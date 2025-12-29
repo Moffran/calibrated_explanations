@@ -9,8 +9,8 @@ from calibrated_explanations.cache import (
     CalibratorCache,
     CacheConfig,
     LRUCache,
-    _default_size_estimator,
-    _hash_part,
+    default_size_estimator,
+    hash_part,
     make_key,
 )
 
@@ -115,7 +115,7 @@ def test_make_key_normalises_arrays() -> None:
 
 def test_default_size_estimator_prefers_numpy_buffers() -> None:
     array = np.arange(6, dtype=np.int16)
-    assert _default_size_estimator(array) == array.nbytes
+    assert default_size_estimator(array) == array.nbytes
 
     class DummyArray:
         def __init__(self, data: Iterable[int]):
@@ -128,16 +128,16 @@ def test_default_size_estimator_prefers_numpy_buffers() -> None:
 
     shim = DummyArray([1, 2, 3, 4])
     expected = np.asarray([1, 2, 3, 4], dtype=np.float32).nbytes
-    assert _default_size_estimator(shim) == expected
+    assert default_size_estimator(shim) == expected
 
     class Opaque:
         pass
 
-    assert _default_size_estimator(Opaque()) == 256
+    assert default_size_estimator(Opaque()) == 256
 
 
 def test_hash_part_covers_nested_structures__should_produce_hashable_representations():
-    """Verify that _hash_part produces consistent, hashable representations of nested structures.
+    """Verify that hash_part produces consistent, hashable representations of nested structures.
 
     Domain Invariants:
     - Numpy arrays must produce hashable tuples (not bare arrays, which are unhashable)
@@ -149,18 +149,18 @@ def test_hash_part_covers_nested_structures__should_produce_hashable_representat
     """
     # Test numpy array: must be converted to hashable tuple, not left as array
     array = np.arange(3, dtype=np.uint8)
-    hashed_array = _hash_part(array)
+    hashed_array = hash_part(array)
     assert isinstance(hashed_array, tuple), "Numpy array must be hashed to a hashable tuple"
     assert hash(hashed_array) is not None, "Hashed array must be hashable"
     # Shape is preserved within the hash representation
     assert len(hashed_array) >= 1, "Hash representation must have elements"
 
     # Test None: must map to None (identity)
-    assert _hash_part(None) is None, "None must remain None in hash"
+    assert hash_part(None) is None, "None must remain None in hash"
 
     # Test nested collections: must be converted to hashable tuples
     nested_sets: List[object] = [{1, 2}, {3, 4}]
-    hashed_nested = _hash_part(nested_sets)
+    hashed_nested = hash_part(nested_sets)
     assert isinstance(hashed_nested, tuple), "Nested list must be converted to hashable tuple"
     assert all(
         isinstance(item, tuple) for item in hashed_nested
@@ -168,7 +168,7 @@ def test_hash_part_covers_nested_structures__should_produce_hashable_representat
     assert hash(hashed_nested) is not None, "Hashed nested must be hashable"
 
     # Test dict: must be converted to hashable representation
-    hashed_mapping = _hash_part({"beta": 3})
+    hashed_mapping = hash_part({"beta": 3})
     assert isinstance(
         hashed_mapping, (tuple, list)
     ), "Dict must convert to hashable tuple or comparable list"
@@ -178,7 +178,7 @@ def test_hash_part_covers_nested_structures__should_produce_hashable_representat
 
     # Test arbitrary object: must produce a hashable string representation
     sentinel = object()
-    hashed_sentinel = _hash_part(sentinel)
+    hashed_sentinel = hash_part(sentinel)
     assert isinstance(hashed_sentinel, tuple), "Arbitrary object must be hashed to tuple"
     assert len(hashed_sentinel) >= 1, "Hash representation must have elements"
     assert hash(hashed_sentinel) is not None, "Hashed sentinel must be hashable"
@@ -593,7 +593,7 @@ def test_calibrator_cache_telemetry_events_coverage() -> None:
     def big_estimator(event: str, payload: Dict[str, object]) -> None:
         events[event] = events.get(event, 0) + 1
 
-    big_cache._cache._telemetry = big_estimator
+    big_cache.cache._telemetry = big_estimator
     big_cache.set(stage="oversized", parts=["x"], value=[1, 2, 3, 4, 5])
     assert events.get("cache_skip", 0) >= 1
 

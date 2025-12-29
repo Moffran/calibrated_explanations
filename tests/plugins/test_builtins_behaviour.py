@@ -73,22 +73,22 @@ def make_explanation_context(explainer, predict_bridge, **overrides):
 
 
 def test_derive_threshold_labels_handles_sequences():
-    labels = builtins._derive_threshold_labels([1, 3.75])
+    labels = builtins.derive_threshold_labels([1, 3.75])
     assert labels == ("1.00 <= Y < 3.75", "Outside interval")
 
 
 def test_derive_threshold_labels_handles_scalars_and_errors():
     sentinel = object()
-    assert builtins._derive_threshold_labels(sentinel) == (
+    assert builtins.derive_threshold_labels(sentinel) == (
         "Target within threshold",
         "Outside threshold",
     )
-    assert builtins._derive_threshold_labels(2.5) == ("Y < 2.50", "Y ≥ 2.50")
+    assert builtins.derive_threshold_labels(2.5) == ("Y < 2.50", "Y ≥ 2.50")
 
 
 def test_derive_threshold_labels_logs_interval_failure(caplog):
     caplog.set_level("DEBUG")
-    labels = builtins._derive_threshold_labels(["bad", "value"])
+    labels = builtins.derive_threshold_labels(["bad", "value"])
     assert labels == ("Target within threshold", "Outside threshold")
     assert "Failed to parse threshold" in caplog.text
 
@@ -143,7 +143,7 @@ def test_collection_to_batch_preserves_metadata():
         mode = "factual"
 
     collection = DummyCollection()
-    batch = builtins._collection_to_batch(collection)  # noqa: SLF001
+    batch = builtins.collection_to_batch(collection)  # noqa: SLF001
     assert isinstance(batch, ExplanationBatch)
     assert batch.collection_metadata["container"] is collection
     assert batch.collection_metadata["mode"] == "factual"
@@ -153,7 +153,7 @@ def test_collection_to_batch_defaults_to_factual():
     class EmptyCollection:
         explanations: tuple = ()
 
-    batch = builtins._collection_to_batch(EmptyCollection())  # noqa: SLF001
+    batch = builtins.collection_to_batch(EmptyCollection())  # noqa: SLF001
     assert batch.explanation_cls is builtins.FactualExplanation
 
 

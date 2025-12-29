@@ -34,6 +34,11 @@ def _should_raise() -> bool:
     return raw.lower() in {"1", "true", "error", "raise"}
 
 
+def should_raise() -> bool:
+    """Backwards-compatible alias for _should_raise."""
+    return _should_raise()
+
+
 def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> None:
     """Emit a `DeprecationWarning` for *message*.
 

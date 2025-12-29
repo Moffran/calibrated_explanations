@@ -51,7 +51,7 @@ def __require_matplotlib():
         )
 
 
-def _compose_save_target(path, title: str, ext) -> str:
+def compose_save_target(path, title: str, ext) -> str:
     """Return a filesystem path for saving plot artefacts using OS separators."""
     ext_str = str(ext)
     base_str = str(path)
@@ -59,6 +59,17 @@ def _compose_save_target(path, title: str, ext) -> str:
     if base_str.endswith(("/", "\\")) or base_path.is_dir():
         return str(base_path / f"{title}{ext_str}")
     return f"{base_str}{title}{ext_str}"
+
+
+def _resolve_explainer(explanation):
+    """Best-effort explainer resolver for legacy plotting helpers."""
+    getter = getattr(explanation, "get_explainer", None)
+    if callable(getter):
+        return getter()
+    getter = getattr(explanation, "_get_explainer", None)
+    if callable(getter):
+        return getter()
+    return explanation
 
 
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
@@ -119,6 +130,7 @@ def _plot_probabilistic(
     ax_positive.set_yticks(range(1))
     ax_positive.set_xticks([])
 
+    resolved_explainer = _resolve_explainer(explanation)
     if explanation.is_thresholded():
         if np.isscalar(explanation.y_threshold):
             ax_negative.set_yticklabels(labels=[f"P(y>{float(explanation.y_threshold) :.2f})"])
@@ -135,7 +147,7 @@ def _plot_probabilistic(
                 ]
             )  # pylint: disable=line-too-long
     elif explanation.get_class_labels() is None:
-        if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+        if getattr(resolved_explainer, "is_multiclass", lambda: False)():  # pylint: disable=protected-access
             ax_negative.set_yticklabels(labels=[f'P(y!={explanation.prediction["classes"]})'])
             ax_positive.set_yticklabels(labels=[f'P(y={explanation.prediction["classes"]})'])
         else:
@@ -214,13 +226,18 @@ def _plot_probabilistic(
         ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        fig.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
+def plot_probabilistic(*args, **kwargs):
+    """Public wrapper for `_plot_probabilistic`."""
+    return _plot_probabilistic(*args, **kwargs)
+
+
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
-def _plot_regression(
+def plot_regression(
     explanation,
     instance,
     predict,
@@ -334,13 +351,13 @@ def _plot_regression(
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        fig.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
 # pylint: disable=duplicate-code
-def _plot_triangular(
+def plot_triangular(
     explanation,
     proba,
     uncertainty,
@@ -374,10 +391,10 @@ def _plot_triangular(
     else:
         min_x = min(
             np.min(rule_proba), np.min(proba)
-        )  # np.min(self._get_explainer().y_cal) # pylint: disable=protected-access
+        )  # np.min(self.get_explainer().y_cal) # pylint: disable=protected-access
         max_x = max(
             np.max(rule_proba), np.max(proba)
-        )  # np.max(self._get_explainer().y_cal) # pylint: disable=protected-access
+        )  # np.max(self.get_explainer().y_cal) # pylint: disable=protected-access
         min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
         max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
         if math.isclose(min_x, max_x, rel_tol=1e-9):
@@ -420,7 +437,7 @@ def _plot_triangular(
     plt.legend()
 
     for ext in save_ext:
-        plt.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        plt.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         plt.show()
 
@@ -443,7 +460,7 @@ def plot_alternative(*args, **kwargs):
 
 
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
-def _plot_alternative(
+def plot_alternative(
     explanation,
     instance,
     predict,
@@ -545,6 +562,7 @@ def _plot_alternative(
     ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
+    resolved_explainer = _resolve_explainer(explanation)
     if explanation.is_thresholded():
         # pylint: disable=unsubscriptable-object
         if np.isscalar(explanation.y_threshold):
@@ -570,11 +588,11 @@ def _plot_alternative(
         ax_main.set_xlim([explanation.y_minmax[0], explanation.y_minmax[1]])
     else:
         if explanation.get_class_labels() is None:
-            if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+            if getattr(resolved_explainer, "is_multiclass", lambda: False)():  # pylint: disable=protected-access
                 ax_main.set_xlabel(f'Probability for class \'{explanation.prediction["classes"]}\'')
             else:
                 ax_main.set_xlabel("Probability for the positive class")
-        elif explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+        elif getattr(resolved_explainer, "is_multiclass", lambda: False)():  # pylint: disable=protected-access
             # pylint: disable=line-too-long
             ax_main.set_xlabel(
                 f'Probability for class \'{explanation.get_class_labels()[explanation.prediction["classes"]]}\''
@@ -587,13 +605,13 @@ def _plot_alternative(
     with contextlib.suppress(Exception):
         fig.tight_layout()
     for ext in save_ext:
-        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        fig.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
+def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """Plot a global explanation overview for the given test data.
 
     This plot is based on the probability distribution and the uncertainty quantification

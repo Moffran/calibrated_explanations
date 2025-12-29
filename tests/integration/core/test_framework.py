@@ -104,7 +104,7 @@ def test_explanation_functions_classification(binary_dataset):
 
     factual_explanations = ce.explain_factual(x_test)
     factual_explanations.get_rules()
-    factual_explanations._is_alternative()
+    factual_explanations.is_alternative()
     factual_explanations.is_one_sided
     factual_explanations.is_probabilistic_regression
     # LIME is an optional dependency; skip this portion if not installed
@@ -125,12 +125,12 @@ def test_explanation_functions_classification(binary_dataset):
 
     alternative_explanations = ce.explore_alternatives(x_test)
     alternative_explanations.get_rules()
-    alternative_explanations._is_alternative()
+    alternative_explanations.is_alternative()
     alternative_explanations.is_one_sided
     alternative_explanations.is_probabilistic_regression
 
-    ce._preload_lime()
-    # ce._preload_shap() # generates an insane number of warnings
+    ce.preload_lime()
+    # ce.preload_shap() # generates an insane number of warnings
 
     print(ce)
 
@@ -147,7 +147,7 @@ def test_explanation_functions_regression(regression_dataset):
 
     factual_explanations = ce.explain_factual(x_test)
     factual_explanations.get_rules()
-    factual_explanations._is_alternative()
+    factual_explanations.is_alternative()
     factual_explanations.is_one_sided
     factual_explanations.is_probabilistic_regression
     factual_explanations[0].is_multiclass()
@@ -156,11 +156,11 @@ def test_explanation_functions_regression(regression_dataset):
 
     alternative_explanations = ce.explore_alternatives(x_test)
     alternative_explanations.get_rules()
-    alternative_explanations._is_alternative()
+    alternative_explanations.is_alternative()
     alternative_explanations.is_one_sided
     alternative_explanations.is_probabilistic_regression
 
-    # ce._preload_lime() # requires lime to be installed, which is optional
-    # ce._preload_shap() # generates an insane number of warnings
+    # ce.preload_lime() # requires lime to be installed, which is optional
+    # ce.preload_shap() # generates an insane number of warnings
 
     print(ce)

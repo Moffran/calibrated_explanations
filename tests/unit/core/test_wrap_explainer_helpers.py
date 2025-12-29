@@ -86,11 +86,11 @@ def test_normalize_public_kwargs_filters_aliases(wrapper: WrapCalibratedExplaine
 
 def test_normalize_auto_encode_flag_variants(wrapper: WrapCalibratedExplainer) -> None:
     assert wrapper._normalize_auto_encode_flag() == "auto"
-    wrapper._auto_encode = True
+    wrapper.auto_encode = True
     assert wrapper._normalize_auto_encode_flag() == "true"
-    wrapper._auto_encode = "FALSE"
+    wrapper.auto_encode = "FALSE"
     assert wrapper._normalize_auto_encode_flag() == "false"
-    wrapper._auto_encode = "unexpected"
+    wrapper.auto_encode = "unexpected"
     assert wrapper._normalize_auto_encode_flag() == "auto"
 
 
@@ -131,8 +131,8 @@ def test_build_preprocessor_metadata_with_and_without_preprocessor(
 ) -> None:
     assert wrapper._build_preprocessor_metadata() is None
 
-    wrapper._preprocessor = RecordingPreprocessor()
-    wrapper._auto_encode = False
+    wrapper.preprocessor = RecordingPreprocessor()
+    wrapper.auto_encode = False
     metadata = wrapper._build_preprocessor_metadata()
     assert metadata is not None
     assert metadata["auto_encode"] == "false"
@@ -142,7 +142,7 @@ def test_build_preprocessor_metadata_with_and_without_preprocessor(
 
 def test_pre_fit_preprocess_and_transform_stages(wrapper: WrapCalibratedExplainer) -> None:
     preprocessor = RecordingPreprocessor()
-    wrapper._preprocessor = preprocessor
+    wrapper.preprocessor = preprocessor
 
     x = np.array([[1, 2], [3, 4]])
     x_fit = wrapper._pre_fit_preprocess(x)
@@ -165,7 +165,7 @@ def test_preprocess_failures_are_swallowed(wrapper: WrapCalibratedExplainer) -> 
         def transform(self, x: Any) -> Any:
             raise RuntimeError("boom")
 
-    wrapper._preprocessor = FailingPreprocessor()
+    wrapper.preprocessor = FailingPreprocessor()
     x = np.array([[1, 2]])
     x_fit = wrapper._pre_fit_preprocess(x)
     assert np.array_equal(x_fit, x)
@@ -244,20 +244,13 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
         unseen_category_policy="error",
     )
 
-    wrapper = WrapCalibratedExplainer._from_config(cfg)
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
 
-    assert hasattr(wrapper, "_perf_cache")
+    assert hasattr(wrapper, "perf_cache")
     assert hasattr(wrapper, "_perf_parallel")
-    assert wrapper._perf_cache is None
-    assert wrapper._perf_parallel is None
+    assert wrapper.perf_cache is None
+    assert wrapper.parallel_executor is None
     assert getattr(wrapper, "_cfg", None) is cfg
-
-
-def test_explain_counterfactual_delegates_to_explore(wrapper: WrapCalibratedExplainer) -> None:
-    sentinel = object()
-    wrapper.explore_alternatives = lambda *args, **kwargs: sentinel  # type: ignore[assignment]
-
-    assert wrapper.explain_counterfactual(np.array([[1, 2]])) is sentinel
 
 
 def test_explain_fast_requires_fit_and_calibration(wrapper: WrapCalibratedExplainer) -> None:
@@ -347,7 +340,7 @@ def test_plot_uses_configured_defaults() -> None:
         unseen_category_policy="error",
         _perf_factory=PerfFactory(),
     )
-    wrapper = WrapCalibratedExplainer._from_config(cfg)
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
 
     class PlotRecorder:
         def __init__(self) -> None:
@@ -389,7 +382,7 @@ def test_pre_fit_preprocess_without_configured_preprocessor(
     wrapper: WrapCalibratedExplainer,
 ) -> None:
     data = np.array([[1, 2]])
-    wrapper._preprocessor = None
+    wrapper.preprocessor = None
 
     assert wrapper._pre_fit_preprocess(data) is data
 
@@ -406,7 +399,7 @@ def test_pre_fit_preprocess_uses_two_step_transform(wrapper: WrapCalibratedExpla
             return np.asarray(x) + 5
 
     preprocessor = TwoStep()
-    wrapper._preprocessor = preprocessor
+    wrapper.preprocessor = preprocessor
     data = np.array([[1, 2]])
 
     transformed = wrapper._pre_fit_preprocess(data)

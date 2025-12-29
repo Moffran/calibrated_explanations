@@ -1,0 +1,1222 @@
+{
+  "allowlist": [
+    {
+      "file": "tests\\conftest.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\core\\test_calibrated_explainer_utils.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\docs\\contributor\\test_plugin_advanced_contract.py",
+      "symbol": "_resolve_plot_style_chain",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\helpers\\explainer_utils.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\integration\\core\\test_explanation_plugin_resolution.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\integration\\core\\test_plugin_resolution.py",
+      "symbol": "_explanation_plugin_instances",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\integration\\core\\test_plugin_resolution.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\integration\\plugins\\test_explanation_plugin_integration.py",
+      "symbol": "_context",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\integration\\plugins\\test_interval_pyproject_integration.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\integration\\plugins\\test_interval_pyproject_integration.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\integration\\viz\\test_plots_integration.py",
+      "symbol": "_plot_alternative",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plot_alternative is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\integration\\viz\\test_plots_integration.py",
+      "symbol": "_plot_global",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plot_global is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\integration\\viz\\test_plots_integration.py",
+      "symbol": "_plot_proba_triangle",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plot_proba_triangle is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\integration\\viz\\test_plots_integration.py",
+      "symbol": "_plot_regression",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plot_regression is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\integration\\viz\\test_plots_more.py",
+      "symbol": "_plot_proba_triangle",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plot_proba_triangle is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\legacy\\test_plotting.py",
+      "symbol": "_compose_save_target",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _compose_save_target is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\legacy\\test_plotting.py",
+      "symbol": "_plot_global",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plot_global is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\plugins\\test_builtins_behaviour.py",
+      "symbol": "_register_builtins",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_builtins_behaviour.py",
+      "symbol": "_supports_calibrated_explainer",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_builtins_module.py",
+      "symbol": "_register_builtins",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_cmd_list",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_cmd_show",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_cmd_trust",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_emit_explanation_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_emit_interval_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_emit_plot_builder_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_emit_plot_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli.py",
+      "symbol": "_emit_plot_renderer_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_cmd_list",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_cmd_show",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_cmd_trust",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_emit_explanation_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_emit_interval_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_emit_plot_builder_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_cli_additional.py",
+      "symbol": "_emit_plot_descriptor",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\plugins\\test_interval_resolution.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\plugins\\test_interval_resolution.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\plugins\\test_interval_resolution.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\plugins\\test_runtime_validation.py",
+      "symbol": "_explanation_attr",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _explanation_attr is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\plugins\\test_runtime_validation.py",
+      "symbol": "_mode",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _mode is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\api\\test_config_builder.py",
+      "symbol": "_perf_factory",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_explain_orchestrator.py",
+      "symbol": "_bridge_monitors",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_explain_orchestrator.py",
+      "symbol": "_derive_plot_chain",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_explain_orchestrator.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_explain_orchestrator.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_explain_orchestrator.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_orchestrator_coverage.py",
+      "symbol": "_derive_plot_chain",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_orchestrator_coverage.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_orchestrator_coverage.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_orchestrator_coverage.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_parallel_executors.py",
+      "symbol": "_sequential_plugin",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_parallel_instance_tasks.py",
+      "symbol": "_instance_parallel_task",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_parallel_instance_tasks.py",
+      "symbol": "_plugin_manager",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_parallel_lifecycle.py",
+      "symbol": "_resolve_strategy",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\explain\\test_pool_idempotency_and_harness.py",
+      "symbol": "_worker_harness",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _worker_harness is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_CalibratedExplainer__noise_type",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _CalibratedExplainer__noise_type is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_CalibratedExplainer__scale_factor",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _CalibratedExplainer__scale_factor is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_CalibratedExplainer__severity",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _CalibratedExplainer__severity is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_check_interval_runtime_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _check_interval_runtime_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_coverage.py",
+      "symbol": "_validate_prediction_result",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_extras.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_extras.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_extras.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_extras.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_extras.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_check_interval_runtime_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _check_interval_runtime_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\prediction\\test_orchestrator_plugins.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_additional.py",
+      "symbol": "_check_interval_runtime_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _check_interval_runtime_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_additional.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_additional.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_additional.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_additional.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_additional.py",
+      "symbol": "_sequential_plugin",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_branch_misc.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_bridge_monitors",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_explanation_plugin_instances",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_fast_interval_plugin_override",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_interval_plugin_override",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_predict_impl",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_pyproject_explanations",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_pyproject_intervals",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_coverage.py",
+      "symbol": "_pyproject_plots",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_lime.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_lime.py",
+      "symbol": "_predict",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_plugin_fallbacks.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_CalibratedExplainer__fast",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__fast is allow-listed due to Defined in external_plugins\\fast_explanations\\pipeline.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_CalibratedExplainer__initialize_interval_learner_for_fast_explainer",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialize_interval_learner_for_fast_explainer is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_CalibratedExplainer__noise_type",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _CalibratedExplainer__noise_type is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_check_interval_runtime_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _check_interval_runtime_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_fast_interval_plugin_override",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_infer_explanation_mode",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _infer_explanation_mode is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_instantiate_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _instantiate_plugin is allow-listed due to Defined in calibrated_explanations\\core\\explain\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_interval_plugin_override",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_pyproject_explanations",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_pyproject_intervals",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_pyproject_plots",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibration_helpers.py",
+      "symbol": "_CalibratedExplainer__initialized",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _CalibratedExplainer__initialized is allow-listed due to Defined in calibrated_explanations\\calibration\\interval_learner.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_calibration_helpers.py",
+      "symbol": "_initialized",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _initialized is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\test_instance_parallel.py",
+      "symbol": "_plugin_manager",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_append_bins",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_append_calibration_buffer",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_bins_size",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_bins_storage",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_ensure_capacity",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_residual_cal_storage",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_sigma_cal_storage",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_interval_regressor.py",
+      "symbol": "_y_cal_hat_size",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_metadata_validation.py",
+      "symbol": "_check_interval_runtime_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _check_interval_runtime_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_metadata_validation.py",
+      "symbol": "_plugin_manager",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _plugin_manager is allow-listed due to Defined in calibrated_explanations\\core\\calibrated_explainer.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_orchestrator_invariants.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_orchestrator_invariants.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_orchestrator_invariants.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_orchestrator_invariants.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\core\\test_parallel_benchmark.py",
+      "symbol": "_parallel_executor",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _parallel_executor is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\core\\test_schema_payload_validation.py",
+      "symbol": "_schema_json",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_build_preprocessor_metadata",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_extract_preprocessor_snapshot",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_finalize_fit",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_format_proba_output",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_maybe_preprocess_for_inference",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_normalize_auto_encode_flag",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_normalize_public_kwargs",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_pre_fit_preprocess",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_pre_fitted",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_pre_transform",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\core\\test_wrap_explainer_helpers.py",
+      "symbol": "_serialise_preprocessor_value",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_build_condition_payload",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_build_instance_uncertainty",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_build_interval",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_build_uncertainty_payload",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_get_percentiles",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_ignored_features_for_instance",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_parse_condition",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_predict_conjunctive",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\explanations\\test_explanation_helpers.py",
+      "symbol": "_safe_feature_name",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_MATPLOTLIB_IMPORT_ERROR",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _MATPLOTLIB_IMPORT_ERROR is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_compose_save_target",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _compose_save_target is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_plot_global",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_global is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_plot_proba_triangle",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_proba_triangle is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_plot_probabilistic",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_probabilistic is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_plot_regression",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_regression is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\legacy\\test_plotting.py",
+      "symbol": "_plot_triangular",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_triangular is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\perf\\test_cache.py",
+      "symbol": "_telemetry",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\perf\\test_parallel.py",
+      "symbol": "_get_cgroup_cpu_quota",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\perf\\test_parallel.py",
+      "symbol": "_process_strategy",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plotting\\test_label_helpers.py",
+      "symbol": "_format_save_path",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plotting\\test_plotting_helpers.py",
+      "symbol": "_resolve_plot_style_chain",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_execution_strategy_wrappers.py",
+      "symbol": "_explanation_attr",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _explanation_attr is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_execution_strategy_wrappers.py",
+      "symbol": "_feature_filter_config",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_execution_strategy_wrappers.py",
+      "symbol": "_mode",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _mode is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_bridge_monitors",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_explanation_plugin_instances",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_fast_interval_plugin_override",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_interval_context_metadata",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_context_metadata is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_interval_plugin_fallbacks",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_fallbacks is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_interval_plugin_hints",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_hints is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_interval_plugin_identifiers",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: _interval_plugin_identifiers is allow-listed due to Defined in calibrated_explanations\\core\\prediction\\orchestrator.py"
+    },
+    {
+      "file": "tests\\unit\\plugins\\test_manager.py",
+      "symbol": "_interval_plugin_override",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_explanations_collection.py",
+      "symbol": "_has_conjunctive_rules",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _has_conjunctive_rules is allow-listed due to Defined in calibrated_explanations\\explanations\\legacy_conjunctions.py"
+    },
+    {
+      "file": "tests\\unit\\test_explanations_collection.py",
+      "symbol": "_plugin_manager",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_explanations_collection.py",
+      "symbol": "_predict",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_perf_cache_shim.py",
+      "symbol": "_hash_part",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_perf_parallel.py",
+      "symbol": "_serial_strategy",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_plot_spec_default_builder.py",
+      "symbol": "_legacy_get_fill_color",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_plots_configuration.py",
+      "symbol": "_read_plot_pyproject",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\test_plotting.py",
+      "symbol": "_get_explainer",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _get_explainer is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\test_plotting.py",
+      "symbol": "_plot_global",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_global is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\test_plotting.py",
+      "symbol": "_plot_proba_triangle",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_proba_triangle is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\test_plotting.py",
+      "symbol": "_plot_probabilistic",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_probabilistic is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\test_plotting.py",
+      "symbol": "_plot_regression",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_regression is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\test_plotting.py",
+      "symbol": "_plot_triangular",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_triangular is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\test_utils_deprecations.py",
+      "symbol": "_EMITTED",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _EMITTED is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\test_utils_deprecations.py",
+      "symbol": "_EMITTED_PER_TEST",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _EMITTED_PER_TEST is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\utils\\test_deprecations_helper.py",
+      "symbol": "_EMITTED",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _EMITTED is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\utils\\test_deprecations_helper.py",
+      "symbol": "_EMITTED_PER_TEST",
+      "expiry": "no expiry",
+      "reason": "Pattern 2 remediation: _EMITTED_PER_TEST is allow-listed as acceptable test internal"
+    },
+    {
+      "file": "tests\\unit\\utils\\test_deprecations_helper.py",
+      "symbol": "_should_raise",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\viz\\test_alternative_regression_parity.py",
+      "symbol": "_plot_alternative",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_alternative is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\viz\\test_narrative_plugin.py",
+      "symbol": "_get_feature_names",
+      "expiry": "no expiry",
+      "reason": "Pattern 1 remediation: acceptable test internal, no expiry"
+    },
+    {
+      "file": "tests\\unit\\viz\\test_plot_parity_adapter.py",
+      "symbol": "_plot_triangular",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_triangular is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\viz\\test_plotspec_mvp.py",
+      "symbol": "_plot_probabilistic",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_probabilistic is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests\\unit\\viz\\test_plotspec_mvp.py",
+      "symbol": "_plot_regression",
+      "expiry": "legacy, no expiry",
+      "reason": "Pattern 1 remediation: _plot_regression is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    }
+  ]
+}

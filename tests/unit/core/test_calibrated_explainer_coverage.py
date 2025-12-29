@@ -27,9 +27,9 @@ def mock_plugin_manager():
         instance.initialize_orchestrators.return_value = None
 
         # Mock orchestrators
-        instance._explanation_orchestrator = MagicMock()
-        instance._prediction_orchestrator = MagicMock()
-        instance._reject_orchestrator = MagicMock()
+        instance.explanation_orchestrator = MagicMock()
+        instance.prediction_orchestrator = MagicMock()
+        instance.reject_orchestrator = MagicMock()
 
         yield mock
 
@@ -37,7 +37,7 @@ def mock_plugin_manager():
 @pytest.fixture(autouse=True)
 def mock_interval_calibrator():
     with patch(
-        "calibrated_explanations.core.prediction.orchestrator.PredictionOrchestrator._obtain_interval_calibrator"
+        "calibrated_explanations.core.prediction.orchestrator.PredictionOrchestrator.obtain_interval_calibrator"
     ) as mock:
         mock.return_value = (MagicMock(), None)
         yield mock
@@ -137,8 +137,8 @@ def test_call_delegates_to_orchestrator(mock_learner, mock_plugin_manager):
     x_test = np.array([[5, 6]])
     explainer(x_test)
 
-    mock_plugin_manager.return_value._explanation_orchestrator.invoke.assert_called_once()
-    args, kwargs = mock_plugin_manager.return_value._explanation_orchestrator.invoke.call_args
+    mock_plugin_manager.return_value.explanation_orchestrator.invoke.assert_called_once()
+    args, kwargs = mock_plugin_manager.return_value.explanation_orchestrator.invoke.call_args
     assert args[1] is x_test
     assert kwargs["extras"]["mode"] == "factual"  # Default inferred mode
 
@@ -151,9 +151,9 @@ def test_explain_factual_delegates(mock_learner, mock_plugin_manager):
     x_test = np.array([[5, 6]])
     explainer.explain_factual(x_test)
 
-    mock_plugin_manager.return_value._explanation_orchestrator.invoke_factual.assert_called_once()
+    mock_plugin_manager.return_value.explanation_orchestrator.invoke_factual.assert_called_once()
     args, kwargs = (
-        mock_plugin_manager.return_value._explanation_orchestrator.invoke_factual.call_args
+        mock_plugin_manager.return_value.explanation_orchestrator.invoke_factual.call_args
     )
     assert args[0] is x_test
 
@@ -166,9 +166,9 @@ def test_explore_alternatives_delegates(mock_learner, mock_plugin_manager):
     x_test = np.array([[5, 6]])
     explainer.explore_alternatives(x_test)
 
-    mock_plugin_manager.return_value._explanation_orchestrator.invoke_alternative.assert_called_once()
+    mock_plugin_manager.return_value.explanation_orchestrator.invoke_alternative.assert_called_once()
     args, kwargs = (
-        mock_plugin_manager.return_value._explanation_orchestrator.invoke_alternative.call_args
+        mock_plugin_manager.return_value.explanation_orchestrator.invoke_alternative.call_args
     )
     assert args[0] is x_test
 
@@ -181,8 +181,8 @@ def test_explain_fast_delegates(mock_learner, mock_plugin_manager):
     x_test = np.array([[5, 6]])
     explainer.explain_fast(x_test)
 
-    mock_plugin_manager.return_value._explanation_orchestrator.invoke.assert_called()
-    args, kwargs = mock_plugin_manager.return_value._explanation_orchestrator.invoke.call_args
+    mock_plugin_manager.return_value.explanation_orchestrator.invoke.assert_called()
+    args, kwargs = mock_plugin_manager.return_value.explanation_orchestrator.invoke.call_args
     assert args[0] == "fast"
     assert args[1] is x_test
 
@@ -195,7 +195,7 @@ def test_predict_delegates(mock_learner, mock_plugin_manager):
     x_test = np.array([[5, 6]])
 
     # Mock return value to allow unpacking in CalibratedExplainer.predict
-    orchestrator = explainer._prediction_orchestrator
+    orchestrator = explainer.prediction_orchestrator
     orchestrator._predict_impl.return_value = (
         np.array([0]),
         np.array([0]),
@@ -220,22 +220,22 @@ def test_properties_delegation(mock_learner, mock_plugin_manager):
     _ = explainer.explanation_plugin_overrides
     _ = explainer._interval_plugin_override
     _ = explainer._fast_interval_plugin_override
-    _ = explainer._plot_style_override
+    _ = explainer.plot_style_override
     _ = explainer._bridge_monitors
     _ = explainer._explanation_plugin_instances
-    _ = explainer._explanation_plugin_identifiers
-    _ = explainer._explanation_plugin_fallbacks
-    _ = explainer._plot_plugin_fallbacks
-    _ = explainer._interval_plugin_hints
-    _ = explainer._interval_plugin_fallbacks
-    _ = explainer._interval_plugin_identifiers
-    _ = explainer._telemetry_interval_sources
-    _ = explainer._interval_preferred_identifier
-    _ = explainer._interval_context_metadata
-    _ = explainer._plot_style_chain
-    _ = explainer._explanation_contexts
-    _ = explainer._last_explanation_mode
-    _ = explainer._last_telemetry
+    _ = explainer.plugin_manager.explanation_plugin_identifiers
+    _ = explainer.plugin_manager.explanation_plugin_fallbacks
+    _ = explainer.plugin_manager.plot_plugin_fallbacks
+    _ = explainer.plugin_manager.interval_plugin_hints
+    _ = explainer.plugin_manager.interval_plugin_fallbacks
+    _ = explainer.plugin_manager.interval_plugin_identifiers
+    _ = explainer.plugin_manager.telemetry_interval_sources
+    _ = explainer.plugin_manager.interval_preferred_identifier
+    _ = explainer.plugin_manager.interval_context_metadata
+    _ = explainer.plugin_manager.plot_style_chain
+    _ = explainer.plugin_manager.explanation_contexts
+    _ = explainer.plugin_manager.last_explanation_mode
+    _ = explainer.plugin_manager.last_telemetry
     _ = explainer._pyproject_explanations
     _ = explainer._pyproject_intervals
     _ = explainer._pyproject_plots
@@ -244,7 +244,7 @@ def test_properties_delegation(mock_learner, mock_plugin_manager):
     # We can verify one of them
     assert (
         explainer.explanation_plugin_overrides
-        == mock_plugin_manager.return_value._explanation_plugin_overrides
+        == mock_plugin_manager.return_value.explanation_plugin_overrides
     )
 
 
@@ -254,7 +254,7 @@ def test_setters_delegation(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     explainer.explanation_plugin_overrides = {"a": 1}
-    assert mock_plugin_manager.return_value._explanation_plugin_overrides == {"a": 1}
+    assert mock_plugin_manager.return_value.explanation_plugin_overrides == {"a": 1}
 
 
 def test_interval_learner_property(mock_learner, mock_plugin_manager):
@@ -264,7 +264,7 @@ def test_interval_learner_property(mock_learner, mock_plugin_manager):
 
     # Mock the registry
     mock_registry = MagicMock()
-    mock_plugin_manager.return_value._prediction_orchestrator._interval_registry = mock_registry
+    mock_plugin_manager.return_value.prediction_orchestrator.interval_registry = mock_registry
 
     _ = explainer.interval_learner
 
@@ -281,7 +281,7 @@ def test_infer_explanation_mode(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     # Default is factual
-    assert explainer._infer_explanation_mode() == "factual"
+    assert explainer.infer_explanation_mode() == "factual"
 
     # Mock discretizer
     with patch("calibrated_explanations.utils.EntropyDiscretizer") as mock_entropy:

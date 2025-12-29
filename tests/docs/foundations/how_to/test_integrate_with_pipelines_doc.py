@@ -50,7 +50,7 @@ def build_pipeline_context() -> SimpleNamespace:
     config = ExplainerConfig(
         model=RandomForestClassifier(random_state=0), preprocessor=preprocessor
     )
-    explainer = WrapCalibratedExplainer._from_config(config)
+    explainer = WrapCalibratedExplainer.from_config(config)
 
     explainer.fit(x_proper, y_proper)
     explainer.calibrate(x_cal, y_cal)

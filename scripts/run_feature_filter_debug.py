@@ -27,7 +27,7 @@ config = (
     .build_config()
 )
 
-wrapper = WrapCalibratedExplainer._from_config(config)
+wrapper = WrapCalibratedExplainer.from_config(config)
 wrapper.calibrate(X_cal, y_cal)
 explainer = wrapper.explainer
 

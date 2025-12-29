@@ -18,7 +18,7 @@ pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def test_plot_alternative_classification_labels(mock_require, mock_render):
+def testplot_alternative_classification_labels(mock_require, mock_render):
     """Should correctly determine axis labels for classification."""
     explanation = MagicMock()
     explanation.get_mode.return_value = "classification"
@@ -55,7 +55,7 @@ def test_plot_alternative_classification_labels(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def test_plot_alternative_thresholded_scalar(mock_require, mock_render):
+def testplot_alternative_thresholded_scalar(mock_require, mock_render):
     """Should correctly determine axis labels for thresholded classification (scalar)."""
     explanation = MagicMock()
     explanation.get_mode.return_value = "classification"
@@ -88,7 +88,7 @@ def test_plot_alternative_thresholded_scalar(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def test_plot_alternative_thresholded_tuple(mock_require, mock_render):
+def testplot_alternative_thresholded_tuple(mock_require, mock_render):
     """Should correctly determine axis labels for thresholded classification (tuple)."""
     explanation = MagicMock()
     explanation.get_mode.return_value = "classification"
@@ -121,7 +121,7 @@ def test_plot_alternative_thresholded_tuple(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def test_plot_alternative_multiclass(mock_require, mock_render):
+def testplot_alternative_multiclass(mock_require, mock_render):
     """Should correctly determine axis labels for multiclass."""
     explanation = MagicMock()
     explanation.get_mode.return_value = "classification"
@@ -159,8 +159,8 @@ def test_plot_alternative_multiclass(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-@patch("calibrated_explanations.plotting.legacy._plot_alternative")
-def test_plot_alternative_fallback_on_error(
+@patch("calibrated_explanations.plotting.legacy.plot_alternative")
+def testplot_alternative_fallback_on_error(
     mock_legacy, mock_require, mock_render, enable_fallbacks
 ):
     """Should fall back to legacy plotting if render_plotspec raises exception.
@@ -199,7 +199,7 @@ def test_plot_alternative_fallback_on_error(
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def test_plot_regression(mock_require, mock_render):
+def testplot_regression(mock_require, mock_render):
     """Should correctly render regression plots."""
     explanation = MagicMock()
     explanation.get_mode.return_value = "regression"
@@ -214,7 +214,7 @@ def test_plot_regression(mock_require, mock_render):
     num_to_show = 1
     column_names = ["f1"]
 
-    plotting._plot_regression(
+    plotting.plot_regression(
         explanation,
         instance,
         predict,
@@ -233,10 +233,8 @@ def test_plot_regression(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-@patch("calibrated_explanations.plotting.legacy._plot_regression")
-def test_plot_regression_fallback_on_error(
-    mock_legacy, mock_require, mock_render, enable_fallbacks
-):
+@patch("calibrated_explanations.plotting.legacy.plot_regression")
+def testplot_regression_fallback_on_error(mock_legacy, mock_require, mock_render, enable_fallbacks):
     """Should fall back to legacy plotting if render_plotspec raises exception.
 
     This test explicitly validates visualization fallback behavior.
@@ -257,7 +255,7 @@ def test_plot_regression_fallback_on_error(
     column_names = ["f1"]
 
     with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
-        plotting._plot_regression(
+        plotting.plot_regression(
             explanation,
             instance,
             predict,
@@ -276,7 +274,7 @@ def test_plot_regression_fallback_on_error(
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def test_plot_triangular(mock_require, mock_render):
+def testplot_triangular(mock_require, mock_render):
     """Should correctly render triangular plots."""
     explanation = MagicMock()
 
@@ -287,7 +285,7 @@ def test_plot_triangular(mock_require, mock_render):
     rule_uncertainty = [0.1, 0.1]
     num_to_show = 1
 
-    plotting._plot_triangular(
+    plotting.plot_triangular(
         explanation,
         proba,
         uncertainty,
@@ -394,7 +392,7 @@ def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch
     explanation = probabilistic_explanation(explainer_multiclass=True)
 
     with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=[0.2],
             predict={"predict": 0.5},
@@ -440,7 +438,7 @@ def test_plot_probabilistic_thresholded_interval_captions(monkeypatch: pytest.Mo
         y_minmax=("0.1", "0.9"),
     )
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance=[0.4],
         predict=explanation.prediction,
@@ -488,7 +486,7 @@ def test_plot_probabilistic_multiclass_without_labels(monkeypatch: pytest.Monkey
         explainer_multiclass=True,
     )
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance=[0.1],
         predict=explanation.prediction,
@@ -535,7 +533,7 @@ def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest
         explanation_multiclass=True,
     )
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance=[0.1],
         predict=explanation.prediction,
@@ -553,7 +551,7 @@ def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest
     assert captured["pos_caption"] == "P(y=5)"
 
 
-def test_plot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
+def testplot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
     """Should invoke plot plugins when not using the legacy path."""
 
     monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
@@ -567,13 +565,13 @@ def test_plot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
     class DummyExplainer:
         def __init__(self):
             self.learner = SimpleNamespace()
-            self._last_explanation_mode = "factual"
+            self.last_explanation_mode = "factual"
             self.latest_explanation = SimpleNamespace()
 
         def predict(self, x, uq_interval=True, bins=None):
             return [0.42], ([0.1], [0.9])
 
-    output = plotting._plot_global(
+    output = plotting.plot_global(
         DummyExplainer(), x=[1, 2], show=True, use_legacy=False, style="plot_spec.default"
     )
     assert hasattr(output, "artifact")
@@ -582,7 +580,7 @@ def test_plot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
     assert plot_spec["kind"] == "global_regression"
 
 
-def test_plot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
+def testplot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
     """Should raise when no plot plugins are available."""
 
     monkeypatch.setattr("calibrated_explanations.plugins.ensure_builtin_plugins", lambda: None)
@@ -600,14 +598,14 @@ def test_plot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
     class DummyExplainer:
         def __init__(self):
             self.learner = SimpleNamespace()
-            self._last_explanation_mode = "factual"
+            self.last_explanation_mode = "factual"
             self.latest_explanation = SimpleNamespace()
 
         def predict(self, x, uq_interval=True, bins=None):
             return [0.42], ([0.1], [0.9])
 
     with pytest.raises(ConfigurationError):
-        plotting._plot_global(DummyExplainer(), x=[1], show=False, use_legacy=False)
+        plotting.plot_global(DummyExplainer(), x=[1], show=False, use_legacy=False)
 
 
 def test_plot_proba_triangle_invokes_matplotlib(monkeypatch: pytest.MonkeyPatch):

@@ -22,7 +22,7 @@ pytestmark = pytest.mark.viz
 def test_plotspec_regression_render_smoke():
     rng = np.random.default_rng(0)
     nfeat = 5
-    # Fake inputs similar to _plot_regression
+    # Fake inputs similar to plot_regression
     predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
     fw = {
         "predict": rng.normal(0, 0.2, size=nfeat),
@@ -65,7 +65,7 @@ def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
     setattr(explanation, "_get_explainer", lambda: None)
 
     with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=np.array([0.2, 0.4]),
             predict={"predict": 0.6, "low": 0.2, "high": 0.8},
@@ -88,7 +88,7 @@ def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
 
 
 @pytest.mark.platform_dependent
-def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
+def testplot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
     """PlotSpec regression helper should save to multiple formats when path specified.
 
     Refactored from brittle os.path.join assertion to semantic
@@ -115,7 +115,7 @@ def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path)
     )
 
     explanation = types.SimpleNamespace(y_minmax=(0.0, 1.0))
-    plotting._plot_regression(
+    plotting.plot_regression(
         explanation,
         instance=np.array([0.3]),
         predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -385,7 +385,7 @@ def test_plotspec_probabilistic_interval_requires_idx(monkeypatch):
     )
 
     with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=np.array([0.1, 0.2]),
             predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -447,7 +447,7 @@ def test_plotspec_probabilistic_default_save_ext(monkeypatch, tmp_path):
     setattr(explanation, "_get_explainer", lambda: None)
 
     base_path = str(tmp_path) + "/"
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance=np.array([0.1, 0.2]),
         predict={"predict": 0.6, "low": 0.2, "high": 0.8},
@@ -630,7 +630,7 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
         def get_class_labels(self):
             return ["neg", "pos"]
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         Explanation(),
         instance=[0.2, 0.3],
         predict={"predict": 0.6, "low": -np.inf, "high": np.inf},
@@ -672,7 +672,7 @@ def test_build_regression_spec_requires_instance_alignment():
         )
 
 
-def test_plot_alternative_sanitises_non_finite_payloads(monkeypatch):
+def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):
     from calibrated_explanations import plotting
 
     recorded: dict[str, dict] = {}

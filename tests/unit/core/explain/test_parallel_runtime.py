@@ -10,7 +10,7 @@ from calibrated_explanations.parallel import ParallelExecutor, ParallelConfig
 class TestExplainParallelRuntime:
     def test_from_explainer_resolves_executor(self):
         explainer = MagicMock()
-        explainer._perf_parallel = None
+        explainer.parallel_executor = None
         explainer.min_instances_for_parallel = None  # Fix: prevent MagicMock return
         executor = MagicMock(spec=ParallelExecutor)
         executor.config = ParallelConfig(min_instances_for_parallel=10, instance_chunk_size=5)
@@ -24,7 +24,7 @@ class TestExplainParallelRuntime:
 
     def test_from_explainer_ignores_granularity_arg(self):
         explainer = MagicMock()
-        explainer._perf_parallel = None
+        explainer.parallel_executor = None
         explainer.executor = None
         explainer.min_instances_for_parallel = None  # Fix: prevent MagicMock return
 
@@ -63,7 +63,7 @@ class TestExplainParallelRuntime:
         executor.config = MagicMock()
         executor.config.enabled = True
         executor.config.strategy = "processes"
-        executor._active_strategy_name = "processes"
+        executor.active_strategy_name = "processes"
 
         runtime = ExplainParallelRuntime(
             executor=executor, min_instances_for_parallel=10, chunk_size=5
@@ -102,7 +102,7 @@ class TestExplainParallelRuntime:
         executor.config = MagicMock()
         executor.config.enabled = True
         executor.config.strategy = "processes"
-        executor._active_strategy_name = "sequential"  # Fallback happened
+        executor.active_strategy_name = "sequential"  # Fallback happened
 
         runtime = ExplainParallelRuntime(
             executor=executor, min_instances_for_parallel=10, chunk_size=5
@@ -119,7 +119,7 @@ class TestExplainParallelRuntime:
         executor.config = MagicMock()
         executor.config.enabled = True
         executor.config.strategy = "threads"
-        executor._active_strategy_name = "threads"
+        executor.active_strategy_name = "threads"
 
         runtime = ExplainParallelRuntime(
             executor=executor, min_instances_for_parallel=1, chunk_size=1
@@ -139,7 +139,7 @@ class TestExplainParallelRuntime:
         executor.config = MagicMock()
         executor.config.enabled = True
         executor.config.strategy = "sequential"
-        executor._active_strategy_name = "sequential"
+        executor.active_strategy_name = "sequential"
 
         runtime = ExplainParallelRuntime(
             executor=executor, min_instances_for_parallel=1, chunk_size=1

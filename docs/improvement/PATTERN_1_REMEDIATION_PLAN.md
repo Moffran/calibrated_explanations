@@ -16,16 +16,16 @@ We have established a baseline allow-list in `.github/private_member_allowlist.j
 
 ## 2. Execution Phases
 
-### Phase 1: Low-Hanging Fruit (Refactor to Public API)
+### Phase 1: Low-Hanging Fruit (Refactor to Public API) - [COMPLETED]
 **Target:** Methods with < 5 test usages that are not name-mangled or legacy.
 *   **Goal:** Reduce the number of unique private methods being accessed.
 *   **Strategy:** Identify the public effect of the private method and assert on that instead.
-*   **Examples:** `_get_sigma_test`, `_feature_names`, `_preprocessor_metadata`.
+*   **Status:** Completed in v0.10.1. Refactored `_get_sigma_test`, `_feature_names`, and `_preprocessor_metadata`.
 
 ### Phase 2: Orchestrator & Plugin Manager Refactoring
 **Target:** Core internal components like `orchestrator.py` and `manager.py`.
 *   **Goal:** Use existing public accessors or introduce new ones where appropriate.
-*   **Strategy:** 
+*   **Strategy:**
     *   Replace `explainer._plugin_manager` with `explainer.require_plugin_manager()`.
     *   Refactor orchestrator tests to use the public `explain()` or `predict_intervals()` methods with appropriate mocks.
 
@@ -37,7 +37,7 @@ We have established a baseline allow-list in `.github/private_member_allowlist.j
 ### Phase 4: Final Review & Hardening
 **Target:** Remaining allow-listed items.
 *   **Goal:** Eliminate as many allow-list entries as possible.
-*   **Strategy:** 
+*   **Strategy:**
     *   Convert essential internal factories to public `classmethod`s (e.g., `from_config`).
     *   Rewrite legacy tests to use the new plugin-based plotting architecture.
 

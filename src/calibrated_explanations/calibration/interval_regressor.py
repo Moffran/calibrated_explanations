@@ -68,7 +68,7 @@ class IntervalRegressor:
         self._residual_cal_storage = np.array(initial_residuals, copy=True)
         self._residual_cal_size = self._residual_cal_storage.shape[0]
 
-        sigma_cal = np.asarray(self.ce._get_sigma_test(x=self.ce.x_cal))  # pylint: disable=protected-access
+        sigma_cal = np.asarray(self.ce.get_sigma_test(x=self.ce.x_cal))
         if sigma_cal.ndim != 1:
             sigma_cal = sigma_cal.reshape(-1)
         self._sigma_cal_storage = np.array(sigma_cal, copy=True)
@@ -251,7 +251,7 @@ class IntervalRegressor:
                 f"Length of test bins ({len(bins)}) does not match number of test instances ({len(y_test_hat)})."
             )
 
-        sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
+        sigma_test = self.ce.get_sigma_test(x=x)
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
         high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
@@ -294,7 +294,7 @@ class IntervalRegressor:
         """
         y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
-        sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
+        sigma_test = self.ce.get_sigma_test(x=x)
         if isinstance(self.current_y_threshold, tuple):
             proba_lower = self.cps.predict(
                 y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[0], bins=bins
@@ -435,7 +435,7 @@ class IntervalRegressor:
         # Update y_hat, residuals, and sigma
         y_cal_hat = self.ce.predict_function(xs)
         residuals = ys - y_cal_hat
-        sigmas = self.ce._get_sigma_test(x=xs)  # pylint: disable=protected-access
+        sigmas = self.ce.get_sigma_test(x=xs)
         self._append_calibration_buffer("y_cal_hat", y_cal_hat)
         self._append_calibration_buffer("residual_cal", residuals)
         self._append_calibration_buffer("sigma_cal", sigmas)
@@ -497,6 +497,17 @@ class IntervalRegressor:
     def y_cal_hat(self):
         """Predicted calibration targets."""
         return self._y_cal_hat_storage[: self._y_cal_hat_size]
+
+    @property
+    def y_cal_hat_storage(self):
+        """Backwards-compatible access to the full calibration buffer."""
+        return self._y_cal_hat_storage
+
+    @y_cal_hat_storage.setter
+    def y_cal_hat_storage(self, value):
+        """Allow overwriting the calibration buffer when needed by tests."""
+        self._y_cal_hat_storage = np.asarray(value)
+        self._y_cal_hat_size = self._y_cal_hat_storage.shape[0]
 
     @property
     def residual_cal(self):

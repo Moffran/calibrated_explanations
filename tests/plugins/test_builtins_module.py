@@ -24,7 +24,7 @@ from calibrated_explanations.plugins.builtins import (
     LegacyPredictBridge,
     PlotSpecDefaultBuilder,
     PlotSpecDefaultRenderer,
-    _collection_to_batch,
+    collection_to_batch,
     _register_builtins,
 )
 from calibrated_explanations.plugins.explanations import (
@@ -247,12 +247,12 @@ def test_supports_and_explain_methods(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_collection_to_batch_handles_empty_and_populated_collections():
-    empty_batch = _collection_to_batch(make_collection(with_instances=False))
+    empty_batch = collection_to_batch(make_collection(with_instances=False))
     assert empty_batch.instances == ()
     assert empty_batch.explanation_cls is builtins_mod.FactualExplanation
 
     populated = make_collection(with_instances=True)
-    batch = _collection_to_batch(populated)
+    batch = collection_to_batch(populated)
     assert isinstance(batch, ExplanationBatch)
     assert batch.instances[0]["explanation"].label == "dummy"
     assert batch.collection_metadata["container"] is populated

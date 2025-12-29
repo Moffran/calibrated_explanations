@@ -26,8 +26,8 @@ class DummyDescriptor(SimpleNamespace):
         (123, ()),
     ],
 )
-def test_string_tuple_variants(value, expected):
-    assert cli._string_tuple(value) == expected
+def testcoerce_string_tuple_variants(value, expected):
+    assert cli.coerce_string_tuple(value) == expected
 
 
 def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):

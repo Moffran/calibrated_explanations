@@ -29,19 +29,19 @@ def analyze_category_a(analysis_file, usage_file):
         test_usages = len(use_list)
         src_usages = int(def_info.get("src_usages", 0))
         def_file = def_info.get("def_file", "Unknown")
-        
+
         # Heuristics for allow-list candidates
         is_name_mangled = name.startswith("_") and "__" in name
         is_factory = name.startswith("_from_") or name.endswith("_from_config")
         has_public_accessor = False
-        
+
         # Check for common public accessors (heuristic)
         public_name = name.lstrip("_")
         # This is a simple check, could be improved by scanning src for the public name
-        
+
         allow_list_candidate = False
         reason = ""
-        
+
         if is_name_mangled:
             allow_list_candidate = True
             reason = "Name-mangled internal state"
@@ -76,12 +76,12 @@ def analyze_category_a(analysis_file, usage_file):
         writer.writerows(report)
 
     print(f"Category A analysis complete. Report written to {output_file}")
-    
+
     # Print summary
     candidates = [r for r in report if r["allow_list_candidate"]]
     print(f"\nFound {len(report)} Category A methods.")
     print(f"Identified {len(candidates)} potential allow-list candidates.")
-    
+
     print("\nTop Allow-list Candidates:")
     for c in candidates[:10]:
         print(f"- {c['name']} ({c['test_usages']} usages): {c['reason']}")

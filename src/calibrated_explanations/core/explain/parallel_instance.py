@@ -154,7 +154,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                 features_to_ignore_array,
             )
             explainer.latest_explanation = empty_explanation
-            explainer._last_explanation_mode = explainer._infer_explanation_mode()
+            explainer.last_explanation_mode = explainer.infer_explanation_mode()
             return empty_explanation
 
         # Determine chunk size: prefer executor config if set, else fallback to ExplainConfig default
@@ -201,7 +201,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
             )
             result = self._sequential_plugin.execute(chunk_request, config, explainer)
             explainer.latest_explanation = result
-            explainer._last_explanation_mode = explainer._infer_explanation_mode()
+            explainer.last_explanation_mode = explainer.infer_explanation_mode()
             return result
 
         # Prepare sanitized config state (exclude executor to avoid pickling issues)
@@ -252,11 +252,11 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
 
         # Step 5: Execute tasks in parallel
         # Note: _instance_parallel_task is now top-level
-        active_strategy = getattr(executor, "_active_strategy_name", None) or getattr(
+        active_strategy = getattr(executor, "active_strategy_name", None) or getattr(
             executor.config, "strategy", "auto"
         )
         if active_strategy == "auto" and hasattr(executor, "_auto_strategy"):
-            active_strategy = executor._auto_strategy(work_items=n_instances)
+            active_strategy = executor.auto_strategy(work_items=n_instances)
 
         configured_strategy = getattr(executor.config, "strategy", active_strategy)
         if (
@@ -307,7 +307,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
 
         # Update explainer state
         explainer.latest_explanation = combined
-        explainer._last_explanation_mode = explainer._infer_explanation_mode()
+        explainer.last_explanation_mode = explainer.infer_explanation_mode()
 
         return combined
 

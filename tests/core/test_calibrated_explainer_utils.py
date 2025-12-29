@@ -37,15 +37,15 @@ def test_instantiate_plugin_prefers_fresh_instances(explainer_factory):
             return self
 
     proto = Proto()
-    assert explainer._instantiate_plugin(None) is None
-    assert explainer._instantiate_plugin(proto) is proto
+    assert explainer.instantiate_plugin(None) is None
+    assert explainer.instantiate_plugin(proto) is proto
 
     class RequiresArgs:
         def __init__(self, value):
             self.value = value
 
     original = RequiresArgs(3)
-    cloned = explainer._instantiate_plugin(original)
+    cloned = explainer.instantiate_plugin(original)
     assert isinstance(cloned, RequiresArgs)
     assert cloned is not original
     assert cloned.value == 3

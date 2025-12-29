@@ -78,7 +78,7 @@ def update_interval_learner(  # pylint: disable=invalid-name
         raise ConfigurationError("Fast explanations are not supported in this update path.")
 
     if explainer.mode == "classification":
-        interval, _identifier = explainer._obtain_interval_calibrator(  # pylint: disable=protected-access
+        interval, _identifier = explainer.obtain_interval_calibrator(
             fast=False,
             metadata={"operation": "update"},
         )
@@ -89,7 +89,7 @@ def update_interval_learner(  # pylint: disable=invalid-name
         # update the IntervalRegressor
         explainer.interval_learner.insert_calibration(xs, ys, bins=bins)
 
-    explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
+    explainer.initialized = True
 
 
 def initialize_interval_learner(explainer: CalibratedExplainer) -> None:
@@ -114,20 +114,22 @@ def initialize_interval_learner(explainer: CalibratedExplainer) -> None:
     --------
     initialize_interval_learner_for_fast_explainer : Special initialization for fast mode
     """
-    ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
-    if callable(ensure_state):
-        ensure_state()
+    orchestrator = getattr(explainer, "prediction_orchestrator", None)
+    if orchestrator is not None:
+        ensure_state = getattr(orchestrator, "ensure_interval_runtime_state", None)
+        if callable(ensure_state):
+            ensure_state()
 
     if explainer.is_fast():
         initialize_interval_learner_for_fast_explainer(explainer)
     elif explainer.mode == "classification" or "regression" in explainer.mode:
-        interval, _identifier = explainer._obtain_interval_calibrator(  # pylint: disable=protected-access
+        interval, _identifier = explainer.obtain_interval_calibrator(
             fast=False,
             metadata={"operation": "initialize"},
         )
         explainer.interval_learner = interval
 
-    explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
+    explainer.initialized = True
 
 
 def initialize_interval_learner_for_fast_explainer(explainer: CalibratedExplainer) -> None:  # pylint: disable=invalid-name
@@ -153,15 +155,18 @@ def initialize_interval_learner_for_fast_explainer(explainer: CalibratedExplaine
     --------
     initialize_interval_learner : Standard initialization for non-fast mode
     """
-    ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
-    if callable(ensure_state):
-        ensure_state()
+    orchestrator = getattr(explainer, "prediction_orchestrator", None)
+    if orchestrator is not None:
+        ensure_state = getattr(orchestrator, "ensure_interval_runtime_state", None)
+        if callable(ensure_state):
+            ensure_state()
 
-    interval, _identifier = explainer._obtain_interval_calibrator(  # pylint: disable=protected-access
+    interval, _identifier = explainer.obtain_interval_calibrator(
         fast=True,
         metadata={"operation": "initialize_fast"},
     )
     explainer.interval_learner = interval
+    explainer.initialized = True
 
 
 __all__ = [

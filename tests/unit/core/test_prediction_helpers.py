@@ -94,9 +94,24 @@ class StubExplainer:
             return [learner for _ in range(self.num_features + 1)]
         return learner
 
+    @property
+    def plugin_manager(self):
+        from calibrated_explanations.plugins.manager import PluginManager
+
+        if not hasattr(self, "_plugin_manager"):
+            self.plugin_manager = PluginManager(self)
+        return self.plugin_manager
+
+    @property
+    def is_mondrian(self) -> bool:
+        return self.is_mondrian()
+
     # ``_ExplainerProtocol`` API -------------------------------------------------
-    def _is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
+    def is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
         return self.mondrian_flag
+
+    def infer_explanation_mode(self) -> str:
+        return "factual"
 
     def is_multiclass(self) -> bool:  # noqa: D401 - protocol implementation
         return self.multiclass_flag
@@ -114,6 +129,9 @@ class StubExplainer:
             np.full((size,), 0.2),
             classes,
         )
+
+    def predict_calibrated(self, x, **kwargs):
+        return self.predict(x, **kwargs)
 
     def _predict(self, *args, **kwargs):
         """Internal alias for predict."""

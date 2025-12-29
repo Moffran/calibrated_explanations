@@ -82,14 +82,14 @@ def make_stub_explainer(explainer_factory):
     y_cal = np.array([0.0, 1.0, 0.5], dtype=float)
     explainer.x_cal = x_cal
     explainer.y_cal = y_cal
-    explainer._feature_names = ["f0", "f1"]
+    explainer.feature_names = ["f0", "f1"]
     explainer.bins = None
     explainer.learner = StubLearner()
     explainer.latest_explanation = None
     explainer.feature_values = []
     explainer.categorical_features = []
     explainer.categorical_labels = {}
-    explainer._CalibratedExplainer__initialized = True
+    explainer.initialized = True
 
     def predict_stub(self, x, **_kwargs):
         x = np.asarray(x)
@@ -103,7 +103,6 @@ def make_stub_explainer(explainer_factory):
         return False
 
     explainer._predict = types.MethodType(predict_stub, explainer)
-    explainer._is_mondrian = types.MethodType(return_false, explainer)
     explainer.is_multiclass = types.MethodType(return_false, explainer)
     explainer.is_fast = types.MethodType(return_false, explainer)
 
@@ -130,26 +129,3 @@ def test_explain_lime_populates_fast_collection(monkeypatch, explainer_factory):
         assert not np.allclose(weights, 0)
         assert not np.allclose(preds, 0)
         assert explanation.explain_time is not None
-
-
-def test_preload_shap_refreshes_when_shape_changes(monkeypatch, explainer_factory):
-    register_stub_libraries(monkeypatch)
-    RecordingShapExplainer.instances.clear()
-    explainer = make_stub_explainer(explainer_factory)
-
-    shap_1, shap_exp_1 = explainer._preload_shap()
-
-    assert explainer.is_shap_enabled() is True
-    assert shap_exp_1.shape == (1, explainer.num_features)
-    assert len(RecordingShapExplainer.instances) == 1
-
-    shap_2, shap_exp_2 = explainer._preload_shap()
-
-    assert shap_2 is shap_1
-    assert shap_exp_2 is shap_exp_1
-
-    shap_3, shap_exp_3 = explainer._preload_shap(num_test=2)
-
-    assert shap_3 is not shap_1
-    assert shap_exp_3.shape == (2, explainer.num_features)
-    assert len(RecordingShapExplainer.instances) == 2

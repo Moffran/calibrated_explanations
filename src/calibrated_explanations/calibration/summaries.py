@@ -42,9 +42,9 @@ def invalidate_calibration_summaries(explainer: CalibratedExplainer) -> None:
         cache_facade.invalidate_all()
 
     # Maintain backward compatibility by clearing instance-level caches
-    explainer._categorical_value_counts_cache = None
-    explainer._numeric_sorted_cache = None
-    explainer._calibration_summary_shape = None
+    explainer.categorical_value_counts_cache = None
+    explainer.numeric_sorted_cache = None
+    explainer.calibration_summary_shape = None
 
 
 def _get_calibration_data_hash(x_cal_np: np.ndarray) -> str:
@@ -121,11 +121,11 @@ def get_calibration_summaries(
 
     # Check instance-level cache for backward compatibility
     if (
-        explainer._categorical_value_counts_cache is not None
-        and explainer._numeric_sorted_cache is not None
-        and explainer._calibration_summary_shape == shape
+        explainer.categorical_value_counts_cache is not None
+        and explainer.numeric_sorted_cache is not None
+        and explainer.calibration_summary_shape == shape
     ):
-        return explainer._categorical_value_counts_cache, explainer._numeric_sorted_cache
+        return explainer.categorical_value_counts_cache, explainer.numeric_sorted_cache
 
     # Compute summaries
     categorical_value_counts: Dict[int, Dict[Any, int]] = {}
@@ -158,11 +158,11 @@ def get_calibration_summaries(
         )
 
     # Maintain instance-level cache for backward compatibility
-    explainer._categorical_value_counts_cache = categorical_value_counts
-    explainer._numeric_sorted_cache = numeric_sorted_cache
-    explainer._calibration_summary_shape = shape
+    explainer.categorical_value_counts_cache = categorical_value_counts
+    explainer.numeric_sorted_cache = numeric_sorted_cache
+    explainer.calibration_summary_shape = shape
 
-    assert explainer._categorical_value_counts_cache is not None
-    assert explainer._numeric_sorted_cache is not None
+    assert explainer.categorical_value_counts_cache is not None
+    assert explainer.numeric_sorted_cache is not None
 
-    return explainer._categorical_value_counts_cache, explainer._numeric_sorted_cache
+    return explainer.categorical_value_counts_cache, explainer.numeric_sorted_cache

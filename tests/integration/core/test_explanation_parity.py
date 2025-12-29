@@ -105,7 +105,7 @@ def test_explore_alternatives_and_conjunctive_rules():
         rules_blob = None
         # prefer conjunctive rules if add_conjunctions populated them
         if (
-            getattr(alt, "_has_conjunctive_rules", False)
+            getattr(alt, "has_conjunctive_rules", False)
             and getattr(alt, "conjunctive_rules", None) is not None
         ):
             rules_blob = alt.conjunctive_rules

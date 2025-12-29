@@ -5,6 +5,10 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...main)
 
+### Changed
+
+- **Anti-Pattern Remediation & Plugin Stabilization:** Completed comprehensive remediation of internal logic testing (Pattern 1) and dead code (Pattern 3), alongside stabilization of the plugin architecture. Refactored private member accesses to public APIs, established a versioned allow-list for acceptable test internals, and removed deprecated LIME/SHAP helpers. Implemented CI enforcement for anti-pattern violations using the allow-list to prevent future regressions. Detailed API changes are documented in [docs/improvement/remediation_api_changes.md](docs/improvement/remediation_api_changes.md).
+
 ### Added
 
 - **ADR-005: Explanation schema v1 contract:** Confirmed `explanation_schema_v1.json` as the canonical v1 payload contract, relaxed the schema_version literal requirement (recommended but not required), clarified `provenance`/`metadata` as optional extension points, and aligned validation helpers/docs/fixtures with the serializer semantics.

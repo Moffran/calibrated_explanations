@@ -117,15 +117,26 @@ def test_uses_process_like_strategy_on_windows_by_default(
     )
     monkeypatch.setattr(parallel_instance_mod.os, "name", "nt", raising=False)
 
+    from calibrated_explanations.plugins.manager import PluginManager
+
     class DummyExplainer:
         def __init__(self) -> None:
             self.latest_explanation = None
-            self._last_explanation_mode = None
+            self.last_explanation_mode = None
+            self._plugin_manager = PluginManager(self)
 
-        def _infer_explanation_mode(self):
+        @property
+        def plugin_manager(self):
+            return self._plugin_manager
+
+        @plugin_manager.setter
+        def plugin_manager(self, value):
+            self._plugin_manager = value
+
+        def infer_explanation_mode(self):
             return "factual"
 
-        def _is_mondrian(self):
+        def is_mondrian(self):
             return False
 
         @property
@@ -155,7 +166,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
         def sample_percentiles(self):
             return [25, 50, 75]
 
-        def _get_calibration_summaries(self, x_cal):
+        def get_calibration_summaries(self, x_cal):
             return {}, {}
 
         @property
@@ -174,7 +185,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
                 strategy="processes",
                 instance_chunk_size=1,
             )
-            self._active_strategy_name = "processes"
+            self.active_strategy_name = "processes"
             self.map_called = False
             self.thread_strategy_called = False
 
@@ -182,10 +193,10 @@ def test_uses_process_like_strategy_on_windows_by_default(
             self.map_called = True
             return [func(item) for item in items]
 
-        def _thread_strategy(self, *args, **kwargs):  # noqa: ANN001,ARG002
+        def thread_strategy(self, *args, **kwargs):  # noqa: ANN001,ARG002
             self.thread_strategy_called = True
             raise AssertionError(
-                "_thread_strategy should not be used when process backends are enabled by default"
+                "thread_strategy should not be used when process backends are enabled by default"
             )
 
     executor = DummyExecutor()

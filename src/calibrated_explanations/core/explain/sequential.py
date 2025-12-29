@@ -88,7 +88,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
         sequential path (lines 2365-2595) to ensure behavioral parity.
         """
         # Import _feature_task from feature_task module (deferred to avoid circular import)
-        from .feature_task import _feature_task  # pylint: disable=import-outside-toplevel
+        from .feature_task import feature_task  # pylint: disable=import-outside-toplevel
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
@@ -180,7 +180,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
         # Step 4: Process features sequentially
         for task in feature_tasks:
-            result = _feature_task(task)
+            result = feature_task(task)
             merge_feature_result(
                 result,
                 weights_predict,

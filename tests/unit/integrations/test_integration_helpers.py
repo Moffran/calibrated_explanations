@@ -18,8 +18,8 @@ class TestLimeHelper:
         helper = LimeHelper(explainer=mock_explainer)
 
         assert helper.is_enabled() is False
-        assert helper._explainer_instance is None
-        assert helper._reference_explanation is None
+        assert helper.explainer_instance is None
+        assert helper.reference_explanation is None
 
     def test_should_set_enabled_flag(self):
         """set_enabled() should update the _enabled flag."""
@@ -36,17 +36,17 @@ class TestLimeHelper:
         helper = LimeHelper(explainer=mock_explainer)
 
         # Manually set some state
-        helper._enabled = True
-        helper._explainer_instance = MagicMock()
-        helper._reference_explanation = MagicMock()
+        helper.enabled = True
+        helper.explainer_instance = MagicMock()
+        helper.reference_explanation = MagicMock()
 
         # Disable
         helper.set_enabled(False)
 
         # State should be cleared
         assert helper.is_enabled() is False
-        assert helper._explainer_instance is None
-        assert helper._reference_explanation is None
+        assert helper.explainer_instance is None
+        assert helper.reference_explanation is None
 
     def test_should_reset_clears_state(self):
         """reset() should clear all cached state."""
@@ -54,17 +54,17 @@ class TestLimeHelper:
         helper = LimeHelper(explainer=mock_explainer)
 
         # Set some state
-        helper._enabled = True
-        helper._explainer_instance = MagicMock()
-        helper._reference_explanation = MagicMock()
+        helper.enabled = True
+        helper.explainer_instance = MagicMock()
+        helper.reference_explanation = MagicMock()
 
         # Call reset
         helper.reset()
 
         # Verify state cleared
-        assert helper._enabled is False
-        assert helper._explainer_instance is None
-        assert helper._reference_explanation is None
+        assert helper.enabled is False
+        assert helper.explainer_instance is None
+        assert helper.reference_explanation is None
 
     def test_should_return_none_when_lime_unavailable(self):
         """preload() should return (None, None) when lime is not installed."""
@@ -105,11 +105,11 @@ class TestLimeHelper:
         helper = LimeHelper(explainer=mock_explainer)
 
         # Mark as already enabled with a cached instance
-        helper._enabled = True
+        helper.enabled = True
         mock_instance = MagicMock()
-        helper._explainer_instance = mock_instance
+        helper.explainer_instance = mock_instance
         mock_explanation = MagicMock()
-        helper._reference_explanation = mock_explanation
+        helper.reference_explanation = mock_explanation
 
         # Call preload - should not reinitialize
         instance, explanation = helper.preload()
@@ -127,8 +127,8 @@ class TestShapHelper:
         helper = ShapHelper(explainer=mock_explainer)
 
         assert helper.is_enabled() is False
-        assert helper._explainer_instance is None
-        assert helper._reference_explanation is None
+        assert helper.explainer_instance is None
+        assert helper.reference_explanation is None
 
     def test_should_set_enabled_flag(self):
         """set_enabled() should update the _enabled flag."""
@@ -145,17 +145,17 @@ class TestShapHelper:
         helper = ShapHelper(explainer=mock_explainer)
 
         # Manually set some state
-        helper._enabled = True
-        helper._explainer_instance = MagicMock()
-        helper._reference_explanation = MagicMock()
+        helper.enabled = True
+        helper.explainer_instance = MagicMock()
+        helper.reference_explanation = MagicMock()
 
         # Disable
         helper.set_enabled(False)
 
         # State should be cleared
         assert helper.is_enabled() is False
-        assert helper._explainer_instance is None
-        assert helper._reference_explanation is None
+        assert helper.explainer_instance is None
+        assert helper.reference_explanation is None
 
     def test_should_reset_clears_state(self):
         """reset() should clear all cached state."""
@@ -163,17 +163,17 @@ class TestShapHelper:
         helper = ShapHelper(explainer=mock_explainer)
 
         # Set some state
-        helper._enabled = True
-        helper._explainer_instance = MagicMock()
-        helper._reference_explanation = MagicMock()
+        helper.enabled = True
+        helper.explainer_instance = MagicMock()
+        helper.reference_explanation = MagicMock()
 
         # Call reset
         helper.reset()
 
         # Verify state cleared
-        assert helper._enabled is False
-        assert helper._explainer_instance is None
-        assert helper._reference_explanation is None
+        assert helper.enabled is False
+        assert helper.explainer_instance is None
+        assert helper.reference_explanation is None
 
     def test_should_return_none_when_shap_unavailable(self):
         """preload() should return (None, None) when shap is not installed."""
@@ -214,11 +214,11 @@ class TestShapHelper:
         helper = ShapHelper(explainer=mock_explainer)
 
         # Mark as already enabled with a cached instance
-        helper._enabled = True
+        helper.enabled = True
         mock_instance = MagicMock()
-        helper._explainer_instance = mock_instance
+        helper.explainer_instance = mock_instance
         mock_explanation = MagicMock()
-        helper._reference_explanation = mock_explanation
+        helper.reference_explanation = mock_explanation
 
         # Call preload - should not reinitialize
         instance, explanation = helper.preload()

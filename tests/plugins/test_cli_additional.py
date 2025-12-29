@@ -32,8 +32,8 @@ class DummySimpleDescriptor:
         (42, ()),
     ],
 )
-def test_string_tuple_normalizes_values(value, expected):
-    assert cli._string_tuple(value) == expected
+def testcoerce_string_tuple_normalizes_values(value, expected):
+    assert cli.coerce_string_tuple(value) == expected
 
 
 def test_emit_explanation_descriptor_reports_fallbacks(monkeypatch, capsys):

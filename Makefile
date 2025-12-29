@@ -20,4 +20,4 @@ ci-local:
 
 .PHONY: check-private-members
 check-private-members:
-	python scripts/scan_private_usage.py
+	python scripts/anti-pattern-analysis/scan_private_usage.py --check

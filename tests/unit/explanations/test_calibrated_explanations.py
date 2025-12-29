@@ -37,11 +37,20 @@ class DummyOriginalExplainer:
         self.rule_boundaries: List[float] = []
         self.learner = "dummy-learner"
         self.difficulty_estimator = "dummy-difficulty"
+        from calibrated_explanations.plugins.manager import PluginManager
+
+        self.plugin_manager = PluginManager(self)
 
     def predict(self, data):  # pragma: no cover - not used directly
         return np.asarray(data)
 
-    def _preload_lime(self):
+    def discretize(self, x):
+        return x
+
+    def predict_calibrated(self, *args, **kwargs):
+        return (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1))
+
+    def preload_lime(self):
         """Return a minimal structure compatible with :meth:`CalibratedExplanations.as_lime`."""
 
         lime_exp = SimpleNamespace(
@@ -56,7 +65,7 @@ class DummyOriginalExplainer:
         )
         return None, lime_exp
 
-    def _preload_shap(self):
+    def preload_shap(self):
         """Return a minimal structure compatible with :meth:`CalibratedExplanations.as_shap`."""
 
         shap_exp = SimpleNamespace(
@@ -107,14 +116,14 @@ class DummyExplanation:
     def plot(self, **kwargs) -> None:
         self.plot_calls.append(tuple(sorted(kwargs.items())))
 
-    def _rank_features(self, _weights, num_to_show=None):  # pylint: disable=unused-argument
+    def rank_features(self, _weights, num_to_show=None):  # pylint: disable=unused-argument
         size = len(self.feature_weights["predict"])
         return list(range(size if num_to_show is None else num_to_show))
 
-    def _define_conditions(self):
+    def define_conditions(self):
         return [f"feature_{i}" for i in range(len(self.feature_weights["predict"]))]
 
-    def _get_rules(self):
+    def get_rules(self):
         return {"rule": [0, 1]}
 
     def super_explanations(self, **_kwargs) -> None:
@@ -268,7 +277,7 @@ def test_as_lime_and_as_shap_shapes(collection: CalibratedExplanations) -> None:
 
 def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> None:
     alt = AlternativeExplanations(
-        collection.calibrated_explainer._explainer,
+        collection.calibrated_explainer.explainer,
         collection.x_test,
         collection.y_threshold,
         collection.bins,

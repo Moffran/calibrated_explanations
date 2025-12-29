@@ -62,7 +62,7 @@ def test_preprocessor_applied_on_fit():
     model = StubModel()
     pre = DummyPreprocessor(factor=2.5)
     cfg = ExplainerConfig(model=model, preprocessor=pre)
-    w = we.WrapCalibratedExplainer._from_config(cfg)
+    w = we.WrapCalibratedExplainer.from_config(cfg)
 
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     y = np.array([0, 1])
@@ -76,7 +76,7 @@ def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):
     model = StubModel()
     pre = DummyPreprocessor(factor=3.0)
     cfg = ExplainerConfig(model=model, preprocessor=pre)
-    w = we.WrapCalibratedExplainer._from_config(cfg)
+    w = we.WrapCalibratedExplainer.from_config(cfg)
     w.fitted = True
 
     captured = {}
@@ -120,7 +120,7 @@ def test_preprocessor_is_persistent_and_deterministic(monkeypatch):
     model = StubModel()
     pre = RecordingPreprocessor(factor=1.5)
     cfg = ExplainerConfig(model=model, preprocessor=pre)
-    w = we.WrapCalibratedExplainer._from_config(cfg)
+    w = we.WrapCalibratedExplainer.from_config(cfg)
 
     # Fit path should call fit once
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -166,7 +166,7 @@ def test_preprocessor_metadata_exposed_in_telemetry():
         .auto_encode(True)
         .build_config()
     )
-    wrapper = we.WrapCalibratedExplainer._from_config(cfg)
+    wrapper = we.WrapCalibratedExplainer.from_config(cfg)
     wrapper.fit(x_train, y_train)
     wrapper.calibrate(x_cal, y_cal)
 

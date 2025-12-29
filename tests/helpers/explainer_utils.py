@@ -20,7 +20,7 @@ def patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def initialize_mock(explainer: CalibratedExplainer, *args: Any, **kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        explainer._CalibratedExplainer__initialized = True
+        explainer.initialized = True
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",

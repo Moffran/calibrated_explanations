@@ -177,12 +177,12 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
         assert interval_deps == ("core.interval.fast",)
         assert "legacy" in plot_fallbacks
 
-        chain = explainer._explanation_plugin_fallbacks["factual"]
+        chain = explainer.plugin_manager.explanation_plugin_fallbacks["factual"]
         assert chain[0] == "tests.dependency_reporting.factual"
         assert "core.explanation.factual" in chain
-        assert explainer._interval_plugin_hints["factual"] == ("core.interval.fast",)
+        assert explainer.plugin_manager.interval_plugin_hints["factual"] == ("core.interval.fast",)
         assert (
-            explainer._explanation_plugin_identifiers["factual"]
+            explainer.plugin_manager.explanation_plugin_identifiers["factual"]
             == "tests.dependency_reporting.factual"
         )
     finally:
@@ -291,12 +291,14 @@ def test_fast_mode_predict_bridge_and_parity(binary_dataset):
     plugin_collection = explainer.explain_fast(x_test)
     legacy_collection = explainer.explain_fast(x_test, _use_plugin=False)
 
-    monitor = explainer._bridge_monitors["fast"]
+    monitor = explainer.plugin_manager.get_bridge_monitor("core.explanation.fast")
     assert monitor.used
     assert "predict" in monitor.calls
 
-    assert explainer._explanation_plugin_identifiers["fast"] == "core.explanation.fast"
-    assert explainer._interval_plugin_hints["fast"] == ("core.interval.fast",)
-    assert "legacy" in explainer._plot_plugin_fallbacks["fast"]
+    assert (
+        explainer.plugin_manager.explanation_plugin_identifiers["fast"] == "core.explanation.fast"
+    )
+    assert explainer.plugin_manager.interval_plugin_hints["fast"] == ("core.interval.fast",)
+    assert "legacy" in explainer.plugin_manager.plot_plugin_fallbacks["fast"]
 
     compare_collections(plugin_collection, legacy_collection)

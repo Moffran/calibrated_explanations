@@ -23,10 +23,10 @@ class TestPluginManagerInitialization:
         manager = PluginManager(mock_explainer)
 
         assert manager.explainer is mock_explainer
-        assert manager._explanation_plugin_overrides == {}
+        assert manager.explanation_plugin_overrides == {}
         assert manager._interval_plugin_override is None
         assert manager._fast_interval_plugin_override is None
-        assert manager._plot_style_override is None
+        assert manager.plot_style_override is None
 
     def test_init_creates_empty_caches(self):
         """should_create_empty_caches_when_initialized."""
@@ -35,17 +35,17 @@ class TestPluginManagerInitialization:
 
         assert manager._bridge_monitors == {}
         assert manager._explanation_plugin_instances == {}
-        assert manager._explanation_plugin_identifiers == {}
+        assert manager.explanation_plugin_identifiers == {}
 
     def test_init_creates_empty_fallback_chains(self):
         """should_create_empty_fallback_chains_when_initialized."""
         mock_explainer = Mock()
         manager = PluginManager(mock_explainer)
 
-        assert manager._explanation_plugin_fallbacks == {}
-        assert manager._plot_plugin_fallbacks == {}
-        assert manager._interval_plugin_hints == {}
-        assert manager._interval_plugin_fallbacks == {}
+        assert manager.explanation_plugin_fallbacks == {}
+        assert manager.plot_plugin_fallbacks == {}
+        assert manager.interval_plugin_hints == {}
+        assert manager.interval_plugin_fallbacks == {}
 
 
 class TestPluginManagerInitializeFromKwargs:
@@ -63,9 +63,9 @@ class TestPluginManagerInitializeFromKwargs:
         }
         manager.initialize_from_kwargs(kwargs)
 
-        assert manager._explanation_plugin_overrides["factual"] == "my_factual"
-        assert manager._explanation_plugin_overrides["alternative"] == "my_alternative"
-        assert manager._explanation_plugin_overrides["fast"] == "my_fast"
+        assert manager.explanation_plugin_overrides["factual"] == "my_factual"
+        assert manager.explanation_plugin_overrides["alternative"] == "my_alternative"
+        assert manager.explanation_plugin_overrides["fast"] == "my_fast"
 
     def test_initialize_interval_overrides(self):
         """should_initialize_interval_plugin_overrides_from_kwargs."""
@@ -86,7 +86,7 @@ class TestPluginManagerInitializeFromKwargs:
         kwargs = {"plot_style": "my_style"}
         manager.initialize_from_kwargs(kwargs)
 
-        assert manager._plot_style_override == "my_style"
+        assert manager.plot_style_override == "my_style"
 
     def test_initialize_missing_overrides_remain_none(self):
         """should_keep_overrides_none_when_not_in_kwargs."""
@@ -98,7 +98,7 @@ class TestPluginManagerInitializeFromKwargs:
 
         assert manager._interval_plugin_override is None
         assert manager._fast_interval_plugin_override is None
-        assert manager._plot_style_override is None
+        assert manager.plot_style_override is None
 
 
 class TestCoercePluginOverride:
@@ -258,10 +258,10 @@ class TestExplanationPluginIdentifierManagement:
 
         manager.set_explanation_plugin_identifier("factual", "id1")
         manager.set_explanation_plugin_identifier("alternative", "id2")
-        assert len(manager._explanation_plugin_identifiers) == 2
+        assert len(manager.explanation_plugin_identifiers) == 2
 
         manager.clear_explanation_plugin_identifiers()
-        assert len(manager._explanation_plugin_identifiers) == 0
+        assert len(manager.explanation_plugin_identifiers) == 0
 
 
 class TestIntervalPluginState:
@@ -272,20 +272,20 @@ class TestIntervalPluginState:
         mock_explainer = Mock()
         manager = PluginManager(mock_explainer)
 
-        assert "default" in manager._interval_plugin_identifiers
-        assert "fast" in manager._interval_plugin_identifiers
-        assert manager._interval_plugin_identifiers["default"] is None
-        assert manager._interval_plugin_identifiers["fast"] is None
+        assert "default" in manager.interval_plugin_identifiers
+        assert "fast" in manager.interval_plugin_identifiers
+        assert manager.interval_plugin_identifiers["default"] is None
+        assert manager.interval_plugin_identifiers["fast"] is None
 
     def test_init_creates_interval_context_metadata(self):
         """should_initialize_interval_context_metadata."""
         mock_explainer = Mock()
         manager = PluginManager(mock_explainer)
 
-        assert "default" in manager._interval_context_metadata
-        assert "fast" in manager._interval_context_metadata
-        assert manager._interval_context_metadata["default"] == {}
-        assert manager._interval_context_metadata["fast"] == {}
+        assert "default" in manager.interval_context_metadata
+        assert "fast" in manager.interval_context_metadata
+        assert manager.interval_context_metadata["default"] == {}
+        assert manager.interval_context_metadata["fast"] == {}
 
 
 class TestPluginManagerDeepCopy:
@@ -298,17 +298,17 @@ class TestPluginManagerDeepCopy:
 
         # Simulate the state that causes issues (mappingproxy in a dict)
         unpicklable_dict = types.MappingProxyType({"a": 1})
-        manager._explanation_contexts = {"test_context": unpicklable_dict}
+        manager.explanation_contexts = {"test_context": unpicklable_dict}
 
         # This should not raise TypeError
         copied_manager = copy.deepcopy(manager)
 
         # Verify the copy has the data (shallow copied or reference)
-        assert copied_manager._explanation_contexts["test_context"] == unpicklable_dict
+        assert copied_manager.explanation_contexts["test_context"] == unpicklable_dict
         assert isinstance(
-            copied_manager._explanation_contexts["test_context"], types.MappingProxyType
+            copied_manager.explanation_contexts["test_context"], types.MappingProxyType
         )
 
         # Verify it's a different manager instance
         assert copied_manager is not manager
-        assert manager._interval_context_metadata["fast"] == {}
+        assert manager.interval_context_metadata["fast"] == {}

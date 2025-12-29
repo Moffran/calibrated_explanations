@@ -21,14 +21,14 @@ def generate_allowlist(analysis_file, current_allowlist_file):
 
     # Expiry version: v0.11.0
     expiry = "v0.11.0"
-    
+
     new_entries = []
     seen = set()
 
-    # We need to know which files use these symbols. 
+    # We need to know which files use these symbols.
     # The category_a_analysis.csv doesn't have the test files, but private_usage_scan.csv does.
     usage_file = "reports/anti-pattern-analysis/private_usage_scan.csv"
-    
+
     # Load candidates from category_a_analysis.csv
     candidates = set()
     with open(analysis_file, "r", encoding="utf-8") as f:
@@ -62,10 +62,10 @@ def generate_allowlist(analysis_file, current_allowlist_file):
     new_entries.sort(key=lambda x: (x["file"], x["symbol"]))
 
     output = {"allowlist": new_entries}
-    
+
     with open(current_allowlist_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
-    
+
     print(f"Updated {current_allowlist_file} with {len(new_entries)} entries.")
 
 if __name__ == "__main__":

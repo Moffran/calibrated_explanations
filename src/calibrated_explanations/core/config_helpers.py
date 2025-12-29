@@ -138,7 +138,7 @@ def coerce_string_tuple(value: Any) -> Tuple[str, ...]:
     if isinstance(value, Iterable):
         result: list[str] = []
         for item in value:
-            if isinstance(item, str) and item:
-                result.append(item)
+            if isinstance(item, str) and item.strip():
+                result.append(item.strip())
         return tuple(result)
     return ()

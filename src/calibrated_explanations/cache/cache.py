@@ -180,7 +180,7 @@ TelemetryCallback = Callable[[str, Mapping[str, Any]], None]
 _NONE_SENTINEL = object()
 
 
-def _default_size_estimator(value: Any) -> int:
+def default_size_estimator(value: Any) -> int:
     """Best-effort size estimator used for memory budgets.
 
     ``sys.getsizeof`` is avoided because it dramatically underestimates numpy
@@ -214,7 +214,7 @@ def _default_size_estimator(value: Any) -> int:
     return 256
 
 
-def _hash_part(part: Any) -> Hashable:
+def hash_part(part: Any) -> Hashable:
     """Normalise cache key parts to stable, hashable values using blake2b.
 
     Uses blake2b for consistency with ADR-003 specification while maintaining
@@ -229,11 +229,15 @@ def _hash_part(part: Any) -> Hashable:
         digest = blake2b(part.view(np.uint8), digest_size=16).hexdigest()
         return ("nd", part.shape, part.dtype.str, digest)
     if isinstance(part, (list, set, frozenset)):
-        return tuple(sorted(_hash_part(item) for item in part))
+        return tuple(sorted(hash_part(item) for item in part))
     if isinstance(part, Mapping):
-        return tuple(sorted((k, _hash_part(v)) for k, v in part.items()))
-    # As a last resort, hash the ``repr`` – this keeps keys deterministic
+        return tuple(sorted((k, hash_part(v)) for k, v in part.items()))
+    # As a last resort, hash the ``repr`` - this keeps keys deterministic
     return ("repr", repr(part))
+
+
+# Backwards-compatible alias
+_hash_part = hash_part
 
 
 def make_key(namespace: str, version: str, parts: Iterable[Any]) -> Tuple[Hashable, ...]:
@@ -243,7 +247,7 @@ def make_key(namespace: str, version: str, parts: Iterable[Any]) -> Tuple[Hashab
     instance, while ``parts`` encodes the payload specific to the current
     computation.
     """
-    return (namespace, version, *(_hash_part(part) for part in parts))
+    return (namespace, version, *(hash_part(part) for part in parts))
 
 
 @dataclass(slots=True)
@@ -301,7 +305,7 @@ class CacheConfig:
     max_bytes: int | None = 32 * 1024 * 1024
     ttl_seconds: float | None = None
     telemetry: TelemetryCallback | None = None
-    size_estimator: Callable[[Any], int] = _default_size_estimator
+    size_estimator: Callable[[Any], int] = default_size_estimator
 
     @classmethod
     def from_env(cls, base: "CacheConfig | None" = None) -> "CacheConfig":
@@ -535,13 +539,13 @@ class CalibratorCache(Generic[V]):
     """
 
     config: CacheConfig
-    _cache: LRUCache[Tuple[Hashable, ...], V] | None = field(init=False, default=None)
+    cache: LRUCache[Tuple[Hashable, ...], V] | None = field(init=False, default=None)
     _version_lock: threading.RLock = field(init=False, default_factory=threading.RLock)
 
     def __post_init__(self) -> None:
         """Initialise the underlying cache if caching is enabled."""
         if self.config.enabled:
-            self._cache = LRUCache(
+            self.cache = LRUCache(
                 namespace=self.config.namespace,
                 version=self.config.version,
                 max_items=self.config.max_items,
@@ -551,19 +555,19 @@ class CalibratorCache(Generic[V]):
                 size_estimator=self.config.size_estimator,
             )
         else:
-            self._cache = None
+            self.cache = None
 
     @property
     def enabled(self) -> bool:
         """Return True when the cache backend is active."""
-        return self._cache is not None
+        return self.cache is not None
 
     @property
     def metrics(self) -> CacheMetrics:
         """Return telemetry counters, falling back to empty metrics when disabled."""
-        if self._cache is None:
+        if self.cache is None:
             return CacheMetrics()
-        return self._cache.metrics
+        return self.cache.metrics
 
     @property
     def version(self) -> str:
@@ -573,17 +577,17 @@ class CalibratorCache(Generic[V]):
 
     def get(self, *, stage: str, parts: Iterable[Any]) -> V | None:
         """Retrieve a cached value for ``stage`` and ``parts``."""
-        if self._cache is None:
+        if self.cache is None:
             return None
         key = make_key(self.config.namespace, f"{self.config.version}:{stage}", parts)
-        return self._cache.get(key)
+        return self.cache.get(key)
 
     def set(self, *, stage: str, parts: Iterable[Any], value: V) -> None:
         """Store ``value`` for ``stage`` and ``parts`` if caching is enabled."""
-        if self._cache is None:
+        if self.cache is None:
             return
         key = make_key(self.config.namespace, f"{self.config.version}:{stage}", parts)
-        self._cache.set(key, value)
+        self.cache.set(key, value)
 
     def compute(self, *, stage: str, parts: Iterable[Any], fn: Callable[[], V]) -> V:
         """Return a cached value or compute and store it when missing."""
@@ -600,12 +604,12 @@ class CalibratorCache(Generic[V]):
         This clears all cached values without changing the version tag,
         used when invalidation is triggered by user action or external signal.
         """
-        if self._cache is not None:
-            with self._cache._lock:
-                self._cache._store.clear()
-                self._cache._bytes = 0
-                self._cache.metrics.resets += 1
-                self._cache._emit("cache_flush", {"reason": "manual"})
+        if self.cache is not None:
+            with self.cache._lock:
+                self.cache._store.clear()
+                self.cache._bytes = 0
+                self.cache.metrics.resets += 1
+                self.cache._emit("cache_flush", {"reason": "manual"})
 
     def reset_version(self, new_version: str) -> None:
         """Reset the version tag to invalidate all cache entries.
@@ -622,8 +626,8 @@ class CalibratorCache(Generic[V]):
         with self._version_lock:
             old_version = self.config.version
             self.config.version = new_version
-            if self._cache is not None:
-                self._cache._emit(
+            if self.cache is not None:
+                self.cache._emit(
                     "cache_version_reset",
                     {"old_version": old_version, "new_version": new_version},
                 )
@@ -636,8 +640,8 @@ class CalibratorCache(Generic[V]):
 
     def forksafe_reset(self) -> None:
         """Reset the cache safely after ``fork`` events."""
-        if self._cache is not None:
-            self._cache.forksafe_reset()
+        if self.cache is not None:
+            self.cache.forksafe_reset()
 
     def __getstate__(self) -> dict:
         """Support pickling by excluding the unpicklable RLock."""

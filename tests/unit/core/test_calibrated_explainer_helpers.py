@@ -38,7 +38,7 @@ def test_predict_bridge_monitor_records_calls():
 
 def test_check_explanation_runtime_metadata_various(explainer_factory):
     """Test ExplanationOrchestrator metadata validation through delegating method."""
-    orch = explainer_factory()._explanation_orchestrator
+    orch = explainer_factory().explanation_orchestrator
 
     # None metadata
     msg = orch.check_metadata(None, identifier=None, mode="factual")
@@ -72,13 +72,13 @@ def test_check_explanation_runtime_metadata_various(explainer_factory):
         "tasks": "both",
         "modes": ("fast",),
     }
-    msg = orch._check_metadata(meta_ok, identifier="id", mode="factual")
+    msg = orch.check_metadata(meta_ok, identifier="id", mode="factual")
     assert "does not declare mode" in msg
 
     # missing capabilities
     meta_ok["modes"] = ("factual",)
     meta_ok["capabilities"] = []
-    msg = orch._check_metadata(meta_ok, identifier="id", mode="factual")
+    msg = orch.check_metadata(meta_ok, identifier="id", mode="factual")
     assert "missing required capabilities" in msg
 
     # valid metadata

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import pprint
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any, Sequence
 
 from .registry import (
@@ -50,19 +50,29 @@ _SINGULAR_LABELS = {
 }
 
 
-def _string_tuple(value: Any) -> Sequence[str]:
-    """Normalize arbitrary metadata values into a tuple of strings."""
+from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
+
+
+def coerce_string_tuple(value: object) -> tuple[str, ...]:
+    """CLI-focused coercion that stringifies non-empty values."""
     if value is None:
         return ()
     if isinstance(value, str):
-        return (value,) if value else ()
-    if isinstance(value, Iterable):
+        return (value,) if value.strip() else ()
+    if isinstance(value, (list, tuple, set)):
         result: list[str] = []
         for item in value:
-            if item:
+            if item is None:
+                continue
+            if isinstance(item, str):
+                item = item.strip()
+                if not item:
+                    continue
+                result.append(item)
+            elif item:
                 result.append(str(item))
         return tuple(result)
-    return ()
+    return _coerce_string_tuple(value)
 
 
 def _emit_header(title: str) -> None:
@@ -81,11 +91,11 @@ def _format_common_metadata(metadata: Mapping[str, Any]) -> str:
 def _emit_explanation_descriptor(descriptor) -> None:
     """Display an explanation plugin descriptor in human-readable form."""
     meta = descriptor.metadata
-    modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
-    tasks = ", ".join(_string_tuple(meta.get("tasks"))) or "-"
-    interval = ", ".join(_string_tuple(meta.get("interval_dependency"))) or "-"
-    plot = ", ".join(_string_tuple(meta.get("plot_dependency"))) or "-"
-    fallbacks = ", ".join(_string_tuple(meta.get("fallbacks")))
+    modes = ", ".join(coerce_string_tuple(meta.get("modes"))) or "-"
+    tasks = ", ".join(coerce_string_tuple(meta.get("tasks"))) or "-"
+    interval = ", ".join(coerce_string_tuple(meta.get("interval_dependency"))) or "-"
+    plot = ", ".join(coerce_string_tuple(meta.get("plot_dependency"))) or "-"
+    fallbacks = ", ".join(coerce_string_tuple(meta.get("fallbacks")))
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     labels = [trust_state]
     if is_identifier_denied(descriptor.identifier):
@@ -101,8 +111,8 @@ def _emit_explanation_descriptor(descriptor) -> None:
 def _emit_interval_descriptor(descriptor) -> None:
     """Display an interval calibrator descriptor for the CLI."""
     meta = descriptor.metadata
-    modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
-    deps = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    modes = ", ".join(coerce_string_tuple(meta.get("modes"))) or "-"
+    deps = ", ".join(coerce_string_tuple(meta.get("dependencies"))) or "-"
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     labels = [trust_state]
     if is_identifier_denied(descriptor.identifier):
@@ -117,7 +127,7 @@ def _emit_plot_descriptor(descriptor) -> None:
     meta = descriptor.metadata
     builder = meta.get("builder_id", "-")
     renderer = meta.get("renderer_id", "-")
-    fallbacks = ", ".join(_string_tuple(meta.get("fallbacks"))) or "-"
+    fallbacks = ", ".join(coerce_string_tuple(meta.get("fallbacks"))) or "-"
     print(f"  - {descriptor.identifier} (style)")
     print(f"    builder={builder}; renderer={renderer}; fallbacks={fallbacks}")
     extras: list[str] = []
@@ -125,7 +135,7 @@ def _emit_plot_descriptor(descriptor) -> None:
         extras.append(f"is_default={'yes' if meta.get('is_default') else 'no'}")
     if "legacy_compatible" in meta:
         extras.append(f"legacy_compatible={'yes' if meta.get('legacy_compatible') else 'no'}")
-    default_for = ", ".join(_string_tuple(meta.get("default_for"))) or ""
+    default_for = ", ".join(coerce_string_tuple(meta.get("default_for"))) or ""
     if default_for:
         extras.append(f"default_for={default_for}")
     if extras:
@@ -137,9 +147,9 @@ def _emit_plot_builder_descriptor(descriptor) -> None:
     meta = descriptor.metadata
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     style = meta.get("style", "-")
-    capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"
-    outputs = ", ".join(_string_tuple(meta.get("output_formats"))) or "-"
-    dependencies = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    capabilities = ", ".join(coerce_string_tuple(meta.get("capabilities"))) or "-"
+    outputs = ", ".join(coerce_string_tuple(meta.get("output_formats"))) or "-"
+    dependencies = ", ".join(coerce_string_tuple(meta.get("dependencies"))) or "-"
     print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
     print(f"    style={style}; capabilities={capabilities}")
     print(f"    output_formats={outputs}; dependencies={dependencies}")
@@ -152,9 +162,9 @@ def _emit_plot_renderer_descriptor(descriptor) -> None:
     """Display a plot renderer descriptor with trust context."""
     meta = descriptor.metadata
     trust_state = "trusted" if descriptor.trusted else "untrusted"
-    capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"
-    outputs = ", ".join(_string_tuple(meta.get("output_formats"))) or "-"
-    dependencies = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    capabilities = ", ".join(coerce_string_tuple(meta.get("capabilities"))) or "-"
+    outputs = ", ".join(coerce_string_tuple(meta.get("output_formats"))) or "-"
+    dependencies = ", ".join(coerce_string_tuple(meta.get("dependencies"))) or "-"
     interactive = "yes" if meta.get("supports_interactive") else "no"
     print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
     print(f"    capabilities={capabilities}; output_formats={outputs}")

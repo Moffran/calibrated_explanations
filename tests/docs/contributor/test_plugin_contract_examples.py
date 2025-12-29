@@ -393,9 +393,9 @@ class TestPluginWiringMethodsAB:
             plot_style="plot_spec.default",
         )
 
-        assert explainer._plot_style_override == "plot_spec.default"
+        assert explainer.plot_style_override == "plot_spec.default"
         # Verify the style chain includes our override
-        chain = explainer._plot_style_chain
+        chain = explainer.plugin_manager.plot_style_chain
         assert chain[0] == "plot_spec.default"
 
     def test_method_b_plot_parameter(self, enable_fallbacks):

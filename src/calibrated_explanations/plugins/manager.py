@@ -140,6 +140,249 @@ class PluginManager:
         self._prediction_orchestrator: Any = None
         self._reject_orchestrator: Any = None
 
+    @property
+    def interval_plugin_hints(self) -> Dict[str, Tuple[str, ...]]:
+        """Access the interval plugin fallback hints."""
+        return getattr(self, "_interval_plugin_hints", {})
+
+    @interval_plugin_hints.setter
+    def interval_plugin_hints(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Update the interval plugin fallback hints."""
+        self._interval_plugin_hints = value
+
+    @interval_plugin_hints.deleter
+    def interval_plugin_hints(self) -> None:
+        """Delete the interval plugin fallback hints."""
+        if hasattr(self, "_interval_plugin_hints"):
+            del self._interval_plugin_hints
+
+    @property
+    def explanation_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Access the explanation plugin fallback chains."""
+        return getattr(self, "_explanation_plugin_fallbacks", {})
+
+    @explanation_plugin_fallbacks.setter
+    def explanation_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Update the explanation plugin fallback chains."""
+        self._explanation_plugin_fallbacks = value
+
+    @explanation_plugin_fallbacks.deleter
+    def explanation_plugin_fallbacks(self) -> None:
+        """Delete the explanation plugin fallback chains."""
+        if hasattr(self, "_explanation_plugin_fallbacks"):
+            del self._explanation_plugin_fallbacks
+
+    @property
+    def plot_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Access the plot plugin fallback chains."""
+        return getattr(self, "_plot_plugin_fallbacks", {})
+
+    @plot_plugin_fallbacks.setter
+    def plot_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Update the plot plugin fallback chains."""
+        self._plot_plugin_fallbacks = value
+
+    @plot_plugin_fallbacks.deleter
+    def plot_plugin_fallbacks(self) -> None:
+        """Delete the plot plugin fallback chains."""
+        if hasattr(self, "_plot_plugin_fallbacks"):
+            del self._plot_plugin_fallbacks
+
+    @property
+    def interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Access the interval plugin fallback chains."""
+        return getattr(self, "_interval_plugin_fallbacks", {})
+
+    @interval_plugin_fallbacks.setter
+    def interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Update the interval plugin fallback chains."""
+        self._interval_plugin_fallbacks = value
+
+    @interval_plugin_fallbacks.deleter
+    def interval_plugin_fallbacks(self) -> None:
+        """Delete the interval plugin fallback chains."""
+        if hasattr(self, "_interval_plugin_fallbacks"):
+            del self._interval_plugin_fallbacks
+
+    @property
+    def interval_plugin_identifiers(self) -> Dict[str, str | None]:
+        """Access the resolved interval plugin identifiers."""
+        return getattr(self, "_interval_plugin_identifiers", {})
+
+    @interval_plugin_identifiers.setter
+    def interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
+        """Update the resolved interval plugin identifiers."""
+        self._interval_plugin_identifiers = value
+
+    @interval_plugin_identifiers.deleter
+    def interval_plugin_identifiers(self) -> None:
+        """Delete the resolved interval plugin identifiers."""
+        if hasattr(self, "_interval_plugin_identifiers"):
+            del self._interval_plugin_identifiers
+
+    @property
+    def telemetry_interval_sources(self) -> Dict[str, str | None]:
+        """Access the telemetry metadata associated with interval sources."""
+        return getattr(self, "_telemetry_interval_sources", {})
+
+    @telemetry_interval_sources.setter
+    def telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
+        """Update the telemetry metadata associated with interval sources."""
+        self._telemetry_interval_sources = value
+
+    @telemetry_interval_sources.deleter
+    def telemetry_interval_sources(self) -> None:
+        """Delete the telemetry metadata associated with interval sources."""
+        if hasattr(self, "_telemetry_interval_sources"):
+            del self._telemetry_interval_sources
+
+    @property
+    def interval_preferred_identifier(self) -> Dict[str, str | None]:
+        """Access the preferred interval identifiers."""
+        return getattr(self, "_interval_preferred_identifier", {})
+
+    @interval_preferred_identifier.setter
+    def interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
+        """Update the preferred interval identifiers."""
+        self._interval_preferred_identifier = value
+
+    @interval_preferred_identifier.deleter
+    def interval_preferred_identifier(self) -> None:
+        """Delete the preferred interval identifiers."""
+        if hasattr(self, "_interval_preferred_identifier"):
+            del self._interval_preferred_identifier
+
+    @property
+    def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Access the context metadata captured for interval plugins."""
+        return getattr(self, "_interval_context_metadata", {})
+
+    @interval_context_metadata.setter
+    def interval_context_metadata(self, value: Dict[str, Dict[str, Any]]) -> None:
+        """Update the context metadata captured for interval plugins."""
+        self._interval_context_metadata = value
+
+    @interval_context_metadata.deleter
+    def interval_context_metadata(self) -> None:
+        """Delete the context metadata captured for interval plugins."""
+        if hasattr(self, "_interval_context_metadata"):
+            del self._interval_context_metadata
+
+    @property
+    def bridge_monitors(self) -> Dict[str, PredictBridgeMonitor]:
+        """Access the bridge monitor registry."""
+        return self._bridge_monitors
+
+    @property
+    def explanation_plugin_instances(self) -> Dict[str, Any]:
+        """Access the cached explanation plugin instances."""
+        return self._explanation_plugin_instances
+
+    @explanation_plugin_instances.setter
+    def explanation_plugin_instances(self, value: Dict[str, Any]) -> None:
+        """Update the cached explanation plugin instances."""
+        self._explanation_plugin_instances = value
+
+    @property
+    def explanation_plugin_identifiers(self) -> Dict[str, str]:
+        """Access the resolved explanation plugin identifiers."""
+        return self._explanation_plugin_identifiers
+
+    @explanation_plugin_identifiers.setter
+    def explanation_plugin_identifiers(self, value: Dict[str, str]) -> None:
+        """Update the resolved explanation plugin identifiers."""
+        self._explanation_plugin_identifiers = value
+
+    @property
+    def plot_style_chain(self) -> Tuple[str, ...] | None:
+        """Access the resolved plot style chain."""
+        return self._plot_style_chain
+
+    @plot_style_chain.setter
+    def plot_style_chain(self, value: Tuple[str, ...] | None) -> None:
+        """Update the resolved plot style chain."""
+        self._plot_style_chain = value
+
+    @property
+    def explanation_contexts(self) -> Dict[str, Any]:
+        """Access the explanation contexts."""
+        return self._explanation_contexts
+
+    @explanation_contexts.setter
+    def explanation_contexts(self, value: Dict[str, Any]) -> None:
+        """Update the explanation contexts."""
+        self._explanation_contexts = value
+
+    @explanation_contexts.deleter
+    def explanation_contexts(self) -> None:
+        """Clear the explanation contexts."""
+        self._explanation_contexts = {}
+
+    @property
+    def last_explanation_mode(self) -> str | None:
+        """Access the last explanation mode."""
+        return self._last_explanation_mode
+
+    @last_explanation_mode.setter
+    def last_explanation_mode(self, value: str | None) -> None:
+        """Update the last explanation mode."""
+        self._last_explanation_mode = value
+
+    @property
+    def last_telemetry(self) -> Dict[str, Any]:
+        """Access the last telemetry payload."""
+        return self._last_telemetry
+
+    @last_telemetry.setter
+    def last_telemetry(self, value: Dict[str, Any]) -> None:
+        """Update the last telemetry payload."""
+        self._last_telemetry = value
+
+    @property
+    def explanation_plugin_overrides(self) -> Dict[str, Any]:
+        """Access the explanation plugin overrides."""
+        return self._explanation_plugin_overrides
+
+    @explanation_plugin_overrides.setter
+    def explanation_plugin_overrides(self, value: Dict[str, Any]) -> None:
+        """Update the explanation plugin overrides."""
+        self._explanation_plugin_overrides = value
+
+    @property
+    def interval_plugin_override(self) -> Any:
+        """Access the interval plugin override."""
+        return self._interval_plugin_override
+
+    @interval_plugin_override.setter
+    def interval_plugin_override(self, value: Any) -> None:
+        """Update the interval plugin override."""
+        self._interval_plugin_override = value
+
+    @property
+    def fast_interval_plugin_override(self) -> Any:
+        """Access the fast interval plugin override."""
+        return self._fast_interval_plugin_override
+
+    @fast_interval_plugin_override.setter
+    def fast_interval_plugin_override(self, value: Any) -> None:
+        """Update the fast interval plugin override."""
+        self._fast_interval_plugin_override = value
+
+    @property
+    def plot_style_override(self) -> Any:
+        """Access the plot style override."""
+        return self._plot_style_override
+
+    @plot_style_override.setter
+    def plot_style_override(self, value: Any) -> None:
+        """Update the plot style override."""
+        self._plot_style_override = value
+
+    @property
+    def default_explanation_identifiers(self) -> Dict[str, str]:
+        """Access the default explanation identifiers."""
+        return self._default_explanation_identifiers
+
     def __deepcopy__(self, memo):
         """Deepcopy the plugin manager, handling circular references and unpicklable objects."""
         import copy
@@ -164,6 +407,21 @@ class PluginManager:
                 else:
                     setattr(result, k, v)
         return result
+
+    @property
+    def explanation_orchestrator(self) -> Any:
+        """Access the explanation orchestrator instance."""
+        return self._explanation_orchestrator
+
+    @property
+    def prediction_orchestrator(self) -> Any:
+        """Access the prediction orchestrator instance."""
+        return self._prediction_orchestrator
+
+    @property
+    def reject_orchestrator(self) -> Any:
+        """Access the reject orchestrator instance."""
+        return self._reject_orchestrator
 
     def initialize_from_kwargs(self, kwargs: Dict[str, Any]) -> None:
         """Initialize plugin overrides from keyword arguments.
@@ -190,7 +448,7 @@ class PluginManager:
         }
         self._interval_plugin_override = kwargs.get("interval_plugin")
         self._fast_interval_plugin_override = kwargs.get("fast_interval_plugin")
-        self._plot_style_override = kwargs.get("plot_style")
+        self.plot_style_override = kwargs.get("plot_style")
 
         # Cache pyproject.toml plugin configurations
         self._pyproject_explanations = read_pyproject_section(
@@ -219,18 +477,18 @@ class PluginManager:
         # Build explanation chains for all modes
         for mode in ("factual", "alternative", "fast"):
             default_id = self._default_explanation_identifiers.get(mode, "")
-            self._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(
+            self._explanation_plugin_fallbacks[mode] = self.build_explanation_chain(
                 mode, default_id
             )
 
         # Build interval chains for default and fast modes
-        self._interval_plugin_fallbacks["default"] = self._build_interval_chain(fast=False)
-        self._interval_plugin_fallbacks["fast"] = self._build_interval_chain(fast=True)
+        self._interval_plugin_fallbacks["default"] = self.build_interval_chain(fast=False)
+        self._interval_plugin_fallbacks["fast"] = self.build_interval_chain(fast=True)
 
         # Build plot style chain
-        self._plot_plugin_fallbacks["default"] = self._build_plot_chain()
+        self._plot_plugin_fallbacks["default"] = self.build_plot_chain()
 
-    def _build_explanation_chain(self, mode: str, default_identifier: str) -> Tuple[str, ...]:
+    def build_explanation_chain(self, mode: str, default_identifier: str) -> Tuple[str, ...]:
         """Build the ordered explanation plugin fallback chain for a mode.
 
         Parameters
@@ -301,7 +559,7 @@ class PluginManager:
 
         return tuple(expanded)
 
-    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
+    def build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
         """Build the ordered interval plugin fallback chain.
 
         Parameters
@@ -379,7 +637,7 @@ class PluginManager:
         self._interval_preferred_identifier[key] = preferred_identifier
         return tuple(ordered)
 
-    def _build_plot_chain(self) -> Tuple[str, ...]:
+    def build_plot_chain(self) -> Tuple[str, ...]:
         """Build the ordered plot style fallback chain.
 
         Returns
@@ -396,7 +654,7 @@ class PluginManager:
         entries: List[str] = []
 
         # 1. User override
-        override = self._plot_style_override
+        override = self.plot_style_override
         if isinstance(override, str) and override:
             entries.append(override)
 
@@ -485,7 +743,7 @@ class PluginManager:
         """
         if identifier not in self._bridge_monitors:
             # Use the explainer's predict bridge as the target
-            self._bridge_monitors[identifier] = PredictBridgeMonitor(self.explainer._predict_bridge)
+            self._bridge_monitors[identifier] = PredictBridgeMonitor(self.explainer.predict_bridge)
         return self._bridge_monitors[identifier]
 
     def clear_bridge_monitors(self) -> None:
@@ -602,7 +860,7 @@ class PluginManager:
         self._plot_style_chain = self._plot_plugin_fallbacks.get("default")
 
         # Initialize interval runtime state
-        self._prediction_orchestrator._ensure_interval_runtime_state()
+        self._prediction_orchestrator.ensure_interval_runtime_state()
 
         # Initialize interval learner
         initialize_interval_learner(self.explainer)

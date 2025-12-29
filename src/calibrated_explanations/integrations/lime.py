@@ -31,6 +31,16 @@ class LimeHelper:
         """Return whether the helper has produced a cached LIME explainer."""
         return self._enabled
 
+    @property
+    def enabled(self) -> bool:
+        """Compatibility alias for tests that set ``enabled`` directly."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set enabled state without forcing preload."""
+        self._enabled = bool(value)
+
     def set_enabled(self, value: bool) -> None:
         """Force the helper's enabled flag, primarily used in tests."""
         if not value:
@@ -44,11 +54,21 @@ class LimeHelper:
         instance, _ = self.preload()
         return instance
 
+    @explainer_instance.setter
+    def explainer_instance(self, value: Any) -> None:
+        """Allow tests to inject cached explainer instances."""
+        self._explainer_instance = value
+
     @property
     def reference_explanation(self) -> Any:
         """Return the cached reference explanation, triggering preload if required."""
         _, explanation = self.preload()
         return explanation
+
+    @reference_explanation.setter
+    def reference_explanation(self, value: Any) -> None:
+        """Allow tests to inject cached reference explanations."""
+        self._reference_explanation = value
 
     def preload(self, x_cal: Optional[Any] = None) -> Tuple[Any, Any]:
         """Materialize and cache the LIME explainer if the dependency is present."""

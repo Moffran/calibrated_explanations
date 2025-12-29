@@ -46,6 +46,8 @@ def prepare_wrapper():
     w.fit(x, y)
     # Minimal calibration stub using real calibrate with empty kwargs
     w.calibrate(x, y)
+    # Set bins for Mondrian mode on the explainer
+    w.explainer.bins = np.array([0, 1])
     return w, x
 
 

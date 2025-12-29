@@ -54,7 +54,7 @@ def configured_wrapper(
 ) -> tuple[WrapCalibratedExplainer, RecordingExplainer]:
     cfg = ExplainerConfig(model=DummyModel(), threshold=threshold, low_high_percentiles=percentiles)
     cfg.model.fit(None, None)
-    wrapper = WrapCalibratedExplainer._from_config(cfg)
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
     recorder = RecordingExplainer()
     wrapper.explainer = recorder
     wrapper.fitted = True

@@ -59,7 +59,7 @@ def _build_fast_filter_explainer(learner: Any, *, mode: str) -> WrapCalibratedEx
         .perf_feature_filter(True, per_instance_top_k=FAST_FILTER_TOP_K)
         .build_config()
     )
-    return WrapCalibratedExplainer._from_config(config)
+    return WrapCalibratedExplainer.from_config(config)
 
 
 def _run_ce_setup(

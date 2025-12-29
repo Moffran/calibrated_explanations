@@ -27,7 +27,7 @@ def test_explain_factual_respects_per_instance_top_k():
         .build_config()
     )
 
-    wrapper = WrapCalibratedExplainer._from_config(config)
+    wrapper = WrapCalibratedExplainer.from_config(config)
     wrapper.calibrate(x_cal, y_cal)
 
     # Explain a handful of instances and assert each final explanation respects the top-k

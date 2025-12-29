@@ -196,7 +196,6 @@ docs/improvement/ignore/
 docs/improvement/adr_mending/
 docs/improvement/archived/
 .ci-env/
-.github/private_member_allowlist.json
 scripts/private_usage_report.csv
 reports/private_usage_scan.csv
 reports/test_anti_pattern_report.csv

@@ -13,6 +13,7 @@ from calibrated_explanations.explanations import (
     CalibratedExplanations,
     FrozenCalibratedExplainer,
 )
+from calibrated_explanations.plugins.manager import PluginManager
 from tests.helpers.deprecation import warns_or_raises
 
 
@@ -52,17 +53,39 @@ class DummyCalibratedExplainer:
         self.sample_percentiles = [5.0, 95.0]
         self.is_multiclass = False
         self.discretizer = object()
-        self._discretize = lambda values: values
         self._predict = lambda data: np.ones(len(data))
         self.rule_boundaries = []
         self.learner = "dummy"
         self.difficulty_estimator = "difficulty"
+        self._plugin_manager = PluginManager(self)
 
-    def _preload_lime(self):
+    @property
+    def plugin_manager(self):
+        return self._plugin_manager
+
+    @plugin_manager.setter
+    def plugin_manager(self, value):
+        self._plugin_manager = value
+
+    def discretize(self, values):
+        # Mock discretization for testing
+        return values
+
+    def preload_lime(self, x_cal=None):
         return None, DummyLimeExplanation(self.num_features)
 
-    def _preload_shap(self):
+    def preload_shap(self, x_cal=None):
         return None, DummyShapExplanation(self.num_features)
+
+    def predict_calibrated(self, data):
+        return self._predict(data)
+
+    def infer_explanation_mode(self):
+        return "factual"
+
+    @property
+    def is_mondrian(self):
+        return False
 
     def runtime_telemetry(self):
         return {"explanations": self.num_features}
@@ -112,9 +135,6 @@ class DummyExplanation:
         order = list(range(len(feature_weights)))
         return order[: num_to_show if num_to_show is not None else len(order)]
 
-    def _rank_features(self, *args, **kwargs):
-        return self.rank_features(*args, **kwargs)
-
     def define_conditions(self):
         return [f"rule_{i}" for i in range(len(self.feature_weights["predict"]))]
 
@@ -135,12 +155,6 @@ class DummyExplanation:
             "predict_high": [self.prediction_interval[1]],
             "is_conjunctive": [False],
         }
-
-    def _get_rules(self):
-        return self.get_rules()
-
-    def _define_conditions(self):
-        return self.define_conditions()
 
 
 @pytest.fixture
@@ -370,7 +384,7 @@ def test_finalize_variants(calibrated_collection, monkeypatch):
         DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
     )
     monkeypatch.setattr(explanations_mod, "AlternativeExplanation", FakeAlternative)
-    monkeypatch.setattr(CalibratedExplanations, "_is_alternative", lambda self: True)
+    monkeypatch.setattr(CalibratedExplanations, "is_alternative", lambda self: True)
     alt_result = new_collection.finalize({}, {}, {}, {"predict": 0.2})
     assert isinstance(alt_result, AlternativeExplanations)
 
@@ -393,12 +407,12 @@ def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
 
     called = {}
 
-    def fake_collection_to_batch(collection):
+    def fakecollection_to_batch(collection):
         called["collection"] = collection
         return {"batch": "ok"}
 
     fake_module = types.ModuleType("calibrated_explanations.plugins.builtins")
-    fake_module._collection_to_batch = fake_collection_to_batch
+    fake_module.collection_to_batch = fakecollection_to_batch
     monkeypatch.setitem(sys.modules, "calibrated_explanations.plugins.builtins", fake_module)
     batch = calibrated_collection.to_batch()
     assert batch == {"batch": "ok"}
@@ -543,12 +557,12 @@ def test_collection_to_json_stream(calibrated_collection):
 
 def test_legacy_payload_prefers_available_rules(calibrated_collection):
     exp = calibrated_collection.explanations[0]
-    exp._has_conjunctive_rules = True  # pylint: disable=protected-access
+    exp.has_conjunctive_rules = True  # pylint: disable=protected-access
     exp.conjunctive_rules = {"ensured": ["rule-a"]}
     payload = calibrated_collection.legacy_payload(exp)
     assert payload["rules"] == exp.conjunctive_rules
 
-    exp._has_conjunctive_rules = False  # pylint: disable=protected-access
+    exp.has_conjunctive_rules = False  # pylint: disable=protected-access
     exp.conjunctive_rules = None
     exp.rules = {"ensured": ["rule-b"]}
     payload_rules = calibrated_collection.legacy_payload(exp)

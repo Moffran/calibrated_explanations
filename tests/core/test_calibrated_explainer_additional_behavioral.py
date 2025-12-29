@@ -154,7 +154,13 @@ def test_set_difficulty_estimator_enforces_fitted_contract(explainer_factory):
 def test_mode_sets_num_classes_correctly(explainer_factory):
     """Test that mode and num_classes are set correctly during initialization."""
     # Test classification with multiple classes
-    explainer = explainer_factory(mode="classification", y_cal=np.array([0, 1, 1, 2]))
+    from tests.helpers.model_utils import DummyLearner
+
+    learner = DummyLearner(num_classes=3)
+    x_cal = np.asarray([[0.0, 1.0], [1.0, 2.0], [2.0, 3.0], [3.0, 4.0]], dtype=float)
+    explainer = explainer_factory(
+        learner=learner, mode="classification", x_cal=x_cal, y_cal=np.array([0, 1, 1, 2])
+    )
     assert explainer.num_classes == 3
     assert explainer.mode == "classification"
 
@@ -170,15 +176,15 @@ def test_mode_sets_num_classes_correctly(explainer_factory):
 
 def test_runtime_metadata_helpers_return_copies(explainer_factory):
     explainer = explainer_factory()
-    explainer._last_telemetry = {"source": "initial"}
+    explainer.plugin_manager.last_telemetry = {"source": "initial"}
     explainer.set_preprocessor_metadata({"scaler": "std"})
     telemetry = explainer.runtime_telemetry
     telemetry["source"] = "mutated"
-    assert explainer._last_telemetry["source"] == "initial"
+    assert explainer.plugin_manager.last_telemetry["source"] == "initial"
 
     metadata = explainer.preprocessor_metadata
     metadata["scaler"] = "modified"
-    assert explainer._preprocessor_metadata["scaler"] == "std"
+    assert explainer.preprocessor_metadata["scaler"] == "std"
 
     explainer.set_preprocessor_metadata(None)
     assert explainer.preprocessor_metadata is None

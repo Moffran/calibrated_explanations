@@ -39,7 +39,7 @@ def test_builder_propagates_configuration_fields():
     assert cfg.perf_telemetry is not None
 
 
-def test_builder_allows_overriding_all_perf_cache_and_parallel_fields():
+def test_builder_allows_overriding_allperf_cache_and_parallel_fields():
     builder = config_module.ExplainerBuilder(DummyModel())
 
     cfg = (

@@ -22,7 +22,7 @@ class ExplainerStub:
         self.y_cal = []
         # Provide a minimal plugin manager so orchestrator helpers can be exercised
         orchestrator = ExplanationOrchestrator(self)
-        self._plugin_manager = SimpleNamespace(_explanation_orchestrator=orchestrator)
+        self.plugin_manager = SimpleNamespace(explanation_orchestrator=orchestrator)
 
 
 @pytest.fixture
@@ -139,7 +139,7 @@ def test_check_explanation_runtime_metadata_success(explanation_orchestrator):
 def test_check_interval_runtime_metadata_errors(
     prediction_orchestrator, metadata, fast, expected_error
 ):
-    error = prediction_orchestrator._check_interval_runtime_metadata(
+    error = prediction_orchestrator.check_interval_runtime_metadata(
         metadata, identifier="interval", fast=fast
     )
     assert error is not None
@@ -154,7 +154,7 @@ def test_check_interval_runtime_metadata_success(prediction_orchestrator):
         "fast_compatible": True,
     }
     assert (
-        prediction_orchestrator._check_interval_runtime_metadata(
+        prediction_orchestrator.check_interval_runtime_metadata(
             metadata, identifier="interval", fast=True
         )
         is None

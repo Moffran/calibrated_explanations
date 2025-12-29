@@ -3,6 +3,7 @@ import collections
 import csv
 import sys
 import os
+import json
 from pathlib import Path
 
 def load_analysis(analysis_file):
@@ -67,7 +68,7 @@ def get_category_and_pattern(name, usage_file, analysis_data):
 
 def scan_workspace(root_path, analysis_data):
     root = Path(root_path)
-    skip_dirs = {".ci-env", "venv", ".venv", ".git", "site-packages", "__pycache__", "build", "dist"}
+    skip_dirs = {".ci-env", "venv", ".venv", ".git", "site-packages", "__pycache__", "build", "dist", "scripts"}
 
     test_files = []
     for dirpath, dirnames, filenames in os.walk(root):
@@ -120,17 +121,40 @@ def scan_workspace(root_path, analysis_data):
 
     return occurrences
 
+def load_allowlist(allowlist_file):
+    if not os.path.exists(allowlist_file):
+        return []
+    try:
+        with open(allowlist_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("allowlist", [])
+    except Exception:
+        return []
+
+def is_allowed(occurrence, allowlist):
+    # Normalize occurrence file path to use forward slashes for comparison
+    occ_file = occurrence["file"].replace("\\", "/")
+    for entry in allowlist:
+        # Normalize entry file path
+        entry_file = entry["file"].replace("\\", "/")
+        if occ_file == entry_file and occurrence["name"] == entry["symbol"]:
+            return True
+    return False
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Scan for private member usage in tests.")
     parser.add_argument("roots", nargs="*", default=["."], help="Root directories to scan.")
     parser.add_argument("--output", default="reports/anti-pattern-analysis/private_usage_scan.csv", help="Output CSV file.")
     parser.add_argument("--analysis", default="reports/anti-pattern-analysis/private_method_analysis.csv", help="Path to private_method_analysis.csv.")
+    parser.add_argument("--allowlist", default=".github/private_member_allowlist.json", help="Path to private_member_allowlist.json.")
+    parser.add_argument("--check", action="store_true", help="Exit with code 1 if non-allowlisted violations are found.")
 
     args = parser.parse_args()
 
     analysis_file = args.analysis
     analysis_data = load_analysis(analysis_file)
+    allowlist = load_allowlist(args.allowlist)
 
     all_data = []
     for root in args.roots:
@@ -138,7 +162,18 @@ def main():
         data = scan_workspace(root, analysis_data)
         all_data.extend(data)
 
-    print(f"\nFound {len(all_data)} occurrences.")
+    # Filter allowlisted items
+    violations = []
+    allowed_count = 0
+    for d in all_data:
+        if is_allowed(d, allowlist):
+            allowed_count += 1
+        else:
+            violations.append(d)
+
+    print(f"\nFound {len(all_data)} total occurrences.")
+    print(f"Allowed (in allowlist): {allowed_count}")
+    print(f"Violations (not in allowlist): {len(violations)}")
 
     # Write detailed CSV
     out_file = args.output
@@ -150,6 +185,15 @@ def main():
         writer.writerows(all_data)
 
     print(f"\nDetailed report written to {out_file}")
+
+    if args.check:
+        if len(violations) > 0:
+            print("\nERROR: Found non-allowlisted private member usages in tests:")
+            for v in violations:
+                print(f"  {v['file']}:{v['line']} - {v['name']} ({v['category']})")
+            sys.exit(1)
+        else:
+            print("\nSUCCESS: No non-allowlisted private member usages found.")
 
     # Summary by Category
     cat_counts = collections.Counter(d["category"] for d in all_data)

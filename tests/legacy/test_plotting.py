@@ -201,7 +201,7 @@ class DummyClassificationExplanation(DummyExplainer):
         self.prediction = {"classes": 1}
 
     def get_class_labels(self):
-        return None if not self._with_labels else self.class_labels
+        return None if not self.with_labels_flag else self.class_labels
 
 
 @pytest.fixture
@@ -215,11 +215,11 @@ def fake_matplotlib(monkeypatch):
 def test_compose_save_target_handles_directories(tmp_path):
     folder = tmp_path / "plots"
     folder.mkdir()
-    result_dir = plotting._compose_save_target(folder, "demo", ".png")
+    result_dir = plotting.compose_save_target(folder, "demo", ".png")
     assert result_dir == str(folder / "demo.png")
 
     file_base = tmp_path / "base"
-    result_file = plotting._compose_save_target(file_base, "demo", ".png")
+    result_file = plotting.compose_save_target(file_base, "demo", ".png")
     assert result_file == str(file_base) + "demo.png"
 
 
@@ -233,7 +233,7 @@ def test_require_matplotlib_reports_original_error(monkeypatch):
     assert "Original import error: boom" in str(exc_info.value)
 
 
-def test_plot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
+def testplot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
     explanation = DummyClassificationExplanation()
     predict = {"predict": 0.6, "low": 0.4, "high": 0.8}
     feature_predict = {
@@ -259,7 +259,7 @@ def test_plot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
     assert ax_main.xlabel == "Probability for the positive class"
 
 
-def test_plot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_path):
+def testplot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_path):
     explanation = DummyThresholdExplanation(np.array(0.42))
     predict = {"predict": 0.6, "low": 0.4, "high": 0.8}
     feature_predict = {
@@ -285,11 +285,11 @@ def test_plot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_pat
     assert ax_main.xlabel == "Probability of target being below 0.42"
 
 
-def test_plot_global_warns_for_identical_uncertainty(fake_matplotlib):
+def testplot_global_warns_for_identical_uncertainty(fake_matplotlib):
     explanation = DummyExplainer()
     x = np.array([[1.0, 2.0]])
 
-    plotting._plot_global(
+    plotting.plot_global(
         explanation,
         x,
         y=None,
@@ -303,7 +303,7 @@ def test_plot_global_warns_for_identical_uncertainty(fake_matplotlib):
     fake_matplotlib.xlabel_calls.clear()
 
     with pytest.warns(Warning):
-        plotting._plot_global(
+        plotting.plot_global(
             explanation,
             x,
             y=None,

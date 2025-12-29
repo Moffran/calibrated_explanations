@@ -117,7 +117,7 @@ class DummyExplainer:
     def predict_calibration(self):
         return self.y_cal + 0.05
 
-    def _get_sigma_test(self, x):  # pylint: disable=unused-argument
+    def get_sigma_test(self, x):  # pylint: disable=unused-argument
         return np.ones(len(x))
 
     def predict_function(self, x):
@@ -156,7 +156,7 @@ def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
         def predict_calibration(self):  # pragma: no cover - exercised indirectly
             return self.y_cal + 0.05
 
-        def _get_sigma_test(self, x):  # pylint: disable=unused-argument
+        def get_sigma_test(self, x):  # pylint: disable=unused-argument
             return np.ones((len(x), 1))
 
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
@@ -169,7 +169,7 @@ def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
     assert regressor.sigma_cal.ndim == 1
     assert regressor.bins is None or regressor.bins.ndim == 1
 
-    assert regressor._y_cal_hat_storage.ndim == 1
+    assert regressor.y_cal_hat_storage.ndim == 1
     assert regressor._residual_cal_storage.ndim == 1
     assert regressor._sigma_cal_storage.ndim == 1
 
@@ -177,14 +177,14 @@ def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
 def test_append_helpers_expand_and_normalize(monkeypatch):
     regressor = make_regressor(monkeypatch)
 
-    base_storage = np.array(regressor._y_cal_hat_storage, copy=True)
+    base_storage = np.array(regressor.y_cal_hat_storage, copy=True)
 
     regressor._append_calibration_buffer("y_cal_hat", np.arange(1, 6, dtype=float).reshape(-1, 1))
 
-    assert regressor._y_cal_hat_storage.shape[0] >= base_storage.shape[0] + 5
-    assert np.array_equal(regressor._y_cal_hat_storage[: base_storage.size], base_storage)
+    assert regressor.y_cal_hat_storage.shape[0] >= base_storage.shape[0] + 5
+    assert np.array_equal(regressor.y_cal_hat_storage[: base_storage.size], base_storage)
     assert np.allclose(
-        regressor._y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6)
+        regressor.y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6)
     )
 
     regressor._append_bins(np.array([[9], [8]]))
@@ -260,8 +260,6 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
     regressor = make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
-
-    import importlib
 
     calls: list[int] = []
 
@@ -519,13 +517,13 @@ def test_append_helpers_ignore_empty_inputs(monkeypatch):
 
     regressor = make_regressor(monkeypatch, bins=np.array([0, 1, 0, 1]))
 
-    original_y_hat = np.array(regressor._y_cal_hat_storage, copy=True)
+    original_y_hat = np.array(regressor.y_cal_hat_storage, copy=True)
     original_y_hat_size = regressor._y_cal_hat_size
     regressor._append_calibration_buffer("y_cal_hat", np.array([]))
 
     assert regressor._y_cal_hat_size == original_y_hat_size
     assert np.array_equal(
-        regressor._y_cal_hat_storage[:original_y_hat_size], original_y_hat[:original_y_hat_size]
+        regressor.y_cal_hat_storage[:original_y_hat_size], original_y_hat[:original_y_hat_size]
     )
 
     original_bins = np.array(regressor._bins_storage, copy=True)
@@ -543,8 +541,8 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
     regressor._append_calibration_buffer("y_cal_hat", appended_calibration)
 
     assert regressor._y_cal_hat_size == 4 + appended_calibration.shape[0]
-    assert np.allclose(regressor._y_cal_hat_storage[:4], np.array([0.15, 0.25, 0.35, 0.45]))
-    assert np.allclose(regressor._y_cal_hat_storage[4:9], appended_calibration.reshape(-1))
+    assert np.allclose(regressor.y_cal_hat_storage[:4], np.array([0.15, 0.25, 0.35, 0.45]))
+    assert np.allclose(regressor.y_cal_hat_storage[4:9], appended_calibration.reshape(-1))
 
     regressor._append_bins(np.array([[2], [3]]))
     regressor._append_bins(np.array([[4], [5], [6]]))
@@ -642,7 +640,7 @@ def test_init_flattens_calibration_arrays(monkeypatch):
         def predict_calibration(self):
             return self.y_cal + 0.05
 
-        def _get_sigma_test(self, x):  # pylint: disable=unused-argument
+        def get_sigma_test(self, x):  # pylint: disable=unused-argument
             return np.ones((len(x), 1))
 
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
@@ -650,7 +648,7 @@ def test_init_flattens_calibration_arrays(monkeypatch):
 
     regressor = interval_module.IntervalRegressor(ColumnExplainer())
 
-    assert regressor._y_cal_hat_storage.ndim == 1
+    assert regressor.y_cal_hat_storage.ndim == 1
     assert regressor._residual_cal_storage.ndim == 1
     assert regressor._sigma_cal_storage.ndim == 1
 

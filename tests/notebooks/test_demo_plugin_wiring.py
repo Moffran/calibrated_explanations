@@ -107,7 +107,7 @@ class TestNotebookMethodA:
 
         # Verify explainer was created with the style
         assert explainer_a is not None
-        assert explainer_a._plot_style_override == "plot_spec.default"
+        assert explainer_a.plot_style_override == "plot_spec.default"
 
         # Generate explanations
         explanations = explainer_a.explain_factual(x_test[:3])
@@ -374,7 +374,7 @@ class TestNotebookMethodE:
             )
 
             # Verify the plugin was used
-            assert explainer._explanation_plugin_overrides["factual"] == plugin_id
+            assert explainer.explanation_plugin_overrides["factual"] == plugin_id
 
             # Generate explanations
             explanations = explainer.explain_factual(x_test[:3])

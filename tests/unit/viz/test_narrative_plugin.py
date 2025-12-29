@@ -512,7 +512,7 @@ def test_narrative_plugin_template_fallback(enable_fallbacks, tmp_path, monkeypa
     class StubExplainer:
         def __init__(self):
             self.mode = "classification"
-            self._explainer = SimpleNamespace(feature_names=["f0"])
+            self.explainer = SimpleNamespace(feature_names=["f0"])
 
         def is_multiclass(self):
             return False
@@ -531,7 +531,7 @@ def test_narrative_plugin_template_fallback(enable_fallbacks, tmp_path, monkeypa
     assert "factual_explanation_beginner" in result[0]
 
 
-def test_narrative_plugin_detect_problem_type_variants():
+def test_narrative_plugindetect_problem_type_variants():
     """Cover detection branches and exception handling."""
     plugin = NarrativePlotPlugin()
 
@@ -545,34 +545,34 @@ def test_narrative_plugin_detect_problem_type_variants():
     explanations = SimpleNamespace(
         explanations=[], calibrated_explainer=Explainer("classification"), y_threshold=None
     )
-    assert plugin._detect_problem_type(explanations) == "multiclass_classification"
+    assert plugin.detect_problem_type(explanations) == "multiclass_classification"
 
     explanations.calibrated_explainer.is_multiclass = lambda: False
-    assert plugin._detect_problem_type(explanations) == "binary_classification"
+    assert plugin.detect_problem_type(explanations) == "binary_classification"
 
     explanations.y_threshold = 0.5
-    assert plugin._detect_problem_type(explanations) == "probabilistic_regression"
+    assert plugin.detect_problem_type(explanations) == "probabilistic_regression"
 
     explanations.y_threshold = None
     explanations.calibrated_explainer.mode = "regression"
-    assert plugin._detect_problem_type(explanations) == "regression"
+    assert plugin.detect_problem_type(explanations) == "regression"
 
     def broken_multiclass():
         raise RuntimeError("boom")
 
     explanations.calibrated_explainer.mode = "other"
     explanations.calibrated_explainer.is_multiclass = broken_multiclass
-    assert plugin._detect_problem_type(explanations) == "regression"
+    assert plugin.detect_problem_type(explanations) == "regression"
 
     explanations.calibrated_explainer = SimpleNamespace()
-    assert plugin._detect_problem_type(explanations) == "regression"
+    assert plugin.detect_problem_type(explanations) == "regression"
 
 
 def test_narrative_plugin_feature_name_helpers(monkeypatch):
     """Verify feature-name extraction and alternative detection."""
     plugin = NarrativePlotPlugin()
     explainer = SimpleNamespace(
-        _explainer=SimpleNamespace(feature_names=["a", "b"]), feature_names=None
+        explainer=SimpleNamespace(feature_names=["a", "b"]), feature_names=None
     )
     explanations = SimpleNamespace(
         explanations=[SimpleNamespace()],
@@ -580,7 +580,7 @@ def test_narrative_plugin_feature_name_helpers(monkeypatch):
     )
     assert plugin._get_feature_names(explanations) == ["a", "b"]
 
-    explainer._explainer = SimpleNamespace()
+    explainer.explainer = SimpleNamespace()
     explainer.feature_names = ("x",)
     assert plugin._get_feature_names(explanations) == ("x",)
 
@@ -592,7 +592,7 @@ def test_narrative_plugin_feature_name_helpers(monkeypatch):
 
     alt = AltExplanations()
     alt.__class__.__name__ = "AlternativeExplanations"
-    assert plugin._is_alternative(alt) is True
+    assert plugin.is_alternative(alt) is True
 
-    alt = SimpleNamespace(_is_alternative=lambda: True)
-    assert plugin._is_alternative(alt) is True
+    alt = SimpleNamespace(is_alternative=lambda: True)
+    assert plugin.is_alternative(alt) is True

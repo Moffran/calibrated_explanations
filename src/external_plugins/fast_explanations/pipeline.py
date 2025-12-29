@@ -91,12 +91,8 @@ class FastExplanationPipeline:
         # Initialize fast mode if not already done
         if not self.explainer.is_fast():
             try:
-                self.explainer._CalibratedExplainer__fast = True  # pylint: disable=protected-access
-                # pylint: disable-next=protected-access
-                init_method = self.explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer
-                init_method()
+                self.explainer.enable_fast_mode()
             except Exception as exc:
-                self.explainer._CalibratedExplainer__fast = False  # pylint: disable=protected-access
                 raise ConfigurationError(
                     "Fast explanations are only possible if the explainer is a "
                     "Fast Calibrated Explainer."
@@ -120,7 +116,7 @@ class FastExplanationPipeline:
             )
 
         # Validate Mondrian categories if applicable
-        if self.explainer._is_mondrian():  # pylint: disable=protected-access
+        if self.explainer.is_mondrian():  # pylint: disable=protected-access
             if bins is None:
                 raise ValidationError(
                     "The bins parameter must be specified for Mondrian explanations."
@@ -182,7 +178,7 @@ class FastExplanationPipeline:
         feature_time = time()
 
         # Get predictions for the instances
-        predict, low, high, predicted_class = self.explainer._predict(  # pylint: disable=protected-access
+        predict, low, high, predicted_class = self.explainer.predict_calibrated(  # pylint: disable=protected-access
             x_test,
             threshold=threshold,
             low_high_percentiles=low_high_percentiles,
@@ -295,7 +291,7 @@ class FastExplanationPipeline:
 
         # Update explainer state
         self.explainer.latest_explanation = explanation
-        self.explainer._last_explanation_mode = "fast"  # pylint: disable=protected-access
+        self.explainer.last_explanation_mode = "fast"  # pylint: disable=protected-access
 
         return explanation
 

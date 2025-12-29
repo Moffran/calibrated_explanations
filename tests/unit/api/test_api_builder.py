@@ -51,7 +51,7 @@ def test_explainer_builder_fluent_roundtrip():
 def test_wrap_from_config_private_helper():
     model = RandomForestClassifier()
     cfg = ExplainerConfig(model=model)
-    w = WrapCalibratedExplainer._from_config(cfg)  # private, intentional
+    w = WrapCalibratedExplainer.from_config(cfg)  # private, intentional
     assert isinstance(w, WrapCalibratedExplainer)
     assert w.learner is model
 
@@ -60,7 +60,7 @@ def test_wrap_from_config_applies_defaults(monkeypatch):
     # Configure defaults
     model = RandomForestClassifier()
     cfg = ExplainerConfig(model=model, low_high_percentiles=(10, 90), threshold=0.3)
-    w = WrapCalibratedExplainer._from_config(cfg)
+    w = WrapCalibratedExplainer.from_config(cfg)
 
     # Monkeypatch underlying explainer to capture kwargs passed through
     class DummyExplainer:
@@ -94,7 +94,7 @@ def test_wrap_from_config_applies_defaults_fast():
     # Configure defaults
     model = RandomForestClassifier()
     cfg = ExplainerConfig(model=model, low_high_percentiles=(20, 80), threshold=0.4)
-    w = WrapCalibratedExplainer._from_config(cfg)
+    w = WrapCalibratedExplainer.from_config(cfg)
 
     class DummyExplainerFast:
         def explain_fast(self, x, **kwargs):  # noqa: D401

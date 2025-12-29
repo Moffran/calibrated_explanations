@@ -36,7 +36,7 @@ TelemetryCallback = _cache.TelemetryCallback
 make_key = _cache.make_key
 
 # Expose implementation details so legacy monkeypatch targets continue to work
-_default_size_estimator = _cache._default_size_estimator
+default_size_estimator = _cache.default_size_estimator
 _hash_part = _cache._hash_part
 monotonic = _cache.monotonic
 

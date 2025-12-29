@@ -178,10 +178,8 @@ class NarrativeGenerator:
             )
 
         # Get rules from explanation
-        if hasattr(explanation, "get_rules"):
+        if hasattr(explanation, "get_rules") or hasattr(explanation, "get_rules"):
             rules_dict = explanation.get_rules()
-        elif hasattr(explanation, "_get_rules"):
-            rules_dict = explanation._get_rules()
         else:
             raise ValidationError(
                 "Explanation has no get_rules method",

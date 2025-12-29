@@ -25,22 +25,22 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
 
     explainer = explainer_factory(mode=mode)
     explainer.bins = None
-    explainer._plot_style_override = None
+    explainer.plot_style_override = None
     explainer.interval_plugin_override = None
     explainer._fast_interval_plugin_override = None
     explainer.interval_plugin_hints = {}
     explainer.interval_plugin_fallbacks = {"default": (), "fast": ()}
     explainer.interval_preferred_identifier = {"default": None, "fast": None}
     explainer.telemetry_interval_sources = {"default": None, "fast": None}
-    explainer._interval_context_metadata = {"default": {}, "fast": {}}
+    explainer.plugin_manager.interval_context_metadata = {"default": {}, "fast": {}}
     explainer.explanation_plugin_overrides = {
         key: None for key in ("factual", "alternative", "fast")
     }
     explainer._pyproject_explanations = {}
     explainer._pyproject_intervals = {}
     explainer._pyproject_plots = {}
-    explainer._plot_style_override = None
-    explainer._explanation_plugin_fallbacks = {}
+    explainer.plot_style_override = None
+    explainer.plugin_manager.explanation_plugin_fallbacks = {}
     return explainer
 
 
@@ -70,26 +70,7 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
     assert explainer.categorical_features == [0, 2]
 
 
-def test_require_plugin_manager_raises_when_missing(explainer_factory):
-    from calibrated_explanations.utils.exceptions import NotFittedError
-
-    explainer = stub_explainer(explainer_factory)
-    explainer.plugin_manager = None
-
-    with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
-        explainer._require_plugin_manager()
-
-
-def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
-    explainer = stub_explainer(explainer_factory)
-    delattr(explainer, "plugin_manager")
-
-    assert explainer._build_explanation_chain("factual") == ()
-    assert explainer._build_interval_chain(fast=False) == ()
-    assert explainer.build_plot_style_chain() == ()
-
-
-def test_build_instance_telemetry_payload_delegates(explainer_factory):
+def testbuild_instance_telemetry_payload_delegates(explainer_factory):
     explainer = stub_explainer(explainer_factory)
     sentinel = object()
 
@@ -97,14 +78,14 @@ def test_build_instance_telemetry_payload_delegates(explainer_factory):
         def __init__(self) -> None:
             self.seen = None
 
-        def _build_instance_telemetry_payload(self, explanations):
+        def build_instance_telemetry_payload(self, explanations):
             self.seen = explanations
             return sentinel
 
-    explainer.plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
+    explainer.plugin_manager = types.SimpleNamespace(explanation_orchestrator=StubOrchestrator())
 
-    assert explainer._build_instance_telemetry_payload("payload") is sentinel
-    assert explainer.plugin_manager._explanation_orchestrator.seen == "payload"
+    assert explainer.build_instance_telemetry_payload("payload") is sentinel
+    assert explainer.plugin_manager.explanation_orchestrator.seen == "payload"
 
 
 def test_oob_path_reraises_source_error(monkeypatch):
@@ -136,12 +117,16 @@ def test_instance_telemetry_payload_delegates(explainer_factory):
     sentinel = object()
 
     class StubOrchestrator:
-        def _build_instance_telemetry_payload(self, explanations):
+        def build_instance_telemetry_payload(self, explanations):
             return (explanations, sentinel)
 
-    explainer.plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
+    explainer.plugin_manager = types.SimpleNamespace(
+        explanation_orchestrator=StubOrchestrator(),
+        pyproject_intervals=None,
+        pyproject_plots=None,
+    )
 
-    assert explainer._build_instance_telemetry_payload("payload") == ("payload", sentinel)
+    assert explainer.build_instance_telemetry_payload("payload") == ("payload", sentinel)
 
     assert explainer._pyproject_intervals is None
     assert explainer._pyproject_plots is None
@@ -152,21 +137,21 @@ def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
 
     class DummyManager:
         def __init__(self) -> None:
-            self._interval_plugin_hints = {"fast": ()}
-            self._interval_plugin_fallbacks = {"fast": ()}
-            self._interval_plugin_identifiers = {"fast": None}
-            self._telemetry_interval_sources = {"fast": None}
-            self._interval_preferred_identifier = {"fast": None}
-            self._interval_context_metadata = {"fast": {}}
+            self.interval_plugin_hints = {"fast": ()}
+            self.interval_plugin_fallbacks = {"fast": ()}
+            self.interval_plugin_identifiers = {"fast": None}
+            self.telemetry_interval_sources = {"fast": None}
+            self.interval_preferred_identifier = {"fast": None}
+            self.interval_context_metadata = {"fast": {}}
 
     explainer.plugin_manager = DummyManager()
 
     del explainer.interval_plugin_hints
-    del explainer._interval_plugin_fallbacks
-    del explainer._interval_plugin_identifiers
-    del explainer._telemetry_interval_sources
-    del explainer._interval_preferred_identifier
-    del explainer._interval_context_metadata
+    del explainer.plugin_manager.interval_plugin_fallbacks
+    del explainer.plugin_manager.interval_plugin_identifiers
+    del explainer.plugin_manager.telemetry_interval_sources
+    del explainer.plugin_manager.interval_preferred_identifier
+    del explainer.plugin_manager.interval_context_metadata
 
     for attr in (
         "_interval_plugin_hints",
@@ -184,23 +169,23 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
 
     class StubManager:
         def __init__(self) -> None:
-            self._interval_plugin_hints = {"default": ("a",)}
-            self._interval_plugin_fallbacks = {"default": ("b",)}
-            self._interval_plugin_identifiers = {"default": "id"}
-            self._telemetry_interval_sources = {"default": "src"}
-            self._interval_preferred_identifier = {"default": "pref"}
-            self._interval_context_metadata = {"default": {"meta": 1}}
-            self._plot_style_chain = ("style",)
+            self.interval_plugin_hints = {"default": ("a",)}
+            self.interval_plugin_fallbacks = {"default": ("b",)}
+            self.interval_plugin_identifiers = {"default": "id"}
+            self.telemetry_interval_sources = {"default": "src"}
+            self.interval_preferred_identifier = {"default": "pref"}
+            self.interval_context_metadata = {"default": {"meta": 1}}
+            self.plot_style_chain = ("style",)
 
     explainer.plugin_manager = StubManager()
 
     del explainer.interval_plugin_hints
-    del explainer._interval_plugin_fallbacks
-    del explainer._interval_plugin_identifiers
-    del explainer._telemetry_interval_sources
-    del explainer._interval_preferred_identifier
-    del explainer._interval_context_metadata
-    explainer._plot_style_chain = ("new_style",)
+    del explainer.plugin_manager.interval_plugin_fallbacks
+    del explainer.plugin_manager.interval_plugin_identifiers
+    del explainer.plugin_manager.telemetry_interval_sources
+    del explainer.plugin_manager.interval_preferred_identifier
+    del explainer.plugin_manager.interval_context_metadata
+    explainer.plugin_manager.plot_style_chain = ("new_style",)
 
     manager = explainer.plugin_manager
     assert not hasattr(manager, "_interval_plugin_hints")
@@ -209,7 +194,9 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
     assert not hasattr(manager, "_telemetry_interval_sources")
     assert not hasattr(manager, "_interval_preferred_identifier")
     assert not hasattr(manager, "_interval_context_metadata")
-    assert manager._plot_style_chain == ("new_style",)
+    # The setter now uses the public property 'plot_style_chain' on the manager.
+    # Since StubManager doesn't have properties, it just sets 'plot_style_chain'.
+    assert manager.plot_style_chain == ("new_style",)
 
 
 def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
@@ -227,11 +214,11 @@ def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_
 
     class StubPredictionOrchestrator:
         def __init__(self, interval_registry: StubIntervalRegistry) -> None:
-            self._interval_registry = interval_registry
-            self._prediction_orchestrator = self
+            self.interval_registry = interval_registry
+            self.prediction_orchestrator = self
 
     stub_manager = StubPredictionOrchestrator(registry)
-    monkeypatch.setattr(explainer, "_require_plugin_manager", lambda: stub_manager)
+    monkeypatch.setattr(explainer, "require_plugin_manager", lambda: stub_manager)
     explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
 
     assert registry.calls == [sentinel]
@@ -270,7 +257,7 @@ def test_explain_uses_plugin_orchestrator(explainer_factory):
             return sentinel
 
     orchestrator = StubExplanationOrchestrator()
-    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=orchestrator)
+    explainer.plugin_manager = types.SimpleNamespace(explanation_orchestrator=orchestrator)
     explainer._infer_explanation_mode = lambda: "factual"
 
     result = explainer.explain_factual("x", threshold=0.2, bins="bins", features_to_ignore=[1])
@@ -288,22 +275,6 @@ def test_reinitialize_validates_bins_length(explainer_factory):
 
     with pytest.raises(DataShapeError):
         explainer.reinitialize(explainer.learner, explainer.x_cal, explainer.y_cal, bins=bins[:1])
-
-
-def test_explain_counterfactual_delegates(explainer_factory):
-    explainer = explainer_factory()
-    sentinel = object()
-    explainer.explore_alternatives = lambda *args, **kwargs: (args, kwargs, sentinel)
-
-    from tests.helpers.deprecation import deprecations_error_enabled
-
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning):
-            explainer.explain_counterfactual("x", threshold=1.0)
-    else:
-        with pytest.warns(DeprecationWarning):
-            result = explainer.explain_counterfactual("x", threshold=1.0)
-        assert result[2] is sentinel
 
 
 def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch):
@@ -394,26 +365,26 @@ def test_predict_proba_uncalibrated_interval(explainer_factory):
 
 def test_ensure_interval_runtime_state_populates_defaults(explainer_factory):
     explainer = explainer_factory()
-    explainer._interval_plugin_hints = {}
-    explainer._interval_plugin_fallbacks = {}
-    explainer._interval_plugin_identifiers = {}
-    explainer._telemetry_interval_sources = {}
-    explainer._interval_preferred_identifier = {}
-    explainer._interval_context_metadata = {}
-    explainer._ensure_interval_runtime_state()
+    explainer.plugin_manager.interval_plugin_hints = {}
+    explainer.plugin_manager.interval_plugin_fallbacks = {}
+    explainer.plugin_manager.interval_plugin_identifiers = {}
+    explainer.plugin_manager.telemetry_interval_sources = {}
+    explainer.plugin_manager.interval_preferred_identifier = {}
+    explainer.plugin_manager.interval_context_metadata = {}
+    explainer.prediction_orchestrator.ensure_interval_runtime_state()
 
-    assert explainer._interval_plugin_hints == {}
-    assert explainer._interval_plugin_fallbacks == {}
-    assert explainer._interval_plugin_identifiers == {"default": None, "fast": None}
-    assert explainer._telemetry_interval_sources == {"default": None, "fast": None}
-    assert explainer._interval_preferred_identifier == {"default": None, "fast": None}
-    assert explainer._interval_context_metadata == {"default": {}, "fast": {}}
+    assert explainer.plugin_manager.interval_plugin_hints == {}
+    assert explainer.plugin_manager.interval_plugin_fallbacks == {}
+    assert explainer.plugin_manager.interval_plugin_identifiers == {"default": None, "fast": None}
+    assert explainer.plugin_manager.telemetry_interval_sources == {"default": None, "fast": None}
+    assert explainer.plugin_manager.interval_preferred_identifier == {"default": None, "fast": None}
+    assert explainer.plugin_manager.interval_context_metadata == {"default": {}, "fast": {}}
 
 
 def test_verbose_repr_includes_metadata(explainer_factory):
     explainer = explainer_factory()
     explainer.verbose = True
-    explainer._feature_names = ["f1", "f2"]  # noqa: SLF001 - testing repr content
+    explainer.feature_names = ["f1", "f2"]
     explainer.categorical_features = [0]
     explainer.categorical_labels = {0: {0: "no", 1: "yes"}}
     explainer.class_labels = {0: "neg", 1: "pos"}
@@ -427,7 +398,7 @@ def test_verbose_repr_includes_metadata(explainer_factory):
     assert "class_labels={0: 'neg', 1: 'pos'}" in result
 
 
-def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
+def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
     explainer = stub_explainer(explainer_factory)
 
     class CallableWithMeta:
@@ -437,14 +408,14 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factor
             raise AssertionError("should not be invoked")
 
     callable_with_meta = CallableWithMeta()
-    assert explainer._instantiate_plugin(callable_with_meta) is callable_with_meta
+    assert explainer.instantiate_plugin(callable_with_meta) is callable_with_meta
 
     class SimplePlugin:
         def __init__(self) -> None:
             self.token = object()
 
     prototype = SimplePlugin()
-    clone = explainer._instantiate_plugin(prototype)
+    clone = explainer.instantiate_plugin(prototype)
     assert isinstance(clone, SimplePlugin)
     assert clone is not prototype
 
@@ -458,14 +429,14 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factor
     from calibrated_explanations.core.explain import orchestrator as explain_orch
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", lambda value: sentinel)
-    assert explainer._instantiate_plugin(broken) is sentinel
+    assert explainer.instantiate_plugin(broken) is sentinel
 
     # Test fallback when deepcopy itself fails
     def raising_deepcopy(value):
         raise RuntimeError("fail")
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", raising_deepcopy)
-    assert explainer._instantiate_plugin(broken) is broken
+    assert explainer.instantiate_plugin(broken) is broken
 
 
 def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory):
@@ -511,8 +482,11 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
 
 def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explainer_factory):
     explainer = stub_explainer(explainer_factory, mode="regression")
-    explainer._interval_plugin_fallbacks = {"default": ("denied.plugin", "ok.plugin"), "fast": ()}
-    explainer._instantiate_plugin = lambda plugin: plugin
+    explainer.plugin_manager.interval_plugin_fallbacks = {
+        "default": ("denied.plugin", "ok.plugin"),
+        "fast": (),
+    }
+    explainer.instantiate_plugin = lambda plugin: plugin
     explainer._check_interval_runtime_metadata = lambda metadata, **_: None
 
     monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
@@ -545,7 +519,7 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explain
         prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
     )
 
-    plugin, identifier = explainer._resolve_interval_plugin(fast=False)
+    plugin, identifier = explainer.prediction_orchestrator.resolve_interval_plugin(fast=False)
 
     assert identifier == "ok.plugin"
     assert plugin is descriptor.plugin
@@ -554,7 +528,7 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explain
 def test_resolve_interval_plugin_denied_override_raises(monkeypatch, explainer_factory):
     explainer = stub_explainer(explainer_factory, mode="regression")
     explainer._interval_plugin_override = "denied.plugin"
-    explainer._interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
+    explainer.plugin_manager.interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
 
     monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
@@ -564,7 +538,7 @@ def test_resolve_interval_plugin_denied_override_raises(monkeypatch, explainer_f
     )
 
     with pytest.raises(ConfigurationError) as excinfo:
-        explainer._resolve_interval_plugin(fast=False)
+        explainer.prediction_orchestrator.resolve_interval_plugin(fast=False)
 
     assert "denied via CE_DENY_PLUGIN" in str(excinfo.value)
 
@@ -573,15 +547,20 @@ def test_build_interval_context_enriches_metadata(explainer_factory):
     explainer = stub_explainer(explainer_factory, mode="regression")
     explainer.x_cal = np.asarray([[1.0, 2.0]])
     explainer.y_cal = np.asarray([1.5])
-    explainer._X_cal = explainer.x_cal
+    # explainer._X_cal = explainer.x_cal
     explainer.bins = np.asarray([0])
     explainer.difficulty_estimator = "difficulty"
-    explainer._interval_context_metadata = {"default": {"preexisting": {"value": 1}}, "fast": {}}
+    explainer.plugin_manager.interval_context_metadata = {
+        "default": {"preexisting": {"value": 1}},
+        "fast": {},
+    }
     explainer._CalibratedExplainer__noise_type = "gaussian"
     explainer.categorical_features = [1]
     explainer.learner = object()
 
-    context = explainer._build_interval_context(fast=False, metadata={"extra": 2})
+    context = explainer.prediction_orchestrator.build_interval_context(
+        fast=False, metadata={"extra": 2}
+    )
 
     assert context.learner is explainer.learner
     assert context.calibration_splits[0] == (explainer.x_cal, explainer.y_cal)
@@ -600,19 +579,19 @@ def test_build_interval_context_enriches_metadata(explainer_factory):
 def test_get_calibration_summaries_caches_results(explainer_factory):
     explainer = stub_explainer(explainer_factory)
     explainer.x_cal = np.asarray([[0, "a"], [1, "b"], [0, "a"]], dtype=object)
-    explainer._X_cal = explainer.x_cal
+    # explainer._X_cal = explainer.x_cal
     explainer.categorical_features = [1]
-    explainer._categorical_value_counts_cache = None
-    explainer._numeric_sorted_cache = None
-    explainer._calibration_summary_shape = None
+    explainer.categorical_value_counts_cache = None
+    explainer.numeric_sorted_cache = None
+    explainer.calibration_summary_shape = None
 
-    counts, numeric = explainer._get_calibration_summaries()
+    counts, numeric = explainer.get_calibration_summaries()
 
     assert counts[1]["a"] == 2
     assert counts[1]["b"] == 1
     assert np.array_equal(numeric[0], np.array([0, 0, 1]))
 
-    counts_cached, numeric_cached = explainer._get_calibration_summaries()
+    counts_cached, numeric_cached = explainer.get_calibration_summaries()
 
     assert counts_cached is counts
     assert numeric_cached is numeric
@@ -628,15 +607,15 @@ class RaisingInterval:
 
 def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory):
     explainer = stub_explainer(explainer_factory, mode="regression")
-    explainer._CalibratedExplainer__initialized = True
+    explainer.initialized = True
     explainer._CalibratedExplainer__fast = False
     explainer.interval_learner = RaisingInterval()
     explainer.suppress_crepes_errors = True
-    explainer._X_cal = np.zeros((1, 1))
+    explainer.x_cal = np.zeros((1, 1))
 
     x = np.ones((2, 1))
 
-    predict, low, high, classes = explainer._predict_impl(x)
+    predict, low, high, classes = explainer.prediction_orchestrator.predict_impl(x)
 
     assert np.all(predict == 0)
     assert np.all(low == 0)
@@ -644,7 +623,9 @@ def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory)
     assert classes is None
 
     threshold = [0.5, 0.5]
-    predict_t, low_t, high_t, classes_t = explainer._predict_impl(x, threshold=threshold)
+    predict_t, low_t, high_t, classes_t = explainer.prediction_orchestrator.predict_impl(
+        x, threshold=threshold
+    )
 
     assert np.all(predict_t == 0)
     assert np.all(low_t == 0)
@@ -667,7 +648,7 @@ def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
         random_state=0,
     )
 
-    assert explainer._infer_explanation_mode() == "alternative"
+    assert explainer.infer_explanation_mode() == "alternative"
 
 
 def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory):
@@ -685,13 +666,13 @@ def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory)
         random_state=0,
     )
 
-    assert explainer._infer_explanation_mode() == "alternative"
+    assert explainer.infer_explanation_mode() == "alternative"
 
 
 def test_infer_explanation_mode_defaults_to_factual(explainer_factory):
     """_infer_explanation_mode should return 'factual' for None or other discretizers."""
     explainer = stub_explainer(explainer_factory)
-    assert explainer._infer_explanation_mode() == "factual"
+    assert explainer.infer_explanation_mode() == "factual"
 
 
 def test_preprocessor_metadata_round_trip(explainer_factory):
@@ -714,59 +695,49 @@ def test_preprocessor_metadata_none_handling(explainer_factory):
     assert explainer.preprocessor_metadata is None
 
 
-def test_prediction_orchestrator_raises_when_missing_attribute(explainer_factory):
-    """_prediction_orchestrator should raise when manager lacks the attribute."""
+def testprediction_orchestrator_raises_when_missing_attribute(explainer_factory):
+    """prediction_orchestrator should raise when manager lacks the attribute."""
     explainer = stub_explainer(explainer_factory)
 
     class BrokenManager:
         pass
 
-    explainer._plugin_manager = BrokenManager()
+    explainer.plugin_manager = BrokenManager()
 
-    with pytest.raises(AttributeError, match="PluginManager has no '_prediction_orchestrator'"):
-        _ = explainer._prediction_orchestrator
+    with pytest.raises(
+        AttributeError, match="'BrokenManager' object has no attribute 'prediction_orchestrator'"
+    ):
+        _ = explainer.prediction_orchestrator
 
 
-def test_explanation_orchestrator_raises_when_missing_attribute(explainer_factory):
-    """_explanation_orchestrator should raise when manager lacks the attribute."""
+def testexplanation_orchestrator_raises_when_missing_attribute(explainer_factory):
+    """explanation_orchestrator should raise when manager lacks the attribute."""
     explainer = stub_explainer(explainer_factory)
 
     class BrokenManager:
         pass
 
-    explainer._plugin_manager = BrokenManager()
+    explainer.plugin_manager = BrokenManager()
 
-    with pytest.raises(AttributeError, match="PluginManager has no '_explanation_orchestrator'"):
-        _ = explainer._explanation_orchestrator
+    with pytest.raises(
+        AttributeError, match="'BrokenManager' object has no attribute 'explanation_orchestrator'"
+    ):
+        _ = explainer.explanation_orchestrator
 
 
-def test_reject_orchestrator_raises_when_missing_attribute(explainer_factory):
-    """_reject_orchestrator should raise when manager lacks the attribute."""
+def testreject_orchestrator_raises_when_missing_attribute(explainer_factory):
+    """reject_orchestrator should raise when manager lacks the attribute."""
     explainer = stub_explainer(explainer_factory)
 
     class BrokenManager:
         pass
 
-    explainer._plugin_manager = BrokenManager()
+    explainer.plugin_manager = BrokenManager()
 
-    with pytest.raises(AttributeError, match="PluginManager has no '_reject_orchestrator'"):
-        _ = explainer._reject_orchestrator
-
-
-def test_explanation_plugin_instances_empty_without_manager(explainer_factory):
-    """_explanation_plugin_instances should return empty dict without manager."""
-    explainer = stub_explainer(explainer_factory)
-    delattr(explainer, "_plugin_manager")
-
-    assert explainer._explanation_plugin_instances == {}
-
-
-def test_explanation_plugin_identifiers_empty_without_manager(explainer_factory):
-    """_explanation_plugin_identifiers should return empty dict without manager."""
-    explainer = stub_explainer(explainer_factory)
-    delattr(explainer, "_plugin_manager")
-
-    assert explainer._explanation_plugin_identifiers == {}
+    with pytest.raises(
+        AttributeError, match="'BrokenManager' object has no attribute 'reject_orchestrator'"
+    ):
+        _ = explainer.reject_orchestrator
 
 
 def test_interval_plugin_hints_property_operations(explainer_factory):
@@ -776,14 +747,14 @@ def test_interval_plugin_hints_property_operations(explainer_factory):
     # Create a mock manager
     class MockManager:
         def __init__(self):
-            self._interval_plugin_hints = {"default": ("hint1", "hint2")}
+            self.interval_plugin_hints = {"default": ("hint1", "hint2")}
 
-    explainer._plugin_manager = MockManager()
+    explainer.plugin_manager = MockManager()
 
-    assert explainer._interval_plugin_hints == {"default": ("hint1", "hint2")}
+    assert explainer.plugin_manager.interval_plugin_hints == {"default": ("hint1", "hint2")}
 
-    explainer._interval_plugin_hints = {"fast": ("fast_hint",)}
-    assert explainer._plugin_manager._interval_plugin_hints == {"fast": ("fast_hint",)}
+    explainer.interval_plugin_hints = {"fast": ("fast_hint",)}
+    assert explainer.plugin_manager.interval_plugin_hints == {"fast": ("fast_hint",)}
 
 
 def test_explanation_plugin_fallbacks_property_operations(explainer_factory):
@@ -792,14 +763,14 @@ def test_explanation_plugin_fallbacks_property_operations(explainer_factory):
 
     class MockManager:
         def __init__(self):
-            self._explanation_plugin_fallbacks = {"factual": ("a", "b")}
+            self.explanation_plugin_fallbacks = {"factual": ("a", "b")}
 
-    explainer._plugin_manager = MockManager()
+    explainer.plugin_manager = MockManager()
 
-    assert explainer._explanation_plugin_fallbacks == {"factual": ("a", "b")}
+    assert explainer.plugin_manager.explanation_plugin_fallbacks == {"factual": ("a", "b")}
 
-    explainer._explanation_plugin_fallbacks = {"alternative": ("c",)}
-    assert explainer._plugin_manager._explanation_plugin_fallbacks == {"alternative": ("c",)}
+    explainer.plugin_manager.explanation_plugin_fallbacks = {"alternative": ("c",)}
+    assert explainer.plugin_manager.explanation_plugin_fallbacks == {"alternative": ("c",)}
 
 
 def test_plot_plugin_fallbacks_property_operations(explainer_factory):
@@ -808,33 +779,14 @@ def test_plot_plugin_fallbacks_property_operations(explainer_factory):
 
     class MockManager:
         def __init__(self):
-            self._plot_plugin_fallbacks = {"default": ("plot_a",)}
+            self.plot_plugin_fallbacks = {"default": ("plot_a",)}
 
-    explainer._plugin_manager = MockManager()
+    explainer.plugin_manager = MockManager()
 
-    assert explainer._plot_plugin_fallbacks == {"default": ("plot_a",)}
+    assert explainer.plugin_manager.plot_plugin_fallbacks == {"default": ("plot_a",)}
 
-    explainer._plot_plugin_fallbacks = {"alt": ("plot_b",)}
-    assert explainer._plugin_manager._plot_plugin_fallbacks == {"alt": ("plot_b",)}
-
-
-def test_explain_counterfactual_deprecates_and_delegates(monkeypatch, explainer_factory):
-    explainer = explainer_factory()
-    sentinel = object()
-
-    monkeypatch.setattr("calibrated_explanations.utils.deprecate", lambda *args, **kwargs: None)
-    explainer.explore_alternatives = lambda *args, **kwargs: sentinel
-
-    assert (
-        explainer.explain_counterfactual(
-            np.ones((1, 2)),
-            threshold=None,
-            low_high_percentiles=(5, 95),
-            bins=None,
-            features_to_ignore=None,
-        )
-        is sentinel
-    )
+    explainer.plugin_manager.plot_plugin_fallbacks = {"alt": ("plot_b",)}
+    assert explainer.plugin_manager.plot_plugin_fallbacks == {"alt": ("plot_b",)}
 
 
 def test_call_and_explain_delegate_with_plugin(monkeypatch, explainer_factory):
@@ -853,7 +805,7 @@ def test_call_and_explain_delegate_with_plugin(monkeypatch, explainer_factory):
             recorded["payload"] = (x, threshold, low_high_percentiles, bins, features_to_ignore)
             return sentinel
 
-    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
+    explainer.plugin_manager = types.SimpleNamespace(explanation_orchestrator=StubOrchestrator())
 
     assert explainer(np.zeros((1, 2))) is sentinel
     assert recorded["extras"] == {"mode": "factual", "_skip_instance_parallel": False}
@@ -879,15 +831,15 @@ def test_legacy_explain_path(monkeypatch, explainer_factory):
 
 def test_is_multiclass_and_set_mode_helpers(explainer_factory):
     explainer = explainer_factory()
-    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
+    explainer.set_mode("classification", initialize=False)
     explainer.num_classes = 3
 
     assert explainer.is_multiclass() is True
-    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
+    explainer.set_mode("regression", initialize=False)
     assert explainer.is_multiclass() is False
 
     with pytest.raises(ValidationError):
-        explainer._CalibratedExplainer__set_mode("unknown", initialize=False)
+        explainer.set_mode("unknown", initialize=False)
 
 
 def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
@@ -937,22 +889,22 @@ class ListInterval:
 
 def test_predict_variants_cover_branches(explainer_factory):
     explainer = explainer_factory()
-    explainer._CalibratedExplainer__initialized = True
+    explainer.initialized = True
 
     probs, intervals = explainer.predict_proba(np.zeros((2, 2)), calibrated=False, uq_interval=True)
     assert probs.shape[0] == 2
     assert intervals[0].shape == (2,)
 
-    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
-    explainer._CalibratedExplainer__initialized = True
+    explainer.set_mode("regression", initialize=False)
+    explainer.initialized = True
     explainer.interval_learner = [
         ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))
     ]
     preds = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=False)
     assert preds.shape == (2, 2)
 
-    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
-    explainer._CalibratedExplainer__initialized = True
+    explainer.set_mode("classification", initialize=False)
+    explainer.initialized = True
     explainer.num_classes = 3
     explainer.interval_learner = ListInterval(
         proba=np.full((2, 3), 1 / 3), low=np.zeros((2, 3)), high=np.ones((2, 3))

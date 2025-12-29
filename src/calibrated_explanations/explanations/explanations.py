@@ -214,9 +214,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def to_batch(self):
         """Serialise the collection into an :class:`ExplanationBatch`."""
-        from ..plugins.builtins import _collection_to_batch  # lazy import
+        from ..plugins.builtins import collection_to_batch  # lazy import
 
-        return _collection_to_batch(self)
+        return collection_to_batch(self)
 
     @classmethod
     def from_batch(cls, batch):
@@ -408,15 +408,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Build a legacy-shaped payload from an explanation instance."""
         rules_blob = None
         # prefer conjunctive rules when present and populated
-        if getattr(exp, "_has_conjunctive_rules", False):
+        if getattr(exp, "has_conjunctive_rules", False):
             rules_blob = getattr(exp, "conjunctive_rules", None)
         if not rules_blob:
             rules_blob = getattr(exp, "rules", None)
-        if not rules_blob and hasattr(exp, "_get_rules"):
+        if not rules_blob and hasattr(exp, "get_rules"):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 try:
-                    rules_blob = exp._get_rules()  # type: ignore[attr-defined]
+                    rules_blob = exp.get_rules()  # type: ignore[attr-defined]
                 except:  # noqa: E722
                     if not isinstance(sys.exc_info()[1], Exception):
                         raise
@@ -498,14 +498,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Public wrapper to obtain the legacy payload for an explanation."""
         return self._legacy_payload(exp)
 
-    def get_explainer(self):
-        """Return the underlying explainer (public wrapper)."""
-        return self._get_explainer()
-
-    def get_rules(self):
-        """Return materialised rules for each explanation (public wrapper)."""
-        return self._get_rules()
-
     @property
     def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
         """Return the prediction intervals for each explanation.
@@ -535,7 +527,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if self._feature_names_cache is None:
             # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
             try:
-                self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # noqa: SLF001
+                self._feature_names_cache = self.calibrated_explainer.feature_names
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
@@ -547,7 +539,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return class labels for classification explanations if available."""
         if self._class_labels_cache is None:
             try:
-                labels = getattr(self.calibrated_explainer._explainer, "class_labels", None)  # noqa: SLF001
+                labels = getattr(self.calibrated_explainer, "class_labels", None)
                 if labels is not None and isinstance(labels, dict):
                     # normalize to list ordered by class index if dict provided
                     # assume keys are numeric class indices
@@ -639,7 +631,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-
     @property
     def is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""
@@ -730,7 +721,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         for i, instance in enumerate(self.x_test):
             instance_bin = self.bins[i] if self.bins is not None else None
-            if self._is_alternative():
+            if self.is_alternative():
                 explanation: Union[FactualExplanation, AlternativeExplanation, FastExplanation]
                 explanation = AlternativeExplanation(
                     self,
@@ -760,7 +751,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
-        if self._is_alternative():
+        if self.is_alternative():
             return self.__convert_to_alternative_explanations()
         return self
 
@@ -816,15 +807,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
 
-    def _get_explainer(self):
+    def get_explainer(self):
         """Return the underlying :class:`~calibrated_explanations.core.calibrated_explainer.CalibratedExplainer` instance."""
         return self.calibrated_explainer
 
-    def _get_rules(self):
+    def get_rules(self):
         """Return the materialised rule payload for each explanation in the collection."""
         return [
             # pylint: disable=protected-access
-            explanation._get_rules()
+            explanation.get_rules()
             for explanation in self.explanations
         ]
 
@@ -914,7 +905,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             )
         return self.explanations[index]
 
-    def _is_alternative(self):
+    def is_alternative(self):
         """Return True when the collection represents an alternative explanation workflow."""
         return isinstance(
             self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer)
@@ -1121,7 +1112,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         list of lime.Explanation
             List of LIME explanation objects with the same values as the `CalibratedExplanations`.
         """
-        _, lime_exp = self.calibrated_explainer._preload_lime()  # pylint: disable=protected-access
+        _, lime_exp = self.calibrated_explainer.preload_lime()
         exp = []
         for explanation in self.explanations:  # range(len(self.x[:,0])):
             tmp = deepcopy(lime_exp)
@@ -1143,8 +1134,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 if num_features_to_show is not None
                 else self.calibrated_explainer.num_features
             )
-            features_to_plot = explanation._rank_features(feature_weights, num_to_show=num_to_show)
-            rules = explanation._define_conditions()
+            features_to_plot = explanation.rank_features(feature_weights, num_to_show=num_to_show)
+            define_conditions = getattr(explanation, "define_conditions", None)
+            if define_conditions is None:
+                define_conditions = getattr(explanation, "_define_conditions", None)
+            rules = define_conditions() if define_conditions is not None else []
             for j, f in enumerate(features_to_plot[::-1]):  # pylint: disable=invalid-name
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             del tmp.local_exp[1][num_to_show:]
@@ -1161,7 +1155,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         shap.Explanation
             SHAP explanation object with the same values as the explanation.
         """
-        _, shap_exp = self.calibrated_explainer._preload_shap()  # pylint: disable=protected-access
+        _, shap_exp = self.calibrated_explainer.preload_shap()
         shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
         shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
         shap_exp.data = self.x_test
@@ -1332,6 +1326,11 @@ class FrozenCalibratedExplainer:
         self._explainer = deepcopy(explainer)
 
     @property
+    def explainer(self):
+        """Return the wrapped explainer instance."""
+        return self._explainer
+
+    @property
     def x_cal(self):
         """
         Retrieves the calibrated feature matrix from the underlying explainer.
@@ -1490,34 +1489,13 @@ class FrozenCalibratedExplainer:
         return self._explainer.discretizer
 
     @property
-    def _discretize(self):
-        """
-        Retrieves the discretize function from the underlying explainer.
-
-        This property provides access to the discretize function used by the explainer, allowing users to understand the discretization process.
-
-        Returns
-        -------
-            function: The discretize function used by the explainer.
-        """
-        return self._explainer._discretize  # pylint: disable=protected-access
-
-    @property
     def discretize(self):
         """Public accessor for the discretize function (testing helper)."""
-        return self._explainer._discretize  # pragma: no cover - thin wrapper
+        return self._explainer.discretize
 
     @property
     def rule_boundaries(self):
-        """
-        Retrieves the boundaries for rules in the explainer from the underlying explainer.
-
-        This property provides access to the boundaries for rules used in the explainer, allowing users to understand the discretization process.
-
-        Returns
-        -------
-            list: The boundaries for rules in the explainer.
-        """
+        """Expose the underlying rule boundaries helper."""
         return self._explainer.rule_boundaries
 
     @property
@@ -1557,12 +1535,12 @@ class FrozenCalibratedExplainer:
         -------
             function: The predict function used by the explainer.
         """
-        return self._explainer._predict  # pylint: disable=protected-access
+        return self._explainer.predict_calibrated
 
     @property
     def predict(self):
         """Public accessor for the predict function (testing helper)."""
-        return self._explainer._predict  # pragma: no cover - thin wrapper
+        return self._explainer.predict_calibrated
 
     @property
     def _preload_lime(self):
@@ -1575,30 +1553,17 @@ class FrozenCalibratedExplainer:
         -------
             function: The preload_lime function used by the explainer.
         """
-        return self._explainer._preload_lime  # pylint: disable=protected-access
+        return self._explainer.preload_lime
 
     @property
     def preload_lime(self):
         """Public accessor for the lime preload helper (testing helper)."""
-        return self._explainer._preload_lime  # pragma: no cover - thin wrapper
-
-    @property
-    def _preload_shap(self):
-        """
-        Retrieves the preload_shap function from the underlying explainer.
-
-        This property provides access to the preload_shap function used by the explainer, allowing users to understand the prediction process.
-
-        Returns
-        -------
-            function: The preload_shap function used by the explainer.
-        """
-        return self._explainer._preload_shap  # pylint: disable=protected-access
+        return self._explainer.preload_lime
 
     @property
     def preload_shap(self):
         """Public accessor for the shap preload helper (testing helper)."""
-        return self._explainer._preload_shap  # pragma: no cover - thin wrapper
+        return self._explainer.preload_shap
 
     def __setattr__(self, key, value):
         """Prevent modification of attributes except for '_explainer'."""

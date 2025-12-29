@@ -130,7 +130,7 @@ def collect_legacy_summary(
         record("fill_betweenx")
         mp.setattr(Figure, "show", lambda self, *args, **kwargs: None)
 
-        legacy_plotting._plot_alternative(
+        legacy_plotting.plot_alternative(
             explanation=explanation,
             instance=as_float_list(case.instance),
             predict=dict(case.predict),
@@ -244,7 +244,7 @@ def collect_plotspec_summary(
 
         mp.setattr("calibrated_explanations.viz.matplotlib_adapter.render", capture)
 
-        plotspec_plotting._plot_alternative(
+        plotspec_plotting.plot_alternative(
             explanation=explanation,
             instance=as_float_list(case.instance),
             predict=dict(case.predict),

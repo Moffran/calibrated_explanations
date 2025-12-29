@@ -24,7 +24,7 @@ import numpy as np
 from .legacy import plotting as legacy
 
 
-def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
+def derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
     """Return positive/negative labels summarising a regression threshold."""
     try:
         if (
@@ -127,6 +127,26 @@ def _format_save_path(base_path: Any, filename: str) -> str:
             return f"{base_path}{filename}"
         return str(Path(base_path) / filename)
     return str(Path(str(base_path)) / filename)
+
+
+def _resolve_explainer_from_explanation(explanation: Any) -> Any:
+    """Best-effort resolver for explanation -> explainer references."""
+    getter = getattr(explanation, "get_explainer", None)
+    if callable(getter):
+        return getter()
+    getter = getattr(explanation, "_get_explainer", None)
+    if callable(getter):
+        return getter()
+    container = getattr(explanation, "calibrated_explanations", None)
+    if container is not None:
+        getter = getattr(container, "get_explainer", None)
+        if callable(getter):
+            return getter()
+        getter = getattr(container, "_get_explainer", None)
+        if callable(getter):
+            return getter()
+        return getattr(container, "calibrated_explainer", None)
+    return None
 
 
 def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
@@ -311,7 +331,7 @@ def __setup_plot_style(style_override=None):
     return config
 
 
-def _plot_probabilistic(
+def plot_probabilistic(
     explanation,
     instance,
     predict,
@@ -359,17 +379,13 @@ def _plot_probabilistic(
         The index for interval plotting.
     save_ext : list, optional
         The list of file extensions to save the plot.
+    style_override : str, optional
+        The style to use for plotting.
+    use_legacy : bool, optional
+        Whether to use the legacy plotting system.
     """
-    explainer = None
+    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        try:
-            explainer = explanation._get_explainer()
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            explainer = getattr(explanation, "calibrated_explanations", None)
-            if explainer is not None:
-                explainer = getattr(explainer, "calibrated_explainer", None)
         if explainer is not None:
             chain = _resolve_plot_style_chain(explainer, style_override)
         else:
@@ -493,11 +509,10 @@ def _plot_probabilistic(
             pos_caption = "P(y<=threshold)"
     else:
         is_multiclass = False
-        try:
-            is_multiclass = explanation._get_explainer().is_multiclass()  # type: ignore[attr-defined]
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
+        if explainer is not None:
+            with contextlib.suppress(Exception):
+                is_multiclass = bool(explainer.is_multiclass())
+        if not is_multiclass:
             is_multiclass = bool(getattr(explanation, "is_multiclass", False))
 
         if class_labels is None:
@@ -602,7 +617,7 @@ def _plot_probabilistic(
 
 
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
-def _plot_regression(
+def plot_regression(
     explanation,
     instance,
     predict,
@@ -663,16 +678,8 @@ def _plot_regression(
             # If the guard fails unexpectedly, defer to legacy parity by proceeding.
             logging.getLogger(__name__).debug("Guard check failed: %s", sys.exc_info()[1])
 
-    explainer = None
+    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        try:
-            explainer = explanation._get_explainer()
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            explainer = getattr(explanation, "calibrated_explanations", None)
-            if explainer is not None:
-                explainer = getattr(explainer, "calibrated_explainer", None)
         if explainer is not None:
             chain = _resolve_plot_style_chain(explainer, style_override)
         else:
@@ -683,7 +690,7 @@ def _plot_regression(
         selected_style = None
 
     if use_legacy:
-        legacy._plot_regression(
+        legacy.plot_regression(
             explanation,
             instance,
             predict,
@@ -751,7 +758,7 @@ def _plot_regression(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
-        legacy._plot_regression(
+        legacy.plot_regression(
             explanation,
             instance,
             predict,
@@ -770,7 +777,7 @@ def _plot_regression(
 
 
 # pylint: disable=duplicate-code
-def _plot_triangular(
+def plot_triangular(
     explanation,
     proba,
     uncertainty,
@@ -811,7 +818,7 @@ def _plot_triangular(
         The list of file extensions to save the plot.
     """
     if use_legacy:
-        legacy._plot_triangular(
+        legacy.plot_triangular(
             explanation,
             proba,
             uncertainty,
@@ -884,16 +891,8 @@ def __plot_proba_triangle():
     plt.plot((x + 0.5 - x) / (1 + x), x, color="black")
 
 
-def plot_alternative(*args, **kwargs):
-    """Public wrapper for the legacy `_plot_alternative` function.
-
-    Prefer this function in tests instead of accessing private `_plot_alternative`.
-    """
-    return _plot_alternative(*args, **kwargs)
-
-
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
-def _plot_alternative(
+def plot_alternative(
     explanation,
     instance,
     predict,
@@ -936,16 +935,8 @@ def _plot_alternative(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-    explainer = None
+    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        try:
-            explainer = explanation._get_explainer()
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            explainer = getattr(explanation, "calibrated_explanations", None)
-            if explainer is not None:
-                explainer = getattr(explainer, "calibrated_explainer", None)
         if explainer is not None:
             chain = _resolve_plot_style_chain(explainer, style_override)
         else:
@@ -956,7 +947,7 @@ def _plot_alternative(
         selected_style = None
 
     if use_legacy:
-        legacy._plot_alternative(
+        legacy.plot_alternative(
             explanation,
             instance,
             predict,
@@ -1309,7 +1300,7 @@ def _plot_alternative(
         if is_regression:
             if is_thresholded:
                 threshold_value = getattr(explanation, "y_threshold", None)
-                pos_label, neg_label = _derive_threshold_labels(threshold_value)
+                pos_label, neg_label = derive_threshold_labels(threshold_value)
                 classification_kwargs = builder_kwargs.copy()
                 classification_kwargs["neg_label"] = neg_label
                 classification_kwargs["pos_label"] = pos_label
@@ -1353,7 +1344,7 @@ def _plot_alternative(
                 f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
                 stacklevel=2,
             )
-            legacy._plot_alternative(
+            legacy.plot_alternative(
                 explanation,
                 instance,
                 predict,
@@ -1373,7 +1364,7 @@ def _plot_alternative(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
-        legacy._plot_alternative(
+        legacy.plot_alternative(
             explanation,
             instance,
             predict,
@@ -1390,7 +1381,7 @@ def _plot_alternative(
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
+def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """
     Generate a global explanation plot for the given test data.
 
@@ -1417,7 +1408,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
     # style_override = kwargs.get("style_override")
     use_legacy = kwargs.get("use_legacy", True)
     if use_legacy:
-        legacy._plot_global(explainer, x, y, threshold, **kwargs)
+        legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
 
     style = kwargs.get("style")

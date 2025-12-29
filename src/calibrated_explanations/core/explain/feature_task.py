@@ -114,7 +114,7 @@ def assign_weight(
     return [prediction[i] - ip for i, ip in enumerate(instance_predict)]
 
 
-def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
+def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
     (
         feature_index,
@@ -646,4 +646,4 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
 
 # Alias for backward compatibility
-execute_feature_task = _feature_task
+execute_feature_task = feature_task

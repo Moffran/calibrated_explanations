@@ -142,42 +142,42 @@ class TestExecutionStrategyPluginAttributes:
         plugin = SequentialExplanationPlugin()
         assert plugin._mode == "factual"
         assert plugin._explanation_attr == "explain_factual"
-        assert plugin._execution_plugin_class is not None
+        assert plugin.execution_plugin_class is not None
 
     # def test_feature_parallel_factual_plugin_attributes(self):
     #     """Feature-parallel factual plugin should have correct base attributes."""
     #     plugin = FeatureParallelExplanationPlugin()
     #     assert plugin._mode == "factual"
     #     assert plugin._explanation_attr == "explain_factual"
-    #     assert plugin._execution_plugin_class is not None
+    #     assert plugin.execution_plugin_class is not None
 
     def test_instance_parallel_factual_plugin_attributes(self):
         """Instance-parallel factual plugin should have correct base attributes."""
         plugin = InstanceParallelExplanationPlugin()
         assert plugin._mode == "factual"
         assert plugin._explanation_attr == "explain_factual"
-        assert plugin._execution_plugin_class is not None
+        assert plugin.execution_plugin_class is not None
 
     def test_sequential_alternative_plugin_attributes(self):
         """Sequential alternative plugin should have correct base attributes."""
         plugin = SequentialAlternativeExplanationPlugin()
         assert plugin._mode == "alternative"
         assert plugin._explanation_attr == "explore_alternatives"
-        assert plugin._execution_plugin_class is not None
+        assert plugin.execution_plugin_class is not None
 
     # def test_feature_parallel_alternative_plugin_attributes(self):
     #     """Feature-parallel alternative plugin should have correct base attributes."""
     #     plugin = FeatureParallelAlternativeExplanationPlugin()
     #     assert plugin._mode == "alternative"
     #     assert plugin._explanation_attr == "explore_alternatives"
-    #     assert plugin._execution_plugin_class is not None
+    #     assert plugin.execution_plugin_class is not None
 
     def test_instance_parallel_alternative_plugin_attributes(self):
         """Instance-parallel alternative plugin should have correct base attributes."""
         plugin = InstanceParallelAlternativeExplanationPlugin()
         assert plugin._mode == "alternative"
         assert plugin._explanation_attr == "explore_alternatives"
-        assert plugin._execution_plugin_class is not None
+        assert plugin.execution_plugin_class is not None
 
 
 class TestPluginSupportsMode:
@@ -216,23 +216,23 @@ class TestExecutionPluginClassConfiguration:
     def test_sequential_loads_sequential_executor_class(self):
         """Sequential wrapper should load SequentialExplainExecutor."""
         plugin = SequentialExplanationPlugin()
-        assert plugin._execution_plugin_class is not None
+        assert plugin.execution_plugin_class is not None
         # Verify the class name matches
-        assert "Sequential" in plugin._execution_plugin_class.__name__
+        assert "Sequential" in plugin.execution_plugin_class.__name__
 
     # def test_feature_parallel_loads_feature_executor_class(self):
     #     """Feature-parallel wrapper should load FeatureParallelExplainExecutor."""
     #     plugin = FeatureParallelExplanationPlugin()
-    #     assert plugin._execution_plugin_class is not None
+    #     assert plugin.execution_plugin_class is not None
     #     # Verify the class name matches
-    #     assert "FeatureParallel" in plugin._execution_plugin_class.__name__
+    #     assert "FeatureParallel" in plugin.execution_plugin_class.__name__
 
     def test_instance_parallel_loads_instance_executor_class(self):
         """Instance-parallel wrapper should load InstanceParallelExplainExecutor."""
         plugin = InstanceParallelExplanationPlugin()
-        assert plugin._execution_plugin_class is not None
+        assert plugin.execution_plugin_class is not None
         # Verify the class name matches
-        assert "InstanceParallel" in plugin._execution_plugin_class.__name__
+        assert "InstanceParallel" in plugin.execution_plugin_class.__name__
 
 
 def inc(x: int) -> int:
@@ -318,7 +318,7 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
     )
 
     plugin = InstanceParallelExplanationPlugin()
-    plugin._execution_plugin_class = DummyExecutionPlugin  # type: ignore[assignment]
+    plugin.execution_plugin_class = DummyExecutionPlugin  # type: ignore[assignment]
 
     context = ExplanationContext(
         task="classification",
@@ -383,7 +383,15 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
             self.features_to_ignore = np.array([], dtype=int)
             self.num_features = num_features
             self._feature_filter_config = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
-            self._explanation_orchestrator = self  # self-invoke for FAST
+            from unittest.mock import MagicMock
+
+            self.plugin_manager = MagicMock()
+            self.plugin_manager.explanation_orchestrator = self  # self-invoke for FAST
+
+        @property
+        def feature_filter_config(self):
+            """Expose the feature filter configuration."""
+            return self._feature_filter_config
 
         # Orchestrator-like interface used by the wrapper
         def invoke(
@@ -476,7 +484,7 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
 
             return DummyCollection()
 
-    plugin._execution_plugin_class = NoopExecutionPlugin  # type: ignore[assignment]
+    plugin.execution_plugin_class = NoopExecutionPlugin  # type: ignore[assignment]
 
     plugin.explain_batch("x", request)
 
@@ -550,7 +558,7 @@ def test_should_warn_and_fallback_to_legacy_when_execution_plugin_raises(
             raise RuntimeError("boom")
 
     plugin = InstanceParallelExplanationPlugin()
-    plugin._execution_plugin_class = RaisingExecutionPlugin  # type: ignore[assignment]
+    plugin.execution_plugin_class = RaisingExecutionPlugin  # type: ignore[assignment]
 
     explainer = DummyExplainer()
     context = ExplanationContext(

@@ -135,25 +135,25 @@ def test_map_uses_strategy_and_updates_metrics(monkeypatch, enable_fallbacks):
 def test_resolve_strategy_variants(monkeypatch):
     config = ParallelConfig(enabled=True, strategy="threads")
     executor = ParallelExecutor(config)
-    strategy = executor._resolve_strategy()
+    strategy = executor.resolve_strategy()
     assert isinstance(strategy, partial)
-    assert strategy.func.__name__ == "_thread_strategy"
+    assert strategy.func.__name__ == "thread_strategy"
 
     config.strategy = "processes"
-    strategy = ParallelExecutor(config)._resolve_strategy()
+    strategy = ParallelExecutor(config).resolve_strategy()
     assert strategy.func.__name__ == "_process_strategy"
 
     config.strategy = "joblib"
-    resolved = ParallelExecutor(config)._resolve_strategy()
-    assert resolved.func.__name__ == "_joblib_strategy"
+    resolved = ParallelExecutor(config).resolve_strategy()
+    assert resolved.func.__name__ == "joblib_strategy"
 
     config.strategy = "sequential"
-    strategy = ParallelExecutor(config)._resolve_strategy()
+    strategy = ParallelExecutor(config).resolve_strategy()
     assert strategy.func.__name__ == "_serial_strategy"
 
     config.strategy = "auto"
     monkeypatch.setattr(executor, "_auto_strategy", lambda **k: "threads")
-    assert executor._resolve_strategy().func.__name__ == "_thread_strategy"
+    assert executor.resolve_strategy().func.__name__ == "thread_strategy"
 
 
 def test_instance_minimum_overrides_min_batch(monkeypatch):
@@ -219,20 +219,20 @@ def test_auto_strategy(monkeypatch):
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
-    assert executor._auto_strategy() == "threads"
+    assert executor.auto_strategy() == "threads"
 
     # Joblib is preferred even on Windows
     MockOS.cpu_count = lambda: 8
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._JoblibParallel", object(), raising=False
     )
-    assert executor._auto_strategy() == "joblib"
+    assert executor.auto_strategy() == "joblib"
 
     # Without joblib fall back to threads on Windows (spawn is slow)
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
-    assert executor._auto_strategy() == "threads"
+    assert executor.auto_strategy() == "threads"
 
 
 def test_auto_strategy_work_items(monkeypatch):
@@ -260,8 +260,8 @@ def test_auto_strategy_work_items(monkeypatch):
     config = ParallelConfig(enabled=True, strategy="auto", min_batch_size=16)
     executor = ParallelExecutor(config)
 
-    assert executor._auto_strategy(work_items=10) == "sequential"
-    assert executor._auto_strategy(work_items=4000) == "processes"
+    assert executor.auto_strategy(work_items=10) == "sequential"
+    assert executor.auto_strategy(work_items=4000) == "processes"
 
     class MockOS:
         name = "posix"
@@ -279,7 +279,7 @@ def test_auto_strategy_work_items(monkeypatch):
         "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
     executor.config.granularity = "instance"
-    assert executor._auto_strategy(work_items=60000) == "processes"
+    assert executor.auto_strategy(work_items=60000) == "processes"
 
 
 def test_resolve_strategy_forwards_work_items(monkeypatch):
@@ -293,10 +293,10 @@ def test_resolve_strategy_forwards_work_items(monkeypatch):
         return "threads"
 
     monkeypatch.setattr(executor, "_auto_strategy", fake_auto_strategy)
-    strategy = executor._resolve_strategy(work_items=123)
+    strategy = executor.resolve_strategy(work_items=123)
 
     assert captured["work_items"] == 123
-    assert strategy.func.__name__ == "_thread_strategy"
+    assert strategy.func.__name__ == "thread_strategy"
 
 
 def test_map_passes_work_items_to_resolver(monkeypatch):
@@ -334,7 +334,7 @@ def test_thread_strategy(monkeypatch):
     )
     config = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
     executor = ParallelExecutor(config)
-    results = executor._thread_strategy(echo, [1, 2, 3])
+    results = executor.thread_strategy(echo, [1, 2, 3])
     assert results == [1, 2, 3]
     assert captured["max_workers"] == 2
 
@@ -371,11 +371,11 @@ def test_joblib_strategy(monkeypatch):
         calls["thread"] = True
         return [fn(item) for item in items]
 
-    monkeypatch.setattr(executor, "_thread_strategy", fake_thread)
+    monkeypatch.setattr(executor, "thread_strategy", fake_thread)
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
-    assert executor._joblib_strategy(echo, [1, 2]) == [1, 2]
+    assert executor.joblib_strategy(echo, [1, 2]) == [1, 2]
     assert calls["thread"]
 
     class FakeParallel:
@@ -396,7 +396,7 @@ def test_joblib_strategy(monkeypatch):
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._joblib_delayed", fake_delayed, raising=False
     )
-    result = executor._joblib_strategy(echo, [1, 2, 3])
+    result = executor.joblib_strategy(echo, [1, 2, 3])
     assert result == [1, 2, 3]
 
 
@@ -436,8 +436,8 @@ def test_parallel_executor_context_manager_initializes_and_cleans_up(monkeypatch
     )
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
     with ParallelExecutor(cfg) as executor:
-        assert isinstance(executor._pool, RecordingPool)
-        assert executor._active_strategy_name == "threads"
+        assert isinstance(executor.pool, RecordingPool)
+        assert executor.active_strategy_name == "threads"
     assert shutdown_calls == [1]
 
 
@@ -454,8 +454,8 @@ def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, ena
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
     executor = ParallelExecutor(cfg)
     with pytest.warns(UserWarning, match="Failed to initialize parallel pool"), executor as ctx:
-        assert ctx._active_strategy_name == "sequential"
-        assert ctx._pool is None
+        assert ctx.active_strategy_name == "sequential"
+        assert ctx.pool is None
 
 
 def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):
@@ -463,9 +463,9 @@ def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):
 
     def fake_cancel(self):
         cancel_calls.append(True)
-        if self._pool is not None and hasattr(self._pool, "shutdown"):
-            self._pool.shutdown(wait=False, cancel_futures=True)
-        self._pool = None
+        if self.pool is not None and hasattr(self.pool, "shutdown"):
+            self.pool.shutdown(wait=False, cancel_futures=True)
+        self.pool = None
 
     monkeypatch.setattr(ParallelExecutor, "cancel", fake_cancel)
 
@@ -500,10 +500,10 @@ def test_parallel_executor_cancel_handles_missing_cancel_futures():
                 raise TypeError("unsupported")
 
     pool = LegacyPool()
-    executor._pool = pool
+    executor.pool = pool
     executor.cancel()
     assert pool.calls == [(False, True), (False, None)]
-    assert executor._pool is None
+    assert executor.pool is None
 
 
 def test_parallel_executor_joblib_pool_reuse(monkeypatch):
@@ -544,11 +544,11 @@ def test_parallel_executor_joblib_pool_reuse(monkeypatch):
     cfg = ParallelConfig(enabled=True, strategy="joblib", max_workers=2, min_batch_size=1)
     executor = ParallelExecutor(cfg)
     with executor as ctx:
-        assert isinstance(ctx._pool, FakeParallel)
-        assert ctx._pool.entered is True
-        result = ctx._joblib_strategy(lambda x: x + 1, [1, 2, 3])
+        assert isinstance(ctx.pool, FakeParallel)
+        assert ctx.pool.entered is True
+        result = ctx.joblib_strategy(lambda x: x + 1, [1, 2, 3])
         assert result == [2, 3, 4]
-    assert executor._pool is None
+    assert executor.pool is None
 
 
 def fake_path_factory(entries: dict[str, str]):
@@ -637,23 +637,23 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
         staticmethod(lambda: None),
     )
 
-    assert executor._auto_strategy(work_items=1) == "sequential"
+    assert executor.auto_strategy(work_items=1) == "sequential"
     assert events[-1]["reason"] == "tiny_workload"
 
     monkeypatch.setenv("CI", "true")
-    assert executor._auto_strategy() == "sequential"
+    assert executor.auto_strategy() == "sequential"
     assert events[-1]["reason"] == "ci_environment"
     monkeypatch.delenv("CI")
     # Also ensure GITHUB_ACTIONS is not interfering if running in real CI
     monkeypatch.setattr(ParallelExecutor, "_is_ci_environment", staticmethod(lambda: False))
 
     cfg.task_size_hint_bytes = 12 * 1024 * 1024
-    assert executor._auto_strategy() == "threads"
+    assert executor.auto_strategy() == "threads"
     assert events[-1]["reason"] == "large_task_size"
     cfg.task_size_hint_bytes = 0
 
-    assert executor._auto_strategy(work_items=2000) == "sequential"
+    assert executor.auto_strategy(work_items=2000) == "sequential"
     assert events[-1]["reason"] == "small_workload"
 
-    assert executor._auto_strategy(work_items=70000) == "processes"
+    assert executor.auto_strategy(work_items=70000) == "processes"
     assert events[-1]["reason"] == "large_instance_workload"

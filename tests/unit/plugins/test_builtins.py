@@ -12,19 +12,19 @@ from calibrated_explanations.explanations.explanation import FactualExplanation
 
 
 def test_derive_threshold_labels_scalar():
-    pos, neg = builtins._derive_threshold_labels(0.5)
+    pos, neg = builtins.derive_threshold_labels(0.5)
     assert pos == "Y < 0.50"
     assert neg == "Y ≥ 0.50"
 
 
 def test_derive_threshold_labels_interval():
-    pos, neg = builtins._derive_threshold_labels((0.2, 0.8))
+    pos, neg = builtins.derive_threshold_labels((0.2, 0.8))
     assert pos == "0.20 <= Y < 0.80"
     assert neg == "Outside interval"
 
 
 def test_derive_threshold_labels_invalid():
-    pos, neg = builtins._derive_threshold_labels("invalid")
+    pos, neg = builtins.derive_threshold_labels("invalid")
     assert pos == "Target within threshold"
     assert neg == "Outside threshold"
 
@@ -34,7 +34,7 @@ def test_collection_to_batch_empty():
     collection.explanations = []
     collection.mode = "factual"
 
-    batch = builtins._collection_to_batch(collection)
+    batch = builtins.collection_to_batch(collection)
     assert batch.collection_metadata["mode"] == "factual"
     assert batch.explanation_cls == FactualExplanation
     assert len(batch.instances) == 0
@@ -46,7 +46,7 @@ def test_collection_to_batch_with_items():
     collection.explanations = [exp1]
     collection.mode = "factual"
 
-    batch = builtins._collection_to_batch(collection)
+    batch = builtins.collection_to_batch(collection)
     assert batch.explanation_cls is type(exp1)
     assert len(batch.instances) == 1
     assert batch.instances[0]["explanation"] == exp1

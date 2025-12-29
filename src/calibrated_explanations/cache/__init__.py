@@ -17,8 +17,8 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         CalibratorCache,
         LRUCache,
         TelemetryCallback,
-        _default_size_estimator,
-        _hash_part,
+        default_size_estimator,
+        hash_part,
         make_key,
     )
     from .explanation_cache import ExplanationCacheFacade
@@ -31,8 +31,8 @@ __all__ = (
     "ExplanationCacheFacade",
     "LRUCache",
     "TelemetryCallback",
-    "_default_size_estimator",
-    "_hash_part",
+    "default_size_estimator",
+    "hash_part",
     "make_key",
 )
 
@@ -42,8 +42,8 @@ _NAME_TO_MODULE = {
     "CalibratorCache": ("cache", "CalibratorCache"),
     "LRUCache": ("cache", "LRUCache"),
     "TelemetryCallback": ("cache", "TelemetryCallback"),
-    "_default_size_estimator": ("cache", "_default_size_estimator"),
-    "_hash_part": ("cache", "_hash_part"),
+    "default_size_estimator": ("cache", "default_size_estimator"),
+    "hash_part": ("cache", "hash_part"),
     "make_key": ("cache", "make_key"),
     "ExplanationCacheFacade": ("explanation_cache", "ExplanationCacheFacade"),
 }

@@ -28,40 +28,40 @@ def reset_deprecation_state():
 
 
 class TestShouldRaise:
-    """Tests for _should_raise() function."""
+    """Tests for should_raise() function."""
 
     def test_should_raise_when_ce_deprecations_is_error(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='error'."""
+        """should_raise() should return True when CE_DEPRECATIONS='error'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}):
             assert _should_raise() is True
 
     def test_should_raise_when_ce_deprecations_is_raise(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='raise'."""
+        """should_raise() should return True when CE_DEPRECATIONS='raise'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "raise"}):
             assert _should_raise() is True
 
     def test_should_raise_when_ce_deprecations_is_true(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='true'."""
+        """should_raise() should return True when CE_DEPRECATIONS='true'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "true"}):
             assert _should_raise() is True
 
     def test_should_raise_when_ce_deprecations_is_1(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='1'."""
+        """should_raise() should return True when CE_DEPRECATIONS='1'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "1"}):
             assert _should_raise() is True
 
     def test_should_not_raise_when_ce_deprecations_unset(self):
-        """_should_raise() should return False when CE_DEPRECATIONS is not set."""
+        """should_raise() should return False when CE_DEPRECATIONS is not set."""
         with patch.dict(os.environ, {}, clear=True):
             assert _should_raise() is False
 
     def test_should_not_raise_when_ce_deprecations_is_false(self):
-        """_should_raise() should return False for other values."""
+        """should_raise() should return False for other values."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "false"}):
             assert _should_raise() is False
 
     def test_should_not_raise_during_pytest_without_ci(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='error' even during pytest."""
+        """should_raise() should return True when CE_DEPRECATIONS='error' even during pytest."""
         # Note: The current implementation always honors CE_DEPRECATIONS when set to error values,
         # regardless of pytest or CI status (per ADR requirements).
         env = {
@@ -69,12 +69,12 @@ class TestShouldRaise:
             "PYTEST_CURRENT_TEST": "test_module.py::test_func",
         }
         with patch.dict(os.environ, env):
-            # When CE_DEPRECATIONS="error" is set, _should_raise() should return True
+            # When CE_DEPRECATIONS="error" is set, should_raise() should return True
             # regardless of pytest or CI status
             assert _should_raise() is True
 
     def test_should_raise_during_ci_with_pytest(self):
-        """_should_raise() should return True during CI with pytest when CE_DEPRECATIONS='error'."""
+        """should_raise() should return True during CI with pytest when CE_DEPRECATIONS='error'."""
         env = {
             "CE_DEPRECATIONS": "error",
             "PYTEST_CURRENT_TEST": "test_module.py::test_func",

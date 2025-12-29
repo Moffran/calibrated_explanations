@@ -146,7 +146,7 @@ class LimePipeline:
             )
 
         # Validate Mondrian categories if applicable
-        if self.explainer._is_mondrian():
+        if self.explainer.is_mondrian():
             if bins is None:
                 raise ValidationError(
                     "The bins parameter must be specified for Mondrian explanations."
@@ -207,7 +207,7 @@ class LimePipeline:
         ]
 
         # Get predictions for the instances
-        predict, low, high, predicted_class = self.explainer._predict(
+        predict, low, high, predicted_class = self.explainer.predict_calibrated(
             x_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
         )
         prediction["predict"] = predict
@@ -226,7 +226,7 @@ class LimePipeline:
 
         # Define probability functions for LIME
         def low_proba(x_data):
-            _, low_vals, _, _ = self.explainer._predict(
+            _, low_vals, _, _ = self.explainer.predict_calibrated(
                 x_data,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,
@@ -235,7 +235,7 @@ class LimePipeline:
             return np.asarray([[1 - l, l] for l in low_vals])  # noqa: E741
 
         def high_proba(x_data):
-            _, _, high_vals, _ = self.explainer._predict(
+            _, _, high_vals, _ = self.explainer.predict_calibrated(
                 x_data,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,

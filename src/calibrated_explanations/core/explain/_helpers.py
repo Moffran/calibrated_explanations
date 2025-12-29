@@ -257,7 +257,7 @@ def feature_effect_for_index(
     baseline_prediction: Mapping[str, Any],
 ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Compute feature-level contributions for a single feature index."""
-    local_predict, local_low, local_high, _ = explainer._predict(
+    local_predict, local_low, local_high, _ = explainer.predict_calibrated(
         x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,

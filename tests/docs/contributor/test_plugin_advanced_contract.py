@@ -289,7 +289,7 @@ class TestMethodEPluginMetadata:
         )
 
         # Verify that plugin metadata was used
-        assert explainer._explanation_plugin_overrides["factual"] == "core.explanation.factual"
+        assert explainer.explanation_plugin_overrides["factual"] == "core.explanation.factual"
 
         # Generate explanations
         explanations = explainer.explain_factual(x_test[:3])

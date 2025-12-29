@@ -30,9 +30,9 @@ class TestCalibratedExplainerParallelEnv:
         with patch.dict(os.environ, {"CE_PARALLEL": "enable,threads"}):
             explainer = CalibratedExplainer(learner, x, y)
 
-            assert explainer._perf_parallel is not None
-            assert explainer._perf_parallel.config.enabled is True
-            assert explainer._perf_parallel.config.strategy == "threads"
+            assert explainer.parallel_executor is not None
+            assert explainer.parallel_executor.config.enabled is True
+            assert explainer.parallel_executor.config.strategy == "threads"
 
     def test_should_not_enable_parallel_executor_when_env_var_is_missing(
         self, simple_learner_and_data
@@ -49,7 +49,7 @@ class TestCalibratedExplainerParallelEnv:
 
             explainer = CalibratedExplainer(learner, x, y)
 
-            assert explainer._perf_parallel is None
+            assert explainer.parallel_executor is None
 
     def test_should_respect_explicit_perf_parallel_over_env_var(self, simple_learner_and_data):
         """Verify that explicit perf_parallel argument takes precedence."""
@@ -69,5 +69,5 @@ class TestCalibratedExplainerParallelEnv:
 
             explainer = CalibratedExplainer(learner, x, y, perf_parallel=disabled_executor)
 
-            assert explainer._perf_parallel is disabled_executor
-            assert explainer._perf_parallel.config.enabled is False
+            assert explainer.parallel_executor is disabled_executor
+            assert explainer.parallel_executor.config.enabled is False

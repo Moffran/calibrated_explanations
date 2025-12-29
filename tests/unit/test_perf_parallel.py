@@ -132,9 +132,9 @@ class TestParallelExecutor:
         with patch("os.name", "nt"), patch(
             "calibrated_explanations.parallel.parallel._JoblibParallel", None
         ), patch.object(ParallelExecutor, "_is_ci_environment", return_value=False):
-            strategy = executor._resolve_strategy()
+            strategy = executor.resolve_strategy()
             # Should resolve to thread strategy partial
-            assert strategy.func == executor._thread_strategy
+            assert strategy.func == executor.thread_strategy
 
     def test_strategy_auto_selection_low_cpu(self):
         """Test auto strategy selects threads on low CPU count."""
@@ -143,8 +143,8 @@ class TestParallelExecutor:
         with patch("os.name", "posix"), patch("os.cpu_count", return_value=2), patch.object(
             ParallelExecutor, "_is_ci_environment", return_value=False
         ):
-            strategy = executor._resolve_strategy()
-            assert strategy.func == executor._thread_strategy
+            strategy = executor.resolve_strategy()
+            assert strategy.func == executor.thread_strategy
 
     def test_strategy_auto_selection_joblib(self):
         """Test auto strategy prefers joblib when available and CPUs > 2."""
@@ -154,8 +154,8 @@ class TestParallelExecutor:
         with patch("os.name", "posix"), patch("os.cpu_count", return_value=4), patch(
             "calibrated_explanations.parallel.parallel._JoblibParallel", new=MagicMock()
         ), patch.object(ParallelExecutor, "_is_ci_environment", return_value=False):
-            strategy = executor._resolve_strategy()
-            assert strategy.func == executor._joblib_strategy
+            strategy = executor.resolve_strategy()
+            assert strategy.func == executor.joblib_strategy
 
     def test_joblib_missing_fallback(self, enable_fallbacks):
         """Test fallback to threads if joblib is requested but missing."""
@@ -163,10 +163,10 @@ class TestParallelExecutor:
         executor = ParallelExecutor(cfg)
         # Force joblib to be None
         with patch("calibrated_explanations.parallel.parallel._JoblibParallel", None), patch.object(
-            executor, "_thread_strategy"
+            executor, "thread_strategy"
         ) as mock_thread:
             with pytest.warns(UserWarning, match=r"fall.*back"):
-                executor._joblib_strategy(lambda x: x, [1])
+                executor.joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
 
     def test_telemetry_emission(self, enable_fallbacks):
@@ -247,7 +247,7 @@ class TestParallelExecutor:
         executor = ParallelExecutor(cfg)
 
         items = list(range(10))
-        results = executor._thread_strategy(lambda x: x * 3, items)
+        results = executor.thread_strategy(lambda x: x * 3, items)
         assert results == [x * 3 for x in items]
 
     def test_serial_strategy_execution(self):

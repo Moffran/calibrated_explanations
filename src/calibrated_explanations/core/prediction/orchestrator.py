@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
-from ...core.config_helpers import coerce_string_tuple
 from ...plugins import (
     IntervalCalibratorContext,
     ensure_builtin_plugins,
@@ -35,6 +34,7 @@ from ...plugins import (
 )
 from ...utils import assert_threshold
 from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
+from .validation import check_interval_runtime_metadata
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -79,7 +79,7 @@ class PredictionOrchestrator:
         # Initialize interval registry for managing interval learner lifecycle
         from .interval_registry import IntervalRegistry
 
-        self._interval_registry = IntervalRegistry(explainer)
+        self.interval_registry = IntervalRegistry(explainer)
         self._logger = logging.getLogger(__name__)
 
     def initialize_chains(self) -> None:
@@ -93,7 +93,7 @@ class PredictionOrchestrator:
         This method is called during explainer initialization to pre-compute the
         interval calibrator plugin resolution chains for default and fast modes.
         """
-        self.explainer._plugin_manager.initialize_chains()
+        self.explainer.plugin_manager.initialize_chains()
 
     def predict(
         self,
@@ -154,7 +154,7 @@ class PredictionOrchestrator:
         Checks performance cache before delegating to actual prediction logic.
         Stores results in cache after successful prediction.
         """
-        cache = getattr(self.explainer, "_perf_cache", None)
+        cache = getattr(self.explainer, "perf_cache", None)
         cache_enabled = getattr(cache, "enabled", False)
         key_parts = None
         if cache_enabled:
@@ -243,6 +243,27 @@ class PredictionOrchestrator:
         feature=None,
         **kwargs,
     ):
+        """Backwards-compatible alias for predict_impl."""
+        return self.predict_impl(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            classes=classes,
+            bins=bins,
+            feature=feature,
+            **kwargs,
+        )
+
+    def predict_impl(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        classes=None,
+        bins=None,
+        feature=None,
+        **kwargs,
+    ):
         """Execute the internal prediction method for classification and regression cases.
 
         For classification:
@@ -293,7 +314,7 @@ class PredictionOrchestrator:
         kwargs.pop("style_override", None)
         if bins is not None:
             bins = np.asarray(bins)
-        if not self.explainer._CalibratedExplainer__initialized:
+        if not self.explainer.initialized:
             raise NotFittedError("The learner must be initialized before calling predict.")
         if feature is None and self.explainer.is_fast():
             feature = self.explainer.num_features  # Use the calibrator defined using X_cal
@@ -438,35 +459,44 @@ class PredictionOrchestrator:
 
         return None, None, None, None  # Should never happen
 
-    def _ensure_interval_runtime_state(self) -> None:
+    def ensure_interval_runtime_state(self) -> None:
         """Ensure interval tracking members exist for legacy instances."""
-        if not self.explainer._interval_plugin_hints:
-            self.explainer._interval_plugin_hints = {}
-        if not self.explainer._interval_plugin_fallbacks:
-            self.explainer._interval_plugin_fallbacks = {}
-        if not self.explainer._interval_plugin_identifiers:
-            self.explainer._interval_plugin_identifiers = {"default": None, "fast": None}
-        if not self.explainer._telemetry_interval_sources:
-            self.explainer._telemetry_interval_sources = {"default": None, "fast": None}
-        if not self.explainer._interval_preferred_identifier:
-            self.explainer._interval_preferred_identifier = {"default": None, "fast": None}
-        if not self.explainer._interval_context_metadata:
-            self.explainer._interval_context_metadata = {"default": {}, "fast": {}}
+        if not self.explainer.plugin_manager.interval_plugin_hints:
+            self.explainer.plugin_manager.interval_plugin_hints = {}
+        if not self.explainer.plugin_manager.interval_plugin_fallbacks:
+            self.explainer.plugin_manager.interval_plugin_fallbacks = {}
+        if not self.explainer.plugin_manager.interval_plugin_identifiers:
+            self.explainer.plugin_manager.interval_plugin_identifiers = {
+                "default": None,
+                "fast": None,
+            }
+        if not self.explainer.plugin_manager.telemetry_interval_sources:
+            self.explainer.plugin_manager.telemetry_interval_sources = {
+                "default": None,
+                "fast": None,
+            }
+        if not self.explainer.plugin_manager.interval_preferred_identifier:
+            self.explainer.plugin_manager.interval_preferred_identifier = {
+                "default": None,
+                "fast": None,
+            }
+        if not self.explainer.plugin_manager.interval_context_metadata:
+            self.explainer.plugin_manager.interval_context_metadata = {"default": {}, "fast": {}}
 
-    def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
+    def gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
         """Return interval dependency hints collected from explanation plugins."""
         if fast:
-            return self.explainer._interval_plugin_hints.get("fast", ())
+            return self.explainer.plugin_manager.interval_plugin_hints.get("fast", ())
         ordered: List[str] = []
         seen: set[str] = set()
         for mode in ("factual", "alternative"):
-            for identifier in self.explainer._interval_plugin_hints.get(mode, ()):  # noqa: B020
+            for identifier in self.explainer.plugin_manager.interval_plugin_hints.get(mode, ()):  # noqa: B020
                 if identifier not in seen:
                     ordered.append(identifier)
                     seen.add(identifier)
         return tuple(ordered)
 
-    def _check_interval_runtime_metadata(
+    def check_interval_runtime_metadata(
         self,
         metadata: Mapping[str, Any] | None,
         *,
@@ -474,39 +504,15 @@ class PredictionOrchestrator:
         fast: bool,
     ) -> str | None:
         """Validate interval plugin metadata for the current execution."""
-        prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
-        if metadata is None:
-            return f"{prefix}: interval metadata unavailable"
-
-        schema_version = metadata.get("schema_version")
-        if schema_version not in (None, 1):
-            return f"{prefix}: unsupported interval schema_version {schema_version}"
-
-        modes = coerce_string_tuple(metadata.get("modes"))
-        if not modes:
-            return f"{prefix}: plugin metadata missing modes declaration"
-        required_mode = "regression" if "regression" in self.explainer.mode else "classification"
-        if required_mode not in modes:
-            declared = ", ".join(modes)
-            return f"{prefix}: does not support mode '{required_mode}' (modes: {declared})"
-
-        capabilities = set(coerce_string_tuple(metadata.get("capabilities")))
-        required_cap = (
-            "interval:regression"
-            if "regression" in self.explainer.mode
-            else "interval:classification"
+        return check_interval_runtime_metadata(
+            metadata,
+            identifier=identifier,
+            fast=fast,
+            mode=self.explainer.mode,
+            bins=self.explainer.bins,
         )
-        if required_cap not in capabilities:
-            declared = ", ".join(sorted(capabilities)) or "<none>"
-            return f"{prefix}: missing capability '{required_cap}' (capabilities: {declared})"
 
-        if fast and not bool(metadata.get("fast_compatible")):
-            return f"{prefix}: not marked fast_compatible"
-        if metadata.get("requires_bins") and self.explainer.bins is None:
-            return f"{prefix}: requires bins but explainer has none configured"
-        return None
-
-    def _resolve_interval_plugin(
+    def resolve_interval_plugin(
         self,
         *,
         fast: bool,
@@ -516,11 +522,11 @@ class PredictionOrchestrator:
         ensure_builtin_plugins()
 
         raw_override = (
-            self.explainer._fast_interval_plugin_override
+            self.explainer.plugin_manager.fast_interval_plugin_override
             if fast
-            else self.explainer._interval_plugin_override
+            else self.explainer.plugin_manager.interval_plugin_override
         )
-        override = self.explainer._plugin_manager.coerce_plugin_override(raw_override)
+        override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
         if override is not None and not isinstance(override, str):
             identifier = getattr(override, "plugin_meta", {}).get("name")
             return override, identifier
@@ -529,9 +535,13 @@ class PredictionOrchestrator:
             preferred_identifier = raw_override
         else:
             key = "fast" if fast else "default"
-            preferred_identifier = self.explainer._interval_preferred_identifier.get(key)
+            preferred_identifier = self.explainer.plugin_manager.interval_preferred_identifier.get(
+                key
+            )
         chain = list(
-            self.explainer._interval_plugin_fallbacks.get("fast" if fast else "default", ())
+            self.explainer.plugin_manager.interval_plugin_fallbacks.get(
+                "fast" if fast else "default", ()
+            )
         )
         if hints:
             ordered = []
@@ -571,7 +581,7 @@ class PredictionOrchestrator:
                 continue
 
             meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self._check_interval_runtime_metadata(
+            error = self.check_interval_runtime_metadata(
                 meta_source,
                 identifier=identifier,
                 fast=fast,
@@ -582,7 +592,7 @@ class PredictionOrchestrator:
                 errors.append(error)
                 continue
 
-            plugin = self.explainer._instantiate_plugin(plugin)
+            plugin = self.explainer.instantiate_plugin(plugin)
             return plugin, identifier
 
         raise ConfigurationError(
@@ -593,7 +603,7 @@ class PredictionOrchestrator:
             + ("; errors: " + "; ".join(errors) if errors else "")
         )
 
-    def _build_interval_context(
+    def build_interval_context(
         self,
         *,
         fast: bool,
@@ -606,7 +616,7 @@ class PredictionOrchestrator:
         fast_flags = {"fast": fast}
         residuals: Mapping[str, Any] = {}
         key = "fast" if fast else "default"
-        stored_metadata = dict(self.explainer._interval_context_metadata.get(key, {}))
+        stored_metadata = dict(self.explainer.plugin_manager.interval_context_metadata.get(key, {}))
         enriched_metadata = stored_metadata
         enriched_metadata.update(metadata)
         enriched_metadata.setdefault("task", self.explainer.mode)
@@ -652,17 +662,17 @@ class PredictionOrchestrator:
             fast_flags=fast_flags,
         )
 
-    def _obtain_interval_calibrator(
+    def obtain_interval_calibrator(
         self,
         *,
         fast: bool,
         metadata: Mapping[str, Any],
     ) -> Tuple[Any, str | None]:
         """Resolve and instantiate the interval calibrator for the active mode."""
-        self._ensure_interval_runtime_state()
-        hints = self._gather_interval_hints(fast=fast)
-        plugin, identifier = self._resolve_interval_plugin(fast=fast, hints=hints)
-        context = self._build_interval_context(fast=fast, metadata=metadata)
+        self.ensure_interval_runtime_state()
+        hints = self.gather_interval_hints(fast=fast)
+        plugin, identifier = self.resolve_interval_plugin(fast=fast, hints=hints)
+        context = self.build_interval_context(fast=fast, metadata=metadata)
         try:
             calibrator = plugin.create(context, fast=fast)
         except:  # noqa: E722
@@ -672,14 +682,14 @@ class PredictionOrchestrator:
             raise ConfigurationError(
                 f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
             ) from exc
-        self._capture_interval_calibrators(
+        self.capture_interval_calibrators(
             context=context,
             calibrator=calibrator,
             fast=fast,
         )
         key = "fast" if fast else "default"
-        self.explainer._interval_plugin_identifiers[key] = identifier
-        self.explainer._telemetry_interval_sources[key] = identifier
+        self.explainer.plugin_manager.interval_plugin_identifiers[key] = identifier
+        self.explainer.plugin_manager.telemetry_interval_sources[key] = identifier
         metadata_dict: Dict[str, Any]
         if isinstance(context.metadata, dict):
             metadata_dict = context.metadata
@@ -695,12 +705,12 @@ class PredictionOrchestrator:
         else:
             metadata_dict["calibrator"] = calibrator
         # persist captured metadata for future invocations without sharing references
-        self.explainer._interval_context_metadata[key] = dict(metadata_dict)
+        self.explainer.plugin_manager.interval_context_metadata[key] = dict(metadata_dict)
         if metadata_dict is not context.metadata and isinstance(context.metadata, dict):
             context.metadata.update(metadata_dict)
         return calibrator, identifier
 
-    def _capture_interval_calibrators(
+    def capture_interval_calibrators(
         self,
         *,
         context: IntervalCalibratorContext,

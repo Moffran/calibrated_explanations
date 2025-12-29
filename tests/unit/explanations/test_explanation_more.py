@@ -35,14 +35,17 @@ def make_container_and_explainer():
     class ContainerStub:
         def __init__(self):
             self.low_high_percentiles = (5, 95)
-            self._explainer = ExplainerStub()
+            self.explainer = ExplainerStub()
             self.features_to_ignore = []
             self.explanations = []
 
         def _get_explainer(self):
-            return self._explainer
+            return self.explainer
 
-    return ContainerStub(), ContainerStub()._get_explainer()
+        def get_explainer(self):
+            return self.explainer
+
+    return ContainerStub(), ContainerStub().get_explainer()
 
 
 def test_to_narrative_handles_output_formats(monkeypatch):
@@ -78,7 +81,7 @@ def test_to_narrative_handles_output_formats(monkeypatch):
         def _check_preconditions(self):
             return None
 
-        def _get_rules(self):
+        def get_rules(self):
             return {"rule": []}
 
         def _is_lesser(self, a, b):
@@ -95,6 +98,14 @@ def test_to_narrative_handles_output_formats(monkeypatch):
 
         def build_rules_payload(self):
             return {"core": {}, "metadata": {}}
+
+        @property
+        def has_rules(self):
+            return False
+
+        @property
+        def has_conjunctive_rules(self):
+            return False
 
     d = Dummy()
     # dict
@@ -121,10 +132,12 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
             # return a single-bin index per column
             return np.asarray(x).reshape(-1)[0:1] * 0 + 0
 
-    monkeypatch.setattr(explanation_module, "BinaryRegressorDiscretizer", DummyDiscretizer)
-    monkeypatch.setattr(explanation_module, "BinaryEntropyDiscretizer", DummyDiscretizer)
+    from calibrated_explanations import utils
+
+    monkeypatch.setattr(utils, "BinaryRegressorDiscretizer", DummyDiscretizer)
+    monkeypatch.setattr(utils, "BinaryEntropyDiscretizer", DummyDiscretizer)
     # ensure explainer has a discretizer instance to satisfy isinstance checks
-    container._explainer.discretizer = DummyDiscretizer()
+    container.explainer.discretizer = DummyDiscretizer()
     # build small arrays for constructor of FactualExplanation
     x = np.array([[0.1]])
     rule_values = np.empty((1, 1), dtype=object)
@@ -167,8 +180,13 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
     def raise_agg(*args, **kwargs):
         raise RuntimeError("Backend 'Agg' not available")
 
-    monkeypatch.setattr(explanation_module, "_plot_regression", raise_agg)
-    monkeypatch.setattr(explanation_module, "_plot_probabilistic", raise_agg)
+    from calibrated_explanations import plotting
+
+    monkeypatch.setattr(plotting, "plot_regression", raise_agg)
+    monkeypatch.setattr(plotting, "plot_probabilistic", raise_agg)
+    # Also monkeypatch the imported names in the explanation module
+    monkeypatch.setattr(explanation_module, "plot_regression", raise_agg)
+    monkeypatch.setattr(explanation_module, "plot_probabilistic", raise_agg)
 
     from calibrated_explanations.utils.exceptions import ConfigurationError
 
@@ -225,7 +243,7 @@ def test_fast_explanation_repr_and_build_payload():
         "predict_high": [0.3],
     }
     fast.rules = mock_rules
-    fast._has_rules = True
+    fast.has_rules = True
 
     r = repr(fast)
     assert "Prediction" in r

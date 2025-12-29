@@ -22,16 +22,16 @@ class TestPredictionOrchestratorInvariants:
     def setup_method(self):
         self.explainer = MagicMock()
         # Mock attributes accessed in __init__
-        self.explainer._interval_plugin_identifiers = {}
-        self.explainer._interval_plugin_fallbacks = {}
-        self.explainer._interval_plugin_hints = {}
-        self.explainer._interval_context_metadata = {}
+        self.explainer.plugin_manager.interval_plugin_identifiers = {}
+        self.explainer.plugin_manager.interval_plugin_fallbacks = {}
+        self.explainer.plugin_manager.interval_plugin_hints = {}
+        self.explainer.plugin_manager.interval_context_metadata = {}
         self.explainer.telemetry_interval_sources = {}
         self.explainer.interval_preferred_identifier = {}
 
         # Mock attributes accessed in _predict
-        self.explainer._perf_cache = MagicMock()
-        self.explainer._perf_cache.enabled = False
+        self.explainer.perf_cache = MagicMock()
+        self.explainer.perf_cache.enabled = False
         self.explainer.mode = "regression"
 
         self.orchestrator = PredictionOrchestrator(self.explainer)

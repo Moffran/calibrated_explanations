@@ -41,11 +41,12 @@ def is_expired(entry: dict) -> bool:
         # Handle version-bound expiry (e.g., v0.11.0)
         if expiry.startswith("v"):
             from calibrated_explanations import __version__
+
             # Simple version comparison (major.minor.patch)
             current = [int(x) for x in __version__.split("-")[0].split(".")]
             target = [int(x) for x in expiry.lstrip("v").split(".")]
             return current >= target
-        
+
         # Fallback to date-bound expiry
         dt = datetime.fromisoformat(expiry)
         return dt.date() < datetime.utcnow().date()
@@ -151,7 +152,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., Calibrat
 
     def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
+        explainer.initialized = True
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",

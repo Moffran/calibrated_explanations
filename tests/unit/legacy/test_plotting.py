@@ -104,7 +104,7 @@ def test_probabilistic_plot_creates_expected_image(tmp_path):
     features_to_plot = [0, 1]
     column_names = ["feature_a", "feature_b"]
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         predict,
@@ -150,7 +150,7 @@ def test_probabilistic_interval_branches(tmp_path, disable_show):
         "low": np.array([-0.4, 0.2]),
         "high": np.array([0.5, 0.6]),
     }
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         predict,
@@ -175,7 +175,7 @@ def test_probabilistic_default_save_extensions_use_title(tmp_path):
     instance = [0.5, -0.1]
     predict = {"predict": 0.55, "low": 0.2, "high": 0.8}
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         predict,
@@ -204,7 +204,7 @@ def test_probabilistic_interval_requires_index():
     }
 
     with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=[0.5, 0.1],
             predict={"predict": 0.6, "low": 0.4, "high": 0.8},
@@ -228,7 +228,7 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
 
     # Tuple threshold branch
     explanation = DummyExplanation(thresholded=True, y_threshold=(0.2, 0.8))
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         {"predict": 0.7, "low": 0.3, "high": 0.9},
@@ -244,7 +244,7 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
 
     # No class labels with multiclass explainer
     explanation = DummyExplanation(class_labels=None, inner_multiclass=True)
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         {"predict": 0.5, "low": 0.4, "high": 0.6},
@@ -260,7 +260,7 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
 
     # No class labels with binary explainer
     explanation = DummyExplanation(class_labels=None, inner_multiclass=False)
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         {"predict": 0.4, "low": 0.2, "high": 0.7},
@@ -278,7 +278,7 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
     explanation = DummyExplanation(
         class_labels=["zero", "one", "two"], multiclass=True, prediction_class=2
     )
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance,
         {"predict": 0.6, "low": 0.5, "high": 0.7},
@@ -296,7 +296,7 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
 def test_probabilistic_interval_one_sided_error(tmp_path):
     explanation = DummyExplanation(one_sided=True)
     with pytest.raises(Warning):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=[0.3],
             predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -318,7 +318,7 @@ def test_probabilistic_interval_one_sided_error(tmp_path):
 
 
 def test_probabilistic_returns_without_output():
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         DummyExplanation(),
         instance=[0.1],
         predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -332,7 +332,7 @@ def test_probabilistic_returns_without_output():
     )
 
 
-def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
+def testplot_global_requires_scalar_threshold_for_non_probabilistic():
     class ThresholdWrapper:
         def __init__(self):
             self.learner = types.SimpleNamespace()
@@ -357,7 +357,7 @@ def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
     y_vals = np.array([0, 1, 0])
 
     with pytest.warns(UserWarning), pytest.raises(AssertionError):
-        plotting._plot_global(
+        plotting.plot_global(
             explainer,
             x_vals,
             y=y_vals,
@@ -378,7 +378,7 @@ def test_regression_interval_plot_saves_image(tmp_path):
     features_to_plot = [0, 1]
     column_names = ["rule_a", "rule_b"]
 
-    plotting._plot_regression(
+    plotting.plot_regression(
         explanation,
         instance,
         predict,
@@ -406,7 +406,7 @@ def test_regression_interval_requires_index(tmp_path):
     }
 
     with pytest.raises(AssertionError):
-        plotting._plot_regression(
+        plotting.plot_regression(
             explanation,
             instance=[1.0, -1.0],
             predict={"predict": 0.2, "low": -0.1, "high": 0.5},
@@ -427,7 +427,7 @@ def test_regression_non_interval_branches(tmp_path, disable_show):
     explanation = DummyExplanation(mode="regression", y_minmax=(-1.0, 1.0))
     instance = [0.3, -0.8]
     predict = {"predict": -0.1, "low": -0.4, "high": 0.2}
-    plotting._plot_regression(
+    plotting.plot_regression(
         explanation,
         instance,
         predict,
@@ -455,7 +455,7 @@ def test_interval_requires_idx_and_two_sided(tmp_path):
 
     explanation = DummyExplanation()
     with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance,
             predict,
@@ -473,7 +473,7 @@ def test_interval_requires_idx_and_two_sided(tmp_path):
 
     one_sided = DummyExplanation(one_sided=True)
     with pytest.raises(Warning):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             one_sided,
             instance,
             predict,
@@ -490,7 +490,7 @@ def test_interval_requires_idx_and_two_sided(tmp_path):
         )
 
 
-def test_plot_global_threshold_requires_scalar():
+def testplot_global_threshold_requires_scalar():
     class NonProbExplainer:
         def __init__(self):
             self.learner = object()
@@ -513,7 +513,7 @@ def test_plot_global_threshold_requires_scalar():
     y = np.array([0.1, 0.2, 0.3])
 
     with pytest.raises(AssertionError):
-        plotting._plot_global(
+        plotting.plot_global(
             explainer,
             x,
             y=y,
@@ -525,7 +525,7 @@ def test_plot_global_threshold_requires_scalar():
 def test_regression_interval_one_sided_error(tmp_path):
     explanation = DummyExplanation(mode="regression", one_sided=True)
     with pytest.raises(Warning):
-        plotting._plot_regression(
+        plotting.plot_regression(
             explanation,
             instance=[0.2],
             predict={"predict": 0.0, "low": -0.1, "high": 0.1},
@@ -547,7 +547,7 @@ def test_regression_interval_one_sided_error(tmp_path):
 
 
 def test_regression_returns_without_output():
-    plotting._plot_regression(
+    plotting.plot_regression(
         DummyExplanation(mode="regression"),
         instance=[0.1],
         predict={"predict": 0.0, "low": -0.2, "high": 0.2},
@@ -590,7 +590,7 @@ def test_alternative_plot_handles_thresholded_classification(tmp_path):
     assert (tmp_path / "alternative.png").exists()
 
 
-def test_alternative_plot_regression_branch(tmp_path, disable_show):
+def test_alternativeplot_regression_branch(tmp_path, disable_show):
     explanation = DummyExplanation(mode="regression", y_minmax=(-1.0, 1.0))
     instance = [0.2, -0.4]
     predict = {"predict": 0.1, "low": -0.2, "high": 0.3}
@@ -641,7 +641,7 @@ def test_triangular_plot_uses_probability_triangle(tmp_path):
     rule_proba = np.array([0.4, 0.6, 0.8])
     rule_uncertainty = np.array([0.1, 0.2, 0.3])
 
-    plotting._plot_triangular(
+    plotting.plot_triangular(
         explanation,
         proba=0.5,
         uncertainty=0.25,
@@ -657,13 +657,13 @@ def test_triangular_plot_uses_probability_triangle(tmp_path):
     assert (tmp_path / "triangular.png").exists()
 
 
-def test_triangular_plot_regression_mode(tmp_path, disable_show):
+def test_triangularplot_regression_mode(tmp_path, disable_show):
     explanation = DummyExplanation(mode="regression", thresholded=False)
     rule_proba = np.array([0.5, 0.5, 0.5])
     rule_uncertainty = np.array([0.1, 0.2, 0.3])
 
     with pytest.warns(Warning):
-        plotting._plot_triangular(
+        plotting.plot_triangular(
             explanation,
             proba=0.5,
             uncertainty=0.25,
@@ -681,7 +681,7 @@ def test_triangular_plot_regression_mode(tmp_path, disable_show):
 
 
 def test_triangular_returns_without_output():
-    plotting._plot_triangular(
+    plotting.plot_triangular(
         DummyExplanation(),
         proba=0.4,
         uncertainty=0.1,
@@ -704,7 +704,7 @@ def test_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path, di
 
     monkeypatch.setattr(plotting.plt, "figure", record_figure)
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         DummyExplanation(),
         instance=[0.3, -0.2, 0.1, 0.4],
         predict={"predict": 0.6, "low": 0.4, "high": 0.8},
@@ -720,7 +720,7 @@ def test_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path, di
         save_ext=[],
     )
 
-    plotting._plot_regression(
+    plotting.plot_regression(
         DummyExplanation(mode="regression"),
         instance=[0.2, -0.5, 0.1, -0.3, 0.4, -0.2],
         predict={"predict": 0.1, "low": -0.2, "high": 0.5},
@@ -740,7 +740,7 @@ def test_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path, di
     assert recorded[1] == (10, pytest.approx(5.0))
 
 
-def test_plot_global_non_probabilistic(monkeypatch):
+def testplot_global_non_probabilistic(monkeypatch):
     class Learner:
         pass
 
@@ -760,10 +760,10 @@ def test_plot_global_non_probabilistic(monkeypatch):
 
     monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
 
-    plotting._plot_global(explainer, x=np.array([[0.0], [1.0]]), show=True)
+    plotting.plot_global(explainer, x=np.array([[0.0], [1.0]]), show=True)
 
 
-def test_plot_global_threshold_branch(monkeypatch):
+def testplot_global_threshold_branch(monkeypatch):
     class Learner:
         pass
 
@@ -783,7 +783,7 @@ def test_plot_global_threshold_branch(monkeypatch):
     explainer = Explainer()
     monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
 
-    plotting._plot_global(
+    plotting.plot_global(
         explainer,
         x=np.zeros((3, 1)),
         y=np.array([0.9, 0.3, 0.4]),
@@ -792,7 +792,7 @@ def test_plot_global_threshold_branch(monkeypatch):
     )
 
 
-def test_plot_global_probabilistic_variants(monkeypatch):
+def testplot_global_probabilistic_variants(monkeypatch):
     class Learner:
         def predict_proba(self, *args, **kwargs):  # pragma: no cover - interface placeholder
             return None
@@ -838,8 +838,8 @@ def test_plot_global_probabilistic_variants(monkeypatch):
     monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
 
     multi_explainer = MultiExplainer()
-    plotting._plot_global(multi_explainer, x=np.zeros((3, 1)), show=True)
-    plotting._plot_global(
+    plotting.plot_global(multi_explainer, x=np.zeros((3, 1)), show=True)
+    plotting.plot_global(
         multi_explainer,
         x=np.zeros((3, 1)),
         y=np.array([0, 1, 2]),
@@ -847,7 +847,7 @@ def test_plot_global_probabilistic_variants(monkeypatch):
     )
 
     binary_explainer = BinaryExplainer()
-    plotting._plot_global(
+    plotting.plot_global(
         binary_explainer,
         x=np.zeros((2, 1)),
         y=np.array([0, 1]),
@@ -855,7 +855,7 @@ def test_plot_global_probabilistic_variants(monkeypatch):
     )
 
 
-def test_plot_global_headless_short_circuit(monkeypatch):
+def testplot_global_headless_short_circuit(monkeypatch):
     explainer = types.SimpleNamespace(learner=types.SimpleNamespace())
 
     def fail():  # pragma: no cover - guard should prevent execution
@@ -864,10 +864,10 @@ def test_plot_global_headless_short_circuit(monkeypatch):
     monkeypatch.setattr(plotting, "plt", None)
     monkeypatch.setattr(plotting, "__require_matplotlib", fail)
 
-    plotting._plot_global(explainer, x=np.zeros((1, 1)), show=False)
+    plotting.plot_global(explainer, x=np.zeros((1, 1)), show=False)
 
 
-def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):
+def testplot_global_requires_scalar_threshold_for_predict_only(disable_show):
     class PredictOnlyExplainer:
         def __init__(self):
             self.learner = types.SimpleNamespace()
@@ -891,7 +891,7 @@ def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):
     y = np.array([0.1, 0.2, 0.3])
 
     with pytest.raises(AssertionError):
-        plotting._plot_global(
+        plotting.plot_global(
             explainer,
             x,
             y=y,
@@ -918,7 +918,7 @@ def test_probabilistic_saves_before_show(monkeypatch, tmp_path):
     monkeypatch.setattr(Figure, "savefig", fake_savefig)
     monkeypatch.setattr(Figure, "show", fake_show)
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         DummyExplanation(),
         instance=[0.2, 0.3],
         predict={"predict": 0.6, "low": 0.4, "high": 0.8},
@@ -956,7 +956,7 @@ def test_probabilistic_rejects_mismatched_lengths():
     feature_weights = np.array([0.3, -0.2])
 
     with pytest.raises(IndexError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation=DummyExplanation(),
             instance=instance,
             predict=predict,
@@ -982,7 +982,7 @@ def test_probabilistic_headless_short_circuit(monkeypatch):
         lambda: (_ for _ in ()).throw(RuntimeError("should not import")),
     )
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation=DummyExplanation(),
         instance=np.array([]),
         predict={"predict": 0.5, "low": 0.2, "high": 0.7},
@@ -1005,7 +1005,7 @@ def test_probabilistic_errors_for_misaligned_instance():
     feature_weights = np.array([0.2, -0.1])
 
     with pytest.raises(IndexError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation=explanation,
             instance=instance,
             predict={"predict": 0.5, "low": 0.3, "high": 0.7},
@@ -1028,7 +1028,7 @@ def test_probabilistic_errors_for_num_to_show_mismatch():
     feature_weights = np.array([0.2, -0.1])
 
     with pytest.raises(ValueError) as excinfo:
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation=explanation,
             instance=instance,
             predict={"predict": 0.5, "low": 0.3, "high": 0.7},
@@ -1056,7 +1056,7 @@ def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
     monkeypatch.setattr(plotting, "plt", None)
     monkeypatch.setattr(plotting, "__require_matplotlib", fail)
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation=explanation,
         instance=np.array([0.1]),
         predict={"predict": 0.5, "low": 0.3, "high": 0.7},
@@ -1107,7 +1107,7 @@ def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
     }
 
     with pytest.raises(IndexError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation=explanation,
             instance=instance,
             predict=predict,
@@ -1136,7 +1136,7 @@ def test_probabilistic_short_circuits_without_show_or_save(monkeypatch):
 
     monkeypatch.setattr(plotting, "__require_matplotlib", boom)
 
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation=explanation,
         instance=instance,
         predict=predict,
@@ -1154,17 +1154,17 @@ def test_probabilistic_short_circuits_without_show_or_save(monkeypatch):
 
 
 def test_compose_save_target_parity():
-    from calibrated_explanations.legacy.plotting import _compose_save_target
+    from calibrated_explanations.legacy.plotting import compose_save_target
 
     # Test prefix behavior (when path is not a dir and doesn't end with separator)
-    target = _compose_save_target("prefix_", "plot", ".png")
+    target = compose_save_target("prefix_", "plot", ".png")
     assert target == "prefix_plot.png"
 
 
 def test_compose_save_target_directory(tmp_path):
-    from calibrated_explanations.legacy.plotting import _compose_save_target
+    from calibrated_explanations.legacy.plotting import compose_save_target
 
     # Test with actual directory
-    target = _compose_save_target(tmp_path, "plot", ".png")
+    target = compose_save_target(tmp_path, "plot", ".png")
     expected = tmp_path / "plot.png"
     assert str(target) == str(expected)

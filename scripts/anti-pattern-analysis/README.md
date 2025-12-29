@@ -29,3 +29,13 @@ This directory contains scripts for identifying and analyzing anti-patterns in t
    ```bash
    python scripts/anti-pattern-analysis/generate_triage_report.py
    ```
+
+## Allow-Listed Private Member Usages
+
+The `.github/private_member_allowlist.json` file contains waivers for private member accesses that are deemed acceptable for testing purposes. These are categorized as follows:
+
+- **Green (Remedied)**: Private accesses that have been fixed by exposing public APIs or renaming to public.
+- **Yellow (Expiry-Allow-Listed)**: Temporary waivers with an expiry date (e.g., v0.11.0), allowing time for proper remediation.
+- **Red (No-Expiry-Allow-Listed)**: Permanent waivers for internals that are acceptable test utilities or legacy code, with no expiry.
+
+To view the current allow-list status, refer to the `anti_pattern_gap_analysis.ipynb` notebook in `docs/improvement/`, which provides a color-coded visualization of all allow-listed items.

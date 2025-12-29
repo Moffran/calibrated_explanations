@@ -14,8 +14,8 @@ plotting = importlib.import_module("calibrated_explanations.plotting")
 
 class DummyExplainer:
     def __init__(self):
-        self._last_explanation_mode = "factual"
-        self._plot_plugin_fallbacks = {"factual": ["fallback-mode"]}
+        self.last_explanation_mode = "factual"
+        self.plot_plugin_fallbacks = {"factual": ["fallback-mode"]}
 
 
 def test_resolve_plot_style_chain_respects_order(monkeypatch):
