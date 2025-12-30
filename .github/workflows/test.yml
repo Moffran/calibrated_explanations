@@ -32,9 +32,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install -e .
-          pip install pytest pytest-cov xgboost lime shap setuptools psutil
+          pip install -r requirements.txt -c constraints.txt
+          pip install -e . -c constraints.txt
+          pip install pytest pytest-cov xgboost lime shap setuptools psutil -c constraints.txt
 
       - name: Run tests with coverage
         id: run_tests
@@ -68,11 +68,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Install project without dependencies to control deps explicitly
-          pip install . --no-deps
+          pip install . --no-deps -c constraints.txt
           # Install minimal runtime deps explicitly. Matplotlib is required at import-time
           # by some core modules (it only supplies the visualization backend), so include it
           # while still omitting other optional viz extras (like lime/ipython).
-          pip install numpy pandas scikit-learn "crepes>=0.7.1,<0.9" "venn-abers>=1.4.1" matplotlib pytest pytest-cov
+          pip install numpy pandas scikit-learn "crepes>=0.7.1,<0.9" "venn-abers>=1.4.1" matplotlib pytest pytest-cov -c constraints.txt
 
       - name: Run core test subset (skip viz)
         run: pytest -q -k "not viz" --no-cov
@@ -92,9 +92,9 @@ jobs:
       - name: Install dependencies with viz extras
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install .[viz]
-          pip install pytest pytest-cov
+          pip install -r requirements.txt -c constraints.txt
+          pip install .[viz] -c constraints.txt
+          pip install pytest pytest-cov -c constraints.txt
 
       - name: Run visualization tests
         run: pytest -m viz --no-cov -q
@@ -114,8 +114,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install . psutil
+          pip install -r requirements.txt -c constraints.txt
+          pip install . psutil -c constraints.txt
 
       - name: Run micro benchmark
         run: |

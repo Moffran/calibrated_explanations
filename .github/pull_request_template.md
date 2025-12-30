@@ -16,6 +16,8 @@
 - [ ] Ruff and Markdown lint pass locally
 - [ ] Updated docs/README if public behavior or user flows changed
 - [ ] Considered backward compatibility and deprecation notes
+- [ ] DCO sign-off added to commits (`git commit -s`)
+- [ ] Reviewed CODE_OF_CONDUCT.md / SECURITY.md / GOVERNANCE.md as needed
 
 ## Screenshots/Notes (optional)
 

@@ -152,6 +152,32 @@ underlying estimator and read the returned intervals.
 
 ---
 
+## Documentation map
+
+- **API reference** – start with the
+  [API index](https://calibrated-explanations.readthedocs.io/en/latest/api/index.html),
+  then browse CLI, plugin, serialization, and visualization references.
+- **Architecture overview** – the
+  [architecture notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/architecture.html)
+  connect runtime components, telemetry, and plugin boundaries.
+- **Contributor guidance** – see the
+  [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
+  for setup, quality gates, and process notes.
+- **Release notes & changelog** – check
+  [release notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/release_notes.html)
+  and the project
+  [CHANGELOG](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md).
+- **Project governance** – review
+  [GOVERNANCE.md](https://github.com/Moffran/calibrated_explanations/blob/main/GOVERNANCE.md),
+  [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md),
+  and the
+  [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md).
+- **Support** – see
+  [SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md)
+  for the fastest way to get help.
+
+---
+
 ## Feature highlights
 
 - **Calibrated prediction confidence** for binary and multiclass classification.
@@ -218,8 +244,8 @@ stays lightweight.
    python -m venv .venv
    source .venv/bin/activate
    python -m pip install --upgrade pip
-   python -m pip install -e .[dev]
-   python -m pip install -r docs/requirements-doc.txt
+   python -m pip install -e .[dev] -c constraints.txt
+   python -m pip install -r docs/requirements-doc.txt -c constraints.txt
    ```
 2. **Run the quality gates locally**
    ```bash
@@ -234,6 +260,13 @@ stays lightweight.
 4. **Open a pull request** referencing the active milestone and relevant ADRs.
    The [PR guide](https://calibrated-explanations.readthedocs.io/en/latest/pr_guide.html)
    lists the checklist used during reviews.
+5. **Review community health docs** – contributions are expected to follow the
+   [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md),
+   the contribution licensing guidance in
+   [CONTRIBUTING](https://github.com/Moffran/calibrated_explanations/blob/main/.github/CONTRIBUTING.md),
+   and the support/security policies in
+   [SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md)
+   and [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md).
 
 ---
 
@@ -251,7 +284,9 @@ stays lightweight.
 Funded by the [Swedish Knowledge Foundation](https://www.kks.se/) through the
 Knowledge Intensive Product Realization SPARK environment at Jönköping
 University. For questions or support, open an issue on
-[GitHub](https://github.com/Moffran/calibrated_explanations/issues).
+[GitHub](https://github.com/Moffran/calibrated_explanations/issues) or review
+the guidance in
+[SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md).
 
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations.svg
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations/

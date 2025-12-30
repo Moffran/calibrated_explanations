@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -c "import pathlib, subprocess, sys; req = pathlib.Path('requirements.txt'); subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', str(req)], check=True) if req.exists() else None"
-          python -m pip install pytest pytest-cov
+          python -c "import pathlib, subprocess, sys; req = pathlib.Path('requirements.txt'); subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', str(req), '-c', 'constraints.txt'], check=True) if req.exists() else None"
+          python -m pip install pytest pytest-cov -c constraints.txt
 
       - name: Run deprecation-sensitive tests
         env:
