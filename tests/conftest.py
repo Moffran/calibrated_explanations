@@ -19,8 +19,8 @@ from tests.helpers.utils import get_env_flag
 # Import additional fixtures from _fixtures module
 from tests.helpers.fixtures import binary_dataset, regression_dataset, multiclass_dataset  # noqa: F401, pylint: disable=unused-import
 
-ATTR_RE = re.compile(r"\._[A-Za-z0-9_]+")
-GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'")
+ATTR_RE = re.compile(r"\._(?!_)[A-Za-z0-9_]+")
+GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(?!__)(_[A-Za-z0-9_]+)'")
 
 
 def load_allowlist(path: Path):
@@ -76,7 +76,10 @@ def pytest_sessionstart(session):
     allowed = set()
     expired_allowed = []
     for e in allowlist:
-        key = (e.get("file"), e.get("symbol"))
+        f = e.get("file")
+        if f:
+            f = f.replace("\\", "/")
+        key = (f, e.get("symbol"))
         if key[0] and key[1]:
             if is_expired(e):
                 expired_allowed.append(e)
@@ -85,7 +88,7 @@ def pytest_sessionstart(session):
 
     violations = []
     for p, syms in findings:
-        rel = str(p).replace("\\\\", "/")
+        rel = p.relative_to(root).as_posix()
         for s in syms:
             if (rel, s) in allowed or (os.path.basename(rel), s) in allowed:
                 continue

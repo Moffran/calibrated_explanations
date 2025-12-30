@@ -1,4 +1,3 @@
-import importlib
 import sys
 import time
 from unittest.mock import patch
@@ -15,22 +14,23 @@ from calibrated_explanations.cache.cache import (
     make_key,
 )
 
+
 def test_cache_fallback_logic():
     # We want to test the fallback classes even if cachetools is installed.
     # They are hidden in the except block and assigned to cachetools shim.
-    
+
     old_modules = sys.modules.copy()
-    if 'calibrated_explanations.cache.cache' in sys.modules:
-        del sys.modules['calibrated_explanations.cache.cache']
+    if "calibrated_explanations.cache.cache" in sys.modules:
+        del sys.modules["calibrated_explanations.cache.cache"]
 
     try:
-        with patch.dict(sys.modules, {'cachetools': None}):
+        with patch.dict(sys.modules, {"cachetools": None}):
             import calibrated_explanations.cache.cache as cache_mod
-            
+
             # The fallback classes are in cache_mod.cachetools
             fallback_lru = cache_mod.cachetools.LRUCache
             fallback_ttl = cache_mod.cachetools.TTLCache
-            
+
             # Test LRUCache fallback
             cache = fallback_lru(2)
             cache["a"] = 1
@@ -41,10 +41,10 @@ def test_cache_fallback_logic():
             assert "b" not in cache
             assert "a" in cache
             assert "c" in cache
-            
+
             assert cache.get("a") == 1
             assert cache.get("d", 4) == 4
-            
+
             cache["a"] = 10
             assert cache["a"] == 10
 
@@ -55,7 +55,7 @@ def test_cache_fallback_logic():
             time.sleep(0.2)
             with pytest.raises(KeyError):
                 _ = cache_ttl["a"]
-            
+
             cache_ttl["b"] = 2
             assert cache_ttl.get("b") == 2
             time.sleep(0.2)
@@ -63,19 +63,18 @@ def test_cache_fallback_logic():
     finally:
         sys.modules.clear()
         sys.modules.update(old_modules)
-        
+
         cache_ttl["c"] = 3
         cache_ttl.pop("c")
         assert "c" not in cache_ttl
-        
+
         cache_ttl["d"] = 4
         cache_ttl.clear()
         assert len(cache_ttl) == 0
 
     # Re-import to restore normal state
-    if 'calibrated_explanations.cache.cache' in sys.modules:
-        del sys.modules['calibrated_explanations.cache.cache']
-    import calibrated_explanations.cache.cache
+    if "calibrated_explanations.cache.cache" in sys.modules:
+        del sys.modules["calibrated_explanations.cache.cache"]
 
 
 def test_hash_part_should_produce_stable_hashable_keys():
@@ -117,7 +116,6 @@ def test_default_size_estimator_should_fallback_when_inputs_unfriendly():
 
 
 def test_lru_cache_should_track_hits_misses_and_none_values():
-
     """LRUCache should distinguish missing entries from cached None values."""
     cache = LRUCache(
         namespace="test",
@@ -186,7 +184,6 @@ def test_calibrator_cache_should_compute_flush_and_reset_version():
 
     assert value_one == "value"
     assert value_two == "value"
-
 
     cache.flush()
     assert cache.metrics.resets == 1
