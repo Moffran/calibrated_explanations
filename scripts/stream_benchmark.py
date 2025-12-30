@@ -78,7 +78,7 @@ def run(n: int, chunk: int, fmt: str):
     # Output the telemetry from the stream
     telemetry_chunk = chunks[-1]
     telemetry = json.loads(telemetry_chunk)
-    
+
     results = {
         "n": n,
         "chunk_size": chunk,

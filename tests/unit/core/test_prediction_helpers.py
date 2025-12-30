@@ -102,10 +102,6 @@ class StubExplainer:
             self.plugin_manager = PluginManager(self)
         return self.plugin_manager
 
-    @property
-    def is_mondrian(self) -> bool:
-        return self.is_mondrian()
-
     # ``_ExplainerProtocol`` API -------------------------------------------------
     def is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
         return self.mondrian_flag

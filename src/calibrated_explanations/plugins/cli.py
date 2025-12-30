@@ -7,6 +7,7 @@ import pprint
 from collections.abc import Mapping
 from typing import Any, Sequence
 
+from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
 from .registry import (
     find_explanation_descriptor,
     find_interval_descriptor,
@@ -48,9 +49,6 @@ _SINGULAR_LABELS = {
     "plot-renderers": "Plot renderer",
     "plots": "Plot style",
 }
-
-
-from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
 
 
 def coerce_string_tuple(value: object) -> tuple[str, ...]:

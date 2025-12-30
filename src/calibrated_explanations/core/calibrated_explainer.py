@@ -754,6 +754,11 @@ class CalibratedExplainer:
     def interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
         self._interval_plugin_fallbacks = value
 
+    @interval_plugin_fallbacks.deleter
+    def interval_plugin_fallbacks(self) -> None:
+        if hasattr(self, "plugin_manager"):
+            del self.plugin_manager.interval_plugin_fallbacks
+
     @property
     def explanation_plugin_overrides(self) -> Dict[str, Any]:
         """Public alias for `_explanation_plugin_overrides`."""

@@ -83,6 +83,7 @@ addopts = "-q --ignore=tests/unit/viz/test_matplotlib_adapter_additional.py --ig
 testpaths = ["tests"]
 markers = [
     "slow: marks tests as slow (can be skipped in FAST_TESTS)",
+    "integration: marks integration tests",
     "viz: marks visualization tests (optional extras)",
     "viz_render: marks tests that call matplotlib_adapter.render() (may fail with coverage due to lazy loading conflicts per ADR-023)",
     "platform_dependent: marks tests that depend on platform-specific behavior (paths, system calls, etc.)",
@@ -97,6 +98,7 @@ filterwarnings = [
     "error:.*fall.*back.*:UserWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
+    "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
     "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",
     "ignore:The 'calibrated_explanations.perf' module is deprecated.*:DeprecationWarning",
     "ignore:Importing from 'calibrated_explanations.core.calibration' is deprecated.*:DeprecationWarning",
@@ -235,5 +237,5 @@ skips = ["B101"]
 exclude = ["tests", "build", "benchmarks", "notebooks", "scripts", "docs", "dist", "evaluation"]
 
 [tool.codespell]
-skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks"
+skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"
 ignore-words-list = "dataframe,nd"

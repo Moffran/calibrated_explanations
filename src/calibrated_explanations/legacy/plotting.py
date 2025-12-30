@@ -17,7 +17,7 @@ mcolors = None
 plt = None
 
 try:
-    import matplotlib as _matplotlib
+    import matplotlib  # noqa: F401
 except (ImportError, RuntimeError) as e:
     _MATPLOTLIB_IMPORT_ERROR = e
 
@@ -462,11 +462,6 @@ def __plot_proba_triangle():
     plt.plot((0.5 + x - 0.5) / (1 + x - 0.5), x - 0.5, color="black")
     x = np.arange(0, 0.5, 0.005)
     plt.plot((x + 0.5 - x) / (1 + x), x, color="black")
-
-
-def plot_alternative(*args, **kwargs):
-    """Public wrapper for `_plot_alternative`."""
-    return _plot_alternative(*args, **kwargs)
 
 
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements

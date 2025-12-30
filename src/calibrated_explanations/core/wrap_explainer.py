@@ -696,9 +696,13 @@ class WrapCalibratedExplainer:
         if bins is not None:
             return bins
         # Fallback to explainer bins for Mondrian mode
-        if hasattr(self, "explainer") and self.explainer and hasattr(self.explainer, "bins"):
-            if self.explainer.is_mondrian():
-                return self.explainer.bins
+        if (
+            hasattr(self, "explainer")
+            and self.explainer
+            and hasattr(self.explainer, "bins")
+            and self.explainer.is_mondrian()
+        ):
+            return self.explainer.bins
         return None
 
     @property

@@ -63,12 +63,11 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         _plot_tomllib = None  # type: ignore[assignment]
 
 _MATPLOTLIB_IMPORT_ERROR = None
-_MATPLOTLIB_IMPORT_ERROR = None
 mcolors = None
 plt = None
 
 try:
-    import matplotlib as _matplotlib
+    import matplotlib  # noqa: F401
 except (ImportError, RuntimeError) as e:
     _MATPLOTLIB_IMPORT_ERROR = e
 

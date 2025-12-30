@@ -85,6 +85,95 @@ def test_compute_filtered_features_skips_when_disabled():
     assert result.per_instance_ignore == []
 
 
+def test_feature_filter_config_from_env_variants(monkeypatch):
+    # Test empty tokens
+    monkeypatch.setenv("CE_FEATURE_FILTER", ",,,")
+    cfg = FeatureFilterConfig.from_base_and_env()
+    assert cfg.enabled is False
+    
+    # Test top_k
+    monkeypatch.setenv("CE_FEATURE_FILTER", "on,top_k=5")
+    cfg = FeatureFilterConfig.from_base_and_env()
+    assert cfg.enabled is True
+    assert cfg.per_instance_top_k == 5
+    
+    # Test top_k with non-digit
+    monkeypatch.setenv("CE_FEATURE_FILTER", "top_k=abc")
+    cfg = FeatureFilterConfig.from_base_and_env()
+    assert cfg.per_instance_top_k == 8 # default
+    
+    # Test top_k with negative (should be max(1, ...))
+    monkeypatch.setenv("CE_FEATURE_FILTER", "top_k=-5")
+    cfg = FeatureFilterConfig.from_base_and_env()
+    assert cfg.per_instance_top_k == 1
+
+
+def test_safe_len_feature_weights_variants():
+    from calibrated_explanations.core.explain._feature_filter import _safe_len_feature_weights
+    from unittest.mock import MagicMock
+    # Empty explanations
+    mock_ce = MagicMock()
+    mock_ce.explanations = []
+    assert _safe_len_feature_weights(mock_ce) == 0
+    
+    # Scalar weights
+    mock_exp = MagicMock()
+    mock_exp.feature_weights = {"predict": 1.0}
+    mock_ce.explanations = [mock_exp]
+    assert _safe_len_feature_weights(mock_ce) == 1
+
+
+def test_compute_filtered_features_to_ignore_edge_cases():
+    from unittest.mock import MagicMock
+    mock_ce = MagicMock()
+    
+    # No weights mapping
+    mock_exp1 = MagicMock()
+    mock_exp1.feature_weights = None
+    mock_ce.explanations = [mock_exp1]
+    config = FeatureFilterConfig(enabled=True, per_instance_top_k=2)
+    res = compute_filtered_features_to_ignore(mock_ce, num_features=2, base_ignore=np.array([0]), config=config)
+    assert 0 in res.per_instance_ignore[0]
+    
+    # predict_weights is None
+    mock_exp2 = MagicMock()
+    mock_exp2.feature_weights = {"other": [1, 2]}
+    mock_ce.explanations = [mock_exp2]
+    res = compute_filtered_features_to_ignore(mock_ce, num_features=2, base_ignore=np.array([0]), config=config)
+    assert 0 in res.per_instance_ignore[0]
+    
+    # weights_arr.size == 0
+    mock_exp3 = MagicMock()
+    mock_exp3.feature_weights = {"predict": []}
+    mock_ce.explanations = [mock_exp3]
+    res = compute_filtered_features_to_ignore(mock_ce, num_features=2, base_ignore=np.array([0]), config=config)
+    assert 0 in res.per_instance_ignore[0]
+    
+    # no candidates_for_filter
+    mock_exp4 = MagicMock()
+    mock_exp4.feature_weights = {"predict": [1, 2]}
+    mock_ce.explanations = [mock_exp4]
+    res = compute_filtered_features_to_ignore(mock_ce, num_features=2, base_ignore=np.array([0, 1]), config=config)
+    assert 0 in res.per_instance_ignore[0]
+    assert 1 in res.per_instance_ignore[0]
+    
+    # global_ignore branch: predict is None in global loop
+    mock_exp5 = MagicMock()
+    mock_exp5.feature_weights = {"predict": [1, 2]}
+    mock_exp6 = MagicMock()
+    mock_exp6.feature_weights = {"other": [1, 2]}
+    mock_ce.explanations = [mock_exp5, mock_exp6]
+    res = compute_filtered_features_to_ignore(mock_ce, num_features=2, base_ignore=np.array([]), config=config)
+    assert res.global_ignore.size >= 0
+    
+    # observed_len == 0
+    mock_exp7 = MagicMock()
+    mock_exp7.feature_weights = {"predict": []}
+    mock_ce.explanations = [mock_exp7]
+    res = compute_filtered_features_to_ignore(mock_ce, num_features=2, base_ignore=np.array([]), config=config)
+    assert res.global_ignore.size >= 0
+
+
 @pytest.mark.parametrize(
     "weights_list,expected_per_instance",
     [

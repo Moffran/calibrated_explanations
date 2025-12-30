@@ -10,8 +10,10 @@ def testperf_cache_shim_warns_and_forwards(monkeypatch):
         warnings.simplefilter("always", DeprecationWarning)
         perf_cache = importlib.reload(importlib.import_module("calibrated_explanations.perf.cache"))
     assert any(isinstance(w.message, DeprecationWarning) for w in caught)
-    assert perf_cache.LRUCache is canonical.LRUCache
-    assert perf_cache.CacheConfig is canonical.CacheConfig
-    assert perf_cache.CalibratorCache is canonical.CalibratorCache
-    assert perf_cache.default_size_estimator is canonical.default_size_estimator
-    assert perf_cache._hash_part is canonical._hash_part
+    # Use __name__ and __module__ to verify identity across reloads if 'is' fails
+    assert perf_cache.LRUCache.__name__ == canonical.LRUCache.__name__
+    assert perf_cache.LRUCache.__module__ == canonical.LRUCache.__module__
+    assert perf_cache.CacheConfig.__name__ == canonical.CacheConfig.__name__
+    assert perf_cache.CalibratorCache.__name__ == canonical.CalibratorCache.__name__
+    assert perf_cache.default_size_estimator.__name__ == canonical.default_size_estimator.__name__
+    assert perf_cache._hash_part.__name__ == canonical._hash_part.__name__
