@@ -2,7 +2,12 @@
 
 # ADR-024: Legacy Plot Input Contracts
 
-Status: Deprecated (superseded by maintenance reference)
+> [!IMPORTANT]
+> **STATUS: SUPERSEDED**
+> This ADR has been superseded by [docs/maintenance/legacy-plotting-reference.md](../../maintenance/legacy-plotting-reference.md).
+> The legacy plotting contracts are now maintained as a reference rather than an active architectural decision.
+
+Status: Superseded
 Date: 2025-10-18
 Deciders: Core maintainers
 Reviewers: TBD

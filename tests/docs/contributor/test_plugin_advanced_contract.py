@@ -17,7 +17,7 @@ class TestMethodCEnvironmentVariables:
 
     def test_ce_plot_style_environment_variable(self):
         """Verify CE_PLOT_STYLE environment variable configuration."""
-        from calibrated_explanations.plotting import _resolve_plot_style_chain
+        from calibrated_explanations.plotting import resolve_plot_style_chain
         from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
@@ -46,7 +46,7 @@ class TestMethodCEnvironmentVariables:
         try:
             os.environ["CE_PLOT_STYLE"] = "legacy"
             # The chain should prioritize CE_PLOT_STYLE when no override is specified
-            chain = _resolve_plot_style_chain(explainer, explicit_style=None)
+            chain = resolve_plot_style_chain(explainer, explicit_style=None)
             # legacy should be in the fallback chain
             assert "legacy" in chain
         finally:
@@ -57,7 +57,7 @@ class TestMethodCEnvironmentVariables:
 
     def test_ce_plot_style_fallbacks_environment_variable(self):
         """Verify CE_PLOT_STYLE_FALLBACKS environment variable."""
-        from calibrated_explanations.plotting import _resolve_plot_style_chain
+        from calibrated_explanations.plotting import resolve_plot_style_chain
         from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
@@ -86,7 +86,7 @@ class TestMethodCEnvironmentVariables:
             # Set fallbacks as comma-separated list
             os.environ["CE_PLOT_STYLE_FALLBACKS"] = "plot_spec.default,legacy"
             # The resolution chain should include these fallbacks
-            chain = _resolve_plot_style_chain(explainer, explicit_style=None)
+            chain = resolve_plot_style_chain(explainer, explicit_style=None)
             # Fallbacks should be included in the chain
             assert len(chain) > 0
         finally:
@@ -308,7 +308,7 @@ class TestPriorityResolution:
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
         from calibrated_explanations import CalibratedExplainer
-        from calibrated_explanations.plotting import _resolve_plot_style_chain
+        from calibrated_explanations.plotting import resolve_plot_style_chain
 
         # Prepare data
         data = load_breast_cancer()
@@ -335,13 +335,13 @@ class TestPriorityResolution:
         )
 
         # The plot style chain should prioritize the explicit parameter
-        chain = _resolve_plot_style_chain(explainer, explicit_style="plot_spec.default")
+        chain = resolve_plot_style_chain(explainer, explicit_style="plot_spec.default")
         # Method A override should be first in chain
         assert chain[0] == "plot_spec.default"
 
     def test_method_fallback_chain(self):
         """Verify that fallback chain works when lower-priority method is used."""
-        from calibrated_explanations.plotting import _resolve_plot_style_chain
+        from calibrated_explanations.plotting import resolve_plot_style_chain
         from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
@@ -366,7 +366,7 @@ class TestPriorityResolution:
         explainer = CalibratedExplainer(model, x_cal, y_cal)
 
         # When no override is specified, chain should include multiple fallbacks
-        chain = _resolve_plot_style_chain(explainer, explicit_style=None)
+        chain = resolve_plot_style_chain(explainer, explicit_style=None)
 
         # Chain should contain multiple styles to try
         assert len(chain) > 1, "Fallback chain should contain multiple styles"

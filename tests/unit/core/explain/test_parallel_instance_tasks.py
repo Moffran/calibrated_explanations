@@ -157,7 +157,7 @@ def test_fallback_runs_with_explainer_when_no_harness(monkeypatch):
         def __init__(self):
             self.latest_explanation = None
 
-        def _infer_explanation_mode(self):
+        def infer_explanation_mode(self):
             return "factual"
 
     fake_expl = FakeExplainer()

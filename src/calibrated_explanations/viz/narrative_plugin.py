@@ -212,7 +212,7 @@ class NarrativePlotPlugin:
         explanation_type = "alternative" if self.is_alternative(explanations) else "factual"
 
         # Get feature names
-        feature_names = self._get_feature_names(explanations)
+        feature_names = self.get_feature_names(explanations)
 
         # Initialize narrative generator
         narrator = NarrativeGenerator(template)
@@ -305,7 +305,7 @@ class NarrativePlotPlugin:
             # Fallback to regression if detection fails
             return "regression"
 
-    def _get_feature_names(self, explanations) -> Optional[List[str]]:
+    def get_feature_names(self, explanations) -> Optional[List[str]]:
         """Extract feature names from the explainer.
 
         Parameters

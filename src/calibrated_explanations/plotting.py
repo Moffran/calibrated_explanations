@@ -209,8 +209,8 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
                 chain.append(descriptor.identifier)
                 break
 
-    mode = getattr(explainer, "_last_explanation_mode", None)
-    plot_fallbacks = getattr(explainer, "_plot_plugin_fallbacks", {})
+    mode = getattr(explainer, "last_explanation_mode", None)
+    plot_fallbacks = getattr(explainer, "plot_plugin_fallbacks", {})
     if mode and isinstance(plot_fallbacks, dict):
         chain.extend(plot_fallbacks.get(mode, ()))
 
@@ -231,6 +231,24 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
     if "legacy" not in ordered:
         ordered.append("legacy")
     return tuple(ordered)
+
+
+def resolve_plot_style_chain(explainer, explicit_style: str | None = None) -> Sequence[str]:
+    """Determine the ordered style fallback chain for plot builders/renderers.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The explainer instance.
+    explicit_style : str, optional
+        An explicit style identifier to use as the primary style.
+
+    Returns
+    -------
+    Sequence[str]
+        The ordered list of style identifiers to attempt.
+    """
+    return _resolve_plot_style_chain(explainer, explicit_style)
 
 
 # pylint: disable=unknown-option-value

@@ -81,7 +81,7 @@ for chunk in explanations.to_json_stream(chunk_size=256, format="chunked"):
 ```
 
 - **Status:** Experimental in v0.10.1+.
-- **Memory profile:** Tested for < 200 MB peak usage with 10k explanations at `chunk_size=256`.
+- **Memory profile:** Tested for < 200 MB peak usage with 10k explanations at `chunk_size=256` (see [reports/streaming_benchmark_v0.10.1.json](reports/streaming_benchmark_v0.10.1.json) for latest results).
 - **Telemetry:** Export metrics (rows, elapsed time, peak memory) are captured in collection metadata and explainer telemetry.
 
 ### Optional extras

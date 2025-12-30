@@ -10,11 +10,11 @@ from calibrated_explanations.viz import coloring
 
 class DummyExplainer:
     def __init__(self):
-        self._last_explanation_mode = "factual"
-        self._plot_plugin_fallbacks = {"factual": ["fallback-mode"]}
+        self.last_explanation_mode = "factual"
+        self.plot_plugin_fallbacks = {"factual": ["fallback-mode"]}
 
 
-def test_resolve_plot_style_chain_respects_order(monkeypatch):
+def testresolve_plot_style_chain_respects_order(monkeypatch):
     monkeypatch.setenv("CE_PLOT_STYLE", "env")
     monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env-fallback,a2")
     monkeypatch.setattr(
@@ -22,7 +22,7 @@ def test_resolve_plot_style_chain_respects_order(monkeypatch):
     )
 
     explainer = DummyExplainer()
-    chain = plotting._resolve_plot_style_chain(explainer, "explicit")
+    chain = plotting.resolve_plot_style_chain(explainer, "explicit")
 
     assert chain[0] == "explicit"
     assert "env" in chain

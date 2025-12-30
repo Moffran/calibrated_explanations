@@ -49,25 +49,6 @@ class LimePipeline:
         self.explainer = explainer
         self._lime_helper: LimeHelper | None = None
 
-    def _is_lime_enabled(self, is_enabled: bool | None = None) -> bool:
-        """Return whether LIME export is enabled.
-
-        Parameters
-        ----------
-        is_enabled : bool, optional
-            If provided, set the enabled state.
-
-        Returns
-        -------
-        bool
-            Whether LIME is currently enabled.
-        """
-        if self._lime_helper is None:
-            self._lime_helper = LimeHelper(self.explainer)
-        if is_enabled is not None:
-            self._lime_helper.set_enabled(bool(is_enabled))
-        return self._lime_helper.is_enabled()
-
     def _preload_lime(self, x_cal: Any = None) -> tuple[Any, Any]:
         """Materialize LIME explainer artifacts when the dependency is available.
 

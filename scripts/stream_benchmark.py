@@ -78,7 +78,16 @@ def run(n: int, chunk: int, fmt: str):
     # Output the telemetry from the stream
     telemetry_chunk = chunks[-1]
     telemetry = json.loads(telemetry_chunk)
-    print(json.dumps(telemetry, indent=2))
+    
+    results = {
+        "n": n,
+        "chunk_size": chunk,
+        "format": fmt,
+        "elapsed_seconds": elapsed,
+        "peak_memory_mb": peak / (1024 * 1024),
+        "telemetry": telemetry
+    }
+    print(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":

@@ -33,6 +33,14 @@ Current maintainers:
 - Adhere to the Code of Conduct in `CODE_OF_CONDUCT.md`.
 - Use the release plan to align PR scope with the current milestone.
 
+## Licensing and DCO
+
+The project uses the **Developer Certificate of Origin (DCO)** to manage
+contributions. All contributors must sign off their commits to certify that
+they have the right to submit the code under the project's license (BSD 3-Clause).
+This "inbound=outbound" policy ensures that the project remains open and
+legally sustainable. See `.github/CONTRIBUTING.md` for sign-off instructions.
+
 ## Escalation and conflict resolution
 
 If there is a conflict that cannot be resolved in a PR or issue thread, the

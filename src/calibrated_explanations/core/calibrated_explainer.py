@@ -646,6 +646,22 @@ class CalibratedExplainer:
         del self.plugin_manager.interval_context_metadata
 
     @property
+    def plot_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Return the plot plugin fallback configuration.
+
+        Returns
+        -------
+        Dict[str, Tuple[str, ...]]
+            Mapping of mode to fallback identifiers.
+        """
+        return self.plugin_manager.plot_plugin_fallbacks
+
+    @plot_plugin_fallbacks.setter
+    def plot_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Set the plot plugin fallback configuration."""
+        self.plugin_manager.plot_plugin_fallbacks = value
+
+    @property
     def _explanation_plugin_overrides(self) -> Dict[str, Any]:
         """Delegate to PluginManager."""
         return self.plugin_manager.explanation_plugin_overrides

@@ -66,10 +66,6 @@ class _ExplainerProtocol(Protocol):
         """Compute calibrated predictions and interval bounds."""
         ...
 
-    def _discretize(self, x: np.ndarray) -> np.ndarray:
-        """Transform inputs into discretized representations when needed."""
-        ...
-
     def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any:
         """Return rule boundary metadata for categorical perturbations."""
         ...

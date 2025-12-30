@@ -258,7 +258,7 @@ def test_explain_uses_plugin_orchestrator(explainer_factory):
 
     orchestrator = StubExplanationOrchestrator()
     explainer.plugin_manager = types.SimpleNamespace(explanation_orchestrator=orchestrator)
-    explainer._infer_explanation_mode = lambda: "factual"
+    explainer.infer_explanation_mode = lambda: "factual"
 
     result = explainer.explain_factual("x", threshold=0.2, bins="bins", features_to_ignore=[1])
 
@@ -487,7 +487,7 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explain
         "fast": (),
     }
     explainer.instantiate_plugin = lambda plugin: plugin
-    explainer._check_interval_runtime_metadata = lambda metadata, **_: None
+    explainer.prediction_orchestrator.check_interval_runtime_metadata = lambda metadata, **_: None
 
     monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
@@ -634,7 +634,7 @@ def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory)
 
 
 def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
-    """_infer_explanation_mode should detect alternative mode when EntropyDiscretizer is set."""
+    """infer_explanation_mode should detect alternative mode when EntropyDiscretizer is set."""
     from calibrated_explanations.utils import EntropyDiscretizer
 
     explainer = stub_explainer(explainer_factory)
@@ -652,7 +652,7 @@ def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
 
 
 def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory):
-    """_infer_explanation_mode should detect alternative mode when RegressorDiscretizer is set."""
+    """infer_explanation_mode should detect alternative mode when RegressorDiscretizer is set."""
     from calibrated_explanations.utils import RegressorDiscretizer
 
     explainer = stub_explainer(explainer_factory, mode="regression")
@@ -670,7 +670,7 @@ def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory)
 
 
 def test_infer_explanation_mode_defaults_to_factual(explainer_factory):
-    """_infer_explanation_mode should return 'factual' for None or other discretizers."""
+    """infer_explanation_mode should return 'factual' for None or other discretizers."""
     explainer = stub_explainer(explainer_factory)
     assert explainer.infer_explanation_mode() == "factual"
 
@@ -794,7 +794,7 @@ def test_call_and_explain_delegate_with_plugin(monkeypatch, explainer_factory):
     sentinel = object()
     recorded = {}
 
-    explainer._infer_explanation_mode = lambda: "factual"
+    explainer.infer_explanation_mode = lambda: "factual"
 
     class StubOrchestrator:
         def invoke(

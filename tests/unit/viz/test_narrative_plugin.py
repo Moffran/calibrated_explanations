@@ -578,14 +578,14 @@ def test_narrative_plugin_feature_name_helpers(monkeypatch):
         explanations=[SimpleNamespace()],
         calibrated_explainer=explainer,
     )
-    assert plugin._get_feature_names(explanations) == ["a", "b"]
+    assert plugin.get_feature_names(explanations) == ["a", "b"]
 
     explainer.explainer = SimpleNamespace()
     explainer.feature_names = ("x",)
-    assert plugin._get_feature_names(explanations) == ("x",)
+    assert plugin.get_feature_names(explanations) == ("x",)
 
     explainer.feature_names = None
-    assert plugin._get_feature_names(explanations) is None
+    assert plugin.get_feature_names(explanations) is None
 
     class AltExplanations(list):
         pass

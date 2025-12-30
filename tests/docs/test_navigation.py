@@ -22,3 +22,11 @@ def test_top_level_toctree_targets_exist() -> None:
         assert slug in index, f"Missing toctree entry for {slug}"
         target = resolve_doc(slug)
         assert target.exists(), f"Document referenced by {slug} is missing"
+
+
+def test_maintenance_docs_exist() -> None:
+    expected = [
+        "maintenance/legacy-plotting-reference.md",
+    ]
+    for path in expected:
+        assert (DOCS / path).exists(), f"Maintenance document {path} is missing"

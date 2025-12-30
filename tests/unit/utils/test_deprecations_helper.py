@@ -97,7 +97,7 @@ class TestDeprecate:
     def test_should_raise_deprecation_when_set_to_error(self):
         """deprecate() should raise DeprecationWarning when CE_DEPRECATIONS='error'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}), patch(
-            "calibrated_explanations.utils.deprecations._should_raise", return_value=True
+            "calibrated_explanations.utils.deprecations.should_raise", return_value=True
         ), pytest.raises(DeprecationWarning, match="Test error message"):
             deprecate("Test error message", key="test_key_error")
 
@@ -162,7 +162,7 @@ class TestDeprecate:
         """deprecate() should record key even when raising in CI (non-pytest mode)."""
         # Use environment without PYTEST_CURRENT_TEST to simulate CI runner
         with patch.dict(os.environ, {"CI": "true", "CE_DEPRECATIONS": "error"}, clear=True), patch(
-            "calibrated_explanations.utils.deprecations._should_raise", return_value=True
+            "calibrated_explanations.utils.deprecations.should_raise", return_value=True
         ):
             unique_key = "ci_key_unique_raising"
             with pytest.raises(DeprecationWarning):
@@ -179,7 +179,7 @@ class TestDeprecate:
         env = {"PYTEST_CURRENT_TEST": pytest_test_id, "CE_DEPRECATIONS": "error", "CI": "true"}
 
         with patch.dict(os.environ, env), patch(
-            "calibrated_explanations.utils.deprecations._should_raise", return_value=True
+            "calibrated_explanations.utils.deprecations.should_raise", return_value=True
         ):
             unique_key = "pytest_ci_key_unique_raise"
             with pytest.raises(DeprecationWarning):

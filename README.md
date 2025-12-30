@@ -178,6 +178,17 @@ underlying estimator and read the returned intervals.
 
 ---
 
+## Licensing & Contributions
+
+Contributions to this project are licensed under the same terms as the project
+itself (BSD 3-Clause). By contributing, you agree to the
+[Developer Certificate of Origin (DCO)](https://developercertificate.org/)
+and that your contributions will be available under the project's license.
+See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for details on how to
+sign off your commits.
+
+---
+
 ## Feature highlights
 
 - **Calibrated prediction confidence** for binary and multiclass classification.

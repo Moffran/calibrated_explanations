@@ -76,7 +76,7 @@ class DummyExplanation:
     def get_mode(self):
         return self.mode
 
-    def _get_explainer(self):
+    def get_explainer(self):
         return self.explainer
 
 
@@ -91,9 +91,24 @@ def close_figures():
 @pytest.fixture
 def disable_show(monkeypatch):
     from matplotlib.figure import Figure
+    import matplotlib.pyplot as plt
 
     monkeypatch.setattr(Figure, "show", lambda self: None)
-    monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
+    # Ensure plotting.plt is initialized if it's lazy
+    if hasattr(plotting, "_plotting"):  # Check if it's the proxy or the module
+        pass
+
+    try:
+        # If it has the lazy loader, trigger it
+        if hasattr(plotting, "__require_matplotlib"):
+            plotting.__require_matplotlib()
+    except Exception:
+        pass
+
+    if getattr(plotting, "plt", None) is not None:
+        monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
+    else:
+        monkeypatch.setattr(plt, "show", lambda *args, **kwargs: None)
 
 
 def test_probabilistic_plot_creates_expected_image(tmp_path):

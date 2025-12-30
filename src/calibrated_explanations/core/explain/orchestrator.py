@@ -568,10 +568,6 @@ class ExplanationOrchestrator:
         self.explainer.plugin_manager.explanation_contexts[mode] = context
         return plugin, identifier
 
-    def _ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
-        """Backwards-compatible alias for ensure_plugin."""
-        return self.ensure_plugin(mode)
-
     def resolve_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Resolve or instantiate the plugin handling *mode*.
 

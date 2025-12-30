@@ -7,15 +7,17 @@
 
 ### Changed
 
-- **Anti-Pattern Remediation & Plugin Stabilization:** Completed comprehensive remediation of internal logic testing (Pattern 1) and dead code (Pattern 3), alongside stabilization of the plugin architecture. Refactored private member accesses to public APIs, established a versioned allow-list for acceptable test internals, and removed deprecated LIME/SHAP helpers. Implemented CI enforcement for anti-pattern violations using the allow-list to prevent future regressions. Detailed API changes are documented in [docs/improvement/remediation_api_changes.md](docs/improvement/remediation_api_changes.md).
+- **Anti-Pattern Remediation & Plugin Stabilization:** Completed comprehensive remediation of internal logic testing (Pattern 1) and dead code (Pattern 3), alongside stabilization of the plugin architecture. Refactored private member accesses to public APIs (including `should_raise` and `resolve_plot_style_chain`), established a versioned allow-list for acceptable test internals, and removed dead code (`_discretize`, `_ensure_plugin`, `_is_lime_enabled`, `_get_feature_names`). Implemented CI enforcement for anti-pattern violations using the allow-list to prevent future regressions. Detailed API changes are documented in [docs/improvement/remediation_api_changes.md](docs/improvement/remediation_api_changes.md).
 
 ### Added
+
+- **Contribution Licensing & DCO:** Added explicit Developer Certificate of Origin (DCO) and BSD 3-Clause licensing statements to `README.md` and `GOVERNANCE.md` to clarify contribution expectations.
 
 - **ADR-005: Explanation schema v1 contract:** Confirmed `explanation_schema_v1.json` as the canonical v1 payload contract, relaxed the schema_version literal requirement (recommended but not required), clarified `provenance`/`metadata` as optional extension points, and aligned validation helpers/docs/fixtures with the serializer semantics.
   - **Tests:** Added unit tests that (a) assert the canonical golden v1 payload validates with `jsonschema` when available, and (b) assert that missing required fields are rejected by the schema validator.
   - **Docs:** Clarified `provenance` guidance in `docs/schema_v1.md` by suggesting minimal recommended keys (`library_version`, `created_at`, `generator`) as conventions (not enforced by schema).
 
-- **Streaming export (experimental):** Added an opt-in streaming export generator to `CalibratedExplanations.to_json_stream()` supporting `jsonl` and `chunked` modes with minimal export telemetry captured in collection metadata and a fuller record written to the explainer `_last_telemetry` when available. Marked the feature experimental and added a simple benchmark script under `scripts/stream_benchmark.py`.
+- **Streaming export (experimental):** Added an opt-in streaming export generator to `CalibratedExplanations.to_json_stream()` supporting `jsonl` and `chunked` modes with minimal export telemetry captured in collection metadata and a fuller record written to the explainer `_last_telemetry` when available. Marked the feature experimental and added a simple benchmark script under `scripts/stream_benchmark.py`. Validated memory profile with a benchmark report showing <3MB peak usage for 10k explanations.
 
 - **PlotSpec v0.10.1 (ADR-007/ADR-016):** Added PlotSpec metadata, validation, registry, and headless export support.
   - Added `PlotKindRegistry` for kind-aware validation with supported plot kinds and their requirements.
@@ -25,7 +27,7 @@
   - Created JSON schema (`plotspec_schema.json`) for PlotSpec validation alignment.
   - Added unit tests verifying round-trip serialization, kind-aware validation, and bytes export behavior.
 
-  - **Legacy plotting maintenance (v0.10.1):** Documented legacy matplotlib plotting behavior and marked ADR-024 / ADR-025 as superseded. Consolidated maintenance guidance for legacy plot helpers, fallback visibility, and testing conventions in `docs/maintenance/legacy-plotting-reference.md`.
+  - **Legacy plotting maintenance (v0.10.1):** Documented legacy matplotlib plotting behavior and formally marked ADR-024 / ADR-025 as superseded. Consolidated maintenance guidance for legacy plot helpers, fallback visibility, and testing conventions in `docs/maintenance/legacy-plotting-reference.md`.
     - **Tests:** Confirmed existing legacy plotting regression tests exercise parity; guidance added to assert visible fallbacks via `pytest.warns(UserWarning)` when applicable.
 
   - **ADR-014: Visualization plugin architecture completion:** Restored the plot plugin architecture with base classes, metadata alignment, override resolution, legacy fallback, CLI tooling, and docs.

@@ -30,10 +30,17 @@ jobs:
           pydocstyle src tests
       - name: Docstring coverage report
         run: |
-          python scripts/check_docstring_coverage.py --fail-under 94.0
+          python scripts/check_docstring_coverage.py --fail-under 94.0 | tee docstring_coverage.txt
       - name: ADR-001 Boundary Check
         run: |
           python scripts/check_import_graph.py
       - name: ADR-002 Compliance Check
         run: |
           python scripts/check_adr002_compliance.py
+      - name: Upload lint artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: lint-reports
+          path: |
+            docstring_coverage.txt
