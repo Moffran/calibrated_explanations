@@ -373,14 +373,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     last = getattr(underlying, "_last_telemetry", None) or {}
                     last.update({"export": telemetry})
                     underlying._last_telemetry = last
-                except Exception:
+                except Exception:  # adr002_allow
                     # best-effort only: log for observability per fallback policy
-                    _LOGGER.debug(
+                    _LOGGER.info(
                         "failed to attach export telemetry to underlying explainer",
                         exc_info=True,
                     )
-        except Exception:
-            _LOGGER.debug("failed to attach export telemetry to collection", exc_info=True)
+        except Exception:  # adr002_allow
+            _LOGGER.info("failed to attach export telemetry to collection", exc_info=True)
 
         # final telemetry fragment
         yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)

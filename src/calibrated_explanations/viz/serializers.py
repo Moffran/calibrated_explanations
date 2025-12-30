@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Set
 
+from ..utils.exceptions import ValidationError
 from .plotspec import (
     BarHPanelSpec,
     BarItem,
@@ -113,7 +114,7 @@ class PlotKindRegistry:
     def get_kind_requirements(cls, kind: str) -> Dict[str, Any]:
         """Get the validation requirements for a kind."""
         if not cls.is_supported_kind(kind):
-            raise ValueError(f"Unsupported kind: {kind}")
+            raise ValidationError(f"Unsupported kind: {kind}")
         return cls._SUPPORTED_KINDS[kind].copy()
 
 
@@ -211,7 +212,7 @@ def plotspec_to_dict(spec: PlotSpec) -> Dict[str, Any]:
         try:
             header = dict(header)
             header["xlim"] = tuple(header["xlim"])
-        except Exception as exc:
+        except Exception as exc:  # adr002_allow
             import logging
 
             logging.warning(f"Failed to convert xlim to tuple in header: {exc}")
@@ -336,7 +337,18 @@ def global_plotspec_to_dict(spec: GlobalPlotSpec) -> Dict[str, Any]:
                 else:
                     vals.append(float(v))
             return vals
-        except Exception:
+        except Exception:  # adr002_allow
+            import logging
+            import warnings
+
+            logging.getLogger(__name__).info(
+                "Failed to cast sequence to floats for axis hints; skipping hints."
+            )
+            warnings.warn(
+                "Failed to cast sequence to floats for axis hints; skipping hints.",
+                UserWarning,
+                stacklevel=2,
+            )
             return None
 
     if ge is not None:

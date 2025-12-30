@@ -259,14 +259,14 @@ def _cmd_validate_plot(args: argparse.Namespace) -> int:
     )
     try:
         artifact = builder.build(ctx)
-    except Exception as exc:
+    except Exception as exc:  # adr002_allow
         print(f"Builder '{builder_id}' build failed: {exc}")
         return 2
     # If artifact looks like a PlotSpec envelope/dict, validate its shape
     try:
         if isinstance(artifact, dict) and ("plot_spec" in artifact or "kind" in artifact):
             validate_plotspec(dict(artifact.get("plot_spec") or artifact))
-    except Exception as exc:
+    except Exception as exc:  # adr002_allow
         print(f"Builder '{builder_id}' produced invalid PlotSpec: {exc}")
         return 3
 

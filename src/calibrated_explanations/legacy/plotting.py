@@ -12,18 +12,14 @@ from ..utils.exceptions import ConfigurationError
 
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).
-try:  # pragma: no cover - optional dependency
-    import matplotlib.colors as mcolors
-    import matplotlib.pyplot as plt
-except ImportError:
-    _e = sys.exc_info()[1]
-    if not isinstance(_e, Exception):
-        raise
-    mcolors = None  # type: ignore[assignment]
-    plt = None  # type: ignore[assignment]
-    _MATPLOTLIB_IMPORT_ERROR = _e
-else:
-    _MATPLOTLIB_IMPORT_ERROR = None
+_MATPLOTLIB_IMPORT_ERROR = None
+mcolors = None
+plt = None
+
+try:
+    import matplotlib as _matplotlib
+except (ImportError, RuntimeError) as e:
+    _MATPLOTLIB_IMPORT_ERROR = e
 
 
 def __require_matplotlib():
@@ -32,6 +28,20 @@ def __require_matplotlib():
     Many tests import the package but don't need plotting. Guarding imports
     prevents import-time failures; call this before performing plotting.
     """
+    global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
+    if plt is None and _MATPLOTLIB_IMPORT_ERROR is None:
+        try:
+            import matplotlib.colors as mcolors_local
+            import matplotlib.pyplot as plt_local
+
+            mcolors = mcolors_local
+            plt = plt_local
+        except ImportError:
+            _e = sys.exc_info()[1]
+            if not isinstance(_e, Exception):
+                raise
+            _MATPLOTLIB_IMPORT_ERROR = _e
+
     if plt is None:
         msg = (
             "Plotting requires matplotlib. Install the 'viz' extra: "
@@ -92,7 +102,7 @@ def _plot_probabilistic(
     # If caller does not want to show and matplotlib is not installed,
     # treat this as a no-op (useful for CI/core-only runs without viz extras).
     # Also treat as no-op if caller does not request saving (no path/title).
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -255,7 +265,7 @@ def plot_regression(
     """Plot regression explanations with optional uncertainty overlays."""
     # Allow no-op in CI when plotting is not requested and matplotlib is absent
     # or when no saving is requested (no path/title provided).
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -371,7 +381,7 @@ def plot_triangular(
 ):
     """Plot triangular explanations with uncertainty anchors."""
     # If user only requested no display (and no saving), avoid requiring matplotlib
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -476,7 +486,7 @@ def plot_alternative(
     """Plot alternative explanations highlighting probability shifts."""
     # Allow lightweight no-op when plotting is not requested or when no save
     # path/title are provided (so nothing would be written).
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:

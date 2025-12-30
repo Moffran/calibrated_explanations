@@ -19,9 +19,15 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
-# Legacy import to ensure legacy plotting is still working
-# while development of plotspec, adapters, and builders are unfinished.
-from .legacy import plotting as legacy
+
+def __getattr__(name: str) -> Any:
+    """Lazily load legacy plotting module."""
+    if name == "legacy":
+        from .legacy import plotting as legacy
+
+        globals()["legacy"] = legacy
+        return legacy
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 def derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
@@ -35,9 +41,7 @@ def derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
             lo = float(threshold[0])
             hi = float(threshold[1])
             return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
-    except:  # noqa: E722
-        if not isinstance(sys.exc_info()[1], Exception):
-            raise
+    except Exception:  # adr002_allow
         logging.getLogger(__name__).debug(
             "Failed to parse threshold as interval: %s", sys.exc_info()[1]
         )
@@ -58,22 +62,54 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _plot_tomllib = None  # type: ignore[assignment]
 
-try:
-    import matplotlib.artist  # noqa: F401
-    import matplotlib.axes  # noqa: F401
-    import matplotlib.colors as mcolors
+_MATPLOTLIB_IMPORT_ERROR = None
+_MATPLOTLIB_IMPORT_ERROR = None
+mcolors = None
+plt = None
 
-    # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
-    import matplotlib.image  # noqa: F401
-    import matplotlib.pyplot as plt
-except BaseException:  # pragma: no cover - optional dependency guard; ADR-002
-    if not isinstance(sys.exc_info()[1], Exception):
-        raise
-    mcolors = None  # type: ignore[assignment]
-    plt = None  # type: ignore[assignment]
-    _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
-else:
-    _MATPLOTLIB_IMPORT_ERROR = None
+try:
+    import matplotlib as _matplotlib
+except (ImportError, RuntimeError) as e:
+    _MATPLOTLIB_IMPORT_ERROR = e
+
+
+def __require_matplotlib() -> None:
+    """Ensure matplotlib is available before using plotting functions."""
+    global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
+    from .utils.exceptions import ConfigurationError
+
+    if plt is None or mcolors is None:
+        if _MATPLOTLIB_IMPORT_ERROR is None:
+            try:
+                import matplotlib.artist  # noqa: F401
+                import matplotlib.axes  # noqa: F401
+                import matplotlib.colors as mcolors_local
+
+                # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
+                import matplotlib.image  # noqa: F401
+                import matplotlib.pyplot as plt_local
+
+                mcolors = mcolors_local
+                plt = plt_local
+            except Exception:  # adr002_allow
+                _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
+
+        if plt is None or mcolors is None:
+            msg = (
+                "Plotting requires matplotlib. Install the 'viz' extra: "
+                "pip install calibrated_explanations[viz]"
+            )
+            if _MATPLOTLIB_IMPORT_ERROR is not None:
+                msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
+            raise ConfigurationError(
+                msg,
+                details={
+                    "requirement": "matplotlib",
+                    "extra": "viz",
+                    "reason": "import_failed" if _MATPLOTLIB_IMPORT_ERROR else "not_installed",
+                    "error": str(_MATPLOTLIB_IMPORT_ERROR) if _MATPLOTLIB_IMPORT_ERROR else None,
+                },
+            )
 
 
 def _read_plot_pyproject() -> Dict[str, Any]:
@@ -87,9 +123,7 @@ def _read_plot_pyproject() -> Dict[str, Any]:
     try:
         with candidate.open("rb") as fh:  # type: ignore[arg-type]
             data = _plot_tomllib.load(fh)
-    except BaseException:  # pragma: no cover - permissive fallback; ADR-002
-        if not isinstance(sys.exc_info()[1], Exception):
-            raise
+    except Exception:  # adr002_allow
         return {}
 
     cursor: Any = data
@@ -266,28 +300,6 @@ def update_plot_config(new_config):
         config.write(f)
 
 
-def __require_matplotlib() -> None:
-    """Ensure matplotlib is available before using plotting functions."""
-    from .utils.exceptions import ConfigurationError
-
-    if plt is None or mcolors is None:
-        msg = (
-            "Plotting requires matplotlib. Install the 'viz' extra: "
-            "pip install calibrated_explanations[viz]"
-        )
-        if _MATPLOTLIB_IMPORT_ERROR is not None:
-            msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
-        raise ConfigurationError(
-            msg,
-            details={
-                "requirement": "matplotlib",
-                "extra": "viz",
-                "reason": "import_failed" if _MATPLOTLIB_IMPORT_ERROR else "not_installed",
-                "error": str(_MATPLOTLIB_IMPORT_ERROR) if _MATPLOTLIB_IMPORT_ERROR else None,
-            },
-        )
-
-
 def __setup_plot_style(style_override=None):
     """Set up plot style using configuration with optional runtime overrides."""
     __require_matplotlib()
@@ -398,6 +410,8 @@ def plot_probabilistic(
     predict_payload = dict(predict or {})
 
     if use_legacy:
+        from .legacy import plotting as legacy
+
         legacy._plot_probabilistic(
             explanation,
             instance,
@@ -598,7 +612,9 @@ def plot_probabilistic(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
-        legacy._plot_probabilistic(
+        from .legacy import plotting as legacy_module
+
+        legacy_module._plot_probabilistic(
             explanation,
             instance,
             predict,
@@ -690,6 +706,8 @@ def plot_regression(
         selected_style = None
 
     if use_legacy:
+        from .legacy import plotting as legacy
+
         legacy.plot_regression(
             explanation,
             instance,
@@ -758,7 +776,9 @@ def plot_regression(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
-        legacy.plot_regression(
+        from .legacy import plotting as legacy_module
+
+        legacy_module.plot_regression(
             explanation,
             instance,
             predict,
@@ -818,6 +838,8 @@ def plot_triangular(
         The list of file extensions to save the plot.
     """
     if use_legacy:
+        from .legacy import plotting as legacy
+
         legacy.plot_triangular(
             explanation,
             proba,
@@ -947,6 +969,8 @@ def plot_alternative(
         selected_style = None
 
     if use_legacy:
+        from .legacy import plotting as legacy
+
         legacy.plot_alternative(
             explanation,
             instance,
@@ -1344,6 +1368,8 @@ def plot_alternative(
                 f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
                 stacklevel=2,
             )
+            from .legacy import plotting as legacy
+
             legacy.plot_alternative(
                 explanation,
                 instance,
@@ -1364,6 +1390,8 @@ def plot_alternative(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
+        from .legacy import plotting as legacy
+
         legacy.plot_alternative(
             explanation,
             instance,
@@ -1408,6 +1436,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     # style_override = kwargs.get("style_override")
     use_legacy = kwargs.get("use_legacy", True)
     if use_legacy:
+        from .legacy import plotting as legacy
+
         legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
 
@@ -1480,7 +1510,19 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         if effective_renderer_override:
             try:
                 override_renderer = find_plot_renderer(effective_renderer_override)
-            except Exception:
+            except Exception:  # adr002_allow
+                import logging
+                import warnings
+
+                logging.getLogger(__name__).info(
+                    "Failed to find plot renderer '%s'; falling back to default",
+                    effective_renderer_override,
+                )
+                warnings.warn(
+                    f"Failed to find plot renderer '{effective_renderer_override}'; falling back to default",
+                    UserWarning,
+                    stacklevel=2,
+                )
                 override_renderer = None
             if override_renderer is not None:
                 # Combined plugin returned by registry exposes .builder and .renderer

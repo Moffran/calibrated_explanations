@@ -18,17 +18,17 @@ from tests.helpers.model_utils import (
 def patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
     """Monkeypatch the interval learner factories to return the dummy implementation."""
 
-    def initialize_mock(explainer: CalibratedExplainer, *args: Any, **kwargs: Any) -> None:
+    def initialize\(explainer: CalibratedExplainer, *args: Any, **kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        explainer.initialized = True
+        explainer._CalibratedExplainer__initialized = True
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
-        initialize_mock,
+        _initialize,
     )
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
-        initialize_mock,
+        _initialize,
     )
 
 
@@ -272,32 +272,32 @@ class FakeExplanation:
         percentiles: Tuple[float, float] = None,
         confidence: int = 90,
     ) -> None:
-        self.mode = mode
-        self.thresholded = thresholded
+        self._mode = mode
+        self._thresholded = thresholded
         self.y_threshold = y_threshold
-        self.class_labels = list(class_labels) if class_labels is not None else None
+        self._class_labels = list(class_labels) if class_labels is not None else None
         self.y_minmax = y_minmax
         self.low_high_percentiles = percentiles
         self.prediction = {"classes": 1}
         self.is_multiclass = is_multiclass
-        self.explainer = FakeExplainer(is_multiclass_flag=is_multiclass)
+        self._explainer = FakeExplainer(is_multiclass_flag=is_multiclass)
         self.calibrated_explanations = FakeCalibrationEnvelope(confidence, percentiles)
 
     def _get_explainer(self) -> FakeExplainer:
         """Return the embedded fake explainer."""
-        return self.explainer
+        return self._explainer
 
     def get_mode(self) -> str:
         """Return the explanation mode that was set."""
-        return self.mode
+        return self._mode
 
     def get_class_labels(self) -> Sequence[str] | None:
         """Return the configured class labels or None."""
-        return self.class_labels
+        return self._class_labels
 
     def is_thresholded(self) -> bool:
         """Indicate whether the explanation is thresholded."""
-        return self.thresholded
+        return self._thresholded
 
     def is_one_sided(self) -> bool:
         """Indicate whether the explanation produces one-sided intervals."""

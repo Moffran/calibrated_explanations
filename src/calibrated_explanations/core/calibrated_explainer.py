@@ -912,7 +912,7 @@ class CalibratedExplainer:
             try:
                 self._CalibratedExplainer__fast = True
                 self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
-            except Exception:
+            except Exception:  # adr002_allow
                 self._CalibratedExplainer__fast = False
                 raise
 
@@ -1259,7 +1259,7 @@ class CalibratedExplainer:
 
     def predict_calibrated(
         self,
-        X: Any,
+        x: Any,
         threshold: float | None = None,
         low_high_percentiles: tuple[float, float] = (5, 95),
         classes: Any = None,
@@ -1269,7 +1269,7 @@ class CalibratedExplainer:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
         """Predict calibrated values and intervals."""
         return self._predict(
-            X,
+            x,
             threshold=threshold,
             low_high_percentiles=low_high_percentiles,
             classes=classes,

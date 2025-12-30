@@ -1448,7 +1448,7 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             if callable(alt_loader):
                 try:
                     plugin = alt_loader()
-                except Exception as exc_alt:  # pragma: no cover - best-effort
+                except Exception as exc_alt:  # adr002_allow  # pragma: no cover - best-effort
                     warnings.warn(
                         f"Failed to load plugin entry point {identifier!r}: {exc_alt}",
                         UserWarning,

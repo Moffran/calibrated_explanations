@@ -39,9 +39,11 @@ class ShapHelper:
 
     # Backwards-compatible aliases
     def isenabled(self) -> bool:  # pragma: no cover - legacy alias
+        """Legacy alias for is_enabled."""
         return self.is_enabled()
 
     def setenabled(self, value: bool) -> None:  # pragma: no cover - legacy alias
+        """Legacy alias for set_enabled."""
         self.set_enabled(value)
 
     @property

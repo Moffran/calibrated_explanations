@@ -49,9 +49,9 @@ Analysis shows approximately 1074 private usages in tests:
 - **Category D (Factory Bypass):** ~14 usages (e.g. `_from_config`).
 - **Pattern 3 (Dead Code):** 0 unique candidates (Remediation Complete).
 
-## 2. Remediation Strategy
+## 3. Remediation Patterns
 
-#### Pattern 1: The "Internal Logic" Fix
+### Pattern 1: The "Internal Logic" Fix
 **Before:**
 ```python
 explainer._CalibratedExplainer__set_mode("classification", initialize=False)
@@ -66,7 +66,7 @@ assert explainer.num_classes == 3
 
 See the detailed [Pattern 1 Remediation Plan](PATTERN_1_REMEDIATION_PLAN.md) for the phased execution strategy.
 
-#### Pattern 2: The "Test Utility" Fix
+### Pattern 2: The "Test Utility" Fix
 **Before:**
 ```python
 from ._fixtures import _make_binary_dataset
@@ -79,17 +79,17 @@ from tests.helpers.dataset_utils import make_binary_dataset
 X, y = make_binary_dataset()
 ```
 
-#### Pattern 3: The "Dead Code" Fix
+### Pattern 3: The "Dead Code" Fix
 If a private method is *only* called by tests and not by any library code:
 1.  Remove the test case.
 2.  Remove the private method from the library.
 
-### Phase 3: Prevention (CI/Linting)
+## 4. Prevention (CI/Linting)
 Implement a CI check that fails if new private member accesses are introduced in tests.
 *   **Tool:** Custom AST-based linter or `flake8` plugin.
 *   **Policy:** Zero new violations. Existing violations are whitelisted in `.github/private_member_allowlist.json` until fixed.
 
-#### Allow-list Policy
+### Allow-list Policy
 Methods may be added to the allow-list if they meet one of the following criteria:
 1.  **Name-mangled internals**: Essential for verifying initialization state in unit tests (e.g., `_CalibratedExplainer__initialized`).
 2.  **Internal Factory/Setup**: Methods like `_from_config` used to bypass complex setup in integration tests.
@@ -98,7 +98,7 @@ Methods may be added to the allow-list if they meet one of the following criteri
 
 All allow-list entries must have an **expiry version** (defaulting to the next major release gate, e.g., `v0.11.0`).
 
-## 3. Execution Plan
+## 5. Execution Plan
 
 1.  **Tooling:** Maintain the **Analysis Toolbox** (`scripts/analyze_private_methods.py`, etc.) to track progress.
 2.  **Batch 0 (Dead Code):** Remove the 8 identified Pattern 3 candidates and their associated tests.
@@ -108,7 +108,7 @@ All allow-list entries must have an **expiry version** (defaulting to the next m
 6.  **CI Enforcement:** Enable a linter check.
 
 
-## 4. Coverage Maintenance
+## 6. Coverage Maintenance
 Refactoring must not decrease coverage.
 *   If a private method was tested directly, ensure the new public-API test covers the same code paths.
 *   Use `pytest --cov` to verify coverage before and after each batch.

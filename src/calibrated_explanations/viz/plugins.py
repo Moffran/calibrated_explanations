@@ -60,6 +60,6 @@ class BasePlotRenderer:
                 "plot_spec" in artifact or "kind" in artifact or "plotspec_version" in artifact
             ):
                 validate_plotspec(dict(artifact))
-        except Exception as exc:  # pragma: no cover - surface errors to caller
+        except Exception as exc:  # adr002_allow  # pragma: no cover - surface errors to caller
             raise PlotPluginError("PlotSpec validation failed") from exc
         raise PlotPluginError("Plot renderer must implement render()")

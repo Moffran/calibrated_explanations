@@ -70,7 +70,7 @@ def render(
                 from dataclasses import asdict
 
                 plot_spec_payload = asdict(spec)
-            except Exception:
+            except Exception:  # adr002_allow
                 plot_spec_payload = spec.__dict__ if hasattr(spec, "__dict__") else {}
             sb = getattr(spec, "save_behavior", None)
             bytes_map = {}
@@ -1223,7 +1223,7 @@ def render(
                     plt.savefig(buf, format=ext)
                     buf.seek(0)
                     bytes_map[str(ext)] = buf.read()
-                except Exception:
+                except Exception:  # adr002_allow
                     if not isinstance(sys.exc_info()[1], Exception):
                         raise
                     # On failure to export a format (e.g., matplotlib import issues),

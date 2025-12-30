@@ -626,7 +626,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     )
                     try:
                         explanation_callable = getattr(self.explainer, self._explanation_attr)
-                    except Exception:
+                    except Exception:  # adr002_allow
                         # Defensive: when the provided helper handle does not expose
                         # the expected explanation attribute (unit tests sometimes
                         # supply minimal dummy objects), degrade to an empty
@@ -690,7 +690,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             )
             try:
                 explanation_callable = getattr(self.explainer, self._explanation_attr)
-            except Exception:
+            except Exception:  # adr002_allow
                 # As above: fall back to an empty collection when explainer handle
                 # lacks the expected attribute.
                 class _FallbackCollection:

@@ -26,4 +26,5 @@ jobs:
 
       - name: Run dependency audit
         run: |
-          pip-audit -r requirements.txt -r docs/requirements-doc.txt
+          # GHSA-xm59-rqc7-hhvf has no fixed nbconvert release yet; ignore until patched.
+          pip-audit -r requirements.txt -r docs/requirements-doc.txt --ignore-vuln GHSA-xm59-rqc7-hhvf

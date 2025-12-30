@@ -20,7 +20,7 @@ from tests.helpers.utils import get_env_flag
 from tests.helpers.fixtures import binary_dataset, regression_dataset, multiclass_dataset  # noqa: F401, pylint: disable=unused-import
 
 ATTR_RE = re.compile(r"\._[A-Za-z0-9_]+")
-GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'\)")
+GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'")
 
 
 def load_allowlist(path: Path):
@@ -38,16 +38,6 @@ def is_expired(entry: dict) -> bool:
     if not expiry:
         return False
     try:
-        # Handle version-bound expiry (e.g., v0.11.0)
-        if expiry.startswith("v"):
-            from calibrated_explanations import __version__
-
-            # Simple version comparison (major.minor.patch)
-            current = [int(x) for x in __version__.split("-")[0].split(".")]
-            target = [int(x) for x in expiry.lstrip("v").split(".")]
-            return current >= target
-
-        # Fallback to date-bound expiry
         dt = datetime.fromisoformat(expiry)
         return dt.date() < datetime.utcnow().date()
     except Exception:
@@ -110,7 +100,7 @@ def pytest_sessionstart(session):
         msg_lines.append(f"- {f}: {s}")
     msg_lines.append("")
     msg_lines.append(
-        "If this is a temporary exception, add an entry to .github/private_member_allowlist.json with an expiry version (e.g., v0.11.0)."
+        "If this is a temporary exception, add an entry to .github/private_member_allowlist.json with an expiry date."
     )
     msg = "\n".join(msg_lines)
 
@@ -152,7 +142,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., Calibrat
 
     def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        explainer.initialized = True
+        explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
