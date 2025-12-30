@@ -151,6 +151,9 @@ exclude_lines = [
 [tool.coverage.html]
 directory = "coverage_html"
 
+[tool.setuptools]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+
 [tool.setuptools.packages.find]
 where = ["src", "external_plugins"]
 
