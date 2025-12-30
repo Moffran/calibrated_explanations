@@ -287,9 +287,9 @@ Refer to these decision records when designing advanced plugin configurations:
   – Explanation plugin contracts and output format.
 - [ADR-014 – plot plugin strategy](../../improvement/adrs/ADR-014-plot-plugin-strategy.md)
   – Plot builder/renderer architecture and fallback chains.
-- [ADR-024 – legacy plot input contracts](../../improvement/adrs/ADR-024-legacy-plot-input-contracts.md)
+- [ADR-024 - legacy plot input contracts](../../improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   – PlotSpec and legacy plot input formats.
-- [ADR-025 – legacy plot rendering semantics](../../improvement/adrs/ADR-025-legacy-plot-rendering-semantics.md)
+- [ADR-025 - legacy plot rendering semantics](../../improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
   – Plot rendering semantics and compatibility.
 
 ## Runtime performance toggles

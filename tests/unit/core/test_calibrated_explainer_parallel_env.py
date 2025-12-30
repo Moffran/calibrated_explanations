@@ -15,7 +15,7 @@ def simple_learner_and_data():
     rng = np.random.default_rng(42)
     x = rng.standard_normal((10, 2))
     y = (x[:, 0] > 0).astype(int)
-    learner = LogisticRegression()
+    learner = LogisticRegression(solver="liblinear")
     learner.fit(x, y)
     return learner, x, y
 

@@ -14,6 +14,6 @@ def make_simple_model_helper():
         ]
     )
     y = np.array([0, 0, 1, 1])
-    model = LogisticRegression(random_state=0)
+    model = LogisticRegression(random_state=0, solver="liblinear")
     model.fit(x, y)
     return model, x, y

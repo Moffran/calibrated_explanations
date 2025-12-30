@@ -24,6 +24,7 @@ GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'")
 
 
 def load_allowlist(path: Path):
+    """Return allowlist entries from a JSON file, or an empty list when missing."""
     if not path.exists():
         return []
     try:
@@ -34,6 +35,7 @@ def load_allowlist(path: Path):
 
 
 def is_expired(entry: dict) -> bool:
+    """Return True when the allowlist entry expiry is in the past."""
     expiry = entry.get("expiry")
     if not expiry:
         return False
@@ -45,6 +47,7 @@ def is_expired(entry: dict) -> bool:
 
 
 def scan_and_check(root: Path):
+    """Scan test files for private-member usage and return any matches."""
     tests_dir = root / "tests"
     if not tests_dir.exists():
         return []
@@ -62,6 +65,7 @@ def scan_and_check(root: Path):
 
 
 def pytest_sessionstart(session):
+    """Enforce private-member policy at session start with warnings or errors."""
     root = Path(session.config.rootpath)
     findings = scan_and_check(root)
     if not findings:
