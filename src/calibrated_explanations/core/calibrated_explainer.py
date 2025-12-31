@@ -492,15 +492,45 @@ class CalibratedExplainer:
         """Return the PredictionOrchestrator provisioned by the PluginManager."""
         return self.require_plugin_manager().prediction_orchestrator
 
+    @prediction_orchestrator.setter
+    def prediction_orchestrator(self, value: Any) -> None:
+        """Set the PredictionOrchestrator."""
+        self.require_plugin_manager().prediction_orchestrator = value
+
+    @prediction_orchestrator.deleter
+    def prediction_orchestrator(self) -> None:
+        """Delete the PredictionOrchestrator."""
+        del self.require_plugin_manager().prediction_orchestrator
+
     @property
     def explanation_orchestrator(self) -> Any:
         """Return the ExplanationOrchestrator provisioned by the PluginManager."""
         return self.require_plugin_manager().explanation_orchestrator
 
+    @explanation_orchestrator.setter
+    def explanation_orchestrator(self, value: Any) -> None:
+        """Set the ExplanationOrchestrator."""
+        self.require_plugin_manager().explanation_orchestrator = value
+
+    @explanation_orchestrator.deleter
+    def explanation_orchestrator(self) -> None:
+        """Delete the ExplanationOrchestrator."""
+        del self.require_plugin_manager().explanation_orchestrator
+
     @property
     def reject_orchestrator(self) -> Any:
         """Return the RejectOrchestrator provisioned by the PluginManager."""
         return self.require_plugin_manager().reject_orchestrator
+
+    @reject_orchestrator.setter
+    def reject_orchestrator(self, value: Any) -> None:
+        """Set the RejectOrchestrator."""
+        self.require_plugin_manager().reject_orchestrator = value
+
+    @reject_orchestrator.deleter
+    def reject_orchestrator(self) -> None:
+        """Delete the RejectOrchestrator."""
+        del self.require_plugin_manager().reject_orchestrator
 
     def build_plot_style_chain(self) -> Tuple[str, ...]:
         """Return the plot style chain.
@@ -810,6 +840,11 @@ class CalibratedExplainer:
     def interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
         self._interval_preferred_identifier = value
 
+    @interval_preferred_identifier.deleter
+    def interval_preferred_identifier(self) -> None:
+        """Delete the interval preferred identifier."""
+        del self._interval_preferred_identifier
+
     @property
     def telemetry_interval_sources(self) -> Dict[str, str | None]:
         """Public alias for `_telemetry_interval_sources`."""
@@ -818,6 +853,123 @@ class CalibratedExplainer:
     @telemetry_interval_sources.setter
     def telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
         self._telemetry_interval_sources = value
+
+    @telemetry_interval_sources.deleter
+    def telemetry_interval_sources(self) -> None:
+        """Delete the telemetry interval sources."""
+        del self._telemetry_interval_sources
+
+    @property
+    def interval_plugin_identifiers(self) -> Dict[str, str | None]:
+        """Public alias for `_interval_plugin_identifiers`."""
+        return self._interval_plugin_identifiers
+
+    @interval_plugin_identifiers.setter
+    def interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
+        self._interval_plugin_identifiers = value
+
+    @interval_plugin_identifiers.deleter
+    def interval_plugin_identifiers(self) -> None:
+        """Delete the interval plugin identifiers."""
+        del self._interval_plugin_identifiers
+
+    @property
+    def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Public alias for `_interval_context_metadata`."""
+        return self._interval_context_metadata
+
+    @interval_context_metadata.setter
+    def interval_context_metadata(self, value: Dict[str, Dict[str, Any]]) -> None:
+        self._interval_context_metadata = value
+
+    @interval_context_metadata.deleter
+    def interval_context_metadata(self) -> None:
+        """Delete the interval context metadata."""
+        del self._interval_context_metadata
+
+    @property
+    def bridge_monitors(self) -> Dict[str, Any]:
+        """Public alias for `_bridge_monitors`."""
+        return self._bridge_monitors
+
+    @bridge_monitors.setter
+    def bridge_monitors(self, value: Dict[str, Any]) -> None:
+        """Set the bridge monitors."""
+        self.require_plugin_manager().bridge_monitors = value
+
+    @property
+    def explanation_plugin_instances(self) -> Dict[str, Any]:
+        """Public alias for `_explanation_plugin_instances`."""
+        return self._explanation_plugin_instances
+
+    @explanation_plugin_instances.setter
+    def explanation_plugin_instances(self, value: Dict[str, Any]) -> None:
+        """Set the explanation plugin instances."""
+        self.require_plugin_manager().explanation_plugin_instances = value
+
+    @property
+    def pyproject_explanations(self) -> Dict[str, Any] | None:
+        """Public alias for `_pyproject_explanations`."""
+        return self._pyproject_explanations
+
+    @pyproject_explanations.setter
+    def pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
+        self._pyproject_explanations = value
+
+    @property
+    def pyproject_intervals(self) -> Dict[str, Any] | None:
+        """Public alias for `_pyproject_intervals`."""
+        return self._pyproject_intervals
+
+    @pyproject_intervals.setter
+    def pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
+        self._pyproject_intervals = value
+
+    @property
+    def pyproject_plots(self) -> Dict[str, Any] | None:
+        """Public alias for `_pyproject_plots`."""
+        return self._pyproject_plots
+
+    @pyproject_plots.setter
+    def pyproject_plots(self, value: Dict[str, Any] | None) -> None:
+        self._pyproject_plots = value
+
+    @property
+    def lime_helper(self) -> Any:
+        """Public alias for `_lime_helper`."""
+        return self._lime_helper
+
+    @lime_helper.setter
+    def lime_helper(self, value: Any) -> None:
+        """Set the LIME helper."""
+        self._lime_helper = value
+
+    @lime_helper.deleter
+    def lime_helper(self) -> None:
+        """Delete the LIME helper."""
+        if hasattr(self, "_lime_helper"):
+            del self._lime_helper
+
+    @property
+    def shap_helper(self) -> Any:
+        """Public alias for `_shap_helper`."""
+        return self._shap_helper
+
+    @shap_helper.setter
+    def shap_helper(self, value: Any) -> None:
+        """Set the SHAP helper."""
+        self._shap_helper = value
+
+    @shap_helper.deleter
+    def shap_helper(self) -> None:
+        """Delete the SHAP helper."""
+        if hasattr(self, "_shap_helper"):
+            del self._shap_helper
+
+    @shap_helper.setter
+    def shap_helper(self, value: Any) -> None:
+        """Set the SHAP helper."""
+        self._shap_helper = value
 
     @property
     def initialized(self) -> bool:
