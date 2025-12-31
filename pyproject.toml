@@ -99,6 +99,7 @@ filterwarnings = [
     # Ignore deprecation warnings from third-party libraries that are outside our control
     "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
     "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
+    "ignore:Auto-close.*backend switching.*:matplotlib._api.deprecation.MatplotlibDeprecationWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",

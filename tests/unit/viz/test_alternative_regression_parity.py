@@ -114,6 +114,7 @@ def collect_legacy_summary(
 ) -> Dict[str, Dict[str, Dict[str, float | str]]]:
     mp = MonkeyPatch()
     try:
+        plt.close("all")
         plt.switch_backend("Agg")
         records: list[tuple[str, tuple, dict]] = []
 
