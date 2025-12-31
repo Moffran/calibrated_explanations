@@ -100,6 +100,7 @@ filterwarnings = [
     "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
     # Ignore pyparsing deprecation warning (emitted by matplotlib)
     "ignore:.*'parseString' deprecated - use 'parse_string'.*:DeprecationWarning",
+    "ignore:.*'resetCache' deprecated - use 'reset_cache'.*:DeprecationWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
