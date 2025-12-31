@@ -98,6 +98,8 @@ filterwarnings = [
     "error:.*fall.*back.*:UserWarning",
     # Ignore scipy.optimize deprecation warning (emitted by sklearn LogisticRegression)
     "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
+    # Ignore pyparsing deprecation warning (emitted by matplotlib)
+    "ignore:.*'parseString' deprecated - use 'parse_string'.*:DeprecationWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
