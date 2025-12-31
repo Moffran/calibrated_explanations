@@ -97,8 +97,8 @@ filterwarnings = [
     # Matches variations like "falling back", "fall back", and "fallback"
     "error:.*fall.*back.*:UserWarning",
     # Ignore deprecation warnings from third-party libraries that are outside our control
-    "ignore::DeprecationWarning:pyparsing.*",
-    "ignore::DeprecationWarning:scipy.optimize.*",
+    "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
+    "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
