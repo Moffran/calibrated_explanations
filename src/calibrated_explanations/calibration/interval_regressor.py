@@ -465,8 +465,13 @@ class IntervalRegressor:
                 indices = np.searchsorted(alphas, residuals[cps_idx])
                 self.split["cps"].alphas = np.insert(alphas, indices, residuals[cps_idx])
             else:
-                bin_values = self.split["cps"].binned_alphas[0]
-                alpha_list = self.split["cps"].binned_alphas[1]
+                # Support both legacy stubs and crepes 0.9.0+
+                if hasattr(self.split["cps"], "binned_alphas"):
+                    bin_values = self.split["cps"].binned_alphas[0]
+                    alpha_list = self.split["cps"].binned_alphas[1]
+                else:
+                    bin_values = self.split["cps"].alphas[0]
+                    alpha_list = self.split["cps"].alphas[1]
                 for b in np.unique(bins):
                     if b not in bin_values:
                         continue
@@ -483,8 +488,13 @@ class IntervalRegressor:
             indices = np.searchsorted(alphas, residuals)
             self.cps.alphas = np.insert(alphas, indices, residuals)
         else:
-            bin_values = self.cps.binned_alphas[0]
-            alpha_list = self.cps.binned_alphas[1]
+            # Support both legacy stubs and crepes 0.9.0+
+            if hasattr(self.cps, "binned_alphas"):
+                bin_values = self.cps.binned_alphas[0]
+                alpha_list = self.cps.binned_alphas[1]
+            else:
+                bin_values = self.cps.alphas[0]
+                alpha_list = self.cps.alphas[1]
             for b in np.unique(bins):
                 if b not in bin_values:
                     continue

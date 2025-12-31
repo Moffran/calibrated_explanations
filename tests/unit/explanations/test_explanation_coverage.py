@@ -100,7 +100,7 @@ def test_explanation_get_explainer_fallbacks():
 
     # Test _get_explainer fallback
     mock_ce_1 = MagicMock(spec=[])
-    mock_ce_1._get_explainer = MagicMock(return_value=mock_explainer)
+    setattr(mock_ce_1, "_get_explainer", MagicMock(return_value=mock_explainer))
     exp1 = ConcreteExplanation(
         mock_ce_1, 0, np.array([[1]]), {}, {}, {}, {"predict": [0.5], "low": [0.4], "high": [0.6]}
     )
@@ -132,13 +132,13 @@ def test_explanation_ignored_features():
     exp = ConcreteExplanation(
         mock_ce, 0, np.array([[1]]), {}, {}, {}, {"predict": [0.5], "low": [0.4], "high": [0.6]}
     )
-    ignored = exp._ignored_features_for_instance()
+    ignored = exp.ignored_features_for_instance()
     assert 1 in ignored
     assert 2 in ignored
 
     # Test with None
     mock_ce.features_to_ignore = None
-    ignored = exp._ignored_features_for_instance()
+    ignored = exp.ignored_features_for_instance()
     assert len(ignored) == 0
 
 
@@ -257,17 +257,17 @@ def test_predict_conjunction_tuple_empty():
     )
 
     # Empty rule_value_set
-    res = exp._predict_conjunction_tuple([], [], np.array([1]), None, None)
+    res = exp.predict_conjunction_tuple([], [], np.array([1]), None, None)
     assert res == (0.0, 0.0, 0.0)
 
     # combo_matrix.size == 0
-    res2 = exp._predict_conjunction_tuple([[]], [0], np.array([1]), None, None)
+    res2 = exp.predict_conjunction_tuple([[]], [0], np.array([1]), None, None)
     assert res2 == (0.0, 0.0, 0.0)
 
 
 def test_predict_conjunction_tuple_with_bins():
     mock_explainer = MagicMock()
-    mock_explainer._predict.return_value = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
+    mock_explainer.predict_calibrated.return_value = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
     mock_ce = MagicMock()
     mock_ce.get_explainer.return_value = mock_explainer
     mock_ce.low_high_percentiles = (5, 95)
@@ -276,9 +276,9 @@ def test_predict_conjunction_tuple_with_bins():
     )
 
     # With bins as scalar
-    res = exp._predict_conjunction_tuple([[1]], [0], np.array([1]), None, None, bins=0)
+    res = exp.predict_conjunction_tuple([[1]], [0], np.array([1]), None, None, bins=0)
     assert res == (0.5, 0.4, 0.6)
 
     # With bins as array
-    res2 = exp._predict_conjunction_tuple([[1]], [0], np.array([1]), None, None, bins=np.array([0]))
+    res2 = exp.predict_conjunction_tuple([[1]], [0], np.array([1]), None, None, bins=np.array([0]))
     assert res2 == (0.5, 0.4, 0.6)

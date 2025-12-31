@@ -109,19 +109,19 @@ def test_feature_filter_config_from_env_variants(monkeypatch):
 
 
 def test_safe_len_feature_weights_variants():
-    from calibrated_explanations.core.explain._feature_filter import _safe_len_feature_weights
+    from calibrated_explanations.core.explain._feature_filter import safe_len_feature_weights
     from unittest.mock import MagicMock
 
     # Empty explanations
     mock_ce = MagicMock()
     mock_ce.explanations = []
-    assert _safe_len_feature_weights(mock_ce) == 0
+    assert safe_len_feature_weights(mock_ce) == 0
 
     # Scalar weights
     mock_exp = MagicMock()
     mock_exp.feature_weights = {"predict": 1.0}
     mock_ce.explanations = [mock_exp]
-    assert _safe_len_feature_weights(mock_ce) == 1
+    assert safe_len_feature_weights(mock_ce) == 1
 
 
 def test_compute_filtered_features_to_ignore_edge_cases():

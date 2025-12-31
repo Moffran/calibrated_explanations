@@ -205,6 +205,10 @@ class ExplainerStub:
         high = np.full((rows, 1), 1.5)
         return predict, low, high, np.zeros(rows)
 
+    def predict_calibrated(self, data, **kwargs):
+        """Internal prediction method used by conjunctive predictions."""
+        return self.predict(data, **kwargs)
+
     def _predict(self, data, **kwargs):
         """Internal prediction method used by conjunctive predictions."""
         return self.predict(data, **kwargs)
@@ -532,20 +536,20 @@ def test_build_uncertainty_payload_controls_percentiles():
 
 
 def test_ignored_features_for_instance_combines_global_and_per_instance(simple_explanation):
-    """_ignored_features_for_instance should merge collection and per-instance masks."""
+    """ignored_features_for_instance should merge collection and per-instance masks."""
     explanation = simple_explanation
     container = explanation.calibrated_explanations
 
     # Global ignore only
     container.features_to_ignore = [0]
     container.features_to_ignore_per_instance = [[], []]
-    ignored = explanation._ignored_features_for_instance()
+    ignored = explanation.ignored_features_for_instance()
     assert 0 in ignored
 
     # Per-instance ignore for this index should be honoured
     container.features_to_ignore = []
     container.features_to_ignore_per_instance = [[], [1]]
-    ignored = explanation._ignored_features_for_instance()
+    ignored = explanation.ignored_features_for_instance()
     assert 1 in ignored
     assert 0 not in ignored
 

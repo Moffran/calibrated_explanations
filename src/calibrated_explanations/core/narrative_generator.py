@@ -97,7 +97,7 @@ def fmt_float(x: Optional[float], nd=3) -> str:
     return "N/A" if x is None else f"{x:.{nd}f}"
 
 
-def _first_or_none(x):
+def first_or_none(x):
     """Return first element if list/array-like, else the scalar."""
     if x is None:
         return None
@@ -191,9 +191,9 @@ class NarrativeGenerator:
             )
 
         # Extract base prediction values
-        bp = _first_or_none(rules_dict.get("base_predict"))
-        bl = _first_or_none(rules_dict.get("base_predict_low"))
-        bh = _first_or_none(rules_dict.get("base_predict_high"))
+        bp = first_or_none(rules_dict.get("base_predict"))
+        bl = first_or_none(rules_dict.get("base_predict_low"))
+        bh = first_or_none(rules_dict.get("base_predict_high"))
 
         # Build context dictionary
         # Try to get the predicted class/label
@@ -247,7 +247,7 @@ class NarrativeGenerator:
             return f"Template not found for {problem_type}/{explanation_type}/{expertise_level}"
 
         # Get feature rules with proper feature names
-        rules = self._serialize_rules(rules_dict, feature_names)
+        rules = self.serialize_rules(rules_dict, feature_names)
 
         # Split features by weight sign
         pos_features = [r for r in rules if r.get("weight", 0) > 0]
@@ -272,7 +272,7 @@ class NarrativeGenerator:
             neg_uncertain = [r for r in neg_features if has_wide_prediction_interval(r)]
             uncertain_all = pos_uncertain + neg_uncertain
 
-            narrative = self._expand_template(
+            narrative = self.expand_template(
                 template,
                 pos_certain,
                 neg_certain,
@@ -282,7 +282,7 @@ class NarrativeGenerator:
                 problem_type,  # Pass problem_type
             )
         else:
-            narrative = self._expand_template(
+            narrative = self.expand_template(
                 template,
                 pos_features,
                 neg_features,
@@ -294,7 +294,7 @@ class NarrativeGenerator:
 
         return narrative
 
-    def _serialize_rules(
+    def serialize_rules(
         self, rules_dict: Dict, feature_names: Optional[List[str]] = None
     ) -> List[Dict]:
         """Convert rule dictionary to list of feature dictionaries with proper names."""
@@ -353,7 +353,7 @@ class NarrativeGenerator:
 
         return result
 
-    def _expand_template(
+    def expand_template(
         self,
         template: str,
         pos_features: List[Dict],

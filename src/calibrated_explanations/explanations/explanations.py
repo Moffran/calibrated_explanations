@@ -1525,6 +1525,19 @@ class FrozenCalibratedExplainer:
         return self._explainer.difficulty_estimator
 
     @property
+    def predict_calibrated(self):
+        """
+        Retrieves the predict function from the underlying explainer.
+
+        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
+
+        Returns
+        -------
+            function: The predict function used by the explainer.
+        """
+        return self._explainer.predict_calibrated
+
+    @property
     def _predict(self):
         """
         Retrieves the predict function from the underlying explainer.

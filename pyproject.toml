@@ -96,6 +96,8 @@ filterwarnings = [
     # Tests that explicitly validate fallback behavior must use the enable_fallbacks fixture
     # Matches variations like "falling back", "fall back", and "fallback"
     "error:.*fall.*back.*:UserWarning",
+    # Ignore scipy.optimize deprecation warning (emitted by sklearn LogisticRegression)
+    "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",

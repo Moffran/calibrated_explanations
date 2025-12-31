@@ -287,7 +287,7 @@ class CalibratedExplanation(ABC):
             return container.explainer
         return getattr(container, "calibrated_explainer", container)
 
-    def _ignored_features_for_instance(self):
+    def ignored_features_for_instance(self):
         """Return the set of feature indices ignored for this instance.
 
         Combines collection-level ``features_to_ignore`` with any
@@ -806,7 +806,7 @@ class CalibratedExplanation(ABC):
         else:
             x = explainer.discretizer.discretize(self.x_test)
 
-        ignored = self._ignored_features_for_instance()
+        ignored = self.ignored_features_for_instance()
         for f in range(self.get_explainer().num_features):
             if f in ignored:
                 self.conditions.append("")
@@ -832,7 +832,7 @@ class CalibratedExplanation(ABC):
             self.conditions.append(rule)
         return self.conditions
 
-    def _predict_conjunction_tuple(
+    def predict_conjunction_tuple(
         self,
         rule_value_set,
         original_features,
@@ -842,7 +842,7 @@ class CalibratedExplanation(ABC):
         bins=None,
     ):
         """Calculate the prediction for a conjunctive rule using batched inference."""
-        predict_fn = self.get_explainer()._predict
+        predict_fn = self.get_explainer().predict_calibrated
         perturbed = np.array(perturbed, copy=True)
 
         # Prepare value arrays
@@ -946,7 +946,7 @@ class CalibratedExplanation(ABC):
             )
 
         if use_batched:
-            return self._predict_conjunction_tuple(
+            return self.predict_conjunction_tuple(
                 rule_value_set,
                 original_features,
                 perturbed,
@@ -955,7 +955,7 @@ class CalibratedExplanation(ABC):
                 bins,
             )
 
-        predict_fn = self.get_explainer()._predict  # pylint: disable=protected-access
+        predict_fn = self.get_explainer().predict_calibrated  # pylint: disable=protected-access
         # Ensure perturbed is a writable copy to avoid "read-only" errors
         perturbed = np.array(perturbed, copy=True)
 
@@ -1474,7 +1474,7 @@ class FactualExplanation(CalibratedExplanation):
         )
 
         rules = self.define_conditions()
-        ignored = self._ignored_features_for_instance()
+        ignored = self.ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
             if f in ignored:
                 continue
@@ -2069,7 +2069,7 @@ class AlternativeExplanation(CalibratedExplanation):
         )
 
         rule_boundaries = self.get_explainer().rule_boundaries(instance)
-        ignored = self._ignored_features_for_instance()
+        ignored = self.ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
             if f in ignored:
                 continue

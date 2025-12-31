@@ -136,7 +136,7 @@ def _read_plot_pyproject() -> Dict[str, Any]:
     return {}
 
 
-def _split_csv(value: Any) -> Sequence[str]:
+def split_csv(value: Any) -> Sequence[str]:
     """Normalize comma-separated labels into a tuple."""
     if not value:
         return ()
@@ -191,13 +191,13 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
     env_style = os.environ.get("CE_PLOT_STYLE")
     if env_style:
         chain.append(env_style.strip())
-    chain.extend(_split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+    chain.extend(split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
 
     py_settings = _read_plot_pyproject()
     py_style = py_settings.get("style")
     if isinstance(py_style, str) and py_style:
         chain.append(py_style)
-    chain.extend(_split_csv(py_settings.get("fallbacks")))
+    chain.extend(split_csv(py_settings.get("fallbacks")))
 
     # If no explicit style provided, prepend the default style from registry
     if not chain:

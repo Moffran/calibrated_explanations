@@ -70,10 +70,10 @@ def test_calibrated_explainer_close():
     from unittest.mock import MagicMock
 
     mock_perf = MagicMock()
-    explainer._perf_parallel = mock_perf
+    setattr(explainer, "_perf_parallel", mock_perf)
     explainer.close()
     mock_perf.__exit__.assert_called_once()
-    assert explainer._perf_parallel is None
+    assert getattr(explainer, "_perf_parallel", None) is None
 
 
 def test_calibrated_explainer_context_manager():

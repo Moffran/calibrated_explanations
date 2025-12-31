@@ -3,7 +3,7 @@ import numpy as np
 from calibrated_explanations.core.narrative_generator import (
     load_template_file,
     to_py,
-    _first_or_none,
+    first_or_none,
     clean_condition,
     crosses_zero,
     has_wide_prediction_interval,
@@ -37,10 +37,10 @@ def test_to_py_variants():
 
 
 def test_first_or_none_variants():
-    assert _first_or_none(None) is None
-    assert _first_or_none([]) is None
-    assert _first_or_none([1, 2]) == 1
-    assert _first_or_none(5) == 5
+    assert first_or_none(None) is None
+    assert first_or_none([]) is None
+    assert first_or_none([1, 2]) == 1
+    assert first_or_none(5) == 5
 
 
 def test_clean_condition_variants():
@@ -123,7 +123,7 @@ def test_serialize_rules_variants():
     gen = NarrativeGenerator()
     # Invalid feature index
     rules_dict = {"rule": ["feat > 5"], "feature": [10]}
-    res = gen._serialize_rules(rules_dict, feature_names=["a", "b"])
+    res = gen.serialize_rules(rules_dict, feature_names=["a", "b"])
     assert res[0]["feature_name"] == "feat"  # extracted from rule
 
 
@@ -136,13 +136,13 @@ def test_expand_template_caution_logic():
         "pred_interval_upper": "0.5",  # width 0.4 > 0.2
     }
     # Beginner level caution
-    res = gen._expand_template(
+    res = gen.expand_template(
         template, pos_features, [], [], context, "beginner", "binary_classification"
     )
     assert "⚠️ Use caution: uncertainty is high." in res
 
     # Advanced level caution
-    res2 = gen._expand_template(
+    res2 = gen.expand_template(
         template, pos_features, [], [], context, "advanced", "binary_classification"
     )
     assert "calibrated probability interval is wide (0.400)" in res2
@@ -153,10 +153,10 @@ def test_expand_template_feat_name_fallback():
     template = "{feature_name}"
     # feature_name is None, fallback to rule.split()[0]
     pos_features = [{"feature_name": None, "rule": "f1 > 0", "weight": 1.0}]
-    res = gen._expand_template(template, pos_features, [], [], {}, "beginner")
+    res = gen.expand_template(template, pos_features, [], [], {}, "beginner")
     assert "f1" in res
 
     # rule is empty
     pos_features2 = [{"feature_name": None, "rule": "", "weight": 1.0}]
-    res2 = gen._expand_template(template, pos_features2, [], [], {}, "beginner")
+    res2 = gen.expand_template(template, pos_features2, [], [], {}, "beginner")
     assert res2 == ""

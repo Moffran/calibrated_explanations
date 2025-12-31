@@ -31,6 +31,9 @@ To reduce coupling between tests and internal implementation details, several pr
   - Refactored `_interval_registry` to public `interval_registry`.
 - **IntervalRegressor**:
   - Standardized to use `_y_cal_hat_storage` consistently.
+  - Added compatibility for `crepes` 0.9.0 by handling `_y_cal_hat` vs `y_cal_hat` attribute changes.
+- **FrozenCalibratedExplainer**:
+  - Added `predict_calibrated` property to ensure API parity with `CalibratedExplainer`.
 - **Integrations**:
   - Updated `LimePipeline` integration to use public `is_mondrian` and `predict_calibrated` APIs.
   - Made `_is_mondrian` public in `PredictionHelpers` protocol.
