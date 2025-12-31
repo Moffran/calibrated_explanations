@@ -76,7 +76,11 @@ class LimeHelper:
         if self._enabled and self._explainer_instance is not None:
             return self._explainer_instance, self._reference_explanation
 
-        lime_cls = safe_import("lime.lime_tabular", "LimeTabularExplainer")
+        try:
+            lime_cls = safe_import("lime.lime_tabular", "LimeTabularExplainer")
+        except ImportError:
+            self._enabled = False
+            return None, None
         if not lime_cls:
             return None, None
 

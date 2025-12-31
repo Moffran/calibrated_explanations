@@ -87,7 +87,11 @@ class ShapHelper:
             if shape is not None and shape[0] == num_test:
                 return self._explainer_instance, self._reference_explanation
 
-        shap_module = safe_import("shap")
+        try:
+            shap_module = safe_import("shap")
+        except ImportError:
+            self._enabled = False
+            return None, None
         if not shap_module:
             return None, None
         x_cal = getattr(self.explainer, "x_cal", None)
