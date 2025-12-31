@@ -267,7 +267,12 @@ def test_predict_conjunction_tuple_empty():
 
 def test_predict_conjunction_tuple_with_bins():
     mock_explainer = MagicMock()
-    mock_explainer.predict_calibrated.return_value = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
+    mock_explainer.predict_calibrated.return_value = (
+        np.array([0.5]),
+        np.array([0.4]),
+        np.array([0.6]),
+        None,
+    )
     mock_ce = MagicMock()
     mock_ce.get_explainer.return_value = mock_explainer
     mock_ce.low_high_percentiles = (5, 95)

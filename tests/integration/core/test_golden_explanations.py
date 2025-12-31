@@ -72,8 +72,8 @@ def approx_equal(a, b):
             return False
         for x, y in zip(a, b):
             if isinstance(x, (int, float)) and isinstance(y, (int, float)):
-                # Relaxed the tolerance from 1e-12 to 1e-8 to account for 
-                # minor floating-point variations across different environments 
+                # Relaxed the tolerance from 1e-12 to 1e-8 to account for
+                # minor floating-point variations across different environments
                 # and library versions.
                 if abs(x - y) > 1e-8:
                     return False

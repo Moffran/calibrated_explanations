@@ -370,6 +370,10 @@ class CalibratedExplainer:
         return manager
 
     def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
+        """Internal alias for resolve_parallel_executor."""
+        return self.resolve_parallel_executor(explicit_executor)
+
+    def resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
         """Resolve the parallel executor honoring overrides and environment config."""
         from ..parallel import ParallelConfig, ParallelExecutor
 
@@ -549,7 +553,11 @@ class CalibratedExplainer:
         """Delegate to ExplanationOrchestrator."""
         return self.explanation_orchestrator.build_instance_telemetry_payload(explanations)
 
-    def _invoke_explanation_plugin(
+    def _invoke_explanation_plugin(self, *args, **kwargs) -> Any:
+        """Internal alias for invoke_explanation_plugin."""
+        return self.invoke_explanation_plugin(*args, **kwargs)
+
+    def invoke_explanation_plugin(
         self,
         mode: str,
         x: Any,
@@ -867,6 +875,46 @@ class CalibratedExplainer:
     @interval_plugin_identifiers.setter
     def interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
         self._interval_plugin_identifiers = value
+
+    @property
+    def preprocessor_metadata(self) -> Any:
+        """Public alias for `_preprocessor_metadata`."""
+        return self._preprocessor_metadata
+
+    @preprocessor_metadata.setter
+    def preprocessor_metadata(self, value: Any) -> None:
+        self._preprocessor_metadata = value
+
+    @property
+    def feature_names_internal(self) -> Any:
+        """Public alias for `_feature_names`."""
+        return self._feature_names
+
+    @feature_names_internal.setter
+    def feature_names_internal(self, value: Any) -> None:
+        self._feature_names = value
+
+    @property
+    def perf_parallel(self) -> bool:
+        """Public alias for `_perf_parallel`."""
+        return self._perf_parallel
+
+    @perf_parallel.setter
+    def perf_parallel(self, value: bool) -> None:
+        self._perf_parallel = value
+
+    @property
+    def get_sigma_test(self) -> bool:
+        """Public alias for `_get_sigma_test`."""
+        return self._get_sigma_test
+
+    @get_sigma_test.setter
+    def get_sigma_test(self, value: bool) -> None:
+        self._get_sigma_test = value
+
+    def initialize_interval_learner_for_fast_explainer(self, *args, **kwargs) -> Any:
+        """Public alias for internal interval learner initialization."""
+        return self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer(*args, **kwargs)
 
     @interval_plugin_identifiers.deleter
     def interval_plugin_identifiers(self) -> None:
@@ -1481,7 +1529,11 @@ class CalibratedExplainer:
         """
         return self._shap_helper.preload(num_test=num_test)
 
-    def _predict(
+    def _predict(self, *args, **kwargs) -> Any:
+        """Internal alias for predict_internal."""
+        return self.predict_internal(*args, **kwargs)
+
+    def predict_internal(
         self,
         x,
         threshold=None,
@@ -1498,8 +1550,8 @@ class CalibratedExplainer:
         # The public `.predict` may be a MagicMock in tests; calling the
         # implementation ensures the intended behavior is exercised.
         orchestrator = self.prediction_orchestrator
-        if hasattr(orchestrator, "_predict_impl"):
-            return orchestrator._predict_impl(
+        if hasattr(orchestrator, "predict_internal"):
+            return orchestrator.predict_internal(
                 x,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,
@@ -1645,7 +1697,11 @@ class CalibratedExplainer:
             _skip_instance_parallel=_skip_instance_parallel,
         )
 
-    def _explain(
+    def _explain(self, *args, **kwargs) -> CalibratedExplanations:
+        """Internal alias for explain_internal."""
+        return self.explain_internal(*args, **kwargs)
+
+    def explain_internal(
         self,
         x,
         threshold=None,

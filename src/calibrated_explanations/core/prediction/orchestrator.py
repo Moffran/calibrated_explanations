@@ -233,6 +233,10 @@ class PredictionOrchestrator:
                     stacklevel=2,
                 )
 
+    def predict_internal(self, *args, **kwargs) -> Any:
+        """Public alias for internal predict implementation."""
+        return self._predict_impl(*args, **kwargs)
+
     def _predict_impl(
         self,
         x,
