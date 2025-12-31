@@ -1217,6 +1217,162 @@
       "symbol": "_plot_regression",
       "expiry": "legacy, no expiry",
       "reason": "Pattern 1 remediation: _plot_regression is allow-listed due to Defined in calibrated_explanations\\legacy\\plotting.py"
+    },
+    {
+      "file": "tests/plugins/test_registry_metadata_ext.py",
+      "symbol": "_checksum_mod",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/test_perf_parallel.py",
+      "symbol": "_JoblibParallel",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/viz/test_plotspec_render_behavior.py",
+      "symbol": "_require_mpl",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/api/test_api_builder.py",
+      "symbol": "_perf_from_config",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/perf/test_parallel.py",
+      "symbol": "_JoblibParallel",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/perf/test_parallel.py",
+      "symbol": "_joblib_delayed",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/explain/test_fast_feature_filter.py",
+      "symbol": "_feature_filter",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/plugins/test_execution_strategy_wrappers.py",
+      "symbol": "_feature_filter",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/plugins/test_execution_strategy_wrappers.py",
+      "symbol": "_shared",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_plugins_registry.py",
+      "symbol": "_register_builtins",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_deprecation_import.py",
+      "symbol": "_legacy_explain",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_calibrated_explainer_additional.py",
+      "symbol": "_is_lime_enabled",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_calibrated_explainer_additional.py",
+      "symbol": "_is_shap_enabled",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_calibrated_explainer_additional.py",
+      "symbol": "_shared",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_feature_filter_helpers.py",
+      "symbol": "_feature_filter",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_explain_helpers_and_plugins.py",
+      "symbol": "_shared",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_wrap_keyword_defaults.py",
+      "symbol": "_from_config",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_prediction_helpers.py",
+      "symbol": "_computation",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_instance_parallel.py",
+      "symbol": "_shared",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_X_cal",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_calibrated_explainer_runtime_helpers.py",
+      "symbol": "_legacy_explain",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_helpers.py",
+      "symbol": "_fake_plugin",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/test_explain_legacy_equivalence.py",
+      "symbol": "_legacy_explain",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/explain/test_parallel_executors.py",
+      "symbol": "_shared",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/explain/test_feature_filter_helpers.py",
+      "symbol": "_feature_filter",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
+    },
+    {
+      "file": "tests/unit/core/explain/test_parallel_instance_tasks.py",
+      "symbol": "_shared",
+      "expiry": "v0.11.0",
+      "reason": "Pattern 1 remediation: acceptable test internal"
     }
   ]
 }
