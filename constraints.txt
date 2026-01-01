@@ -1,40 +1,14 @@
 # Dependency constraints for development and CI.
 #
+# ONLY absolutely necessary constraints are included here to ensure compatibility
+# where upstream packages have strict requirements (e.g., numpy version splits).
+# All other dependencies use the softer ranges from requirements.txt.
+#
 # Update policy:
-# - Prefer regenerating with pip-tools (pip-compile) when network access allows.
-# - Keep pins aligned with Python 3.10-3.12 support.
-# - Add new entries when CI introduces new direct dependencies.
+# - Add pins ONLY when CI reveals unavoidable incompatibilities.
+# - Remove pins as soon as upstream fixes the issues.
 
-cachetools==5.3.3
-crepes==0.7.1
-ipython==8.26.0
-jsonschema==4.23.0
-lime==0.2.0.1
-matplotlib==3.8.4
-mypy==1.11.2
-nbqa==1.8.5
-numpy==1.26.4
-numpydoc==1.7.0
-pandas==2.2.2
-pip-audit==2.7.3
-psutil==5.9.8
-pympler==1.1
-pydocstyle==6.3.0
-pytest==8.3.3
-pytest-cov==5.0.0
-pyyaml==6.0.2
-ruff==0.6.9
-scikit-learn==1.4.2
-venn-abers==1.4.1
-
-# Documentation toolchain pins (align with docs/requirements-doc.txt)
-myst-parser==3.0.1
-nbsphinx==0.9.7
-pydata-sphinx-theme==0.16.1
-furo==2025.9.25
-sphinxcontrib-mermaid==1.2.2
-linkify-it-py==2.0.3
-docutils==0.20.1
-sphinx-rtd-theme==3.0.2
-roman==5.0
-sphinx==7.4.7
+numpy==1.26.4; python_version < '3.13'
+numpy==2.1.2; python_version >= '3.13'
+scikit-learn==1.4.2; python_version < '3.13'
+scikit-learn==1.5.2; python_version >= '3.13'
