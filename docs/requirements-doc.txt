@@ -2,17 +2,17 @@ crepes >= 0.7.1
 ipython
 scikit-learn
 matplotlib >= 3.4
-myst_parser>=3.0.1
-nbsphinx>=0.9.8
+myst_parser==3.0.1
+nbsphinx==0.9.7
 numpy >= 1.20
 numpydoc
 pytest
-pydata_sphinx_theme
+pydata_sphinx_theme==0.16.1
 furo==2025.12.19
 sphinxcontrib-mermaid==1.2.3
 linkify-it-py==2.0.3
-sphinx>=9.0.0
-docutils==0.22.4
-sphinx_rtd_theme
+sphinx==7.4.7
+docutils==0.20.1
+sphinx_rtd_theme==3.0.2
 venn-abers
 roman
