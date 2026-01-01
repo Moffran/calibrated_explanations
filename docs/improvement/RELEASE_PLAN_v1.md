@@ -2,9 +2,9 @@
 
 # Release Plan to v1.0.0
 
-## Current released version: v0.10.0
+## Current released version: v0.10.1
 
-> Status: v0.10.0 shipped on 2025-12-21.
+> Status: v0.10.1 shipped on 2026-01-01.
 
 
 Maintainers: Core team
