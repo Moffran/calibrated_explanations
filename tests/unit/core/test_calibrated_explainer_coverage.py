@@ -61,8 +61,9 @@ def mock_identify_constant_features():
 
 @pytest.fixture(autouse=True)
 def mock_helpers():
-    with patch("calibrated_explanations.integrations.LimeHelper"), patch(
-        "calibrated_explanations.integrations.ShapHelper"
+    with (
+        patch("calibrated_explanations.integrations.LimeHelper"),
+        patch("calibrated_explanations.integrations.ShapHelper"),
     ):
         yield
 
@@ -321,11 +322,14 @@ def test_reinitialize_with_data(mock_learner, mock_plugin_manager):
     xs = np.array([[5, 6]])
     ys = np.array([1])
 
-    with patch(
-        "calibrated_explanations.calibration.interval_learner.update_interval_learner"
-    ) as mock_update_il, patch(
-        "calibrated_explanations.calibration.state.CalibrationState.append_calibration"
-    ) as mock_append:
+    with (
+        patch(
+            "calibrated_explanations.calibration.interval_learner.update_interval_learner"
+        ) as mock_update_il,
+        patch(
+            "calibrated_explanations.calibration.state.CalibrationState.append_calibration"
+        ) as mock_append,
+    ):
         explainer.reinitialize(new_learner, xs, ys)
 
         mock_append.assert_called_once()
@@ -347,22 +351,20 @@ def test_x_cal_y_cal_properties(mock_learner, mock_plugin_manager):
     y_cal = np.array([0, 1])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
-    with patch(
-        "calibrated_explanations.calibration.state.CalibrationState.get_x_cal"
-    ) as mock_get_x, patch(
-        "calibrated_explanations.calibration.state.CalibrationState.set_x_cal"
-    ) as mock_set_x:
+    with (
+        patch("calibrated_explanations.calibration.state.CalibrationState.get_x_cal") as mock_get_x,
+        patch("calibrated_explanations.calibration.state.CalibrationState.set_x_cal") as mock_set_x,
+    ):
         _ = explainer.x_cal
         mock_get_x.assert_called_once_with(explainer)
 
         explainer.x_cal = x_cal
         mock_set_x.assert_called_once_with(explainer, x_cal)
 
-    with patch(
-        "calibrated_explanations.calibration.state.CalibrationState.get_y_cal"
-    ) as mock_get_y, patch(
-        "calibrated_explanations.calibration.state.CalibrationState.set_y_cal"
-    ) as mock_set_y:
+    with (
+        patch("calibrated_explanations.calibration.state.CalibrationState.get_y_cal") as mock_get_y,
+        patch("calibrated_explanations.calibration.state.CalibrationState.set_y_cal") as mock_set_y,
+    ):
         _ = explainer.y_cal
         mock_get_y.assert_called_once_with(explainer)
 
@@ -655,9 +657,10 @@ def test_context_manager(mock_learner, mock_plugin_manager):
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
-    with patch.object(explainer, "initialize_pool") as mock_init, patch.object(
-        explainer, "close"
-    ) as mock_close:
+    with (
+        patch.object(explainer, "initialize_pool") as mock_init,
+        patch.object(explainer, "close") as mock_close,
+    ):
         with explainer as e:
             assert e is explainer
             mock_init.assert_called_once_with(pool_at_init=True)

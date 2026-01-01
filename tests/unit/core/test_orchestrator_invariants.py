@@ -48,27 +48,30 @@ class TestPredictionOrchestratorInvariants:
         # low > high
         invalid_result = (np.array([0.5]), np.array([0.7]), np.array([0.6]), None)
 
-        with patch.object(
-            self.orchestrator, "_predict_impl", return_value=invalid_result
-        ), pytest.warns(UserWarning, match="low > high"):
+        with (
+            patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
+            pytest.warns(UserWarning, match="low > high"),
+        ):
             self.orchestrator.predict(np.array([[1]]))
 
     def test_predict_invalid_predict_lt_low(self):
         # predict < low
         invalid_result = (np.array([0.3]), np.array([0.4]), np.array([0.6]), None)
 
-        with patch.object(
-            self.orchestrator, "_predict_impl", return_value=invalid_result
-        ), pytest.warns(UserWarning, match="predict not in"):
+        with (
+            patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
+            pytest.warns(UserWarning, match="predict not in"),
+        ):
             self.orchestrator.predict(np.array([[1]]))
 
     def test_predict_invalid_predict_gt_high(self):
         # predict > high
         invalid_result = (np.array([0.7]), np.array([0.4]), np.array([0.6]), None)
 
-        with patch.object(
-            self.orchestrator, "_predict_impl", return_value=invalid_result
-        ), pytest.warns(UserWarning, match="predict not in"):
+        with (
+            patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
+            pytest.warns(UserWarning, match="predict not in"),
+        ):
             self.orchestrator.predict(np.array([[1]]))
 
 

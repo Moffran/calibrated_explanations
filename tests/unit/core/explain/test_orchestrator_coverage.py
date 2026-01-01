@@ -27,13 +27,17 @@ def orchestrator(mock_explainer):
 
 
 def test_set_discretizer_valid(orchestrator, mock_explainer):
-    with patch(
-        "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
-    ) as mock_instantiate, patch(
-        "calibrated_explanations.core.discretizer_config.validate_discretizer_choice"
-    ) as mock_validate, patch(
-        "calibrated_explanations.core.discretizer_config.setup_discretized_data"
-    ) as mock_setup:
+    with (
+        patch(
+            "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
+        ) as mock_instantiate,
+        patch(
+            "calibrated_explanations.core.discretizer_config.validate_discretizer_choice"
+        ) as mock_validate,
+        patch(
+            "calibrated_explanations.core.discretizer_config.setup_discretized_data"
+        ) as mock_setup,
+    ):
         mock_validate.return_value = "binaryEntropy"
 
         # Create a mock discretizer with required attributes
@@ -180,13 +184,17 @@ def test_set_discretizer_invalid_source(orchestrator):
 def test_set_discretizer_prediction_source(orchestrator, mock_explainer):
     mock_explainer.predict.return_value = np.array([0, 1])
 
-    with patch(
-        "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
-    ) as mock_instantiate, patch(
-        "calibrated_explanations.core.discretizer_config.validate_discretizer_choice"
-    ) as mock_validate, patch(
-        "calibrated_explanations.core.discretizer_config.setup_discretized_data"
-    ) as mock_setup:
+    with (
+        patch(
+            "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
+        ) as mock_instantiate,
+        patch(
+            "calibrated_explanations.core.discretizer_config.validate_discretizer_choice"
+        ) as mock_validate,
+        patch(
+            "calibrated_explanations.core.discretizer_config.setup_discretized_data"
+        ) as mock_setup,
+    ):
         mock_validate.return_value = "binaryEntropy"
         mock_setup.return_value = ({"f1": {"values": [], "frequencies": []}}, np.array([[1, 2]]))
 
@@ -248,10 +256,11 @@ def test_resolve_plugin_success(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
     mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["plugin1"]}
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor"
-    ) as mock_find_desc, patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin"
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor"
+        ) as mock_find_desc,
+        patch("calibrated_explanations.core.explain.orchestrator.find_explanation_plugin"),
     ):
         # Setup mock descriptor and plugin
         mock_desc = MagicMock()
@@ -361,9 +370,13 @@ def test_resolve_plugin_denied(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.explanation_plugin_overrides = {}
     mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=True
-    ), pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"):
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=True,
+        ),
+        pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"),
+    ):
         orchestrator.resolve_plugin("factual")
 
 
@@ -372,15 +385,21 @@ def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.explanation_plugin_overrides = {}
     mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=False
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-        return_value=None,
-    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
+            return_value=None,
+        ),
+        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
+    ):
         # Should raise ConfigurationError because plugin1 is preferred (only one in chain)
         # Wait, preferred_identifier is None unless override is set.
         # But if chain has items, it tries them. If all fail, it raises ConfigurationError at the end.
@@ -393,14 +412,19 @@ def test_resolve_plugin_missing_supports_mode(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.explanation_plugin_overrides = {}
     mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=False
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin"
-    ) as mock_find:
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin"
+        ) as mock_find,
+    ):
         mock_plugin = MagicMock()
         del mock_plugin.supports_mode  # Simulate missing method
         # Actually MagicMock will create it on access unless we spec it.

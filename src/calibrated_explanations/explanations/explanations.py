@@ -158,7 +158,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 if isinstance(key[0], (bool, np.bool_)):
                     # Handle boolean indexing
                     new_.explanations = [
-                        exp for exp, include in zip(self.explanations, key) if include
+                        exp for exp, include in zip(self.explanations, key, strict=False) if include
                     ]
                 elif isinstance(key[0], int):
                     # Handle integer list indexing

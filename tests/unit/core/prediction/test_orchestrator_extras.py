@@ -110,18 +110,23 @@ def test_resolve_interval_plugin_missing_in_chain(orchestrator, mock_explainer):
         "capabilities": ("interval:classification",),
     }
 
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
-        side_effect=[None, valid_plugin_mock],
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-        return_value=False,
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
+            side_effect=[None, valid_plugin_mock],
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
     ):
         # We need the second one to be found
         # The first call to find_interval_plugin_trusted returns None (for missing_plugin)

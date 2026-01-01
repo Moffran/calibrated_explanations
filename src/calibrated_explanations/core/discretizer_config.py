@@ -157,7 +157,7 @@ def setup_discretized_data(
         feature_count: Dict[Any, int] = {}
         for item in column:
             feature_count[item] = feature_count.get(item, 0) + 1
-        values, frequencies = map(list, zip(*(sorted(feature_count.items()))))
+        values, frequencies = map(list, zip(*(sorted(feature_count.items())), strict=False))
 
         feature_data[feature] = {
             "values": values,

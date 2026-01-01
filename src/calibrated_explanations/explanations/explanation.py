@@ -348,7 +348,7 @@ class CalibratedExplanation(ABC):
             sorted_indices = [
                 i
                 for i, x in sorted(
-                    enumerate(list(zip(np.abs(feature_weights), width))),
+                    enumerate(list(zip(np.abs(feature_weights), width, strict=False))),
                     key=lambda x: (x[1][0], x[1][1]),
                 )
             ]

@@ -170,7 +170,7 @@ calibrated_explanations = ["py.typed", "schemas/*.json", "templates/*.yaml"]
 # Tooling / Quality Gates (Phase 0)
 # ----------------------------
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 100
 extend-exclude = ["build", "dist", "benchmarks", "docs/_build", "scripts", "evaluation"]
 

@@ -332,10 +332,10 @@ def transform_to_numeric(df, target, mappings=None):
 
             if col != target:
                 categorical_features.append(c)
-                categorical_labels[c] = dict(zip(range(len(uniques)), uniques))
+                categorical_labels[c] = dict(zip(range(len(uniques)), uniques, strict=False))
             else:
-                target_labels = dict(zip(range(len(uniques)), uniques))
-            mapping = dict(zip(uniques, range(len(uniques))))
+                target_labels = dict(zip(range(len(uniques)), uniques, strict=False))
+            mapping = dict(zip(uniques, range(len(uniques)), strict=False))
             if len(mapping) > 5:
                 counts = df[col].value_counts().sort_values(ascending=False)
                 idx = 0

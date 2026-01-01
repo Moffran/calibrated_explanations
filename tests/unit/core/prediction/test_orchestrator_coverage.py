@@ -434,12 +434,15 @@ def test_resolve_interval_plugin_fallback(orchestrator, mock_explainer):
         mock_explainer.instantiate_plugin.return_value = "instantiated_fallback"
 
         # Mock find_interval_plugin and find_interval_plugin_trusted to return None
-        with patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
-            return_value=None,
-        ), patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
-            return_value=None,
+        with (
+            patch(
+                "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
+                return_value=None,
+            ),
+            patch(
+                "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
+                return_value=None,
+            ),
         ):
             plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
 
@@ -565,10 +568,13 @@ def test_resolve_interval_plugin_denied(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.interval_preferred_identifier = {"default": "denied_plugin"}
     mock_explainer.plugin_manager.interval_plugin_fallbacks = {"default": ["denied_plugin"]}
 
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-        return_value=True,
-    ), pytest.raises(core_exceptions.ConfigurationError, match="denied via CE_DENY_PLUGIN"):
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
+            return_value=True,
+        ),
+        pytest.raises(core_exceptions.ConfigurationError, match="denied via CE_DENY_PLUGIN"),
+    ):
         orchestrator.resolve_interval_plugin(fast=False)
 
 
@@ -579,16 +585,21 @@ def test_resolve_interval_plugin_not_registered_preferred(orchestrator, mock_exp
     mock_explainer.plugin_manager.interval_preferred_identifier = {"default": "missing_plugin"}
     mock_explainer.plugin_manager.interval_plugin_fallbacks = {"default": ["missing_plugin"]}
 
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
-        return_value=None,
-    ), pytest.raises(core_exceptions.ConfigurationError, match="not registered"):
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
+            return_value=None,
+        ),
+        pytest.raises(core_exceptions.ConfigurationError, match="not registered"),
+    ):
         orchestrator.resolve_interval_plugin(fast=False)
 
 
@@ -605,10 +616,13 @@ def test_resolve_interval_plugin_metadata_error_preferred(orchestrator, mock_exp
     mock_descriptor.trusted = True
     mock_descriptor.plugin = MagicMock()
 
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-        return_value=mock_descriptor,
-    ), pytest.raises(core_exceptions.ConfigurationError, match="missing modes declaration"):
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+            return_value=mock_descriptor,
+        ),
+        pytest.raises(core_exceptions.ConfigurationError, match="missing modes declaration"),
+    ):
         orchestrator.resolve_interval_plugin(fast=False)
 
 
@@ -616,9 +630,11 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
     # Test obtain_interval_calibrator calling resolve_interval_plugin and creating calibrator
     mock_explainer.plugin_manager.interval_plugin_hints = {}
 
-    with patch.object(orchestrator, "resolve_interval_plugin") as mock_resolve, patch.object(
-        orchestrator, "build_interval_context"
-    ) as mock_build, patch.object(orchestrator, "capture_interval_calibrators") as mock_capture:
+    with (
+        patch.object(orchestrator, "resolve_interval_plugin") as mock_resolve,
+        patch.object(orchestrator, "build_interval_context") as mock_build,
+        patch.object(orchestrator, "capture_interval_calibrators") as mock_capture,
+    ):
         mock_plugin = MagicMock()
         mock_plugin.create.return_value = "calibrator_instance"
         mock_resolve.return_value = (mock_plugin, "test_plugin")
@@ -638,9 +654,10 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
 def test_obtain_interval_calibrator_creation_failure(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.interval_plugin_hints = {}
 
-    with patch.object(orchestrator, "resolve_interval_plugin") as mock_resolve, patch.object(
-        orchestrator, "build_interval_context"
-    ) as mock_build:
+    with (
+        patch.object(orchestrator, "resolve_interval_plugin") as mock_resolve,
+        patch.object(orchestrator, "build_interval_context") as mock_build,
+    ):
         mock_plugin = MagicMock()
         mock_plugin.create.side_effect = ValueError("Creation failed")
         mock_resolve.return_value = (mock_plugin, "test_plugin")
@@ -925,10 +942,13 @@ def test_resolve_interval_plugin_denied_preferred(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.interval_plugin_fallbacks = {"default": ["denied_plugin"]}
 
     # Mock is_identifier_denied to return True for "denied_plugin"
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-        return_value=True,
-    ), pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"):
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
+            return_value=True,
+        ),
+        pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"),
+    ):
         orchestrator.resolve_interval_plugin(fast=False)
 
 
@@ -943,13 +963,17 @@ def test_resolve_interval_plugin_metadata_error_preferred_duplicate(orchestrator
     mock_descriptor.trusted = True
     mock_descriptor.plugin = MagicMock()
 
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-        return_value=False,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-        return_value=mock_descriptor,
-    ), pytest.raises(ConfigurationError, match="unsupported interval schema_version"):
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+            return_value=mock_descriptor,
+        ),
+        pytest.raises(ConfigurationError, match="unsupported interval schema_version"),
+    ):
         orchestrator.resolve_interval_plugin(fast=False)
 
 
@@ -975,15 +999,18 @@ def test_obtain_interval_calibrator_creation_failure_duplicate(orchestrator, moc
 
     mock_explainer.mode = "regression"
 
-    with patch(
-        "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-        return_value=False,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-        return_value=mock_descriptor,
-    ), patch(
-        "calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins"
-    ), pytest.raises(ConfigurationError, match="Interval plugin execution failed"):
+    with (
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+            return_value=mock_descriptor,
+        ),
+        patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins"),
+        pytest.raises(ConfigurationError, match="Interval plugin execution failed"),
+    ):
         orchestrator.obtain_interval_calibrator(fast=False, metadata={})
 
 

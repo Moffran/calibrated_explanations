@@ -49,14 +49,18 @@ def test_set_discretizer_prediction_source(orchestrator, mock_explainer):
     """Test set_discretizer with prediction condition source."""
     mock_explainer.predict.return_value = (np.array([0, 1]), None, None)
 
-    with patch(
-        "calibrated_explanations.core.discretizer_config.validate_discretizer_choice",
-        return_value="entropy",
-    ), patch(
-        "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
-    ) as mock_instantiate, patch(
-        "calibrated_explanations.core.discretizer_config.setup_discretized_data",
-        return_value=({"f1": {"values": [], "frequencies": []}}, None),
+    with (
+        patch(
+            "calibrated_explanations.core.discretizer_config.validate_discretizer_choice",
+            return_value="entropy",
+        ),
+        patch(
+            "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
+        ) as mock_instantiate,
+        patch(
+            "calibrated_explanations.core.discretizer_config.setup_discretized_data",
+            return_value=({"f1": {"values": [], "frequencies": []}}, None),
+        ),
     ):
         orchestrator.set_discretizer("entropy", condition_source="prediction")
 
@@ -72,15 +76,19 @@ def test_set_discretizer_success(orchestrator, mock_explainer):
     """Test successful set_discretizer execution."""
     mock_discretizer = MagicMock()
 
-    with patch(
-        "calibrated_explanations.core.discretizer_config.validate_discretizer_choice",
-        return_value="entropy",
-    ), patch(
-        "calibrated_explanations.core.discretizer_config.instantiate_discretizer",
-        return_value=mock_discretizer,
-    ), patch(
-        "calibrated_explanations.core.discretizer_config.setup_discretized_data",
-        return_value=({"f1": {"values": [1], "frequencies": [1]}}, "discretized_data"),
+    with (
+        patch(
+            "calibrated_explanations.core.discretizer_config.validate_discretizer_choice",
+            return_value="entropy",
+        ),
+        patch(
+            "calibrated_explanations.core.discretizer_config.instantiate_discretizer",
+            return_value=mock_discretizer,
+        ),
+        patch(
+            "calibrated_explanations.core.discretizer_config.setup_discretized_data",
+            return_value=({"f1": {"values": [1], "frequencies": [1]}}, "discretized_data"),
+        ),
     ):
         orchestrator.set_discretizer("entropy")
 
@@ -113,9 +121,10 @@ def test_invoke_success(orchestrator, mock_explainer):
     mock_batch.container_cls = mock_container
     mock_container.from_batch.return_value = mock_result
 
-    with patch.object(
-        orchestrator, "ensure_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"):
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "test_plugin")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+    ):
         result = orchestrator.invoke(
             mode="factual",
             x=np.array([[1, 2]]),
@@ -135,9 +144,10 @@ def test_invoke_plugin_failure(orchestrator):
     mock_plugin = MagicMock()
     mock_plugin.explain_batch.side_effect = ValueError("Plugin error")
 
-    with patch.object(
-        orchestrator, "ensure_plugin", return_value=(mock_plugin, "test_plugin")
-    ), pytest.raises(ConfigurationError, match="Explanation plugin execution failed"):
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "test_plugin")),
+        pytest.raises(ConfigurationError, match="Explanation plugin execution failed"),
+    ):
         orchestrator.invoke(
             mode="factual",
             x=np.array([[1, 2]]),
@@ -154,12 +164,14 @@ def test_invoke_validation_failure(orchestrator):
     mock_batch = MagicMock()
     mock_plugin.explain_batch.return_value = mock_batch
 
-    with patch.object(
-        orchestrator, "ensure_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
-        side_effect=ValueError("Validation error"),
-    ), pytest.raises(ConfigurationError, match="returned an invalid batch"):
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "test_plugin")),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
+            side_effect=ValueError("Validation error"),
+        ),
+        pytest.raises(ConfigurationError, match="returned an invalid batch"),
+    ):
         orchestrator.invoke(
             mode="factual",
             x=np.array([[1, 2]]),
@@ -180,11 +192,11 @@ def test_invoke_bridge_monitor_failure(orchestrator, mock_explainer):
     mock_monitor.used = False
     mock_explainer.plugin_manager.get_bridge_monitor.return_value = mock_monitor
 
-    with patch.object(
-        orchestrator, "ensure_plugin", return_value=(mock_plugin, "custom_plugin")
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"
-    ), pytest.raises(ConfigurationError, match="did not use the calibrated predict bridge"):
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "custom_plugin")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        pytest.raises(ConfigurationError, match="did not use the calibrated predict bridge"),
+    ):
         orchestrator.invoke(
             mode="factual",
             x=np.array([[1, 2]]),
@@ -213,10 +225,10 @@ def testensure_plugin_new(orchestrator, mock_explainer):
     mock_plugin = MagicMock()
     mock_plugin.plugin_meta = {"name": "test_plugin"}
 
-    with patch.object(
-        orchestrator, "resolve_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch.object(orchestrator, "check_metadata", return_value=None), patch.object(
-        orchestrator, "build_context", return_value=MagicMock()
+    with (
+        patch.object(orchestrator, "resolve_plugin", return_value=(mock_plugin, "test_plugin")),
+        patch.object(orchestrator, "check_metadata", return_value=None),
+        patch.object(orchestrator, "build_context", return_value=MagicMock()),
     ):
         plugin, identifier = orchestrator.ensure_plugin("factual")
 
@@ -232,11 +244,12 @@ def testensure_plugin_init_failure(orchestrator, mock_explainer):
     mock_plugin = MagicMock()
     mock_plugin.initialize.side_effect = ValueError("Init error")
 
-    with patch.object(
-        orchestrator, "resolve_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch.object(orchestrator, "check_metadata", return_value=None), patch.object(
-        orchestrator, "build_context", return_value=MagicMock()
-    ), pytest.raises(ConfigurationError, match="Explanation plugin initialisation failed"):
+    with (
+        patch.object(orchestrator, "resolve_plugin", return_value=(mock_plugin, "test_plugin")),
+        patch.object(orchestrator, "check_metadata", return_value=None),
+        patch.object(orchestrator, "build_context", return_value=MagicMock()),
+        pytest.raises(ConfigurationError, match="Explanation plugin initialisation failed"),
+    ):
         orchestrator.ensure_plugin("factual")
 
 
@@ -308,9 +321,13 @@ def test_resolve_plugin_denied(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
     mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["denied_plugin"]}
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=True
-    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=True,
+        ),
+        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
+    ):
         orchestrator.resolve_plugin("factual")
 
 
@@ -320,15 +337,21 @@ def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
     mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["missing_plugin"]}
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=False
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-        return_value=None,
-    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
+            return_value=None,
+        ),
+        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
+    ):
         orchestrator.resolve_plugin("factual")
 
 
@@ -343,15 +366,21 @@ def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
     mock_plugin = MagicMock()
     mock_plugin.plugin_meta = {}  # Empty metadata causes error
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=False
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-        return_value=mock_plugin,
-    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
+            return_value=mock_plugin,
+        ),
+        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
+    ):
         orchestrator.resolve_plugin("factual")
 
 
@@ -365,16 +394,21 @@ def test_resolve_plugin_supports_mode_failure(orchestrator, mock_explainer):
     mock_plugin.plugin_meta = None
     mock_plugin.supports_mode.return_value = False
 
-    with patch(
-        "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=False
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-        return_value=None,
-    ), patch(
-        "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-        return_value=mock_plugin,
-    ), patch.object(orchestrator, "check_metadata", return_value=None), pytest.raises(
-        ConfigurationError, match="Unable to resolve explanation plugin"
+    with (
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
+            return_value=False,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
+            return_value=None,
+        ),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
+            return_value=mock_plugin,
+        ),
+        patch.object(orchestrator, "check_metadata", return_value=None),
+        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
     ):
         orchestrator.resolve_plugin("factual")
 

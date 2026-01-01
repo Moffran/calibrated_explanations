@@ -122,7 +122,7 @@ def render(
                         else:
                             xs = [float(x) for x in proba]
                             ys = [float(y) for y in unc]
-                        for i, (xv, yv) in enumerate(zip(xs, ys)):
+                        for i, (xv, yv) in enumerate(zip(xs, ys, strict=False)):
                             wrapper["primitives"].append(
                                 {
                                     "id": f"global.scatter.{i}",

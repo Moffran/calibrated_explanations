@@ -5,27 +5,6 @@ directly from ``calibrated_explanations.utils`` rather than reaching into
 individual helper modules.
 """
 
-def _ensure_joblib_pool_attribute():
-    """Work around joblib ThreadingBackend expecting a missing `pool` attribute."""
-    try:
-        import joblib._parallel_backends as _joblib_backends
-    except Exception:
-        return
-
-    if hasattr(_joblib_backends.PoolManagerMixin, "pool"):
-        return
-
-    def _get_pool(self):
-        return getattr(self, "_pool", None)
-
-    def _set_pool(self, value):
-        self._pool = value
-
-    _joblib_backends.PoolManagerMixin.pool = property(_get_pool, _set_pool)
-
-
-_ensure_joblib_pool_attribute()
-
 from .deprecation import deprecate_public_api_symbol
 from .deprecations import _EMITTED, _EMITTED_PER_TEST, _should_raise, deprecate, deprecate_alias
 from .discretizers import (
@@ -57,6 +36,28 @@ from .perturbation import (
     uniform_perturbation,
 )
 from .rng import set_rng_seed
+
+
+def _ensure_joblib_pool_attribute():
+    """Work around joblib ThreadingBackend expecting a missing `pool` attribute."""
+    try:
+        import joblib._parallel_backends as _joblib_backends
+    except Exception:
+        return
+
+    if hasattr(_joblib_backends.PoolManagerMixin, "pool"):
+        return
+
+    def _get_pool(self):
+        return getattr(self, "_pool", None)
+
+    def _set_pool(self, value):
+        self._pool = value
+
+    _joblib_backends.PoolManagerMixin.pool = property(_get_pool, _set_pool)
+
+
+_ensure_joblib_pool_attribute()
 
 __all__ = [
     "assert_threshold",

@@ -69,7 +69,7 @@ class BaseDiscretizer:
         bins = self.bins(data, labels)
         bins = [np.unique(x) for x in bins]
 
-        for feature, qts in zip(self.to_discretize, bins):
+        for feature, qts in zip(self.to_discretize, bins, strict=False):
             n_bins = qts.shape[0]  # Actually number of borders (= #bins-1)
             boundaries = np.min(data[:, feature]), np.max(data[:, feature])
             name = feature_names[feature]

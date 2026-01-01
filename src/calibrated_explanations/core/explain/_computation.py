@@ -147,7 +147,7 @@ def rule_boundaries(
         )  # Ensure perturbed_instances is a numpy array
 
     all_min_max = []
-    for instance, perturbed_instance in zip(instances, perturbed_instances):
+    for instance, perturbed_instance in zip(instances, perturbed_instances, strict=False):
         min_max = []
         for f in range(explainer.num_features):
             if f not in explainer.discretizer.to_discretize:

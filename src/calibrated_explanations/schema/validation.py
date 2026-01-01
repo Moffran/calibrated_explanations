@@ -23,9 +23,11 @@ except ImportError:
 
 def _schema_json() -> dict[str, Any]:  # pragma: no cover - tiny IO
     """Load the bundled explanation schema as a Python dictionary."""
-    with resources.files("calibrated_explanations.schemas").joinpath(
-        "explanation_schema_v1.json"
-    ).open("r", encoding="utf-8") as f:
+    with (
+        resources.files("calibrated_explanations.schemas")
+        .joinpath("explanation_schema_v1.json")
+        .open("r", encoding="utf-8") as f
+    ):
         import json
 
         return json.load(f)

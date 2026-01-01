@@ -238,7 +238,9 @@ def compute_weight_delta(baseline, perturbed) -> np.ndarray:
     baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
     perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
     deltas = np.empty_like(perturbed_flat, dtype=float)
-    for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
+    for idx, (pert_value, base_value) in enumerate(
+        zip(perturbed_flat, baseline_flat, strict=False)
+    ):
         # Use scalar helper from module-level implementation
         delta_value = base_value - pert_value
         delta_array = np.asarray(delta_value, dtype=float).reshape(-1)

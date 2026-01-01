@@ -191,9 +191,12 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
     mock_calibrator = MagicMock()
     mock_plugin.create.return_value = mock_calibrator
 
-    with patch.object(
-        orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch.object(orchestrator, "build_interval_context") as mock_build_context:
+    with (
+        patch.object(
+            orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+        ),
+        patch.object(orchestrator, "build_interval_context") as mock_build_context,
+    ):
         mock_context = MagicMock()
         mock_context.metadata = {}
         mock_build_context.return_value = mock_context
@@ -210,10 +213,12 @@ def test_obtain_interval_calibrator_failure(orchestrator, mock_explainer):
     mock_plugin = MagicMock()
     mock_plugin.create.side_effect = ValueError("Creation failed")
 
-    with patch.object(
-        orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch.object(orchestrator, "build_interval_context"), pytest.raises(
-        ConfigurationError, match="Interval plugin execution failed"
+    with (
+        patch.object(
+            orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+        ),
+        patch.object(orchestrator, "build_interval_context"),
+        pytest.raises(ConfigurationError, match="Interval plugin execution failed"),
     ):
         orchestrator.obtain_interval_calibrator(fast=False, metadata={})
 

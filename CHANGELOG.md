@@ -12,7 +12,7 @@
 
 ### Fixed
 
-- **Python 3.13 Support & Dependency Management Refactor:** 
+- **Python 3.13 Support & Dependency Management Refactor:**
   - Emptied `constraints.txt` to only include absolutely necessary constraints (numpy and scikit-learn version splits for Python compatibility), allowing CI to use softer ranges from `requirements.txt` for most dependencies.
   - Consolidated core dependencies and version ranges into `requirements.txt` for more active management.
   - Removed experimental Python 3.14 from the CI matrix.

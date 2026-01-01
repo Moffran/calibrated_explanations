@@ -396,7 +396,7 @@ class FastExplanationPipeline:
             )  # Ensure perturbed_instances is a numpy array
 
         all_min_max = []
-        for instance, perturbed_instance in zip(instances, perturbed_instances):
+        for instance, perturbed_instance in zip(instances, perturbed_instances, strict=False):
             min_max = []
             for feature_idx in range(self.explainer.num_features):
                 if feature_idx not in self.explainer.discretizer.to_discretize:

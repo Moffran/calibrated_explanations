@@ -138,7 +138,8 @@ def get_calibration_summaries(
         for f_cat in categorical_features:
             unique_vals, unique_counts = np.unique(x_cal_np[:, f_cat], return_counts=True)
             categorical_value_counts[int(f_cat)] = {
-                val: int(cnt) for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
+                val: int(cnt)
+                for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist(), strict=False)
             }
 
         # Sort numeric feature values for later use
