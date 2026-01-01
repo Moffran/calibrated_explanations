@@ -9,7 +9,7 @@ numpydoc
 pytest
 pydata_sphinx_theme==0.16.1
 furo==2025.12.19
-sphinxcontrib-mermaid==1.2.2
+sphinxcontrib-mermaid==1.2.3
 linkify-it-py==2.0.3
 sphinx==7.4.7
 docutils==0.22.4
