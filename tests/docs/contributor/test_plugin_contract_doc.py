@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def _build_dummy_model():
+def build_dummy_model():
     class DummyModel:
         def predict_proba(self, x):
             return np.column_stack([1 - x, x])
@@ -48,7 +48,7 @@ def test_plugin_contract_class_behaviour():
 
     plugin = HelloCalibratedPlugin()
     _ = ExplainerPlugin
-    model: Any = _build_dummy_model()
+    model: Any = build_dummy_model()
     sample = np.array([[0.2], [0.8]])
     assert plugin.supports(model)
     payload = plugin.explain(model, sample)
@@ -58,7 +58,7 @@ def test_plugin_contract_class_behaviour():
 
 def test_plugin_contract_registration():
     from calibrated_explanations.plugins.base import validate_plugin_meta
-    from calibrated_explanations.plugins.registry import (
+    from calibrated_explanations.plugins import (
         register_explanation_plugin,
         _EXPLANATION_PLUGINS,
     )

@@ -6,8 +6,8 @@ import math
 
 import pytest
 
-from calibrated_explanations.viz.matplotlib_adapter import render
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import render
+from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
     IntervalHeaderSpec,
@@ -96,11 +96,11 @@ def test_render_saves_before_show(monkeypatch, tmp_path):
 def test_render_body_only_height_handles_label_errors():
     class ExplodingLabel:
         def __init__(self) -> None:
-            self._calls = 0
+            self.call_count = 0
 
         def __str__(self) -> str:
-            self._calls += 1
-            if self._calls == 1:
+            self.call_count += 1
+            if self.call_count > 1:
                 raise ValueError("boom")
             return "recovered"
 

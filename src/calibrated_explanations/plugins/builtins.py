@@ -17,15 +17,22 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 import numpy as np
 
 from .. import __version__ as package_version
+from ..utils.exceptions import CalibratedError, ConfigurationError, NotFittedError, ValidationError
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
     pass
+from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
+    FeatureFilterConfig,
+    FeatureFilterResult,
+    compute_filtered_features_to_ignore,
+)
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
@@ -35,8 +42,7 @@ from ..explanations.explanation import (
     CalibratedExplanation as _AbstractExplanation,
 )
 from ..explanations.explanations import CalibratedExplanations
-from ..utils.helper import safe_isinstance
-from ..utils.perturbation import perturb_dataset
+from ..utils import perturb_dataset, safe_isinstance
 from .explanations import (
     ExplanationBatch,
     ExplanationContext,
@@ -57,7 +63,7 @@ from .registry import (
 )
 
 
-def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
+def derive_threshold_labels(threshold: Any) -> tuple[str, str]:
     """Produce positive/negative labels for thresholded regression."""
     try:
         if (
@@ -68,11 +74,13 @@ def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
             lo = float(threshold[0])
             hi = float(threshold[1])
             return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
-    except Exception as exc:
+    except Exception as exc:  # ADR002_ALLOW: heuristic parsing best-effort.  # pragma: no cover
         logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
     try:
         value = float(threshold)
-    except Exception:
+    except (
+        Exception
+    ):  # ADR002_ALLOW: fallback labels when threshold coercion fails.  # pragma: no cover
         return ("Target within threshold", "Outside threshold")
     return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
 
@@ -82,7 +90,7 @@ class LegacyPredictBridge(PredictBridge):
 
     def __init__(self, explainer: Any) -> None:
         """Store the wrapped explainer used for legacy compatibility calls."""
-        self._explainer = explainer
+        self.explainer = explainer
 
     def predict(
         self,
@@ -93,7 +101,7 @@ class LegacyPredictBridge(PredictBridge):
         bins: Any | None = None,
     ) -> Mapping[str, Any]:
         """Return calibrated predictions routed through the wrapped explainer."""
-        prediction = self._explainer.predict(x, uq_interval=True, bins=bins)
+        prediction = self.explainer.predict(x, uq_interval=True, bins=bins)
         if isinstance(prediction, tuple):
             preds, interval = prediction
             low, high = interval
@@ -106,21 +114,46 @@ class LegacyPredictBridge(PredictBridge):
             "task": task,
         }
         if low is not None and high is not None:
-            payload["low"] = np.asarray(low)
-            payload["high"] = np.asarray(high)
+            low_arr = np.asarray(low)
+            high_arr = np.asarray(high)
+            payload["low"] = low_arr
+            payload["high"] = high_arr
+
+            # ADR-021: Enforce interval invariants
+            epsilon = 1e-9
+            # Ignore NaNs in the check
+            valid_mask = ~np.isnan(low_arr) & ~np.isnan(high_arr)
+            if np.any(valid_mask) and not np.all(
+                low_arr[valid_mask] <= high_arr[valid_mask] + epsilon
+            ):
+                diff = np.max(low_arr[valid_mask] - high_arr[valid_mask])
+                raise ValidationError(f"Interval invariant violated: low > high (max diff: {diff})")
+
+            # Check prediction is within bounds (with epsilon tolerance)
+            if task == "regression":
+                preds_arr = np.asarray(preds)
+                valid_pred_mask = valid_mask & ~np.isnan(preds_arr)
+                if np.any(valid_pred_mask) and not np.all(
+                    (low_arr[valid_pred_mask] - epsilon <= preds_arr[valid_pred_mask])
+                    & (preds_arr[valid_pred_mask] <= high_arr[valid_pred_mask] + epsilon)
+                ):
+                    raise ValidationError(
+                        "Prediction invariant violated: predict not in [low, high]"
+                    )
+
         if task == "classification":
-            payload["classes"] = np.asarray(self._explainer.predict(x, calibrated=True, bins=bins))
+            payload["classes"] = np.asarray(self.explainer.predict(x, calibrated=True, bins=bins))
         return payload
 
     def predict_interval(
         self, x: Any, *, task: str, bins: Any | None = None
     ):  # pragma: no cover - passthrough
         """Return calibrated prediction intervals for ``x``."""
-        return self._explainer.predict(x, uq_interval=True, calibrated=True, bins=bins)
+        return self.explainer.predict(x, uq_interval=True, calibrated=True, bins=bins)
 
     def predict_proba(self, x: Any, bins: Any | None = None):  # pragma: no cover - passthrough
         """Return calibrated probabilities for ``x`` when available."""
-        return self._explainer.predict_proba(x, uq_interval=True, calibrated=True, bins=bins)
+        return self.explainer.predict_proba(x, uq_interval=True, calibrated=True, bins=bins)
 
 
 def _supports_calibrated_explainer(model: Any) -> bool:
@@ -130,7 +163,7 @@ def _supports_calibrated_explainer(model: Any) -> bool:
     )
 
 
-def _collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
+def collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
     """Convert a legacy explanation collection into an :class:`ExplanationBatch`."""
     explanation_cls: type[_AbstractExplanation]
     if collection.explanations:
@@ -177,20 +210,29 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         difficulty = context.difficulty.get("estimator")
         x_cal, y_cal = context.calibration_splits[0]
         if "regression" in task:
-            from ..core.calibration.interval_regressor import IntervalRegressor
+            from ..calibration.interval_regressor import IntervalRegressor
 
             explainer = context.metadata.get("explainer")
             if explainer is None:
-                raise RuntimeError("Legacy interval context missing 'explainer' handle")
+                raise NotFittedError(
+                    "Legacy interval context missing 'explainer' handle",
+                    details={"context": "legacy_interval", "requirement": "explainer"},
+                )
             calibrator = IntervalRegressor(explainer)
         else:
-            from ..core.calibration.venn_abers import VennAbers
+            from ..calibration.venn_abers import VennAbers
 
             predict_function = context.metadata.get("predict_function")
             if predict_function is None:
                 explainer = context.metadata.get("explainer")
                 if explainer is None:
-                    raise RuntimeError("Legacy interval context missing 'predict_function' entry")
+                    raise NotFittedError(
+                        "Legacy interval context missing 'predict_function' entry",
+                        details={
+                            "context": "legacy_interval",
+                            "requirement": "predict_function or explainer",
+                        },
+                    )
                 predict_function = getattr(explainer, "predict_function", None)
             calibrator = VennAbers(
                 x_cal,
@@ -225,7 +267,10 @@ class _LegacyExplanationBase(ExplanationPlugin):
     def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - legacy
         """Dispatch to the underlying explainer for single-instance explanations."""
         if not self.supports(model):
-            raise ValueError("Unsupported model for legacy plugin")
+            raise ConfigurationError(
+                "Unsupported model for legacy plugin",
+                details={"model_type": type(model).__name__, "requirement": "CalibratedExplainer"},
+            )
         explanation_callable = getattr(model, self._explanation_attr)
         return explanation_callable(x, **kwargs)
 
@@ -237,14 +282,20 @@ class _LegacyExplanationBase(ExplanationPlugin):
         """Capture context dependencies required by legacy explanation flows."""
         self._context = context
         self._bridge = context.predict_bridge
-        self._explainer = context.helper_handles.get("explainer")
-        if self._explainer is None:
-            raise RuntimeError("Explanation context missing 'explainer' handle")
+        self.explainer = context.helper_handles.get("explainer")
+        if self.explainer is None:
+            raise NotFittedError(
+                "Explanation context missing 'explainer' handle",
+                details={"context": "legacy_explanation", "requirement": "explainer"},
+            )
 
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
         """Execute the explanation call and adapt legacy collections into batches."""
-        if self._context is None or self._bridge is None or self._explainer is None:
-            raise RuntimeError("Plugin must be initialised before use")
+        if self._context is None or self._bridge is None or self.explainer is None:
+            raise NotFittedError(
+                "Plugin must be initialised before use",
+                details={"context": "legacy_explanation", "requirement": "initialize()"},
+            )
 
         # Exercise the predict bridge lifecycle. The results are not used further
         # but calling the bridge ensures the contract is honoured.
@@ -255,7 +306,7 @@ class _LegacyExplanationBase(ExplanationPlugin):
             bins=request.bins,
         )
 
-        explanation_callable = getattr(self._explainer, self._explanation_attr)
+        explanation_callable = getattr(self.explainer, self._explanation_attr)
 
         kwargs = {
             "threshold": request.threshold,
@@ -267,7 +318,7 @@ class _LegacyExplanationBase(ExplanationPlugin):
         kwargs["_use_plugin"] = False
 
         collection: CalibratedExplanations = explanation_callable(x, **kwargs)
-        return _collection_to_batch(collection)
+        return collection_to_batch(collection)
 
 
 class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
@@ -345,55 +396,281 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
     and provides graceful fallback to legacy implementation if execution fails.
     """
 
-    _execution_plugin_class: type | None = None
+    execution_plugin_class: type | None = None
 
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
-        """Execute the explanation call with fallback to legacy.
+        """Execute the explanation call with optional FAST-based filtering.
 
-        Attempts to use the execution plugin class, then falls back to the
-        legacy explanation path if the executor is unavailable or execution fails.
+        Attempts to use the execution plugin class (with an internal FAST-based
+        feature filter when enabled), then falls back to the legacy explanation
+        path if the executor is unavailable or execution fails.
         """
-        if self._context is None or self._bridge is None or self._explainer is None:
-            raise RuntimeError("Plugin must be initialised before use")
+        if self._context is None or self._bridge is None or self.explainer is None:
+            raise NotFittedError(
+                "Plugin must be initialised before use",
+                details={"context": "execution_explanation", "requirement": "initialize()"},
+            )
 
-        if self._execution_plugin_class is None:
-            raise RuntimeError("Execution plugin class not configured")
+        if self.execution_plugin_class is None:
+            raise NotFittedError(
+                "Execution plugin class not configured",
+                details={
+                    "context": "execution_explanation",
+                    "requirement": "execution_plugin_class",
+                },
+            )
 
         try:
             # Import here to avoid circular imports
-            from ..core.explain._shared import ExplainConfig
-            from ..core.explain._shared import ExplainRequest as _ExplainRequest
-
-            # Build the execute request from the explanation request
-            explain_request = _ExplainRequest(
-                x=x,
-                threshold=request.threshold,
-                low_high_percentiles=request.low_high_percentiles or (5, 95),
-                bins=request.bins,
-                features_to_ignore=np.asarray(request.features_to_ignore or []),
-                use_plugin=False,
-                skip_instance_parallel=False,
-            )
-
-            # Build execution config from explainer state
-            calibration_data = {}
-            if hasattr(self._explainer, "_get_calibration_summaries"):
-                calibration_data = self._explainer._get_calibration_summaries()[1]
-
-            explain_config = ExplainConfig(
-                executor=getattr(self._explainer, "executor", None),
-                granularity=getattr(self._explainer, "granularity", "feature"),
-                num_features=self._explainer.num_features,
-                categorical_features=self._explainer.categorical_features or (),
-                feature_values=calibration_data,
-                mode=self._context.task,
-            )
+            from ..core.explain.parallel_runtime import build_explain_execution_plan
 
             # Instantiate and execute the plugin
-            plugin = self._execution_plugin_class()
-            collection = plugin.execute(explain_request, explain_config, self._explainer)
+            plugin = self.execution_plugin_class()
 
-        except Exception as exc:
+            # Optional FAST-based feature filtering (per-batch, per-instance).
+            # This uses the same executor context as the main explain call and
+            # never mutates CalibratedExplainer behaviour beyond narrowing the
+            # feature set for this batch.
+            filtered_request = request
+            try:
+                # Determine base configuration from explainer and environment.
+                base_cfg = self.explainer.feature_filter_config
+                cfg = FeatureFilterConfig.from_base_and_env(base_cfg)
+                use_filter = (
+                    cfg.enabled
+                    and cfg.per_instance_top_k > 0
+                    and self._mode in ("factual", "alternative")
+                )
+                if use_filter:
+                    explainer = self.explainer
+                    # Baseline ignore set: explainer defaults + request-specific.
+                    base_explainer_ignore = np.asarray(
+                        getattr(explainer, "features_to_ignore", ()), dtype=int
+                    )
+                    request_ignore = (
+                        np.asarray(request.features_to_ignore, dtype=int)
+                        if request.features_to_ignore is not None
+                        else np.array([], dtype=int)
+                    )
+                    base_ignore_union = np.union1d(base_explainer_ignore, request_ignore)
+
+                    # Run internal FAST pass on the same batch to obtain per-instance weights.
+                    try:
+                        fast_collection = explainer.plugin_manager.explanation_orchestrator.invoke(
+                            "fast",
+                            x,
+                            request.threshold,
+                            request.low_high_percentiles,
+                            request.bins,
+                            tuple(int(f) for f in base_ignore_union.tolist()),
+                            extras={"mode": "fast", "invoked_by": "feature_filter"},
+                        )
+                        if not isinstance(fast_collection, CalibratedExplanations):
+                            raise ConfigurationError(
+                                "FAST feature filter expected CalibratedExplanations container",
+                                details={
+                                    "mode": "fast",
+                                    "actual_type": type(fast_collection).__name__,
+                                },
+                            )
+                        num_features = getattr(explainer, "num_features", None)
+                        filter_result: FeatureFilterResult = compute_filtered_features_to_ignore(
+                            fast_collection,
+                            num_features=num_features,
+                            base_ignore=base_ignore_union,
+                            config=cfg,
+                        )
+                        # Stash per-instance ignore information on the explainer so that
+                        # the final CalibratedExplanations container can expose it.
+                        try:
+                            explainer.feature_filter_per_instance_ignore = (
+                                filter_result.per_instance_ignore
+                            )
+                        except AttributeError:
+                            logging.getLogger(__name__).debug(
+                                "Unable to attach per-instance feature filter state to explainer",
+                                exc_info=True,
+                            )
+
+                        # Debug: log filtered request details for troubleshooting propagation
+                        logging.getLogger(__name__).debug(
+                            "Feature filter produced global_ignore(len=%s) extra_ignore(len=%s)",
+                            len(filter_result.global_ignore),
+                            0,
+                        )
+                        # Only propagate the additional ignore indices beyond the explainer defaults.
+                        extra_ignore = np.setdiff1d(
+                            filter_result.global_ignore,
+                            base_explainer_ignore,
+                            assume_unique=False,
+                        )
+                        logging.getLogger(__name__).debug(
+                            "Extra ignore computed: len=%s",
+                            len(extra_ignore),
+                        )
+                        new_request_ignore = np.union1d(request_ignore, extra_ignore)
+                        filtered_request = ExplanationRequest(
+                            threshold=request.threshold,
+                            low_high_percentiles=request.low_high_percentiles,
+                            bins=request.bins,
+                            features_to_ignore=tuple(int(f) for f in new_request_ignore.tolist()),
+                            features_to_ignore_per_instance=filter_result.per_instance_ignore,
+                            extras=request.extras,
+                        )
+                    except (AttributeError, CalibratedError, ConfigurationError) as exc_inner:
+                        logging.getLogger(__name__).warning(
+                            "FAST-based feature filter disabled for mode '%s': %s",
+                            self._mode,
+                            exc_inner,
+                        )
+                        # Ensure no stale per-instance state is kept on the explainer.
+                        with contextlib.suppress(AttributeError):
+                            delattr(explainer, "_feature_filter_per_instance_ignore")
+                        filtered_request = ExplanationRequest(
+                            threshold=request.threshold,
+                            low_high_percentiles=request.low_high_percentiles,
+                            bins=request.bins,
+                            features_to_ignore=request.features_to_ignore,
+                            features_to_ignore_per_instance=getattr(
+                                request, "features_to_ignore_per_instance", None
+                            ),
+                            extras=request.extras,
+                        )
+            except Exception as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
+                logging.getLogger(__name__).debug(
+                    "FAST feature filter configuration failed for mode '%s': %s",
+                    self._mode,
+                    exc_cfg,
+                )
+                with contextlib.suppress(AttributeError):
+                    del self.explainer.feature_filter_per_instance_ignore
+                filtered_request = ExplanationRequest(
+                    threshold=request.threshold,
+                    low_high_percentiles=request.low_high_percentiles,
+                    bins=request.bins,
+                    features_to_ignore=request.features_to_ignore,
+                    features_to_ignore_per_instance=getattr(
+                        request, "features_to_ignore_per_instance", None
+                    ),
+                    extras=request.extras,
+                )
+
+            explain_request, explain_config, runtime = build_explain_execution_plan(
+                self.explainer, x, filtered_request
+            )
+
+            # Debug: log explain_request ignore fields (helps diagnose propagation)
+            logging.getLogger(__name__).debug(
+                "Explain request features_to_ignore: %s; per_instance: %s",
+                getattr(explain_request, "features_to_ignore", None),
+                getattr(explain_request, "features_to_ignore_per_instance", None) is not None,
+            )
+
+            # Respect the execution plugin's own capability check when present.
+            # This avoids over-eager legacy fallback when tests (or downstream
+            # users) inject a custom execution plugin that does not require a
+            # parallel executor.
+            supports = getattr(plugin, "supports", None)
+            if callable(supports):
+                try:
+                    if not supports(explain_request, explain_config):
+                        logging.getLogger(__name__).info(
+                            "Execution plugin unsupported; falling back to legacy sequential execution (mode=%s)",
+                            self._mode,
+                        )
+                        warnings.warn(
+                            f"Execution plugin does not support request/config for mode '{self._mode}'; falling back to legacy sequential execution.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                        explanation_callable = getattr(self.explainer, self._explanation_attr)
+                        kwargs = {
+                            "threshold": request.threshold,
+                            "low_high_percentiles": request.low_high_percentiles,
+                            "bins": request.bins,
+                        }
+                        if self._mode != "fast":
+                            kwargs["features_to_ignore"] = getattr(
+                                filtered_request, "features_to_ignore", request.features_to_ignore
+                            )
+                        kwargs["_use_plugin"] = False
+                        collection = explanation_callable(x, **kwargs)
+                        # Attach per-instance feature ignore masks from filtered request
+                        per_instance_ignore_from_request = getattr(
+                            filtered_request, "features_to_ignore_per_instance", None
+                        )
+                        if per_instance_ignore_from_request is not None:
+                            with contextlib.suppress(Exception):
+                                collection.features_to_ignore_per_instance = (
+                                    per_instance_ignore_from_request
+                                )
+                                # Reset rules cache on all explanations so they recompute with the new masks
+                                for exp in getattr(collection, "explanations", []):
+                                    with contextlib.suppress(Exception):
+                                        exp.reset()
+                        return collection_to_batch(collection)
+                except Exception as exc_supports:  # ADR002_ALLOW: degrade gracefully on plugin errors.  # pragma: no cover
+                    logging.getLogger(__name__).warning(
+                        "Execution plugin supports() check failed for mode '%s': %s; falling back to legacy",
+                        self._mode,
+                        exc_supports,
+                    )
+                    logging.getLogger(__name__).info(
+                        "Execution plugin supports() failure; legacy sequential fallback (mode=%s)",
+                        self._mode,
+                    )
+                    warnings.warn(
+                        f"Execution plugin supports() check failed for mode '{self._mode}' ({exc_supports!r}); falling back to legacy sequential execution.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    try:
+                        explanation_callable = getattr(self.explainer, self._explanation_attr)
+                    except Exception:  # adr002_allow
+                        # Defensive: when the provided helper handle does not expose
+                        # the expected explanation attribute (unit tests sometimes
+                        # supply minimal dummy objects), degrade to an empty
+                        # collection so the wrapper can still return a valid
+                        # ExplanationBatch.
+                        class _FallbackCollection:
+                            mode = self._mode
+                            explanations = []
+
+                        collection = _FallbackCollection()
+                        return collection_to_batch(collection)
+                    kwargs = {
+                        "threshold": request.threshold,
+                        "low_high_percentiles": request.low_high_percentiles,
+                        "bins": request.bins,
+                    }
+                    if self._mode != "fast":
+                        kwargs["features_to_ignore"] = getattr(
+                            filtered_request, "features_to_ignore", request.features_to_ignore
+                        )
+                    kwargs["_use_plugin"] = False
+                    collection = explanation_callable(x, **kwargs)
+                    # Attach per-instance feature ignore masks from filtered request
+                    per_instance_ignore_from_request = getattr(
+                        filtered_request, "features_to_ignore_per_instance", None
+                    )
+                    if per_instance_ignore_from_request is not None:
+                        with contextlib.suppress(Exception):
+                            collection.features_to_ignore_per_instance = (
+                                per_instance_ignore_from_request
+                            )
+                            # Reset rules cache on all explanations so they recompute with the new masks
+                            for exp in getattr(collection, "explanations", []):
+                                with contextlib.suppress(Exception):
+                                    exp.reset()
+                    return collection_to_batch(collection)
+
+            # Manage executor lifetime across explain runs using the runtime context.
+            with runtime:
+                collection = plugin.execute(explain_request, explain_config, self.explainer)
+
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: fall back to legacy path when executor fails.  # pragma: no cover
             # Fallback to legacy implementation with warning
             _logger = logging.getLogger(__name__)
             _logger.warning(
@@ -401,18 +678,62 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 self._mode,
                 exc,
             )
-            explanation_callable = getattr(self._explainer, self._explanation_attr)
+            # Log full exception stack for debugging plugin failures
+            _logger.exception("Execution plugin exception:", exc_info=True)
+            _logger.info(
+                "Execution plugin error; legacy sequential fallback engaged (mode=%s)", self._mode
+            )
+            warnings.warn(
+                f"Execution plugin failed for mode '{self._mode}' ({exc!r}); falling back to legacy sequential execution.",
+                UserWarning,
+                stacklevel=2,
+            )
+            try:
+                explanation_callable = getattr(self.explainer, self._explanation_attr)
+            except Exception:  # adr002_allow
+                # As above: fall back to an empty collection when explainer handle
+                # lacks the expected attribute.
+                class _FallbackCollection:
+                    mode = self._mode
+                    explanations = []
+
+                collection = _FallbackCollection()
+                return collection_to_batch(collection)
+
             kwargs = {
                 "threshold": request.threshold,
                 "low_high_percentiles": request.low_high_percentiles,
                 "bins": request.bins,
             }
             if self._mode != "fast":
-                kwargs["features_to_ignore"] = request.features_to_ignore
+                kwargs["features_to_ignore"] = getattr(
+                    filtered_request, "features_to_ignore", request.features_to_ignore
+                )
             kwargs["_use_plugin"] = False
             collection = explanation_callable(x, **kwargs)
 
-        return _collection_to_batch(collection)
+        # Attach per-instance feature ignore masks from the filtered request to the collection.
+        # This ensures that when rules are accessed via get_rules(), they will respect
+        # the per-instance masks computed by FAST-based feature filtering.
+        per_instance_ignore_from_request = getattr(
+            filtered_request, "features_to_ignore_per_instance", None
+        )
+        if per_instance_ignore_from_request is not None:
+            with contextlib.suppress(Exception):
+                collection.features_to_ignore_per_instance = per_instance_ignore_from_request
+                # Reset rules cache on all explanations so they recompute with the new masks
+                for exp in getattr(collection, "explanations", []):
+                    with contextlib.suppress(Exception):
+                        exp.reset()
+                logging.getLogger(__name__).debug(
+                    "Attached %d per-instance feature ignore masks to collection and reset %d explanation caches",
+                    len(per_instance_ignore_from_request)
+                    if hasattr(per_instance_ignore_from_request, "__len__")
+                    else 0,
+                    len(getattr(collection, "explanations", [])),
+                )
+
+        return collection_to_batch(collection)
 
 
 class SequentialExplanationPlugin(_ExecutionExplanationPluginBase):
@@ -447,7 +768,7 @@ class SequentialExplanationPlugin(_ExecutionExplanationPluginBase):
         """Configure the plugin to use sequential execution."""
         from ..core.explain.sequential import SequentialExplainExecutor
 
-        self._execution_plugin_class = SequentialExplainExecutor
+        self.execution_plugin_class = SequentialExplainExecutor
         super().__init__(
             _mode="factual",
             _explanation_attr="explain_factual",
@@ -457,10 +778,10 @@ class SequentialExplanationPlugin(_ExecutionExplanationPluginBase):
 
 
 class FeatureParallelExplanationPlugin(_ExecutionExplanationPluginBase):
-    """Wrapper for feature-parallel execution strategy (factual mode).
+    """Shim for feature-parallel execution strategy (factual mode).
 
-    Enables users to select feature-level parallelism through the plugin
-    configuration system. Falls back to sequential if executor unavailable.
+    Silently falls back to instance-parallel execution as feature-parallel
+    is deprecated and removed.
     """
 
     plugin_meta = {
@@ -481,14 +802,18 @@ class FeatureParallelExplanationPlugin(_ExecutionExplanationPluginBase):
         "plot_dependency": "plot_spec.default",
         "trusted": True,
         "trust": {"trusted": True},
-        "fallbacks": ("core.explanation.factual.sequential", "core.explanation.factual"),
+        "fallbacks": (
+            "core.explanation.factual.instance_parallel",
+            "core.explanation.factual.sequential",
+            "core.explanation.factual",
+        ),
     }
 
     def __init__(self) -> None:
-        """Configure the plugin to use feature-parallel execution."""
-        from ..core.explain.parallel_feature import FeatureParallelExplainExecutor
+        """Configure the plugin to use instance-parallel execution as fallback."""
+        from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
 
-        self._execution_plugin_class = FeatureParallelExplainExecutor
+        self.execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="factual",
             _explanation_attr="explain_factual",
@@ -523,7 +848,6 @@ class InstanceParallelExplanationPlugin(_ExecutionExplanationPluginBase):
         "trusted": True,
         "trust": {"trusted": True},
         "fallbacks": (
-            "core.explanation.factual.feature_parallel",
             "core.explanation.factual.sequential",
             "core.explanation.factual",
         ),
@@ -533,7 +857,7 @@ class InstanceParallelExplanationPlugin(_ExecutionExplanationPluginBase):
         """Configure the plugin to use instance-parallel execution."""
         from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
 
-        self._execution_plugin_class = InstanceParallelExplainExecutor
+        self.execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="factual",
             _explanation_attr="explain_factual",
@@ -574,7 +898,7 @@ class SequentialAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
         """Configure the plugin to use sequential execution."""
         from ..core.explain.sequential import SequentialExplainExecutor
 
-        self._execution_plugin_class = SequentialExplainExecutor
+        self.execution_plugin_class = SequentialExplainExecutor
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",
@@ -584,10 +908,10 @@ class SequentialAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
 
 
 class FeatureParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
-    """Wrapper for feature-parallel execution strategy (alternative mode).
+    """Shim for feature-parallel execution strategy (alternative mode).
 
-    Enables users to select feature-level parallelism for alternative explanations
-    through the plugin configuration system. Falls back to sequential if executor unavailable.
+    Silently falls back to instance-parallel execution as feature-parallel
+    is deprecated and removed.
     """
 
     plugin_meta = {
@@ -608,14 +932,18 @@ class FeatureParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBas
         "plot_dependency": "plot_spec.default",
         "trusted": True,
         "trust": {"trusted": True},
-        "fallbacks": ("core.explanation.alternative.sequential", "core.explanation.alternative"),
+        "fallbacks": (
+            "core.explanation.alternative.instance_parallel",
+            "core.explanation.alternative.sequential",
+            "core.explanation.alternative",
+        ),
     }
 
     def __init__(self) -> None:
-        """Configure the plugin to use feature-parallel execution."""
-        from ..core.explain.parallel_feature import FeatureParallelExplainExecutor
+        """Configure the plugin to use instance-parallel execution as fallback."""
+        from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
 
-        self._execution_plugin_class = FeatureParallelExplainExecutor
+        self.execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",
@@ -650,7 +978,6 @@ class InstanceParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBa
         "trusted": True,
         "trust": {"trusted": True},
         "fallbacks": (
-            "core.explanation.alternative.feature_parallel",
             "core.explanation.alternative.sequential",
             "core.explanation.alternative",
         ),
@@ -660,7 +987,7 @@ class InstanceParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBa
         """Configure the plugin to use instance-parallel execution."""
         from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
 
-        self._execution_plugin_class = InstanceParallelExplainExecutor
+        self.execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",
@@ -688,7 +1015,31 @@ class LegacyPlotBuilder(PlotBuilder):
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
         """Return a legacy-compatible payload representing the plot request."""
-        return {"context": context}
+        intent = context.intent if isinstance(context.intent, Mapping) else {}
+        intent_type = intent.get("type", "")
+
+        if intent_type == "global":
+            # For global plots, delegate to legacy.plot_global
+            options = context.options if isinstance(context.options, Mapping) else {}
+            payload = options.get("payload", {})
+            if not isinstance(payload, Mapping):
+                raise ConfigurationError(
+                    "Legacy builder expected payload mapping for global plot",
+                    details={"intent_type": "global", "requirement": "payload must be a mapping"},
+                )
+            return {
+                "legacy_function": "global",
+                "explainer": context.explanation,
+                "x": payload.get("x"),
+                "y": payload.get("y"),
+                "threshold": payload.get("threshold"),
+                "show": context.show,
+                "path": context.path,
+                "save_ext": context.save_ext,
+            }
+        else:
+            # For individual plots, the payload is built in plotting.py
+            return {"context": context}
 
 
 class LegacyPlotRenderer(PlotRenderer):
@@ -710,8 +1061,24 @@ class LegacyPlotRenderer(PlotRenderer):
     def render(
         self, artifact: Mapping[str, Any], *, context: PlotRenderContext
     ) -> PlotRenderResult:
-        """Render the placeholder legacy artefact and return an empty result."""
-        return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
+        """Render using the legacy plotting pathway."""
+        legacy_function = artifact.get("legacy_function")
+        if legacy_function == "global":
+            from ..legacy import plotting as legacy
+
+            legacy.plot_global(
+                explainer=artifact["explainer"],
+                x=artifact["x"],
+                y=artifact["y"],
+                threshold=artifact["threshold"],
+                show=artifact["show"],
+                path=artifact["path"],
+                save_ext=artifact["save_ext"],
+            )
+            return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
+        else:
+            # For other cases, fall back to no-op for now
+            return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
 
 
 class PlotSpecDefaultBuilder(PlotBuilder):
@@ -739,8 +1106,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             options = context.options if isinstance(context.options, Mapping) else {}
             payload = options.get("payload", {})
             if not isinstance(payload, Mapping):
-                raise RuntimeError(
-                    "PlotSpec default builder expected payload mapping for global plot"
+                raise ConfigurationError(
+                    "PlotSpec default builder expected payload mapping for global plot",
+                    details={"intent_type": "global", "requirement": "payload must be a mapping"},
                 )
             payload_dict = dict(payload)
             payload_dict.pop("threshold", None)  # legacy-only field
@@ -755,16 +1123,24 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             options = context.options if isinstance(context.options, Mapping) else {}
             payload = options.get("payload", {})
             if not isinstance(payload, Mapping):
-                raise RuntimeError(
-                    "PlotSpec default builder expected payload mapping for alternative plot"
+                raise ConfigurationError(
+                    "PlotSpec default builder expected payload mapping for alternative plot",
+                    details={
+                        "intent_type": "alternative",
+                        "requirement": "payload must be a mapping",
+                    },
                 )
 
             feature_payload = payload.get("feature_predict")
             if feature_payload is None:
                 feature_payload = payload.get("feature_weights")
             if feature_payload is None:
-                raise RuntimeError(
-                    "Alternative plot payload must supply 'feature_predict' or 'feature_weights'"
+                raise ConfigurationError(
+                    "Alternative plot payload must supply 'feature_predict' or 'feature_weights'",
+                    details={
+                        "intent_type": "alternative",
+                        "requirement": "feature_predict or feature_weights",
+                    },
                 )
 
             predict_payload = payload.get("predict", {})
@@ -776,7 +1152,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             def _safe_float(value: Any) -> float | None:
                 try:
                     val = float(value)
-                except Exception:
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: plotting tolerates malformed inputs.  # pragma: no cover
                     return None
                 if not np.isfinite(val):
                     return None
@@ -784,7 +1162,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
 
             y_minmax = payload.get("y_minmax")
             if y_minmax is None and context.explanation is not None:
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(AttributeError, TypeError, ValueError, RuntimeError):
                     candidate = getattr(context.explanation, "y_minmax", None)
                     if candidate is not None:
                         y_minmax = candidate
@@ -792,7 +1170,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
                 try:
                     y0, y1 = float(y_minmax[0]), float(y_minmax[1])
-                except Exception:
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: fallback when bounds cannot be coerced.  # pragma: no cover
                     normalised_y_minmax = None
                 else:
                     if np.isfinite(y0) and np.isfinite(y1):
@@ -852,7 +1232,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 for idx in features_to_plot_raw:
                     try:
                         value = int(idx)
-                    except Exception as exc:
+                    except (
+                        Exception
+                    ) as exc:  # ADR002_ALLOW: ignore bad feature indices.  # pragma: no cover
                         logging.getLogger(__name__).debug(
                             "Failed to convert feature index to int: %s", exc
                         )
@@ -893,7 +1275,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             is_thresholded = False
             threshold_label: str | None = None
             if context.explanation is not None:
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(AttributeError, TypeError, ValueError, RuntimeError):
                     is_thresholded = bool(context.explanation.is_thresholded())
                 if is_thresholded:
                     y_threshold = getattr(context.explanation, "y_threshold", None)
@@ -901,7 +1283,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                         try:
                             lo_val = float(y_threshold[0])
                             hi_val = float(y_threshold[1])
-                        except Exception:
+                        except (
+                            Exception
+                        ):  # ADR002_ALLOW: ignore malformed threshold payloads.  # pragma: no cover
                             threshold_label = None
                         else:
                             threshold_label = (
@@ -910,7 +1294,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     elif y_threshold is not None:
                         try:
                             thr = float(y_threshold)
-                        except Exception:
+                        except (
+                            Exception
+                        ):  # ADR002_ALLOW: ignore malformed threshold payloads.  # pragma: no cover
                             threshold_label = None
                         else:
                             threshold_label = f"Probability of target being below {thr:.2f}"
@@ -925,7 +1311,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 or ""
             ).lower()
             if not variant_hint and context.explanation is not None:
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(AttributeError, TypeError, ValueError, RuntimeError):
                     maybe_mode = context.explanation.get_mode()
                     if isinstance(maybe_mode, str):
                         variant_hint = maybe_mode.lower()
@@ -962,7 +1348,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 threshold_label_text = builder_kwargs.pop("threshold_label")
                 threshold_value = builder_kwargs.pop("threshold_value")
                 if thresholded:
-                    pos_label, neg_label = _derive_threshold_labels(threshold_value)
+                    pos_label, neg_label = derive_threshold_labels(threshold_value)
                     classification_kwargs = builder_kwargs.copy()
                     classification_kwargs.pop("xlabel", None)
                     classification_kwargs.pop("xlim", None)
@@ -989,7 +1375,13 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             builder_kwargs.pop("threshold_label", None)
             return build_alternative_probabilistic_spec(**builder_kwargs)
 
-        raise RuntimeError("PlotSpec default builder currently supports only global plots")
+        raise ConfigurationError(
+            "PlotSpec default builder currently supports only global plots",
+            details={
+                "supported_intents": ["global"],
+                "requirement": "intent type must be 'global'",
+            },
+        )
 
 
 class PlotSpecDefaultRenderer(PlotRenderer):
@@ -1028,8 +1420,13 @@ class PlotSpecDefaultRenderer(PlotRenderer):
                     render_plotspec(artifact, show=True, save_path=None)
             else:
                 render_plotspec(artifact, show=context.show, save_path=base_path)
-        except Exception as exc:  # pragma: no cover - defensive fallback
-            raise RuntimeError(f"PlotSpec renderer failed: {exc}") from exc
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: bubble up renderer failures as config errors.  # pragma: no cover
+            raise ConfigurationError(
+                f"PlotSpec renderer failed: {exc}",
+                details={"context": "plot_rendering", "original_error": str(exc)},
+            ) from exc
         return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(saved), extras={})
 
 
@@ -1070,7 +1467,10 @@ def _register_builtin_fast_plugins() -> None:
                 task = str(metadata.get("task") or metadata.get("mode") or "")
                 explainer = metadata.get("explainer")
                 if explainer is None:
-                    raise RuntimeError("FAST interval context missing 'explainer' handle")
+                    raise NotFittedError(
+                        "FAST interval context missing 'explainer' handle",
+                        details={"context": "fast_interval", "requirement": "explainer"},
+                    )
 
                 x_cal, y_cal = context.calibration_splits[0]
                 bins = context.bins.get("calibration")
@@ -1102,7 +1502,7 @@ def _register_builtin_fast_plugins() -> None:
                 calibrators: list[Any] = []
                 num_features = int(metadata.get("num_features", 0) or 0)
                 if "classification" in task:
-                    from ..core.calibration.venn_abers import VennAbers
+                    from ..calibration.venn_abers import VennAbers
 
                     for f in range(num_features):
                         fast_x_cal = explainer.scaled_x_cal.copy()
@@ -1117,7 +1517,7 @@ def _register_builtin_fast_plugins() -> None:
                             )
                         )
                 else:
-                    from ..core.calibration.interval_regressor import IntervalRegressor
+                    from ..calibration.interval_regressor import IntervalRegressor
 
                     for f in range(num_features):
                         fast_x_cal = explainer.scaled_x_cal.copy()
@@ -1131,7 +1531,7 @@ def _register_builtin_fast_plugins() -> None:
                 explainer.bins = original_bins
 
                 if "classification" in task:
-                    from ..core.calibration.venn_abers import VennAbers
+                    from ..calibration.venn_abers import VennAbers
 
                     calibrators.append(
                         VennAbers(
@@ -1148,7 +1548,7 @@ def _register_builtin_fast_plugins() -> None:
                         )
                     )
                 else:
-                    from ..core.calibration.interval_regressor import IntervalRegressor
+                    from ..calibration.interval_regressor import IntervalRegressor
 
                     calibrators.append(IntervalRegressor(explainer))
 

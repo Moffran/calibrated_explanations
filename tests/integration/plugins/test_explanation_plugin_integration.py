@@ -2,18 +2,23 @@
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
+
+from tests.helpers.explainer_utils import (
+    make_explainer_from_dataset,
+    make_multiclass_explainer_from_dataset,
+    make_regression_explainer_from_dataset,
+    assert_explanation_collections_equal,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_explanation_plugins,
     ensure_builtin_plugins,
     register_explanation_plugin,
@@ -55,53 +60,12 @@ class FutureSchemaFactualPlugin(LegacyFactualExplanationPlugin):
 
 
 @pytest.fixture(autouse=True)
-def _restore_registry():
+def restore_registry():
     clear_explanation_plugins()
     ensure_builtin_plugins()
     yield
     clear_explanation_plugins()
     ensure_builtin_plugins()
-
-
-def _make_explainer(binary_dataset, **overrides):
-    from tests._helpers import get_classification_model
-
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,
-        _,
-        _,
-        categorical_features,
-        feature_names,
-    ) = binary_dataset
-
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=["No", "Yes"],
-        **overrides,
-    )
-    return explainer, x_test
-
-
-def _assert_collections_equal(lhs, rhs):
-    lhs_items = getattr(lhs, "explanations", lhs)
-    rhs_items = getattr(rhs, "explanations", rhs)
-    assert len(lhs_items) == len(rhs_items)
-    assert repr(lhs) == repr(rhs)
-    for left, right in zip(lhs_items, rhs_items):
-        for key in ("predict", "low", "high"):
-            np.testing.assert_allclose(left.prediction[key], right.prediction[key])
-            np.testing.assert_allclose(left.feature_weights[key], right.feature_weights[key])
 
 
 def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
@@ -112,15 +76,15 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", identifier)
 
     try:
-        explainer, x_test = _make_explainer(binary_dataset)
+        explainer, x_test = make_explainer_from_dataset(binary_dataset)
         explainer.explain_factual(x_test[:2])
         assert plugin._context is None
 
-        chain = explainer._explanation_plugin_fallbacks["factual"]
+        chain = explainer.plugin_manager.explanation_plugin_fallbacks["factual"]
         assert chain[0] == identifier
         assert "core.explanation.factual" in chain
 
-        context = explainer._explanation_contexts["factual"]
+        context = explainer.plugin_manager.explanation_contexts["factual"]
         assert context.interval_settings["dependencies"] == ("core.interval.legacy",)
         fallbacks = context.plot_settings["fallbacks"]
         assert "legacy" in fallbacks
@@ -130,7 +94,9 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
 
 
 def test_missing_override_identifier_errors(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset, factual_plugin="tests.integration.missing")
+    explainer, x_test = make_explainer_from_dataset(
+        binary_dataset, factual_plugin="tests.integration.missing"
+    )
 
     with pytest.raises(ConfigurationError, match="missing: not registered"):
         explainer.explain_factual(x_test[:1])
@@ -138,86 +104,86 @@ def test_missing_override_identifier_errors(binary_dataset):
 
 def test_schema_version_override_error(binary_dataset):
     plugin = FutureSchemaFactualPlugin()
-    explainer, x_test = _make_explainer(binary_dataset, factual_plugin=plugin)
+    explainer, x_test = make_explainer_from_dataset(binary_dataset, factual_plugin=plugin)
 
     with pytest.raises(ConfigurationError, match="schema_version"):
         explainer.explain_factual(x_test[:1])
 
 
 def test_factual_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset)
+    explainer, x_test = make_explainer_from_dataset(binary_dataset)
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_sequential_factual_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(
+    explainer, x_test = make_explainer_from_dataset(
         binary_dataset, factual_plugin="core.explanation.factual.sequential"
     )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_instance_parallel_factual_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(
+    """MUST NOT enable_fallbacks: verifies instance-parallel execution correctness.
+    This test must exercise the instance-parallel execution path directly; do not opt-in
+    to `enable_fallbacks` because any fallback would hide deviations from instance-parallel
+    behaviour and defeat the purpose of the test.
+    """
+    explainer, x_test = make_explainer_from_dataset(
         binary_dataset, factual_plugin="core.explanation.factual.instance_parallel"
     )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_feature_parallel_factual_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(
-        binary_dataset, factual_plugin="core.explanation.factual.feature_parallel"
-    )
-    legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
-    plugin_result = explainer.explain_factual(x_test[:3])
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed feature_parallel factual test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 def test_alternative_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset)
+    explainer, x_test = make_explainer_from_dataset(binary_dataset)
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_sequential_alternative_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(
+    explainer, x_test = make_explainer_from_dataset(
         binary_dataset, alternative_plugin="core.explanation.alternative.sequential"
     )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_instance_parallel_alternative_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(
+    """MUST NOT enable_fallbacks: verifies instance-parallel alternative execution.
+    This test must exercise the instance-parallel execution path directly; do not opt-in
+    to `enable_fallbacks` because any fallback would hide deviations from instance-parallel
+    behaviour and defeat the purpose of the test.
+    """
+    explainer, x_test = make_explainer_from_dataset(
         binary_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
     )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_feature_parallel_alternative_explanations_match_legacy(binary_dataset):
-    explainer, x_test = _make_explainer(
-        binary_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
-    )
-    legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
-    plugin_result = explainer.explore_alternatives(x_test[:3])
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed feature_parallel alternative test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 # =====================================================================
@@ -225,112 +191,78 @@ def test_feature_parallel_alternative_explanations_match_legacy(binary_dataset):
 # =====================================================================
 
 
-def _make_multiclass_explainer(multiclass_dataset, **overrides):
-    from tests._helpers import get_classification_model
-
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,  # y_test
-        _,  # num_classes
-        _,  # num_features
-        categorical_features,
-        _,  # categorical_labels
-        _,  # target_labels
-        feature_names,
-    ) = multiclass_dataset
-
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=["Class0", "Class1", "Class2"],
-        **overrides,
-    )
-    return explainer, x_test
-
-
 def test_multiclass_factual_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(multiclass_dataset)
+    explainer, x_test = make_multiclass_explainer_from_dataset(multiclass_dataset)
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_multiclass_sequential_factual_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(
+    explainer, x_test = make_multiclass_explainer_from_dataset(
         multiclass_dataset, factual_plugin="core.explanation.factual.sequential"
     )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_multiclass_instance_parallel_factual_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(
+    """MUST NOT enable_fallbacks: multiclass instance-parallel factual test.
+    This test must run the instance-parallel plugin without allowing fallbacks; enabling
+    fallbacks would mask execution differences and is forbidden.
+    """
+    explainer, x_test = make_multiclass_explainer_from_dataset(
         multiclass_dataset, factual_plugin="core.explanation.factual.instance_parallel"
     )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_multiclass_feature_parallel_factual_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(
-        multiclass_dataset, factual_plugin="core.explanation.factual.feature_parallel"
-    )
-    legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
-    plugin_result = explainer.explain_factual(x_test[:3])
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed multiclass feature_parallel factual test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 def test_multiclass_alternative_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(multiclass_dataset)
+    explainer, x_test = make_multiclass_explainer_from_dataset(multiclass_dataset)
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_multiclass_sequential_alternative_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(
+    explainer, x_test = make_multiclass_explainer_from_dataset(
         multiclass_dataset, alternative_plugin="core.explanation.alternative.sequential"
     )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_multiclass_instance_parallel_alternative_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(
+    """MUST NOT enable_fallbacks: multiclass instance-parallel alternative test.
+    This test must run the instance-parallel plugin without allowing fallbacks; enabling
+    fallbacks would mask execution differences and is forbidden.
+    """
+    explainer, x_test = make_multiclass_explainer_from_dataset(
         multiclass_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
     )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_multiclass_feature_parallel_alternative_explanations_match_legacy(multiclass_dataset):
-    explainer, x_test = _make_multiclass_explainer(
-        multiclass_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
-    )
-    legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
-    plugin_result = explainer.explore_alternatives(x_test[:3])
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed multiclass feature_parallel alternative test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 # =====================================================================
@@ -338,108 +270,78 @@ def test_multiclass_feature_parallel_alternative_explanations_match_legacy(multi
 # =====================================================================
 
 
-def _make_regression_explainer(regression_dataset, **overrides):
-    from tests._helpers import get_regression_model
-
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,  # y_test
-        _,  # num_features
-        categorical_features,
-        feature_names,
-    ) = regression_dataset
-
-    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="regression",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        **overrides,
-    )
-    return explainer, x_test
-
-
 def test_regression_factual_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(regression_dataset)
+    explainer, x_test = make_regression_explainer_from_dataset(regression_dataset)
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_regression_sequential_factual_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, factual_plugin="core.explanation.factual.sequential"
     )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_regression_instance_parallel_factual_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
+    """MUST NOT enable_fallbacks: regression instance-parallel factual test.
+    This test must run the instance-parallel plugin without allowing fallbacks; enabling
+    fallbacks would mask execution differences and is forbidden.
+    """
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, factual_plugin="core.explanation.factual.instance_parallel"
     )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_regression_feature_parallel_factual_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
-        regression_dataset, factual_plugin="core.explanation.factual.feature_parallel"
-    )
-    legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
-    plugin_result = explainer.explain_factual(x_test[:3])
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed regression feature_parallel factual test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 def test_regression_alternative_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(regression_dataset)
+    explainer, x_test = make_regression_explainer_from_dataset(regression_dataset)
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_regression_sequential_alternative_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, alternative_plugin="core.explanation.alternative.sequential"
     )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_regression_instance_parallel_alternative_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
+    """MUST NOT enable_fallbacks: regression instance-parallel alternative test.
+    This test must run the instance-parallel plugin without allowing fallbacks; enabling
+    fallbacks would mask execution differences and is forbidden.
+    """
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
     )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_regression_feature_parallel_alternative_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
-        regression_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
-    )
-    legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
-    plugin_result = explainer.explore_alternatives(x_test[:3])
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed regression feature_parallel alternative test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 # =====================================================================
@@ -448,86 +350,80 @@ def test_regression_feature_parallel_alternative_explanations_match_legacy(regre
 
 
 def test_probabilistic_regression_factual_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(regression_dataset)
+    explainer, x_test = make_regression_explainer_from_dataset(regression_dataset)
     legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_probabilistic_regression_sequential_factual_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, factual_plugin="core.explanation.factual.sequential"
     )
     legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_probabilistic_regression_instance_parallel_factual_explanations_match_legacy(
     regression_dataset,
 ):
-    explainer, x_test = _make_regression_explainer(
+    """MUST NOT enable_fallbacks: probabilistic regression instance-parallel factual test.
+    This test must run the instance-parallel plugin without allowing fallbacks; enabling
+    fallbacks would mask execution differences and is forbidden.
+    """
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, factual_plugin="core.explanation.factual.instance_parallel"
     )
     legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_feature_parallel_factual_explanations_match_legacy(
-    regression_dataset,
-):
-    explainer, x_test = _make_regression_explainer(
-        regression_dataset, factual_plugin="core.explanation.factual.feature_parallel"
-    )
-    legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
-    plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed probabilistic regression feature_parallel factual test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.
 
 
 def test_probabilistic_regression_alternative_explanations_match_legacy(regression_dataset):
-    explainer, x_test = _make_regression_explainer(regression_dataset)
+    explainer, x_test = make_regression_explainer_from_dataset(regression_dataset)
     legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_probabilistic_regression_sequential_alternative_explanations_match_legacy(
     regression_dataset,
 ):
-    explainer, x_test = _make_regression_explainer(
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, alternative_plugin="core.explanation.alternative.sequential"
     )
     legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
 def test_probabilistic_regression_instance_parallel_alternative_explanations_match_legacy(
     regression_dataset,
 ):
-    explainer, x_test = _make_regression_explainer(
+    """MUST NOT enable_fallbacks: probabilistic regression instance-parallel alternative test.
+    This test must run the instance-parallel plugin without allowing fallbacks; enabling
+    fallbacks would mask execution differences and is forbidden.
+    """
+    explainer, x_test = make_regression_explainer_from_dataset(
         regression_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
     )
     legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
 
-    _assert_collections_equal(plugin_result, legacy)
+    assert_explanation_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_feature_parallel_alternative_explanations_match_legacy(
-    regression_dataset,
-):
-    explainer, x_test = _make_regression_explainer(
-        regression_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
-    )
-    legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
-    plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
-
-    _assert_collections_equal(plugin_result, legacy)
+# Removed probabilistic regression feature_parallel alternative test (deprecated execution strategy).
+# Feature-parallel is deprecated and intentionally falls back to instance-parallel.
+# These tests were removed to avoid hidden parity through baked-in fallbacks.

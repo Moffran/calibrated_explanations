@@ -1,38 +1,13 @@
 import numpy as np
 
-import pytest
 
-from calibrated_explanations.core.config_helpers import (
-    split_csv,
-    coerce_string_tuple,
+from calibrated_explanations.core.explain.helpers import (
+    compute_weight_delta,
+    slice_bins,
+    slice_threshold,
 )
-from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
-
-
-def test_split_and_coerce_string_tuple():
-    assert split_csv(None) == ()
-    assert split_csv("") == ()
-    assert split_csv("a,b, c") == ("a", "b", "c")
-
-    assert coerce_string_tuple(None) == ()
-    assert coerce_string_tuple("") == ()
-    assert coerce_string_tuple("x") == ("x",)
-    assert coerce_string_tuple(["a", "", 1]) == ("a",)
-
-
-def test_assign_weight_scalar_basic_and_arrays():
-    # scalar
-    assert pytest.approx(assign_weight_scalar(0.2, 0.8)) == 0.6
-
-    # numpy arrays -> returns first element of flattened diff
-    a = np.array([0.1, 0.2])
-    b = np.array([0.5, 0.6])
-    assert pytest.approx(assign_weight_scalar(a, b)) == 0.4
-
-    # empty arrays -> 0.0
-    assert assign_weight_scalar([], []) == 0.0
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 
 
 class DummyBridge:
@@ -63,32 +38,32 @@ def test_predict_bridge_monitor_records_calls():
 
 def test_check_explanation_runtime_metadata_various(explainer_factory):
     """Test ExplanationOrchestrator metadata validation through delegating method."""
-    orch = explainer_factory()._explanation_orchestrator
+    orch = explainer_factory().explanation_orchestrator
 
     # None metadata
-    msg = orch._check_metadata(None, identifier=None, mode="factual")
+    msg = orch.check_metadata(None, identifier=None, mode="factual")
     assert "metadata unavailable" in msg
 
     # bad schema
     bad_meta = {"schema_version": "bad"}
-    msg = orch._check_metadata(bad_meta, identifier=None, mode="factual")
+    msg = orch.check_metadata(bad_meta, identifier=None, mode="factual")
     assert "unsupported" in msg
 
     # missing tasks
     good_schema = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
     meta_missing_tasks = dict(good_schema)
-    msg = orch._check_metadata(meta_missing_tasks, identifier="id", mode="factual")
+    msg = orch.check_metadata(meta_missing_tasks, identifier="id", mode="factual")
     assert "missing tasks declaration" in msg
 
     # tasks incompatible
     meta_tasks = dict(good_schema)
     meta_tasks["tasks"] = "regression"
-    msg = orch._check_metadata(meta_tasks, identifier="id", mode="factual")
+    msg = orch.check_metadata(meta_tasks, identifier="id", mode="factual")
     assert "does not support task" in msg
 
     # missing modes
     meta_tasks["tasks"] = "both"
-    msg = orch._check_metadata({**meta_tasks}, identifier="id", mode="factual")
+    msg = orch.check_metadata({**meta_tasks}, identifier="id", mode="factual")
     assert "missing modes declaration" in msg
 
     # modes not matching
@@ -97,13 +72,13 @@ def test_check_explanation_runtime_metadata_various(explainer_factory):
         "tasks": "both",
         "modes": ("fast",),
     }
-    msg = orch._check_metadata(meta_ok, identifier="id", mode="factual")
+    msg = orch.check_metadata(meta_ok, identifier="id", mode="factual")
     assert "does not declare mode" in msg
 
     # missing capabilities
     meta_ok["modes"] = ("factual",)
     meta_ok["capabilities"] = []
-    msg = orch._check_metadata(meta_ok, identifier="id", mode="factual")
+    msg = orch.check_metadata(meta_ok, identifier="id", mode="factual")
     assert "missing required capabilities" in msg
 
     # valid metadata
@@ -118,7 +93,7 @@ def test_check_explanation_runtime_metadata_various(explainer_factory):
             "task:classification",
         ],
     }
-    assert orch._check_metadata(meta_valid, identifier="id", mode="factual") is None
+    assert orch.check_metadata(meta_valid, identifier="id", mode="factual") is None
 
 
 def test_slice_threshold_and_bins():
@@ -127,7 +102,7 @@ def test_slice_threshold_and_bins():
     Tests should call explain module functions directly,
     not private methods on CalibratedExplainer.
     """
-    from calibrated_explanations.core.explain._helpers import slice_threshold, slice_bins
+    # imported above via public helpers
 
     # threshold None or scalar
     assert slice_threshold(None, 0, 1, 1) is None
@@ -153,7 +128,6 @@ def test_compute_weight_delta_basic():
     Tests should call explain module functions directly,
     not private methods on CalibratedExplainer.
     """
-    from calibrated_explanations.core.explain._helpers import compute_weight_delta
 
     # scalar baseline vs array perturbed
     res = compute_weight_delta(1.0, np.array([0.5, 1.5]))

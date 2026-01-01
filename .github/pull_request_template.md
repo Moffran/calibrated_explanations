@@ -6,8 +6,8 @@
 
 ## Checklist
 
-- [ ] Aligned with current phase in `improvement_docs/RELEAS_PLAN_V1.md` (link section)
-- [ ] Referenced relevant ADR(s) in `improvement_docs/adrs/` (IDs)
+- [ ] Aligned with current phase in `docs/improvement/RELEASE_PLAN_v1.md` (link section)
+- [ ] Referenced relevant ADR(s) in `docs/improvement/adrs/` (IDs)
 - [ ] Added/updated tests for new or changed behavior
 - [ ] Coverage gate passes (`pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90`)
 - [ ] Coverage waiver requested (if needed) with linked issue: <!-- paste issue URL or write N/A -->
@@ -16,6 +16,8 @@
 - [ ] Ruff and Markdown lint pass locally
 - [ ] Updated docs/README if public behavior or user flows changed
 - [ ] Considered backward compatibility and deprecation notes
+- [ ] DCO sign-off added to commits (`git commit -s`)
+- [ ] Reviewed CODE_OF_CONDUCT.md / SECURITY.md / GOVERNANCE.md as needed
 
 ## Screenshots/Notes (optional)
 

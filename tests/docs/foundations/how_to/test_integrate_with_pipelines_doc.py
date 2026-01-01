@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 
-def _build_pipeline_context() -> SimpleNamespace:
+def build_pipeline_context() -> SimpleNamespace:
     from sklearn.compose import ColumnTransformer
     from sklearn.datasets import load_breast_cancer
     from sklearn.ensemble import RandomForestClassifier
@@ -50,7 +50,7 @@ def _build_pipeline_context() -> SimpleNamespace:
     config = ExplainerConfig(
         model=RandomForestClassifier(random_state=0), preprocessor=preprocessor
     )
-    explainer = WrapCalibratedExplainer._from_config(config)
+    explainer = WrapCalibratedExplainer.from_config(config)
 
     explainer.fit(x_proper, y_proper)
     explainer.calibrate(x_cal, y_cal)
@@ -68,7 +68,7 @@ def _build_pipeline_context() -> SimpleNamespace:
     )
 
 
-def test_integrate_with_pipelines_snippet():
-    context = _build_pipeline_context()
+def test_integrate_with_pipelines_snippet(enable_fallbacks):
+    context = build_pipeline_context()
     assert context.factual
     assert "preprocessor" in context.telemetry

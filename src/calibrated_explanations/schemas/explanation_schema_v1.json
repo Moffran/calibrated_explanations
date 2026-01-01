@@ -6,7 +6,10 @@
   "additionalProperties": true,
   "required": ["task", "index", "explanation_type", "prediction", "rules"],
   "properties": {
-    "schema_version": {"type": "string", "const": "1.0.0"},
+    "schema_version": {
+      "type": "string",
+      "description": "Optional recommended schema version for consumers (e.g. '1.0.0')."
+    },
     "task": {"type": "string"},
     "index": {"type": "integer", "minimum": 0},
     "explanation_type": {"type": "string", "enum": ["factual", "alternative"]},

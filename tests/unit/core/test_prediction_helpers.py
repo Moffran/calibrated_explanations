@@ -3,11 +3,12 @@ import pytest
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from unittest.mock import MagicMock
 
 from calibrated_explanations.core import prediction_helpers as ph
 from calibrated_explanations.core.explain._computation import explain_predict_step
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import DataShapeError, ValidationError
+from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 
 
 def test_prediction_helpers_round_trip():
@@ -50,7 +51,7 @@ def test_prediction_helpers_round_trip():
     assert len(prediction["__full_probabilities__"]) == len(x_valid)
 
 
-class _StubExplainer:
+class StubExplainer:
     """Lightweight implementation of ``_ExplainerProtocol`` for unit tests."""
 
     def __init__(
@@ -64,12 +65,12 @@ class _StubExplainer:
     ) -> None:
         self.num_features = num_features
         self.mode = mode
-        self._mondrian = mondrian
-        self._fast = fast
-        self._multiclass = multiclass
+        self.mondrian_flag = mondrian
+        self.fast_flag = fast
+        self.multiclass_flag = multiclass
         self.x_cal = np.zeros((2, num_features))
-        self.interval_learner = self._build_interval_learner()
-        self._learner = (
+        self.interval_learner = self.build_interval_learner()
+        self.learner_instance = (
             self.interval_learner[0]
             if isinstance(self.interval_learner, list)
             else self.interval_learner
@@ -77,8 +78,8 @@ class _StubExplainer:
         self.predict_calls: list = []
         self.discretizer = None  # Required by explain_predict_step
 
-    def _build_interval_learner(self):
-        class _Learner:
+    def build_interval_learner(self):
+        class Learner:
             def __init__(self, *, as_list: bool) -> None:
                 self.as_list = as_list
                 self.calls = []
@@ -87,26 +88,37 @@ class _StubExplainer:
                 self.calls.append((np.asarray(x), bins))
                 return np.full((len(x), 2), 0.5)
 
-        learner = _Learner(as_list=self._fast)
-        if self._fast:
+        learner = Learner(as_list=self.fast_flag)
+        if self.fast_flag:
             # ``explain_predict_step`` indexes the learner list by ``num_features``
             return [learner for _ in range(self.num_features + 1)]
         return learner
 
+    @property
+    def plugin_manager(self):
+        from calibrated_explanations.plugins.manager import PluginManager
+
+        if not hasattr(self, "_plugin_manager"):
+            self.plugin_manager = PluginManager(self)
+        return self.plugin_manager
+
     # ``_ExplainerProtocol`` API -------------------------------------------------
-    def _is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
-        return self._mondrian
+    def is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
+        return self.mondrian_flag
+
+    def infer_explanation_mode(self) -> str:
+        return "factual"
 
     def is_multiclass(self) -> bool:  # noqa: D401 - protocol implementation
-        return self._multiclass
+        return self.multiclass_flag
 
     def is_fast(self) -> bool:  # noqa: D401 - protocol implementation
-        return self._fast
+        return self.fast_flag
 
-    def _predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
+    def predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
         self.predict_calls.append((np.asarray(x), kwargs))
         size = np.asarray(x).shape[0]
-        classes = np.arange(size) if self._multiclass else np.zeros(size, dtype=int)
+        classes = np.arange(size) if self.multiclass_flag else np.zeros(size, dtype=int)
         return (
             np.full((size,), 0.1),
             np.full((size,), -0.1),
@@ -114,7 +126,14 @@ class _StubExplainer:
             classes,
         )
 
-    def _discretize(self, x):  # noqa: D401 - protocol implementation
+    def predict_calibrated(self, x, **kwargs):
+        return self.predict(x, **kwargs)
+
+    def _predict(self, *args, **kwargs):
+        """Internal alias for predict."""
+        return self.predict(*args, **kwargs)
+
+    def discretize(self, x):  # noqa: D401 - protocol implementation
         return np.asarray(x) + 1
 
     def rule_boundaries(self, x, x_perturbed):  # noqa: D401 - protocol implementation
@@ -122,7 +141,7 @@ class _StubExplainer:
 
 
 def test_validate_and_prepare_input_reshapes_vector():
-    explainer = _StubExplainer(num_features=3)
+    explainer = StubExplainer(num_features=3)
     vector = np.array([1.0, 2.0, 3.0])
 
     prepared = ph.validate_and_prepare_input(explainer, vector)
@@ -132,7 +151,7 @@ def test_validate_and_prepare_input_reshapes_vector():
 
 
 def test_validate_and_prepare_input_rejects_wrong_width():
-    explainer = _StubExplainer(num_features=4)
+    explainer = StubExplainer(num_features=4)
     matrix = np.ones((2, 3))
 
     with pytest.raises(DataShapeError):
@@ -140,18 +159,18 @@ def test_validate_and_prepare_input_rejects_wrong_width():
 
 
 def test_initialize_explanation_requires_bins_for_mondrian(monkeypatch):
-    explainer = _StubExplainer(mondrian=True)
+    explainer = StubExplainer(mondrian=True)
     x = np.ones((2, explainer.num_features))
 
     # Avoid constructing the heavy ``CalibratedExplanations`` implementation.
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     # Patch the import inside the initialize_explanation function
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     with pytest.raises(ValidationError):
         ph.initialize_explanation(
@@ -165,16 +184,16 @@ def test_initialize_explanation_requires_bins_for_mondrian(monkeypatch):
 
 
 def test_initialize_explanation_validates_bin_length(monkeypatch):
-    explainer = _StubExplainer(mondrian=True)
+    explainer = StubExplainer(mondrian=True)
     x = np.ones((2, explainer.num_features))
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     with pytest.raises(DataShapeError):
         ph.initialize_explanation(
@@ -188,16 +207,16 @@ def test_initialize_explanation_validates_bin_length(monkeypatch):
 
 
 def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch):
-    explainer = _StubExplainer(mode="classification")
+    explainer = StubExplainer(mode="classification")
     x = np.ones((2, explainer.num_features))
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     with pytest.raises(ValidationError):
         ph.initialize_explanation(
@@ -211,25 +230,25 @@ def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch
 
 
 def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
-    explainer = _StubExplainer(mode="regression")
+    explainer = StubExplainer(mode="regression")
     x = np.ones((2, explainer.num_features))
     bins = np.ones((2,))
     threshold = [(0.1, 0.2), (0.3, 0.4)]
 
     recorded_calls: list[tuple] = []
 
-    def _fake_assert(thresh, data):
+    def fake_assert_mock(thresh, data):
         recorded_calls.append((thresh, np.asarray(data).shape))
         return thresh
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
-    monkeypatch.setattr(ph, "assert_threshold", _fake_assert)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
+    monkeypatch.setattr(ph, "assert_threshold", fake_assert_mock)
 
     with pytest.warns(UserWarning, match="list of interval thresholds"):
         explanation = ph.initialize_explanation(
@@ -246,16 +265,16 @@ def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
 
 
 def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
-    explainer = _StubExplainer(mode="regression")
+    explainer = StubExplainer(mode="regression")
     x = np.ones((3, explainer.num_features))
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     explanation = ph.initialize_explanation(
         explainer,
@@ -270,7 +289,7 @@ def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
 
 
 def test_predict_internal_delegates_to_underlying_protocol():
-    explainer = _StubExplainer(multiclass=False)
+    explainer = StubExplainer(multiclass=False)
     x = np.ones((2, explainer.num_features))
 
     result = ph.predict_internal(
@@ -291,4 +310,68 @@ def test_predict_internal_delegates_to_underlying_protocol():
     assert kwargs["classes"] == [1]
     np.testing.assert_array_equal(kwargs["bins"], np.array([0, 1]))
     assert kwargs["feature"] == 0
+    assert isinstance(result, tuple)
+
+
+def test_format_regression_prediction_handles_thresholds():
+    predict = np.array([1.0, 2.0])
+    low = np.array([0.5, 1.5])
+    high = np.array([1.5, 2.5])
+
+    labels = ph.format_regression_prediction(predict, low, high, threshold=1.5)
+    assert isinstance(labels, list)
+    assert all("y_hat" in label for label in labels)
+
+    multi_labels = ph.format_regression_prediction(
+        predict, low, high, threshold=[(0.5, 1.5), (0.1, 0.9)]
+    )
+    assert isinstance(multi_labels, list)
+
+    interval_result = ph.format_regression_prediction(
+        predict, low, high, threshold=None, uq_interval=True
+    )
+    assert isinstance(interval_result, tuple)
+
+
+def test_format_classification_prediction_maps_labels():
+    predict = np.array([0.6, 0.4])
+    low = np.zeros_like(predict)
+    high = np.ones_like(predict)
+    new_classes = None
+    class_labels = np.array(["neg", "pos"])
+
+    mapped = ph.format_classification_prediction(
+        predict,
+        low,
+        high,
+        new_classes,
+        is_multiclass_val=False,
+        class_labels=class_labels,
+        uq_interval=True,
+    )
+    assert isinstance(mapped, tuple)
+    assert mapped[0].tolist() == ["pos", "neg"]
+
+
+def test_handle_uncalibrated_regression_prediction():
+    learner = MagicMock()
+    learner.predict.return_value = np.array([1.0, 2.0])
+    x = np.ones((2, 2))
+
+    with pytest.raises(ValidationError):
+        ph.handle_uncalibrated_regression_prediction(learner, x, threshold=1.0)
+
+    result = ph.handle_uncalibrated_regression_prediction(learner, x, uq_interval=True)
+    assert isinstance(result, tuple)
+
+
+def test_handle_uncalibrated_classification_prediction():
+    learner = MagicMock()
+    learner.predict.return_value = np.array([0, 1])
+    x = np.ones((2, 2))
+
+    with pytest.raises(ValidationError):
+        ph.handle_uncalibrated_classification_prediction(learner, x, threshold=0.5)
+
+    result = ph.handle_uncalibrated_classification_prediction(learner, x, uq_interval=True)
     assert isinstance(result, tuple)

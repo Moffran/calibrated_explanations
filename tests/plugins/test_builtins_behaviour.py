@@ -8,6 +8,10 @@ import types
 import numpy as np
 import pytest
 
+from calibrated_explanations.core import (
+    ConfigurationError,
+    NotFittedError,
+)
 from calibrated_explanations.plugins import builtins
 from calibrated_explanations.plugins.explanations import (
     ExplanationBatch,
@@ -15,29 +19,29 @@ from calibrated_explanations.plugins.explanations import (
     ExplanationRequest,
 )
 from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
-from calibrated_explanations.plugins.plots import PlotRenderContext
+from tests.helpers.plugin_utils import make_plot_context
 
 
-class _SentinelExplainer:
+class SentinelExplainer:
     """Minimal stub exposing the interfaces exercised by the legacy bridge."""
 
     def __init__(self, prediction, *, calibrated_classes=None):
-        self._prediction = prediction
-        self._calibrated_classes = calibrated_classes or ["c0", "c1"]
+        self.prediction_data = prediction
+        self.calibrated_classes_data = calibrated_classes or ["c0", "c1"]
         self.calls: list[tuple[str, tuple, dict]] = []
 
     def predict(self, *args, **kwargs):
         self.calls.append(("predict", args, kwargs))
         if kwargs.get("calibrated"):
-            return self._calibrated_classes
-        return self._prediction
+            return self.calibrated_classes_data
+        return self.prediction_data
 
     def predict_proba(self, *args, **kwargs):  # pragma: no cover - passthrough proxy
         self.calls.append(("predict_proba", args, kwargs))
         return (args, kwargs)
 
 
-def _make_interval_context(**overrides):
+def make_interval_context(**overrides):
     base = {
         "learner": "learner",
         "calibration_splits": [("x_cal", "y_cal")],
@@ -51,7 +55,7 @@ def _make_interval_context(**overrides):
     return IntervalCalibratorContext(**base)
 
 
-def _make_explanation_context(explainer, predict_bridge, **overrides):
+def make_explanation_context(explainer, predict_bridge, **overrides):
     context = {
         "task": "classification",
         "mode": "factual",
@@ -68,46 +72,29 @@ def _make_explanation_context(explainer, predict_bridge, **overrides):
     return ExplanationContext(**context)
 
 
-def _make_plot_context(**overrides):
-    context = {
-        "explanation": None,
-        "instance_metadata": {},
-        "style": "plot_spec.default",
-        "intent": {},
-        "show": False,
-        "path": None,
-        "save_ext": None,
-        "options": {},
-    }
-    context.update(overrides)
-    return PlotRenderContext(**context)
-
-
 def test_derive_threshold_labels_handles_sequences():
-    labels = builtins._derive_threshold_labels([1, 3.75])
+    labels = builtins.derive_threshold_labels([1, 3.75])
     assert labels == ("1.00 <= Y < 3.75", "Outside interval")
 
 
 def test_derive_threshold_labels_handles_scalars_and_errors():
     sentinel = object()
-    assert builtins._derive_threshold_labels(sentinel) == (
+    assert builtins.derive_threshold_labels(sentinel) == (
         "Target within threshold",
         "Outside threshold",
     )
-    assert builtins._derive_threshold_labels(2.5) == ("Y < 2.50", "Y ≥ 2.50")
+    assert builtins.derive_threshold_labels(2.5) == ("Y < 2.50", "Y ≥ 2.50")
 
 
 def test_derive_threshold_labels_logs_interval_failure(caplog):
     caplog.set_level("DEBUG")
-    labels = builtins._derive_threshold_labels(["bad", "value"])
+    labels = builtins.derive_threshold_labels(["bad", "value"])
     assert labels == ("Target within threshold", "Outside threshold")
     assert "Failed to parse threshold" in caplog.text
 
 
 def test_legacy_predict_bridge_handles_tuple_payload_for_classification():
-    bridge = builtins.LegacyPredictBridge(
-        _SentinelExplainer(([1.0, 2.0], ([0.1, 0.2], [0.3, 0.4])))
-    )
+    bridge = builtins.LegacyPredictBridge(SentinelExplainer(([1.0, 2.0], ([0.1, 0.2], [0.3, 0.4]))))
     payload = bridge.predict(
         np.asarray([[1.0]]), mode="factual", task="classification", bins="hist"
     )
@@ -119,7 +106,7 @@ def test_legacy_predict_bridge_handles_tuple_payload_for_classification():
 
 
 def test_legacy_predict_bridge_handles_scalar_prediction():
-    bridge = builtins.LegacyPredictBridge(_SentinelExplainer([4.0, 5.0]))
+    bridge = builtins.LegacyPredictBridge(SentinelExplainer([4.0, 5.0]))
     payload = bridge.predict(np.asarray([[1.0]]), mode="fast", task="regression")
     assert set(payload) == {"predict", "mode", "task"}
     np.testing.assert_array_equal(payload["predict"], [4.0, 5.0])
@@ -156,7 +143,7 @@ def test_collection_to_batch_preserves_metadata():
         mode = "factual"
 
     collection = DummyCollection()
-    batch = builtins._collection_to_batch(collection)  # noqa: SLF001
+    batch = builtins.collection_to_batch(collection)  # noqa: SLF001
     assert isinstance(batch, ExplanationBatch)
     assert batch.collection_metadata["container"] is collection
     assert batch.collection_metadata["mode"] == "factual"
@@ -166,7 +153,7 @@ def test_collection_to_batch_defaults_to_factual():
     class EmptyCollection:
         explanations: tuple = ()
 
-    batch = builtins._collection_to_batch(EmptyCollection())  # noqa: SLF001
+    batch = builtins.collection_to_batch(EmptyCollection())  # noqa: SLF001
     assert batch.explanation_cls is builtins.FactualExplanation
 
 
@@ -177,13 +164,11 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
         def __init__(self, explainer):
             created_with["explainer"] = explainer
 
-    interval_module = types.ModuleType(
-        "calibrated_explanations.core.calibration.interval_regressor"
-    )
+    interval_module = types.ModuleType("calibrated_explanations.calibration.interval_regressor")
     interval_module.IntervalRegressor = DummyIntervalRegressor
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "regression", "explainer": object()},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -201,14 +186,14 @@ def test_interval_calibrator_create_for_classification(monkeypatch):
             created_args["args"] = args
             created_args["kwargs"] = kwargs
 
-    venn_module = types.ModuleType("calibrated_explanations.core.calibration.venn_abers")
+    venn_module = types.ModuleType("calibrated_explanations.calibration.venn_abers")
     venn_module.VennAbers = DummyVennAbers
     monkeypatch.setitem(sys.modules, venn_module.__name__, venn_module)
 
     class Explainer:
         predict_function = "sentinel"
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "classification", "explainer": Explainer()},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -219,43 +204,41 @@ def test_interval_calibrator_create_for_classification(monkeypatch):
 
 
 def test_interval_calibrator_requires_predict_function(monkeypatch):
-    venn_module = types.ModuleType("calibrated_explanations.core.calibration.venn_abers")
+    venn_module = types.ModuleType("calibrated_explanations.calibration.venn_abers")
     venn_module.VennAbers = object
     monkeypatch.setitem(sys.modules, venn_module.__name__, venn_module)
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "classification"},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.create(context)
 
 
 def test_interval_calibrator_requires_explainer_for_regression(monkeypatch):
-    interval_module = types.ModuleType(
-        "calibrated_explanations.core.calibration.interval_regressor"
-    )
+    interval_module = types.ModuleType("calibrated_explanations.calibration.interval_regressor")
     interval_module.IntervalRegressor = object
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
-    context = _make_interval_context(metadata={"task": "regression"})
+    context = make_interval_context(metadata={"task": "regression"})
     plugin = builtins.LegacyIntervalCalibratorPlugin()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.create(context)
 
 
 def test_explanation_plugin_requires_initialisation():
     plugin = builtins.LegacyFactualExplanationPlugin()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.explain_batch("x", ExplanationRequest(None, None, None, (), {}))
 
 
 def test_explanation_initialise_requires_explainer():
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(
-        explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1]))
+    context = make_explanation_context(
+        explainer=None, predict_bridge=builtins.LegacyPredictBridge(SentinelExplainer([1]))
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.initialize(context)
 
 
@@ -290,7 +273,7 @@ def test_explanation_batch_adapts_legacy_collection(monkeypatch):
 
     explainer = DummyExplainer()
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(
+    context = make_explanation_context(
         explainer=explainer, predict_bridge=DummyBridge(), task="classification"
     )
     plugin.initialize(context)
@@ -324,19 +307,19 @@ def test_explanation_rejects_unsupported_model(monkeypatch):
         def explain_factual(self, x, **kwargs):  # pragma: no cover - shouldn't run
             raise AssertionError
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigurationError):
         plugin.explain(DummyModel(), "x")
 
 
 def test_legacy_plot_builder_round_trips_context():
-    context = _make_plot_context(intent={"type": "anything"})
+    context = make_plot_context(intent={"type": "anything"})
     builder = builtins.LegacyPlotBuilder()
     assert builder.build(context)["context"] is context
 
 
 def test_legacy_plot_renderer_produces_empty_result():
     renderer = builtins.LegacyPlotRenderer()
-    context = _make_plot_context()
+    context = make_plot_context()
     result = renderer.render({"context": context}, context=context)
     assert result.saved_paths == ()
     assert result.figure is None
@@ -354,7 +337,7 @@ def test_plotspec_builder_global_payload(monkeypatch):
         fake_builder,
     )
 
-    context = _make_plot_context(
+    context = make_plot_context(
         intent={"type": "global", "title": "Global"},
         options={"payload": {"y": [1, 2], "threshold": 0.5, "extra": 1}},
     )
@@ -367,13 +350,13 @@ def test_plotspec_builder_global_payload(monkeypatch):
 
 def test_plotspec_builder_rejects_non_mapping_payloads():
     builder = builtins.PlotSpecDefaultBuilder()
-    with pytest.raises(RuntimeError):
-        builder.build(_make_plot_context(intent={"type": "global"}, options={"payload": 3}))
-    with pytest.raises(RuntimeError):
-        builder.build(_make_plot_context(intent={"type": "alternative"}, options={"payload": 3}))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
+        builder.build(make_plot_context(intent={"type": "global"}, options={"payload": 3}))
+    with pytest.raises(ConfigurationError):
+        builder.build(make_plot_context(intent={"type": "alternative"}, options={"payload": 3}))
+    with pytest.raises(ConfigurationError):
         builder.build(
-            _make_plot_context(
+            make_plot_context(
                 intent={"type": "alternative"},
                 options={"payload": {"feature_predict": None, "feature_weights": None}},
             )
@@ -407,7 +390,7 @@ def test_plotspec_builder_handles_non_mapping_predict_payload(monkeypatch):
         def get_mode(self):
             return "classification"
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -446,7 +429,7 @@ def test_plotspec_builder_alternative_regression_threshold(monkeypatch):
 
     class Explanation:
         def __init__(self):
-            self._threshold = (0.25, 0.5)
+            self.threshold_data = (0.25, 0.5)
 
         def is_thresholded(self):
             return True
@@ -457,7 +440,7 @@ def test_plotspec_builder_alternative_regression_threshold(monkeypatch):
         y_minmax = (0.1, 0.9)
         y_threshold = (0.25, 0.5)
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative", "title": "Alt"},
         options={
@@ -508,7 +491,7 @@ def test_plotspec_builder_alternative_probability_fallback(monkeypatch):
 
         y_threshold = 0.7
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -554,7 +537,7 @@ def test_plotspec_builder_handles_invalid_sequences(monkeypatch):
 
         y_threshold = object()  # not convertible
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -599,7 +582,7 @@ def test_plotspec_builder_regression_without_threshold(monkeypatch):
         def get_mode(self):
             return "regression"
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -617,8 +600,8 @@ def test_plotspec_builder_regression_without_threshold(monkeypatch):
 
 def test_plotspec_builder_requires_supported_intent():
     builder = builtins.PlotSpecDefaultBuilder()
-    with pytest.raises(RuntimeError):
-        builder.build(_make_plot_context(intent={"type": "unsupported"}))
+    with pytest.raises(ConfigurationError):
+        builder.build(make_plot_context(intent={"type": "unsupported"}))
 
 
 def test_plotspec_renderer_handles_multiple_outputs(monkeypatch):
@@ -632,7 +615,7 @@ def test_plotspec_renderer_handles_multiple_outputs(monkeypatch):
         fake_render,
     )
 
-    context = _make_plot_context(show=True, save_ext=(".png", ".svg"), path="/tmp/plot")
+    context = make_plot_context(show=True, save_ext=(".png", ".svg"), path="/tmp/plot")
     renderer = builtins.PlotSpecDefaultRenderer()
     result = renderer.render({"kind": "prob"}, context=context)
     assert result.saved_paths == ("/tmp/plot.png", "/tmp/plot.svg")
@@ -650,7 +633,7 @@ def test_plotspec_renderer_without_save(monkeypatch):
         fake_render,
     )
 
-    context = _make_plot_context(show=False, path="base")
+    context = make_plot_context(show=False, path="base")
     renderer = builtins.PlotSpecDefaultRenderer()
     renderer.render({"kind": "prob"}, context=context)
     assert calls == [({"kind": "prob"}, False, "base")]

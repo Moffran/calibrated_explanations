@@ -37,7 +37,9 @@ def test_probabilistic_spec_clamps_header_bounds():
 
 
 def test_probabilistic_spec_validates_sequence_length():
-    with pytest.raises(ValueError, match="feature_weights"):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError, match="feature_weights"):
         builders.build_probabilistic_bars_spec(
             title="missing",
             predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -251,6 +253,7 @@ def test_triangular_global_and_serialization_helpers__should_produce_correct_plo
         is_probabilistic=False,
     )
     # Domain invariant: triangular plot spec has correct kind
+    assert "plotspec_version" in tri, "Envelope must include 'plotspec_version'"
     assert "plot_spec" in tri, "Result must be wrapped in plot_spec"
     assert (
         tri["plot_spec"]["kind"] == "triangular"
@@ -278,6 +281,7 @@ def test_triangular_global_and_serialization_helpers__should_produce_correct_plo
         is_regularized=False,
     )
     # Domain invariant: global regression spec has correct kind
+    assert "plotspec_version" in global_spec, "Envelope must include 'plotspec_version'"
     assert (
         global_spec["plot_spec"]["kind"] == "global_regression"
     ), "Global builder must produce 'global_regression' kind"

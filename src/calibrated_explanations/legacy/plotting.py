@@ -2,22 +2,24 @@
 
 import contextlib
 import math
+import sys
 import warnings
 from pathlib import Path
 
 import numpy as np
 
+from ..utils.exceptions import ConfigurationError
+
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).
-try:  # pragma: no cover - optional dependency
-    import matplotlib.colors as mcolors
-    import matplotlib.pyplot as plt
-except Exception as _e:  # pragma: no cover - optional dependency
-    mcolors = None  # type: ignore[assignment]
-    plt = None  # type: ignore[assignment]
-    _MATPLOTLIB_IMPORT_ERROR = _e
-else:
-    _MATPLOTLIB_IMPORT_ERROR = None
+_MATPLOTLIB_IMPORT_ERROR = None
+mcolors = None
+plt = None
+
+try:
+    import matplotlib  # noqa: F401
+except (ImportError, RuntimeError) as e:
+    _MATPLOTLIB_IMPORT_ERROR = e
 
 
 def __require_matplotlib():
@@ -26,6 +28,20 @@ def __require_matplotlib():
     Many tests import the package but don't need plotting. Guarding imports
     prevents import-time failures; call this before performing plotting.
     """
+    global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
+    if plt is None and _MATPLOTLIB_IMPORT_ERROR is None:
+        try:
+            import matplotlib.colors as mcolors_local
+            import matplotlib.pyplot as plt_local
+
+            mcolors = mcolors_local
+            plt = plt_local
+        except ImportError:
+            _e = sys.exc_info()[1]
+            if not isinstance(_e, Exception):
+                raise
+            _MATPLOTLIB_IMPORT_ERROR = _e
+
     if plt is None:
         msg = (
             "Plotting requires matplotlib. Install the 'viz' extra: "
@@ -33,10 +49,19 @@ def __require_matplotlib():
         )
         if _MATPLOTLIB_IMPORT_ERROR is not None:
             msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
-        raise RuntimeError(msg)
+        raise ConfigurationError(
+            msg,
+            details={
+                "dependency": "matplotlib",
+                "extra": "viz",
+                "original_error": str(_MATPLOTLIB_IMPORT_ERROR)
+                if _MATPLOTLIB_IMPORT_ERROR
+                else None,
+            },
+        )
 
 
-def _compose_save_target(path, title: str, ext) -> str:
+def compose_save_target(path, title: str, ext) -> str:
     """Return a filesystem path for saving plot artefacts using OS separators."""
     ext_str = str(ext)
     base_str = str(path)
@@ -44,6 +69,17 @@ def _compose_save_target(path, title: str, ext) -> str:
     if base_str.endswith(("/", "\\")) or base_path.is_dir():
         return str(base_path / f"{title}{ext_str}")
     return f"{base_str}{title}{ext_str}"
+
+
+def _resolve_explainer(explanation):
+    """Best-effort explainer resolver for legacy plotting helpers."""
+    getter = getattr(explanation, "get_explainer", None)
+    if callable(getter):
+        return getter()
+    getter = getattr(explanation, "_get_explainer", None)
+    if callable(getter):
+        return getter()
+    return explanation
 
 
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
@@ -66,7 +102,7 @@ def _plot_probabilistic(
     # If caller does not want to show and matplotlib is not installed,
     # treat this as a no-op (useful for CI/core-only runs without viz extras).
     # Also treat as no-op if caller does not request saving (no path/title).
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -104,6 +140,7 @@ def _plot_probabilistic(
     ax_positive.set_yticks(range(1))
     ax_positive.set_xticks([])
 
+    resolved_explainer = _resolve_explainer(explanation)
     if explanation.is_thresholded():
         if np.isscalar(explanation.y_threshold):
             ax_negative.set_yticklabels(labels=[f"P(y>{float(explanation.y_threshold) :.2f})"])
@@ -120,7 +157,7 @@ def _plot_probabilistic(
                 ]
             )  # pylint: disable=line-too-long
     elif explanation.get_class_labels() is None:
-        if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+        if getattr(resolved_explainer, "is_multiclass", lambda: False)():  # pylint: disable=protected-access
             ax_negative.set_yticklabels(labels=[f'P(y!={explanation.prediction["classes"]})'])
             ax_positive.set_yticklabels(labels=[f'P(y={explanation.prediction["classes"]})'])
         else:
@@ -199,13 +236,18 @@ def _plot_probabilistic(
         ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        fig.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
+def plot_probabilistic(*args, **kwargs):
+    """Public wrapper for `_plot_probabilistic`."""
+    return _plot_probabilistic(*args, **kwargs)
+
+
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
-def _plot_regression(
+def plot_regression(
     explanation,
     instance,
     predict,
@@ -223,7 +265,7 @@ def _plot_regression(
     """Plot regression explanations with optional uncertainty overlays."""
     # Allow no-op in CI when plotting is not requested and matplotlib is absent
     # or when no saving is requested (no path/title provided).
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -319,13 +361,13 @@ def _plot_regression(
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        fig.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
 # pylint: disable=duplicate-code
-def _plot_triangular(
+def plot_triangular(
     explanation,
     proba,
     uncertainty,
@@ -339,13 +381,13 @@ def _plot_triangular(
 ):
     """Plot triangular explanations with uncertainty anchors."""
     # If user only requested no display (and no saving), avoid requiring matplotlib
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    # assert self._get_explainer().mode == 'classification' or \
-    #     (self._get_explainer().mode == 'regression' and self._is_probabilistic_regression()), \
+    # assert explanation.get_mode() == 'classification' or \
+    #     (explanation.get_mode() == 'regression' and explanation.is_thresholded()), \
     #     'Triangular plot is only available for classification or probabilistic regression'
     marker_size = 50
     min_x, min_y = 0, 0
@@ -359,10 +401,10 @@ def _plot_triangular(
     else:
         min_x = min(
             np.min(rule_proba), np.min(proba)
-        )  # np.min(self._get_explainer().y_cal) # pylint: disable=protected-access
+        )  # np.min(self.get_explainer().y_cal) # pylint: disable=protected-access
         max_x = max(
             np.max(rule_proba), np.max(proba)
-        )  # np.max(self._get_explainer().y_cal) # pylint: disable=protected-access
+        )  # np.max(self.get_explainer().y_cal) # pylint: disable=protected-access
         min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
         max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
         if math.isclose(min_x, max_x, rel_tol=1e-9):
@@ -405,7 +447,7 @@ def _plot_triangular(
     plt.legend()
 
     for ext in save_ext:
-        plt.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        plt.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         plt.show()
 
@@ -423,7 +465,7 @@ def __plot_proba_triangle():
 
 
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
-def _plot_alternative(
+def plot_alternative(
     explanation,
     instance,
     predict,
@@ -439,7 +481,7 @@ def _plot_alternative(
     """Plot alternative explanations highlighting probability shifts."""
     # Allow lightweight no-op when plotting is not requested or when no save
     # path/title are provided (so nothing would be written).
-    if not show and (plt is None or path is None or title is None):
+    if not show and (path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -525,6 +567,7 @@ def _plot_alternative(
     ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
+    resolved_explainer = _resolve_explainer(explanation)
     if explanation.is_thresholded():
         # pylint: disable=unsubscriptable-object
         if np.isscalar(explanation.y_threshold):
@@ -550,11 +593,11 @@ def _plot_alternative(
         ax_main.set_xlim([explanation.y_minmax[0], explanation.y_minmax[1]])
     else:
         if explanation.get_class_labels() is None:
-            if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+            if getattr(resolved_explainer, "is_multiclass", lambda: False)():  # pylint: disable=protected-access
                 ax_main.set_xlabel(f'Probability for class \'{explanation.prediction["classes"]}\'')
             else:
                 ax_main.set_xlabel("Probability for the positive class")
-        elif explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+        elif getattr(resolved_explainer, "is_multiclass", lambda: False)():  # pylint: disable=protected-access
             # pylint: disable=line-too-long
             ax_main.set_xlabel(
                 f'Probability for class \'{explanation.get_class_labels()[explanation.prediction["classes"]]}\''
@@ -567,13 +610,13 @@ def _plot_alternative(
     with contextlib.suppress(Exception):
         fig.tight_layout()
     for ext in save_ext:
-        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
+        fig.savefig(compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
+def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """Plot a global explanation overview for the given test data.
 
     This plot is based on the probability distribution and the uncertainty quantification
@@ -670,7 +713,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
             if not np.isscalar(threshold):
                 warnings.warn(
                     "plot_global requires a scalar threshold for non-probabilistic explainers.",
-                    RuntimeWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
             assert np.isscalar(

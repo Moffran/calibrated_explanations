@@ -18,7 +18,7 @@ if str(SRC) not in sys.path:
 
 from calibrated_explanations.plugins import ExplanationContext
 from calibrated_explanations.plugins import registry
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_explanation_plugins,
     ensure_builtin_plugins,
 )
@@ -39,7 +39,7 @@ class SimpleExplainerPlugin(LegacyFactualExplanationPlugin):
 
 
 @pytest.fixture(autouse=True)
-def _registry_fixture():
+def registry_fixture():
     """Clear registry before and after each test."""
     clear_explanation_plugins()
     ensure_builtin_plugins()

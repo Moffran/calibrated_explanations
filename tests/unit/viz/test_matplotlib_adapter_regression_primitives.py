@@ -1,8 +1,8 @@
-from calibrated_explanations.viz.builders import build_regression_bars_spec
-from calibrated_explanations.viz.matplotlib_adapter import render
+from calibrated_explanations.viz import build_regression_bars_spec
+from calibrated_explanations.viz import render
 
 
-def _make_regression_interval_weights():
+def make_regression_interval_weights():
     # Predict with an interval around p=100. We'll use feature weight intervals
     # that cross zero after mapping into contribution coords when header.pred is subtracted.
     predict = {"predict": 100.0, "low": 90.0, "high": 110.0}
@@ -17,7 +17,7 @@ def _make_regression_interval_weights():
 
 
 def test_regression_exports_base_interval_and_suppresses_solid_by_default():
-    predict, feature_weights = _make_regression_interval_weights()
+    predict, feature_weights = make_regression_interval_weights()
     spec = build_regression_bars_spec(
         title="test",
         predict=predict,
@@ -43,7 +43,7 @@ def test_regression_exports_base_interval_and_suppresses_solid_by_default():
 
 
 def test_regression_parity_draws_solid_when_flag_false():
-    predict, feature_weights = _make_regression_interval_weights()
+    predict, feature_weights = make_regression_interval_weights()
     spec = build_regression_bars_spec(
         title="test",
         predict=predict,

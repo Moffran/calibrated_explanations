@@ -366,11 +366,11 @@ guides.
 
 Use these decision records when designing new plugins:
 
-- [ADR-024 – legacy plot input contracts](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-024-legacy-plot-input-contracts.md)
+- [ADR-024 - legacy plot input contracts](../improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   defines PlotSpec and legacy plot inputs that plugins must honour.
-- [ADR-025 – legacy plot rendering semantics](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-025-legacy-plot-rendering-semantics.md)
+- [ADR-025 - legacy plot rendering semantics](../improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
   documents rendering semantics so PlotSpec builders remain interchangeable.
-- [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md)
+- [ADR-026 – explanation plugin semantics](../improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval
   plugins.
 
@@ -383,8 +383,10 @@ authors should treat these as shared infrastructure:
   in the cache must be deterministic, pickle-safe, and process independent.
 - When you spawn subprocesses (for example inside a plugin), call
   ``explainer._perf_cache.forksafe_reset()`` or reuse the provided
-  :class:`~calibrated_explanations.perf.parallel.ParallelExecutor` to inherit the
-  built-in fork guards.
+  :class:`~calibrated_explanations.parallel.ParallelExecutor` to inherit the
+  built-in fork guards. The ``calibrated_explanations.perf.parallel`` and
+  ``calibrated_explanations.perf.cache`` shims remain temporarily for
+  compatibility and will be removed after v1.1.0.
 - Respect ``CE_CACHE``/``CE_PARALLEL`` overrides documented in
   {doc}`../foundations/how-to/tune_runtime_performance`. Plugins should not force
   their own worker settings—delegate to the executor attached to the explainer

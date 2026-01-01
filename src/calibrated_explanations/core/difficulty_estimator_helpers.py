@@ -1,6 +1,6 @@
 """Utilities for managing difficulty estimator configuration and validation."""
 
-from .exceptions import NotFittedError
+from ..utils.exceptions import NotFittedError
 
 
 def validate_difficulty_estimator(difficulty_estimator):

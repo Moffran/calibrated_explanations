@@ -16,11 +16,11 @@ import numpy as np
 if TYPE_CHECKING:
     from ..explanations import CalibratedExplanations
 
-from .exceptions import (
+from ..utils.exceptions import (
     ValidationError,
     DataShapeError,
 )
-from ..utils.helper import assert_threshold, safe_isinstance
+from ..utils import assert_threshold, safe_isinstance
 from .explain._computation import explain_predict_step
 
 # Local typing protocol to avoid importing CalibratedExplainer and creating cycles.
@@ -41,7 +41,7 @@ class _ExplainerProtocol(Protocol):
     x_cal: np.ndarray
     interval_learner: Any
 
-    def _is_mondrian(self) -> bool:
+    def is_mondrian(self) -> bool:
         """Return True when a Mondrian (per-bin) calibration is active."""
         ...
 
@@ -64,10 +64,6 @@ class _ExplainerProtocol(Protocol):
         feature: Optional[int] = ...,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Compute calibrated predictions and interval bounds."""
-        ...
-
-    def _discretize(self, x: np.ndarray) -> np.ndarray:
-        """Transform inputs into discretized representations when needed."""
         ...
 
     def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any:
@@ -104,12 +100,24 @@ def initialize_explanation(
     """Initialize explanation object (extracted logic)."""
     from ..explanations import CalibratedExplanations  # pylint: disable=import-outside-toplevel
 
-    if explainer._is_mondrian():  # noqa: SLF001
+    is_mondrian = getattr(explainer, "is_mondrian", False)
+    if callable(is_mondrian):
+        is_mondrian = is_mondrian()
+    if is_mondrian:
+        if bins is None:
+            bins = getattr(explainer, "bins", None)
         if bins is None:
             raise ValidationError("Bins required for Mondrian explanations")
         if len(bins) != len(x):  # pragma: no cover - defensive
             raise DataShapeError("The length of bins must match the number of added instances.")
-    explanation = CalibratedExplanations(explainer, x, threshold, bins, features_to_ignore)
+    explanation = CalibratedExplanations(
+        explainer,
+        x,
+        threshold,
+        bins,
+        features_to_ignore,
+        condition_source=getattr(explainer, "condition_source", "observed"),
+    )
     if threshold is not None:
         if "regression" not in explainer.mode:
             raise ValidationError(
@@ -137,7 +145,7 @@ def predict_internal(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Run the internal prediction logic (mechanically moved)."""
     # (Body kept inside calibrated_explainer for now to limit patch size) -- placeholder stub if future isolation needed
-    return explainer._predict(  # noqa: SLF001
+    return explainer.predict_calibrated(
         x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,
@@ -248,8 +256,34 @@ def format_classification_prediction(
     if new_classes is None:
         new_classes = (predict >= 0.5).astype(int)
 
+    # When class_labels or label_map are provided we may need to map numeric
+    # indices to human-readable labels. Be defensive: new_classes can already
+    # contain labels (strings) or numeric indices. Also allow dict-style
+    # mappings.
     if label_map is not None or class_labels is not None:
-        new_classes = np.array([class_labels[c] for c in new_classes])
+        # Prefer explicit mapping function when label_map provided
+        if label_map is not None:
+            mapped = [label_map.get(int(c), label_map.get(str(c), c)) for c in new_classes]
+            new_classes = np.array(mapped)
+        else:
+            # class_labels may be a sequence (list/ndarray) or a mapping.
+            if isinstance(class_labels, dict):
+                mapped = [class_labels.get(c, class_labels.get(int(c), c)) for c in new_classes]
+                new_classes = np.array(mapped)
+            else:
+                # sequence-like: map only when new_classes are integer indices
+                try:
+                    arr_nc = np.asarray(new_classes)
+                    if np.issubdtype(arr_nc.dtype, np.integer):
+                        mapped = [class_labels[int(c)] for c in arr_nc]
+                        new_classes = np.array(mapped)
+                    else:
+                        # Assume new_classes are already label values; coerce to ndarray
+                        new_classes = np.asarray(new_classes)
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: tolerate unexpected label containers.  # pragma: no cover
+                    new_classes = np.asarray(new_classes)
 
     return (new_classes, (low, high)) if uq_interval else new_classes
 

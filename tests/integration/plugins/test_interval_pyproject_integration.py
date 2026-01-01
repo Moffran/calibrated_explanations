@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_interval_plugins,
     ensure_builtin_plugins,
     register_interval_plugin,
@@ -37,7 +37,7 @@ class PyprojectRecordingIntervalPlugin(IntervalCalibratorPlugin):
         return object()
 
 
-def _make_simple_classifier():
+def make_simple_classifier_helper():
     x = np.array(
         [
             [0.0, 0.0],
@@ -73,7 +73,7 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     try:
-        model, x_cal, y_cal = _make_simple_classifier()
+        model, x_cal, y_cal = make_simple_classifier_helper()
         explainer = CalibratedExplainer(
             model,
             x_cal,
@@ -84,9 +84,16 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
             class_labels=["No", "Yes"],
         )
 
-        assert explainer._interval_plugin_identifiers["default"] == descriptor.identifier
-        assert explainer._interval_plugin_fallbacks["default"][0] == descriptor.identifier
-        assert descriptor.identifier in explainer._interval_plugin_fallbacks["default"]
+        assert (
+            explainer.plugin_manager.interval_plugin_identifiers["default"] == descriptor.identifier
+        )
+        assert (
+            explainer.plugin_manager.interval_plugin_fallbacks["default"][0]
+            == descriptor.identifier
+        )
+        assert (
+            descriptor.identifier in explainer.plugin_manager.interval_plugin_fallbacks["default"]
+        )
         assert (
             PyprojectRecordingIntervalPlugin.invocations
         ), "pyproject override should invoke the registered plugin"

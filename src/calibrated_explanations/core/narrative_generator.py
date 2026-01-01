@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
-import math
 import re
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -26,10 +27,15 @@ except ImportError:
 
 def load_template_file(filepath: str) -> Dict[str, Any]:
     """Load template file - supports both JSON and YAML formats."""
+    from ..utils.exceptions import SerializationError
+
     path = Path(filepath)
 
     if not path.exists():
-        raise FileNotFoundError(f"Template file not found: {filepath}")
+        raise SerializationError(
+            f"Template file not found: {filepath}",
+            details={"filepath": filepath, "reason": "file_not_found"},
+        )
 
     extension = path.suffix.lower()
 
@@ -38,24 +44,40 @@ def load_template_file(filepath: str) -> Dict[str, Any]:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON template: {e}") from e
+            raise SerializationError(
+                f"Failed to parse JSON template: {e}",
+                details={"filepath": filepath, "format": "json", "error": str(e)},
+            ) from e
 
     elif extension in (".yaml", ".yml"):
         if yaml is None:
-            raise ValueError(
+            raise SerializationError(
                 f"Cannot load YAML file '{filepath}' - PyYAML not installed. "
-                "Install with: pip install pyyaml"
+                "Install with: pip install pyyaml",
+                details={
+                    "filepath": filepath,
+                    "format": "yaml",
+                    "reason": "yaml_not_installed",
+                },
             )
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except yaml.YAMLError as e:
-            raise ValueError(f"Failed to parse YAML template: {e}") from e
+            raise SerializationError(
+                f"Failed to parse YAML template: {e}",
+                details={"filepath": filepath, "format": "yaml", "error": str(e)},
+            ) from e
 
     else:
-        raise ValueError(
+        raise SerializationError(
             f"Unsupported template file format: {extension}. "
-            "Supported formats: .json, .yaml, .yml"
+            "Supported formats: .json, .yaml, .yml",
+            details={
+                "filepath": filepath,
+                "format": extension,
+                "supported": [".json", ".yaml", ".yml"],
+            },
         )
 
 
@@ -75,26 +97,13 @@ def fmt_float(x: Optional[float], nd=3) -> str:
     return "N/A" if x is None else f"{x:.{nd}f}"
 
 
-def _first_or_none(x):
+def first_or_none(x):
     """Return first element if list/array-like, else the scalar."""
     if x is None:
         return None
     if isinstance(x, (list, tuple, np.ndarray)):
         return to_py(x[0]) if len(x) else None
     return to_py(x)
-
-
-def _num_or_none(x):
-    """Best-effort cast to float; return None on failure or NaN."""
-    if x is None:
-        return None
-    if isinstance(x, (np.floating, np.integer)):
-        x = x.item()
-    try:
-        xf = float(x)
-    except (TypeError, ValueError):
-        return None
-    return None if math.isnan(xf) else xf
 
 
 def clean_condition(rule: str, feat_name: Any) -> str:
@@ -109,7 +118,9 @@ def clean_condition(rule: str, feat_name: Any) -> str:
         return rule
     try:
         return re.sub(rf"(?i)^{re.escape(feat_name_str)}\s*", "", rule).strip()
-    except Exception:
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         # Fallback if regex fails
         return rule
 
@@ -118,11 +129,9 @@ def crosses_zero(feat: Dict) -> bool:
     """Check if feature weight interval crosses zero (direction uncertain)."""
     wl = feat.get("weight_low")
     wh = feat.get("weight_high")
-    try:
+    with contextlib.suppress(ValueError, TypeError):
         if wl is not None and wh is not None:
             return float(wl) <= 0.0 <= float(wh)
-    except (ValueError, TypeError):
-        return False
     return False
 
 
@@ -130,12 +139,10 @@ def has_wide_prediction_interval(feat: Dict, threshold: float = 0.20) -> bool:
     """Check if feature's prediction interval is wide (≥ 0.20)."""
     pl = feat.get("predict_low")
     ph = feat.get("predict_high")
-    try:
+    with contextlib.suppress(ValueError, TypeError):
         if pl is not None and ph is not None:
             width = abs(float(ph) - float(pl))
             return width >= threshold - 1e-12
-    except (ValueError, TypeError):
-        return False
     return False
 
 
@@ -162,21 +169,31 @@ class NarrativeGenerator:
         feature_names: Optional[List[str]] = None,
     ) -> str:
         """Generate narrative for a single explanation."""
+        from ..utils.exceptions import ValidationError
+
         if self.templates is None:
-            raise ValueError("Templates not loaded. Call load_templates() first.")
+            raise ValidationError(
+                "Templates not loaded. Call load_templates() first.",
+                details={"state": "uninitialized", "required_method": "load_templates"},
+            )
 
         # Get rules from explanation
         if hasattr(explanation, "get_rules"):
             rules_dict = explanation.get_rules()
-        elif hasattr(explanation, "_get_rules"):
-            rules_dict = explanation._get_rules()
         else:
-            raise AttributeError("Explanation has no get_rules method")
+            raise ValidationError(
+                "Explanation has no get_rules method",
+                details={
+                    "param": "explanation",
+                    "required_method": "get_rules",
+                    "type": type(explanation).__name__,
+                },
+            )
 
         # Extract base prediction values
-        bp = _first_or_none(rules_dict.get("base_predict"))
-        bl = _first_or_none(rules_dict.get("base_predict_low"))
-        bh = _first_or_none(rules_dict.get("base_predict_high"))
+        bp = first_or_none(rules_dict.get("base_predict"))
+        bl = first_or_none(rules_dict.get("base_predict_low"))
+        bh = first_or_none(rules_dict.get("base_predict_high"))
 
         # Build context dictionary
         # Try to get the predicted class/label
@@ -217,11 +234,9 @@ class NarrativeGenerator:
             and bl is not None
             and bh is not None
         ):
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 width = float(bh) - float(bl)
                 context["interval_width"] = fmt_float(width)
-            except (ValueError, TypeError):
-                pass
 
         # Get template
         try:
@@ -232,7 +247,7 @@ class NarrativeGenerator:
             return f"Template not found for {problem_type}/{explanation_type}/{expertise_level}"
 
         # Get feature rules with proper feature names
-        rules = self._serialize_rules(rules_dict, feature_names)
+        rules = self.serialize_rules(rules_dict, feature_names)
 
         # Split features by weight sign
         pos_features = [r for r in rules if r.get("weight", 0) > 0]
@@ -257,7 +272,7 @@ class NarrativeGenerator:
             neg_uncertain = [r for r in neg_features if has_wide_prediction_interval(r)]
             uncertain_all = pos_uncertain + neg_uncertain
 
-            narrative = self._expand_template(
+            narrative = self.expand_template(
                 template,
                 pos_certain,
                 neg_certain,
@@ -267,7 +282,7 @@ class NarrativeGenerator:
                 problem_type,  # Pass problem_type
             )
         else:
-            narrative = self._expand_template(
+            narrative = self.expand_template(
                 template,
                 pos_features,
                 neg_features,
@@ -279,7 +294,7 @@ class NarrativeGenerator:
 
         return narrative
 
-    def _serialize_rules(
+    def serialize_rules(
         self, rules_dict: Dict, feature_names: Optional[List[str]] = None
     ) -> List[Dict]:
         """Convert rule dictionary to list of feature dictionaries with proper names."""
@@ -309,22 +324,14 @@ class NarrativeGenerator:
             feature_idx = get_item("feature", i)
 
             # Try to get actual feature name
+            feature_name = None
             if feature_names is not None and feature_idx is not None:
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     feat_idx = int(feature_idx)
                     if 0 <= feat_idx < len(feature_names):
                         feature_name = feature_names[feat_idx]
-                    else:
-                        # Fallback to extracting from rule
-                        feature_name = extract_feature_name_from_rule(
-                            rules_list[i] if i < len(rules_list) else ""
-                        )
-                except (ValueError, TypeError):
-                    # Fallback to extracting from rule
-                    feature_name = extract_feature_name_from_rule(
-                        rules_list[i] if i < len(rules_list) else ""
-                    )
-            else:
+
+            if feature_name is None:
                 # Fallback to extracting from rule
                 feature_name = extract_feature_name_from_rule(
                     rules_list[i] if i < len(rules_list) else ""
@@ -346,7 +353,7 @@ class NarrativeGenerator:
 
         return result
 
-    def _expand_template(
+    def expand_template(
         self,
         template: str,
         pos_features: List[Dict],
@@ -369,7 +376,7 @@ class NarrativeGenerator:
             "multiclass_classification",
             "probabilistic_regression",
         ):
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 pred_low = context.get("pred_interval_lower", "")
                 pred_high = context.get("pred_interval_upper", "")
 
@@ -385,8 +392,6 @@ class NarrativeGenerator:
                             caution_line = "⚠️ Use caution: uncertainty is high."
                         else:
                             caution_line = f"⚠️ Use caution: calibrated probability interval is wide ({width:.3f})."
-            except (ValueError, TypeError):
-                pass
 
         # Build feature lines
         def build_lines(line: str, feats: List[Dict]) -> List[str]:

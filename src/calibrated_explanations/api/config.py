@@ -10,6 +10,7 @@ See `RELEASE_PLAN_v1` milestone targets and ADR-009 for preprocessing-related fi
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -42,7 +43,7 @@ class ExplainerConfig:
     # Parallelism placeholder (not wired yet)
     parallel_workers: int | None = None
 
-    # Performance feature flags (ADR-003/ADR-004) – disabled by default
+    # Performance feature flags (ADR-003/ADR-004) - disabled by default
     perf_cache_enabled: bool = False
     perf_cache_max_items: int = 512
     perf_cache_max_bytes: int | None = 32 * 1024 * 1024
@@ -52,9 +53,15 @@ class ExplainerConfig:
     perf_parallel_enabled: bool = False
     perf_parallel_backend: Literal["auto", "sequential", "joblib", "threads", "processes"] = "auto"
     perf_parallel_workers: int | None = None
-    perf_parallel_min_batch: int = 32
+    perf_parallel_min_batch: int = 8
+    perf_parallel_min_instances: int | None = None
+    perf_parallel_tiny_workload: int | None = None
     perf_parallel_granularity: Literal["feature", "instance"] = "feature"
     perf_telemetry: Any | None = None
+
+    # Internal FAST-based feature filtering (disabled by default)
+    perf_feature_filter_enabled: bool = False
+    perf_feature_filter_per_instance_top_k: int = 8
 
 
 class ExplainerBuilder:
@@ -185,6 +192,8 @@ class ExplainerBuilder:
         backend: Literal["auto", "sequential", "joblib", "threads", "processes"] | None = None,
         workers: int | None = None,
         min_batch: int | None = None,
+        min_instances: int | None = None,
+        tiny_workload: int | None = None,
         granularity: Literal["feature", "instance"] | None = None,
     ) -> ExplainerBuilder:
         """Configure the parallel backend used for performance operations.
@@ -203,6 +212,10 @@ class ExplainerBuilder:
             self._cfg.perf_parallel_workers = workers
         if min_batch is not None:
             self._cfg.perf_parallel_min_batch = min_batch
+        if min_instances is not None:
+            self._cfg.perf_parallel_min_instances = min_instances
+        if tiny_workload is not None:
+            self._cfg.perf_parallel_tiny_workload = tiny_workload
         if granularity is not None:
             self._cfg.perf_parallel_granularity = granularity
         return self
@@ -210,6 +223,26 @@ class ExplainerBuilder:
     def perf_telemetry(self, callback: Any | None) -> ExplainerBuilder:
         """Register a telemetry callback shared by cache and parallel executors."""
         self._cfg.perf_telemetry = callback
+        return self
+
+    def perf_feature_filter(
+        self,
+        enabled: bool,
+        *,
+        per_instance_top_k: int | None = None,
+    ) -> ExplainerBuilder:
+        """Configure internal FAST-based feature filtering.
+
+        Parameters
+        ----------
+        enabled : bool
+            Flag indicating whether the internal FAST-based feature filter is enabled.
+        per_instance_top_k : int, optional
+            Maximum number of features to keep per instance based on FAST weights.
+        """
+        self._cfg.perf_feature_filter_enabled = enabled
+        if per_instance_top_k is not None:
+            self._cfg.perf_feature_filter_per_instance_top_k = max(1, int(per_instance_top_k))
         return self
 
     def build_config(self) -> ExplainerConfig:
@@ -220,7 +253,9 @@ class ExplainerBuilder:
         try:
             # stash a lightweight factory on the config for downstream wiring
             self._cfg._perf_factory = _perf_from_config(self._cfg)  # type: ignore[attr-defined]
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             # be conservative: do not fail config building if perf factory creation fails
             self._cfg._perf_factory = None  # type: ignore[attr-defined]
         return self._cfg

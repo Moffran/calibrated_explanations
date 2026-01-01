@@ -6,6 +6,7 @@ configuration sources like pyproject.toml and environment variables.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, Sequence, Tuple
 
@@ -49,7 +50,9 @@ def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     try:
         with candidate.open("rb") as fh:  # type: ignore[arg-type]
             data = _tomllib.load(fh)
-    except Exception:  # pragma: no cover - permissive fallback
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return {}
 
     cursor: Any = data
@@ -135,7 +138,7 @@ def coerce_string_tuple(value: Any) -> Tuple[str, ...]:
     if isinstance(value, Iterable):
         result: list[str] = []
         for item in value:
-            if isinstance(item, str) and item:
-                result.append(item)
+            if isinstance(item, str) and item.strip():
+                result.append(item.strip())
         return tuple(result)
     return ()

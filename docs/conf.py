@@ -7,6 +7,7 @@
 # -- Path setup --------------------------------------------------------------
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -25,10 +26,10 @@ copyright = "2023, Helena Löfström, Tuwe Löfström"
 author = "Helena Löfström, Tuwe Löfström"
 
 # The short X.Y version
-version = "0.9.1"
+version = "0.10.0"
 
 # The full version, including alpha/beta/rc tags
-release = "0.9.1"
+release = "0.10.0"
 
 # -- General configuration ---------------------------------------------------
 
@@ -76,7 +77,24 @@ templates_path = ["_templates"]
 language = "en"
 
 # Patterns to ignore when looking for source files
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "_shared/**",
+    "improvement/ignore",
+    "improvement/archived",
+    "improvement/adr_mending",
+]
+
+# Skip notebooks that require pandoc when it is unavailable (local CI parity).
+if shutil.which("pandoc") is None:
+    exclude_patterns.append("improvement/anti_pattern_gap_analysis.ipynb")
+
+# Skip specific GitHub targets that consistently hit rate limits during local linkcheck runs.
+linkcheck_ignore = [
+    r"https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG\.md",
+]
 
 # Pygments style for syntax highlighting
 pygments_style = "sphinx"
@@ -84,8 +102,18 @@ pygments_style = "sphinx"
 # Enable extended MyST features for directive fences (e.g. mermaid diagrams)
 myst_enable_extensions = [
     "colon_fence",
-    "linkify",
+    # Linkify caused spurious detection of code/path fragments as external
+    # links (e.g. `DESIGN.md` -> http://DESIGN.md). Disable it and rely
+    # on explicit links in the docs instead.
 ]
+
+# MyST parser configuration: disable fuzzy linkify so plain code/path
+# fragments like `external_plugins/shap_lime/DESIGN.md` are not treated
+# as external links (which produces false positives in linkcheck).
+myst_heading_anchors = 3
+myst_config = {
+    "linkify_fuzzy_links": False,
+}
 
 _SHARED_FRAGMENT_DIR = Path(__file__).parent / "_shared"
 

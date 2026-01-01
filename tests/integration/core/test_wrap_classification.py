@@ -18,13 +18,13 @@ The tests ensure that:
 import numpy as np
 import pytest
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.utils.exceptions import NotFittedError
 from crepes.extras import MondrianCategorizer
 from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
-from tests._helpers import generic_test
+from tests.helpers.explainer_utils import generic_test
 
 
 @pytest.fixture(autouse=True)

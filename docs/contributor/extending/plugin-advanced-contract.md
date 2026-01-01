@@ -281,15 +281,15 @@ explainer = CalibratedExplainer(
 
 Refer to these decision records when designing advanced plugin configurations:
 
-- [ADR-006 – plugin registry](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-006-plugin-registry-trust-model.md)
+- [ADR-006 – plugin registry](../../improvement/adrs/ADR-006-plugin-registry-trust-model.md)
   – Registry design and plugin lifecycle.
-- [ADR-013 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md)
+- [ADR-013 – explanation plugin semantics](../../improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   – Explanation plugin contracts and output format.
-- [ADR-014 – plot plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-014-plot-plugin-strategy.md)
+- [ADR-014 – plot plugin strategy](../../improvement/adrs/ADR-014-plot-plugin-strategy.md)
   – Plot builder/renderer architecture and fallback chains.
-- [ADR-024 – legacy plot input contracts](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-024-legacy-plot-input-contracts.md)
+- [ADR-024 - legacy plot input contracts](../../improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   – PlotSpec and legacy plot input formats.
-- [ADR-025 – legacy plot rendering semantics](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-025-legacy-plot-rendering-semantics.md)
+- [ADR-025 - legacy plot rendering semantics](../../improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
   – Plot rendering semantics and compatibility.
 
 ## Runtime performance toggles

@@ -1,7 +1,7 @@
 # pylint: disable=line-too-long, missing-function-docstring, too-many-locals, import-outside-toplevel, invalid-name, no-member, unused-import
 """Snapshot the current public API surface of calibrated_explanations.
 
-Creates a timestamped text file in benchmarks/ listing exported symbols from the
+Creates a timestamped text file in tests/benchmarks/ listing exported symbols from the
 package root plus selected key modules.
 """
 
@@ -21,7 +21,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 PACKAGE = "calibrated_explanations"
-OUT_DIR = ROOT / "benchmarks"
+OUT_DIR = ROOT / "tests/benchmarks"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 

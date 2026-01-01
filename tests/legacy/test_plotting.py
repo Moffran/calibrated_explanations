@@ -52,7 +52,7 @@ class FakeAxes:
 
 class FakeFigure:
     def __init__(self, registry):
-        self._registry = registry
+        self.registry = registry
         self.axes = []
         self.saved = []
         self.tight_layout_called = False
@@ -61,19 +61,19 @@ class FakeFigure:
     def add_subplot(self, *_args, **_kwargs):
         ax = FakeAxes()
         self.axes.append(ax)
-        self._registry.last_axes = ax
+        self.registry.last_axes = ax
         return ax
 
     def savefig(self, path, **kwargs):
         self.saved.append((path, kwargs))
-        self._registry.saved_paths.append(path)
+        self.registry.saved_paths.append(path)
 
     def tight_layout(self):
         self.tight_layout_called = True
 
     def show(self):
         self.show_called = True
-        self._registry.figure_show_calls += 1
+        self.registry.figure_show_calls += 1
 
 
 class FakePlotLib:
@@ -139,8 +139,8 @@ class FakePlotLib:
 
 class DummyExplainer:
     def __init__(self, *, mode="classification", multiclass=False):
-        self._mode = mode
-        self._multiclass = multiclass
+        self.mode = mode
+        self.multiclass_flag = multiclass
         self.prediction = {"classes": 0}
         self.y_minmax = (0.0, 1.0)
         self.calibrated_explanations = types.SimpleNamespace(get_confidence=lambda: 90)
@@ -149,7 +149,7 @@ class DummyExplainer:
         self.y_cal = np.array([0.5, 0.5])
 
     def get_mode(self):
-        return self._mode
+        return self.mode
 
     def is_thresholded(self):
         return False
@@ -158,10 +158,10 @@ class DummyExplainer:
         return None
 
     def _get_explainer(self):
-        return types.SimpleNamespace(is_multiclass=lambda: self._multiclass)
+        return types.SimpleNamespace(is_multiclass=lambda: self.multiclass_flag)
 
     def is_multiclass(self):
-        return self._multiclass
+        return self.multiclass_flag
 
     def predict_proba(self, *_args, **_kwargs):
         proba = np.array([[0.3, 0.7]])
@@ -182,26 +182,26 @@ class DummyExplainer:
 class DummyThresholdExplanation(DummyExplainer):
     def __init__(self, y_threshold):
         super().__init__(mode="classification")
-        self._threshold = y_threshold
+        self.threshold_value = y_threshold
 
     def is_thresholded(self):
         return True
 
     @property
     def y_threshold(self):
-        return self._threshold
+        return self.threshold_value
 
 
 class DummyClassificationExplanation(DummyExplainer):
     def __init__(self, *, with_labels=False, multiclass=False):
         super().__init__(mode="classification", multiclass=multiclass)
-        self._with_labels = with_labels
+        self.with_labels_flag = with_labels
         if with_labels:
             self.class_labels = {0: "zero", 1: "one"}
         self.prediction = {"classes": 1}
 
     def get_class_labels(self):
-        return None if not self._with_labels else self.class_labels
+        return None if not self.with_labels_flag else self.class_labels
 
 
 @pytest.fixture
@@ -215,23 +215,25 @@ def fake_matplotlib(monkeypatch):
 def test_compose_save_target_handles_directories(tmp_path):
     folder = tmp_path / "plots"
     folder.mkdir()
-    result_dir = plotting._compose_save_target(folder, "demo", ".png")
+    result_dir = plotting.compose_save_target(folder, "demo", ".png")
     assert result_dir == str(folder / "demo.png")
 
     file_base = tmp_path / "base"
-    result_file = plotting._compose_save_target(file_base, "demo", ".png")
+    result_file = plotting.compose_save_target(file_base, "demo", ".png")
     assert result_file == str(file_base) + "demo.png"
 
 
 def test_require_matplotlib_reports_original_error(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ConfigurationError
+
     monkeypatch.setattr(plotting, "plt", None)
     monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("boom"))
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(ConfigurationError) as exc_info:
         plotting.__require_matplotlib()
     assert "Original import error: boom" in str(exc_info.value)
 
 
-def test_plot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
+def testplot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
     explanation = DummyClassificationExplanation()
     predict = {"predict": 0.6, "low": 0.4, "high": 0.8}
     feature_predict = {
@@ -239,7 +241,7 @@ def test_plot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
         "low": np.array([0.2, 0.1]),
         "high": np.array([0.9, 0.7]),
     }
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation,
         instance=[1.0, 2.0],
         predict=predict,
@@ -257,7 +259,7 @@ def test_plot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
     assert ax_main.xlabel == "Probability for the positive class"
 
 
-def test_plot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_path):
+def testplot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_path):
     explanation = DummyThresholdExplanation(np.array(0.42))
     predict = {"predict": 0.6, "low": 0.4, "high": 0.8}
     feature_predict = {
@@ -265,7 +267,7 @@ def test_plot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_pat
         "low": np.array([0.2]),
         "high": np.array([0.9]),
     }
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation,
         instance=[1.0],
         predict=predict,
@@ -283,11 +285,11 @@ def test_plot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_pat
     assert ax_main.xlabel == "Probability of target being below 0.42"
 
 
-def test_plot_global_warns_for_identical_uncertainty(fake_matplotlib):
+def testplot_global_warns_for_identical_uncertainty(fake_matplotlib):
     explanation = DummyExplainer()
     x = np.array([[1.0, 2.0]])
 
-    plotting._plot_global(
+    plotting.plot_global(
         explanation,
         x,
         y=None,
@@ -301,7 +303,7 @@ def test_plot_global_warns_for_identical_uncertainty(fake_matplotlib):
     fake_matplotlib.xlabel_calls.clear()
 
     with pytest.warns(Warning):
-        plotting._plot_global(
+        plotting.plot_global(
             explanation,
             x,
             y=None,

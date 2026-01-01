@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import pprint
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any, Sequence
 
+from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
 from .registry import (
     find_explanation_descriptor,
     find_interval_descriptor,
@@ -27,6 +28,7 @@ from .registry import (
     mark_plot_builder_untrusted,
     mark_plot_renderer_trusted,
     mark_plot_renderer_untrusted,
+    register_plot_style,
 )
 
 _LIST_KIND_CHOICES = (
@@ -49,19 +51,26 @@ _SINGULAR_LABELS = {
 }
 
 
-def _string_tuple(value: Any) -> Sequence[str]:
-    """Normalize arbitrary metadata values into a tuple of strings."""
+def coerce_string_tuple(value: object) -> tuple[str, ...]:
+    """CLI-focused coercion that stringifies non-empty values."""
     if value is None:
         return ()
     if isinstance(value, str):
-        return (value,) if value else ()
-    if isinstance(value, Iterable):
+        return (value,) if value.strip() else ()
+    if isinstance(value, (list, tuple, set)):
         result: list[str] = []
         for item in value:
-            if item:
+            if item is None:
+                continue
+            if isinstance(item, str):
+                item = item.strip()
+                if not item:
+                    continue
+                result.append(item)
+            elif item:
                 result.append(str(item))
         return tuple(result)
-    return ()
+    return _coerce_string_tuple(value)
 
 
 def _emit_header(title: str) -> None:
@@ -80,11 +89,11 @@ def _format_common_metadata(metadata: Mapping[str, Any]) -> str:
 def _emit_explanation_descriptor(descriptor) -> None:
     """Display an explanation plugin descriptor in human-readable form."""
     meta = descriptor.metadata
-    modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
-    tasks = ", ".join(_string_tuple(meta.get("tasks"))) or "-"
-    interval = ", ".join(_string_tuple(meta.get("interval_dependency"))) or "-"
-    plot = ", ".join(_string_tuple(meta.get("plot_dependency"))) or "-"
-    fallbacks = ", ".join(_string_tuple(meta.get("fallbacks")))
+    modes = ", ".join(coerce_string_tuple(meta.get("modes"))) or "-"
+    tasks = ", ".join(coerce_string_tuple(meta.get("tasks"))) or "-"
+    interval = ", ".join(coerce_string_tuple(meta.get("interval_dependency"))) or "-"
+    plot = ", ".join(coerce_string_tuple(meta.get("plot_dependency"))) or "-"
+    fallbacks = ", ".join(coerce_string_tuple(meta.get("fallbacks")))
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     labels = [trust_state]
     if is_identifier_denied(descriptor.identifier):
@@ -100,8 +109,8 @@ def _emit_explanation_descriptor(descriptor) -> None:
 def _emit_interval_descriptor(descriptor) -> None:
     """Display an interval calibrator descriptor for the CLI."""
     meta = descriptor.metadata
-    modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
-    deps = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    modes = ", ".join(coerce_string_tuple(meta.get("modes"))) or "-"
+    deps = ", ".join(coerce_string_tuple(meta.get("dependencies"))) or "-"
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     labels = [trust_state]
     if is_identifier_denied(descriptor.identifier):
@@ -116,7 +125,7 @@ def _emit_plot_descriptor(descriptor) -> None:
     meta = descriptor.metadata
     builder = meta.get("builder_id", "-")
     renderer = meta.get("renderer_id", "-")
-    fallbacks = ", ".join(_string_tuple(meta.get("fallbacks"))) or "-"
+    fallbacks = ", ".join(coerce_string_tuple(meta.get("fallbacks"))) or "-"
     print(f"  - {descriptor.identifier} (style)")
     print(f"    builder={builder}; renderer={renderer}; fallbacks={fallbacks}")
     extras: list[str] = []
@@ -124,7 +133,7 @@ def _emit_plot_descriptor(descriptor) -> None:
         extras.append(f"is_default={'yes' if meta.get('is_default') else 'no'}")
     if "legacy_compatible" in meta:
         extras.append(f"legacy_compatible={'yes' if meta.get('legacy_compatible') else 'no'}")
-    default_for = ", ".join(_string_tuple(meta.get("default_for"))) or ""
+    default_for = ", ".join(coerce_string_tuple(meta.get("default_for"))) or ""
     if default_for:
         extras.append(f"default_for={default_for}")
     if extras:
@@ -136,9 +145,9 @@ def _emit_plot_builder_descriptor(descriptor) -> None:
     meta = descriptor.metadata
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     style = meta.get("style", "-")
-    capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"
-    outputs = ", ".join(_string_tuple(meta.get("output_formats"))) or "-"
-    dependencies = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    capabilities = ", ".join(coerce_string_tuple(meta.get("capabilities"))) or "-"
+    outputs = ", ".join(coerce_string_tuple(meta.get("output_formats"))) or "-"
+    dependencies = ", ".join(coerce_string_tuple(meta.get("dependencies"))) or "-"
     print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
     print(f"    style={style}; capabilities={capabilities}")
     print(f"    output_formats={outputs}; dependencies={dependencies}")
@@ -151,9 +160,9 @@ def _emit_plot_renderer_descriptor(descriptor) -> None:
     """Display a plot renderer descriptor with trust context."""
     meta = descriptor.metadata
     trust_state = "trusted" if descriptor.trusted else "untrusted"
-    capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"
-    outputs = ", ".join(_string_tuple(meta.get("output_formats"))) or "-"
-    dependencies = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    capabilities = ", ".join(coerce_string_tuple(meta.get("capabilities"))) or "-"
+    outputs = ", ".join(coerce_string_tuple(meta.get("output_formats"))) or "-"
+    dependencies = ", ".join(coerce_string_tuple(meta.get("dependencies"))) or "-"
     interactive = "yes" if meta.get("supports_interactive") else "no"
     print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
     print(f"    capabilities={capabilities}; output_formats={outputs}")
@@ -162,7 +171,8 @@ def _emit_plot_renderer_descriptor(descriptor) -> None:
 
 def _cmd_list(args: argparse.Namespace) -> int:
     """Handle the `plugins list` subcommand."""
-    kind = args.kind
+    # Honor the convenience `--plots` flag which acts as an alias for `kind=plots`
+    kind = "plots" if getattr(args, "plots", False) else args.kind
     trusted_only = args.trusted_only
 
     if kind in ("explanations", "all"):
@@ -218,6 +228,70 @@ def _cmd_list(args: argparse.Namespace) -> int:
             for descriptor in descriptors:
                 _emit_plot_descriptor(descriptor)
 
+    return 0
+
+
+def _cmd_validate_plot(args: argparse.Namespace) -> int:
+    """Validate a plot builder by identifier by attempting a dry build."""
+    builder_id = args.builder
+    from ..plugins.plots import PlotRenderContext
+    from ..viz.serializers import validate_plotspec
+    from .registry import find_plot_builder
+
+    builder = find_plot_builder(builder_id)
+    if builder is None:
+        print(f"Builder '{builder_id}' is not registered")
+        return 1
+    # Construct a minimal context and attempt to build
+    ctx = PlotRenderContext(
+        explanation=None,
+        instance_metadata={"type": "test"},
+        style=builder.plugin_meta.get("style", "unknown")
+        if hasattr(builder, "plugin_meta")
+        else "unknown",
+        intent={"type": "test"},
+        show=False,
+        path=None,
+        save_ext=None,
+        options={},
+    )
+    try:
+        artifact = builder.build(ctx)
+    except Exception as exc:  # adr002_allow
+        print(f"Builder '{builder_id}' build failed: {exc}")
+        return 2
+    # If artifact looks like a PlotSpec envelope/dict, validate its shape
+    try:
+        if isinstance(artifact, dict) and ("plot_spec" in artifact or "kind" in artifact):
+            validate_plotspec(dict(artifact.get("plot_spec") or artifact))
+    except Exception as exc:  # adr002_allow
+        print(f"Builder '{builder_id}' produced invalid PlotSpec: {exc}")
+        return 3
+
+    print(f"Builder '{builder_id}' validated successfully")
+    return 0
+
+
+def _cmd_set_default(args: argparse.Namespace) -> int:
+    """Set a plot style as the default. Updates registration metadata."""
+    style_id = args.style
+    from .registry import (
+        find_plot_style_descriptor,
+        list_plot_style_descriptors,
+    )
+
+    desc = find_plot_style_descriptor(style_id)
+    if desc is None:
+        print(f"Plot style '{style_id}' is not registered")
+        return 1
+
+    # Re-register styles setting is_default appropriately
+    for sd in list_plot_style_descriptors():
+        meta = dict(sd.metadata)
+        meta["is_default"] = sd.identifier == style_id
+        register_plot_style(sd.identifier, metadata=meta)
+
+    print(f"Set '{style_id}' as default plot style")
     return 0
 
 
@@ -292,6 +366,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="explanations",
         help="Plugin category to list",
     )
+    # Backwards-compatible convenience flag: `--plots` maps to `kind=plots`
+    list_parser.add_argument(
+        "--plots",
+        action="store_true",
+        help="Alias for listing plot styles (sets kind=plots)",
+    )
     list_parser.add_argument(
         "--trusted-only",
         action="store_true",
@@ -334,6 +414,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Plugin category to mark as untrusted",
     )
     untrust_parser.set_defaults(func=_cmd_trust, action="untrust")
+
+    validate_plot_parser = subparsers.add_parser(
+        "validate-plot", help="Validate a plot builder by identifier"
+    )
+    validate_plot_parser.add_argument("--builder", required=True, help="Builder identifier")
+    validate_plot_parser.set_defaults(func=_cmd_validate_plot)
+
+    set_default_parser = subparsers.add_parser(
+        "set-default", help="Set default plot style (by identifier)"
+    )
+    # Accept both `--style` (existing) and `--plot-style` (doc/CLI convenience)
+    set_default_parser.add_argument(
+        "--style",
+        "--plot-style",
+        required=True,
+        dest="style",
+        help="Plot style identifier to set as default",
+    )
+    set_default_parser.set_defaults(func=_cmd_set_default)
 
     try:
         args = parser.parse_args(argv)

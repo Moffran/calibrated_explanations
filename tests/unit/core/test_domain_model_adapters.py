@@ -6,11 +6,11 @@ import pytest
 
 import numpy as np
 
-from calibrated_explanations.explanations.adapters import domain_to_legacy, legacy_to_domain
+from calibrated_explanations.explanations import domain_to_legacy, legacy_to_domain
 from calibrated_explanations.explanations import models
 
 
-def _make_feature_rule(
+def make_feature_rule(
     feature: Any,
     rule: str,
     *,
@@ -37,7 +37,7 @@ def _make_feature_rule(
     )
 
 
-def _make_legacy_payload_zero_rules(task: str = "classification") -> Dict[str, Any]:
+def make_legacy_payload_zero_rules_helper(task: str = "classification") -> Dict[str, Any]:
     return {
         "task": task,
         "prediction": {"predict": [0.7], "low": [0.6], "high": [0.8]},
@@ -47,7 +47,7 @@ def _make_legacy_payload_zero_rules(task: str = "classification") -> Dict[str, A
     }
 
 
-def _make_legacy_payload_two_rules(task: str = "classification") -> Dict[str, Any]:
+def make_legacy_payload_two_rules_helper(task: str = "classification") -> Dict[str, Any]:
     return {
         "task": task,
         "prediction": {"predict": [0.7], "low": [0.6], "high": [0.8]},
@@ -68,8 +68,8 @@ def _make_legacy_payload_two_rules(task: str = "classification") -> Dict[str, An
 @pytest.mark.parametrize(
     "payload",
     [
-        _make_legacy_payload_zero_rules(),
-        _make_legacy_payload_two_rules(),
+        make_legacy_payload_zero_rules_helper(),
+        make_legacy_payload_two_rules_helper(),
     ],
 )
 def test_round_trip_legacy_domain_legacy_preserves_shape(payload: Dict[str, Any]) -> None:
@@ -105,7 +105,7 @@ def test_domain_to_legacy_emits_parallel_arrays_with_multiple_rules() -> None:
         explanation_type="factual",
         prediction={"predict": [0.8], "alt": [0.2]},
         rules=[
-            _make_feature_rule(
+            make_feature_rule(
                 0,
                 "x0 <= 0.3",
                 rule_weight={"predict": 0.11, "alt": 0.04},
@@ -113,7 +113,7 @@ def test_domain_to_legacy_emits_parallel_arrays_with_multiple_rules() -> None:
                 feature_value=0.25,
                 value_str="<= 0.3",
             ),
-            _make_feature_rule(
+            make_feature_rule(
                 2,
                 "x2 > 1.0",
                 rule_weight={"predict": 0.23, "alt": 0.09, "lift": 1.2},

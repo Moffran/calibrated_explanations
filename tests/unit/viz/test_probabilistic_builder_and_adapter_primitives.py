@@ -2,12 +2,12 @@ import json
 import os
 import pytest
 
-from calibrated_explanations.viz.builders import build_factual_probabilistic_plotspec_dict
-from calibrated_explanations.viz.matplotlib_adapter import render as mpl_render
-from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+from calibrated_explanations.viz import build_factual_probabilistic_plotspec_dict
+from calibrated_explanations.viz import render as mpl_render
+from calibrated_explanations.viz import build_probabilistic_bars_spec
 
 HERE = os.path.dirname(__file__)
-SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "improvement_docs", "plot_spec"))
+SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "docs", "improvement", "plot_spec"))
 
 
 def test_builder_outputs_valid_shape():
@@ -30,6 +30,8 @@ def test_builder_outputs_valid_shape():
         ascending=False,
     )
     assert isinstance(spec_dict, dict)
+    # envelope-level metadata for schema/versioning
+    assert "plotspec_version" in spec_dict
     ps = spec_dict.get("plot_spec")
     assert ps is not None
     assert ps.get("kind") in ("factual_probabilistic", "factual_regression")

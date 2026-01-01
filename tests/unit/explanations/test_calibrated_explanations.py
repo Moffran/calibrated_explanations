@@ -9,14 +9,15 @@ from typing import List, Sequence
 import numpy as np
 import pytest
 
-from calibrated_explanations.explanations.explanations import (
+from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
 )
+from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 @dataclass
-class _DummyOriginalExplainer:
+class DummyOriginalExplainer:
     """Lightweight stand-in for :class:`CalibratedExplainer`."""
 
     feature_names: Sequence[str]
@@ -36,11 +37,20 @@ class _DummyOriginalExplainer:
         self.rule_boundaries: List[float] = []
         self.learner = "dummy-learner"
         self.difficulty_estimator = "dummy-difficulty"
+        from calibrated_explanations.plugins.manager import PluginManager
 
-    def _predict(self, data):  # pragma: no cover - not used directly
+        self.plugin_manager = PluginManager(self)
+
+    def predict(self, data):  # pragma: no cover - not used directly
         return np.asarray(data)
 
-    def _preload_lime(self):
+    def discretize(self, x):
+        return x
+
+    def predict_calibrated(self, *args, **kwargs):
+        return (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1))
+
+    def preload_lime(self):
         """Return a minimal structure compatible with :meth:`CalibratedExplanations.as_lime`."""
 
         lime_exp = SimpleNamespace(
@@ -55,7 +65,7 @@ class _DummyOriginalExplainer:
         )
         return None, lime_exp
 
-    def _preload_shap(self):
+    def preload_shap(self):
         """Return a minimal structure compatible with :meth:`CalibratedExplanations.as_shap`."""
 
         shap_exp = SimpleNamespace(
@@ -66,7 +76,7 @@ class _DummyOriginalExplainer:
         return None, shap_exp
 
 
-class _DummyExplanation:
+class DummyExplanation:
     """Minimal explanation object exercising list-handling logic."""
 
     def __init__(
@@ -90,58 +100,56 @@ class _DummyExplanation:
         self.feature_predict = {"predict": weight}
         self.prediction_probabilities = probabilities
         self.x_test = np.array([predict, predict + 1])
-        self._plot_calls: list[tuple] = []
-        self._conjunction_calls: list[str] = []
+        self.plot_calls: list[tuple] = []
+        self.conjunction_calls: list[str] = []
 
     # -- Helpers used by :mod:`CalibratedExplanations` --
     def remove_conjunctions(self) -> None:
-        self._conjunction_calls.append("remove")
+        self.conjunction_calls.append("remove")
 
     def add_conjunctions(self, *_args, **_kwargs) -> None:
-        self._conjunction_calls.append("add")
+        self.conjunction_calls.append("add")
 
     def reset(self) -> None:
-        self._conjunction_calls.append("reset")
+        self.conjunction_calls.append("reset")
 
     def plot(self, **kwargs) -> None:
-        self._plot_calls.append(tuple(sorted(kwargs.items())))
+        self.plot_calls.append(tuple(sorted(kwargs.items())))
 
-    def _rank_features(self, _weights, num_to_show=None):  # pylint: disable=unused-argument
+    def rank_features(self, _weights, num_to_show=None):  # pylint: disable=unused-argument
         size = len(self.feature_weights["predict"])
         return list(range(size if num_to_show is None else num_to_show))
 
-    def _define_conditions(self):
+    def define_conditions(self):
         return [f"feature_{i}" for i in range(len(self.feature_weights["predict"]))]
 
-    def _get_rules(self):
+    def get_rules(self):
         return {"rule": [0, 1]}
 
     def super_explanations(self, **_kwargs) -> None:
-        self._conjunction_calls.append("super")
+        self.conjunction_calls.append("super")
 
     def semi_explanations(self, **_kwargs) -> None:
-        self._conjunction_calls.append("semi")
+        self.conjunction_calls.append("semi")
 
     def counter_explanations(self, **_kwargs) -> None:
-        self._conjunction_calls.append("counter")
+        self.conjunction_calls.append("counter")
 
     def ensured_explanations(self) -> None:
-        self._conjunction_calls.append("ensured")
+        self.conjunction_calls.append("ensured")
 
 
 @pytest.fixture()
 def collection() -> CalibratedExplanations:
-    explainer = _DummyOriginalExplainer(
-        feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"}
-    )
+    explainer = DummyOriginalExplainer(feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"})
     x = np.arange(6, dtype=float).reshape(3, 2)
     thresholds = [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7)]
     bins = ["bin0", "bin1", "bin2"]
     coll = CalibratedExplanations(explainer, x, thresholds, bins)
     coll.explanations = [
-        _DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),
-        _DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),
-        _DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),
+        DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),
+        DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),
+        DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),
     ]
     return coll
 
@@ -169,7 +177,9 @@ def test_getitem_slice_singleton_returns_explanation(collection: CalibratedExpla
 
 
 def test_getitem_invalid_type_raises(collection: CalibratedExplanations) -> None:
-    with pytest.raises(TypeError):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
         _ = collection[1.5]  # type: ignore[index]
 
 
@@ -200,7 +210,7 @@ def test_lower_upper_cache_arrays(collection: CalibratedExplanations) -> None:
 
 def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
     collection.low_high_percentiles = (5.0, np.inf)
-    assert collection._is_one_sided()
+    assert collection.is_one_sided
     assert collection.get_confidence() == 95.0
     collection.low_high_percentiles = (np.inf, 90.0)
     assert collection.get_confidence() == 90.0
@@ -215,14 +225,28 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 
 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
-    with pytest.warns(DeprecationWarning):
-        assert collection.get_explanation(1) is collection.explanations[1]
-    with pytest.raises(TypeError), pytest.warns(DeprecationWarning):
-        collection.get_explanation("1")  # type: ignore[arg-type]
-    with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
-        collection.get_explanation(-1)
-    with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
-        collection.get_explanation(len(collection.x_test))
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    if deprecations_error_enabled():
+        # In raise-mode deprecations trigger before the validation checks;
+        # assert that the deprecation is raised instead of the ValidationError.
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(1)
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation("1")  # type: ignore[arg-type]
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(-1)
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(len(collection.x_test))
+    else:
+        with warns_or_raises():
+            assert collection.get_explanation(1) is collection.explanations[1]
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation("1")  # type: ignore[arg-type]
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation(-1)
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation(len(collection.x_test))
 
 
 def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanations) -> None:
@@ -231,11 +255,11 @@ def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanat
     monkeypatch.setattr(helper_utils, "make_directory", lambda *_, **__: None)
     filename = tmp_path / "plot.png"
     collection.plot(index=0, filename=str(filename), show=False)
-    assert collection.explanations[0]._plot_calls  # plot called for index
+    assert collection.explanations[0].plot_calls  # plot called for index
     for exp in collection.explanations:
-        exp._plot_calls.clear()
+        exp.plot_calls.clear()
     collection.plot(show=False, filename=str(filename))
-    assert all(exp._plot_calls for exp in collection.explanations)
+    assert all(exp.plot_calls for exp in collection.explanations)
 
 
 def test_as_lime_and_as_shap_shapes(collection: CalibratedExplanations) -> None:
@@ -253,7 +277,7 @@ def test_as_lime_and_as_shap_shapes(collection: CalibratedExplanations) -> None:
 
 def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> None:
     alt = AlternativeExplanations(
-        collection.calibrated_explainer._explainer,
+        collection.calibrated_explainer.explainer,
         collection.x_test,
         collection.y_threshold,
         collection.bins,
@@ -263,16 +287,18 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
     alt.semi_explanations()
     alt.counter_explanations()
     alt.ensured_explanations()
-    calls = [exp._conjunction_calls for exp in collection.explanations]
+    calls = [exp.conjunction_calls for exp in collection.explanations]
     assert all({"super", "semi", "counter", "ensured"}.issubset(set(call)) for call in calls)
 
 
 def test_from_batch_validation_errors(collection: CalibratedExplanations) -> None:
+    from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
+
     batch_missing = SimpleNamespace(collection_metadata={})
-    with pytest.raises(ValueError):
+    with pytest.raises(SerializationError):
         CalibratedExplanations.from_batch(batch_missing)
     batch_wrong = SimpleNamespace(collection_metadata={"container": object()})
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         CalibratedExplanations.from_batch(batch_wrong)
 
 

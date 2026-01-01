@@ -7,7 +7,7 @@ pytest.importorskip("matplotlib")
 pytestmark = pytest.mark.viz
 
 
-def _render_spec_and_get_axes(spec):
+def render_spec_and_get_axes(spec):
     # Request the figure back for inspection
     # import backend-specific adapter and matplotlib lazily (after importorskip)
     from calibrated_explanations.viz import matplotlib_adapter
@@ -20,7 +20,7 @@ def _render_spec_and_get_axes(spec):
 
 
 def test_probabilistic_header_axes_unit_interval_with_custom_minmax():
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     predict = {"predict": 0.62, "low": 0.5, "high": 0.75}
     fw = {
@@ -38,7 +38,7 @@ def test_probabilistic_header_axes_unit_interval_with_custom_minmax():
         y_minmax=(5.0, 10.0),
         interval=True,
     )
-    fig, axes = _render_spec_and_get_axes(spec)
+    fig, axes = render_spec_and_get_axes(spec)
     try:
         neg_xlim = axes[0].get_xlim()
         pos_xlim = axes[1].get_xlim()
@@ -60,7 +60,7 @@ def test_body_xlim_contains_zero_and_padding():
     high = vals + 0.01
     fw = {"predict": vals, "low": low, "high": high}
     # import builders lazily after matplotlib is ensured present
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     spec = build_probabilistic_bars_spec(
         title="t",
@@ -72,7 +72,7 @@ def test_body_xlim_contains_zero_and_padding():
         y_minmax=None,
         interval=True,
     )
-    fig, axs = _render_spec_and_get_axes(spec)
+    fig, axs = render_spec_and_get_axes(spec)
     # body is last axis
     ax = axs[-1]
     x0, x1 = ax.get_xlim()
@@ -93,7 +93,7 @@ def test_bars_drawn_from_zero_directionally_and_overlay_sign():
     low = vals - 0.005
     high = vals + 0.005
     fw = {"predict": vals, "low": low, "high": high}
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     spec = build_probabilistic_bars_spec(
         title="t",
@@ -142,7 +142,7 @@ def test_bars_drawn_from_zero_directionally_and_overlay_sign():
 
 def test_render_short_circuits_without_show_or_save(monkeypatch):
     from calibrated_explanations.viz import matplotlib_adapter
-    from calibrated_explanations.viz.plotspec import PlotSpec
+    from calibrated_explanations.viz import PlotSpec
 
     calls = []
 
@@ -219,7 +219,7 @@ def test_render_uses_exact_save_path(tmp_path):
 
 def test_render_saves_to_requested_path(monkeypatch, tmp_path):
     from calibrated_explanations.viz import matplotlib_adapter
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     predict = {"predict": 0.5, "low": 0.3, "high": 0.7}
     vals = np.array([0.2, -0.1])

@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional, Tuple
 
-from ..utils.helper import safe_import
+from ..utils import safe_import
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard
     from ..core.calibrated_explainer import CalibratedExplainer
@@ -31,6 +31,16 @@ class LimeHelper:
         """Return whether the helper has produced a cached LIME explainer."""
         return self._enabled
 
+    @property
+    def enabled(self) -> bool:
+        """Compatibility alias for tests that set ``enabled`` directly."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set enabled state without forcing preload."""
+        self._enabled = bool(value)
+
     def set_enabled(self, value: bool) -> None:
         """Force the helper's enabled flag, primarily used in tests."""
         if not value:
@@ -44,15 +54,33 @@ class LimeHelper:
         instance, _ = self.preload()
         return instance
 
+    @explainer_instance.setter
+    def explainer_instance(self, value: Any) -> None:
+        """Allow tests to inject cached explainer instances."""
+        self._explainer_instance = value
+
     @property
     def reference_explanation(self) -> Any:
         """Return the cached reference explanation, triggering preload if required."""
         _, explanation = self.preload()
         return explanation
 
+    @reference_explanation.setter
+    def reference_explanation(self, value: Any) -> None:
+        """Allow tests to inject cached reference explanations."""
+        self._reference_explanation = value
+
     def preload(self, x_cal: Optional[Any] = None) -> Tuple[Any, Any]:
         """Materialize and cache the LIME explainer if the dependency is present."""
-        lime_cls = safe_import("lime.lime_tabular", "LimeTabularExplainer")
+        # If already enabled and we have a cached instance, return it
+        if self._enabled and self._explainer_instance is not None:
+            return self._explainer_instance, self._reference_explanation
+
+        try:
+            lime_cls = safe_import("lime.lime_tabular", "LimeTabularExplainer")
+        except ImportError:
+            self._enabled = False
+            return None, None
         if not lime_cls:
             return None, None
 

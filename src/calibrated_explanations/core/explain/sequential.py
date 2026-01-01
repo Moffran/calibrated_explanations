@@ -34,6 +34,21 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
     Processes all test instances and features in a single thread.
     This is the default fallback when parallelism is disabled or unavailable.
+
+    Notes
+    -----
+    **Memory considerations**: The sequential executor materializes all perturbed
+    instances during perturbation generation in `explain_predict_step`. For very
+    large datasets (e.g., 1000+ instances × 1000+ features), this can require
+    significant memory. Users experiencing memory exhaustion should consider:
+
+    1. Reducing test set size (fewer instances)
+    2. Enabling parallelism (which chunks instances internally)
+    3. Reducing number of features via feature selection
+
+    A future optimization will implement lazy perturbation generation or instance-
+    level chunking in sequential mode to better handle large datasets (tracked as
+    a memory efficiency improvement).
     """
 
     @property
@@ -73,10 +88,11 @@ class SequentialExplainExecutor(BaseExplainExecutor):
         sequential path (lines 2365-2595) to ensure behavioral parity.
         """
         # Import _feature_task from feature_task module (deferred to avoid circular import)
-        from .feature_task import _feature_task  # pylint: disable=import-outside-toplevel
+        from .feature_task import feature_task  # pylint: disable=import-outside-toplevel
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
+        features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
 
         # Track total explanation time
         total_start_time = time()
@@ -116,6 +132,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             request.low_high_percentiles,
             request.bins,
             features_to_ignore_array,
+            features_to_ignore_per_instance=features_to_ignore_per_instance,
         )
 
         # Step 2: Initialize data structures to store feature-level results
@@ -163,7 +180,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
         # Step 4: Process features sequentially
         for task in feature_tasks:
-            result = _feature_task(task)
+            result = feature_task(task)
             merge_feature_result(
                 result,
                 weights_predict,

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from tests.docs.get_started.test_quickstart_regression_doc import (
-    _run_quickstart_regression,
+from tests.helpers.doc_utils import (
+    run_quickstart_regression,
 )
 
 
-def test_probabilistic_regression_snippets():
-    context = _run_quickstart_regression()
+def test_probabilistic_regression_snippets(enable_fallbacks):
+    context = run_quickstart_regression()
     probabilities, probability_interval = context.explainer.predict_proba(
         context.X_test[:1],
         threshold=150,

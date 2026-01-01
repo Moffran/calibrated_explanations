@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from .calibration.interval_learner import (
+    from ..calibration.interval_learner import (
         assign_threshold,
         initialize_interval_learner,
         initialize_interval_learner_for_fast_explainer,
@@ -33,15 +33,15 @@ __all__ = [
 def __getattr__(name: str):
     """Lazy-load functions from calibration.interval_learner with deprecation warning."""
     if name in __all__:
-        from ..utils.deprecations import deprecate
+        from ..utils import deprecate
 
         msg = (
             f"Importing {name} from calibration_helpers is deprecated."
             " This alias will be removed in v1.0.0."
-            " Import from calibrated_explanations.core.calibration.interval_learner instead."
+            " Import from calibrated_explanations.calibration.interval_learner instead."
         )
         deprecate(msg, key=f"calibration_helpers:{name}", stacklevel=3)
-        from .calibration import interval_learner as _il  # pylint: disable=import-outside-toplevel
+        from ..calibration import interval_learner as _il  # pylint: disable=import-outside-toplevel
 
         return getattr(_il, name)
 

@@ -5,16 +5,17 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.calibrated_explanations.core import venn_abers as venn_abers_module
-from src.calibrated_explanations.core.calibration.venn_abers import VennAbers
+from calibrated_explanations.core import ConfigurationError
+from calibrated_explanations.calibration import venn_abers as venn_abers_module
+from calibrated_explanations.calibration import VennAbers
 
 
-class _StubVennAbers:
+class StubVennAbers:
     """Lightweight stand-in for :mod:`venn_abers`' VennAbers implementation."""
 
     def fit(self, probs, targets, precision=4):  # noqa: ARG002 - interface compatibility
         # Store the shapes to mimic basic stateful behaviour used by the calibrator.
-        self._last_fit = (np.asarray(probs).shape, np.asarray(targets).shape)
+        self.last_fit = (np.asarray(probs).shape, np.asarray(targets).shape)
         return self
 
     def predict_proba(self, probs):
@@ -26,29 +27,29 @@ class _StubVennAbers:
         return (None, calibrated)
 
 
-class _DummyLearner:
+class DummyLearner:
     """Simple learner returning deterministic probability tables."""
 
     def __init__(self, base_probs: np.ndarray):
-        self._base_probs = np.asarray(base_probs, dtype=float)
+        self.base_probs = np.asarray(base_probs, dtype=float)
 
     def predict_proba(self, x, bins=None):  # noqa: ARG002 - signature compatible with scikit-learn
         n_samples = len(x)
-        repeats = int(np.ceil(n_samples / len(self._base_probs)))
-        tiled = np.vstack([self._base_probs] * repeats)
+        repeats = int(np.ceil(n_samples / len(self.base_probs)))
+        tiled = np.vstack([self.base_probs] * repeats)
         return tiled[:n_samples]
 
 
-class _DifficultyEstimator:
+class DifficultyEstimator:
     """Difficulty estimator returning a deterministic vector."""
 
     def __init__(self, values: np.ndarray):
-        self._values = np.asarray(values, dtype=float)
+        self.values = np.asarray(values, dtype=float)
 
     def apply(self, x):  # noqa: ARG002 - interface compatibility
         n_samples = len(x)
-        repeats = int(np.ceil(n_samples / len(self._values)))
-        tiled = np.concatenate([self._values] * repeats)
+        repeats = int(np.ceil(n_samples / len(self.values)))
+        tiled = np.concatenate([self.values] * repeats)
         return tiled[:n_samples]
 
 
@@ -56,7 +57,7 @@ class _DifficultyEstimator:
 def patch_venn_abers(monkeypatch):
     """Replace the external dependency with a lightweight stub for predictable behaviour."""
 
-    monkeypatch.setattr(venn_abers_module.va, "VennAbers", _StubVennAbers)
+    monkeypatch.setattr(venn_abers_module.va, "VennAbers", StubVennAbers)
 
 
 def test_predict_with_difficulty_and_class_selection():
@@ -64,7 +65,7 @@ def test_predict_with_difficulty_and_class_selection():
 
     x_cal = np.array([[0.0], [1.0], [2.0]])
     y_cal = np.array(["cat", "dog", "mouse"])
-    learner = _DummyLearner(
+    learner = DummyLearner(
         np.array(
             [
                 [0.60, 0.25, 0.15],
@@ -73,7 +74,7 @@ def test_predict_with_difficulty_and_class_selection():
             ]
         )
     )
-    difficulty = _DifficultyEstimator(np.array([0.2, 0.5, 0.7]))
+    difficulty = DifficultyEstimator(np.array([0.2, 0.5, 0.7]))
 
     calibrator = VennAbers(x_cal, y_cal, learner, difficulty_estimator=difficulty)
 
@@ -109,7 +110,7 @@ def test_predict_proba_requires_bins_for_mondrian_multiclass():
     x_cal = np.array([[0.0], [1.0], [2.0], [3.0], [4.0], [5.0]])
     y_cal = np.array(["a", "b", "c", "a", "b", "c"])
     bins = np.array([0, 0, 1, 1, 0, 1])
-    learner = _DummyLearner(
+    learner = DummyLearner(
         np.array(
             [
                 [0.55, 0.25, 0.20],
@@ -122,7 +123,7 @@ def test_predict_proba_requires_bins_for_mondrian_multiclass():
     calibrator = VennAbers(x_cal, y_cal, learner, bins=bins)
 
     test_bins = np.array([0, 1])
-    with pytest.raises(ValueError, match="bins must be provided if Mondrian"):
+    with pytest.raises(ConfigurationError, match="bins must be provided if Mondrian"):
         calibrator.predict_proba(np.array([[1.0], [2.0]]))
 
     probs, predicted_classes = calibrator.predict_proba(np.array([[1.0], [2.0]]), bins=test_bins)
@@ -144,12 +145,12 @@ def test_predict_proba_requires_bins_for_mondrian_binary():
     x_cal = np.array([[0.0], [1.0], [2.0], [3.0]])
     y_cal = np.array([0, 1, 0, 1])
     bins = np.array([0, 0, 1, 1])
-    learner = _DummyLearner(np.array([[0.7, 0.3], [0.4, 0.6]]))
+    learner = DummyLearner(np.array([[0.7, 0.3], [0.4, 0.6]]))
 
     calibrator = VennAbers(x_cal, y_cal, learner, bins=bins)
 
     test_bins = np.array([0, 1])
-    with pytest.raises(ValueError, match="bins must be provided if Mondrian"):
+    with pytest.raises(ConfigurationError, match="bins must be provided if Mondrian"):
         calibrator.predict_proba(np.array([[1.0], [2.0]]))
 
     probs = calibrator.predict_proba(np.array([[1.0], [2.0]]), bins=test_bins)
@@ -168,7 +169,7 @@ def test_binary_predict_rounds_probabilities():
 
     x_cal = np.array([[0.0], [1.0], [2.0]])
     y_cal = np.array([0, 1, 0])
-    learner = _DummyLearner(np.array([[0.6, 0.4], [0.35, 0.65], [0.45, 0.55]]))
+    learner = DummyLearner(np.array([[0.6, 0.4], [0.35, 0.65], [0.45, 0.55]]))
 
     calibrator = VennAbers(x_cal, y_cal, learner)
 
@@ -198,12 +199,12 @@ def test_predict_function_without_bins_argument_scales_binary_difficulty():
         tiled = np.vstack([base] * repeats)
         return tiled[: len(x)]
 
-    difficulty = _DifficultyEstimator(np.array([0.3, 0.6, 0.2]))
+    difficulty = DifficultyEstimator(np.array([0.3, 0.6, 0.2]))
 
     calibrator = VennAbers(
         x_cal,
         y_cal,
-        learner=_DummyLearner(np.array([[0.6, 0.4], [0.4, 0.6]])),
+        learner=DummyLearner(np.array([[0.6, 0.4], [0.4, 0.6]])),
         difficulty_estimator=difficulty,
         predict_function=predict_without_bins,
     )

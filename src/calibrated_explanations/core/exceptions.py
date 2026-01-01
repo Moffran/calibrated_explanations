@@ -1,65 +1,41 @@
-"""Custom exception hierarchy for calibrated_explanations (Phase 1B).
+"""Compatibility shim exposing the exception hierarchy under ``core``.
 
-These exceptions standardize error signaling across the core library without
-changing the existing successful code paths.
+Historically the central exception types lived directly under
+``calibrated_explanations.core``.  They were migrated to
+``calibrated_explanations.utils.exceptions`` (ADR-002) but documentation,
+type-check configuration and downstream code still import from
+``calibrated_explanations.core.exceptions``.  Sphinx therefore attempts to
+``autodoc`` this module during the docs build.  Without a real module the
+import fails, bringing the entire docs workflow down.
 
-Do not export these in the package-level ``calibrated_explanations.core.__all__`` yet
-(to avoid API surface churn). Import them from this module directly.
+To keep the public API stable we provide a light re-export module that simply
+forwards the canonical implementations from ``utils.exceptions``.  This keeps
+documentation, mypy configuration, and any downstream imports working without
+duplicating logic.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from ..utils.exceptions import (
+    CalibratedError,
+    ConfigurationError,
+    ConvergenceError,
+    DataShapeError,
+    ModelNotSupportedError,
+    NotFittedError,
+    SerializationError,
+    ValidationError,
+    explain_exception,
+)
 
 __all__ = [
     "CalibratedError",
-    "ValidationError",
-    "DataShapeError",
     "ConfigurationError",
+    "ConvergenceError",
+    "DataShapeError",
     "ModelNotSupportedError",
     "NotFittedError",
-    "ConvergenceError",
     "SerializationError",
+    "ValidationError",
+    "explain_exception",
 ]
-
-
-class CalibratedError(Exception):
-    """Base class for library-specific errors."""
-
-    def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
-        """Attach structured error details alongside the user-facing message."""
-        super().__init__(message)
-        self.details: dict[str, Any] | None = details
-
-    def __repr__(self) -> str:  # pragma: no cover - repr stability check in tests
-        """Return the exception representation with the message payload."""
-        cls = self.__class__.__name__
-        return f"{cls}({super().__str__()!r})"
-
-
-class ValidationError(CalibratedError):
-    """Inputs or configuration failed validation."""
-
-
-class DataShapeError(ValidationError):
-    """Provided data has incompatible shape or dtype (e.g., x/y mismatch)."""
-
-
-class ConfigurationError(CalibratedError):
-    """Invalid or conflicting configuration/parameter combination."""
-
-
-class ModelNotSupportedError(CalibratedError):
-    """Unsupported model type or missing required methods for task (e.g., predict_proba)."""
-
-
-class NotFittedError(CalibratedError):
-    """Operation requires a fitted estimator/explainer."""
-
-
-class ConvergenceError(CalibratedError):
-    """Optimization or calibration failed to converge within limits."""
-
-
-class SerializationError(CalibratedError):
-    """Failed to serialize/deserialize explanation artifacts."""

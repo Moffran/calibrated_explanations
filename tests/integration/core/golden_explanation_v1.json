@@ -1,53 +1,53 @@
 {
+  "schema_version": "1.0.0",
+  "task": "classification",
   "index": 0,
   "explanation_type": "factual",
-  "metadata": null,
   "prediction": {
     "predict": 1,
     "low": 0.9,
     "high": 1.1
   },
-  "provenance": null,
   "rules": [
     {
-      "bin_index": null,
       "feature": 0,
-      "feature_value": null,
-      "instance_prediction": null,
-      "is_conjunctive": false,
+      "rule": "r1",
+      "rule_weight": {
+        "predict": 0.1,
+        "low": 0.05,
+        "high": 0.15
+      },
       "rule_prediction": {
         "predict": 0.0,
         "low": -0.1,
         "high": 0.1
       },
-      "rule": "r1",
+      "instance_prediction": null,
+      "feature_value": null,
+      "is_conjunctive": false,
       "value_str": null,
-      "rule_weight": {
-        "predict": 0.1,
-        "low": 0.05,
-        "high": 0.15
-      }
+      "bin_index": null
     },
     {
-      "bin_index": null,
       "feature": 1,
-      "feature_value": null,
-      "instance_prediction": null,
-      "is_conjunctive": false,
+      "rule": "r2",
+      "rule_weight": {
+        "predict": 0.2,
+        "low": 0.15,
+        "high": 0.25
+      },
       "rule_prediction": {
         "predict": 1.0,
         "low": 0.9,
         "high": 1.1
       },
-      "rule": "r2",
+      "instance_prediction": null,
+      "feature_value": null,
+      "is_conjunctive": false,
       "value_str": null,
-      "rule_weight": {
-        "predict": 0.2,
-        "low": 0.15,
-        "high": 0.25
-      }
+      "bin_index": null
     }
   ],
-  "schema_version": "1.0.0",
-  "task": "classification"
+  "provenance": null,
+  "metadata": null
 }

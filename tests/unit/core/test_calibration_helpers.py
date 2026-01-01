@@ -10,9 +10,9 @@ from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations.core.calibration import interval_learner as ch
+from calibrated_explanations.calibration import interval_learner as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_calibration_helpers_round_trip():
@@ -52,7 +52,7 @@ def test_fast_calibration_helper_delegates(monkeypatch):
         captured_calls.append({"fast": fast, "metadata": dict(metadata)})
         return ["fast-cal-1", "fast-cal-2"], "tests.interval.fake"
 
-    monkeypatch.setattr(CalibratedExplainer, "_obtain_interval_calibrator", fake_obtain)
+    monkeypatch.setattr(CalibratedExplainer, "obtain_interval_calibrator", fake_obtain)
 
     explainer = CalibratedExplainer(
         clf,
@@ -73,21 +73,29 @@ def test_fast_calibration_helper_delegates(monkeypatch):
     assert captured_calls[-1]["metadata"].get("operation") == "initialize_fast"
 
 
-class _BaseStubExplainer:
+class BaseStubExplainer:
     """Utility stub exposing the minimal CalibratedExplainer surface for tests."""
 
     mode: str
 
     def __init__(self, *, mode: str):
         self.mode = mode
-        self._CalibratedExplainer__initialized = False  # match real attribute name
+        self._initialized = False  # match real attribute name
+
+    @property
+    def initialized(self):
+        return self._initialized
+
+    @initialized.setter
+    def initialized(self, value):
+        self._initialized = value
 
     def is_fast(self) -> bool:  # pragma: no cover - concrete subclasses override
         raise NotImplementedError
 
 
 def test_update_interval_learner__should_reject_fast_mode_updates():
-    class FastExplainer(_BaseStubExplainer):
+    class FastExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="classification")
 
@@ -101,7 +109,7 @@ def test_update_interval_learner__should_reject_fast_mode_updates():
 
 
 def test_update_interval_learner__should_raise_when_regression_interval_is_list():
-    class RegressionListExplainer(_BaseStubExplainer):
+    class RegressionListExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="regression")
             self.interval_learner = []  # fast-mode sentinel from runtime helpers
@@ -123,7 +131,7 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
         def insert_calibration(self, xs, ys, bins=None):
             self.calls.append((tuple(xs), tuple(ys), bins))
 
-    class RegressionExplainer(_BaseStubExplainer):
+    class RegressionExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="regression")
             self.interval_learner = TrackingInterval()
@@ -141,7 +149,7 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
     )
 
     assert explainer.interval_learner.calls == [((1.0, 2.0, 3.0), (0.1, 0.2, 0.3), {"count": 5})]
-    assert explainer._CalibratedExplainer__initialized is True
+    assert explainer.initialized is True
 
 
 def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
@@ -159,32 +167,39 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
     from calibrated_explanations.core import calibration_helpers as ch_helpers
 
     # Create a fake calibration package + interval_learner submodule
-    fake_interval = types.ModuleType("calibrated_explanations.core.calibration.interval_learner")
+    # Note: ADR-001 - calibration is extracted to top-level package
+    fake_interval = types.ModuleType("calibrated_explanations.calibration.interval_learner")
 
     def fake_assign_threshold(explainer, t):
         return "ok"
 
     fake_interval.assign_threshold = fake_assign_threshold
 
-    fake_pkg = types.ModuleType("calibrated_explanations.core.calibration")
+    fake_pkg = types.ModuleType("calibrated_explanations.calibration")
     fake_pkg.interval_learner = fake_interval
 
-    monkeypatch.setitem(sys.modules, "calibrated_explanations.core.calibration", fake_pkg)
+    monkeypatch.setitem(sys.modules, "calibrated_explanations.calibration", fake_pkg)
     monkeypatch.setitem(
-        sys.modules, "calibrated_explanations.core.calibration.interval_learner", fake_interval
+        sys.modules, "calibrated_explanations.calibration.interval_learner", fake_interval
     )
 
-    with warnings.catch_warnings(record=True) as rec:
-        warnings.simplefilter("always")
-        func = ch_helpers.assign_threshold
+    from tests.helpers.deprecation import deprecations_error_enabled
 
-    assert any(
-        issubclass(w.category, DeprecationWarning) for w in rec
-    ), "expected DeprecationWarning"
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            _ = ch_helpers.assign_threshold
+    else:
+        with warnings.catch_warnings(record=True) as rec:
+            warnings.simplefilter("always")
+            func = ch_helpers.assign_threshold
 
-    # Calling the delegated function should return the fake result
-    res = func(object(), 0.5)
-    assert res == "ok"
+        assert any(
+            issubclass(w.category, DeprecationWarning) for w in rec
+        ), "expected DeprecationWarning"
+
+        # Calling the delegated function should return the fake result
+        res = func(object(), 0.5)
+        assert res == "ok"
 
 
 def test_calibration_helpers_unknown_attribute_raises():

@@ -1,6 +1,6 @@
-from calibrated_explanations.perf.cache import LRUCache, make_key
+from calibrated_explanations.cache import LRUCache, make_key
 from calibrated_explanations.plugins import registry
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     PlotSpec,
     IntervalHeaderSpec,
     BarHPanelSpec,
@@ -38,7 +38,7 @@ def test_make_key_is_deterministic():
     assert isinstance(k1, tuple)
 
 
-class _FakePlugin:
+class FakePlugin:
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["explain"],
@@ -58,12 +58,12 @@ class _FakePlugin:
 
 def test_plugin_registry_register_and_find():
     registry.clear()
-    p = _FakePlugin()
+    p = FakePlugin()
     registry.register(p)
     assert p in registry.list_plugins()
     # find_for should return our plugin for any model
     found = registry.find_for(object())
-    assert any(isinstance(x, _FakePlugin.__class__) or x is p for x in found)
+    assert any(isinstance(x, FakePlugin.__class__) or x is p for x in found)
     registry.untrust_plugin(p)  # safe if not trusted
     registry.unregister(p)
     assert p not in registry.list_plugins()

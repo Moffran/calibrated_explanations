@@ -16,7 +16,7 @@ import warnings
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core import CalibratedExplainer
 
 
 # Tests run with `error::FutureWarning` in `pytest.ini` which makes
@@ -40,7 +40,7 @@ pytestmark = [
 ]
 
 
-def _tiny_binary_dataset(n_samples: int = 120, n_features: int = 8, random_state: int = 42):
+def tiny_binary_dataset(n_samples: int = 120, n_features: int = 8, random_state: int = 42):
     x_data, y = make_classification(
         n_samples=n_samples,
         n_features=n_features,
@@ -66,7 +66,7 @@ def test_xgboost_classifier_basic_integration():
         import xgboost as xgb
     except Exception as exc:  # pragma: no cover - environment-specific
         pytest.skip(f"xgboost unavailable or misconfigured: {exc}")
-    x_train, y_train, x_cal, y_cal, x_test, _ = _tiny_binary_dataset()
+    x_train, y_train, x_cal, y_cal, x_test, _ = tiny_binary_dataset()
 
     # Use lightweight params for speed; rely on sklearn-compatible wrapper
     clf = xgb.XGBClassifier(
@@ -105,7 +105,7 @@ def test_lightgbm_classifier_basic_integration():
         import lightgbm as lgb
     except Exception as exc:  # pragma: no cover - environment-specific
         pytest.skip(f"lightgbm unavailable or misconfigured: {exc}")
-    x_train, y_train, x_cal, y_cal, x_test, _ = _tiny_binary_dataset()
+    x_train, y_train, x_cal, y_cal, x_test, _ = tiny_binary_dataset()
 
     clf = lgb.LGBMClassifier(
         n_estimators=25,
@@ -114,6 +114,8 @@ def test_lightgbm_classifier_basic_integration():
         subsample=0.9,
         colsample_bytree=0.9,
         random_state=42,
+        n_jobs=1,
+        force_col_wise=True,
     )
     clf.fit(x_train, y_train)
 
@@ -139,7 +141,7 @@ def test_catboost_classifier_basic_integration():
         import catboost as cb
     except Exception as exc:  # pragma: no cover - environment-specific
         pytest.skip(f"catboost unavailable or misconfigured: {exc}")
-    x_train, y_train, x_cal, y_cal, x_test, _ = _tiny_binary_dataset()
+    x_train, y_train, x_cal, y_cal, x_test, _ = tiny_binary_dataset()
 
     clf = cb.CatBoostClassifier(
         iterations=40,

@@ -13,10 +13,18 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import copy
+import sys
+import contextlib
 from time import time
+from typing import TYPE_CHECKING
 
 import numpy as np
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
+
+if TYPE_CHECKING:
+    from ..explanations import AlternativeExplanations, CalibratedExplanations
+    from ..plugins.manager import PluginManager
 
 try:
     import tomllib as _tomllib
@@ -26,30 +34,23 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _tomllib = None  # type: ignore[assignment]
 
-from ..perf import CalibratorCache, ParallelExecutor
-from ..plotting import _plot_global
-from ..explanations import AlternativeExplanations, CalibratedExplanations
-from ..integrations import LimeHelper, ShapHelper
-from ..utils.discretizers import (
-    EntropyDiscretizer,
-    RegressorDiscretizer,
-)
-from ..utils.helper import (
-    check_is_fitted,
-    convert_targets_to_numeric,
-    safe_isinstance,
-)
-from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
-from ..plugins import (
-    IntervalCalibratorContext,
-)
-from ..plugins.builtins import LegacyPredictBridge
+# Core imports (no cross-sibling dependencies)
+from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
-from .exceptions import (
+from ..utils.exceptions import (
     DataShapeError,
     ValidationError,
 )
-from ..plugins.manager import PluginManager
+
+# Lazy imports deferred to avoid cross-sibling coupling
+# These are imported inside methods/properties where used
+# - perf (CalibratorCache, ParallelExecutor) - lazy in __init__
+# - plotting (_plot_global) - lazy in plotting methods
+# - explanations (AlternativeExplanations, CalibratedExplanations) - lazy as needed
+# - integrations (LimeHelper, ShapHelper) - lazy in __init__
+# - api.params (canonicalize_kwargs, etc.) - lazy in param handling
+# - plugins (IntervalCalibratorContext, PluginManager, LegacyPredictBridge) - lazy in __init__
+# - utils.discretizers (EntropyDiscretizer, RegressorDiscretizer) - lazy in validation
 
 
 class CalibratedExplainer:
@@ -140,23 +141,20 @@ class CalibratedExplainer:
         self._numeric_sorted_cache: Dict[int, np.ndarray] | None = None
         self._calibration_summary_shape: Tuple[int, int] | None = None
         if self.oob:
-            try:
-                if mode == "classification":
-                    y_oob_proba = self.learner.oob_decision_function_
-                    if (
-                        len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1
-                    ):  # Binary classification
-                        y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
-                    else:  # Multiclass classification
-                        y_oob = np.argmax(y_oob_proba, axis=1)
-                        if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
-                            y_oob = y_cal.categories[y_oob]
-                        else:
-                            y_oob = y_oob.astype(np.dtype(y_cal.dtype))
-                else:
-                    y_oob = self.learner.oob_prediction_
-            except Exception as exc:
-                raise exc
+            if mode == "classification":
+                y_oob_proba = self.learner.oob_decision_function_
+                if (
+                    len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1
+                ):  # Binary classification
+                    y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
+                else:  # Multiclass classification
+                    y_oob = np.argmax(y_oob_proba, axis=1)
+                    if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
+                        y_oob = y_cal.categories[y_oob]
+                    else:
+                        y_oob = y_oob.astype(np.dtype(y_cal.dtype))
+            else:
+                y_oob = self.learner.oob_prediction_
             if len(x_cal) != len(y_oob):
                 raise DataShapeError(
                     "The length of the out-of-bag predictions does not match the length of X_cal."
@@ -166,7 +164,7 @@ class CalibratedExplainer:
         self.y_cal = y_cal
 
         # Initialize RNG with seed
-        from ..utils.rng import set_rng_seed  # pylint: disable=import-outside-toplevel
+        from ..utils import set_rng_seed  # pylint: disable=import-outside-toplevel
 
         seed = kwargs.get("seed", 42)
         self.seed = seed
@@ -180,6 +178,16 @@ class CalibratedExplainer:
         self.__noise_type = kwargs.get("noise_type", "uniform")
         self.__scale_factor = kwargs.get("scale_factor", 5)
         self.__severity = kwargs.get("severity", 1)
+        self.condition_source = kwargs.get("condition_source", "observed")
+        if self.condition_source not in {"observed", "prediction"}:
+            raise ValidationError(
+                "condition_source must be either 'observed' or 'prediction'",
+                details={
+                    "param": "condition_source",
+                    "value": self.condition_source,
+                    "allowed": ("observed", "prediction"),
+                },
+            )
 
         self.categorical_labels = categorical_labels
         self.class_labels = class_labels
@@ -230,13 +238,22 @@ class CalibratedExplainer:
 
         self.feature_values: Dict[int, List[Any]] = {}
         self.feature_frequencies: Dict[int, np.ndarray] = {}
+
+        # Lazy import helper integrations (deferred from module level)
+        from ..integrations import LimeHelper, ShapHelper
+
         self.latest_explanation: Optional[CalibratedExplanations] = None
         self._lime_helper = LimeHelper(self)
         self._shap_helper = ShapHelper(self)
         self.reject = kwargs.get("reject", False)
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
-        self.__set_mode(str.lower(mode), initialize=False)
+        self.set_mode(str.lower(mode), initialize=False)
+
+        # Lazy import orchestrator and plugin management (deferred from module level)
+        from ..plugins.manager import PluginManager
+        from ..plugins.builtins import LegacyPredictBridge
+        from ..cache import CalibratorCache
 
         # Initialize plugin manager (SINGLE SOURCE OF TRUTH for plugin management)
         # PluginManager handles ALL plugin initialization including:
@@ -244,12 +261,17 @@ class CalibratedExplainer:
         # - Setting up plugin overrides from kwargs
         # - Creating and initializing orchestrators
         # - Building plugin fallback chains
-        self._plugin_manager = PluginManager(self)
-        self._plugin_manager.initialize_from_kwargs(kwargs)
-        self._plugin_manager.initialize_orchestrators()
+        self.plugin_manager = PluginManager(self)
+        self.plugin_manager.initialize_from_kwargs(kwargs)
+        self.plugin_manager.initialize_orchestrators()
 
-        self._perf_cache: CalibratorCache[Any] | None = perf_cache
-        self._perf_parallel: ParallelExecutor | None = perf_parallel
+        # Initialize interval learner after orchestrators are ready
+        self.prediction_orchestrator.interval_registry.initialize()
+
+        self.perf_cache: CalibratorCache[Any] | None = perf_cache
+
+        # Initialize parallel executor (ADR-004: Honor CE_PARALLEL overrides)
+        self._perf_parallel: Any | None = self._resolve_parallel_executor(perf_parallel)
 
         # Orchestrator references are now accessed via properties that delegate to PluginManager
         # No direct assignment needed - properties handle the delegation
@@ -263,17 +285,196 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
-    def _require_plugin_manager(self) -> PluginManager:
-        """Return the plugin manager or raise if the explainer is not initialized."""
+    # TODO: Needs to be
+    def __deepcopy__(self, memo):
+        """Safely deepcopy the explainer, handling circular references."""
+        if id(self) in memo:
+            return memo[id(self)]
+        # Create a shallow copy without calling __init__
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        # Manually copy attributes
+        # Some attributes are runtime helpers or refer back into the explainer
+        # (plugin manager, parallel executor, caches, integration helpers, etc.).
+        # Deep-copying these can cause recursion or try to copy unpicklable objects.
+        # Shallow-copy them instead to preserve references and avoid recursion.
+        shallow_copy_keys = {
+            "_plugin_manager",
+            "_perf_parallel",
+            "perf_cache",
+            "_lime_helper",
+            "_shap_helper",
+            "_predict_bridge",
+            "latest_explanation",
+            "learner",
+            "predict_function",
+            "rng",
+        }
+
+        for k, v in self.__dict__.items():
+            if k in shallow_copy_keys:
+                # ADR002_ALLOW: swallowing to keep deepcopy best-effort.
+                with contextlib.suppress(Exception):
+                    setattr(result, k, v)
+                continue
+
+            try:
+                setattr(result, k, copy.deepcopy(v, memo))
+            except (
+                Exception
+            ):  # ADR002_ALLOW: fallback to shallow copy when deepcopy fails.  # pragma: no cover
+                # Fallback: if deepcopy fails for any reason, keep original reference.
+                # ADR002_ALLOW: ignore attributes that cannot be copied.
+                with contextlib.suppress(Exception):
+                    setattr(result, k, v)
+
+        return result
+
+    def __getstate__(self):
+        """Exclude runtime helpers when pickling."""
+        state = self.__dict__.copy()
+        state["perf_cache"] = None
+        state["_perf_parallel"] = None
+        return state
+
+    def __setstate__(self, state):
+        """Restore state after pickling without restoring helpers."""
+        self.__dict__.update(state)
+
+    def require_plugin_manager(self) -> PluginManager:
+        """Return the plugin manager or raise if the explainer is not initialized.
+
+        Returns
+        -------
+        PluginManager
+            The active plugin manager instance.
+
+        Raises
+        ------
+        NotFittedError
+            If the plugin manager is not initialized.
+        """
+        from ..utils.exceptions import NotFittedError
+
         manager = getattr(self, "_plugin_manager", None)
         if manager is None:
-            raise RuntimeError(
-                "PluginManager is not initialized. Instantiate CalibratedExplainer via __init__."
+            raise NotFittedError(
+                "PluginManager is not initialized. Instantiate CalibratedExplainer via __init__.",
+                details={
+                    "state": "uninitialized",
+                    "reason": "plugin_manager_missing",
+                    "required_method": "__init__",
+                },
             )
         return manager
 
-    def _infer_explanation_mode(self) -> str:
+    def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
+        """Resolve the parallel executor honoring overrides and environment config."""
+        return self.resolve_parallel_executor(explicit_executor)
+
+    def resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
+        """Resolve the parallel executor honoring overrides and environment config."""
+        from ..parallel import ParallelConfig, ParallelExecutor
+
+        if explicit_executor is not None:
+            return explicit_executor
+
+        env_config = ParallelConfig.from_env()
+        if env_config.enabled:
+            return ParallelExecutor(env_config)
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Parallel pool lifecycle helpers
+    # ------------------------------------------------------------------
+    def initialize_pool(self, n_workers: int | None = None, *, pool_at_init: bool = False) -> None:
+        """Create a `ParallelExecutor` for this explainer.
+
+        Parameters
+        ----------
+        n_workers: int | None
+            Optional maximum worker count to enforce.
+        pool_at_init: bool
+            If True, enter the pool immediately so worker processes are
+            spawned at initialization time (useful for warm-up and
+            initializer-based harness installation).
+        """
+        from ..parallel import ParallelConfig, ParallelExecutor
+
+        if getattr(self, "_perf_parallel", None) is not None:
+            return
+
+        cfg = ParallelConfig.from_env()
+        cfg.enabled = True
+        if n_workers is not None:
+            cfg.max_workers = n_workers
+
+        # If requested, set up a worker initializer that will receive a
+        # compact explainer spec. Keep the spec deliberately small and
+        # picklable.
+        if pool_at_init:
+            # ADR002_ALLOW: optional initializer wiring should not block.
+            with contextlib.suppress(Exception):
+                import calibrated_explanations.core.explain.parallel_runtime as pr_mod
+
+                # Build a picklable compact spec containing only the data
+                # required to rehydrate an explainer in worker processes.
+                # Attempt to include a picklable learner payload. If the
+                # learner is not picklable, fall back to omitting it so the
+                # worker initializer must handle a missing learner case.
+                learner_bytes = None
+                try:
+                    import pickle  # nosec B403
+
+                    learner_bytes = pickle.dumps(getattr(self, "learner", None))
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: learner pickling best-effort fallback.  # pragma: no cover
+                    learner_bytes = None
+
+                spec = {
+                    "learner_bytes": learner_bytes,
+                    "x_cal": getattr(self, "x_cal", None),
+                    "y_cal": getattr(self, "y_cal", None),
+                    "mode": getattr(self, "mode", None),
+                    "num_features": getattr(self, "num_features", None),
+                    "bins": getattr(self, "bins", None),
+                    "sample_percentiles": getattr(self, "sample_percentiles", None),
+                }
+                cfg.worker_initializer = pr_mod.worker_init_from_explainer_spec
+                cfg.worker_init_args = (spec,)
+
+        self._perf_parallel = ParallelExecutor(cfg)
+        if pool_at_init:
+            # Enter context to spawn worker pool now
+            self._perf_parallel.__enter__()
+
+    def close(self) -> None:
+        """Shutdown any provisioned parallel pool and release resources."""
+        perf = getattr(self, "_perf_parallel", None)
+        if perf is None:
+            return
+        try:
+            perf.__exit__(None, None, None)
+        finally:
+            self._perf_parallel = None
+
+    def __enter__(self) -> "CalibratedExplainer":
+        """Context manager entry; create and enter a worker pool."""
+        self.initialize_pool(pool_at_init=True)
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Context manager exit; close any provisioned pool."""
+        self.close()
+
+    def infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
+        # Lazy import discretizers (deferred from module level)
+        from ..utils import EntropyDiscretizer, RegressorDiscretizer
+
         # Check discretizer type to infer mode
         discretizer = self.discretizer if hasattr(self, "discretizer") else None
         if discretizer is not None and isinstance(
@@ -291,70 +492,72 @@ class CalibratedExplainer:
     # Tests that call these directly MUST initialize PluginManager properly.
 
     @property
-    def _prediction_orchestrator(self) -> Any:
+    def prediction_orchestrator(self) -> Any:
         """Return the PredictionOrchestrator provisioned by the PluginManager."""
-        manager = self._require_plugin_manager()
-        if not hasattr(manager, "_prediction_orchestrator"):
-            raise AttributeError("PluginManager has no '_prediction_orchestrator'.")
-        return manager._prediction_orchestrator
+        return self.require_plugin_manager().prediction_orchestrator
+
+    @prediction_orchestrator.setter
+    def prediction_orchestrator(self, value: Any) -> None:
+        """Set the PredictionOrchestrator."""
+        self.require_plugin_manager().prediction_orchestrator = value
+
+    @prediction_orchestrator.deleter
+    def prediction_orchestrator(self) -> None:
+        """Delete the PredictionOrchestrator."""
+        del self.require_plugin_manager().prediction_orchestrator
 
     @property
-    def _explanation_orchestrator(self) -> Any:
+    def explanation_orchestrator(self) -> Any:
         """Return the ExplanationOrchestrator provisioned by the PluginManager."""
-        manager = self._require_plugin_manager()
-        if not hasattr(manager, "_explanation_orchestrator"):
-            raise AttributeError("PluginManager has no '_explanation_orchestrator'.")
-        return manager._explanation_orchestrator
+        return self.require_plugin_manager().explanation_orchestrator
+
+    @explanation_orchestrator.setter
+    def explanation_orchestrator(self, value: Any) -> None:
+        """Set the ExplanationOrchestrator."""
+        self.require_plugin_manager().explanation_orchestrator = value
+
+    @explanation_orchestrator.deleter
+    def explanation_orchestrator(self) -> None:
+        """Delete the ExplanationOrchestrator."""
+        del self.require_plugin_manager().explanation_orchestrator
 
     @property
-    def _reject_orchestrator(self) -> Any:
+    def reject_orchestrator(self) -> Any:
         """Return the RejectOrchestrator provisioned by the PluginManager."""
-        manager = self._require_plugin_manager()
-        if not hasattr(manager, "_reject_orchestrator"):
-            raise AttributeError("PluginManager has no '_reject_orchestrator'.")
-        return manager._reject_orchestrator
+        return self.require_plugin_manager().reject_orchestrator
 
-    def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
-        """Delegate to PluginManager for explanation chain building."""
-        if not hasattr(self, "_plugin_manager"):
-            # Fallback for tests that create minimal stubs
-            return ()
-        default_id = self._plugin_manager._default_explanation_identifiers.get(mode, "")
-        return self._plugin_manager._build_explanation_chain(mode, default_id)
+    @reject_orchestrator.setter
+    def reject_orchestrator(self, value: Any) -> None:
+        """Set the RejectOrchestrator."""
+        self.require_plugin_manager().reject_orchestrator = value
 
-    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
-        """Delegate to PluginManager for interval chain building."""
-        if not hasattr(self, "_plugin_manager"):
-            return ()
-        return self._plugin_manager._build_interval_chain(fast=fast)
+    @reject_orchestrator.deleter
+    def reject_orchestrator(self) -> None:
+        """Delete the RejectOrchestrator."""
+        del self.require_plugin_manager().reject_orchestrator
 
-    def _build_plot_style_chain(self) -> Tuple[str, ...]:
-        """Delegate to PluginManager for plot style chain building."""
-        if not hasattr(self, "_plugin_manager"):
-            return ()
-        return self._plugin_manager._build_plot_chain()
+    def build_plot_style_chain(self) -> Tuple[str, ...]:
+        """Return the plot style chain.
 
-    def _check_explanation_runtime_metadata(
-        self,
-        metadata: Mapping[str, Any] | None,
-        *,
-        identifier: str | None,
-        mode: str,
-    ) -> str | None:
+        This is the public replacement for the legacy internal helper. It delegates
+        to :class:`PluginManager` to construct the chain when available and
+        otherwise returns an empty tuple for minimal explainer stubs used in tests.
+        """
+        return self.plugin_manager.build_plot_chain()
+
+    def instantiate_plugin(self, prototype: Any) -> Any:
         """Delegate to ExplanationOrchestrator."""
-        return self._explanation_orchestrator._check_metadata(
-            metadata, identifier=identifier, mode=mode
-        )
+        return self.plugin_manager.explanation_orchestrator.instantiate_plugin(prototype)
 
-    def _instantiate_plugin(self, prototype: Any) -> Any:
+    def build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
         """Delegate to ExplanationOrchestrator."""
-        return self._explanation_orchestrator._instantiate_plugin(prototype)
+        return self.explanation_orchestrator.build_instance_telemetry_payload(explanations)
 
-    def _build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
-        """Delegate to ExplanationOrchestrator."""
-        return self._explanation_orchestrator._build_instance_telemetry_payload(explanations)
+    def _invoke_explanation_plugin(self, *args, **kwargs) -> Any:
+        """Invoke the explanation plugin with the given parameters."""
+        return self.invoke_explanation_plugin(*args, **kwargs)
 
-    def _invoke_explanation_plugin(
+    def invoke_explanation_plugin(
         self,
         mode: str,
         x: Any,
@@ -366,7 +569,7 @@ class CalibratedExplainer:
         extras: Mapping[str, Any] | None = None,
     ) -> Any:
         """Delegate to ExplanationOrchestrator."""
-        return self._explanation_orchestrator.invoke(
+        return self.explanation_orchestrator.invoke(
             mode,
             x,
             threshold,
@@ -376,79 +579,13 @@ class CalibratedExplainer:
             extras=extras,
         )
 
-    def _ensure_interval_runtime_state(self) -> None:
+    def ensure_interval_runtime_state(self) -> None:
         """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._ensure_interval_runtime_state()
+        return self.prediction_orchestrator.ensure_interval_runtime_state()
 
-    def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
+    def gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
         """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._gather_interval_hints(fast=fast)
-
-    def _check_interval_runtime_metadata(
-        self,
-        metadata: Mapping[str, Any] | None,
-        *,
-        identifier: str | None,
-        fast: bool,
-    ) -> str | None:
-        """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._check_interval_runtime_metadata(
-            metadata, identifier=identifier, fast=fast
-        )
-
-    def _resolve_interval_plugin(
-        self,
-        *,
-        fast: bool,
-        hints: Sequence[str] = (),
-    ) -> Tuple[Any, str | None]:
-        """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._resolve_interval_plugin(fast=fast, hints=hints)
-
-    def _build_interval_context(
-        self,
-        *,
-        fast: bool,
-        metadata: Mapping[str, Any],
-    ) -> IntervalCalibratorContext:
-        """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._build_interval_context(fast=fast, metadata=metadata)
-
-    def _obtain_interval_calibrator(
-        self,
-        *,
-        fast: bool,
-        metadata: Mapping[str, Any],
-    ) -> Tuple[Any, str | None]:
-        """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._obtain_interval_calibrator(
-            fast=fast, metadata=metadata
-        )
-
-    def _capture_interval_calibrators(
-        self,
-        *,
-        context: IntervalCalibratorContext,
-        calibrator: Any,
-        fast: bool,
-    ) -> None:
-        """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._capture_interval_calibrators(
-            context=context, calibrator=calibrator, fast=fast
-        )
-
-    def _predict_impl(
-        self, x, threshold=None, low_high_percentiles=(5, 95), classes=None, bins=None, **kwargs
-    ):
-        """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._predict_impl(
-            x,
-            threshold=threshold,
-            low_high_percentiles=low_high_percentiles,
-            classes=classes,
-            bins=bins,
-            **kwargs,
-        )
+        return self.prediction_orchestrator.gather_interval_hints(fast=fast)
 
     # ===================================================================
     # Backward-compatibility properties for plugin state (via PluginManager)
@@ -457,302 +594,585 @@ class CalibratedExplainer:
     # with code that accesses plugin state directly from explainer.
 
     @property
+    def _interval_plugin_hints(self) -> Dict[str, Tuple[str, ...]]:
+        """Delegate to PluginManager."""
+        return self.plugin_manager.interval_plugin_hints
+
+    @_interval_plugin_hints.setter
+    def _interval_plugin_hints(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Delegate to PluginManager."""
+        self.plugin_manager.interval_plugin_hints = value
+
+    @_interval_plugin_hints.deleter
+    def _interval_plugin_hints(self) -> None:
+        """Delegate to PluginManager."""
+        del self.plugin_manager.interval_plugin_hints
+
+    @property
+    def _interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Delegate to PluginManager."""
+        return self.plugin_manager.interval_plugin_fallbacks
+
+    @_interval_plugin_fallbacks.setter
+    def _interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Delegate to PluginManager."""
+        self.plugin_manager.interval_plugin_fallbacks = value
+
+    @_interval_plugin_fallbacks.deleter
+    def _interval_plugin_fallbacks(self) -> None:
+        """Delegate to PluginManager."""
+        del self.plugin_manager.interval_plugin_fallbacks
+
+    @property
+    def _interval_preferred_identifier(self) -> Dict[str, str | None]:
+        """Delegate to PluginManager."""
+        return self.plugin_manager.interval_preferred_identifier
+
+    @_interval_preferred_identifier.setter
+    def _interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
+        """Delegate to PluginManager."""
+        self.plugin_manager.interval_preferred_identifier = value
+
+    @_interval_preferred_identifier.deleter
+    def _interval_preferred_identifier(self) -> None:
+        """Delegate to PluginManager."""
+        del self.plugin_manager.interval_preferred_identifier
+
+    @property
+    def _telemetry_interval_sources(self) -> Dict[str, str | None]:
+        """Delegate to PluginManager."""
+        return self.plugin_manager.telemetry_interval_sources
+
+    @_telemetry_interval_sources.setter
+    def _telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
+        """Delegate to PluginManager."""
+        self.plugin_manager.telemetry_interval_sources = value
+
+    @_telemetry_interval_sources.deleter
+    def _telemetry_interval_sources(self) -> None:
+        """Delegate to PluginManager."""
+        del self.plugin_manager.telemetry_interval_sources
+
+    @property
+    def _interval_plugin_identifiers(self) -> Dict[str, str | None]:
+        """Delegate to PluginManager."""
+        return self.plugin_manager.interval_plugin_identifiers
+
+    @_interval_plugin_identifiers.setter
+    def _interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
+        """Delegate to PluginManager."""
+        self.plugin_manager.interval_plugin_identifiers = value
+
+    @_interval_plugin_identifiers.deleter
+    def _interval_plugin_identifiers(self) -> None:
+        """Delegate to PluginManager."""
+        del self.plugin_manager.interval_plugin_identifiers
+
+    @property
+    def _interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Delegate to PluginManager."""
+        return self.plugin_manager.interval_context_metadata
+
+    @_interval_context_metadata.setter
+    def _interval_context_metadata(self, value: Dict[str, Dict[str, Any]]) -> None:
+        """Delegate to PluginManager."""
+        self.plugin_manager.interval_context_metadata = value
+
+    @_interval_context_metadata.deleter
+    def _interval_context_metadata(self) -> None:
+        """Delegate to PluginManager."""
+        del self.plugin_manager.interval_context_metadata
+
+    @property
+    def plot_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Return the plot plugin fallback configuration.
+
+        Returns
+        -------
+        Dict[str, Tuple[str, ...]]
+            Mapping of mode to fallback identifiers.
+        """
+        return self.plugin_manager.plot_plugin_fallbacks
+
+    @plot_plugin_fallbacks.setter
+    def plot_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        """Set the plot plugin fallback configuration."""
+        self.plugin_manager.plot_plugin_fallbacks = value
+
+    @property
     def _explanation_plugin_overrides(self) -> Dict[str, Any]:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return {}
-        return self._plugin_manager._explanation_plugin_overrides
+        return self.plugin_manager.explanation_plugin_overrides
 
     @_explanation_plugin_overrides.setter
     def _explanation_plugin_overrides(self, value: Dict[str, Any]) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_explanation_overrides = value
-            return
-        self._plugin_manager._explanation_plugin_overrides = value
+        self.plugin_manager.explanation_plugin_overrides = value
 
     @property
     def _interval_plugin_override(self) -> Any:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._interval_plugin_override
+        return self.plugin_manager.interval_plugin_override
 
     @_interval_plugin_override.setter
     def _interval_plugin_override(self, value: Any) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_interval_override = value
-            return
-        self._plugin_manager._interval_plugin_override = value
+        self.plugin_manager.interval_plugin_override = value
 
     @property
     def _fast_interval_plugin_override(self) -> Any:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._fast_interval_plugin_override
+        return self.plugin_manager.fast_interval_plugin_override
 
     @_fast_interval_plugin_override.setter
     def _fast_interval_plugin_override(self, value: Any) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_fast_interval_override = value
-            return
-        self._plugin_manager._fast_interval_plugin_override = value
+        self.plugin_manager.fast_interval_plugin_override = value
 
     @property
     def _plot_style_override(self) -> Any:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._plot_style_override
+        return self.plugin_manager.plot_style_override
 
     @_plot_style_override.setter
     def _plot_style_override(self, value: Any) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_plot_style_override = value
-            return
-        self._plugin_manager._plot_style_override = value
-
-    @property
-    def _bridge_monitors(self) -> Dict[str, Any]:
-        """Expose bridge monitor registry managed by PluginManager."""
-        return self._require_plugin_manager()._bridge_monitors
+        self.plugin_manager.plot_style_override = value
 
     @property
     def _explanation_plugin_instances(self) -> Dict[str, Any]:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return {}
-        return self._plugin_manager._explanation_plugin_instances
+        return self.plugin_manager.explanation_plugin_instances
 
-    @property
-    def _explanation_plugin_identifiers(self) -> Dict[str, str]:
+    @_explanation_plugin_instances.setter
+    def _explanation_plugin_instances(self, value: Dict[str, Any]) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return {}
-        return self._plugin_manager._explanation_plugin_identifiers
+        self.plugin_manager.explanation_plugin_instances = value
+
+    # Public aliases to replace test access of private members (safe one-line delegations)
+    @property
+    def plugin_manager(self) -> PluginManager:
+        """Public accessor for the active PluginManager."""
+        return self.require_plugin_manager()
+
+    @plugin_manager.setter
+    def plugin_manager(self, value: Any) -> None:
+        """Set the plugin manager for this explainer."""
+        self._plugin_manager = value
+
+    @plugin_manager.deleter
+    def plugin_manager(self) -> None:
+        """Delete the plugin manager."""
+        if hasattr(self, "_plugin_manager"):
+            del self._plugin_manager
 
     @property
-    def _explanation_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
-        """Expose explanation plugin fallback chains."""
-        return getattr(self._require_plugin_manager(), "_explanation_plugin_fallbacks", {})
+    def interval_plugin_hints(self) -> Dict[str, Tuple[str, ...]]:
+        """Public alias for `_interval_plugin_hints`.
 
-    @_explanation_plugin_fallbacks.setter
-    def _explanation_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
-        """Update explanation plugin fallback chains via PluginManager."""
-        self._require_plugin_manager()._explanation_plugin_fallbacks = value
+        Tests should use this instead of accessing the private attribute.
+        """
+        return self._interval_plugin_hints
 
-    @property
-    def _plot_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
-        """Expose plot plugin fallback chains."""
-        return getattr(self._require_plugin_manager(), "_plot_plugin_fallbacks", {})
+    @interval_plugin_hints.setter
+    def interval_plugin_hints(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        self._interval_plugin_hints = value
 
-    @_plot_plugin_fallbacks.setter
-    def _plot_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
-        """Update plot plugin fallback chains via PluginManager."""
-        self._require_plugin_manager()._plot_plugin_fallbacks = value
+    @interval_plugin_hints.deleter
+    def interval_plugin_hints(self) -> None:
+        if hasattr(self, "plugin_manager"):
+            del self.plugin_manager.interval_plugin_hints
 
     @property
-    def _interval_plugin_hints(self) -> Dict[str, Tuple[str, ...]]:
-        """Expose interval plugin hint chains."""
-        return getattr(self._require_plugin_manager(), "_interval_plugin_hints", {})
+    def interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Public alias for `_interval_plugin_fallbacks`."""
+        return self._interval_plugin_fallbacks
 
-    @_interval_plugin_hints.setter
-    def _interval_plugin_hints(self, value: Dict[str, Tuple[str, ...]]) -> None:
-        """Update interval plugin hints via PluginManager."""
-        self._require_plugin_manager()._interval_plugin_hints = value
+    @interval_plugin_fallbacks.setter
+    def interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        self._interval_plugin_fallbacks = value
 
-    @_interval_plugin_hints.deleter
-    def _interval_plugin_hints(self) -> None:
-        """Backward compatibility deleter."""
-        manager = getattr(self, "_plugin_manager", None)
-        if manager is not None:
-            del manager._interval_plugin_hints
+    @interval_plugin_fallbacks.deleter
+    def interval_plugin_fallbacks(self) -> None:
+        if hasattr(self, "plugin_manager"):
+            del self.plugin_manager.interval_plugin_fallbacks
 
     @property
-    def _interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
-        """Expose interval plugin fallback chains."""
-        return getattr(self._require_plugin_manager(), "_interval_plugin_fallbacks", {})
+    def explanation_plugin_overrides(self) -> Dict[str, Any]:
+        """Public alias for `_explanation_plugin_overrides`."""
+        if hasattr(self, "plugin_manager"):
+            return self._explanation_plugin_overrides
+        return {}
 
-    @_interval_plugin_fallbacks.setter
-    def _interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
-        """Update interval plugin fallbacks via PluginManager."""
-        self._require_plugin_manager()._interval_plugin_fallbacks = value
-
-    @_interval_plugin_fallbacks.deleter
-    def _interval_plugin_fallbacks(self) -> None:
-        """Backward compatibility deleter."""
-        manager = getattr(self, "_plugin_manager", None)
-        if manager is not None:
-            del manager._interval_plugin_fallbacks
+    @explanation_plugin_overrides.setter
+    def explanation_plugin_overrides(self, value: Dict[str, Any]) -> None:
+        self._explanation_plugin_overrides = value
 
     @property
-    def _interval_plugin_identifiers(self) -> Dict[str, str | None]:
-        """Expose resolved interval plugin identifiers."""
-        return getattr(self._require_plugin_manager(), "_interval_plugin_identifiers", {})
+    def interval_plugin_override(self) -> Any:
+        """Public alias for `_interval_plugin_override`."""
+        if hasattr(self, "plugin_manager"):
+            return self._interval_plugin_override
+        return None
 
-    @_interval_plugin_identifiers.setter
-    def _interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
-        """Update interval plugin identifiers via PluginManager."""
-        self._require_plugin_manager()._interval_plugin_identifiers = value
-
-    @_interval_plugin_identifiers.deleter
-    def _interval_plugin_identifiers(self) -> None:
-        """Backward compatibility deleter."""
-        manager = getattr(self, "_plugin_manager", None)
-        if manager is not None:
-            del manager._interval_plugin_identifiers
+    @interval_plugin_override.setter
+    def interval_plugin_override(self, value: Any) -> None:
+        if hasattr(self, "plugin_manager"):
+            self._interval_plugin_override = value
+        # else do nothing
 
     @property
-    def _telemetry_interval_sources(self) -> Dict[str, str | None]:
-        """Expose telemetry metadata associated with interval sources."""
-        return getattr(self._require_plugin_manager(), "_telemetry_interval_sources", {})
+    def fast_interval_plugin_override(self) -> Any:
+        """Public alias for `_fast_interval_plugin_override`."""
+        return self._fast_interval_plugin_override
 
-    @_telemetry_interval_sources.setter
-    def _telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
-        """Update telemetry metadata via PluginManager."""
-        self._require_plugin_manager()._telemetry_interval_sources = value
-
-    @_telemetry_interval_sources.deleter
-    def _telemetry_interval_sources(self) -> None:
-        """Backward compatibility deleter."""
-        manager = getattr(self, "_plugin_manager", None)
-        if manager is not None:
-            del manager._telemetry_interval_sources
+    @fast_interval_plugin_override.setter
+    def fast_interval_plugin_override(self, value: Any) -> None:
+        self._fast_interval_plugin_override = value
 
     @property
-    def _interval_preferred_identifier(self) -> Dict[str, str | None]:
-        """Expose preferred interval identifiers."""
-        return getattr(self._require_plugin_manager(), "_interval_preferred_identifier", {})
+    def plot_style_override(self) -> Any:
+        """Public alias for `_plot_style_override`."""
+        return self._plot_style_override
 
-    @_interval_preferred_identifier.setter
-    def _interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
-        """Update preferred interval identifiers via PluginManager."""
-        self._require_plugin_manager()._interval_preferred_identifier = value
-
-    @_interval_preferred_identifier.deleter
-    def _interval_preferred_identifier(self) -> None:
-        """Backward compatibility deleter."""
-        manager = getattr(self, "_plugin_manager", None)
-        if manager is not None:
-            del manager._interval_preferred_identifier
+    @plot_style_override.setter
+    def plot_style_override(self, value: Any) -> None:
+        self._plot_style_override = value
 
     @property
-    def _interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
-        """Expose context metadata captured for interval plugins."""
-        return getattr(self._require_plugin_manager(), "_interval_context_metadata", {})
+    def interval_preferred_identifier(self) -> Dict[str, str | None]:
+        """Public alias for `_interval_preferred_identifier`."""
+        return self._interval_preferred_identifier
 
-    @_interval_context_metadata.setter
-    def _interval_context_metadata(self, value: Dict[str, Dict[str, Any]]) -> None:
-        """Update interval context metadata via PluginManager."""
-        self._require_plugin_manager()._interval_context_metadata = value
+    @interval_preferred_identifier.setter
+    def interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
+        self._interval_preferred_identifier = value
 
-    @_interval_context_metadata.deleter
-    def _interval_context_metadata(self) -> None:
-        """Backward compatibility deleter."""
-        manager = getattr(self, "_plugin_manager", None)
-        if manager is not None:
-            del manager._interval_context_metadata
+    @interval_preferred_identifier.deleter
+    def interval_preferred_identifier(self) -> None:
+        """Delete the interval preferred identifier."""
+        del self._interval_preferred_identifier
 
     @property
-    def _plot_style_chain(self) -> Tuple[str, ...] | None:
-        """Expose the resolved plot style chain."""
-        return getattr(self._require_plugin_manager(), "_plot_style_chain", None)
+    def telemetry_interval_sources(self) -> Dict[str, str | None]:
+        """Public alias for `_telemetry_interval_sources`."""
+        return self._telemetry_interval_sources
 
-    @_plot_style_chain.setter
-    def _plot_style_chain(self, value: Tuple[str, ...] | None) -> None:
-        """Update the plot style chain via PluginManager."""
-        self._require_plugin_manager()._plot_style_chain = value
+    @telemetry_interval_sources.setter
+    def telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
+        self._telemetry_interval_sources = value
 
-    @property
-    def _explanation_contexts(self) -> Dict[str, Any]:
-        """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return {}
-        return self._plugin_manager._explanation_contexts
+    @telemetry_interval_sources.deleter
+    def telemetry_interval_sources(self) -> None:
+        """Delete the telemetry interval sources."""
+        del self._telemetry_interval_sources
 
     @property
-    def _last_explanation_mode(self) -> str | None:
-        """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._last_explanation_mode
+    def interval_plugin_identifiers(self) -> Dict[str, str | None]:
+        """Public alias for `_interval_plugin_identifiers`."""
+        return self._interval_plugin_identifiers
 
-    @_last_explanation_mode.setter
-    def _last_explanation_mode(self, value: str | None) -> None:
-        """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_last_explanation_mode = value
-            return
-        self._plugin_manager._last_explanation_mode = value
+    @interval_plugin_identifiers.setter
+    def interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
+        self._interval_plugin_identifiers = value
 
     @property
-    def _last_telemetry(self) -> Dict[str, Any]:
-        """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return {}
-        return self._plugin_manager._last_telemetry
+    def preprocessor_metadata(self) -> Any:
+        """Public alias for `_preprocessor_metadata`."""
+        return self._preprocessor_metadata
 
-    @_last_telemetry.setter
-    def _last_telemetry(self, value: Dict[str, Any]) -> None:
-        """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_last_telemetry = value
-            return
-        self._plugin_manager._last_telemetry = value
+    @preprocessor_metadata.setter
+    def preprocessor_metadata(self, value: Any) -> None:
+        self._preprocessor_metadata = value
+
+    @property
+    def feature_names_internal(self) -> Any:
+        """Public alias for `_feature_names`."""
+        return self._feature_names
+
+    @feature_names_internal.setter
+    def feature_names_internal(self, value: Any) -> None:
+        self._feature_names = value
+
+    @property
+    def perf_parallel(self) -> bool:
+        """Public alias for `_perf_parallel`."""
+        return self._perf_parallel
+
+    @perf_parallel.setter
+    def perf_parallel(self, value: bool) -> None:
+        self._perf_parallel = value
+
+    @property
+    def get_sigma_test(self) -> bool:
+        """Public alias for `_get_sigma_test`."""
+        return self._get_sigma_test
+
+    @get_sigma_test.setter
+    def get_sigma_test(self, value: bool) -> None:
+        self._get_sigma_test = value
+
+    def initialize_interval_learner_for_fast_explainer(self, *args, **kwargs) -> Any:
+        """Public alias for internal interval learner initialization."""
+        return self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer(
+            *args, **kwargs
+        )
+
+    @interval_plugin_identifiers.deleter
+    def interval_plugin_identifiers(self) -> None:
+        """Delete the interval plugin identifiers."""
+        del self._interval_plugin_identifiers
+
+    @property
+    def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Public alias for `_interval_context_metadata`."""
+        return self._interval_context_metadata
+
+    @interval_context_metadata.setter
+    def interval_context_metadata(self, value: Dict[str, Dict[str, Any]]) -> None:
+        self._interval_context_metadata = value
+
+    @interval_context_metadata.deleter
+    def interval_context_metadata(self) -> None:
+        """Delete the interval context metadata."""
+        del self._interval_context_metadata
+
+    @property
+    def bridge_monitors(self) -> Dict[str, Any]:
+        """Public alias for `_bridge_monitors`."""
+        return self._bridge_monitors
+
+    @bridge_monitors.setter
+    def bridge_monitors(self, value: Dict[str, Any]) -> None:
+        """Set the bridge monitors."""
+        self.require_plugin_manager().bridge_monitors = value
+
+    @property
+    def explanation_plugin_instances(self) -> Dict[str, Any]:
+        """Public alias for `_explanation_plugin_instances`."""
+        return self._explanation_plugin_instances
+
+    @explanation_plugin_instances.setter
+    def explanation_plugin_instances(self, value: Dict[str, Any]) -> None:
+        """Set the explanation plugin instances."""
+        self.require_plugin_manager().explanation_plugin_instances = value
+
+    @property
+    def pyproject_explanations(self) -> Dict[str, Any] | None:
+        """Public alias for `_pyproject_explanations`."""
+        return self._pyproject_explanations
+
+    @pyproject_explanations.setter
+    def pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
+        self._pyproject_explanations = value
+
+    @property
+    def pyproject_intervals(self) -> Dict[str, Any] | None:
+        """Public alias for `_pyproject_intervals`."""
+        return self._pyproject_intervals
+
+    @pyproject_intervals.setter
+    def pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
+        self._pyproject_intervals = value
+
+    @property
+    def pyproject_plots(self) -> Dict[str, Any] | None:
+        """Public alias for `_pyproject_plots`."""
+        return self._pyproject_plots
+
+    @pyproject_plots.setter
+    def pyproject_plots(self, value: Dict[str, Any] | None) -> None:
+        self._pyproject_plots = value
+
+    @property
+    def lime_helper(self) -> Any:
+        """Public alias for `_lime_helper`."""
+        return self._lime_helper
+
+    @lime_helper.setter
+    def lime_helper(self, value: Any) -> None:
+        """Set the LIME helper."""
+        self._lime_helper = value
+
+    @lime_helper.deleter
+    def lime_helper(self) -> None:
+        """Delete the LIME helper."""
+        if hasattr(self, "_lime_helper"):
+            del self._lime_helper
+
+    @property
+    def shap_helper(self) -> Any:
+        """Public alias for `_shap_helper`."""
+        return self._shap_helper
+
+    @shap_helper.setter
+    def shap_helper(self, value: Any) -> None:
+        """Set the SHAP helper."""
+        self._shap_helper = value
+
+    @shap_helper.deleter
+    def shap_helper(self) -> None:
+        """Delete the SHAP helper."""
+        if hasattr(self, "_shap_helper"):
+            del self._shap_helper
+
+    @property
+    def initialized(self) -> bool:
+        """Return True if the explainer is initialized."""
+        return getattr(self, "_CalibratedExplainer__initialized", False)
+
+    @initialized.setter
+    def initialized(self, value: bool) -> None:
+        """Set the initialization state of the explainer."""
+        self.__initialized = value
+
+    @property
+    def is_initialized(self) -> bool:
+        """Public check for whether the explainer has been initialized.
+
+        .. deprecated:: 0.10.1
+            Use :attr:`initialized` instead.
+        """
+        return self.initialized
+
+    @property
+    def last_explanation_mode(self) -> str | None:
+        """Return the mode of the last generated explanation."""
+        return self._last_explanation_mode
+
+    @last_explanation_mode.setter
+    def last_explanation_mode(self, value: str | None) -> None:
+        """Set the mode of the last generated explanation."""
+        self._last_explanation_mode = value
+
+    @property
+    def feature_filter_per_instance_ignore(self) -> Any:
+        """Return the per-instance feature filter ignore list."""
+        return getattr(self, "_feature_filter_per_instance_ignore", None)
+
+    @feature_filter_per_instance_ignore.setter
+    def feature_filter_per_instance_ignore(self, value: Any) -> None:
+        """Set the per-instance feature filter ignore list."""
+        self._feature_filter_per_instance_ignore = value
+
+    @feature_filter_per_instance_ignore.deleter
+    def feature_filter_per_instance_ignore(self) -> None:
+        """Delete the per-instance feature filter ignore list."""
+        if hasattr(self, "_feature_filter_per_instance_ignore"):
+            delattr(self, "_feature_filter_per_instance_ignore")
+
+    @property
+    def parallel_executor(self) -> Any:
+        """Return the active parallel executor."""
+        return getattr(self, "_perf_parallel", None)
+
+    @parallel_executor.setter
+    def parallel_executor(self, value: Any) -> None:
+        """Set the active parallel executor."""
+        self._perf_parallel = value
+
+    @property
+    def feature_filter_config(self) -> Any:
+        """Return the feature filter configuration."""
+        return getattr(self, "_feature_filter_config", None)
+
+    @feature_filter_config.setter
+    def feature_filter_config(self, value: Any) -> None:
+        """Set the feature filter configuration."""
+        self._feature_filter_config = value
+
+    @property
+    def predict_bridge(self) -> Any:
+        """Return the prediction bridge."""
+        return getattr(self, "_predict_bridge", None)
+
+    @predict_bridge.setter
+    def predict_bridge(self, value: Any) -> None:
+        """Set the prediction bridge."""
+        self._predict_bridge = value
+
+    @property
+    def categorical_value_counts_cache(self) -> Any:
+        """Return the categorical value counts cache."""
+        return getattr(self, "_categorical_value_counts_cache", None)
+
+    @categorical_value_counts_cache.setter
+    def categorical_value_counts_cache(self, value: Any) -> None:
+        """Set the categorical value counts cache."""
+        self._categorical_value_counts_cache = value
+
+    @property
+    def numeric_sorted_cache(self) -> Any:
+        """Return the numeric sorted cache."""
+        return getattr(self, "_numeric_sorted_cache", None)
+
+    @numeric_sorted_cache.setter
+    def numeric_sorted_cache(self, value: Any) -> None:
+        """Set the numeric sorted cache."""
+        self._numeric_sorted_cache = value
+
+    @property
+    def calibration_summary_shape(self) -> Any:
+        """Return the calibration summary shape."""
+        return getattr(self, "_calibration_summary_shape", None)
+
+    @calibration_summary_shape.setter
+    def calibration_summary_shape(self, value: Any) -> None:
+        """Set the calibration summary shape."""
+        self._calibration_summary_shape = value
+
+    def enable_fast_mode(self) -> None:
+        """Enable fast explanation mode.
+
+        This initializes the interval learner for fast explanations if not already done.
+        """
+        if not self.is_fast():
+            try:
+                self._CalibratedExplainer__fast = True
+                self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+            except Exception:  # adr002_allow
+                self._CalibratedExplainer__fast = False
+                raise
+
+    @property
+    def _bridge_monitors(self) -> Dict[str, Any]:
+        """Expose bridge monitor registry managed by PluginManager."""
+        return self.require_plugin_manager().bridge_monitors
 
     @property
     def _pyproject_explanations(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._pyproject_explanations
+        return self.plugin_manager.pyproject_explanations
 
     @_pyproject_explanations.setter
     def _pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_pyproject_explanations = value
-            return
-        self._plugin_manager._pyproject_explanations = value
+        self.plugin_manager.pyproject_explanations = value
 
     @property
     def _pyproject_intervals(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._pyproject_intervals
+        return self.plugin_manager.pyproject_intervals
 
     @_pyproject_intervals.setter
     def _pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_pyproject_intervals = value
-            return
-        self._plugin_manager._pyproject_intervals = value
+        self.plugin_manager.pyproject_intervals = value
 
     @property
     def _pyproject_plots(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            return None
-        return self._plugin_manager._pyproject_plots
+        return self.plugin_manager.pyproject_plots
 
     @_pyproject_plots.setter
     def _pyproject_plots(self, value: Dict[str, Any] | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_pyproject_plots = value
-            return
-        self._plugin_manager._pyproject_plots = value
+        self.plugin_manager.pyproject_plots = value
 
     @property
     def runtime_telemetry(self) -> Mapping[str, Any]:
         """Return the most recent telemetry payload reported by the explainer."""
-        return dict(self._last_telemetry)
+        return dict(self.plugin_manager.last_telemetry)
 
     @property
     def preprocessor_metadata(self) -> Dict[str, Any] | None:
@@ -777,7 +1197,7 @@ class CalibratedExplainer:
         array-like
             The calibration input data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         return CalibrationState.get_x_cal(self)
 
@@ -795,7 +1215,7 @@ class CalibratedExplainer:
         ValueError
             If the number of features in value does not match the existing calibration data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.set_x_cal(self, value)
 
@@ -808,7 +1228,7 @@ class CalibratedExplainer:
         array-like
             The calibration target data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         return CalibrationState.get_y_cal(self)
 
@@ -821,7 +1241,7 @@ class CalibratedExplainer:
         value : array-like of shape (n_samples,)
             The new calibration target data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.set_y_cal(self, value)
 
@@ -835,7 +1255,7 @@ class CalibratedExplainer:
         y : array-like of shape (n_samples,)
             The new calibration target data to append.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.append_calibration(self, x, y)
 
@@ -844,13 +1264,13 @@ class CalibratedExplainer:
 
         Delegates to the calibration.summaries module which manages the cache.
         """
-        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+        from ..calibration.summaries import (  # pylint: disable=import-outside-toplevel
             invalidate_calibration_summaries as _invalidate,
         )
 
         _invalidate(self)
 
-    def _get_calibration_summaries(
+    def get_calibration_summaries(
         self, x_cal_np: Optional[np.ndarray] = None
     ) -> Tuple[Dict[int, Dict[Any, int]], Dict[int, np.ndarray]]:
         """Return cached categorical counts and sorted numeric calibration values.
@@ -858,7 +1278,7 @@ class CalibratedExplainer:
         Delegates to the calibration.summaries module which manages caching of
         statistical summaries used during explanation generation.
         """
-        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+        from ..calibration.summaries import (  # pylint: disable=import-outside-toplevel
             get_calibration_summaries as _get,
         )
 
@@ -892,6 +1312,17 @@ class CalibratedExplainer:
         """
         return self._feature_names
 
+    @feature_names.setter
+    def feature_names(self, value):
+        """Set the feature names.
+
+        Parameters
+        ----------
+        value : list
+            The list of feature names.
+        """
+        self._feature_names = list(value) if value is not None else None
+
     @property
     def interval_learner(self) -> Any:
         """Access the interval learner managed by the prediction orchestrator.
@@ -906,7 +1337,7 @@ class CalibratedExplainer:
         This is a backward-compatible property that delegates to the interval registry
         managed by the PredictionOrchestrator. See ADR-001.
         """
-        return self._prediction_orchestrator._interval_registry.interval_learner
+        return self.prediction_orchestrator.interval_registry.interval_learner
 
     @interval_learner.setter
     def interval_learner(self, value: Any) -> None:
@@ -922,7 +1353,7 @@ class CalibratedExplainer:
         This is a backward-compatible setter that delegates to the interval registry
         managed by the PredictionOrchestrator.
         """
-        self._prediction_orchestrator._interval_registry.interval_learner = value
+        self.prediction_orchestrator.interval_registry.interval_learner = value
 
     def _get_sigma_test(self, x: np.ndarray) -> np.ndarray:
         """Return the difficulty (sigma) of the test instances.
@@ -942,7 +1373,22 @@ class CalibratedExplainer:
         This is a backward-compatible method that delegates to the interval registry
         managed by the PredictionOrchestrator. See ADR-001.
         """
-        return self._prediction_orchestrator._interval_registry.get_sigma_test(x)
+        return self.prediction_orchestrator.interval_registry.get_sigma_test(x)
+
+    def get_sigma_test(self, x: np.ndarray) -> np.ndarray:
+        """Return the difficulty (sigma) of the test instances.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Test instances for which to estimate difficulty.
+
+        Returns
+        -------
+        np.ndarray
+            Difficulty estimates (sigma values) for each test instance.
+        """
+        return self._get_sigma_test(x)
 
     def _CalibratedExplainer__initialize_interval_learner_for_fast_explainer(self) -> None:  # noqa: N802
         """Backward-compatible wrapper for fast-mode interval learner initialization.
@@ -955,7 +1401,7 @@ class CalibratedExplainer:
 
         See ADR-001.
         """
-        self._prediction_orchestrator._interval_registry.initialize_for_fast_explainer()
+        self.prediction_orchestrator.interval_registry.initialize_for_fast_explainer()
 
     def reinitialize(self, learner, xs=None, ys=None, bins=None):
         """Reinitialize the explainer with a new learner.
@@ -990,11 +1436,11 @@ class CalibratedExplainer:
                     )
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             # update interval learner via helper
-            from .calibration.interval_learner import update_interval_learner as _upd_il
+            from ..calibration.interval_learner import update_interval_learner as _upd_il
 
             _upd_il(self, xs, ys, bins=bins)
         else:
-            from .calibration.interval_learner import initialize_interval_learner as _init_il
+            from ..calibration.interval_learner import initialize_interval_learner as _init_il
 
             _init_il(self)
         self.__initialized = True
@@ -1020,7 +1466,71 @@ class CalibratedExplainer:
                 disp_str += f"\n\tclass_labels={self.class_labels}"
         return disp_str
 
-    def _predict(
+    def obtain_interval_calibrator(
+        self,
+        *,
+        fast: bool,
+        metadata: Mapping[str, Any],
+    ) -> Tuple[Any, str | None]:
+        """Return the interval calibrator from the prediction orchestrator."""
+        return self.prediction_orchestrator.obtain_interval_calibrator(fast=fast, metadata=metadata)
+
+    def predict_calibrated(
+        self,
+        x: Any,
+        threshold: float | None = None,
+        low_high_percentiles: tuple[float, float] = (5, 95),
+        classes: Any = None,
+        bins: Any = None,
+        feature: int | None = None,
+        **kwargs,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
+        """Predict calibrated values and intervals."""
+        return self._predict(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            classes=classes,
+            bins=bins,
+            feature=feature,
+            **kwargs,
+        )
+
+    def preload_lime(self, x_cal=None):
+        """Materialize LIME explainer artifacts.
+
+        Parameters
+        ----------
+        x_cal : array-like, optional
+            Calibration data to use for preloading.
+
+        Returns
+        -------
+        LimePipeline
+            The LIME pipeline instance.
+        """
+        return self._lime_helper.preload(x_cal=x_cal)
+
+    def preload_shap(self, num_test: int | None = None):
+        """Materialize SHAP explainer artifacts.
+
+        Parameters
+        ----------
+        num_test : int, optional
+            Number of test samples to use for preloading.
+
+        Returns
+        -------
+        tuple
+            The SHAP explainer and reference explanation.
+        """
+        return self._shap_helper.preload(num_test=num_test)
+
+    def _predict(self, *args, **kwargs) -> Any:
+        """Delegate to predict_internal."""
+        return self.predict_internal(*args, **kwargs)
+
+    def predict_internal(
         self,
         x,
         threshold=None,
@@ -1031,7 +1541,23 @@ class CalibratedExplainer:
         **kwargs,
     ):
         """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
-        return self._prediction_orchestrator.predict(
+        # Delegate directly to the orchestrator implementation method so
+        # tests that inject a minimal/mock PluginManager (with a
+        # `_prediction_orchestrator` stub) can set `_predict_impl.return_value`.
+        # The public `.predict` may be a MagicMock in tests; calling the
+        # implementation ensures the intended behavior is exercised.
+        orchestrator = self.prediction_orchestrator
+        if hasattr(orchestrator, "predict_internal"):
+            return orchestrator.predict_internal(
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=classes,
+                bins=bins,
+                feature=feature,
+                **kwargs,
+            )
+        return orchestrator.predict(
             x,
             threshold=threshold,
             low_high_percentiles=low_high_percentiles,
@@ -1050,6 +1576,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        **kwargs,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
@@ -1065,59 +1592,30 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        **kwargs : dict
+            Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance.
         """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
         # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
-        return self._explanation_orchestrator.invoke_factual(
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            discretizer=discretizer,
-            _use_plugin=_use_plugin,
-        )
-
-    def explain_counterfactual(
-        self,
-        x,
-        threshold=None,
-        low_high_percentiles=(5, 95),
-        bins=None,
-        features_to_ignore=None,
-    ) -> AlternativeExplanations:
-        """See documentation for the `explore_alternatives` method.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
-
-        Warnings
-        --------
-        Deprecated: This method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.
-
-        Notes
-        -----
-        **DELETION COUPLING:** When removing this method, also remove the corresponding test:
-        - `tests/unit/core/test_calibrated_explainer_additional.py::test_explain_counterfactual_deprecated`
-
-        Both the deprecated method and its test must be removed together to avoid orphaned tests.
-        """
-        from ..utils.deprecations import deprecate
-
-        deprecate(
-            "The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.",
-            key="CalibratedExplainer.explain_counterfactual",
-            stacklevel=3,
-        )
-        return self.explore_alternatives(
-            x, threshold, low_high_percentiles, bins, features_to_ignore
-        )
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self.explanation_orchestrator.invoke_factual(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                discretizer=discretizer,
+                _use_plugin=_use_plugin,
+                **kwargs,
+            )
 
     def explore_alternatives(
         self,
@@ -1128,6 +1626,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        **kwargs,
     ) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
@@ -1143,27 +1642,32 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        **kwargs : dict
+            Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
-            An `AlternativeExplanations` containing one :class:`.AlternativeExplanation` for each instance.
-
         Notes
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
         # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "regressor" if "regression" in self.mode else "entropy"
-        return self._explanation_orchestrator.invoke_alternative(
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            discretizer=discretizer,
-            _use_plugin=_use_plugin,
-        )  # type: ignore[return-value]
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self.explanation_orchestrator.invoke_alternative(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                discretizer=discretizer,
+                _use_plugin=_use_plugin,
+                **kwargs,
+            )  # type: ignore[return-value]
 
     def __call__(
         self,
@@ -1178,18 +1682,23 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
-        Since v0.4.0, this method is equivalent to the `explain` method.
+        Since v0.4.0, this method is equivalent to the `_explain` method.
         """
-        return self.explain(
+        return self._explain(
             x,
             threshold,
             low_high_percentiles,
             bins,
             features_to_ignore,
             _use_plugin=_use_plugin,
+            _skip_instance_parallel=_skip_instance_parallel,
         )
 
-    def explain(
+    def _explain(self, *args, **kwargs) -> CalibratedExplanations:
+        """Delegate to explain_internal for internal explanation orchestration."""
+        return self.explain_internal(*args, **kwargs)
+
+    def explain_internal(
         self,
         x,
         threshold=None,
@@ -1202,7 +1711,8 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
-        This is a thin delegator that delegates to the explanation orchestrator.
+        This is an internal orchestration primitive that delegates to the explanation orchestrator.
+        It is NOT part of the public API and should not be called directly.
 
         This method:
         1. Makes predictions on original test instances
@@ -1220,10 +1730,12 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
         # Thin delegator to orchestrator
         if _use_plugin:
-            mode = self._infer_explanation_mode()
-            return self._explanation_orchestrator.invoke(
+            mode = self.infer_explanation_mode()
+            return self.explanation_orchestrator.invoke(
                 mode,
                 x,
                 threshold,
@@ -1234,7 +1746,7 @@ class CalibratedExplainer:
             )
 
         # Legacy path for backward compatibility and testing
-        from .explain._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
+        from .explain import legacy_explain  # pylint: disable=import-outside-toplevel
 
         return legacy_explain(
             self,
@@ -1298,6 +1810,8 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.
         """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
         if _use_plugin:
             return self._invoke_explanation_plugin(
                 "fast",
@@ -1359,9 +1873,10 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.
         """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path
@@ -1398,7 +1913,6 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path
@@ -1410,6 +1924,20 @@ class CalibratedExplainer:
 
         pipeline = ShapPipeline(self)
         return pipeline.explain(x, **kwargs)
+
+    def is_lime_enabled(self, is_enabled: bool | None = None) -> bool:
+        """Return or set the LIME helper enabled state."""
+        if is_enabled is None:
+            return self._lime_helper.is_enabled()
+        self._lime_helper.set_enabled(bool(is_enabled))
+        return self._lime_helper.is_enabled()
+
+    def is_shap_enabled(self, is_enabled: bool | None = None) -> bool:
+        """Return or set the SHAP helper enabled state."""
+        if is_enabled is None:
+            return self._shap_helper.is_enabled()
+        self._shap_helper.set_enabled(bool(is_enabled))
+        return self._shap_helper.is_enabled()
 
     def is_multiclass(self) -> bool:
         """Test if it is a multiclass problem.
@@ -1431,7 +1959,7 @@ class CalibratedExplainer:
         """
         return self.__fast
 
-    def _is_mondrian(self) -> bool:
+    def is_mondrian(self) -> bool:
         """Test if Mondrian (per-bin) calibration is enabled.
 
         Returns
@@ -1441,7 +1969,7 @@ class CalibratedExplainer:
         """
         return self.bins is not None
 
-    def _discretize(self, data: np.ndarray) -> np.ndarray:
+    def discretize(self, data: np.ndarray) -> np.ndarray:
         """Apply the discretizer to input data.
 
         Parameters
@@ -1454,7 +1982,7 @@ class CalibratedExplainer:
         np.ndarray
             The discretized data.
         """
-        from .explain._computation import discretize as _discretize_func  # pylint: disable=import-outside-toplevel
+        from .explain import discretize as _discretize_func  # pylint: disable=import-outside-toplevel
 
         return _discretize_func(self, data)
 
@@ -1473,7 +2001,7 @@ class CalibratedExplainer:
         array-like
             Min and max values for each feature for each instance.
         """
-        from .explain._computation import rule_boundaries as _rule_boundaries  # pylint: disable=import-outside-toplevel
+        from .explain import rule_boundaries as _rule_boundaries  # pylint: disable=import-outside-toplevel
 
         return _rule_boundaries(self, instances, perturbed_instances)
 
@@ -1497,9 +2025,9 @@ class CalibratedExplainer:
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
         if initialize:
-            self._prediction_orchestrator._interval_registry.initialize()  # type: ignore[attr-defined]
+            self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
 
-    def __set_mode(self, mode, initialize=True) -> None:
+    def set_mode(self, mode, initialize=True) -> None:
         """Assign the mode of the explainer. The mode can be either 'classification' or 'regression'.
 
         Parameters
@@ -1522,7 +2050,7 @@ class CalibratedExplainer:
             raise ValidationError("The mode must be either 'classification' or 'regression'.")
         self.mode = mode
         if initialize:
-            self._prediction_orchestrator._interval_registry.initialize()  # type: ignore[attr-defined]
+            self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
         """Initialize the reject learner with a threshold value.
@@ -1539,7 +2067,7 @@ class CalibratedExplainer:
         threshold : float, optional
             The threshold value. Defaults to None.
         """
-        return self._reject_orchestrator.initialize_reject_learner(
+        return self.reject_orchestrator.initialize_reject_learner(
             calibration_set=calibration_set, threshold=threshold
         )
 
@@ -1562,10 +2090,18 @@ class CalibratedExplainer:
         array-like
             Returns rejection decisions and error/rejection rates.
         """
-        return self._reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
+        return self.reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=too-many-branches
-    def set_discretizer(self, discretizer, x_cal=None, y_cal=None, features_to_ignore=None) -> None:
+    def set_discretizer(
+        self,
+        discretizer,
+        x_cal=None,
+        y_cal=None,
+        features_to_ignore=None,
+        *,
+        condition_source: Optional[str] = None,
+    ) -> None:
         """Assign the discretizer to be used.
 
         Parameters
@@ -1577,55 +2113,13 @@ class CalibratedExplainer:
         y_cal : array-like, optional
             The calibration target data for the discretizer.
         """
-        from .discretizer_config import (  # pylint: disable=import-outside-toplevel
-            validate_discretizer_choice,
-            instantiate_discretizer,
-            setup_discretized_data,
-        )
-
-        if x_cal is None:
-            x_cal = self.x_cal
-        if y_cal is None:
-            y_cal = self.y_cal
-
-        # Validate and potentially default the discretizer choice
-        discretizer = validate_discretizer_choice(discretizer, self.mode)
-
-        if features_to_ignore is None:
-            features_to_ignore = []
-        not_to_discretize = np.union1d(
-            np.union1d(self.categorical_features, self.features_to_ignore), features_to_ignore
-        )
-
-        # Store old discretizer to check if we can cache
-        old_discretizer = self.discretizer
-
-        # Instantiate the discretizer (may return cached instance if type matches)
-        self.discretizer = instantiate_discretizer(
+        self.explanation_orchestrator.set_discretizer(
             discretizer,
-            x_cal,
-            not_to_discretize,
-            self.feature_names,
-            y_cal,
-            self.seed,
-            old_discretizer,
+            x_cal=x_cal,
+            y_cal=y_cal,
+            features_to_ignore=features_to_ignore,
+            condition_source=condition_source,
         )
-
-        # If discretizer is unchanged, skip recomputation
-        if self.discretizer is old_discretizer and hasattr(self, "discretized_X_cal"):
-            return
-
-        # Setup discretized data and build feature caches
-        feature_data, self.discretized_X_cal = setup_discretized_data(
-            self, self.discretizer, self.x_cal, self.num_features
-        )
-
-        # Populate feature_values and feature_frequencies from the setup data
-        self.feature_values = {}
-        self.feature_frequencies = {}
-        for feature, data in feature_data.items():
-            self.feature_values[feature] = data["values"]
-            self.feature_frequencies[feature] = data["frequencies"]
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def predict(self, x, uq_interval=False, calibrated=True, **kwargs):
@@ -1691,6 +2185,13 @@ class CalibratedExplainer:
             handle_uncalibrated_classification_prediction,
             format_regression_prediction,
             format_classification_prediction,
+        )
+
+        # Lazy import API params functions (deferred from module level)
+        from ..api.params import (
+            canonicalize_kwargs,
+            validate_param_combination,
+            warn_on_aliases,
         )
 
         # emit deprecation warnings for aliases and normalize kwargs
@@ -1785,6 +2286,13 @@ class CalibratedExplainer:
         # strip plotting-only keys that callers may pass
         kwargs.pop("show", None)
         kwargs.pop("style_override", None)
+        # Lazy import API params functions (deferred from module level)
+        from ..api.params import (
+            canonicalize_kwargs,
+            validate_param_combination,
+            warn_on_aliases,
+        )
+
         # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
@@ -1838,117 +2346,16 @@ class CalibratedExplainer:
             )
         return (proba, (low, high)) if uq_interval else proba
 
-    def _is_lime_enabled(self, is_enabled=None) -> bool:
-        """Return whether LIME export is enabled.
-
-        .. deprecated:: 0.10.0
-            Access LIME state through LimePipeline instead.
-
-        Notes
-        -----
-        **DELETION COUPLING:** When removing this method, also remove:
-        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
-        - Related internal state management (`_lime_pipeline`)
-
-        Both the method and test must be deleted together to avoid orphaned tests.
-        """
-        # Delegate to LimePipeline for lazy initialization and caching
-        if not hasattr(self, "_lime_pipeline"):
-            # pylint: disable-next=import-outside-toplevel
-            from external_plugins.integrations.lime_pipeline import LimePipeline
-
-            self._lime_pipeline = LimePipeline(self)
-        return self._lime_pipeline._is_lime_enabled(is_enabled)
-
-    def _is_shap_enabled(self, is_enabled=None) -> bool:
-        """Return whether SHAP export is enabled.
-
-        .. deprecated:: 0.10.0
-            Access SHAP state through ShapPipeline instead.
-
-        Notes
-        -----
-        **DELETION COUPLING:** When removing this method, also remove:
-        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
-        - Related internal state management (`_shap_pipeline`)
-
-        Both the method and test must be deleted together to avoid orphaned tests.
-        """
-        # Delegate to ShapPipeline for lazy initialization and caching
-        if not hasattr(self, "_shap_pipeline"):
-            # pylint: disable-next=import-outside-toplevel
-            from external_plugins.integrations.shap_pipeline import ShapPipeline
-
-            self._shap_pipeline = ShapPipeline(self)
-        return self._shap_pipeline._is_shap_enabled(is_enabled)
-
-    def _preload_lime(self, x_cal=None):
-        """Materialize LIME explainer artifacts when the dependency is available.
-
-        .. deprecated:: 0.10.0
-            Use LimePipeline._preload_lime instead.
-
-        Notes
-        -----
-        **DELETION COUPLING:** When removing this method, also remove:
-        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
-        - Related internal state management (`_lime_pipeline`)
-
-        Both the method and test must be deleted together to avoid orphaned tests.
-        """
-        # Delegate to LimePipeline for lazy initialization and caching
-        if not hasattr(self, "_lime_pipeline"):
-            # pylint: disable-next=import-outside-toplevel
-            import sys
-            from pathlib import Path
-
-            # Ensure the repository root is in the path
-            repo_root = Path(__file__).resolve().parents[3]
-            if str(repo_root) not in sys.path:
-                sys.path.insert(0, str(repo_root))
-
-            from external_plugins.integrations.lime_pipeline import LimePipeline
-
-            self._lime_pipeline = LimePipeline(self)
-        return self._lime_pipeline._preload_lime(x_cal=x_cal)
-
-    def _preload_shap(self, num_test=None):
-        """Eagerly compute SHAP explanations to amortize repeated requests.
-
-        .. deprecated:: 0.10.0
-            Use ShapPipeline._preload_shap instead.
-
-        Notes
-        -----
-        **DELETION COUPLING:** When removing this method, also remove:
-        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
-        - Related internal state management (`_shap_pipeline`)
-
-        Both the method and test must be deleted together to avoid orphaned tests.
-        """
-        # Delegate to ShapPipeline for lazy initialization and caching
-        if not hasattr(self, "_shap_pipeline"):
-            # pylint: disable-next=import-outside-toplevel
-            import sys
-            from pathlib import Path
-
-            # Ensure the repository root is in the path
-            repo_root = Path(__file__).resolve().parents[3]
-            if str(repo_root) not in sys.path:
-                sys.path.insert(0, str(repo_root))
-
-            from external_plugins.integrations.shap_pipeline import ShapPipeline
-
-            self._shap_pipeline = ShapPipeline(self)
-        return self._shap_pipeline._preload_shap(num_test=num_test)
-
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x, y=None, threshold=None, **kwargs):
         """Generate plots for the test data."""
         # Pass any style overrides along to the plotting function
         style_override = kwargs.pop("style_override", None)
         kwargs["style_override"] = style_override
-        _plot_global(self, x, y=y, threshold=threshold, **kwargs)
+        # Lazy import plotting function (deferred from module level)
+        from ..plotting import plot_global
+
+        plot_global(self, x, y=y, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
         """Generate a calibrated confusion matrix.

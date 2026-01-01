@@ -1,6 +1,6 @@
 import pandas as pd
 
-from calibrated_explanations.utils.helper import transform_to_numeric
+from calibrated_explanations.utils import transform_to_numeric
 
 
 def test_transform_to_numeric_basic():

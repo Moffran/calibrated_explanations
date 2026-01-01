@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ...core.calibration.interval_learner import (
+from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
-from ..exceptions import ConfigurationError
+from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -90,6 +90,14 @@ class IntervalRegistry:
         # pylint: disable=unused-argument
         return np.ones(x.shape[0]) if isinstance(x, (np.ndarray, list, tuple)) else np.ones(1)
 
+    def constant_sigma(self, x: np.ndarray, learner=None, beta=None) -> np.ndarray:
+        """Public wrapper returning a unit difficulty vector when no estimator is configured.
+
+        Tests and external callers should use this public helper instead of the
+        internal `_constant_sigma` protected method.
+        """
+        return self._constant_sigma(x, learner=learner, beta=beta)
+
     def update(self, xs: np.ndarray, ys: np.ndarray, bins=None) -> None:
         """Refresh the interval learner with new calibration data.
 
@@ -114,7 +122,7 @@ class IntervalRegistry:
             # pylint: disable=fixme
             # TODO: change so that existing calibrators are extended with new calibration instances
             # Import here to allow monkeypatching in tests
-            from ..calibration.venn_abers import VennAbers
+            from ...calibration.venn_abers import VennAbers
 
             self.interval_learner = VennAbers(
                 self.explainer.x_cal,

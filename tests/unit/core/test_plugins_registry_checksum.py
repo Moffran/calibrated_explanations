@@ -13,7 +13,7 @@ import pytest
 from calibrated_explanations.plugins import registry
 
 
-def _write_checksum_plugin(tmp_path: Path) -> str:
+def write_checksum_plugin(tmp_path: Path) -> str:
     """Write a temporary plugin module that self-reports its checksum."""
 
     module_name = "checksum_test_plugin"
@@ -62,7 +62,7 @@ def _write_checksum_plugin(tmp_path: Path) -> str:
 def test_register_explanation_plugin_verifies_checksum(tmp_path, monkeypatch):
     """A correct checksum allows registration without raising warnings."""
 
-    module_name = _write_checksum_plugin(tmp_path)
+    module_name = write_checksum_plugin(tmp_path)
     monkeypatch.syspath_prepend(str(tmp_path))
 
     registry.clear()
@@ -84,9 +84,10 @@ def test_register_explanation_plugin_verifies_checksum(tmp_path, monkeypatch):
 
 
 def test_register_explanation_plugin_rejects_checksum_mismatch(tmp_path, monkeypatch):
-    """An incorrect checksum raises a ValueError to prevent tampering."""
+    """An incorrect checksum raises a ValidationError to prevent tampering."""
+    from calibrated_explanations.utils.exceptions import ValidationError
 
-    module_name = _write_checksum_plugin(tmp_path)
+    module_name = write_checksum_plugin(tmp_path)
     monkeypatch.syspath_prepend(str(tmp_path))
 
     registry.clear()
@@ -98,7 +99,7 @@ def test_register_explanation_plugin_rejects_checksum_mismatch(tmp_path, monkeyp
         plugin.plugin_meta = dict(module.PLUGIN.plugin_meta)
         plugin.plugin_meta["checksum"] = "0" * 64
 
-        with pytest.raises(ValueError, match="Checksum mismatch"):
+        with pytest.raises(ValidationError, match="Checksum mismatch"):
             registry.register_explanation_plugin("checksum.invalid", plugin)
     finally:
         registry.clear()
@@ -141,7 +142,7 @@ def test_register_explanation_plugin_warns_when_module_missing(tmp_path):
     MissingFilePlugin.__module__ = module_name
 
     try:
-        with pytest.warns(RuntimeWarning, match="Cannot verify checksum"):
+        with pytest.warns(UserWarning, match="Cannot verify checksum"):
             registry.register_explanation_plugin("checksum.missing", MissingFilePlugin())
     finally:
         registry.clear()

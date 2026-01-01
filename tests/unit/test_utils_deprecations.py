@@ -4,17 +4,19 @@ import os
 
 import pytest
 
+import calibrated_explanations.utils as utils_mod
 
-def _reload_module():
-    # Import the helper module freshly to reset module-level state
-    import calibrated_explanations.utils.deprecations as dep_mod
 
-    importlib.reload(dep_mod)
-    return dep_mod
+def reload_module():
+    """Reload the utils package and its deprecation helpers."""
+    # Ensure the underlying deprecations module picks up a clean slate
+    importlib.reload(importlib.import_module("calibrated_explanations.utils.deprecations"))
+    importlib.reload(utils_mod)
+    return utils_mod
 
 
 def test_deprecate_emits_once(monkeypatch):
-    dep_mod = _reload_module()
+    dep_mod = reload_module()
     # Ensure environment not in error mode
     monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
 
@@ -30,7 +32,7 @@ def test_deprecate_emits_once(monkeypatch):
 
 
 def test_deprecate_alias_convenience(monkeypatch):
-    dep_mod = _reload_module()
+    dep_mod = reload_module()
     monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
 
     with warnings.catch_warnings(record=True) as rec:
@@ -54,7 +56,7 @@ def test_deprecate_alias_convenience(monkeypatch):
 
 
 def test_deprecations_raise_when_env_set(monkeypatch):
-    dep_mod = _reload_module()
+    dep_mod = reload_module()
     # Enable error mode
     monkeypatch.setenv("CE_DEPRECATIONS", "error")
 

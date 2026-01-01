@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Mapping as MappingABC
 from collections.abc import MutableMapping as MutableMappingABC
 from collections.abc import Sequence as SequenceABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
 else:
     CalibratedExplanationsType = object
+from ..utils.exceptions import ValidationError
 from .base import ExplainerPlugin, PluginMeta
 from .predict import PredictBridge
 
@@ -50,8 +52,9 @@ class ExplanationRequest:
     threshold: Optional[object]
     low_high_percentiles: Optional[Tuple[float, float]]
     bins: Optional[object]
-    features_to_ignore: Sequence[int]
-    extras: Mapping[str, object]
+    features_to_ignore: Sequence[int] | Sequence[Sequence[int]]
+    extras: Mapping[str, object] = field(default_factory=dict)
+    features_to_ignore_per_instance: Sequence[Sequence[int]] | None = None
 
 
 @dataclass
@@ -98,24 +101,21 @@ def validate_explanation_batch(
 ) -> ExplanationBatch:
     """Validate runtime contracts for ``ExplanationBatch`` payloads."""
     if not isinstance(batch, ExplanationBatch):
-        raise TypeError("explanation plugins must return an ExplanationBatch instance")
+        raise ValidationError("explanation plugins must return an ExplanationBatch instance")
 
     container_cls = batch.container_cls
     if not isinstance(container_cls, type):
-        raise TypeError("batch.container_cls must be a class")
+        raise ValidationError("batch.container_cls must be a class")
 
     def _inherits_calibrated_explanations(cls: type) -> bool:
-        try:
+        with contextlib.suppress(ImportError, TypeError):
             from ..explanations.explanations import (
                 CalibratedExplanations,  # pylint: disable=import-outside-toplevel
             )
 
             if issubclass(cls, CalibratedExplanations):
                 return True
-        except (ImportError, TypeError):
-            pass
-        # Fall back to name-based check in case multiple module copies exist (e.g. notebooks)
-        for base in getattr(cls, "__mro__", ()):
+        for base in getattr(cls, "__mro__", ()):  # pragma: no cover - defensive
             if base is cls:
                 continue
             if base.__name__ == "CalibratedExplanations":
@@ -123,25 +123,21 @@ def validate_explanation_batch(
         return False
 
     if not _inherits_calibrated_explanations(container_cls):
-        raise TypeError("batch.container_cls must inherit from CalibratedExplanations")
+        raise ValidationError("batch.container_cls must inherit from CalibratedExplanations")
 
     explanation_cls = batch.explanation_cls
     if not isinstance(explanation_cls, type):
-        raise TypeError("batch.explanation_cls must be a class")
+        raise ValidationError("batch.explanation_cls must be a class")
 
     def _inherits_calibrated_explanation(cls: type) -> bool:
-        try:
-            # Attempt direct import-based check (may fail due to circular imports)
+        with contextlib.suppress(ImportError, TypeError):
             from ..explanations.explanation import (
                 CalibratedExplanation,
             )
 
             if issubclass(cls, CalibratedExplanation):
                 return True
-        except (ImportError, TypeError):
-            pass
-        # Fall back to name-based check in case of circular imports or multiple module copies
-        for base in getattr(cls, "__mro__", ()):
+        for base in getattr(cls, "__mro__", ()):  # pragma: no cover - defensive
             if base is cls:
                 continue
             if base.__name__ == "CalibratedExplanation":
@@ -149,41 +145,115 @@ def validate_explanation_batch(
         return False
 
     if not _inherits_calibrated_explanation(explanation_cls):
-        raise TypeError("batch.explanation_cls must inherit from CalibratedExplanation")
+        raise ValidationError("batch.explanation_cls must inherit from CalibratedExplanation")
 
     instances = batch.instances
     if not isinstance(instances, SequenceABC) or isinstance(instances, (str, bytes)):
-        raise TypeError("batch.instances must be a sequence of mappings")
+        raise ValidationError("batch.instances must be a sequence of mappings")
     for index, instance in enumerate(instances):
         if not isinstance(instance, MappingABC):
-            raise TypeError(f"batch.instances[{index}] must be a mapping describing the instance")
+            raise ValidationError(
+                f"batch.instances[{index}] must be a mapping describing the instance"
+            )
 
     metadata = batch.collection_metadata
     if not isinstance(metadata, MutableMappingABC):
-        raise TypeError("batch.collection_metadata must be a mutable mapping")
+        raise ValidationError(
+            "batch.collection_metadata must be a mutable mapping",
+            details={
+                "param": "batch.collection_metadata",
+                "expected_type": "MutableMapping",
+                "actual_type": type(metadata).__name__,
+            },
+        )
 
     mode_hint = metadata.get("mode")
     if expected_mode is not None and mode_hint is not None and str(mode_hint) != expected_mode:
-        raise ValueError(
+        raise ValidationError(
             "ExplanationBatch metadata reports mode '"
             + str(mode_hint)
             + "' but runtime expected '"
             + expected_mode
-            + "'"
+            + "'",
+            details={
+                "param": "mode",
+                "expected": expected_mode,
+                "actual": str(mode_hint),
+                "source": "batch.collection_metadata",
+            },
         )
 
     task_hint = metadata.get("task")
     if expected_task is not None and task_hint is not None and str(task_hint) != expected_task:
-        raise ValueError(
+        raise ValidationError(
             "ExplanationBatch metadata reports task '"
             + str(task_hint)
             + "' but runtime expected '"
             + expected_task
-            + "'"
+            + "'",
+            details={
+                "param": "task",
+                "expected": expected_task,
+                "actual": str(task_hint),
+                "source": "batch.collection_metadata",
+            },
         )
 
-    container = metadata.get("container")
-    if container is not None and not isinstance(container, container_cls):
-        raise TypeError("ExplanationBatch metadata 'container' has unexpected type")
+    for index, instance in enumerate(instances):
+        prediction = instance.get("prediction")
+        if isinstance(prediction, MappingABC):
+            _validate_prediction_invariant(prediction, f"Instance {index} prediction")
 
     return batch
+
+
+def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> None:
+    """Enforce low <= predict <= high invariant on prediction payload."""
+    import numpy as np
+
+    predict = payload.get("predict")
+    low = payload.get("low")
+    high = payload.get("high")
+
+    if predict is None or low is None or high is None:
+        return
+
+    with contextlib.suppress(TypeError, ValueError):
+        # Convert to numpy arrays for uniform handling
+        predict_arr = np.asanyarray(predict)
+        low_arr = np.asanyarray(low)
+        high_arr = np.asanyarray(high)
+
+        # Skip if any are empty
+        if predict_arr.size == 0 or low_arr.size == 0 or high_arr.size == 0:
+            return
+
+        # Check for numeric types
+        if not (
+            np.issubdtype(predict_arr.dtype, np.number)
+            and np.issubdtype(low_arr.dtype, np.number)
+            and np.issubdtype(high_arr.dtype, np.number)
+        ):
+            return
+
+        # Check low <= high
+        if not np.all(low_arr <= high_arr):
+            import warnings
+
+            warnings.warn(
+                f"{context}: interval invariant violated (low > high)",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        # Check low <= predict <= high
+        # Allow small floating point tolerance
+        epsilon = 1e-9
+        if not np.all((low_arr - epsilon <= predict_arr) & (predict_arr <= high_arr + epsilon)):
+            import warnings
+
+            warnings.warn(
+                f"{context}: prediction invariant violated (predict not in [low, high])",
+                UserWarning,
+                stacklevel=2,
+            )

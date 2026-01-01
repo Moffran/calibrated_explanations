@@ -1,4 +1,4 @@
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     CalibratedError,
     ConfigurationError,
     ConvergenceError,
@@ -28,3 +28,13 @@ def test_exceptions_carry_details_dict_and_repr():
     r = repr(e)
     assert "ValidationError" in r
     assert "bad input" in r
+
+
+def test_core_exceptions_should_reexport_utils_when_imported_from_core():
+    import calibrated_explanations.core.exceptions as core_exceptions
+    from calibrated_explanations.utils import exceptions as utils_exceptions
+
+    assert core_exceptions.CalibratedError is utils_exceptions.CalibratedError
+    assert core_exceptions.ValidationError is utils_exceptions.ValidationError
+    assert core_exceptions.SerializationError is utils_exceptions.SerializationError
+    assert core_exceptions.explain_exception is utils_exceptions.explain_exception

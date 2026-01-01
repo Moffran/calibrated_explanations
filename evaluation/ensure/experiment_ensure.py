@@ -11,7 +11,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 from calibrated_explanations import WrapCalibratedExplainer
-from calibrated_explanations.utils.helper import transform_to_numeric
+from calibrated_explanations.utils import transform_to_numeric
 from sklearn.datasets import fetch_openml
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split

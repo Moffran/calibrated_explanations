@@ -6,6 +6,10 @@ from calibrated explanations instead of traditional visualizations.
 
 from __future__ import annotations
 
+import contextlib
+import logging
+import sys
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -55,19 +59,29 @@ class NarrativePlotPlugin:
         self.default_template = self._get_default_template_path()
         self._template_path = template_path or self.default_template
 
+    @property
+    def template_path(self) -> str:
+        """Public accessor for the active template path.
+
+        Tests should use this non-underscore property instead of inspecting
+        the private `_template_path` attribute.
+        """
+        return self._template_path
+
     @staticmethod
     def _get_default_template_path() -> str:
-        """Get the default template path from the project root.
+        """Get the default template path from the package resources.
 
         Returns
         -------
         str
             Absolute path to the default explain_template.yaml file.
         """
-        # Navigate from viz/ to project root
+        # Navigate from viz/ to templates/
         current_file = Path(__file__).resolve()
-        project_root = current_file.parent.parent.parent.parent
-        default_template = project_root / "explain_template.yaml"
+        # src/calibrated_explanations/viz -> src/calibrated_explanations/templates
+        package_root = current_file.parent.parent
+        default_template = package_root / "templates" / "explain_template.yaml"
         return str(default_template)
 
     def plot(
@@ -120,34 +134,71 @@ class NarrativePlotPlugin:
         if template and not Path(template).is_absolute() and not Path(template).exists():
             # For relative paths, fall back to default template
             template = self.default_template
+            logging.getLogger(__name__).info(
+                "Narrative template not found (relative path); using default template"
+            )
+            warnings.warn(
+                "Narrative template fallback: default template used because provided relative path was missing",
+                UserWarning,
+                stacklevel=2,
+            )
         elif template and Path(template).is_absolute() and not Path(template).exists():
             # For absolute paths, fall back to default template
             template = self.default_template
+            logging.getLogger(__name__).info(
+                "Narrative template not found (absolute path); using default template"
+            )
+            warnings.warn(
+                "Narrative template fallback: default template used because provided absolute path was missing",
+                UserWarning,
+                stacklevel=2,
+            )
 
         # Validate expertise level
         valid_levels = {"beginner", "intermediate", "advanced"}
         if isinstance(expertise_level, str):
             if expertise_level not in valid_levels:
-                raise ValueError(
+                from ..utils.exceptions import ValidationError
+
+                raise ValidationError(
                     f"Invalid expertise level: {expertise_level}. "
-                    f"Valid levels: {', '.join(sorted(valid_levels))}"
+                    f"Valid levels: {', '.join(sorted(valid_levels))}",
+                    details={
+                        "param": "expertise_level",
+                        "value": expertise_level,
+                        "allowed_values": sorted(valid_levels),
+                    },
                 )
             levels = (expertise_level,)
         else:
             levels = tuple(expertise_level)
             invalid = [lv for lv in levels if lv not in valid_levels]
             if invalid:
-                raise ValueError(
+                from ..utils.exceptions import ValidationError
+
+                raise ValidationError(
                     f"Invalid expertise level(s): {', '.join(invalid)}. "
-                    f"Valid levels: {', '.join(sorted(valid_levels))}"
+                    f"Valid levels: {', '.join(sorted(valid_levels))}",
+                    details={
+                        "param": "expertise_level",
+                        "invalid_values": invalid,
+                        "allowed_values": sorted(valid_levels),
+                    },
                 )
 
         # Validate output format
         valid_outputs = {"dataframe", "text", "html", "dict"}
         if output not in valid_outputs:
-            raise ValueError(
+            from ..utils.exceptions import ValidationError
+
+            raise ValidationError(
                 f"Invalid output format: {output}. "
-                f"Valid formats: {', '.join(sorted(valid_outputs))}"
+                f"Valid formats: {', '.join(sorted(valid_outputs))}",
+                details={
+                    "param": "output",
+                    "value": output,
+                    "allowed_values": sorted(valid_outputs),
+                },
             )
 
         # Check pandas availability for dataframe output
@@ -157,11 +208,11 @@ class NarrativePlotPlugin:
             )
 
         # Detect problem type and explanation type
-        problem_type = self._detect_problem_type(explanations)
-        explanation_type = "alternative" if self._is_alternative(explanations) else "factual"
+        problem_type = self.detect_problem_type(explanations)
+        explanation_type = "alternative" if self.is_alternative(explanations) else "factual"
 
         # Get feature names
-        feature_names = self._get_feature_names(explanations)
+        feature_names = self.get_feature_names(explanations)
 
         # Initialize narrative generator
         narrator = NarrativeGenerator(template)
@@ -186,7 +237,10 @@ class NarrativePlotPlugin:
                         feature_names=feature_names,
                     )
                     row[f"{explanation_type}_explanation_{level}"] = narrative
-                except Exception as e:
+                except BaseException:
+                    e = sys.exc_info()[1]
+                    if not isinstance(e, Exception):
+                        raise
                     # Include error message in output for debugging
                     row[f"{explanation_type}_explanation_{level}"] = (
                         f"Error generating narrative: {e}"
@@ -199,7 +253,7 @@ class NarrativePlotPlugin:
         # Format output
         return self._format_output(results, output)
 
-    def _detect_problem_type(self, explanations) -> str:
+    def detect_problem_type(self, explanations) -> str:
         """Detect the problem type from explanations metadata.
 
         Parameters
@@ -228,7 +282,10 @@ class NarrativePlotPlugin:
                 # Check if multiclass
                 try:
                     is_multiclass = explainer.is_multiclass()
-                except Exception:
+                except BaseException:
+                    exc_info = sys.exc_info()[1]
+                    if not isinstance(exc_info, Exception):
+                        raise
                     is_multiclass = getattr(explainer, "is_multiclass", False)
 
                 if is_multiclass:
@@ -241,11 +298,14 @@ class NarrativePlotPlugin:
             # Default fallback
             return "regression"
 
-        except Exception:
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
+                raise
             # Fallback to regression if detection fails
             return "regression"
 
-    def _get_feature_names(self, explanations) -> Optional[List[str]]:
+    def get_feature_names(self, explanations) -> Optional[List[str]]:
         """Extract feature names from the explainer.
 
         Parameters
@@ -261,22 +321,28 @@ class NarrativePlotPlugin:
         try:
             explainer = explanations.calibrated_explainer
 
-            # Try to get feature names from the underlying explainer
-            if hasattr(explainer, "_explainer"):
-                underlying = explainer._explainer
-                if hasattr(underlying, "feature_names"):
-                    return underlying.feature_names
-
-            # Try direct access
+            # Prefer direct access when available
             if hasattr(explainer, "feature_names"):
-                return explainer.feature_names
+                feature_names = explainer.feature_names
+                if feature_names is not None:
+                    return feature_names
+
+            # Fall back to wrapped explainer instances when direct names are missing.
+            for attr_name in ("explainer", "_explainer"):
+                if hasattr(explainer, attr_name):
+                    underlying = getattr(explainer, attr_name)
+                    if hasattr(underlying, "feature_names"):
+                        return underlying.feature_names
 
             return None
 
-        except Exception:
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
+                raise
             return None
 
-    def _is_alternative(self, explanations) -> bool:
+    def is_alternative(self, explanations) -> bool:
         """Check if explanations are alternative explanations.
 
         Parameters
@@ -294,12 +360,11 @@ class NarrativePlotPlugin:
         if "Alternative" in class_name:
             return True
 
-        # Check if the explanations have the _is_alternative method
-        if hasattr(explanations, "_is_alternative"):
-            try:
-                return explanations._is_alternative()
-            except (AttributeError, TypeError):
-                return False
+        # Check if the explanations have the is_alternative method
+        if hasattr(explanations, "is_alternative"):
+            with contextlib.suppress(AttributeError, TypeError):
+                return explanations.is_alternative()
+            return False
 
         return False
 
@@ -333,7 +398,16 @@ class NarrativePlotPlugin:
             return self._format_as_html(results)
 
         # Should not reach here due to validation
-        raise ValueError(f"Unsupported output format: {output_format}")
+        from ..utils.exceptions import ConfigurationError
+
+        raise ConfigurationError(
+            f"Unsupported output format: {output_format}",
+            details={
+                "param": "output_format",
+                "value": output_format,
+                "allowed_values": ["dataframe", "text", "html", "dict"],
+            },
+        )
 
     def _format_as_text(self, results: List[Dict[str, Any]]) -> str:
         """Format results as plain text.

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.explanations import CalibratedExplanations
 from calibrated_explanations.plugins.builtins import (
     LegacyAlternativeExplanationPlugin,
     LegacyFactualExplanationPlugin,
@@ -17,6 +17,8 @@ from calibrated_explanations.plugins.explanations import (
     ExplanationContext,
     ExplanationRequest,
 )
+from tests.helpers.model_utils import get_classification_model, get_regression_model
+from tests.helpers.explainer_utils import initiate_explainer
 
 # Ensure the repository root is in the path
 repo_root = Path(__file__).resolve().parents[2]
@@ -31,7 +33,7 @@ from external_plugins.fast_explanations import (  # noqa: E402
 register_fast_plugins()
 
 
-def _make_context(explainer, mode: str) -> ExplanationContext:
+def make_context(explainer, mode: str) -> ExplanationContext:
     task = "classification" if "regression" not in explainer.mode else "regression"
     feature_names = tuple(getattr(explainer, "feature_names", []) or [])
     categorical_features = tuple(getattr(explainer, "categorical_features", []) or [])
@@ -54,7 +56,7 @@ def _make_context(explainer, mode: str) -> ExplanationContext:
     )
 
 
-def _make_request(threshold=None, low_high_percentiles=(5, 95), bins=None):
+def make_request(threshold=None, low_high_percentiles=(5, 95), bins=None):
     return ExplanationRequest(
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,
@@ -64,7 +66,7 @@ def _make_request(threshold=None, low_high_percentiles=(5, 95), bins=None):
     )
 
 
-def _assert_collections_equal(lhs, rhs):
+def assert_collections_equal(lhs, rhs):
     assert len(lhs) == len(rhs)
     for left, right in zip(lhs, rhs):
         np.testing.assert_allclose(
@@ -78,7 +80,8 @@ def _assert_collections_equal(lhs, rhs):
 
 
 def test_factual_plugin_matches_legacy(binary_dataset):
-    from tests._helpers import get_classification_model, initiate_explainer
+    from tests.helpers.model_utils import get_classification_model
+    from tests.helpers.explainer_utils import initiate_explainer
 
     (
         x_prop_train,
@@ -105,18 +108,16 @@ def test_factual_plugin_matches_legacy(binary_dataset):
     )
 
     plugin = LegacyFactualExplanationPlugin()
-    plugin.initialize(_make_context(explainer, "factual"))
-    batch = plugin.explain_batch(x_test, _make_request())
+    plugin.initialize(make_context(explainer, "factual"))
+    batch = plugin.explain_batch(x_test, make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
     legacy = explainer.explain_factual(x_test)
 
-    _assert_collections_equal(plugin_collection, legacy)
+    assert_collections_equal(plugin_collection, legacy)
 
 
 def test_alternative_plugin_matches_legacy(binary_dataset):
-    from tests._helpers import get_classification_model, initiate_explainer
-
     (
         x_prop_train,
         y_prop_train,
@@ -142,18 +143,16 @@ def test_alternative_plugin_matches_legacy(binary_dataset):
     )
 
     plugin = LegacyAlternativeExplanationPlugin()
-    plugin.initialize(_make_context(explainer, "alternative"))
-    batch = plugin.explain_batch(x_test, _make_request())
+    plugin.initialize(make_context(explainer, "alternative"))
+    batch = plugin.explain_batch(x_test, make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
     legacy = explainer.explore_alternatives(x_test)
 
-    _assert_collections_equal(plugin_collection, legacy)
+    assert_collections_equal(plugin_collection, legacy)
 
 
 def test_fast_plugin_matches_legacy(binary_dataset):
-    from tests._helpers import get_classification_model, initiate_explainer
-
     (
         x_prop_train,
         y_prop_train,
@@ -180,18 +179,16 @@ def test_fast_plugin_matches_legacy(binary_dataset):
     )
 
     plugin = FastExplanationPlugin()
-    plugin.initialize(_make_context(explainer, "fast"))
-    batch = plugin.explain_batch(x_test, _make_request())
+    plugin.initialize(make_context(explainer, "fast"))
+    batch = plugin.explain_batch(x_test, make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
     legacy = explainer.explain_fast(x_test)
 
-    _assert_collections_equal(plugin_collection, legacy)
+    assert_collections_equal(plugin_collection, legacy)
 
 
 def test_factual_plugin_matches_legacy_regression(regression_dataset):
-    from tests._helpers import get_regression_model, initiate_explainer
-
     (
         x_prop_train,
         y_prop_train,
@@ -215,18 +212,16 @@ def test_factual_plugin_matches_legacy_regression(regression_dataset):
     )
 
     plugin = LegacyFactualExplanationPlugin()
-    plugin.initialize(_make_context(explainer, "factual"))
-    batch = plugin.explain_batch(x_test, _make_request())
+    plugin.initialize(make_context(explainer, "factual"))
+    batch = plugin.explain_batch(x_test, make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
     legacy = explainer.explain_factual(x_test)
 
-    _assert_collections_equal(plugin_collection, legacy)
+    assert_collections_equal(plugin_collection, legacy)
 
 
 def test_alternative_plugin_matches_legacy_regression(regression_dataset):
-    from tests._helpers import get_regression_model, initiate_explainer
-
     (
         x_prop_train,
         y_prop_train,
@@ -250,18 +245,16 @@ def test_alternative_plugin_matches_legacy_regression(regression_dataset):
     )
 
     plugin = LegacyAlternativeExplanationPlugin()
-    plugin.initialize(_make_context(explainer, "alternative"))
-    batch = plugin.explain_batch(x_test, _make_request())
+    plugin.initialize(make_context(explainer, "alternative"))
+    batch = plugin.explain_batch(x_test, make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
     legacy = explainer.explore_alternatives(x_test)
 
-    _assert_collections_equal(plugin_collection, legacy)
+    assert_collections_equal(plugin_collection, legacy)
 
 
 def test_fast_plugin_matches_legacy_regression(regression_dataset):
-    from tests._helpers import get_regression_model, initiate_explainer
-
     (
         x_prop_train,
         y_prop_train,
@@ -286,10 +279,10 @@ def test_fast_plugin_matches_legacy_regression(regression_dataset):
     )
 
     plugin = FastExplanationPlugin()
-    plugin.initialize(_make_context(explainer, "fast"))
-    batch = plugin.explain_batch(x_test, _make_request())
+    plugin.initialize(make_context(explainer, "fast"))
+    batch = plugin.explain_batch(x_test, make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
     legacy = explainer.explain_fast(x_test)
 
-    _assert_collections_equal(plugin_collection, legacy)
+    assert_collections_equal(plugin_collection, legacy)

@@ -2,13 +2,14 @@
   "schema_version": "1.0.0",
   "task": "classification",
   "index": 0,
+  "explanation_type": "factual",
   "prediction": {"predict": [1.0], "low": [0.8], "high": [1.2]},
   "rules": [
     {
       "feature": 0,
       "rule": "x0 <= 0.5",
-      "weight": {"predict": 0.1, "low": 0.05, "high": 0.15},
-      "prediction": {"predict": 0.6, "low": 0.5, "high": 0.7},
+      "rule_weight": {"predict": 0.1, "low": 0.05, "high": 0.15},
+      "rule_prediction": {"predict": 0.6, "low": 0.5, "high": 0.7},
       "instance_prediction": null,
       "feature_value": 0.3,
       "is_conjunctive": false,
@@ -18,8 +19,8 @@
     {
       "feature": 2,
       "rule": "x2 > 1.2",
-      "weight": {"predict": 0.2, "low": 0.1, "high": 0.3},
-      "prediction": {"predict": 0.7, "low": 0.6, "high": 0.8},
+      "rule_weight": {"predict": 0.2, "low": 0.1, "high": 0.3},
+      "rule_prediction": {"predict": 0.7, "low": 0.6, "high": 0.8},
       "instance_prediction": null,
       "feature_value": 1.5,
       "is_conjunctive": false,

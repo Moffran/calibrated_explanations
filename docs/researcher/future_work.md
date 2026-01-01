@@ -98,7 +98,7 @@ This ledger tracks potential research directions and enhancements to the calibra
 We welcome research contributions! If you're working on any of these areas or have related ideas:
 
 1. Open a discussion in the [GitHub Discussions](https://github.com/Moffran/calibrated_explanations/discussions) forum
-2. Reference relevant ADRs (see `improvement_docs/adrs/`)
+2. Reference relevant ADRs (see `docs/improvement/adrs/`)
 3. Consider prototyping as a plugin (see ADR-006, ADR-013, ADR-015)
 4. For published work, cite the calibrated explanations framework and we'll add your paper to our literature tracker
 

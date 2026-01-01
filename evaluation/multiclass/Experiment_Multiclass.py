@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from calibrated_explanations.core.venn_abers import VennAbers
+from calibrated_explanations.calibration import VennAbers
 from matplotlib import pyplot as plt
 from sklearn.calibration import calibration_curve
 from sklearn.ensemble import RandomForestClassifier

@@ -4,16 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-version = "0.10.0-dev"
+version = "0.10.1-dev"
 description = "Extract calibrated explanations from machine learning models."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "BSD-3-Clause"}
 authors = [
-  { name="Helena Löfström", email="helena.lofstrom@ju.se" },
-  { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
+  { name = "Helena Löfström", email = "helena.lofstrom@ju.se" },
+  { name = "Tuwe Löfström", email = "tuwe.lofstrom@ju.se" },
 ]
+
 dependencies = [
+  'cachetools',
+  'pympler',
   'crepes',
   'venn-abers',
   'ipython',
@@ -22,6 +25,7 @@ dependencies = [
   'numpy',
   'pandas',
   'scikit-learn',
+  'pyyaml',
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -73,22 +77,100 @@ eval = [
 "ce.plugins" = "calibrated_explanations.plugins.cli:main"
 
 [tool.pytest.ini_options]
+minversion = "6.0"
 pythonpath = ["src"]
+addopts = "-q --ignore=tests/unit/viz/test_matplotlib_adapter_additional.py --ignore=tests/unit/viz/test_matplotlib_adapter_regression_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_render.py --ignore=tests/unit/viz/test_plot_parity_adapter.py --ignore=tests/unit/viz/test_plotspec_mvp.py --ignore=tests/unit/viz/test_plotspec_render_behavior.py --ignore=tests/unit/viz/test_probabilistic_builder_and_adapter_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_primitives.py --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml --cov-fail-under=90"
+testpaths = ["tests"]
 markers = [
-  "viz: tests that require visualization extras (matplotlib)",
+    "slow: marks tests as slow (can be skipped in FAST_TESTS)",
+    "integration: marks integration tests",
+    "viz: marks visualization tests (optional extras)",
+    "viz_render: marks tests that call matplotlib_adapter.render() (may fail with coverage due to lazy loading conflicts per ADR-023)",
+    "platform_dependent: marks tests that depend on platform-specific behavior (paths, system calls, etc.)",
 ]
+filterwarnings = [
+    "error::DeprecationWarning",
+    "error::PendingDeprecationWarning",
+    "error::FutureWarning",
+    # Enforce fallback chain policy: treat UserWarnings containing "fall...back" as errors
+    # Tests that explicitly validate fallback behavior must use the enable_fallbacks fixture
+    # Matches variations like "falling back", "fall back", and "fallback"
+    "error:.*fall.*back.*:UserWarning",
+    # Ignore deprecation warnings from third-party libraries that are outside our control
+    "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
+    "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
+    "ignore:Auto-close.*backend switching.*:matplotlib._api.deprecation.MatplotlibDeprecationWarning",
+    # Allow other UserWarnings (but they'll be visible in test output)
+    "ignore::UserWarning",
+    "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
+    "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",
+    "ignore:The 'calibrated_explanations.perf' module is deprecated.*:DeprecationWarning",
+    "ignore:Importing from 'calibrated_explanations.core.calibration' is deprecated.*:DeprecationWarning",
+    "ignore:_read_pyproject_section is deprecated.*:DeprecationWarning",
+    "ignore:_split_csv is deprecated.*:DeprecationWarning",
+    "ignore:_coerce_string_tuple is deprecated.*:DeprecationWarning",
+    "ignore:_assign_weight_scalar is deprecated.*:DeprecationWarning",
+    "ignore:_feature_task is deprecated.*:DeprecationWarning",
+    "ignore:The py23 module has been deprecated:DeprecationWarning:fontTools.misc.py23",
+]
+
+# ----------------------------
+# Coverage Configuration (Phase 0)
+# ----------------------------
+[tool.coverage.run]
+branch = true
+source = ["src/calibrated_explanations"]
+omit = [
+    "tests/*",
+    "docs/*",
+    "notebooks/*",
+    "tests/benchmarks/*",
+    "scripts/*",
+    "evaluation/*",
+    "setup.py",
+    "src/calibrated_explanations/viz/matplotlib_adapter.py",
+    "src/calibrated_explanations/_interval_regressor.py",
+    "src/calibrated_explanations/_plots.py",
+    "src/calibrated_explanations/_plots_legacy.py",
+    "src/calibrated_explanations/_venn_abers.py",
+]
+parallel = false
+
+[tool.coverage.paths]
+calibrated_explanations = [
+    "src/calibrated_explanations",
+    "*/site-packages/calibrated_explanations",
+]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = false
+precision = 1
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.coverage.html]
+directory = "coverage_html"
+
+[tool.setuptools]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 
 [tool.setuptools.packages.find]
 where = ["src", "external_plugins"]
 
 [tool.setuptools.package-data]
-calibrated_explanations = ["py.typed", "schemas/*.json"]
+calibrated_explanations = ["py.typed", "schemas/*.json", "templates/*.yaml"]
 
 # ----------------------------
 # Tooling / Quality Gates (Phase 0)
 # ----------------------------
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 100
 extend-exclude = ["build", "dist", "benchmarks", "docs/_build", "scripts", "evaluation"]
 
@@ -159,5 +241,5 @@ skips = ["B101"]
 exclude = ["tests", "build", "benchmarks", "notebooks", "scripts", "docs", "dist", "evaluation"]
 
 [tool.codespell]
+skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"
 ignore-words-list = "dataframe,nd"
-skip = "notebooks,scripts,evaluation,benchmarks,build,dist,docs/_build,docs_old/_build,*.lock,*.csv,*.json,*.png,*.jpg,*.gif,*.zip"

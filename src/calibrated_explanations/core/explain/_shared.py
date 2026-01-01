@@ -6,6 +6,7 @@ and instance-parallel explain executors per the plugin decomposition strategy.
 
 from __future__ import annotations
 
+import contextlib
 from collections import defaultdict
 from dataclasses import dataclass, field
 from time import time
@@ -56,7 +57,7 @@ def build_feature_tasks(
         feature_index_map = {}
 
     # Get calibration summaries for fast lookups
-    categorical_value_counts, numeric_sorted_cache = explainer._get_calibration_summaries(x_cal_np)
+    categorical_value_counts, numeric_sorted_cache = explainer.get_calibration_summaries(x_cal_np)
 
     features_to_ignore_set = set(features_to_ignore_array.tolist())
     features_to_ignore_tuple = tuple(int(f) for f in features_to_ignore_set)
@@ -75,26 +76,23 @@ def build_feature_tasks(
         if isinstance(lesser_values, Mapping):
             lesser_feature = lesser_values.get(feature_idx, {})
         else:
-            try:
+            lesser_feature = {}
+            with contextlib.suppress(IndexError, KeyError, TypeError):
                 lesser_feature = lesser_values[feature_idx]
-            except (IndexError, KeyError, TypeError):
-                lesser_feature = {}
 
         if isinstance(greater_values, Mapping):
             greater_feature = greater_values.get(feature_idx, {})
         else:
-            try:
+            greater_feature = {}
+            with contextlib.suppress(IndexError, KeyError, TypeError):
                 greater_feature = greater_values[feature_idx]
-            except (IndexError, KeyError, TypeError):
-                greater_feature = {}
 
         if isinstance(covered_values, Mapping):
             covered_feature = covered_values.get(feature_idx, {})
         else:
-            try:
+            covered_feature = {}
+            with contextlib.suppress(IndexError, KeyError, TypeError):
                 covered_feature = covered_values[feature_idx]
-            except (IndexError, KeyError, TypeError):
-                covered_feature = {}
 
         value_counts_cache = categorical_value_counts.get(int(feature_idx), {})
         numeric_sorted_values = numeric_sorted_cache.get(feature_idx)
@@ -192,6 +190,8 @@ def finalize_explanation(
         feature_predict["low"].append(low_matrix[i].copy())
         feature_predict["high"].append(high_matrix[i].copy())
 
+    # parity instrumentation removed
+
     elapsed_time = time() - instance_start_time
     list_instance_time = [elapsed_time / n_instances for _ in range(n_instances)]
     total_time = time() - total_start_time
@@ -205,9 +205,24 @@ def finalize_explanation(
         total_time=total_time,
     )
 
+    # Attach per-instance feature ignore information when provided by the
+    # FAST-based feature filter. This is stored on the explainer by the
+    # execution wrapper and propagated here to the explanation container.
+    per_instance_ignore = getattr(explainer, "feature_filter_per_instance_ignore", None)
+    if per_instance_ignore is not None:
+        with contextlib.suppress(Exception):
+            explanation.features_to_ignore_per_instance = per_instance_ignore
+    # Clear transient state to avoid accidental reuse across subsequent runs.
+    with contextlib.suppress(AttributeError):
+        del explainer.feature_filter_per_instance_ignore
+
     # Update explainer state
     explainer.latest_explanation = explanation
-    explainer._last_explanation_mode = explainer._infer_explanation_mode()
+    explainer.last_explanation_mode = explainer.infer_explanation_mode()
+
+    # parity instrumentation removed
+
+    # parity instrumentation removed
 
     return explanation
 
@@ -236,6 +251,10 @@ class ExplainRequest:
 
     features_to_ignore: np.ndarray
     """Array of feature indices to skip during perturbation."""
+    extras: Any | None = None
+    """Opaque extras forwarded from the explanation request (unused by executors)."""
+    features_to_ignore_per_instance: Any | None = None
+    """Optional per-instance feature ignore masks."""
 
     # Control flags
     use_plugin: bool = True
@@ -330,7 +349,7 @@ class ExplainConfig:
     granularity: str = "feature"
     """Parallelism granularity: 'feature', 'instance', or 'none'."""
 
-    min_instances_for_parallel: int = 4
+    min_instances_for_parallel: int = 8
     """Minimum instances required to trigger instance parallelism."""
 
     chunk_size: int = 100

@@ -1,0 +1,480 @@
+"""Run GitHub Actions workflow shell steps locally.
+
+This helper parses YAML workflow files under `.github/workflows/` and
+extracts `run:` step bodies. It then executes them sequentially in a
+local shell so you can catch CI failures before opening a PR.
+
+Features:
+- Dynamically discovers workflows in `.github/workflows/*.yml`.
+- Extracts `run:` blocks from each job's `steps` and preserves `env`.
+- Skips steps that use actions (e.g. `uses: actions/checkout`) but
+  warns so you can run any required setup manually.
+- Supports `--shell` (bash|pwsh) and `--dry-run`.
+- By default runs all workflows; select workflows with `--workflow`.
+
+Notes:
+- Many workflow `run` blocks assume a Linux bash environment (set -e,
+  Bash-specific operators). On Windows prefer running under WSL/Git-Bash
+  and pass `--shell bash`.
+- The script does not attempt to emulate `actions/setup-python`; it will
+  only run the commands as-is in your current environment.
+
+Usage examples:
+  # Show the commands that would run
+  python scripts/run_ci_locally.py --dry-run
+
+  # Run lint and test workflows (may be slow)
+  python scripts/run_ci_locally.py --workflow lint --workflow test
+
+  # Run in PowerShell explicitly
+  python scripts/run_ci_locally.py --shell pwsh
+"""
+from __future__ import annotations
+
+import argparse
+import glob
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+try:
+    import yaml
+except Exception as exc:  # pragma: no cover - dev dependency expected
+    print("PyYAML is required (package name: pyyaml). Please install it.")
+    raise
+
+
+def find_workflow_files(path: str = ".github/workflows") -> List[str]:
+    pattern = os.path.join(path, "*.yml")
+    files = glob.glob(pattern)
+    pattern2 = os.path.join(path, "*.yaml")
+    files += glob.glob(pattern2)
+    files.sort()
+    return files
+
+
+def load_workflow(path: str) -> Dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as fh:
+        return yaml.safe_load(fh)
+
+
+def extract_run_steps(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return a list of dicts: {job, step_idx, name, env, run}.
+
+    Only steps that have a `run` key are returned. Steps that use
+    `uses:` are skipped (these are actions that run on CI).
+    """
+    out: List[Dict[str, Any]] = []
+    jobs = workflow.get("jobs") or {}
+    for job_name, job in jobs.items():
+        steps = job.get("steps") or []
+        job_env = job.get("env") or {}
+        runs_on = job.get("runs-on") or ""
+        job_shell = "bash"
+        if isinstance(runs_on, str):
+            runs_key = runs_on.lower()
+        elif isinstance(runs_on, list):
+            runs_key = " ".join(str(v) for v in runs_on).lower()
+        else:
+            runs_key = ""
+        if "windows" in runs_key:
+            job_shell = "pwsh"
+        # Track whether this job used actions/setup-python earlier
+        setup_python_found = False
+        for idx, step in enumerate(steps):
+            if not isinstance(step, dict):
+                continue
+            # Detect `uses: actions/setup-python@...` so we can emulate it
+            if "uses" in step and isinstance(step.get("uses"), str):
+                if "actions/setup-python" in step.get("uses"):
+                    setup_python_found = True
+                # We don't add 'uses' steps to run list; continue scanning
+                continue
+            if "run" in step:
+                # Merge job env, then step env
+                step_env = dict(job_env)
+                step_env.update(step.get("env") or {})
+                out.append(
+                    {
+                        "job": job_name,
+                        "step_idx": idx,
+                        "id": step.get("id"),
+                        "name": step.get("name") or f"step_{idx}",
+                        "env": step_env,
+                        "run": step["run"],
+                        "shell": step.get("shell"),
+                        "job_shell": job_shell,
+                        "setup_python": setup_python_found,
+                    }
+                )
+    return out
+
+
+def collect_all_runs(workflow_files: List[str], selected: Optional[List[str]] = None) -> Dict[str, List[Dict[str, Any]]]:
+    collected: Dict[str, List[Dict[str, Any]]] = {}
+    for wf in workflow_files:
+        base = os.path.basename(wf)
+        name = os.path.splitext(base)[0]
+        if selected and name not in selected:
+            continue
+        try:
+            data = load_workflow(wf)
+        except Exception as exc:
+            print(f"Failed to parse {wf}: {exc}")
+            continue
+        steps = extract_run_steps(data)
+        if steps:
+            collected[name] = steps
+    return collected
+
+
+STEP_OUTPUT_PATTERN = re.compile(r"\${{\s*steps\.([^.}\s]+)\.outputs\.([^.}\s]+)\s*}}")
+
+
+def render_step_expressions(script: str, step_outputs: Dict[str, Dict[str, str]]) -> str:
+    """Replace `${{ steps.X.outputs.Y }}` placeholders with recorded outputs."""
+    missing: set[str] = set()
+
+    def _replace(match: re.Match[str]) -> str:
+        step_id, key = match.group(1), match.group(2)
+        value = step_outputs.get(step_id, {}).get(key)
+        if value is None:
+            identifier = f"{step_id}.{key}"
+            if identifier not in missing:
+                print(f"Warning: missing output for steps.{step_id}.outputs.{key}")
+                missing.add(identifier)
+            return ""
+        return value
+
+    return STEP_OUTPUT_PATTERN.sub(_replace, script)
+
+
+def parse_github_output(path: str) -> Dict[str, str]:
+    """Read outputs that a step wrote to $GITHUB_OUTPUT."""
+    outputs: Dict[str, str] = {}
+    if not os.path.exists(path):
+        return outputs
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            outputs[key] = value
+    return outputs
+
+
+def resolve_bash_executable() -> Tuple[str, str]:
+    """Prefer Git Bash on Windows so that bash steps share the same env as pwsh."""
+    if os.name != "nt":
+        return "bash", "posix"
+
+    candidates: List[Tuple[str, str]] = []
+
+    env_candidate = os.environ.get("GIT_BASH_PATH")
+    if env_candidate:
+        candidates.append(("git", env_candidate))
+
+    search_roots = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles", "")) / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles(x86)", "")) / "Git" / "bin" / "bash.exe",
+    ]
+    for path in search_roots:
+        if path and path.exists():
+            candidates.append(("git", str(path)))
+
+    which_bash = shutil.which("bash")
+    if which_bash:
+        candidates.append(("wsl", which_bash))
+
+    for flavor, candidate in candidates:
+        if candidate and os.path.exists(candidate):
+            return candidate, flavor
+    return "bash", "posix"
+
+
+def convert_path_for_bash(path: str, flavor: str) -> str:
+    """Convert a Windows path to the format expected by the bash flavor."""
+    if os.name != "nt":
+        return path
+    abs_path = os.path.abspath(path)
+    drive, tail = os.path.splitdrive(abs_path)
+    tail = tail.replace("\\", "/")
+    drive_letter = drive.rstrip(":").lower()
+    if not drive_letter:
+        return abs_path
+    if flavor == "wsl":
+        return f"/mnt/{drive_letter}{tail}"
+    if flavor == "git":
+        return f"/{drive_letter}{tail}"
+    return abs_path
+
+
+def run_script_block(
+    script: str,
+    env: Dict[str, str],
+    shell: str,
+    cwd: Optional[str] = None,
+    capture_outputs: bool = False,
+) -> tuple[int, Dict[str, str]]:
+    # Write script to a temporary file and execute with chosen shell.
+    # When running under Windows+bash, create the temp file inside the
+    # requested working directory so we can invoke it by a relative path
+    # (avoids path conversion/mount issues with MSYS/MinGW).
+    temp_dir = cwd or os.getcwd()
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".sh", dir=temp_dir, newline="\n") as fh:
+        fh.write(script)
+        tmp = fh.name
+    gh_output_path = None
+    if capture_outputs:
+        with tempfile.NamedTemporaryFile("w", delete=False, dir=temp_dir) as out_fh:
+            gh_output_path = out_fh.name
+
+    bash_exec = None
+    bash_flavor = "posix"
+    if shell == "bash":
+        bash_exec, bash_flavor = resolve_bash_executable()
+
+    full_env = dict(os.environ)
+    full_env.update(env)
+    full_env.setdefault("MPLBACKEND", "Agg")
+    if os.name == "nt":
+        # Windows uses a case-insensitive environment so some tools set PATH while
+        # others set Path. When launching bash we need the upper-case variant or
+        # it will see an empty $PATH and fail to locate executables such as mypy.
+        path_value = full_env.get("PATH") or full_env.get("Path")
+        if path_value:
+            full_env["PATH"] = path_value
+            full_env["Path"] = path_value
+    if gh_output_path:
+        gh_path = gh_output_path
+        if shell == "bash" and os.name == "nt":
+            gh_path = convert_path_for_bash(gh_output_path, bash_flavor)
+        full_env["GITHUB_OUTPUT"] = gh_path
+
+    script_path = tmp
+    if shell == "bash":
+        bash_exe = bash_exec or "bash"
+        if os.name == "nt":
+            rel = os.path.relpath(script_path, start=temp_dir)
+            quoted = shlex.quote(rel)
+            cmd = [bash_exe, "-lc", f". {quoted}"]
+        else:
+            cmd = [bash_exe, script_path]
+    else:
+        ps_tmp = script_path + ".ps1"
+        os.rename(script_path, ps_tmp)
+        script_path = ps_tmp
+        cmd = ["pwsh", "-NoProfile", "-NonInteractive", "-File", script_path]
+
+    print("-> Executing:", cmd)
+    try:
+        proc = subprocess.run(cmd, env=full_env, cwd=cwd)
+        outputs: Dict[str, str] = {}
+        if gh_output_path:
+            outputs = parse_github_output(gh_output_path)
+        return proc.returncode, outputs
+    finally:
+        try:
+            os.unlink(script_path)
+        except Exception:
+            pass
+        if gh_output_path:
+            try:
+                os.unlink(gh_output_path)
+            except Exception:
+                pass
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Run CI workflow steps locally")
+    parser.add_argument("--workflow", action="append", help="Workflow basename to run (without extension)")
+    default_shell = "pwsh" if os.name == "nt" else "bash"
+    parser.add_argument("--shell", choices=("bash", "pwsh"), default=default_shell, help="Shell to use for running steps")
+    parser.add_argument("--dry-run", action="store_true", help="Only print discovered steps without executing")
+    parser.add_argument("--continue-on-error", action="store_true", help="Continue running other steps if one fails")
+    parser.add_argument("--cwd", default=".", help="Working directory for commands (defaults to repo root)")
+    args = parser.parse_args(argv)
+
+    workflow_files = find_workflow_files()
+    if not workflow_files:
+        print("No workflow files found under .github/workflows/")
+        return 2
+
+    selected = args.workflow
+    collected = collect_all_runs(workflow_files, selected)
+    if not collected:
+        print("No runnable steps found in the selected workflows.")
+        return 0
+
+    print("Discovered the following runnable steps:")
+    for wf_name, steps in collected.items():
+        print(f"\nWorkflow: {wf_name}")
+        for s in steps:
+            heading = f"  [{s['job']}] {s['name']}"
+            print(heading)
+            # Print the first line of the run block for brevity
+            snippet = s["run"].splitlines()
+            preview = snippet[0] if snippet else "<empty>"
+            print("    ", preview)
+
+    if args.dry_run:
+        print("\nDry-run complete. No commands executed.")
+        return 0
+
+    print("\nRunning steps now. Press Ctrl-C to abort.")
+    results: List[Dict[str, Any]] = []
+    abort = False
+    first_nonzero_rc = 0
+    step_outputs: Dict[str, Dict[str, str]] = {}
+    for wf_name, steps in collected.items():
+        print(f"\n=== Workflow: {wf_name} ===")
+        for s in steps:
+            print(f"\n--- Job: {s['job']} | Step: {s['name']} ---")
+            env_vars = {k: str(v) for k, v in (s.get("env") or {}).items()}
+            # Use the shell specified by the workflow step if provided.
+            # Otherwise fall back to the job's inferred shell so that setup/install
+            # steps share the same environment as subsequent commands (e.g. pip
+            # installs performed in bash are visible to later bash steps).
+            # Finally, if neither is defined, default to the user-selected shell.
+            step_shell = s.get("shell") or s.get("job_shell") or args.shell
+            script = render_step_expressions(s['run'], step_outputs)
+            capture = bool(s.get("id"))
+            rc, outputs = run_script_block(script, env_vars, step_shell, cwd=args.cwd, capture_outputs=capture)
+            step_id = s.get("id")
+            if step_id is not None:
+                step_outputs[step_id] = outputs
+            results.append({
+                "workflow": wf_name,
+                "job": s["job"],
+                "step": s["name"],
+                "rc": rc,
+                "run": script,
+                "setup_python": s.get("setup_python", False),
+                "shell": step_shell,
+            })
+            if rc != 0:
+                print(f"Step failed with exit code {rc}: {s['name']}")
+                if first_nonzero_rc == 0:
+                    first_nonzero_rc = rc
+                if not args.continue_on_error:
+                    abort = True
+                    break
+        if abort:
+            break
+
+    # Summary
+    total = len(results)
+    failed = [r for r in results if r["rc"] != 0]
+    succeeded = [r for r in results if r["rc"] == 0]
+
+    print("\n\nCI Local Run Summary")
+    print("--------------------")
+    print(f"Total steps run: {total}")
+    print(f"Succeeded: {len(succeeded)}")
+    print(f"Failed: {len(failed)}")
+
+    if failed:
+        print("\nFailing steps:")
+        for r in failed:
+            preview = (r["run"] or "").splitlines()
+            snippet = preview[0] if preview else "<empty>"
+            print(f"- {r['workflow']} :: {r['job']} :: {r['step']} (rc={r['rc']})")
+            print(f"    command: {snippet}")
+
+        # Heuristic: highlight failing 'test' related steps that likely need attention
+        test_keywords = [
+            "pytest",
+            "test-cov",
+            "test",
+            "pydocstyle",
+            "mypy",
+            "ruff",
+            "nbqa",
+            "check_coverage",
+            "check_docstring",
+            "micro_bench_perf",
+        ]
+        important = []
+        for r in failed:
+            run_lower = (r["run"] or "").lower()
+            name_lower = (r["step"] or "").lower()
+            if any(k in run_lower or k in name_lower for k in test_keywords):
+                important.append(r)
+
+        if important:
+            print("\nCI test failures likely needing attention:")
+            for r in important:
+                print(f"- {r['workflow']} :: {r['job']} :: {r['step']} (rc={r['rc']})")
+                print(f"    full command excerpt:\n      " + "\n      ".join((r['run'] or "").splitlines()[:5]))
+    else:
+        print("\nAll steps completed successfully.")
+
+    # Write a machine-readable summary to `reports/ci_local_summary.json`.
+    try:
+        reports_dir = os.path.join(args.cwd or ".", "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        summary_path = os.path.join(reports_dir, "ci_local_summary.json")
+        summary = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "cwd": os.path.abspath(args.cwd or "."),
+            "shell": args.shell,
+            "workflows": list(collected.keys()),
+            "total_steps": total,
+            "succeeded": len(succeeded),
+            "failed": len(failed),
+            "failed_steps": [
+                {
+                    "workflow": r["workflow"],
+                    "job": r["job"],
+                    "step": r["step"],
+                    "rc": r["rc"],
+                    "command_preview": (r["run"] or "").splitlines()[:5],
+                }
+                for r in failed
+            ],
+            "important_failures": [
+                {
+                    "workflow": r["workflow"],
+                    "job": r["job"],
+                    "step": r["step"],
+                    "rc": r["rc"],
+                    "command_preview": (r["run"] or "").splitlines()[:10],
+                }
+                for r in (important if failed else [])
+            ],
+        }
+        # Optionally run pre-commit and include its result in the summary.
+        try:
+            preproc = subprocess.run(["pre-commit", "run", "--all-files"], capture_output=True, text=True)
+            pre_rc = preproc.returncode
+            summary["pre_commit"] = {
+                "rc": pre_rc,
+                "stdout_tail": preproc.stdout.splitlines()[-50:],
+                "stderr_tail": preproc.stderr.splitlines()[-50:],
+            }
+            print(f"\npre-commit exit code: {pre_rc}")
+        except Exception as exc:  # pragma: no cover - best-effort
+            summary["pre_commit"] = {"error": str(exc)}
+            print(f"Failed to run pre-commit: {exc}")
+
+        with open(summary_path, "w", encoding="utf-8") as fh:
+            json.dump(summary, fh, indent=2)
+        print(f"\nWrote CI local summary to: {summary_path}")
+    except Exception as exc:  # pragma: no cover - best-effort reporting
+        print(f"Failed to write summary JSON: {exc}")
+
+    return first_nonzero_rc
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

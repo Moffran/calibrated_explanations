@@ -11,7 +11,7 @@ from calibrated_explanations.core.explain._legacy_explain import explain as lega
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
-def _split(x: np.ndarray, y: np.ndarray, *, calibration: int, test: int):
+def split(x: np.ndarray, y: np.ndarray, *, calibration: int, test: int):
     x_train = x[: -(calibration + test)]
     y_train = y[: -(calibration + test)]
     x_cal = x[-(calibration + test) : -test]
@@ -21,7 +21,7 @@ def _split(x: np.ndarray, y: np.ndarray, *, calibration: int, test: int):
     return x_train, y_train, x_cal, y_cal, x_test, y_test
 
 
-def _assert_collection_equal(modern, legacy):
+def assert_collection_equal(modern, legacy):
     assert len(modern.explanations) == len(legacy.explanations)
     for modern_exp, legacy_exp in zip(modern.explanations, legacy.explanations):
         for key in ("predict", "low", "high"):
@@ -63,7 +63,7 @@ def test_classification_matches_legacy():
         n_redundant=0,
         random_state=1,
     )
-    x_train, y_train, x_cal, y_cal, x_test, _ = _split(x, y, calibration=150, test=60)
+    x_train, y_train, x_cal, y_cal, x_test, _ = split(x, y, calibration=150, test=60)
     model = RandomForestClassifier(n_estimators=20, random_state=1)
     model.fit(x_train, y_train)
 
@@ -79,10 +79,10 @@ def test_classification_matches_legacy():
     explainer.set_discretizer(None)
 
     subset = x_test[:10]
-    modern = explainer.explain(subset, _use_plugin=False)
+    modern = explainer.explain_factual(subset, _use_plugin=False)
     legacy = legacy_explain(explainer, subset)
 
-    _assert_collection_equal(modern, legacy)
+    assert_collection_equal(modern, legacy)
 
 
 def test_regression_matches_legacy():
@@ -93,7 +93,7 @@ def test_regression_matches_legacy():
         noise=0.1,
         random_state=5,
     )
-    x_train, y_train, x_cal, y_cal, x_test, _ = _split(x, y, calibration=150, test=60)
+    x_train, y_train, x_cal, y_cal, x_test, _ = split(x, y, calibration=150, test=60)
     model = RandomForestRegressor(n_estimators=30, random_state=5)
     model.fit(x_train, y_train)
 
@@ -109,10 +109,10 @@ def test_regression_matches_legacy():
     explainer.set_discretizer(None)
 
     subset = x_test[:10]
-    modern = explainer.explain(subset, _use_plugin=False)
+    modern = explainer.explain_factual(subset, _use_plugin=False)
     legacy = legacy_explain(explainer, subset)
 
-    _assert_collection_equal(modern, legacy)
+    assert_collection_equal(modern, legacy)
 
 
 def test_legacy_explain_categorical_paths_and_ignore():

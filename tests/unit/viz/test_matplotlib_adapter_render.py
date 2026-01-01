@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from calibrated_explanations.viz import matplotlib_adapter
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
     IntervalHeaderSpec,

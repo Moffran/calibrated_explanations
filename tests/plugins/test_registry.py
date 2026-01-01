@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import warnings
-
 import pytest
 
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     ensure_builtin_plugins,
     list_explanation_descriptors,
     mark_explanation_trusted,
@@ -13,7 +12,7 @@ from calibrated_explanations.plugins.registry import (
 )
 
 
-def _base_metadata() -> dict:
+def base_metadata() -> dict:
     return {
         "name": "test",
         "schema_version": 1,
@@ -26,7 +25,7 @@ def _base_metadata() -> dict:
 
 
 def test_validate_allows_canonical_modes() -> None:
-    meta = _base_metadata()
+    meta = base_metadata()
 
     normalised = validate_explanation_metadata(meta)
 
@@ -34,15 +33,15 @@ def test_validate_allows_canonical_modes() -> None:
 
 
 def test_validate_alias_emits_warning_and_normalises() -> None:
-    meta = _base_metadata()
+    meta = base_metadata()
     meta["modes"] = ("explanation:factual", "factual")
 
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", category=DeprecationWarning)
+        warnings.simplefilter("always")
         normalised = validate_explanation_metadata(meta)
 
     assert normalised["modes"] == ("factual",)
-    assert any(isinstance(item.message, DeprecationWarning) for item in caught)
+    assert any("explanation mode alias" in str(w.message) for w in caught)
 
 
 @pytest.mark.parametrize(
@@ -55,7 +54,7 @@ def test_validate_alias_emits_warning_and_normalises() -> None:
     ),
 )
 def test_dependency_fields_are_normalised(field: str, value, expected) -> None:
-    meta = _base_metadata()
+    meta = base_metadata()
     meta[field] = value
 
     normalised = validate_explanation_metadata(meta)
@@ -64,25 +63,29 @@ def test_dependency_fields_are_normalised(field: str, value, expected) -> None:
 
 
 def test_tasks_field_required_and_validated() -> None:
-    meta = _base_metadata()
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    meta = base_metadata()
     meta["tasks"] = ("classification", "regression")
 
     normalised = validate_explanation_metadata(meta)
 
     assert normalised["tasks"] == ("classification", "regression")
 
-    meta_invalid = _base_metadata()
+    meta_invalid = base_metadata()
     meta_invalid["tasks"] = ("unknown",)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         validate_explanation_metadata(meta_invalid)
 
 
 def test_schema_version_future_rejected() -> None:
-    meta = _base_metadata()
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    meta = base_metadata()
     meta["schema_version"] = 999
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValidationError) as exc:
         validate_explanation_metadata(meta)
 
     assert "unsupported schema_version" in str(exc.value)
@@ -102,24 +105,30 @@ def test_list_descriptors_respects_trust_state() -> None:
 
 
 def test_validate_explanation_metadata_invalid_modes():
-    meta = _base_metadata()
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    meta = base_metadata()
     meta["modes"] = ("invalid_mode",)
 
-    with pytest.raises(ValueError, match="unsupported values"):
+    with pytest.raises(ValidationError, match="unsupported values"):
         validate_explanation_metadata(meta)
 
 
 def test_validate_explanation_metadata_no_modes():
-    meta = _base_metadata()
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    meta = base_metadata()
     del meta["modes"]
 
-    with pytest.raises(ValueError, match="plugin_meta missing required key: modes"):
+    with pytest.raises(ValidationError, match="plugin_meta missing required key: modes"):
         validate_explanation_metadata(meta)
 
 
 def test_validate_explanation_metadata_missing_trust():
-    meta = _base_metadata()
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    meta = base_metadata()
     del meta["trust"]
 
-    with pytest.raises(ValueError, match="missing required key: trust"):
+    with pytest.raises(ValidationError, match="missing required key: trust"):
         validate_explanation_metadata(meta)

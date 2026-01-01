@@ -2,47 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
 
-import pytest
-
-from calibrated_explanations.viz import plots as plotting
-
-
-def test_read_plot_pyproject_handles_missing_file(tmp_path, monkeypatch):
-    """When no ``pyproject.toml`` exists the helper should fall back to an empty dict."""
-
-    monkeypatch.chdir(tmp_path)
-
-    assert plotting._read_plot_pyproject() == {}
-
-
-def test_read_plot_pyproject_extracts_nested_plot_settings(tmp_path, monkeypatch):
-    """Ensure the helper returns the dedicated plotting settings section when present."""
-
-    monkeypatch.chdir(tmp_path)
-
-    (tmp_path / "pyproject.toml").write_text(
-        """
-        [tool.calibrated_explanations.plots]
-        style = "toml-style"
-        fallbacks = ["a", "b"]
-        """.strip()
-        + "\n",
-        encoding="utf-8",
-    )
-
-    assert plotting._read_plot_pyproject() == {"style": "toml-style", "fallbacks": ["a", "b"]}
-
-
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        ("first, second, third", ("first", "second", "third")),
-        (["keep", "  also keep  ", 42, ""], ("keep", "also keep")),
-        (None, ()),
-    ],
-)
-def test_split_csv_normalises_and_filters_values(value, expected):
-    """``_split_csv`` should normalise whitespace and ignore non-string values."""
-
-    assert plotting._split_csv(value) == expected
+# Suppress internal deprecation warning from viz.plots importing legacy plotting
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import builtins
-
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.calibration import interval_regressor as interval_module
-from calibrated_explanations.utils import helper as helper_module
+import calibrated_explanations.utils as utils_module
+from calibrated_explanations.calibration import interval_regressor as interval_module
+from calibrated_explanations.core import ConfigurationError, DataShapeError
 
 
 class DummyCPS:
@@ -17,6 +16,7 @@ class DummyCPS:
         # Predict invocations pop values from this queue so tests can control outputs.
         self.predict_queue: list[float] = []
         self.alphas = np.array([], dtype=float)
+        self.binned_alphas = None
 
     # pylint: disable=too-many-arguments
     def fit(self, *, residuals, sigmas=None, bins=None, seed=None):  # pragma: no cover - smoke
@@ -30,16 +30,22 @@ class DummyCPS:
         )
         if sigmas is None:
             sigmas = np.ones_like(residuals)
-        self._last_sigmas = np.array(sigmas, copy=True)
+        self.last_sigmas = np.array(sigmas, copy=True)
         residuals = np.array(residuals, copy=True)
         if bins is None:
             self.alphas = np.sort(residuals.astype(float))
+            self.binned_alphas = None
         else:
             bins = np.array(bins)
+            unique_bins = np.unique(bins)
+            alpha_list = []
             mapping: dict[object, np.ndarray] = {}
-            for value in np.unique(bins):
-                mapping[value] = np.sort(residuals[bins == value].astype(float))
+            for value in unique_bins:
+                sorted_residuals = np.sort(residuals[bins == value].astype(float))
+                mapping[value] = sorted_residuals
+                alpha_list.append(sorted_residuals)
             self.alphas = (None, mapping)
+            self.binned_alphas = (unique_bins, alpha_list)
 
     # pylint: disable=too-many-arguments
     def predict(
@@ -111,7 +117,7 @@ class DummyExplainer:
     def predict_calibration(self):
         return self.y_cal + 0.05
 
-    def _get_sigma_test(self, x):  # pylint: disable=unused-argument
+    def get_sigma_test(self, x):  # pylint: disable=unused-argument
         return np.ones(len(x))
 
     def predict_function(self, x):
@@ -119,7 +125,7 @@ class DummyExplainer:
         return np.sum(x, axis=1)
 
 
-def _make_regressor(monkeypatch: pytest.MonkeyPatch, *, bins=None):
+def make_regressor(monkeypatch: pytest.MonkeyPatch, *, bins=None):
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
     monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
     DummyVennAbers.last_init = None
@@ -150,7 +156,7 @@ def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
         def predict_calibration(self):  # pragma: no cover - exercised indirectly
             return self.y_cal + 0.05
 
-        def _get_sigma_test(self, x):  # pylint: disable=unused-argument
+        def get_sigma_test(self, x):  # pylint: disable=unused-argument
             return np.ones((len(x), 1))
 
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
@@ -163,22 +169,22 @@ def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
     assert regressor.sigma_cal.ndim == 1
     assert regressor.bins is None or regressor.bins.ndim == 1
 
-    assert regressor._y_cal_hat_storage.ndim == 1
+    assert regressor.y_cal_hat_storage.ndim == 1
     assert regressor._residual_cal_storage.ndim == 1
     assert regressor._sigma_cal_storage.ndim == 1
 
 
 def test_append_helpers_expand_and_normalize(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
-    base_storage = np.array(regressor._y_cal_hat_storage, copy=True)
+    base_storage = np.array(regressor.y_cal_hat_storage, copy=True)
 
     regressor._append_calibration_buffer("y_cal_hat", np.arange(1, 6, dtype=float).reshape(-1, 1))
 
-    assert regressor._y_cal_hat_storage.shape[0] >= base_storage.shape[0] + 5
-    assert np.array_equal(regressor._y_cal_hat_storage[: base_storage.size], base_storage)
+    assert regressor.y_cal_hat_storage.shape[0] >= base_storage.shape[0] + 5
+    assert np.array_equal(regressor.y_cal_hat_storage[: base_storage.size], base_storage)
     assert np.allclose(
-        regressor._y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6)
+        regressor.y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6)
     )
 
     regressor._append_bins(np.array([[9], [8]]))
@@ -187,7 +193,7 @@ def test_append_helpers_expand_and_normalize(monkeypatch):
 
 
 def test_insert_calibration_updates_split_indices(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
     initial_small = len(regressor.split["parts"][0])
     initial_large = len(regressor.split["parts"][1])
@@ -204,7 +210,7 @@ def test_insert_calibration_updates_split_indices(monkeypatch):
 
 
 def test_bins_setter_flattens_column_vectors(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
     regressor.bins = np.array([[0], [1], [1], [0]])
 
@@ -213,7 +219,7 @@ def test_bins_setter_flattens_column_vectors(monkeypatch):
 
 
 def test_predict_probability_scalar_threshold(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.6]
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
 
@@ -228,7 +234,7 @@ def test_predict_probability_scalar_threshold(monkeypatch):
 
 
 def test_predict_probability_sequence_threshold(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     # Each tuple threshold consumes two CPS predictions (lower + upper bound).
     regressor.split["cps"].predict_queue = [0.2, 0.8, 0.2, 0.8]
     x = np.array([[0.5, 0.1], [0.6, 0.2]])
@@ -243,32 +249,17 @@ def test_predict_probability_sequence_threshold(monkeypatch):
 
 
 def test_predict_probability_requires_calibration_bins_when_test_bins_provided(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1]])
 
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
-def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
-    original_import = builtins.__import__  # capture original before any monkeypatching
-
-    regressor = _make_regressor(monkeypatch)
+def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch):
+    regressor = make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
-
-    import importlib
-
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
-    import_attempts: list[tuple[str, int]] = []
-
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: D401 - test helper
-        import_attempts.append((name, level))
-        if level > 0 and name.endswith("utils.helper"):
-            raise ImportError("relative helper unavailable")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
 
     calls: list[int] = []
 
@@ -279,7 +270,11 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
             return arr[0, col]
         return arr.ravel()[0]
 
-    monkeypatch.setattr(helper_module, "safe_first_element", stub_safe_first_element, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        stub_safe_first_element,
+        raising=False,
+    )
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -289,14 +284,11 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     assert extra is None
     assert calls == [1, 0, 0, 1, 0, 0]
 
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.2, 0.8]
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    import importlib
-
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
     calls: list[tuple[np.ndarray, int | None]] = []
 
     def fake_safe_first_element(values, col=None):
@@ -306,16 +298,10 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
             return array[0, col]
         return array.flat[0]
 
-    monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
-
-    def failing_import(
-        name, globals=None, locals=None, fromlist=(), level=0
-    ):  # pragma: no cover - helper
-        if name.endswith("utils.helper") and level == 1:
-            raise ImportError("forced failure")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", failing_import)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        fake_safe_first_element,
+    )
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -330,7 +316,7 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
 
 def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
     calibration_bins = np.array([0, 1, 0, 1])
-    regressor = _make_regressor(monkeypatch, bins=calibration_bins)
+    regressor = make_regressor(monkeypatch, bins=calibration_bins)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
 
     expanded = np.array([5, 5])
@@ -372,24 +358,24 @@ def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
 
 
 def test_predict_probability_requires_calibration_bins(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     x = np.array([[0.1, 0.2]])
 
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
 def test_predict_probability_rejects_mismatched_bin_length(monkeypatch):
     calibration_bins = np.array([0, 1, 0, 1])
-    regressor = _make_regressor(monkeypatch, bins=calibration_bins)
+    regressor = make_regressor(monkeypatch, bins=calibration_bins)
     x = np.array([[0.1, 0.2], [0.2, 0.3]])
 
-    with pytest.raises(ValueError, match="length of test bins"):
+    with pytest.raises(DataShapeError, match="length of test bins"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
 def test_predict_uncertainty_uses_interval_outputs(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     x = np.array([[0.3, 0.2]])
 
     median, low, high, extra = regressor.predict_uncertainty(x, low_high_percentiles=(5, 95))
@@ -401,55 +387,58 @@ def test_predict_uncertainty_uses_interval_outputs(monkeypatch):
 
 
 def test_insert_calibration_requires_bins_when_existing_none(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ValueError, match="Cannot mix calibration instances with and without bins"):
+    with pytest.raises(
+        ConfigurationError, match="Cannot mix calibration instances with and without bins"
+    ):
         regressor.insert_calibration(xs, ys, bins=np.array([0, 1]))
 
 
 def test_insert_calibration_validates_bin_length(monkeypatch):
     base_bins = np.zeros(4, dtype=int)
-    regressor = _make_regressor(monkeypatch, bins=base_bins)
+    regressor = make_regressor(monkeypatch, bins=base_bins)
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ValueError, match="length of bins"):
+    with pytest.raises(DataShapeError, match="length of bins"):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
 
 
 def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    """Verify fallback import mechanism for safe_first_element when relative import fails.
+
+    Note: With the refactored structure where interval_regressor lives in the top-level
+    calibration package (not core.calibration), the relative import from ..utils.helper
+    now resolves correctly and doesn't require fallback. This test validates that
+    safe_first_element is called correctly in the new structure.
+    """
+    regressor = make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.4, 0.6]
     x = np.array([[0.5, 0.1], [0.6, 0.2]])
     thresholds = np.array([0.3, 0.7])
 
     calls: list[tuple[int | None, float]] = []
-    original_safe_first = helper_module.safe_first_element
+    original_safe_first = utils_module.safe_first_element
 
     def tracking_safe_first(values, default=0.0, col=None):
         result = original_safe_first(values, default=default, col=col)
         calls.append((col, result))
         return result
 
-    monkeypatch.setattr(helper_module, "safe_first_element", tracking_safe_first, raising=False)
-
-    original_import = builtins.__import__
-    failures = {"count": 0}
-
-    def failing_relative_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if level == 1 and name == "utils.helper":
-            failures["count"] += 1
-            raise ImportError("simulated relative failure")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", failing_relative_import)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        tracking_safe_first,
+        raising=False,
+    )
 
     proba, _, _, _ = regressor.predict_probability(x, y_threshold=thresholds)
 
     assert np.allclose(proba, 0.7)
-    assert failures["count"] >= thresholds.size
+    # With the new structure, the relative import succeeds correctly from calibration/utils.
+    # Verify that safe_first_element is still called the expected number of times.
     assert len(calls) == thresholds.size * 3
     for offset in range(0, len(calls), 3):
         cols = [calls[offset + i][0] for i in range(3)]
@@ -457,7 +446,7 @@ def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
 
 
 def test_predict_proba_returns_binary_matrix_for_scalar_threshold(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     regressor.current_y_threshold = 0.3
     regressor.cps.predict_queue = [0.2]
     x = np.array([[0.5, 0.5]])
@@ -469,7 +458,7 @@ def test_predict_proba_returns_binary_matrix_for_scalar_threshold(monkeypatch):
 
 
 def test_predict_proba_handles_interval_threshold(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     regressor.current_y_threshold = (0.1, 0.4)
     regressor.cps.predict_queue = [0.15, 0.9]
     x = np.array([[0.2, 0.1], [0.3, 0.2]])
@@ -483,51 +472,58 @@ def test_predict_proba_handles_interval_threshold(monkeypatch):
 
 
 def test_compute_proba_cal_rejects_invalid_threshold(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    from calibrated_explanations.utils.exceptions import ValidationError
 
-    with pytest.raises(TypeError, match="y_threshold must be a float or a tuple"):
+    regressor = make_regressor(monkeypatch)
+
+    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal({"not": "supported"})
 
 
 def test_insert_calibration_updates_predictor_state(monkeypatch):
     base_bins = np.array([0, 1, 0, 1])
-    regressor = _make_regressor(monkeypatch, bins=base_bins)
+    regressor = make_regressor(monkeypatch, bins=base_bins)
     updates = [
         (np.array([[0.9, 0.2]]), np.array([1.4]), np.array([0])),
         (np.array([[0.1, 0.8]]), np.array([1.2]), np.array([1])),
     ]
 
-    expected_bins0 = np.array(regressor.cps.alphas[1][0], copy=True)
-    expected_bins1 = np.array(regressor.cps.alphas[1][1], copy=True)
+    # Use split["cps"] because insert_calibration updates the split CPS, not the main one.
+    # Also use binned_alphas because that's what is updated.
+    cps = regressor.split["cps"]
+    expected_bins0 = np.array(cps.binned_alphas[1][0], copy=True)
+    expected_bins1 = np.array(cps.binned_alphas[1][1], copy=True)
     appended_bins: list[int] = []
 
-    for xs, ys, new_bins in updates:
+    for i, (xs, ys, new_bins) in enumerate(updates):
         residual = ys - regressor.ce.predict_function(xs)
         regressor.insert_calibration(xs, ys, bins=new_bins)
         appended_bins.extend(new_bins.tolist())
-        if new_bins[0] == 0:
-            expected_bins0 = np.sort(np.concatenate([expected_bins0, residual]))
-        else:
-            expected_bins1 = np.sort(np.concatenate([expected_bins1, residual]))
+        # First update goes to CPS (part 0), second goes to VA (part 1) due to split balancing
+        if i == 0:
+            if new_bins[0] == 0:
+                expected_bins0 = np.sort(np.concatenate([expected_bins0, residual]))
+            else:
+                expected_bins1 = np.sort(np.concatenate([expected_bins1, residual]))
 
     assert regressor.bins.shape[0] == base_bins.shape[0] + len(appended_bins)
     assert np.all(regressor.bins[-len(appended_bins) :] == np.array(appended_bins))
-    assert np.allclose(regressor.cps.alphas[1][0], expected_bins0)
-    assert np.allclose(regressor.cps.alphas[1][1], expected_bins1)
+    assert np.allclose(cps.binned_alphas[1][0], expected_bins0)
+    assert np.allclose(cps.binned_alphas[1][1], expected_bins1)
 
 
 def test_append_helpers_ignore_empty_inputs(monkeypatch):
     """Empty calibration inserts should not mutate internal buffers."""
 
-    regressor = _make_regressor(monkeypatch, bins=np.array([0, 1, 0, 1]))
+    regressor = make_regressor(monkeypatch, bins=np.array([0, 1, 0, 1]))
 
-    original_y_hat = np.array(regressor._y_cal_hat_storage, copy=True)
+    original_y_hat = np.array(regressor.y_cal_hat_storage, copy=True)
     original_y_hat_size = regressor._y_cal_hat_size
     regressor._append_calibration_buffer("y_cal_hat", np.array([]))
 
     assert regressor._y_cal_hat_size == original_y_hat_size
     assert np.array_equal(
-        regressor._y_cal_hat_storage[:original_y_hat_size], original_y_hat[:original_y_hat_size]
+        regressor.y_cal_hat_storage[:original_y_hat_size], original_y_hat[:original_y_hat_size]
     )
 
     original_bins = np.array(regressor._bins_storage, copy=True)
@@ -539,14 +535,14 @@ def test_append_helpers_ignore_empty_inputs(monkeypatch):
 
 
 def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
     appended_calibration = np.array([[9.0], [8.0], [7.0], [6.0], [5.0]])
     regressor._append_calibration_buffer("y_cal_hat", appended_calibration)
 
     assert regressor._y_cal_hat_size == 4 + appended_calibration.shape[0]
-    assert np.allclose(regressor._y_cal_hat_storage[:4], np.array([0.15, 0.25, 0.35, 0.45]))
-    assert np.allclose(regressor._y_cal_hat_storage[4:9], appended_calibration.reshape(-1))
+    assert np.allclose(regressor.y_cal_hat_storage[:4], np.array([0.15, 0.25, 0.35, 0.45]))
+    assert np.allclose(regressor.y_cal_hat_storage[4:9], appended_calibration.reshape(-1))
 
     regressor._append_bins(np.array([[2], [3]]))
     regressor._append_bins(np.array([[4], [5], [6]]))
@@ -556,15 +552,17 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
 
 
 def test_compute_proba_cal_rejects_unsupported_type(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    from calibrated_explanations.utils.exceptions import ValidationError
 
-    with pytest.raises(TypeError, match="y_threshold must be a float or a tuple"):
+    regressor = make_regressor(monkeypatch)
+
+    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal(object())
 
 
 def test_insert_calibration_updates_with_bins(monkeypatch):
     base_bins = np.array([0, 1, 0, 1])
-    regressor = _make_regressor(monkeypatch, bins=base_bins)
+    regressor = make_regressor(monkeypatch, bins=base_bins)
     xs = np.array([[0.5, 0.5], [0.6, 0.4]])
     ys = np.array([1.2, 1.5])
     new_bins = np.array([0, 1])
@@ -575,14 +573,15 @@ def test_insert_calibration_updates_with_bins(monkeypatch):
     assert np.array_equal(regressor.bins[-2:], new_bins)
     assert regressor.y_cal_hat.shape[0] == 6
     assert regressor.residual_cal.shape[0] == 6
-    assert regressor.cps.alphas[1][0][-1] == pytest.approx(0.2)
-    assert regressor.cps.alphas[1][1][-1] == pytest.approx(0.5)
+    assert regressor.split["cps"].binned_alphas[1][0][-1] == pytest.approx(0.2)
+    # Second update goes to VA, so CPS bin 1 should not change
+    assert regressor.split["cps"].binned_alphas[1][1][-1] == pytest.approx(-0.05)
 
 
 def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
     """Residual insertions update both CPS views when no Mondrian bins are used."""
 
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
     base_split_alphas = np.array(regressor.split["cps"].alphas, copy=True)
     base_cps_alphas = np.array(regressor.cps.alphas, copy=True)
@@ -609,14 +608,16 @@ def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
 
 
 def test_compute_proba_cal_invalid_type(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    from calibrated_explanations.utils.exceptions import ValidationError
 
-    with pytest.raises(TypeError, match="y_threshold must be a float or a tuple"):
+    regressor = make_regressor(monkeypatch)
+
+    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal([0.1, 0.2])
 
 
 def test_compute_proba_cal_tuple_threshold(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.2, 0.8]
 
     regressor.compute_proba_cal((0.15, 0.35))
@@ -639,7 +640,7 @@ def test_init_flattens_calibration_arrays(monkeypatch):
         def predict_calibration(self):
             return self.y_cal + 0.05
 
-        def _get_sigma_test(self, x):  # pylint: disable=unused-argument
+        def get_sigma_test(self, x):  # pylint: disable=unused-argument
             return np.ones((len(x), 1))
 
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
@@ -647,13 +648,13 @@ def test_init_flattens_calibration_arrays(monkeypatch):
 
     regressor = interval_module.IntervalRegressor(ColumnExplainer())
 
-    assert regressor._y_cal_hat_storage.ndim == 1
+    assert regressor.y_cal_hat_storage.ndim == 1
     assert regressor._residual_cal_storage.ndim == 1
     assert regressor._sigma_cal_storage.ndim == 1
 
 
 def test_append_bins_initializes_storage(monkeypatch):
-    regressor = _make_regressor(monkeypatch, bins=None)
+    regressor = make_regressor(monkeypatch, bins=None)
 
     regressor._append_bins(np.array([[1], [2]]))
 
@@ -663,7 +664,7 @@ def test_append_bins_initializes_storage(monkeypatch):
 
 
 def test_ensure_capacity_copies_existing_prefix(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
     original = np.array([5], dtype=float)
 
     grown = regressor._ensure_capacity(original, size=1, additional=2)
@@ -673,7 +674,7 @@ def test_ensure_capacity_copies_existing_prefix(monkeypatch):
 
 
 def test_insert_calibration_updates_split_parts(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
     xs = np.array([[0.2, 0.1], [0.3, 0.2], [0.4, 0.3]])
     ys = np.array([0.4, 0.5, 0.6])
@@ -688,7 +689,7 @@ def test_insert_calibration_updates_split_parts(monkeypatch):
 
 
 def test_bins_setter_flattens_inputs(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
+    regressor = make_regressor(monkeypatch)
 
     regressor.bins = np.array([[0], [1], [0], [1]])
 

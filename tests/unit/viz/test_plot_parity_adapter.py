@@ -1,7 +1,7 @@
 import pytest
 
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     REGRESSION_BAR_COLOR,
     REGRESSION_BASE_COLOR,
 )
@@ -17,11 +17,6 @@ from tests.unit.viz.test_plot_parity_fixtures import (
     triangular_probabilistic,
     global_probabilistic_multiclass,
 )
-
-
-def _role_alpha(pr):
-    v = pr.get("visual", {})
-    return v.get("color_role"), v.get("alpha")
 
 
 REG_BAR_COLOR = REGRESSION_BAR_COLOR
@@ -251,8 +246,8 @@ def test_render_dict_global_via_shim(tmp_path):
     assert len(saves) == 2
 
 
-def test_plot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
-    """Ensure `_plot_triangular` delegates to builder+adapter and handles save_ext."""
+def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
+    """Ensure `plot_triangular` delegates to builder+adapter and handles save_ext."""
     from calibrated_explanations.viz import plots as _plots
 
     calls = []
@@ -276,7 +271,7 @@ def test_plot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
     rule_uncertainty = [0.05]
 
     # call with show=False and no save_ext -> should no-op and not call adapter.render
-    _plots._plot_triangular(
+    _plots.plot_triangular(
         None,
         proba,
         uncertainty,
@@ -293,7 +288,7 @@ def test_plot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
 
     # Reset and call with save_ext to trigger adapter.save behavior
     calls.clear()
-    _plots._plot_triangular(
+    _plots.plot_triangular(
         None,
         proba,
         uncertainty,

@@ -14,8 +14,7 @@ from typing import TYPE_CHECKING, Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
-from ...utils.helper import safe_isinstance
-from ..prediction_helpers import initialize_explanation as _ih
+from ...utils import safe_isinstance
 from ._computation import explain_predict_step  # Re-export for backward compatibility
 from .feature_task import FeatureTaskResult
 
@@ -60,9 +59,10 @@ def slice_threshold(threshold: Any, start: int, stop: int, total_len: int) -> An
     """
     if threshold is None or np.isscalar(threshold):
         return threshold
-    try:
+    length = None
+    with contextlib.suppress(TypeError):
         length = len(threshold)
-    except TypeError:
+    if length is None:
         return threshold
     if length != total_len:
         return threshold
@@ -115,6 +115,8 @@ def initialize_explanation(
     Delegates to the prediction_helpers module which contains the
     authoritative initialization logic.
     """
+    from ..prediction_helpers import initialize_explanation as _ih
+
     return _ih(explainer, x, low_high_percentiles, threshold, bins, features_to_ignore)
 
 
@@ -187,6 +189,8 @@ def merge_feature_result(
     low_matrix[:, feature_index] = feature_low_values
     high_matrix[:, feature_index] = feature_high_values
 
+    # (parity instrumentation removed)
+
     if lower_update is not None:
         rule_boundaries[:, feature_index, 0] = lower_update
     if upper_update is not None:
@@ -227,19 +231,21 @@ def compute_weight_delta(baseline, perturbed) -> np.ndarray:
         with contextlib.suppress(ValueError):
             baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
 
-    try:
+    with contextlib.suppress(TypeError, ValueError):
         return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-    except (TypeError, ValueError):
-        # Fallback to element-wise assignment via explainer semantics
-        baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
-        perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
-        deltas = np.empty_like(perturbed_flat, dtype=float)
-        for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
-            # Use scalar helper from module-level implementation
-            delta_value = base_value - pert_value
-            delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
-            deltas[idx] = float(delta_array[0])
-        return deltas.reshape(perturbed_arr.shape)
+
+    # Fallback to element-wise assignment via explainer semantics
+    baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
+    perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
+    deltas = np.empty_like(perturbed_flat, dtype=float)
+    for idx, (pert_value, base_value) in enumerate(
+        zip(perturbed_flat, baseline_flat, strict=False)
+    ):
+        # Use scalar helper from module-level implementation
+        delta_value = base_value - pert_value
+        delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
+        deltas[idx] = float(delta_array[0])
+    return deltas.reshape(perturbed_arr.shape)
 
 
 def feature_effect_for_index(
@@ -253,7 +259,7 @@ def feature_effect_for_index(
     baseline_prediction: Mapping[str, Any],
 ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Compute feature-level contributions for a single feature index."""
-    local_predict, local_low, local_high, _ = explainer._predict(
+    local_predict, local_low, local_high, _ = explainer.predict_calibrated(
         x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,

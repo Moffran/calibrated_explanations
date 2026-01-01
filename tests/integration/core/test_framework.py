@@ -17,23 +17,19 @@ from unittest.mock import patch
 
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils.helper import (
-    check_is_fitted,
-    is_notebook,
-    make_directory,
-    safe_import,
-)
+from calibrated_explanations.utils.exceptions import NotFittedError
+from calibrated_explanations.utils import check_is_fitted, is_notebook, make_directory, safe_import
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 
-from tests._helpers import get_classification_model, get_regression_model
+from tests.helpers.model_utils import get_classification_model, get_regression_model
 
 
 def test_failure():
     """
     Tests the failure case for initializing `CalibratedExplainer`.
     """
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         CalibratedExplainer(RandomForestClassifier(), [], [])
 
 
@@ -49,17 +45,19 @@ def test_check_is_fitted_with_fitted_model(binary_dataset):
         check_is_fitted(model)
     except TypeError:
         pytest.fail("check_is_fitted raised TypeError unexpectedly!")
-    except RuntimeError:
-        pytest.fail("check_is_fitted raised RuntimeError unexpectedly!")
+    except NotFittedError:
+        pytest.fail("check_is_fitted raised NotFittedError unexpectedly!")
 
 
 def test_check_is_fitted_with_non_fitted_model():
     """
     Tests `check_is_fitted` with a non-fitted model.
     """
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         check_is_fitted(RandomForestClassifier())
-    with pytest.raises(TypeError):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
         check_is_fitted(RandomForestClassifier)
 
 
@@ -105,10 +103,10 @@ def test_explanation_functions_classification(binary_dataset):
     ce = CalibratedExplainer(model, x_cal, y_cal, verbose=True)
 
     factual_explanations = ce.explain_factual(x_test)
-    factual_explanations._get_rules()
-    factual_explanations._is_alternative()
-    factual_explanations._is_one_sided()
-    factual_explanations._is_probabilistic_regression()
+    factual_explanations.get_rules()
+    factual_explanations.is_alternative()
+    factual_explanations.is_one_sided
+    factual_explanations.is_probabilistic_regression
     # LIME is an optional dependency; skip this portion if not installed
     try:  # pragma: no cover - optional path
         import importlib
@@ -126,13 +124,13 @@ def test_explanation_functions_classification(binary_dataset):
     ce.predict_proba(x_test)
 
     alternative_explanations = ce.explore_alternatives(x_test)
-    alternative_explanations._get_rules()
-    alternative_explanations._is_alternative()
-    alternative_explanations._is_one_sided()
-    alternative_explanations._is_probabilistic_regression()
+    alternative_explanations.get_rules()
+    alternative_explanations.is_alternative()
+    alternative_explanations.is_one_sided
+    alternative_explanations.is_probabilistic_regression
 
-    ce._preload_lime()
-    # ce._preload_shap() # generates an insane number of warnings
+    ce.preload_lime()
+    # ce.preload_shap() # generates an insane number of warnings
 
     print(ce)
 
@@ -148,21 +146,21 @@ def test_explanation_functions_regression(regression_dataset):
     ce = CalibratedExplainer(model, x_cal, y_cal, mode="regression", verbose=True)
 
     factual_explanations = ce.explain_factual(x_test)
-    factual_explanations._get_rules()
-    factual_explanations._is_alternative()
-    factual_explanations._is_one_sided()
-    factual_explanations._is_probabilistic_regression()
+    factual_explanations.get_rules()
+    factual_explanations.is_alternative()
+    factual_explanations.is_one_sided
+    factual_explanations.is_probabilistic_regression
     factual_explanations[0].is_multiclass()
     # factual_explanations.as_lime() # requires lime to be installed, which is optional
     # factual_explanations.as_shap() # generates an insane number of warnings
 
     alternative_explanations = ce.explore_alternatives(x_test)
-    alternative_explanations._get_rules()
-    alternative_explanations._is_alternative()
-    alternative_explanations._is_one_sided()
-    alternative_explanations._is_probabilistic_regression()
+    alternative_explanations.get_rules()
+    alternative_explanations.is_alternative()
+    alternative_explanations.is_one_sided
+    alternative_explanations.is_probabilistic_regression
 
-    # ce._preload_lime() # requires lime to be installed, which is optional
-    # ce._preload_shap() # generates an insane number of warnings
+    # ce.preload_lime() # requires lime to be installed, which is optional
+    # ce.preload_shap() # generates an insane number of warnings
 
     print(ce)

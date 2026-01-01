@@ -1,11 +1,11 @@
 import pytest
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     build_probabilistic_bars_spec,
 )
-from calibrated_explanations.viz.matplotlib_adapter import render
+from calibrated_explanations.viz import render
 
 
-def _make_interval_weights():
+def make_interval_weights():
     # Create a simple predict dict and feature_weights with one rule crossing zero
     predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
     # One rule that maps to an interval crossing zero in the legacy coordinate system
@@ -19,7 +19,7 @@ def _make_interval_weights():
 
 @pytest.mark.viz_render
 def test_default_suppresses_solid_for_crossing_interval():
-    predict, feature_weights = _make_interval_weights()
+    predict, feature_weights = make_interval_weights()
     spec = build_probabilistic_bars_spec(
         title="test",
         predict=predict,
@@ -53,7 +53,7 @@ def test_default_suppresses_solid_for_crossing_interval():
 
 @pytest.mark.viz_render
 def test_parity_shows_solid_when_flag_false():
-    predict, feature_weights = _make_interval_weights()
+    predict, feature_weights = make_interval_weights()
     spec = build_probabilistic_bars_spec(
         title="test",
         predict=predict,

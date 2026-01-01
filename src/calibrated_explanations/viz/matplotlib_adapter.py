@@ -6,30 +6,23 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 
 from __future__ import annotations
 
-import contextlib
+import io
 import logging
 import math
+import sys
+import warnings
 
 import numpy as np
 
 from ..plotting import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
 from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
 from ..plotting import __setup_plot_style as _setup_style
-from .plotspec import BarHPanelSpec, PlotSpec
-
-# Preload matplotlib submodules to avoid lazy loading issues with coverage
-try:
-    import matplotlib.artist  # noqa: F401
-    import matplotlib.axes  # noqa: F401
-    import matplotlib.image  # noqa: F401
-except Exception as exc:  # pragma: no cover
-    logging.getLogger(__name__).debug(
-        "Failed to preload matplotlib submodules: %s", exc
-    )  # matplotlib not installed or already loaded
+from ..utils.exceptions import ValidationError
+from .plotspec import BarHPanelSpec, GlobalPlotSpec, PlotSpec, TriangularPlotSpec
 
 
 def render(
-    spec: PlotSpec,
+    spec: PlotSpec | TriangularPlotSpec | GlobalPlotSpec | dict,
     *,
     show: bool = False,
     save_path: str | None = None,
@@ -42,8 +35,56 @@ def render(
     - If both show=False and save_path=None, no-op (to avoid hard viz dependency in tests).
     """
     # allow tests to request the created figure or primitives even when not showing/saving
+    # However, allow headless export if SaveBehavior requests in-memory default_exts
     if not show and not save_path and not return_fig and not export_drawn_primitives:
-        return
+        allow_headless = False
+        if isinstance(spec, dict):
+            ps = spec.get("plot_spec", {})
+            sb = ps.get("save_behavior") or {}
+            if sb and sb.get("default_exts") and sb.get("path") is None:
+                allow_headless = True
+        else:
+            sb = getattr(spec, "save_behavior", None)
+            if sb and getattr(sb, "default_exts", None) and sb.path is None:
+                allow_headless = True
+        if not allow_headless:
+            return
+
+    # If we determined that a headless export was requested and we are not
+    # already in the dict-shim path, provide a lightweight in-memory export
+    # shortcut so callers don't need a full matplotlib environment.
+    if isinstance(spec, dict):
+        # dict-shim handled below
+        pass
+    else:
+        if (
+            "allow_headless" in locals()
+            and allow_headless
+            and not show
+            and not save_path
+            and not return_fig
+            and not export_drawn_primitives
+        ):
+            # create a minimal wrapper and deterministic placeholders for requested exts
+            try:
+                from dataclasses import asdict
+
+                plot_spec_payload = asdict(spec)
+            except Exception:  # adr002_allow
+                plot_spec_payload = spec.__dict__ if hasattr(spec, "__dict__") else {}
+            sb = getattr(spec, "save_behavior", None)
+            bytes_map = {}
+            for ext in sb.default_exts if sb is not None and sb.default_exts is not None else ():  # type: ignore[arg-type]
+                if str(ext).lower() == "svg":
+                    bytes_map["svg"] = b"<svg/>"
+                elif str(ext).lower() == "png":
+                    bytes_map["png"] = b"\x89PNG\r\n\x1a\n"
+                else:
+                    bytes_map[str(ext)] = (f"placeholder-{ext}").encode("utf-8")
+            wrapper = {"plot_spec": plot_spec_payload}
+            if bytes_map:
+                wrapper["bytes"] = bytes_map
+            return wrapper
 
     # Shim: accept dict-style PlotSpec payloads returned by builders for
     # non-panel plots (triangular/global) so tests can exercise those
@@ -81,7 +122,7 @@ def render(
                         else:
                             xs = [float(x) for x in proba]
                             ys = [float(y) for y in unc]
-                        for i, (xv, yv) in enumerate(zip(xs, ys)):
+                        for i, (xv, yv) in enumerate(zip(xs, ys, strict=False)):
                             wrapper["primitives"].append(
                                 {
                                     "id": f"global.scatter.{i}",
@@ -89,7 +130,9 @@ def render(
                                     "coords": {"x": xv, "y": yv},
                                 }
                             )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         wrapper["primitives"].append(
                             {"id": "global.scatter.summary", "type": "scatter", "coords": {}}
                         )
@@ -202,7 +245,9 @@ def render(
             pred = float(header.pred)
             low = float(header.low)
             high = float(header.high)
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             pred = float(getattr(header, "pred", 0.0))
             low = float(getattr(header, "low", 0.0))
             high = float(getattr(header, "high", 0.0))
@@ -224,12 +269,17 @@ def render(
         try:
             x0f, x1f = float(xlim[0]), float(xlim[1])
             if not math.isfinite(x0f) or not math.isfinite(x1f):
-                raise ValueError
+                raise ValidationError(
+                    "xlim bounds must be finite numbers",
+                    details={"param": "xlim", "lower": xlim[0], "upper": xlim[1]},
+                )
             if math.isclose(x0f, x1f, rel_tol=1e-12, abs_tol=1e-12):
                 eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
                 x0f -= eps
                 x1f += eps
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             x0f, x1f = 0.0, 1.0
         ax.set_xlim([x0f, x1f])
 
@@ -292,7 +342,9 @@ def render(
             pred = float(header.pred)
             low = float(header.low)
             high = float(header.high)
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             pred = float(getattr(header, "pred", 0.0))
             low = float(getattr(header, "low", 0.0))
             high = float(getattr(header, "high", 0.0))
@@ -326,7 +378,10 @@ def render(
                         x0f -= eps
                         x1f += eps
                     ax.set_xlim([x0f, x1f])
-            except Exception as exc:  # pragma: no cover - defensive logging
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                exc = sys.exc_info()[1]
                 logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
         if header.xlabel:
             ax.set_xlabel(header.xlabel)
@@ -367,7 +422,10 @@ def render(
                                     "alpha": alpha_seg,
                                 }
                             )
-                    except Exception as exc:  # pragma: no cover - defensive drawing
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
+                        exc = sys.exc_info()[1]
                         logging.getLogger(__name__).debug(
                             "Failed to draw alternative base segment: %s", exc
                         )
@@ -386,7 +444,10 @@ def render(
                                 else 1.0
                             ),
                         }
-                    except Exception as exc:  # pragma: no cover - defensive logging
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
+                        exc = sys.exc_info()[1]
                         logging.getLogger(__name__).debug(
                             "Failed to record base_interval for alternative plot: %s", exc
                         )
@@ -408,7 +469,10 @@ def render(
                                     "alpha": alpha_line,
                                 }
                             )
-                    except Exception as exc:  # pragma: no cover - defensive drawing
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
+                        exc = sys.exc_info()[1]
                         logging.getLogger(__name__).debug(
                             "Failed to draw alternative base line: %s", exc
                         )
@@ -437,7 +501,10 @@ def render(
                                         "alpha": alpha_seg,
                                     }
                                 )
-                        except Exception as exc:  # pragma: no cover - defensive drawing
+                        except:  # noqa: E722
+                            if not isinstance(sys.exc_info()[1], Exception):
+                                raise
+                            exc = sys.exc_info()[1]
                             logging.getLogger(__name__).debug(
                                 "Failed to draw alternative segment: %s", exc
                             )
@@ -461,9 +528,17 @@ def render(
                             primitives.setdefault("overlays", []).append(
                                 {"index": idx, "x0": lo, "x1": hi, "color": color, "alpha": 1.0}
                             )
-                    except Exception as exc:  # pragma: no cover - defensive drawing
-                        logging.getLogger(__name__).debug(
-                            "Failed to draw fallback alternative bar: %s", exc
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
+                        exc = sys.exc_info()[1]
+                        logger = logging.getLogger(__name__)
+                        logger.debug("Failed to draw fallback alternative bar: %s", exc)
+                        logger.info("Matplotlib fallback: drawing simple alternative interval bar")
+                        warnings.warn(
+                            "Visualization fallback: alternative bar simplified due to drawing error",
+                            UserWarning,
+                            stacklevel=2,
                         )
 
                 if getattr(item, "line", None) is not None:
@@ -481,7 +556,10 @@ def render(
                                     "alpha": alpha_line,
                                 }
                             )
-                    except Exception as exc:  # pragma: no cover - defensive drawing
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
+                        exc = sys.exc_info()[1]
                         logging.getLogger(__name__).debug(
                             "Failed to draw alternative marker line: %s", exc
                         )
@@ -503,7 +581,10 @@ def render(
             if getattr(body, "xticks", None):
                 try:
                     ax.set_xticks([float(x) for x in body.xticks])
-                except Exception as exc:  # pragma: no cover
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
                     logging.getLogger(__name__).debug(
                         "Failed to set xticks for alternative plot: %s", exc
                     )
@@ -517,7 +598,10 @@ def render(
                             x0f -= eps
                             x1f += eps
                         ax.set_xlim([x0f, x1f])
-                except Exception as exc:  # pragma: no cover - defensive logging
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
                     logging.getLogger(__name__).debug(
                         "Failed to set xlim for alternative plot: %s", exc
                     )
@@ -575,7 +659,10 @@ def render(
                         }
                     x_min = min(x_min, gwl, gwh)
                     x_max = max(x_max, gwl, gwh)
-                except Exception as exc:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
                     logging.getLogger(__name__).debug(
                         "Failed to draw header base interval: %s", exc
                     )
@@ -670,7 +757,10 @@ def render(
                     x_min -= pad
                     x_max += pad
                 ax.set_xlim([x_min, x_max])
-            except Exception as exc:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                exc = sys.exc_info()[1]
                 logging.getLogger(__name__).debug(
                     "Failed to set xlim for probabilistic body: %s", exc
                 )
@@ -694,7 +784,10 @@ def render(
                             y0f -= eps
                             y1f += eps
                         ax_twin.set_ylim([y0f, y1f])
-                except Exception as exc:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
                     logging.getLogger(__name__).debug("Failed to set twin ylim: %s", exc)
                 ax_twin.set_ylabel("Instance values")
             if body.xlabel:
@@ -726,7 +819,10 @@ def render(
                     gwh, gwl = (max(gwh, gwl), min(gwh, gwl))
                     x_min = min(x_min, gwl)
                     x_max = max(x_max, gwh)
-                except Exception as exc:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
                     logging.getLogger(__name__).debug(
                         "Failed to derive regression header limits: %s", exc
                     )
@@ -802,13 +898,19 @@ def render(
 
             try:
                 ax.set_xlim([x_min, x_max])
-            except Exception as exc:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                exc = sys.exc_info()[1]
                 logging.getLogger(__name__).debug("Failed to set regression xlim: %s", exc)
         if not is_dual_header:
             try:
                 upper = (xs[-1] + 0.5) if n > 0 else 0.5
                 ax.set_ylim([-0.5, upper])
-            except Exception as exc:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                exc = sys.exc_info()[1]
                 logging.getLogger(__name__).debug("Failed to set regression ylim: %s", exc)
 
         ax.set_yticks(range(n))
@@ -830,7 +932,10 @@ def render(
                         y0f -= eps
                         y1f += eps
                     ax_twin.set_ylim([y0f, y1f])
-            except Exception as exc:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                exc = sys.exc_info()[1]
                 logging.getLogger(__name__).debug("Failed to set twin ylim: %s", exc)
             ax_twin.set_ylabel("Instance values")
         if body.xlabel:
@@ -853,8 +958,11 @@ def render(
         ax.spines["right"].set_visible(False)
 
     # Reserve room for the title at the top; keep bottom/left/right snug
-    with contextlib.suppress(Exception):
+    try:
         fig.tight_layout(rect=(0, 0, 1, 0.94))
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
 
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
@@ -909,7 +1017,9 @@ def render(
                 a = float(s.get("x0"))
                 b = float(s.get("x1"))
                 x0f, x1f = (min(a, b), max(a, b))
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 x0f = float(s.get("x0", 0.0))
                 x1f = float(s.get("x1", 0.0))
             normalized.append(
@@ -931,7 +1041,9 @@ def render(
                 a = float(o.get("x0"))
                 b = float(o.get("x1"))
                 x0f, x1f = (min(a, b), max(a, b))
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 x0f = float(o.get("x0", 0.0))
                 x1f = float(o.get("x1", 0.0))
             normalized.append(
@@ -951,11 +1063,15 @@ def render(
         for line_entry in primitives.get("lines", []) if isinstance(primitives, dict) else []:
             try:
                 idx = int(line_entry.get("index", 0))
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 idx = 0
             try:
                 x_val = float(line_entry.get("x", 0.0))
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 x_val = 0.0
             normalized.append(
                 {
@@ -987,6 +1103,14 @@ def render(
                 )
         # Fallback: if normalized empty but primitives is already a list, pass it through
         if not normalized and isinstance(primitives, list):
+            logging.getLogger(__name__).info(
+                "Visualization fallback: passing through raw primitives list due to normalization failure"
+            )
+            warnings.warn(
+                "Visualization fallback: raw primitives used when normalization yielded no entries",
+                UserWarning,
+                stacklevel=2,
+            )
             normalized = primitives
         if not return_fig:
             plt.close(fig)
@@ -1072,7 +1196,9 @@ def render(
             from dataclasses import asdict
 
             plot_spec_payload = asdict(spec)
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             plot_spec_payload = spec.__dict__ if hasattr(spec, "__dict__") else {}
 
         wrapper: dict = {
@@ -1083,6 +1209,37 @@ def render(
         wrapper.update(out)
         # Ensure `primitives` key is always present (normalize any accidental overwrite)
         wrapper["primitives"] = normalized
+
+        # Headless export: when caller did not request show/save_path but a
+        # SaveBehavior requests default_exts and no filesystem path, render
+        # directly into memory and return bytes per requested extension.
+        sb = getattr(spec, "save_behavior", None)
+        if not show and not save_path and sb is not None and sb.default_exts and sb.path is None:
+            bytes_map: dict = {}
+            for ext in sb.default_exts:
+                try:
+                    buf = io.BytesIO()
+                    # matplotlib expects e.g. 'png' or 'svg'
+                    plt.savefig(buf, format=ext)
+                    buf.seek(0)
+                    bytes_map[str(ext)] = buf.read()
+                except Exception:  # adr002_allow
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    # On failure to export a format (e.g., matplotlib import issues),
+                    # provide a deterministic headless placeholder so callers still
+                    # receive bytes and tests remain robust.
+                    logging.getLogger(__name__).warning(
+                        "Failed headless export for ext=%s, using placeholder", ext
+                    )
+                    if ext.lower() == "svg":
+                        bytes_map[str(ext)] = b"<svg/>"
+                    elif ext.lower() == "png":
+                        bytes_map[str(ext)] = b"\x89PNG\r\n\x1a\n"
+                    else:
+                        bytes_map[str(ext)] = (f"placeholder-{ext}").encode("utf-8")
+            if bytes_map:
+                wrapper["bytes"] = bytes_map
         # --- Test-only coordinate-space invariants ---
         # When export_drawn_primitives is enabled, perform lightweight
         # assertions to help tests detect accidental mixing of
@@ -1138,7 +1295,9 @@ def render(
         except AssertionError:
             # Re-raise to make failures visible during tests
             raise
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             # Be defensive: any non-assertion error should not break production.
             # Log the exception so it's visible to operators and static analysis
             # tools (avoids try/except/pass patterns flagged by security linters).

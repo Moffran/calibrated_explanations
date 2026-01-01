@@ -29,8 +29,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install . psutil
+          pip install -r requirements.txt -c constraints.txt
+          pip install . psutil -c constraints.txt
 
       - name: Generate new baseline & micro benchmarks
         id: gen
@@ -38,32 +38,32 @@ jobs:
           DATE_TAG=$(date -u +%Y%m%d)
           # API baseline collection not automated here; keep previous behavior minimal
           # Save micro benchmarks for perf guard
-          python scripts/micro_bench_perf.py --explain-backend legacy > benchmarks/micro_${DATE_TAG}.json
+          python scripts/micro_bench_perf.py --explain-backend legacy > tests/benchmarks/micro_${DATE_TAG}.json
           echo "date_tag=$DATE_TAG" >> $GITHUB_OUTPUT
 
       - name: Micro baseline diff vs current committed baseline
         id: api_diff
         run: |
-          OLD=$(ls benchmarks/micro_*.json | sort | head -n 1 || true)
-          NEW=benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
-          echo "Old micro baseline: $OLD" > perf_diff.txt
-          echo "New micro baseline: $NEW" >> perf_diff.txt
-          if [ -n "$OLD" ]; then python scripts/check_perf_micro.py "$OLD" "$NEW" benchmarks/perf_thresholds.json >> perf_diff.txt || true; else echo "No existing micro baseline found." >> perf_diff.txt; fi
-          cat perf_diff.txt
+          OLD=$(ls tests/benchmarks/micro_*.json | sort | head -n 1 || true)
+          NEW=tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+          echo "Old micro baseline: $OLD" > tests/benchmarks/perf_diff.txt
+          echo "New micro baseline: $NEW" >> tests/benchmarks/perf_diff.txt
+          if [ -n "$OLD" ]; then python scripts/check_perf_micro.py "$OLD" "$NEW" tests/benchmarks/perf_thresholds.json >> tests/benchmarks/perf_diff.txt || true; else echo "No existing micro baseline found." >> tests/benchmarks/perf_diff.txt; fi
+          cat tests/benchmarks/perf_diff.txt
 
       - name: Maybe regenerate thresholds
         if: ${{ github.event.inputs.override_thresholds == 'yes' }}
         run: |
           # Simple heuristic: keep existing structure; no automatic change implemented
-          echo "Threshold regeneration not automated; adjust manually if needed." >> perf_diff.txt
+          echo "Threshold regeneration not automated; adjust manually if needed." >> tests/benchmarks/perf_diff.txt
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: new-micro-baseline-${{ steps.gen.outputs.date_tag }}
           path: |
-            benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
-            perf_diff.txt
+            tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+            tests/benchmarks/perf_diff.txt
 
       - name: Create Pull Request with new baseline
         uses: peter-evans/create-pull-request@v7
@@ -74,15 +74,15 @@ jobs:
             Reason: ${{ github.event.inputs.reason || 'manual update' }}
 
             Includes:
-            - benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+            - tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
 
             Perf summary:
             ```
-            $(cat perf_diff.txt)
+            $(cat tests/benchmarks/perf_diff.txt)
             ```
           branch: chore/update-baseline-${{ steps.gen.outputs.date_tag }}
           base: main
           add-paths: |
-            benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
-            perf_diff.txt
+            tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+            tests/benchmarks/perf_diff.txt
           labels: performance, baseline-update

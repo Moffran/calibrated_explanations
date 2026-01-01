@@ -29,10 +29,11 @@ Functions:
 import numpy as np
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import DifficultyEstimator
 
-from tests._helpers import get_regression_model, initiate_explainer
+from tests.helpers.model_utils import get_regression_model
+from tests.helpers.explainer_utils import initiate_explainer
 
 
 def safe_fit_difficulty(x, y, scaler=True):
@@ -44,7 +45,7 @@ def safe_fit_difficulty(x, y, scaler=True):
         return DifficultyEstimator().fit(X=x, y=y, scaler=scaler)
     except Exception:
         # Fallback stub: minimal API used by CalibratedExplainer (fit + predict-like method)
-        class _StubDifficulty:
+        class StubDifficulty:
             def __init__(self):
                 # indicate 'fitted' so CalibratedExplainer accepts it
                 self.fitted = True
@@ -67,16 +68,16 @@ def safe_fit_difficulty(x, y, scaler=True):
             def __call__(self, x_data):
                 return self.apply(x_data)
 
-        return _StubDifficulty().fit()
+        return StubDifficulty().fit()
 
 
 def test_safe_fit_difficulty_fallback(monkeypatch):
     """Ensure the helper returns a stub difficulty estimator when fitting fails."""
 
-    def _failing_fit(self, *args, **kwargs):  # noqa: D401  - short helper, no doc needed
+    def failing_fit_mock(self, *args, **kwargs):  # noqa: D401  - short helper, no doc needed
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(DifficultyEstimator, "fit", _failing_fit, raising=True)
+    monkeypatch.setattr(DifficultyEstimator, "fit", failing_fit_mock, raising=True)
 
     stub = safe_fit_difficulty(np.zeros((3, 2)), np.zeros(3), scaler=False)
 

@@ -4,14 +4,14 @@ import numpy as np
 
 from calibrated_explanations.plugins import PlotRenderContext
 from calibrated_explanations.plugins.builtins import PlotSpecDefaultBuilder
-from calibrated_explanations.viz.builders import _legacy_get_fill_color
-from calibrated_explanations.viz.plotspec import PlotSpec
+from calibrated_explanations.viz import _legacy_get_fill_color
+from calibrated_explanations.viz import PlotSpec
 
 REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
 REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
 
 
-def _make_context(intent, payload, explanation=None):
+def make_context(intent, payload, explanation=None):
     return PlotRenderContext(
         explanation=explanation,
         instance_metadata=MappingProxyType({"type": "alternative"}),
@@ -43,7 +43,7 @@ def test_plot_spec_builder_handles_alternative_probabilistic():
         "column_names": ["rule_a", "rule_b"],
         "instance": [1.0, 2.0],
     }
-    context = _make_context(
+    context = make_context(
         {"type": "alternative", "mode": "classification", "title": "alt"},
         payload,
         explanation,
@@ -74,7 +74,7 @@ def test_plot_spec_builder_handles_alternative_regression():
         "column_names": ["rule_a", "rule_b"],
         "instance": np.array([10.0, 5.0]),
     }
-    context = _make_context(
+    context = make_context(
         {"type": "alternative", "mode": "regression", "title": "alt"},
         payload,
         explanation,
@@ -105,7 +105,7 @@ def test_plot_spec_builder_handles_alternative_regression_without_intervals():
         "column_names": ["rule_a", "rule_b"],
         "instance": [0.1, -0.2],
     }
-    context = _make_context(
+    context = make_context(
         {"type": "alternative", "mode": "regression", "title": "alt_no_interval"},
         payload,
         explanation,
@@ -142,7 +142,7 @@ def test_plot_spec_builder_normalizes_probability_regression_scale():
         "column_names": ["rule_a", "rule_b"],
         "instance": [0.5, 1.2],
     }
-    context = _make_context(
+    context = make_context(
         {"type": "alternative", "mode": "regression", "title": "alt_prob_scale"},
         payload,
         explanation,
@@ -178,7 +178,7 @@ def test_plot_spec_builder_infers_missing_features_and_labels():
         "instance": [10.0, 5.0, -2.0],
     }
 
-    context = _make_context(
+    context = make_context(
         {"type": "alternative", "mode": "classification", "title": "alt"},
         payload,
         explanation,

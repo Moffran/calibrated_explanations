@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from .calibration.venn_abers import VennAbers
-from .exceptions import ValidationError
+from ..calibration.venn_abers import VennAbers
+from ..utils.exceptions import ValidationError
 
 
 def compute_calibrated_confusion_matrix(

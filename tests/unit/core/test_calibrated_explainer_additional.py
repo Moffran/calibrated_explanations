@@ -7,208 +7,48 @@ method to avoid orphaned tests.
 
 **DELETION COUPLING REQUIREMENTS:**
 When removing deprecated methods from calibrated_explainer.py (e.g., _is_lime_enabled,
-_is_shap_enabled, _preload_lime, _preload_shap, explain_counterfactual), the
+_is_shap_enabled, preload_lime, preload_shap, explain_counterfactual), the
 corresponding tests in this file MUST be removed at the same time:
 
 - Removing CalibratedExplainer._is_lime_enabled → Remove any test_*lime* tests
 - Removing CalibratedExplainer._is_shap_enabled → Remove any test_*shap* tests
-- Removing CalibratedExplainer._preload_lime → Remove any test_*preload_lime* tests
-- Removing CalibratedExplainer._preload_shap → Remove any test_*preload_shap* tests
+- Removing CalibratedExplainer.preload_lime → Remove any test_*preload_lime* tests
+- Removing CalibratedExplainer.preload_shap → Remove any test_*preload_shap* tests
 - Removing CalibratedExplainer.explain_counterfactual → Remove test_explain_counterfactual* tests
 
 See calibrated_explainer.py docstrings for specific test locations.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import pytest
-from unittest.mock import create_autospec
 
-from calibrated_explanations.core.calibrated_explainer import (
-    CalibratedExplainer,
-)
-from calibrated_explanations.core.config_helpers import (
-    coerce_string_tuple as _coerce_string_tuple,
-    read_pyproject_section as _read_pyproject_section,
-    split_csv as _split_csv,
-)
+from calibrated_explanations.core.prediction.validation import check_interval_runtime_metadata
+from tests.helpers.model_utils import DummyLearner
+
+
 from calibrated_explanations.core.explain.feature_task import (
-    assign_weight_scalar as _assign_weight_scalar,
-    _feature_task,
+    feature_task,
 )
-from calibrated_explanations.plugins.predict_monitor import (
-    PredictBridgeMonitor as _PredictBridgeMonitor,
+from calibrated_explanations.core.explain.helpers import (
+    compute_weight_delta,
+    merge_feature_result,
 )
-from calibrated_explanations.core.exceptions import DataShapeError
-from calibrated_explanations.plugins.predict import PredictBridge
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
-
-
-class DummyLearner:
-    """Minimal learner implementation for calibration-focused tests."""
-
-    def __init__(
-        self,
-        *,
-        mode: str = "classification",
-        oob_decision_function: Optional[np.ndarray] = None,
-        oob_prediction: Optional[np.ndarray] = None,
-    ) -> None:
-        self.mode = mode
-        self.fitted_ = True  # ensures check_is_fitted succeeds
-        self.oob_decision_function_ = oob_decision_function
-        self.oob_prediction_ = oob_prediction
-
-    def fit(self, x: np.ndarray, y: np.ndarray) -> "DummyLearner":  # pragma: no cover - unused
-        return self
-
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        return np.zeros(len(x))
-
-    def predict_proba(self, x: np.ndarray) -> np.ndarray:
-        x = np.atleast_2d(x)
-        probs = np.zeros((len(x), 2))
-        probs[:, 0] = 0.4
-        probs[:, 1] = 0.6
-        return probs
-
-
-class DummyIntervalLearner:
-    """Interval learner returning deterministic zero arrays."""
-
-    def predict_uncertainty(
-        self, x: np.ndarray, *_args: Any, **_kwargs: Any
-    ) -> tuple[np.ndarray, ...]:
-        n = x.shape[0]
-        zeros = np.zeros(n)
-        return zeros, zeros, zeros, None
-
-    def predict_probability(
-        self, x: np.ndarray, *_args: Any, **_kwargs: Any
-    ) -> tuple[np.ndarray, ...]:
-        n = x.shape[0]
-        zeros = np.zeros(n)
-        return zeros, zeros, zeros, None
-
-    def predict_proba(self, x: np.ndarray, *_args: Any, **_kwargs: Any) -> tuple[np.ndarray, ...]:
-        """Compatibility shim: some code paths call predict_proba.
-
-        Return three zero arrays (predict, low, high) similar to other helpers.
-        """
-        x = np.atleast_2d(x)
-        n = x.shape[0]
-        probs = np.zeros((n, 2))
-        probs[:, 0] = 0.4
-        probs[:, 1] = 0.6
-        low = np.zeros((n, 2))
-        high = np.zeros((n, 2))
-        return probs, low, high
-
-
-def _patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure interval initialization is lightweight for focused unit tests."""
-
-    def _initialize(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
-        explainer.interval_learner = DummyIntervalLearner()
-        explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
-
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner",
-        _initialize,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
-        _initialize,
-    )
-
-
-def _make_explainer(
-    monkeypatch: pytest.MonkeyPatch,
-    learner: DummyLearner,
-    x_cal: np.ndarray,
-    y_cal: Any,
-    **kwargs: Any,
-) -> CalibratedExplainer:
-    _patch_interval_initializers(monkeypatch)
-    return CalibratedExplainer(learner, x_cal, y_cal, **kwargs)
-
-
-def test_read_pyproject_section_handles_multiple_sources(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
-) -> None:
-    module = __import__("calibrated_explanations.core.config_helpers", fromlist=["_tomllib"])
-    monkeypatch.chdir(tmp_path)
-
-    # No TOML reader available -> early fallback
-    monkeypatch.setattr(module, "_tomllib", None)
-    assert _read_pyproject_section(("tool",)) == {}
-
-    class DummyToml:
-        def __init__(self, payload: dict[str, Any]) -> None:
-            self._payload = payload
-
-        def load(self, _fh: Any) -> dict[str, Any]:
-            return self._payload
-
-    # File missing -> still fallback
-    monkeypatch.setattr(module, "_tomllib", DummyToml({}))
-    assert _read_pyproject_section(("tool", "missing")) == {}
-
-    pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text("[tool]\nname='demo'\n", encoding="utf-8")
-
-    # Value present but not a mapping -> coerced to empty result
-    monkeypatch.setattr(
-        module,
-        "_tomllib",
-        DummyToml({"tool": {"calibrated_explanations": {"explanations": ["value"]}}}),
-    )
-    assert _read_pyproject_section(("tool", "calibrated_explanations", "explanations")) == {}
-
-    # Proper mapping -> returned as dictionary copy
-    monkeypatch.setattr(
-        module,
-        "_tomllib",
-        DummyToml({"tool": {"calibrated_explanations": {"explanations": {"key": "value"}}}}),
-    )
-    assert _read_pyproject_section(("tool", "calibrated_explanations", "explanations")) == {
-        "key": "value"
-    }
-
-
-def test_coerce_string_tuple_variants() -> None:
-    assert _coerce_string_tuple("alpha") == ("alpha",)
-    assert _coerce_string_tuple(["alpha", "", "beta", 1]) == ("alpha", "beta")
-    assert _coerce_string_tuple(None) == ()
-    assert _coerce_string_tuple(123) == ()
-
-
-def test_predict_bridge_monitor_tracks_usage() -> None:
-    bridge = create_autospec(PredictBridge, instance=True)
-    monitor = _PredictBridgeMonitor(bridge)
-
-    payload = {"x": np.ones((2, 2))}
-    monitor.predict(payload, mode="factual", task="classification")
-    monitor.predict_interval(payload, task="classification")
-    monitor.predict_proba(payload)
-
-    assert monitor.calls == ("predict", "predict_interval", "predict_proba")
-    assert monitor.used
-
-    monitor.reset_usage()
-    assert monitor.calls == ()
-    assert not monitor.used
+from calibrated_explanations.core.calibration_metrics import compute_calibrated_confusion_matrix
+from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.explanations import CalibratedExplanations
+from tests.helpers.explainer_utils import make_mock_explainer
 
 
 def test_oob_predictions_binary(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner(oob_decision_function=np.array([0.2, 0.7, 0.8]))
     x_cal = np.arange(3).reshape(-1, 1)
     y_cal = np.array([0, 1, 0])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)
 
     assert np.array_equal(explainer.y_cal, np.array([0, 1, 1]))
 
@@ -230,9 +70,11 @@ def test_oob_predictions_multiclass_categorical(monkeypatch: pytest.MonkeyPatch)
     learner = DummyLearner(
         oob_decision_function=np.array([[0.1, 0.2, 0.7], [0.6, 0.2, 0.2], [0.2, 0.5, 0.3]])
     )
+    # Ensure predict_proba returns 3 columns for multiclass OOB test
+    learner.predict_proba = lambda x: np.full((len(x), 3), 0.33)
     x_cal = np.arange(3).reshape(-1, 1)
     y_cal = pd.Categorical(["cat", "dog", "bird"])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)
 
     assert "pandas.core.arrays.categorical.Categorical" in calls
     assert explainer.label_map == {"bird": 0, "cat": 1, "dog": 2}
@@ -246,53 +88,14 @@ def test_oob_predictions_regression_length_mismatch(monkeypatch: pytest.MonkeyPa
     y_cal = np.linspace(0.0, 1.0, 3)
 
     with pytest.raises(DataShapeError):
-        _make_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression", oob=True)
-
-
-def test_explanation_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    base = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
-    assert "missing tasks" in explainer._check_explanation_runtime_metadata(
-        base, identifier="demo", mode="factual"
-    )
-
-    bad_tasks = base | {"tasks": ("regression",)}
-    assert "does not support task" in explainer._check_explanation_runtime_metadata(
-        bad_tasks, identifier="demo", mode="factual"
-    )
-
-    missing_modes = base | {"tasks": ("classification",)}
-    assert "missing modes" in explainer._check_explanation_runtime_metadata(
-        missing_modes, identifier="demo", mode="factual"
-    )
-
-    wrong_mode = missing_modes | {"modes": ("fast",)}
-    assert "does not declare mode" in explainer._check_explanation_runtime_metadata(
-        wrong_mode, identifier="demo", mode="factual"
-    )
-
-    missing_caps = missing_modes | {"modes": ("factual",)}
-    assert "missing required capabilities" in explainer._check_explanation_runtime_metadata(
-        missing_caps, identifier="demo", mode="factual"
-    )
-
-    ok = missing_caps | {
-        "capabilities": ("explain", "explanation:factual", "task:both"),
-    }
-    assert (
-        explainer._check_explanation_runtime_metadata(ok, identifier="demo", mode="factual") is None
-    )
+        make_mock_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression", oob=True)
 
 
 def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     metadata = {
         "schema_version": EXPLANATION_PROTOCOL_VERSION,
@@ -301,46 +104,38 @@ def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch
         "capabilities": ("explain", "mode:factual", "task:both"),
     }
 
+    from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+
     assert (
-        explainer._check_explanation_runtime_metadata(metadata, identifier="demo", mode="factual")
+        ExplanationOrchestrator(explainer).check_metadata(
+            metadata, identifier="demo", mode="factual"
+        )
         is None
     )
 
 
-def test_instantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
+def testinstantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    assert explainer._instantiate_plugin(None) is None
+    assert explainer.instantiate_plugin(None) is None
 
     def plugin_factory() -> str:
         return "plugin"
 
     plugin_factory.plugin_meta = {"name": "factory"}  # type: ignore[attr-defined]
-    assert explainer._instantiate_plugin(plugin_factory) is plugin_factory
+    assert explainer.instantiate_plugin(plugin_factory) is plugin_factory
 
     class Prototype:
         def __init__(self) -> None:
             self.value = "fresh"
 
     proto = Prototype()
-    inst = explainer._instantiate_plugin(proto)
+    inst = explainer.instantiate_plugin(proto)
     assert isinstance(inst, Prototype)
     assert inst is not proto
-
-
-def test_runtime_and_preprocessor_metadata_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    assert explainer.runtime_telemetry == {}
-
-    explainer.set_preprocessor_metadata({"scale": 2})
-    assert explainer.preprocessor_metadata == {"scale": 2}
 
 
 def test_build_interval_context_uses_stored_fast_calibrators(
@@ -349,12 +144,14 @@ def test_build_interval_context_uses_stored_fast_calibrators(
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     explainer.interval_learner = ["a", "b"]
-    explainer._interval_context_metadata["fast"] = {"fast_calibrators": ("cached",)}
+    explainer.plugin_manager.interval_context_metadata["fast"] = {"fast_calibrators": ("cached",)}
 
-    context = explainer._build_interval_context(fast=True, metadata={"note": "demo"})
+    context = explainer.prediction_orchestrator.build_interval_context(
+        fast=True, metadata={"note": "demo"}
+    )
 
     assert context.metadata["existing_fast_calibrators"] == ("cached",)
     assert context.metadata["note"] == "demo"
@@ -366,12 +163,12 @@ def test_build_interval_context_falls_back_to_interval_learner(
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     explainer.interval_learner = ["only-fast"]
-    explainer._interval_context_metadata["fast"] = {}
+    explainer.plugin_manager.interval_context_metadata["fast"] = {}
 
-    context = explainer._build_interval_context(fast=True, metadata={})
+    context = explainer.prediction_orchestrator.build_interval_context(fast=True, metadata={})
 
     assert context.metadata["existing_fast_calibrators"] == ("only-fast",)
 
@@ -380,12 +177,14 @@ def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.Monk
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    context = explainer._build_interval_context(fast=True, metadata={})
+    context = explainer.prediction_orchestrator.build_interval_context(fast=True, metadata={})
     calibrators = ["first", "second"]
 
-    explainer._capture_interval_calibrators(context=context, calibrator=calibrators, fast=True)
+    explainer.prediction_orchestrator.capture_interval_calibrators(
+        context=context, calibrator=calibrators, fast=True
+    )
 
     assert context.metadata["fast_calibrators"] == ("first", "second")
 
@@ -394,7 +193,7 @@ def test_x_y_cal_setters_and_append(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
     explainer.x_cal = df
@@ -414,7 +213,7 @@ def test_ensure_interval_state_and_coerce_override(monkeypatch: pytest.MonkeyPat
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     # Remove keys to emulate legacy state
     for key in [
@@ -427,76 +226,67 @@ def test_ensure_interval_state_and_coerce_override(monkeypatch: pytest.MonkeyPat
     ]:
         delattr(explainer, key)
 
-    explainer._ensure_interval_runtime_state()
-    assert "default" in explainer._interval_plugin_identifiers
+    explainer.prediction_orchestrator.ensure_interval_runtime_state()
+    assert "default" in explainer.plugin_manager.interval_plugin_identifiers
 
 
 def test_interval_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner(mode="regression")
     x_cal = np.ones((2, 2))
     y_cal = np.array([0.1, 0.2])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression")
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression")
 
     base = {"schema_version": 1}
-    assert "metadata unavailable" in explainer._check_interval_runtime_metadata(
-        None, identifier="demo", fast=False
+    assert "metadata unavailable" in check_interval_runtime_metadata(
+        None, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     bad_version = base | {"schema_version": 2}
-    assert "unsupported interval" in explainer._check_interval_runtime_metadata(
-        bad_version, identifier="demo", fast=False
+    assert "unsupported interval" in check_interval_runtime_metadata(
+        bad_version, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     missing_modes = base | {"capabilities": ("interval:regression",)}
-    assert "missing modes" in explainer._check_interval_runtime_metadata(
-        missing_modes, identifier="demo", fast=False
+    assert "missing modes" in check_interval_runtime_metadata(
+        missing_modes, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     wrong_mode = missing_modes | {"modes": ("classification",)}
-    assert "does not support mode" in explainer._check_interval_runtime_metadata(
-        wrong_mode, identifier="demo", fast=False
+    assert "does not support mode" in check_interval_runtime_metadata(
+        wrong_mode, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     missing_caps = missing_modes | {"modes": ("regression",), "capabilities": ()}
-    assert "missing capability" in explainer._check_interval_runtime_metadata(
-        missing_caps, identifier="demo", fast=False
+    assert "missing capability" in check_interval_runtime_metadata(
+        missing_caps, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     ok = missing_caps | {"capabilities": ("interval:regression",), "fast_compatible": True}
-    assert explainer._check_interval_runtime_metadata(ok, identifier="demo", fast=False) is None
+    assert (
+        check_interval_runtime_metadata(
+            ok, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
+        )
+        is None
+    )
 
 
 def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    explainer._interval_plugin_hints = {
+    explainer.plugin_manager.interval_plugin_hints = {
         "factual": ("one", "two"),
         "alternative": ("two", "three"),
         "fast": ("fast-one",),
     }
-    assert explainer._gather_interval_hints(fast=True) == ("fast-one",)
-    assert explainer._gather_interval_hints(fast=False) == ("one", "two", "three")
-
-
-def test_split_csv_and_assign_weight_scalar_variants() -> None:
-    # split CSV
-    assert _split_csv(None) == ()
-    assert _split_csv("") == ()
-    assert _split_csv("a,b , ,c") == ("a", "b", "c")
-
-    # assign weight scalar: scalar subtraction (instance_predict, prediction)
-    assert _assign_weight_scalar(0.5, 1.0) == 0.5
-
-    # assign weight scalar: object arrays with numeric strings (fallback path)
-    pred = np.asarray(["1.5"], dtype=object)
-    inst = np.asarray(["0.5"], dtype=object)
-    assert _assign_weight_scalar(inst, pred) == 1.0
-
-    # empty arrays -> 0.0
-    assert _assign_weight_scalar(np.array([]), np.array([])) == 0.0
+    assert explainer.prediction_orchestrator.gather_interval_hints(fast=True) == ("fast-one",)
+    assert explainer.prediction_orchestrator.gather_interval_hints(fast=False) == (
+        "one",
+        "two",
+        "three",
+    )
 
 
 def test_feature_task_ignored_and_no_indices() -> None:
@@ -543,7 +333,7 @@ def test_feature_task_ignored_and_no_indices() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     assert result[0] == 0
     # weights should be zero since feature is ignored
     assert np.allclose(result[1], np.zeros(2))
@@ -599,7 +389,7 @@ def test_feature_task_categorical_no_values() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     # weights should be zeros and binned_result should have zero-length arrays
     assert np.allclose(result[1], np.zeros(2))
     _, binned_result, *_ = (
@@ -655,7 +445,7 @@ def test_feature_task_categorical_with_values() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     # since uncovered.size > 0 weights_predict should be non-zero for at least one instance
     weights = result[1]
     assert np.any(weights != 0.0)
@@ -665,7 +455,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     # Use the instance-parallel plugin to exercise instance-chunk combining
     from calibrated_explanations.core.explain.parallel_instance import (
@@ -674,7 +464,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
     from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
 
     # create a simple explainer instance used by the fake sequential execute
-    explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
+    explainer = make_mock_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
 
     # Empty instances -> early return via plugin
     req_empty = ExplainRequest(
@@ -689,6 +479,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         class Config:
             enabled = True
             min_batch_size = 1
+            instance_chunk_size = None
 
         def __init__(self):
             self.config = self.Config()
@@ -700,7 +491,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         executor=EmptyExec(),
         num_features=explainer.num_features,
         categorical_features=(),
-        feature_values={},
+        feature_values={0: np.array([]), 1: np.array([])},
+        chunk_size=1,  # Ensure consistent chunk sizing
     )
     plugin = InstanceParallelExplainExecutor()
 
@@ -715,13 +507,15 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         class Config:
             enabled = True
             min_batch_size = 1
+            chunk_size = 1  # Force multiple chunks: 3 instances -> 3 chunks
+            instance_chunk_size = 1
 
         def __init__(self, results):
             self.config = self.Config()
-            self._results = results
+            self.results_data = results
 
         def map(self, func, tasks, work_items=None):
-            return self._results
+            return self.results_data
 
     # prepare two chunk results with one explanation each
     def make_chunk(start, subset):
@@ -744,7 +538,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         executor=exec_for_chunks,
         num_features=explainer.num_features,
         categorical_features=(),
-        feature_values={},
+        feature_values={0: np.array([]), 1: np.array([])},
+        chunk_size=1,  # Force multiple chunks
     )
 
     combined = plugin.execute(req, cfg, explainer)
@@ -778,7 +573,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
 
     # Single chunk will delegate to sequential plugin via InstanceParallelExplainExecutor
     # create a small explainer instance for the plugin to attach results to
-    explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
+    explainer = make_mock_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
 
     req = ExplainRequest(
         x=np.asarray([[1.0, 2.0]]),
@@ -792,7 +587,9 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
             "E",
             (),
             {
-                "config": type("C", (), {"enabled": True, "min_batch_size": 2}),
+                "config": type(
+                    "C", (), {"enabled": True, "min_batch_size": 2, "instance_chunk_size": None}
+                ),
                 "map": lambda *_a, **_k: [],
             },
         )(),
@@ -807,7 +604,18 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
     assert isinstance(out, CalibratedExplanations)
 
 
+# @pytest.mark.skip(
+#     reason="Direct _feature_task test triggers object-array IndexError. "
+#     "Integration tests verify correct behavior via fallback path. "
+#     "Skip until execution plugin 2x weight bug is fixed."
+# )
 def test_feature_task_numeric_branch_basic() -> None:
+    """Test _feature_task numeric branch with proper boolean flags.
+
+    NOTE: This test directly calls internal _feature_task with synthetic data.
+    Real execution flows through the explain pipeline which uses proper boolean
+    flags (True/False) from _computation.py, not integers.
+    """
     # Minimal numeric branch exercise
     feature_index = 0
     x_column = np.array([0.0, 1.0, 2.0])
@@ -819,7 +627,10 @@ def test_feature_task_numeric_branch_basic() -> None:
     categorical_features = []
     feature_values = {0: []}
     # perturbed_feature rows: (feature_index, instance, bin, flag)
-    perturbed_feature = np.asarray([[0, 0, 0, 0], [0, 1, 0, 0], [0, 2, 1, 0]], dtype=object)
+    # Use proper boolean flags as the real code does (see _computation.py lines 501, 525)
+    perturbed_feature = np.asarray(
+        [[0, 0, 0, False], [0, 1, 0, False], [0, 2, 1, False]], dtype=object
+    )
     feature_indices = np.asarray([0, 1, 2], dtype=int)
     lower_boundary = np.array([-np.inf, -np.inf, -np.inf])
     upper_boundary = np.array([np.inf, np.inf, np.inf])
@@ -852,7 +663,7 @@ def test_feature_task_numeric_branch_basic() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     # verify shapes and that some weights may be non-zero
     assert isinstance(result, tuple)
     weights = result[1]
@@ -864,15 +675,15 @@ def test_get_calibration_summaries_and_cache(monkeypatch: pytest.MonkeyPatch) ->
     learner = DummyLearner()
     x_cal = np.array([[1.0, 2.0], [1.0, 3.0], [2.0, 4.0]])
     y_cal = np.array([0, 1, 0])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    cat_counts, num_sorted = explainer._get_calibration_summaries()
+    cat_counts, num_sorted = explainer.get_calibration_summaries()
     # categorical_features is empty by default -> no categorical counts
     assert isinstance(cat_counts, dict)
     assert isinstance(num_sorted, dict)
 
     # Calling again should reuse caches (shape unchanged)
-    cat_counts2, num_sorted2 = explainer._get_calibration_summaries()
+    cat_counts2, num_sorted2 = explainer.get_calibration_summaries()
     assert cat_counts2 == cat_counts
     assert all(np.array_equal(num_sorted2[k], v) for k, v in num_sorted.items())
 
@@ -881,7 +692,7 @@ def test_explain_basic_runs(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((3, 2))
     y_cal = np.array([0, 1, 0])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     # ensure a minimal discretizer exists so explain() doesn't error
     explainer.discretizer = type("D", (), {"to_discretize": []})()
@@ -898,25 +709,17 @@ def test_compute_weight_delta_variants_and_merge_feature_result() -> None:
     # compute_weight_delta: scalar baseline vs array perturbed
     scalar_baseline = 1.0
     pert = np.array([0.2, 0.7])
-    deltas = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["compute_weight_delta"]
-    ).compute_weight_delta(scalar_baseline, pert)
+    deltas = compute_weight_delta(scalar_baseline, pert)
     assert isinstance(deltas, np.ndarray)
     assert deltas.shape == pert.shape
 
     # compute_weight_delta: broadcasting path (baseline shape mismatch)
     baseline = np.array([1.0])
     pert2 = np.array([[0.1, 0.2], [0.3, 0.4]])
-    deltas2 = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["compute_weight_delta"]
-    ).compute_weight_delta(baseline, pert2)
+    deltas2 = compute_weight_delta(baseline, pert2)
     assert deltas2.shape == pert2.shape
 
     # merge_feature_result: basic buffer update
-    mod = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["merge_feature_result"]
-    )
-    merge_feature_result = mod.merge_feature_result
 
     n_inst = 2
     n_feat = 3
@@ -1010,6 +813,110 @@ def test_package_init_lazy_attributes_smoke() -> None:
             continue
 
 
+def test_compute_calibrated_confusion_matrix_requires_samples() -> None:
+    x_cal = np.empty((0, 2))
+    y_cal = np.array([])
+
+    with pytest.raises(ValidationError):
+        compute_calibrated_confusion_matrix(x_cal, y_cal, learner=object())
+
+
+def test_compute_calibrated_confusion_matrix_single_fold(monkeypatch: pytest.MonkeyPatch) -> None:
+    x_cal = np.array([[1.0, 0.5], [0.5, 0.5]])
+    y_cal = np.array([1, 0])
+    calls = []
+
+    class DummyVennAbers:
+        def __init__(self, x, y, learner, bins=None):
+            calls.append(("init", len(x), None if bins is None else len(bins)))
+
+        def predict_proba(self, x, *, output_interval, bins=None):
+            calls.append(("predict", len(x), None if bins is None else len(bins)))
+            return (None, None, None, np.ones(len(x), dtype=int))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration_metrics.VennAbers",
+        DummyVennAbers,
+    )
+
+    matrix = compute_calibrated_confusion_matrix(
+        x_cal,
+        y_cal,
+        learner=object(),
+        stratified=False,
+    )
+
+    assert matrix.shape == (2, 2)
+    assert [tag for tag, *_ in calls] == ["init", "predict"]
+
+
+def test_compute_calibrated_confusion_matrix_stratified_bins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    x_cal = np.arange(12.0).reshape(6, 2)
+    y_cal = np.array([0, 0, 0, 1, 1, 1])
+    bins = np.array([0, 1, 0, 1, 1, 0])
+    calls = []
+
+    class RecordingVennAbers:
+        def __init__(self, x, y, learner, bins=None):
+            calls.append(("init", len(x), None if bins is None else len(bins)))
+
+        def predict_proba(self, x, *, output_interval, bins=None):
+            calls.append(("predict", len(x), None if bins is None else len(bins)))
+            return (None, None, None, np.zeros(len(x), dtype=int))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration_metrics.VennAbers",
+        RecordingVennAbers,
+    )
+
+    matrix = compute_calibrated_confusion_matrix(
+        x_cal,
+        y_cal,
+        learner=object(),
+        bins=bins,
+        stratified=True,
+    )
+
+    assert matrix.shape == (2, 2)
+    init_calls = [c for c in calls if c[0] == "init"]
+    predict_calls = [c for c in calls if c[0] == "predict"]
+    assert len(init_calls) == len(predict_calls) == 3
+    assert all(size == bins_len for _, size, bins_len in predict_calls)
+
+
+def test_compute_calibrated_confusion_matrix_kfold(monkeypatch: pytest.MonkeyPatch) -> None:
+    x_cal = np.arange(16.0).reshape(8, 2)
+    y_cal = np.array([0, 0, 1, 1, 0, 0, 1, 1])
+    calls = []
+
+    class RecordingVennAbers:
+        def __init__(self, x, y, learner, bins=None):
+            calls.append(("init", len(x)))
+
+        def predict_proba(self, x, *, output_interval, bins=None):
+            calls.append(("predict", len(x)))
+            return (None, None, None, np.ones(len(x), dtype=int))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration_metrics.VennAbers",
+        RecordingVennAbers,
+    )
+
+    matrix = compute_calibrated_confusion_matrix(
+        x_cal,
+        y_cal,
+        learner=object(),
+        stratified=False,
+    )
+
+    assert matrix.shape == (2, 2)
+    init_calls = [c for c in calls if c[0] == "init"]
+    predict_calls = [c for c in calls if c[0] == "predict"]
+    assert len(init_calls) == len(predict_calls) == 4
+
+
 def test_force_mark_lines_for_coverage() -> None:
     """Conservatively execute no-op code attributed to large source files.
 
@@ -1019,7 +926,6 @@ def test_force_mark_lines_for_coverage() -> None:
     coverage past the CI gate when adding small, targeted unit tests is
     slower than required.
     """
-    import os
 
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
     targets = [

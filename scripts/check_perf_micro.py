@@ -5,7 +5,7 @@ Exits with non-zero status if thresholds are exceeded.
 Inputs:
 - baseline JSON produced by scripts/micro_bench_perf.py
 - current JSON produced by scripts/micro_bench_perf.py
-- thresholds JSON (benchmarks/perf_thresholds.json)
+- thresholds JSON (tests/benchmarks/perf_thresholds.json)
 
 Currently enforced:
 - import_time_seconds: relative increase <= max_relative_increase
@@ -28,14 +28,29 @@ def load_json(path: Path) -> dict:
         return json.load(f)
 
 
+def find_latest_baseline(directory: Path | None = None) -> Path:
+    """Locate the most recent micro benchmark baseline JSON in the tests/benchmarks folder."""
+    base_dir = (directory or Path("tests/benchmarks")).resolve()
+    candidates = sorted(base_dir.glob("micro_*.json"))
+    if not candidates:
+        raise FileNotFoundError("No baseline micro benchmark JSON files found under tests/benchmarks/")
+    return candidates[-1]
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("baseline", type=Path)
+    p.add_argument("baseline", nargs="?", type=Path, help="Baseline metrics JSON (latest if omitted)")
     p.add_argument("current", type=Path)
     p.add_argument("thresholds", type=Path)
     args = p.parse_args(argv)
 
-    baseline_raw = load_json(args.baseline)
+    try:
+        baseline_path = args.baseline or find_latest_baseline()
+    except FileNotFoundError as exc:
+        p.error(str(exc))
+
+    print(f"Using baseline: {baseline_path}")
+    baseline_raw = load_json(baseline_path)
     current_raw = load_json(args.current)
     thresholds = load_json(args.thresholds)
 

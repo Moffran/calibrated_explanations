@@ -13,76 +13,30 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from pytest import MonkeyPatch
+import warnings
 
-from calibrated_explanations import plotting as plotspec_plotting
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from calibrated_explanations.viz import plots as plotspec_plotting
+
 from calibrated_explanations.legacy import plotting as legacy_plotting
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     REGRESSION_BASE_COLOR,
     REGRESSION_BAR_COLOR,
 )
+from tests.helpers.explainer_utils import FakeExplanation
 
 pytest.importorskip("matplotlib")
 pytestmark = pytest.mark.viz
 
 
-def _confidence_from_percentiles(percentiles: tuple[float, float]) -> float:
+def confidence_from_percentiles(percentiles: tuple[float, float]) -> float:
     low, high = percentiles
     if math.isinf(high):
         return 100.0 - float(low)
     if math.isinf(low):
         return float(high)
     return float(high) - float(low)
-
-
-class _StubExplainer:
-    """Minimal explainer stub for style resolution and metadata access."""
-
-    _plot_plugin_fallbacks: Mapping[str, tuple[str, ...]] = {"alternative": ()}
-    _last_explanation_mode: str = "alternative"
-
-    def is_multiclass(self) -> bool:  # pragma: no cover - constant behaviour
-        return False
-
-
-class _StubCalibrated:
-    """Provide confidence metadata expected by both plotting paths."""
-
-    def __init__(self, percentiles: tuple[float, float]) -> None:
-        self._percentiles = percentiles
-        self._plot_plugin_fallbacks: Mapping[str, tuple[str, ...]] = {"alternative": ()}
-        self.calibrated_explainer = _StubExplainer()
-        self.low_high_percentiles = percentiles
-
-    def get_confidence(self) -> float:
-        return _confidence_from_percentiles(self._percentiles)
-
-
-class _StubAlternativeExplanation:
-    """Simple container emulating the attributes used by the plot helpers."""
-
-    def __init__(
-        self,
-        *,
-        y_minmax: tuple[float, float],
-        percentiles: tuple[float, float],
-    ) -> None:
-        self.y_minmax = y_minmax
-        self.low_high_percentiles = percentiles
-        self.calibrated_explanations = _StubCalibrated(percentiles)
-        self.prediction = {"predict": 0.0, "classes": 1}
-        self.y_threshold = None
-
-    def _get_explainer(self) -> _StubExplainer:
-        return self.calibrated_explanations.calibrated_explainer
-
-    def get_mode(self) -> str:  # pragma: no cover - constant behaviour
-        return "regression"
-
-    def get_class_labels(self):  # pragma: no cover - regression path doesn't require labels
-        return None
-
-    def is_thresholded(self) -> bool:  # pragma: no cover - explicit regression branch
-        return False
 
 
 @dataclass(frozen=True)
@@ -145,25 +99,26 @@ CASES: tuple[RegressionParityCase, ...] = (
 )
 
 
-def _as_float_list(values: Iterable[float]) -> list[float]:
+def as_float_list(values: Iterable[float]) -> list[float]:
     return [float(v) for v in values]
 
 
-def _coerce_array(payload: Mapping[str, Iterable[float]]) -> Dict[str, np.ndarray]:
+def coerce_array(payload: Mapping[str, Iterable[float]]) -> Dict[str, np.ndarray]:
     return {key: np.asarray(list(values), dtype=float) for key, values in payload.items()}
 
 
-def _collect_legacy_summary(
+def collect_legacy_summary(
     *,
-    explanation: _StubAlternativeExplanation,
+    explanation: FakeExplanation,
     case: RegressionParityCase,
 ) -> Dict[str, Dict[str, Dict[str, float | str]]]:
     mp = MonkeyPatch()
     try:
+        plt.close("all")
         plt.switch_backend("Agg")
         records: list[tuple[str, tuple, dict]] = []
 
-        def _record(method: str) -> Callable:
+        def record(method: str) -> Callable:
             orig = getattr(Axes, method)
 
             def wrapper(self, *args, **kwargs):
@@ -173,14 +128,14 @@ def _collect_legacy_summary(
             mp.setattr(Axes, method, wrapper)
             return wrapper
 
-        _record("fill_betweenx")
+        record("fill_betweenx")
         mp.setattr(Figure, "show", lambda self, *args, **kwargs: None)
 
-        legacy_plotting._plot_alternative(
+        legacy_plotting.plot_alternative(
             explanation=explanation,
-            instance=_as_float_list(case.instance),
+            instance=as_float_list(case.instance),
             predict=dict(case.predict),
-            feature_predict=_coerce_array(case.feature_predict),
+            feature_predict=coerce_array(case.feature_predict),
             features_to_plot=list(case.features_to_plot),
             num_to_show=len(tuple(case.features_to_plot)),
             column_names=list(case.column_names),
@@ -190,13 +145,13 @@ def _collect_legacy_summary(
             save_ext=[],
         )
 
-        return _summarise_legacy_records(records, case)
+        return summarise_legacy_records(records, case)
     finally:
         mp.undo()
         plt.close("all")
 
 
-def _summarise_legacy_records(
+def summarise_legacy_records(
     records: list[tuple[str, tuple, dict]],
     case: RegressionParityCase,
 ) -> Dict[str, Dict[str, Dict[str, float | str]]]:
@@ -274,9 +229,9 @@ def _summarise_legacy_records(
     }
 
 
-def _collect_plotspec_summary(
+def collect_plotspec_summary(
     *,
-    explanation: _StubAlternativeExplanation,
+    explanation: FakeExplanation,
     case: RegressionParityCase,
 ) -> Dict[str, Dict[str, Dict[str, float | str]]]:
     mp = MonkeyPatch()
@@ -284,17 +239,17 @@ def _collect_plotspec_summary(
     try:
         mp.setattr(plotspec_plotting, "__require_matplotlib", lambda: None)
 
-        def _capture(spec, **_kwargs):
+        def capture(spec, **_kwargs):
             captured["spec"] = spec
             return {}
 
-        mp.setattr("calibrated_explanations.viz.matplotlib_adapter.render", _capture)
+        mp.setattr("calibrated_explanations.viz.matplotlib_adapter.render", capture)
 
-        plotspec_plotting._plot_alternative(
+        plotspec_plotting.plot_alternative(
             explanation=explanation,
-            instance=_as_float_list(case.instance),
+            instance=as_float_list(case.instance),
             predict=dict(case.predict),
-            feature_predict=_coerce_array(case.feature_predict),
+            feature_predict=coerce_array(case.feature_predict),
             features_to_plot=list(case.features_to_plot),
             num_to_show=len(tuple(case.features_to_plot)),
             column_names=list(case.column_names),
@@ -306,12 +261,12 @@ def _collect_plotspec_summary(
         )
 
         spec = captured["spec"]
-        return _summarise_plotspec(spec)
+        return summarise_plotspec(spec)
     finally:
         mp.undo()
 
 
-def _summarise_plotspec(spec) -> Dict[str, Dict[str, Dict[str, float | str]]]:
+def summarise_plotspec(spec) -> Dict[str, Dict[str, Dict[str, float | str]]]:
     body = spec.body
     assert body is not None
     assert body.base_segments is not None and len(body.base_segments) == 1
@@ -365,13 +320,16 @@ def _summarise_plotspec(spec) -> Dict[str, Dict[str, Dict[str, float | str]]]:
 def test_alternative_regression_plotspec_matches_legacy(case: RegressionParityCase) -> None:
     """Ensure PlotSpec rendering matches the legacy alternative regression visuals."""
 
-    explanation = _StubAlternativeExplanation(
+    confidence = confidence_from_percentiles(case.percentiles)
+    explanation = FakeExplanation(
+        mode="regression",
         y_minmax=case.y_minmax,
         percentiles=case.percentiles,
+        confidence=confidence,
     )
 
-    legacy_summary = _collect_legacy_summary(explanation=explanation, case=case)
-    plotspec_summary = _collect_plotspec_summary(explanation=explanation, case=case)
+    legacy_summary = collect_legacy_summary(explanation=explanation, case=case)
+    plotspec_summary = collect_plotspec_summary(explanation=explanation, case=case)
 
     assert plotspec_summary["base_interval"]["color"] == legacy_summary["base_interval"]["color"]
     assert plotspec_summary["base_interval"]["alpha"] == pytest.approx(

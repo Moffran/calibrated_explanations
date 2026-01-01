@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.viz import matplotlib_adapter as ma
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
     IntervalHeaderSpec,
@@ -16,7 +16,7 @@ from calibrated_explanations.viz.plotspec import (
 CREATED_FIGURES = []
 
 
-class _FakeSpine:
+class FakeSpine:
     def __init__(self):
         self.visible = True
 
@@ -24,16 +24,16 @@ class _FakeSpine:
         self.visible = bool(flag)
 
 
-class _BadLabel:
+class BadLabel:
     def __str__(self):  # pragma: no cover - trivial
         raise ValueError("label failed")
 
 
-class _FakeAxes:
+class FakeAxes:
     def __init__(self):
         self.calls = []
-        self._ylim = (0.0, 0.0)
-        self.spines = {key: _FakeSpine() for key in ("top", "right", "bottom", "left")}
+        self.ylim_value = (0.0, 0.0)
+        self.spines = {key: FakeSpine() for key in ("top", "right", "bottom", "left")}
 
     def fill_betweenx(self, *args, **kwargs):
         self.calls.append(("fill_betweenx", args, kwargs))
@@ -61,19 +61,19 @@ class _FakeAxes:
 
     def set_ylim(self, *args, **kwargs):
         if args:
-            self._ylim = args[0]
+            self.ylim_value = args[0]
         self.calls.append(("set_ylim", args, kwargs))
 
     def get_ylim(self):
-        return self._ylim
+        return self.ylim_value
 
     def twinx(self):
-        twin = _FakeAxes()
+        twin = FakeAxes()
         self.calls.append(("twinx", (), {}))
         return twin
 
 
-class _FakeGridSpec:
+class FakeGridSpec:
     def __init__(self, figure, nrows, ncols, height_ratios=None):
         self.figure = figure
         self.nrows = nrows
@@ -84,7 +84,7 @@ class _FakeGridSpec:
         return item
 
 
-class _FakeFigure:
+class FakeFigure:
     def __init__(self, figsize=None):
         self.figsize = figsize
         self.axes = []
@@ -94,10 +94,10 @@ class _FakeFigure:
         CREATED_FIGURES.append(self)
 
     def add_gridspec(self, nrows, ncols, height_ratios=None):
-        return _FakeGridSpec(self, nrows, ncols, height_ratios)
+        return FakeGridSpec(self, nrows, ncols, height_ratios)
 
     def add_subplot(self, spec):
-        ax = _FakeAxes()
+        ax = FakeAxes()
         self.axes.append(ax)
         return ax
 
@@ -112,12 +112,12 @@ class _FakeFigure:
 
 
 @pytest.fixture(autouse=True)
-def _patch_matplotlib(monkeypatch):
+def patch_matplotlib(monkeypatch):
     CREATED_FIGURES.clear()
     fake_pyplot = types.ModuleType("pyplot")
 
     def figure(*, figsize=None):
-        return _FakeFigure(figsize)
+        return FakeFigure(figsize)
 
     def close(fig=None):
         if fig is not None:
@@ -163,10 +163,10 @@ def test_render_headless_skips_matplotlib(monkeypatch):
 
     spec = PlotSpec(title="skip")
 
-    def _boom():  # pragma: no cover - should not execute
+    def boom():  # pragma: no cover - should not execute
         raise AssertionError("_require_mpl should not be called")
 
-    monkeypatch.setattr(ma, "_require_mpl", _boom)
+    monkeypatch.setattr(ma, "_require_mpl", boom)
     assert ma.render(spec) is None
 
 
@@ -204,14 +204,14 @@ def test_render_saves_before_show(monkeypatch):
         events.append("show")
         return original_show(*args, **kwargs)
 
-    original_savefig = _FakeFigure.savefig
+    original_savefig = FakeFigure.savefig
 
     def spy_savefig(self, *args, **kwargs):  # pragma: no cover - spy helper
         events.append("save")
         return original_savefig(self, *args, **kwargs)
 
     monkeypatch.setattr(fake_pyplot, "show", spy_show)
-    monkeypatch.setattr(_FakeFigure, "savefig", spy_savefig)
+    monkeypatch.setattr(FakeFigure, "savefig", spy_savefig)
 
     ma.render(spec, show=True, save_path="out.png")
 
@@ -222,13 +222,13 @@ def test_render_saves_before_show(monkeypatch):
 def test_auto_height_falls_back_when_label_conversion_fails():
     header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=False)
     body = BarHPanelSpec(
-        bars=[BarItem(label=_BadLabel(), value=0.1), BarItem(label="ok", value=-0.2)],
+        bars=[BarItem(label=BadLabel(), value=0.1), BarItem(label="ok", value=-0.2)],
     )
     spec = PlotSpec(title="height", header=header, body=body)
 
     fig = ma.render(spec, return_fig=True)
 
-    assert isinstance(fig, _FakeFigure)
+    assert isinstance(fig, FakeFigure)
     # Height should stay finite even after the label exception path executes
     assert fig.figsize[1] >= 3.0
 
@@ -327,7 +327,7 @@ def test_dual_body_zero_extent_sets_padding():
     assert xlim_calls
 
 
-class _SimpleBar:
+class SimpleBar:
     def __init__(self, label, value, low, high):
         self.label = label
         self.value = value
@@ -339,7 +339,7 @@ class _SimpleBar:
 def test_dual_body_defaults_suppress_when_flags_missing():
     header = IntervalHeaderSpec(pred=0.4, low=0.2, high=0.6, dual=True)
     body = types.SimpleNamespace(
-        bars=[_SimpleBar("no-flag", 0.3, -0.2, 0.5)],
+        bars=[SimpleBar("no-flag", 0.3, -0.2, 0.5)],
         xlabel=None,
         ylabel=None,
     )
@@ -425,7 +425,7 @@ def test_render_returns_figure_for_single_header():
     )
     spec = PlotSpec(title="Regression", figure_size=(4.0, 2.5), header=header, body=None)
     fig = ma.render(spec, return_fig=True, draw_intervals=False)
-    assert isinstance(fig, _FakeFigure)
+    assert isinstance(fig, FakeFigure)
     assert not fig.closed
 
 
@@ -616,7 +616,7 @@ def test_export_guard_raises_on_probability_coordinate_mismatch():
         ma.render(spec, export_drawn_primitives=True)
 
 
-class _NamespaceSpec:
+class NamespaceSpec:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -624,7 +624,7 @@ class _NamespaceSpec:
 def test_render_handles_non_dataclass_spec_payload():
     header = IntervalHeaderSpec(pred=0.2, low=0.1, high=0.3, dual=False)
     body = BarHPanelSpec(bars=[BarItem(label="ns", value=0.1)])
-    spec = _NamespaceSpec(title="ns", header=header, body=body, figure_size=(4, 3))
+    spec = NamespaceSpec(title="ns", header=header, body=body, figure_size=(4, 3))
 
     result = ma.render(spec, export_drawn_primitives=True)
 

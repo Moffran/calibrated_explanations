@@ -53,7 +53,7 @@ class TestHelloIntervalCalibratorPlugin:
     def test_plugin_registration(self):
         """Verify the interval plugin can be registered."""
         from calibrated_explanations.plugins.base import validate_plugin_meta
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_interval_plugin,
             _INTERVAL_PLUGINS,
         )
@@ -146,7 +146,7 @@ class TestHelloExplanationPlugin:
         """Verify the explanation plugin can be registered."""
         from dataclasses import dataclass
         from calibrated_explanations.plugins.base import validate_plugin_meta
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_explanation_plugin,
             _EXPLANATION_PLUGINS,
         )
@@ -275,7 +275,7 @@ class TestHelloPlotPlugin:
             PlotRenderer,
             PlotRenderResult,
         )
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_plot_builder,
             register_plot_renderer,
             register_plot_style,
@@ -363,7 +363,7 @@ class TestPluginWiringMethodsAB:
 
     def test_method_a_explainer_parameter(self):
         """Test Method A: Wiring via CalibratedExplainer parameter."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -393,14 +393,14 @@ class TestPluginWiringMethodsAB:
             plot_style="plot_spec.default",
         )
 
-        assert explainer._plot_style_override == "plot_spec.default"
+        assert explainer.plot_style_override == "plot_spec.default"
         # Verify the style chain includes our override
-        chain = explainer._plot_style_chain
+        chain = explainer.plugin_manager.plot_style_chain
         assert chain[0] == "plot_spec.default"
 
-    def test_method_b_plot_parameter(self):
+    def test_method_b_plot_parameter(self, enable_fallbacks):
         """Test Method B: Wiring via explanation.plot() parameter."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -443,12 +443,12 @@ class TestPluginDependencyPropagation:
 
     def test_plugin_dependency_metadata_seeding(self):
         """Verify that explanation plugin metadata dependencies are seeded into fallback chain."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
         from calibrated_explanations import CalibratedExplainer
-        from calibrated_explanations.plugins.registry import ensure_builtin_plugins
+        from calibrated_explanations.plugins import ensure_builtin_plugins
 
         ensure_builtin_plugins()
 

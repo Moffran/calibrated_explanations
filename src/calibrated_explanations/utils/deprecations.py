@@ -21,28 +21,22 @@ _EMITTED: Set[str] = set()
 # the environment during each test run.
 _EMITTED_PER_TEST: Dict[str, Set[str]] = {}
 
-# Snapshot whether `CE_DEPRECATIONS` was present when the module was imported.
-# This allows tests to set the env dynamically and have that take effect,
-# while avoiding forcing developers to unset a global env var before running
-# the test suite if they happened to have it set in their shell.
-_CE_DEPRECATIONS_AT_START = os.getenv("CE_DEPRECATIONS")
-
 
 def _should_raise() -> bool:
     raw = os.getenv("CE_DEPRECATIONS")
     if not raw:
         return False
-    # When running under pytest locally, prefer to emit warnings so tests
-    # behave deterministically for developers who may have
-    # `CE_DEPRECATIONS` set in their shell. Allow raising in CI where
-    # `CI` or `GITHUB_ACTIONS` is set.
-    if (
-        os.getenv("PYTEST_CURRENT_TEST")
-        and not (os.getenv("CI") or os.getenv("GITHUB_ACTIONS"))
-        and _CE_DEPRECATIONS_AT_START is not None
-    ):
-        return False
+    # Honor explicit error-like values for CE_DEPRECATIONS unconditionally.
+    # The previous behaviour suppressed raising when pytest was active and
+    # the variable was present at import time; ADRs require that deprecations
+    # escalate to errors when requested, so we always treat the following
+    # values as enabling raise-on-deprecations.
     return raw.lower() in {"1", "true", "error", "raise"}
+
+
+def should_raise() -> bool:
+    """Backwards-compatible alias for _should_raise."""
+    return _should_raise()
 
 
 def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> None:

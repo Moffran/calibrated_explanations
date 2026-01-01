@@ -4,13 +4,11 @@ import json
 
 import pytest
 
-from tests.docs.get_started.test_quickstart_classification_doc import (
-    _run_quickstart_classification,
-)
+from tests.helpers.doc_utils import run_quickstart_classification
 
 
-def test_export_explanations_snippets(tmp_path):
-    context = _run_quickstart_classification()
+def test_export_explanations_snippets(enable_fallbacks, tmp_path):
+    context = run_quickstart_classification()
     batch = context.explainer.explain_factual(context.X_test[:10])
     payload = batch.to_json()
 

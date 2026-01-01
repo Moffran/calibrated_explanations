@@ -1,37 +1,49 @@
-"""Performance primitives exposed to the rest of the code base."""
+"""Deprecated shim forwarding to :mod:`calibrated_explanations.cache` and :mod:`calibrated_explanations.parallel`.
+
+Per ADR-001 Stage 1b, cache and parallel concerns are now in dedicated packages.
+This shim will be removed in v0.11.0.
+"""
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
-from .cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback
-from .parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
+warnings.warn(
+    "The 'calibrated_explanations.perf' module is deprecated. "
+    "Use 'calibrated_explanations.cache' and 'calibrated_explanations.parallel' instead. "
+    "This shim will be removed in v0.11.0.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from ..cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback  # noqa: E402
+from ..parallel import ParallelConfig, ParallelExecutor, ParallelMetrics  # noqa: E402
 
 
 @dataclass
-class PerfFactory:
-    """Factory bundling cache and parallel primitives behind feature flags."""
+class PerfFactory:  # pragma: no cover
+    """Factory bundling cache and parallel primitives (deprecated)."""
 
     cache: CacheConfig
     parallel: ParallelConfig
 
     def make_cache(self) -> CalibratorCache[Any]:
-        """Return a cache instance configured with the factory defaults."""
+        """Build a cache backend based on the stored configuration."""
         return CalibratorCache(self.cache)
 
     def make_parallel_executor(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
-        """Return a parallel executor configured with the factory defaults."""
+        """Create a parallel executor wired to this factory's parallel config."""
         return ParallelExecutor(self.parallel, cache=cache)
 
-    # Backwards compatible name retained for earlier scaffolding usage
     def make_parallel_backend(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
-        """Return a parallel executor using the legacy backend name."""
+        """Alias for :meth:`make_parallel_executor` for backwards compatibility."""
         return self.make_parallel_executor(cache=cache)
 
 
-def from_config(cfg: Any) -> PerfFactory:
-    """Build a :class:`PerfFactory` from an ``ExplainerConfig`` like object."""
+def from_config(cfg: Any) -> PerfFactory:  # pragma: no cover
+    """Build a PerfFactory from config object (deprecated)."""
     cache_cfg = CacheConfig(
         enabled=getattr(cfg, "perf_cache_enabled", False),
         namespace=getattr(cfg, "perf_cache_namespace", "calibrator"),
@@ -46,12 +58,26 @@ def from_config(cfg: Any) -> PerfFactory:
         enabled=getattr(cfg, "perf_parallel_enabled", False),
         strategy=getattr(cfg, "perf_parallel_backend", "auto"),
         max_workers=getattr(cfg, "perf_parallel_workers", None),
-        min_batch_size=getattr(cfg, "perf_parallel_min_batch", 32),
+        min_batch_size=getattr(cfg, "perf_parallel_min_batch", 8),
+        min_instances_for_parallel=getattr(cfg, "perf_parallel_min_instances", None),
+        tiny_workload_threshold=getattr(cfg, "perf_parallel_tiny_workload", None),
         granularity=getattr(cfg, "perf_parallel_granularity", "feature"),
         telemetry=getattr(cfg, "perf_telemetry", None),
     )
     parallel_cfg = ParallelConfig.from_env(parallel_cfg)
     return PerfFactory(cache=cache_cfg, parallel=parallel_cfg)
+
+
+def __getattr__(name: str) -> Any:  # pragma: no cover
+    """Forward other attribute access to cache and parallel packages."""
+    try:
+        from .. import cache
+
+        return getattr(cache, name)
+    except AttributeError:
+        from .. import parallel
+
+        return getattr(parallel, name)
 
 
 __all__ = [

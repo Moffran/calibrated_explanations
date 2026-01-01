@@ -1,0 +1,18 @@
+codecov:
+  require_ci_to_pass: yes
+
+coverage:
+  status:
+    patch:
+      default:
+        target: '90%'
+        threshold: '0%'
+      runtime-calibration:
+        target: '90%'
+        threshold: '0%'
+        paths:
+          - "src/calibrated_explanations/core/"
+          - "src/calibrated_explanations/plugins/intervals.py"
+          - "src/calibrated_explanations/plugins/builtins.py"
+          - "src/calibrated_explanations/utils/perturbation.py"
+          - "src/calibrated_explanations/utils/discretizers.py"

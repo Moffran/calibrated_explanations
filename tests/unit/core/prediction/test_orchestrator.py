@@ -32,7 +32,7 @@ class TestPredictionOrchestratorBehavior:
         )
         x_cal, y_cal = x_data[:40], y_data[:40]
         x_test = x_data[40:60]
-        learner = LogisticRegression(random_state=42)
+        learner = LogisticRegression(random_state=42, solver="liblinear")
         learner.fit(x_cal, y_cal)
         explainer = CalibratedExplainer(learner, x_cal, y_cal, mode="classification")
         return explainer, x_test
@@ -256,7 +256,7 @@ class TestPredictionOrchestratorEdgeCases:
         )
         x_cal, y_cal = x_data[:20], y_data[:20]
         x_test = x_data[20:30]
-        learner = LogisticRegression(random_state=42)
+        learner = LogisticRegression(random_state=42, solver="liblinear")
         learner.fit(x_cal, y_cal)
         explainer = CalibratedExplainer(learner, x_cal, y_cal, mode="classification")
         return explainer, x_test
@@ -267,7 +267,7 @@ class TestPredictionOrchestratorEdgeCases:
             n_samples=50, n_features=10, n_informative=5, n_redundant=2, random_state=42
         )
         x_cal, y_cal = x_data[:20], y_data[:20]
-        learner = LogisticRegression(random_state=42)
+        learner = LogisticRegression(random_state=42, solver="liblinear")
         learner.fit(x_cal, y_cal)
         # Create explainer with minimal calibration (should still work)
         explainer = CalibratedExplainer(learner, x_cal, y_cal, mode="classification")

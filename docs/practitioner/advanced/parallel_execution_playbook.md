@@ -1,11 +1,10 @@
 # Parallel execution playbook (opt-in)
 
 Experienced teams can squeeze additional throughput from calibrated explanations
-by tuning the parallel executor. This playbook distils the current heuristics
-while ADR-004 improvements are still underway, so you can decide when the extra
-complexity is worthwhile. Pair it with the configuration steps in
-{doc}`../../foundations/how-to/tune_runtime_performance` and roll back to the
-sequential baseline whenever the gains are marginal.
+by tuning the parallel executor. This playbook distils the ADR-004-complete
+heuristics so you can decide when the extra complexity is worthwhile. Pair it
+with the configuration steps in {doc}`../../foundations/how-to/tune_runtime_performance`
+and roll back to the sequential baseline whenever the gains are marginal.
 
 ```{tip}
 Keep these controls off until you have baseline explanations, calibration
@@ -19,9 +18,7 @@ small workloads, especially on Windows.
   Windows deployments cannot rely on thread-safe payloads.
 - **Use instance-parallel** when instances dominate (``n_instances ≥ 4 × workers × 64``)
   and feature counts stay below ~64; aim for chunks between 256 and 1,024 rows.
-- **Use feature-parallel** when features dominate (``n_features ≥ 4 × workers × 4``)
-  and the test set stays below ~200 instances; prefer thread-based backends on
-  Windows.
+- **Use feature-parallel** (Deprecated) - Feature-parallel execution is deprecated and falls back to instance-parallel.
 - **Avoid process pools on Windows** unless work items take hundreds of
   milliseconds and payloads are shared via memory mapping.
 
@@ -46,7 +43,7 @@ Best for wide batches of instances with relatively few features.
 - **Fallback** – switch back to sequential when chunk sizes shrink below 128 or
   when feature counts top 128 (feature-parallel usually performs better there).
 
-### Feature-parallel (`FeatureParallelExplainExecutor`)
+<!-- ### Feature-parallel (`FeatureParallelExplainExecutor`)
 
 Ideal for feature-dense explain workloads with modest instance counts.
 
@@ -58,7 +55,7 @@ Ideal for feature-dense explain workloads with modest instance counts.
   on Linux when arrays are memmapped.
 - **Fallback** – revert to sequential when feature counts fall within a single
   worker group (e.g. ``n_features ≤ workers × 4``) or when test sets exceed 250
-  rows.
+  rows. -->
 
 ## Backend recommendations
 
@@ -78,23 +75,21 @@ Ideal for feature-dense explain workloads with modest instance counts.
    processes).
 4. Derive chunk sizes from the recommended bounds; clamp instance chunks to
    256–1,024 rows.
-5. Keep feature-parallel gated behind at least ~10k work items to avoid needless
-   overhead.
+5. (Deprecated) Feature-parallel tuning is no longer relevant as it falls back to instance-parallel.
 6. Benchmark against sequential; adopt the executor only when you see ≥1.2×
    speed-up.
 
-## Current limitations (pre-ADR-004)
+## Operational guardrails
 
-These constraints are being tracked in the runtime roadmap (Release Plan v0.9.0
-item 11 and v0.10.0 item 4) and will ease once ADR-004 lands:
-
-- ``min_batch_size`` still serves as both the gating threshold and the chunk
-  size for instance parallelism.
-- Feature tasks serialise large payloads, so process-based backends pay heavy
-  pickling costs.
-- ``auto`` strategy ignores workload hints; manual tuning stays necessary.
-- Telemetry lacks per-strategy timings and utilisation metrics, limiting
-  observability.
+- ``auto`` strategy now looks at workload hints. Provide ``work_items`` when
+  calling domain wrappers (e.g. instance × feature counts) to let ADR-004’s
+  chooser bias toward threads for light work and processes for large,
+  instance-heavy payloads.
+- Use ``task_size_hint_bytes`` to steer away from process backends when payloads
+  exceed ~10MB per task; the auto chooser will return ``sequential`` for very
+  small batches to keep overhead low.
+- Telemetry emits duration, worker counts, and work-item hints per execution so
+  you can validate parallel wins before rolling out broadly.
 
 ## Related resources
 
@@ -102,5 +97,5 @@ item 11 and v0.10.0 item 4) and will ease once ADR-004 lands:
   executor and cache.
 - {doc}`../../foundations/concepts/telemetry` – instrument runtime metrics when
   you opt in to parallel execution.
-- `improvement_docs/parallel_execution_improvement_plan.md` – internal task
+- `docs/improvement/parallel_execution_improvement_plan.md` – internal task
   breakdown tracking the ADR-004 remediation.

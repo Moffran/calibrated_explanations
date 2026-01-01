@@ -139,14 +139,53 @@ underlying estimator and read the returned intervals.
   before submitting pull requests.
 
 ### Maintainers
-- Track release readiness through the
-  [release checklist](https://calibrated-explanations.readthedocs.io/en/latest/governance/release_checklist.html)
-  and roadmap in
-  [improvement_docs/RELEASE_PLAN_v1.md](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/RELEASE_PLAN_v1.md).
-- Confirm ADR alignment via
-  [improvement_docs/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/improvement_docs/adrs)
+- Track release readiness through the root-level
+  [`ROADMAP.md`](https://github.com/Moffran/calibrated_explanations/blob/main/ROADMAP.md),
+  [docs/foundations/governance/release_checklist.md](https://calibrated-explanations.readthedocs.io/en/latest/governance/release_checklist.html),
+  and the implementation plan in
+  [`docs/improvement/RELEASE_PLAN_v1.md`](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/RELEASE_PLAN_v1.md).
+- Confirm Standards and ADR alignment via
+  [docs/improvement/standards/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/standards) and
+  [docs/improvement/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs)
   and keep docs navigation synced with the
   [IA crosswalk](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/nav_crosswalk.html).
+
+---
+
+## Documentation map
+
+- **API reference** – start with the
+  [API index](https://calibrated-explanations.readthedocs.io/en/latest/api/index.html),
+  then browse CLI, plugin, serialization, and visualization references.
+- **Architecture overview** – the
+  [architecture notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/architecture.html)
+  connect runtime components, telemetry, and plugin boundaries.
+- **Contributor guidance** – see the
+  [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
+  for setup, quality gates, and process notes.
+- **Release notes & changelog** – check
+  [release notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/release_notes.html)
+  and the project
+  [CHANGELOG](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md).
+- **Project governance** – review
+  [GOVERNANCE.md](https://github.com/Moffran/calibrated_explanations/blob/main/GOVERNANCE.md),
+  [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md),
+  and the
+  [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md).
+- **Support** – see
+  [SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md)
+  for the fastest way to get help.
+
+---
+
+## Licensing & Contributions
+
+Contributions to this project are licensed under the same terms as the project
+itself (BSD 3-Clause). By contributing, you agree to the
+[Developer Certificate of Origin (DCO)](https://developercertificate.org/)
+and that your contributions will be available under the project's license.
+See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for details on how to
+sign off your commits.
 
 ---
 
@@ -202,7 +241,7 @@ stays lightweight.
    Result archives (`*.pkl`, `.zip`) sit beside each run for quick comparison.
 4. **Keep results traceable** – preserve the random seeds baked into the scripts
    (typically `42` or `0`) and record any deviations alongside the active ADRs
-   noted in [`improvement_docs/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/improvement_docs/adrs).
+   noted in [`docs/improvement/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs).
 5. **Cite the sources** – the
    [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/research/theory_and_literature.html)
    lists DOIs, arXiv IDs, and funding acknowledgements to include in your work.
@@ -216,8 +255,8 @@ stays lightweight.
    python -m venv .venv
    source .venv/bin/activate
    python -m pip install --upgrade pip
-   python -m pip install -e .[dev]
-   python -m pip install -r docs/requirements-doc.txt
+   python -m pip install -e .[dev] -c constraints.txt
+   python -m pip install -r docs/requirements-doc.txt -c constraints.txt
    ```
 2. **Run the quality gates locally**
    ```bash
@@ -232,6 +271,13 @@ stays lightweight.
 4. **Open a pull request** referencing the active milestone and relevant ADRs.
    The [PR guide](https://calibrated-explanations.readthedocs.io/en/latest/pr_guide.html)
    lists the checklist used during reviews.
+5. **Review community health docs** – contributions are expected to follow the
+   [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md),
+   the contribution licensing guidance in
+   [CONTRIBUTING](https://github.com/Moffran/calibrated_explanations/blob/main/.github/CONTRIBUTING.md),
+   and the support/security policies in
+   [SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md)
+   and [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md).
 
 ---
 
@@ -249,7 +295,9 @@ stays lightweight.
 Funded by the [Swedish Knowledge Foundation](https://www.kks.se/) through the
 Knowledge Intensive Product Realization SPARK environment at Jönköping
 University. For questions or support, open an issue on
-[GitHub](https://github.com/Moffran/calibrated_explanations/issues).
+[GitHub](https://github.com/Moffran/calibrated_explanations/issues) or review
+the guidance in
+[SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md).
 
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations.svg
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations/

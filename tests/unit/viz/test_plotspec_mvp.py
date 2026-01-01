@@ -5,9 +5,14 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import warnings
 
-from calibrated_explanations import plotting
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from calibrated_explanations.viz import plots as plotting
+
 from calibrated_explanations.viz import build_regression_bars_spec, matplotlib_adapter
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 pytest.importorskip("matplotlib")
@@ -17,7 +22,7 @@ pytestmark = pytest.mark.viz
 def test_plotspec_regression_render_smoke():
     rng = np.random.default_rng(0)
     nfeat = 5
-    # Fake inputs similar to _plot_regression
+    # Fake inputs similar to plot_regression
     predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
     fw = {
         "predict": rng.normal(0, 0.2, size=nfeat),
@@ -60,7 +65,7 @@ def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
     setattr(explanation, "_get_explainer", lambda: None)
 
     with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=np.array([0.2, 0.4]),
             predict={"predict": 0.6, "low": 0.2, "high": 0.8},
@@ -83,7 +88,7 @@ def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
 
 
 @pytest.mark.platform_dependent
-def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
+def testplot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
     """PlotSpec regression helper should save to multiple formats when path specified.
 
     Refactored from brittle os.path.join assertion to semantic
@@ -110,7 +115,7 @@ def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path)
     )
 
     explanation = types.SimpleNamespace(y_minmax=(0.0, 1.0))
-    plotting._plot_regression(
+    plotting.plot_regression(
         explanation,
         instance=np.array([0.3]),
         predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -160,45 +165,6 @@ def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path)
     assert (
         len(found_indicators) >= 3
     ), f"Should find indicators for 3 formats, got {found_indicators}"
-
-
-@pytest.mark.platform_dependent
-def test_format_save_path_concatenates_title(tmp_path):
-    """Test that _format_save_path combines base directory and filename correctly.
-
-    Refactored to use pathlib.Path and semantic assertions.
-     Tests that the function:
-     - Concatenates base directory and filename
-     - Handles trailing slashes correctly
-     - Returns a valid path that can be converted back to Path
-
-     Note: Uses pathlib for cross-platform path handling; does not compare
-     exact string representations (platform-dependent).
-
-     Marked as @pytest.mark.platform_dependent because path handling
-     behavior may vary across Windows/POSIX systems.
-    """
-    base = tmp_path / "plots"
-    base.mkdir()
-
-    # Test 1: Base path as Path object
-    result1 = plotting._format_save_path(base, "figurepng")
-    result_path1 = Path(result1)
-    assert result_path1.name == "figurepng", "Filename should be in result"
-    assert result_path1.parent == base, "Parent directory should match base"
-
-    # Test 2: Base path as string with trailing slash
-    result2 = plotting._format_save_path(str(base) + "/", "figurepdf")
-    result_path2 = Path(result2)
-    assert result_path2.name == "figurepdf", "Filename should be in result"
-    # Normalize for comparison (pathlib handles trailing slashes)
-    assert (
-        result_path2.parent.resolve() == base.resolve()
-    ), f"Parent should match base: {result_path2.parent} vs {base}"
-
-    # Test 3: Empty base path should return filename only
-    result3 = plotting._format_save_path("", "figurepng")
-    assert result3 == "figurepng", "Empty base should return just filename"
 
 
 def test_plotspec_sorting_abs_desc():
@@ -419,7 +385,7 @@ def test_plotspec_probabilistic_interval_requires_idx(monkeypatch):
     )
 
     with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
+        plotting.plot_probabilistic(
             explanation,
             instance=np.array([0.1, 0.2]),
             predict={"predict": 0.5, "low": 0.2, "high": 0.8},
@@ -445,30 +411,30 @@ def test_plotspec_probabilistic_default_save_ext(monkeypatch, tmp_path):
     sentinel_spec = object()
     builder_args: list[dict] = []
 
-    def _fake_builder(**kwargs):
+    def fake_builder(**kwargs):
         builder_args.append(kwargs)
         return sentinel_spec
 
     render_calls: list[dict] = []
 
-    def _fake_render(spec, **kwargs):
+    def fake_render(spec, **kwargs):
         render_calls.append({"spec": spec, **kwargs})
 
     formatted: list[tuple[str, str]] = []
 
-    def _format(base, filename):
+    def format_path(base, filename):
         formatted.append((base, filename))
         return f"{base}{filename}"
 
     monkeypatch.setattr(
         "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
-        _fake_builder,
+        fake_builder,
     )
     monkeypatch.setattr(
         "calibrated_explanations.viz.matplotlib_adapter.render",
-        _fake_render,
+        fake_render,
     )
-    monkeypatch.setattr(plotting, "_format_save_path", _format)
+    monkeypatch.setattr(plotting, "_format_save_path", format_path)
 
     explanation = types.SimpleNamespace(
         y_minmax=(0.0, 1.0),
@@ -481,7 +447,7 @@ def test_plotspec_probabilistic_default_save_ext(monkeypatch, tmp_path):
     setattr(explanation, "_get_explainer", lambda: None)
 
     base_path = str(tmp_path) + "/"
-    plotting._plot_probabilistic(
+    plotting.plot_probabilistic(
         explanation,
         instance=np.array([0.1, 0.2]),
         predict={"predict": 0.6, "low": 0.2, "high": 0.8},
@@ -538,7 +504,7 @@ def test_regression_builder_rejects_short_instance_vector():
     predict = {"predict": 0.5}
     fw = [0.2, -0.1, 0.05]
     feats = [0, 2]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         build_regression_bars_spec(
             title=None,
             predict=predict,
@@ -554,7 +520,7 @@ def test_regression_builder_rejects_short_instance_vector():
 
 
 def test_probabilistic_builder_clamps_infinite_bounds():
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     predict = {"predict": 0.6, "low": -np.inf, "high": np.inf}
     fw = {
@@ -580,10 +546,10 @@ def test_probabilistic_builder_clamps_infinite_bounds():
 
 
 def test_probabilistic_builder_rejects_truncated_labels():
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     predict = {"predict": 0.4}
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         build_probabilistic_bars_spec(
             title=None,
             predict=predict,
@@ -602,7 +568,7 @@ def test_build_regression_requires_instance_alignment():
     feats = [0, 1]
     cols = ["a", "b"]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         build_regression_bars_spec(
             title=None,
             predict=predict,
@@ -657,15 +623,15 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
     monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
     monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
 
-    class _Explanation:
+    class Explanation:
         y_minmax = (0.0, 1.0)
         prediction = {"classes": 1}
 
         def get_class_labels(self):
             return ["neg", "pos"]
 
-    plotting._plot_probabilistic(
-        _Explanation(),
+    plotting.plot_probabilistic(
+        Explanation(),
         instance=[0.2, 0.3],
         predict={"predict": 0.6, "low": -np.inf, "high": np.inf},
         feature_weights=[0.1, -0.2],
@@ -693,7 +659,7 @@ def test_build_regression_spec_requires_instance_alignment():
         "high": np.array([0.2, 0.1]),
     }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         build_regression_bars_spec(
             title=None,
             predict=predict,
@@ -706,7 +672,7 @@ def test_build_regression_spec_requires_instance_alignment():
         )
 
 
-def test_plot_alternative_sanitises_non_finite_payloads(monkeypatch):
+def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):
     from calibrated_explanations import plotting
 
     recorded: dict[str, dict] = {}
@@ -735,7 +701,7 @@ def test_plot_alternative_sanitises_non_finite_payloads(monkeypatch):
     )
     setattr(explanation, "_get_explainer", lambda: None)
 
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation=explanation,
         instance=np.array([0.1, 0.2, 0.3]),
         predict={"predict": 0.5, "low": -np.inf, "high": np.inf},

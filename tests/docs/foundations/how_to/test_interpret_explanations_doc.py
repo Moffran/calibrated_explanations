@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from tests.docs.get_started.test_quickstart_classification_doc import (
-    _run_quickstart_classification,
-)
+from tests.helpers.doc_utils import run_quickstart_classification
 
 
-def test_interpret_explanations_snippets():
-    context = _run_quickstart_classification()
+def test_interpret_explanations_snippets(enable_fallbacks):
+    context = run_quickstart_classification()
     explainer = context.explainer
     x_test = context.X_test
 

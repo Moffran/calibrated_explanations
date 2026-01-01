@@ -8,22 +8,24 @@ from typing import Any
 
 import pytest
 
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
+from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
-class _FakeEntryPoint:
+class FakeEntryPoint:
     def __init__(self, plugin: Any) -> None:
         self.name = plugin.plugin_meta["name"]
         self.module = "tests.plugins.fake"
         self.attr = None
-        self.group = registry._ENTRYPOINT_GROUP
-        self._plugin = plugin
+        self.group = registry.get_entrypoint_group()
+        self.plugin_instance = plugin
 
     def load(self):
-        return self._plugin
+        return self.plugin_instance
 
 
-class _FakeEntryPoints(list):
+class FakeEntryPoints(list):
     def select(self, *, group: str):
         return [entry for entry in self if getattr(entry, "group", None) == group]
 
@@ -64,7 +66,7 @@ def test_register_and_find_example_plugin(tmp_path, monkeypatch):
 
 def test_env_trust_marks_plugin_trusted(monkeypatch):
     registry.clear()
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.env")
 
     class EnvPlugin:
@@ -88,7 +90,7 @@ def test_env_trust_marks_plugin_trusted(monkeypatch):
     registry.register(plugin)
     assert plugin in registry.list_plugins(include_untrusted=False)
     registry.unregister(plugin)
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
 
 
 def test_is_identifier_denied(monkeypatch):
@@ -108,7 +110,7 @@ def test_validate_plugin_meta_rejects_bad_meta():
         def explain(self, model, x, **kwargs):
             return {}
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register(BadPlugin())
 
 
@@ -131,6 +133,8 @@ class DummyPlugin:
 
 
 def test_register_and_trust_flow(tmp_path):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     p = DummyPlugin()
     # ensure clean start
     registry.clear()
@@ -139,7 +143,7 @@ def test_register_and_trust_flow(tmp_path):
     assert p not in registry.list_plugins(include_untrusted=False)
 
     # trusting unregistered plugin raises
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.trust_plugin(object())
 
     # trust and find
@@ -199,6 +203,8 @@ def test_register_explanation_plugin_descriptor():
 
 
 def test_register_explanation_plugin_requires_modes():
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
 
     class BadExplanationPlugin:
@@ -213,11 +219,13 @@ def test_register_explanation_plugin_requires_modes():
             "trust": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("bad", BadExplanationPlugin())
 
 
 def test_register_explanation_plugin_requires_tasks():
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
 
     class NoTasksExplanationPlugin:
@@ -232,7 +240,7 @@ def test_register_explanation_plugin_requires_tasks():
             "trust": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("bad.tasks", NoTasksExplanationPlugin())
 
 
@@ -252,13 +260,19 @@ def test_register_explanation_plugin_translates_aliases():
             "trust": True,
         }
 
-    with pytest.warns(DeprecationWarning):
-        descriptor = registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
+    else:
+        with warns_or_raises():
+            descriptor = registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
 
-    assert descriptor.metadata["modes"] == ("factual",)
+        assert descriptor.metadata["modes"] == ("factual",)
 
 
 def test_register_explanation_plugin_schema_version_future():
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
 
     class FuturePlugin:
@@ -274,11 +288,11 @@ def test_register_explanation_plugin_schema_version_future():
             "trust": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("future", FuturePlugin())
 
 
-def _make_entry_plugin(name: str = "tests.entry"):
+def make_entry_plugin(name: str = "tests.entry"):
     class EntryPlugin:
         plugin_meta = {
             "schema_version": 1,
@@ -301,18 +315,18 @@ def _make_entry_plugin(name: str = "tests.entry"):
 
 def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
     registry.clear()
-    registry._WARNED_UNTRUSTED.clear()
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_trust_warnings()
+    registry.clear_env_trust_cache()
 
-    plugin = _make_entry_plugin()
-    fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+    plugin = make_entry_plugin()
+    fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
     monkeypatch.setattr(
         registry.importlib_metadata,
         "entry_points",
         lambda: fake_entries,
     )
 
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         loaded = registry.load_entrypoint_plugins()
 
     assert loaded == ()
@@ -321,12 +335,12 @@ def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
 
 def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
     registry.clear()
-    registry._WARNED_UNTRUSTED.clear()
+    registry.clear_trust_warnings()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.entry")
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
 
-    plugin = _make_entry_plugin()
-    fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+    plugin = make_entry_plugin()
+    fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
     monkeypatch.setattr(
         registry.importlib_metadata,
         "entry_points",
@@ -337,7 +351,7 @@ def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
     assert loaded == (plugin,)
     assert plugin in registry.list_plugins(include_untrusted=False)
     registry.unregister(plugin)
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
 
 
 class ExampleIntervalPlugin:
@@ -366,6 +380,8 @@ def test_register_interval_plugin_descriptor():
 
 
 def test_register_interval_plugin_requires_modes():
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     registry.clear_interval_plugins()
 
     class BadIntervalPlugin:
@@ -382,7 +398,7 @@ def test_register_interval_plugin_requires_modes():
             "confidence_source": "legacy",
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_interval_plugin("bad.interval", BadIntervalPlugin())
 
 
@@ -439,6 +455,8 @@ def test_register_plot_components():
 
 
 def test_register_plot_builder_requires_style():
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     registry.clear_plot_plugins()
 
     class BadPlotPlugin:
@@ -454,7 +472,7 @@ def test_register_plot_builder_requires_style():
             "legacy_compatible": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_builder("bad.plot", BadPlotPlugin())
 
 
@@ -485,21 +503,25 @@ def test_register_plot_plugin_combines_builder_and_renderer():
 
     plugin = CombinedPlugin()
     try:
-        with pytest.warns(DeprecationWarning):
-            descriptor = registry.register_plot_plugin("example.plot.combined", plugin)
-        assert descriptor.identifier == "example.plot.combined"
-        assert registry.find_plot_builder("example.plot.combined") is plugin
-        assert registry.find_plot_renderer("example.plot.combined") is plugin
+        if deprecations_error_enabled():
+            with pytest.raises(DeprecationWarning):
+                registry.register_plot_plugin("example.plot.combined", plugin)
+        else:
+            with warns_or_raises():
+                descriptor = registry.register_plot_plugin("example.plot.combined", plugin)
+            assert descriptor.identifier == "example.plot.combined"
+            assert registry.find_plot_builder("example.plot.combined") is plugin
+            assert registry.find_plot_renderer("example.plot.combined") is plugin
 
-        combined = registry.find_plot_plugin("example.plot.combined")
-        assert combined is not None
-        assert combined.plugin_meta is plugin.plugin_meta
-        assert combined.build(1, foo=2) == ("build", (1,), {"foo": 2})
-        assert combined.render(3, bar=4) == ("render", (3,), {"bar": 4})
+            combined = registry.find_plot_plugin("example.plot.combined")
+            assert combined is not None
+            assert combined.plugin_meta is plugin.plugin_meta
+            assert combined.build(1, foo=2) == ("build", (1,), {"foo": 2})
+            assert combined.render(3, bar=4) == ("render", (3,), {"bar": 4})
 
-        trusted_combined = registry.find_plot_plugin_trusted("example.plot.combined")
-        assert trusted_combined is not None
-        assert trusted_combined.build(5) == ("build", (5,), {})
+            trusted_combined = registry.find_plot_plugin_trusted("example.plot.combined")
+            assert trusted_combined is not None
+            assert trusted_combined.build(5) == ("build", (5,), {})
     finally:
         registry.clear_plot_plugins()
 
@@ -539,8 +561,8 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
             "supports_interactive": False,
         }
 
-        def render(self, value):
-            return ("renderer", value)
+        def render(self, artifact, *, context):
+            return ("renderer", artifact)
 
     try:
         builder_desc = registry.register_plot_builder("example.plot.mixed", Builder())
@@ -558,7 +580,19 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
         combined = registry.find_plot_plugin("example.plot.mixed")
         assert combined is not None
         assert combined.build("data")[0] == "builder"
-        assert combined.render("data")[0] == "renderer"
+        from calibrated_explanations.plugins.plots import PlotRenderContext
+
+        context = PlotRenderContext(
+            explanation=None,
+            instance_metadata={},
+            style="example.plot.mixed",
+            intent={},
+            show=False,
+            path=None,
+            save_ext=None,
+            options={},
+        )
+        assert combined.render("data", context=context)[0] == "renderer"
 
         assert registry.find_plot_plugin_trusted("example.plot.mixed") is None
     finally:
@@ -566,33 +600,35 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
 
 
 def test_verify_plugin_checksum_success_and_failure(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     plugin = ExamplePlotBuilder()
     module_path = Path(__file__)
     good_digest = hashlib.sha256(module_path.read_bytes()).hexdigest()
 
     meta = {"checksum": {"sha256": good_digest}, "name": "example.plot.builder"}
     # Should not raise when checksum matches
-    registry._verify_plugin_checksum(plugin, dict(meta))
+    registry.verify_plugin_checksum(plugin, dict(meta))
 
     meta_string = {"checksum": good_digest, "name": "example.plot.builder"}
-    registry._verify_plugin_checksum(plugin, dict(meta_string))
+    registry.verify_plugin_checksum(plugin, dict(meta_string))
 
     bad_meta = {"checksum": {"sha256": "00" * 32}, "name": "example.plot.builder"}
-    with pytest.raises(ValueError, match="Checksum mismatch"):
-        registry._verify_plugin_checksum(plugin, bad_meta)
+    with pytest.raises(ValidationError, match="Checksum mismatch"):
+        registry.verify_plugin_checksum(plugin, bad_meta)
 
     # Simulate a plugin whose module file cannot be resolved
     meta_missing = {"checksum": {"sha256": good_digest}, "name": "missing"}
     monkeypatch.setattr(
         registry,
-        "_resolve_plugin_module_file",
+        "resolve_plugin_module_file",
         lambda plugin: module_path.with_name("nonexistent_file"),
     )
-    with pytest.warns(RuntimeWarning):
-        registry._verify_plugin_checksum(object(), meta_missing)
+    with pytest.warns(UserWarning):
+        registry.verify_plugin_checksum(object(), meta_missing)
 
-    with pytest.raises(ValueError, match="must be a string or mapping"):
-        registry._verify_plugin_checksum(plugin, {"checksum": 123, "name": "bad"})
+    with pytest.raises(ValidationError, match="must be a string or mapping"):
+        registry.verify_plugin_checksum(plugin, {"checksum": 123, "name": "bad"})
 
 
 def test_list_descriptors_and_trust_management(monkeypatch):
@@ -748,8 +784,12 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
 
     try:
         trusted_plugin = TrustedCombo()
-        with pytest.warns(DeprecationWarning):
-            registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
+        if deprecations_error_enabled():
+            with pytest.raises(DeprecationWarning):
+                registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
+        else:
+            with warns_or_raises():
+                registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
 
         builder_desc = registry.register_plot_builder("example.plot.untrusted", UntrustedBuilder())
         renderer_desc = registry.register_plot_renderer(
@@ -765,27 +805,42 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
             },
         )
 
-        all_builders = registry.list_plot_builder_descriptors()
-        assert [d.identifier for d in all_builders] == [
-            "example.plot.trusted",
-            "example.plot.untrusted",
-        ]
+        if not deprecations_error_enabled():
+            all_builders = registry.list_plot_builder_descriptors()
+            assert [d.identifier for d in all_builders] == [
+                "example.plot.trusted",
+                "example.plot.untrusted",
+            ]
         trusted_builders = registry.list_plot_builder_descriptors(trusted_only=True)
-        assert [d.identifier for d in trusted_builders] == ["example.plot.trusted"]
+        if deprecations_error_enabled():
+            # In raise-mode the deprecated registration raised and the trusted
+            # plugin won't be present.
+            assert [d.identifier for d in trusted_builders] == []
+        else:
+            assert [d.identifier for d in trusted_builders] == ["example.plot.trusted"]
 
         all_renderers = registry.list_plot_renderer_descriptors()
-        assert [d.identifier for d in all_renderers] == [
-            "example.plot.trusted",
-            "example.plot.untrusted",
-        ]
+        if deprecations_error_enabled():
+            assert [d.identifier for d in all_renderers] == ["example.plot.untrusted"]
+        else:
+            assert [d.identifier for d in all_renderers] == [
+                "example.plot.trusted",
+                "example.plot.untrusted",
+            ]
         trusted_renderers = registry.list_plot_renderer_descriptors(trusted_only=True)
-        assert [d.identifier for d in trusted_renderers] == ["example.plot.trusted"]
+        if deprecations_error_enabled():
+            assert [d.identifier for d in trusted_renderers] == []
+        else:
+            assert [d.identifier for d in trusted_renderers] == ["example.plot.trusted"]
 
         styles = registry.list_plot_style_descriptors()
-        assert [d.identifier for d in styles] == [
-            "example.plot.trusted",
-            "example.plot.untrusted",
-        ]
+        if deprecations_error_enabled():
+            assert [d.identifier for d in styles] == ["example.plot.untrusted"]
+        else:
+            assert [d.identifier for d in styles] == [
+                "example.plot.trusted",
+                "example.plot.untrusted",
+            ]
     finally:
         registry.clear_plot_plugins()
 
@@ -813,35 +868,35 @@ def test_ensure_builtin_plugins_invokes_register(monkeypatch):
 
 
 def test_trust_normalisation_helpers(monkeypatch):
-    registry._ENV_TRUST_CACHE = None
-    registry._WARNED_UNTRUSTED.clear()
+    registry.clear_env_trust_cache()
+    registry.clear_trust_warnings()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "auto_plugin")
 
     meta_mapping = {"trust": {"default": True}}
-    assert registry._normalise_trust(meta_mapping) is True
+    assert registry.normalise_trust(meta_mapping) is True
 
-    names = registry._env_trusted_names()
+    names = registry.env_trusted_names()
     assert names == {"auto_plugin"}
     # Cache should persist even if env changes
     monkeypatch.setenv("CE_TRUST_PLUGIN", "")
-    assert registry._env_trusted_names() == {"auto_plugin"}
+    assert registry.env_trusted_names() == {"auto_plugin"}
 
     meta_env = {"name": "auto_plugin", "trust": False}
-    assert registry._should_trust(meta_env) is True
+    assert registry.should_trust(meta_env) is True
 
     meta_untrusted = {"name": "manual", "provider": "tests"}
-    with pytest.warns(RuntimeWarning):
-        registry._warn_untrusted_plugin(meta_untrusted, source="entry")
+    with pytest.warns(UserWarning):
+        registry.warn_untrusted_plugin(meta_untrusted, source="entry")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("error", RuntimeWarning)
-        registry._warn_untrusted_plugin(meta_untrusted, source="entry")
+        registry.warn_untrusted_plugin(meta_untrusted, source="entry")
     assert caught == []
 
 
 def test_load_entrypoint_plugins_error_branches(monkeypatch):
     registry.clear()
-    registry._WARNED_UNTRUSTED.clear()
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_trust_warnings()
+    registry.clear_env_trust_cache()
 
     class NoMetaPlugin:
         pass
@@ -882,12 +937,12 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             self.name = name
             self.module = module or "tests.plugins.fake"
             self.attr = attr
-            self.group = registry._ENTRYPOINT_GROUP
-            self._loader = loader
+            self.group = registry.get_entrypoint_group()
+            self.loader_func = loader
 
         def load(self):
-            if self._loader is not None:
-                return self._loader()
+            if self.loader_func is not None:
+                return self.loader_func()
             module = importlib.import_module(self.module)
             return getattr(module, self.attr)
 
@@ -900,17 +955,17 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
     trusted = LoaderEntryPoint("trusted", loader=lambda: TrustedPlugin())
     attr_entry = LoaderEntryPoint("attr", module=attr_module_name, attr="attr_plugin")
 
-    entry_points = _FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])
+    entry_points = FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entry_points)
 
     try:
-        with pytest.warns(RuntimeWarning):
+        with pytest.warns(UserWarning):
             loaded = registry.load_entrypoint_plugins()
         assert {plugin.plugin_meta["name"] for plugin in loaded} == {"entry.trusted", "entry.attr"}
         # untrusted plugin should not be registered when include_untrusted is False
         assert all(plugin in registry.list_plugins(include_untrusted=False) for plugin in loaded)
     finally:
         registry.clear()
-        registry._WARNED_UNTRUSTED.clear()
-        registry._ENV_TRUST_CACHE = None
+        registry.clear_trust_warnings()
+        registry.clear_env_trust_cache()
         sys.modules.pop(attr_module_name, None)

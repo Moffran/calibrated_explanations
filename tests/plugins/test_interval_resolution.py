@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import pytest
+from tests.helpers.explainer_utils import make_explainer_from_dataset
 
-from calibrated_explanations.core.calibration.venn_abers import VennAbers
-from calibrated_explanations.core.calibration import interval_learner as ch
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
+import calibrated_explanations.calibration as ch
+from calibrated_explanations.calibration import VennAbers
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_interval_plugins,
     ensure_builtin_plugins,
     register_interval_plugin,
@@ -132,45 +132,14 @@ class SlowFastIntervalPlugin(IntervalCalibratorPlugin):
         return [object()]
 
 
-def _make_explainer(binary_dataset, **overrides):
-    from tests._helpers import get_classification_model
-
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,
-        _,
-        _,
-        categorical_features,
-        feature_names,
-    ) = binary_dataset
-
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=["No", "Yes"],
-        seed=42,
-        **overrides,
-    )
-    return explainer, x_test
-
-
 def test_interval_resolution_skips_untrusted_fallback(monkeypatch, binary_dataset):
     ensure_builtin_plugins()
     descriptor = register_interval_plugin("tests.interval.untrusted", UntrustedIntervalPlugin())
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", descriptor.identifier)
     try:
-        explainer, _ = _make_explainer(binary_dataset)
+        explainer, _ = make_explainer_from_dataset(binary_dataset)
         ch.initialize_interval_learner(explainer)
-        identifier = explainer._interval_plugin_identifiers.get("default")
+        identifier = explainer.plugin_manager.interval_plugin_identifiers.get("default")
         assert identifier == "core.interval.legacy"
         assert isinstance(explainer.interval_learner, VennAbers)
     finally:
@@ -181,13 +150,13 @@ def test_interval_resolution_skips_untrusted_fallback(monkeypatch, binary_datase
 
 def test_fast_interval_plugin_constructs_calibrators(binary_dataset):
     ensure_builtin_plugins()
-    explainer, _ = _make_explainer(binary_dataset, fast=True)
+    explainer, _ = make_explainer_from_dataset(binary_dataset, fast=True)
     ch.initialize_interval_learner(explainer)
     calibrators = explainer.interval_learner
     assert isinstance(calibrators, list)
     assert len(calibrators) == explainer.num_features + 1
     assert all(isinstance(cal, VennAbers) for cal in calibrators)
-    assert explainer._interval_plugin_identifiers.get("fast") == "core.interval.fast"
+    assert explainer.plugin_manager.interval_plugin_identifiers.get("fast") == "core.interval.fast"
 
 
 def test_interval_override_uses_untrusted_plugin(monkeypatch, binary_dataset):
@@ -219,9 +188,12 @@ def test_interval_override_uses_untrusted_plugin(monkeypatch, binary_dataset):
     )
     monkeypatch.setenv("CE_INTERVAL_PLUGIN", descriptor.identifier)
     try:
-        explainer, _ = _make_explainer(binary_dataset)
+        explainer, _ = make_explainer_from_dataset(binary_dataset)
         ch.initialize_interval_learner(explainer)
-        assert explainer._interval_plugin_identifiers.get("default") == descriptor.identifier
+        assert (
+            explainer.plugin_manager.interval_plugin_identifiers.get("default")
+            == descriptor.identifier
+        )
     finally:
         monkeypatch.delenv("CE_INTERVAL_PLUGIN", raising=False)
         clear_interval_plugins()
@@ -236,15 +208,15 @@ def test_interval_hint_prioritizes_trusted_plugin(monkeypatch, binary_dataset):
     RecordingIntervalPlugin.last_calibrator = None
     descriptor = register_interval_plugin("tests.interval.recording", RecordingIntervalPlugin())
     try:
-        explainer, _ = _make_explainer(binary_dataset)
-        explainer._interval_plugin_hints["factual"] = (descriptor.identifier,)  # noqa: SLF001
+        explainer, _ = make_explainer_from_dataset(binary_dataset)
+        explainer.plugin_manager.interval_plugin_hints["factual"] = (descriptor.identifier,)  # noqa: SLF001
 
         ch.initialize_interval_learner(explainer)
 
         assert explainer.interval_learner is RecordingIntervalPlugin.last_calibrator
-        identifier = explainer._interval_plugin_identifiers.get("default")
+        identifier = explainer.plugin_manager.interval_plugin_identifiers.get("default")
         assert identifier == descriptor.identifier
-        stored = explainer._interval_context_metadata["default"]
+        stored = explainer.plugin_manager.interval_context_metadata["default"]
         assert stored["calibrator"] is RecordingIntervalPlugin.last_calibrator
     finally:
         clear_interval_plugins()
@@ -258,7 +230,7 @@ def test_interval_metadata_captures_calibrator(monkeypatch, binary_dataset):
     descriptor = register_interval_plugin("tests.interval.recording", RecordingIntervalPlugin())
     monkeypatch.setenv("CE_INTERVAL_PLUGIN", descriptor.identifier)
     try:
-        explainer, _ = _make_explainer(binary_dataset)
+        explainer, _ = make_explainer_from_dataset(binary_dataset)
         ch.initialize_interval_learner(explainer)
         assert explainer.interval_learner is RecordingIntervalPlugin.last_calibrator
         context = RecordingIntervalPlugin.last_context
@@ -280,7 +252,7 @@ def test_fast_interval_metadata_captures_calibrators(monkeypatch, binary_dataset
     )
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST", descriptor.identifier)
     try:
-        explainer, _ = _make_explainer(
+        explainer, _ = make_explainer_from_dataset(
             binary_dataset,
             fast=True,
         )
@@ -295,7 +267,7 @@ def test_fast_interval_metadata_captures_calibrators(monkeypatch, binary_dataset
         assert existing == RecordingFastIntervalPlugin.last_calibrators
         assert isinstance(existing, tuple)
         # ``_interval_context_metadata`` should keep a defensive copy of the mapping.
-        cached = explainer._interval_context_metadata["fast"]
+        cached = explainer.plugin_manager.interval_context_metadata["fast"]
         assert cached is not context.metadata
         assert cached["fast_calibrators"] == RecordingFastIntervalPlugin.last_calibrators
         assert isinstance(cached["fast_calibrators"], tuple)
@@ -313,9 +285,9 @@ def test_interval_resolution_skips_missing_capability(monkeypatch, binary_datase
     )
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", descriptor.identifier)
     try:
-        explainer, _ = _make_explainer(binary_dataset)
+        explainer, _ = make_explainer_from_dataset(binary_dataset)
         ch.initialize_interval_learner(explainer)
-        identifier = explainer._interval_plugin_identifiers.get("default")
+        identifier = explainer.plugin_manager.interval_plugin_identifiers.get("default")
         assert identifier == "core.interval.legacy"
     finally:
         monkeypatch.delenv("CE_INTERVAL_PLUGIN_FALLBACKS", raising=False)
@@ -332,14 +304,14 @@ def test_fast_interval_override_requires_fast_capability(monkeypatch, binary_dat
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST", descriptor.identifier)
     try:
         with pytest.raises(ConfigurationError):
-            _make_explainer(binary_dataset, fast=True)
+            make_explainer_from_dataset(binary_dataset, fast=True)
     finally:
         monkeypatch.delenv("CE_INTERVAL_PLUGIN_FAST", raising=False)
         clear_interval_plugins()
         ensure_builtin_plugins()
 
 
-class _ExplicitIntervalPlugin(IntervalCalibratorPlugin):
+class ExplicitIntervalPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "tests.interval.explicit",
         "schema_version": 1,
@@ -361,19 +333,23 @@ class _ExplicitIntervalPlugin(IntervalCalibratorPlugin):
 
 def test_interval_override_allows_untrusted_plugin(binary_dataset):
     ensure_builtin_plugins()
-    descriptor = register_interval_plugin("tests.interval.explicit", _ExplicitIntervalPlugin())
+    descriptor = register_interval_plugin("tests.interval.explicit", ExplicitIntervalPlugin())
     try:
-        explainer, _ = _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)
+        explainer, _ = make_explainer_from_dataset(
+            binary_dataset, interval_plugin=descriptor.identifier
+        )
         ch.initialize_interval_learner(explainer)
-        assert explainer._interval_plugin_identifiers["default"] == descriptor.identifier
-        stored = explainer._interval_context_metadata["default"]
+        assert (
+            explainer.plugin_manager.interval_plugin_identifiers["default"] == descriptor.identifier
+        )
+        stored = explainer.plugin_manager.interval_context_metadata["default"]
         assert stored["calibrator"] is explainer.interval_learner
     finally:
         clear_interval_plugins()
         ensure_builtin_plugins()
 
 
-class _MissingCapabilityPlugin(IntervalCalibratorPlugin):
+class MissingCapabilityPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "tests.interval.missing_cap",
         "schema_version": 1,
@@ -395,17 +371,17 @@ class _MissingCapabilityPlugin(IntervalCalibratorPlugin):
 
 def test_interval_override_missing_capability(binary_dataset):
     ensure_builtin_plugins()
-    descriptor = register_interval_plugin("tests.interval.missing_cap", _MissingCapabilityPlugin())
+    descriptor = register_interval_plugin("tests.interval.missing_cap", MissingCapabilityPlugin())
     try:
         with pytest.raises(ConfigurationError) as excinfo:
-            _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)
+            make_explainer_from_dataset(binary_dataset, interval_plugin=descriptor.identifier)
         assert "does not support mode" in str(excinfo.value)
     finally:
         clear_interval_plugins()
         ensure_builtin_plugins()
 
 
-class _FastRecordingPlugin(IntervalCalibratorPlugin):
+class FastRecordingPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "tests.interval.fast_override",
         "schema_version": 1,
@@ -435,23 +411,23 @@ class _FastRecordingPlugin(IntervalCalibratorPlugin):
 
 def test_fast_interval_override_metadata_reuse(binary_dataset):
     ensure_builtin_plugins()
-    _FastRecordingPlugin.invocations.clear()
-    _FastRecordingPlugin.returned.clear()
-    descriptor = register_interval_plugin("tests.interval.fast_override", _FastRecordingPlugin())
+    FastRecordingPlugin.invocations.clear()
+    FastRecordingPlugin.returned.clear()
+    descriptor = register_interval_plugin("tests.interval.fast_override", FastRecordingPlugin())
     try:
-        explainer, _ = _make_explainer(
+        explainer, _ = make_explainer_from_dataset(
             binary_dataset,
             fast=True,
             fast_interval_plugin=descriptor.identifier,
         )
-        first_calibrators = _FastRecordingPlugin.returned[-1]
-        stored = explainer._interval_context_metadata["fast"]
+        first_calibrators = FastRecordingPlugin.returned[-1]
+        stored = explainer.plugin_manager.interval_context_metadata["fast"]
         assert stored["fast_calibrators"] == first_calibrators
         assert isinstance(stored["fast_calibrators"], tuple)
 
         # Invoke again to confirm metadata is reused without exposing mutable state
         ch.initialize_interval_learner(explainer)
-        reuse_metadata = _FastRecordingPlugin.invocations[-1]
+        reuse_metadata = FastRecordingPlugin.invocations[-1]
         assert reuse_metadata == first_calibrators
         assert isinstance(reuse_metadata, tuple)
     finally:
@@ -459,7 +435,7 @@ def test_fast_interval_override_metadata_reuse(binary_dataset):
         ensure_builtin_plugins()
 
 
-class _FastIncompatiblePlugin(IntervalCalibratorPlugin):
+class FastIncompatiblePlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "tests.interval.fast_incompatible",
         "schema_version": 1,
@@ -482,11 +458,11 @@ class _FastIncompatiblePlugin(IntervalCalibratorPlugin):
 def test_fast_interval_override_requires_fast_compatibility(binary_dataset):
     ensure_builtin_plugins()
     descriptor = register_interval_plugin(
-        "tests.interval.fast_incompatible", _FastIncompatiblePlugin()
+        "tests.interval.fast_incompatible", FastIncompatiblePlugin()
     )
     try:
         with pytest.raises(ConfigurationError) as excinfo:
-            _make_explainer(
+            make_explainer_from_dataset(
                 binary_dataset,
                 fast=True,
                 fast_interval_plugin=descriptor.identifier,
@@ -503,12 +479,12 @@ def test_interval_hint_skips_untrusted_plugin(monkeypatch, binary_dataset):
     ensure_builtin_plugins()
     descriptor = register_interval_plugin("tests.interval.untrusted", UntrustedIntervalPlugin())
     try:
-        explainer, _ = _make_explainer(binary_dataset)
-        explainer._interval_plugin_hints["factual"] = (descriptor.identifier,)  # noqa: SLF001
+        explainer, _ = make_explainer_from_dataset(binary_dataset)
+        explainer.plugin_manager.interval_plugin_hints["factual"] = (descriptor.identifier,)  # noqa: SLF001
 
         ch.initialize_interval_learner(explainer)
 
-        identifier = explainer._interval_plugin_identifiers.get("default")
+        identifier = explainer.plugin_manager.interval_plugin_identifiers.get("default")
         assert identifier == "core.interval.legacy"
         assert explainer.interval_learner is not None
     finally:

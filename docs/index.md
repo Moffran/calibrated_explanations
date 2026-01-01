@@ -98,6 +98,20 @@ plugins
 
 ```{toctree}
 :maxdepth: 1
+:caption: Engineering standards
+
+standards/index
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Reference
+
+api/index
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Upgrade guides
 
 migration/index
@@ -109,5 +123,14 @@ migration/index
 
 appendices/external_plugins
 appendices/changelog_links
+maintenance/legacy-plotting-reference
 citing
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Project Management
+
+ROADMAP
+improvement/index
 ```

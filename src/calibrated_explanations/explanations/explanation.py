@@ -16,30 +16,32 @@ Classes:
         Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
 """
 
+import contextlib
 import math
 import re
 import warnings
 from abc import ABC, abstractmethod
-
-# from dataclasses import dataclass
+from collections.abc import Sequence
 from types import MappingProxyType
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from pandas import Categorical
 
-from calibrated_explanations.core.explain.feature_task import (
-    assign_threshold as normalize_threshold,
-)
-
-from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
-from ..utils.discretizers import (
+from ..plotting import plot_alternative, plot_probabilistic, plot_regression, plot_triangular
+from ..utils import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
+    calculate_metrics,
+    prepare_for_saving,
+    safe_first_element,
+    safe_mean,
 )
-from ..utils.helper import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
+from ..utils.helper import assign_threshold as normalize_threshold
+from ..utils.int_utils import collect_ints
+from ._conjunctions import ConjunctionState
 
 # @dataclass
 # class PredictionInterval:
@@ -115,6 +117,7 @@ class CalibratedExplanation(ABC):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Abstract base class for storing and visualizing calibrated explanations.
 
@@ -178,23 +181,59 @@ class CalibratedExplanation(ABC):
         self.conditions = []
         self.rules = None
         self.conjunctive_rules = None
-        self._has_rules = False
-        self._has_conjunctive_rules = False
+        self.has_rules = False
+        self.has_conjunctive_rules = False
         self.bin = [instance_bin] if instance_bin is not None else None
         self.explain_time = None
+        self.condition_source = condition_source
         # reduce dependence on Explainer class
-        if not isinstance(self._get_explainer().y_cal, Categorical):
+        if not isinstance(self.get_explainer().y_cal, Categorical):
             self.y_minmax = [
-                np.min(self._get_explainer().y_cal),
-                np.max(self._get_explainer().y_cal),
+                np.min(self.get_explainer().y_cal),
+                np.max(self.get_explainer().y_cal),
             ]
         else:
             self.y_minmax = [0, 0]
         self.focus_columns = None
 
+        self._validate_prediction_invariant()
+
+    def _validate_prediction_invariant(self) -> None:
+        """Enforce low <= predict <= high invariant on prediction payload."""
+        import warnings
+
+        predict = self.prediction.get("predict")
+        low = self.prediction.get("low")
+        high = self.prediction.get("high")
+
+        if predict is None or low is None or high is None:
+            return
+
+        with contextlib.suppress(TypeError, ValueError):
+            # Handle scalar values (common case)
+            if (
+                isinstance(predict, (int, float))
+                and isinstance(low, (int, float))
+                and isinstance(high, (int, float))
+            ):
+                if not low <= high:
+                    warnings.warn(
+                        "Prediction interval invariant violated: low > high",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                # Allow small floating point tolerance
+                epsilon = 1e-9
+                if not (low - epsilon <= predict <= high + epsilon):
+                    warnings.warn(
+                        "Prediction invariant violated: predict not in [low, high]",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+
     def __len__(self):
         """Return the number of rules in the explanation."""
-        return len(self._get_rules()["rule"])
+        return len(self.get_rules()["rule"])
 
     @abstractmethod
     def build_rules_payload(self) -> Dict[str, Any]:
@@ -225,21 +264,52 @@ class CalibratedExplanation(ABC):
 
     def get_mode(self):
         """Return the mode of the explanation ('classification' or 'regression')."""
-        return self._get_explainer().mode
+        return self.get_explainer().mode
 
     def get_class_labels(self):
         """Return the class labels."""
-        return self._get_explainer().class_labels
+        return self.get_explainer().class_labels
 
     def is_multiclass(self):
         """Determine if the explanation is multiclass."""
-        return self._get_explainer().is_multiclass()
+        return self.get_explainer().is_multiclass()
 
-    def _get_explainer(self):
+    def get_explainer(self):
         """Return the explainer object."""
-        return self.calibrated_explanations._get_explainer()  # pylint: disable=protected-access
+        container = self.calibrated_explanations
+        getter = getattr(container, "get_explainer", None)
+        if callable(getter):
+            return getter()
+        getter = getattr(container, "_get_explainer", None)
+        if callable(getter):
+            return getter()
+        if hasattr(container, "explainer"):
+            return container.explainer
+        return getattr(container, "calibrated_explainer", container)
 
-    def _rank_features(self, feature_weights=None, width=None, num_to_show=None):
+    def ignored_features_for_instance(self):
+        """Return the set of feature indices ignored for this instance.
+
+        Combines collection-level ``features_to_ignore`` with any
+        per-instance mask exposed via ``features_to_ignore_per_instance``.
+        """
+        ignored: set[int] = set()
+        global_ignore = getattr(self.calibrated_explanations, "features_to_ignore", None)
+        if global_ignore is None:
+            global_ignore = ()
+        ignored.update(collect_ints(global_ignore))
+
+        per_instance = getattr(
+            self.calibrated_explanations, "features_to_ignore_per_instance", None
+        )
+        instance_mask = None
+        if isinstance(per_instance, Sequence) and 0 <= self.index < len(per_instance):
+            instance_mask = per_instance[self.index]
+        if instance_mask is not None:
+            ignored.update(collect_ints(instance_mask))
+        return ignored
+
+    def rank_features(self, feature_weights=None, width=None, num_to_show=None):
         """Rank the features based on their weights.
 
         Parameters
@@ -257,7 +327,17 @@ class CalibratedExplanation(ABC):
             The sorted indices of the features.
         """
         if not (feature_weights is not None or width is not None):
-            raise ValueError("Either feature_weights or width (or both) must not be None")
+            from ..utils.exceptions import ValidationError
+
+            raise ValidationError(
+                "Either feature_weights or width (or both) must not be None",
+                details={
+                    "param": "feature_weights/width",
+                    "requirement": "at least one must be provided",
+                    "feature_weights": feature_weights is not None,
+                    "width": width is not None,
+                },
+            )
         num_features = len(feature_weights) if feature_weights is not None else len(width)
         if num_to_show is None or num_to_show > num_features:
             num_to_show = num_features
@@ -268,7 +348,7 @@ class CalibratedExplanation(ABC):
             sorted_indices = [
                 i
                 for i, x in sorted(
-                    enumerate(list(zip(np.abs(feature_weights), width))),
+                    enumerate(list(zip(np.abs(feature_weights), width, strict=False))),
                     key=lambda x: (x[1][0], x[1][1]),
                 )
             ]
@@ -308,7 +388,7 @@ class CalibratedExplanation(ABC):
         -------
             bool: True if mode is 'regression'
         """
-        return "regression" in self._get_explainer().mode
+        return "regression" in self.get_explainer().mode
 
     def is_probabilistic(self) -> bool:
         """Check if the explanation is probabilistic.
@@ -317,7 +397,7 @@ class CalibratedExplanation(ABC):
         -------
             bool: True if mode is 'classification' or is_thresholded and is_regression are True
         """
-        return "classification" in self._get_explainer().mode or (
+        return "classification" in self.get_explainer().mode or (
             self.is_regression() and self.is_thresholded()
         )
 
@@ -466,34 +546,29 @@ class CalibratedExplanation(ABC):
         """Validate that required explanation inputs and state are available."""
         pass
 
-    @abstractmethod
-    def _get_rules(self):
-        """Populate the underlying rule structures when first accessed."""
-        pass
-
     def reset(self):
         """Reset the explanation to its original state."""
-        self._has_rules = False
-        self._get_rules()
+        self.has_rules = False
+        self.get_rules()
         return self
 
     def remove_conjunctions(self):
         """Remove any conjunctive rules."""
-        self._has_conjunctive_rules = False
+        self.has_conjunctive_rules = False
         return self
 
     # ------------------------------------------------------------------
     # Telemetry helpers
     # ------------------------------------------------------------------
     @staticmethod
-    def _to_python_number(value: Any) -> Any:
+    def to_python_number(value: Any) -> Any:
         """Convert numpy/scalar values to native Python types suitable for telemetry."""
         if isinstance(value, np.generic):
             value = value.item()
         if isinstance(value, np.ndarray):
-            return [CalibratedExplanation._to_python_number(v) for v in value.tolist()]
+            return [CalibratedExplanation.to_python_number(v) for v in value.tolist()]
         if isinstance(value, (list, tuple)):
-            return [CalibratedExplanation._to_python_number(v) for v in value]
+            return [CalibratedExplanation.to_python_number(v) for v in value]
         if value is None:
             return None
         if isinstance(value, (np.bool_, bool)):
@@ -507,9 +582,9 @@ class CalibratedExplanation(ABC):
         return value
 
     @staticmethod
-    def _normalize_percentile_value(value: Any) -> Optional[float]:
+    def normalize_percentile_value(value: Any) -> Optional[float]:
         """Normalise percentile inputs to decimal fractions."""
-        value = CalibratedExplanation._to_python_number(value)
+        value = CalibratedExplanation.to_python_number(value)
         if value is None:
             return None
         if isinstance(value, (float, int)):
@@ -526,12 +601,12 @@ class CalibratedExplanation(ABC):
         percentiles = getattr(self.calibrated_explanations, "low_high_percentiles", None)
         if percentiles is None or len(percentiles) != 2:
             return None
-        low = self._normalize_percentile_value(percentiles[0])
-        high = self._normalize_percentile_value(percentiles[1])
+        low = self.normalize_percentile_value(percentiles[0])
+        high = self.normalize_percentile_value(percentiles[1])
         return (low, high)
 
     @staticmethod
-    def _compute_confidence_level(
+    def compute_confidence_level(
         percentiles: Optional[Tuple[Optional[float], Optional[float]]],
     ) -> Optional[float]:
         """Compute confidence level from decimal percentiles."""
@@ -546,7 +621,7 @@ class CalibratedExplanation(ABC):
             return None if low is None else 1 - low
         return max(0.0, high - low)
 
-    def _normalize_threshold_value(self) -> Any:
+    def normalize_threshold_value(self) -> Any:
         """Normalise threshold metadata to telemetry-friendly structure."""
         threshold = self.y_threshold
         if threshold is None:
@@ -556,11 +631,11 @@ class CalibratedExplanation(ABC):
         if isinstance(threshold, (list, tuple)):
             if len(threshold) == 0:
                 return None
-            values = [CalibratedExplanation._to_python_number(threshold[0])]
+            values = [CalibratedExplanation.to_python_number(threshold[0])]
             if len(threshold) > 1:
-                values.append(CalibratedExplanation._to_python_number(threshold[1]))
+                values.append(CalibratedExplanation.to_python_number(threshold[1]))
             return values
-        return CalibratedExplanation._to_python_number(threshold)
+        return CalibratedExplanation.to_python_number(threshold)
 
     def _build_uncertainty_payload(
         self,
@@ -574,11 +649,11 @@ class CalibratedExplanation(ABC):
         include_percentiles: bool = True,
     ) -> Dict[str, Any]:
         """Create a structured uncertainty payload."""
-        lower = CalibratedExplanation._to_python_number(low)
-        upper = CalibratedExplanation._to_python_number(high)
+        lower = CalibratedExplanation.to_python_number(low)
+        upper = CalibratedExplanation.to_python_number(high)
         payload: Dict[str, Any] = {
             "representation": representation,
-            "calibrated_value": CalibratedExplanation._to_python_number(value),
+            "calibrated_value": CalibratedExplanation.to_python_number(value),
             "lower_bound": lower,
             "upper_bound": upper,
             "legacy_interval": [lower, upper],
@@ -588,10 +663,10 @@ class CalibratedExplanation(ABC):
         payload["confidence_level"] = None
         if include_percentiles and percentiles:
             payload["raw_percentiles"] = [
-                CalibratedExplanation._to_python_number(percentiles[0]),
-                CalibratedExplanation._to_python_number(percentiles[1]),
+                CalibratedExplanation.to_python_number(percentiles[0]),
+                CalibratedExplanation.to_python_number(percentiles[1]),
             ]
-            confidence = self._compute_confidence_level(percentiles)
+            confidence = CalibratedExplanation.compute_confidence_level(percentiles)
             if confidence is not None:
                 payload["confidence_level"] = confidence
         return payload
@@ -600,8 +675,8 @@ class CalibratedExplanation(ABC):
     def _build_interval(low: Any, high: Any) -> Dict[str, Any]:
         """Return a minimal uncertainty interval with Python-native bounds."""
         return {
-            "lower": CalibratedExplanation._to_python_number(low),
-            "upper": CalibratedExplanation._to_python_number(high),
+            "lower": CalibratedExplanation.to_python_number(low),
+            "upper": CalibratedExplanation.to_python_number(high),
         }
 
     def _build_instance_uncertainty(self) -> Dict[str, Any]:
@@ -612,7 +687,7 @@ class CalibratedExplanation(ABC):
                 low=self.prediction["low"],
                 high=self.prediction["high"],
                 representation="threshold",
-                threshold=self._normalize_threshold_value(),
+                threshold=self.normalize_threshold_value(),
                 include_percentiles=False,
             )
         if self.is_probabilistic():
@@ -635,20 +710,23 @@ class CalibratedExplanation(ABC):
 
     def _safe_feature_name(self, feature_index: Any) -> str:
         """Return a readable feature name for telemetry."""
-        feature_names = getattr(self._get_explainer(), "feature_names", None)
+        feature_names = getattr(self.get_explainer(), "feature_names", None)
         try:
             idx = int(feature_index)
-        except (TypeError, ValueError):
+        except (
+            TypeError,
+            ValueError,
+        ):  # ADR002_ALLOW: handle non-numeric feature ids.  # pragma: no cover
             return str(feature_index)
         if feature_names and 0 <= idx < len(feature_names):
             return str(feature_names[idx])
         return str(idx)
 
     @staticmethod
-    def _convert_condition_value(raw_value: Optional[str], fallback: Any) -> Any:
+    def convert_condition_value(raw_value: Optional[str], fallback: Any) -> Any:
         """Convert textual condition payloads to structured values."""
         if raw_value is None:
-            return CalibratedExplanation._to_python_number(fallback)
+            return CalibratedExplanation.to_python_number(fallback)
         text = raw_value.strip()
         if text.lower() in {"-inf", "-infinity"}:
             return float("-inf")
@@ -656,7 +734,9 @@ class CalibratedExplanation(ABC):
             return float("inf")
         try:
             return float(text)
-        except ValueError:
+        except (
+            ValueError
+        ):  # ADR002_ALLOW: textual rule fragments may not be numeric.  # pragma: no cover
             return text
 
     def _parse_condition(self, feature_name: str, rule_text: str) -> Tuple[str, Optional[str]]:
@@ -685,9 +765,9 @@ class CalibratedExplanation(ABC):
         feature_name = self._safe_feature_name(feature_index)
         operator, parsed_value = self._parse_condition(feature_name, rule_text)
         if operator == "raw":
-            value = CalibratedExplanation._to_python_number(display_value)
+            value = CalibratedExplanation.to_python_number(display_value)
         else:
-            value = self._convert_condition_value(parsed_value, display_value)
+            value = self.convert_condition_value(parsed_value, display_value)
         return {
             "feature": feature_name,
             "operator": operator,
@@ -706,7 +786,7 @@ class CalibratedExplanation(ABC):
             "metadata": metadata,
         }
 
-    def _define_conditions(self):
+    def define_conditions(self):
         """
         Define the rule conditions for an instance.
 
@@ -717,24 +797,106 @@ class CalibratedExplanation(ABC):
         """
         self.conditions = []
         # pylint: disable=invalid-name
-        x = self._get_explainer().discretizer.discretize(self.x_test)
-        for f in range(self._get_explainer().num_features):
-            if f in self.calibrated_explanations.features_to_ignore:
+        explainer = self.get_explainer()
+        if explainer.discretizer is None:
+            # Handle missing discretizer (e.g. regression without discretization)
+            # For now, just use empty conditions or skip
+            # print("DEBUG: FactualExplanation.define_conditions: discretizer is None")
+            pass
+        else:
+            x = explainer.discretizer.discretize(self.x_test)
+
+        ignored = self.ignored_features_for_instance()
+        for f in range(self.get_explainer().num_features):
+            if f in ignored:
                 self.conditions.append("")
                 continue
-            if f in self._get_explainer().categorical_features:
-                if self._get_explainer().categorical_labels is not None:
+
+            if explainer.discretizer is None:
+                val = self.x_test[f]
+                rule = f"{self.get_explainer().feature_names[f]} = {val}"
+                self.conditions.append(rule)
+                continue
+
+            if f in self.get_explainer().categorical_features:
+                if self.get_explainer().categorical_labels is not None:
                     try:
-                        target = self._get_explainer().categorical_labels[f][int(x[f])]
-                        rule = f"{self._get_explainer().feature_names[f]} = {target}"
+                        target = self.get_explainer().categorical_labels[f][int(x[f])]
+                        rule = f"{self.get_explainer().feature_names[f]} = {target}"
                     except IndexError:
-                        rule = f"{self._get_explainer().feature_names[f]} = {x[f]}"
+                        rule = f"{self.get_explainer().feature_names[f]} = {x[f]}"
                 else:
-                    rule = f"{self._get_explainer().feature_names[f]} = {x[f]}"
+                    rule = f"{self.get_explainer().feature_names[f]} = {x[f]}"
             else:
-                rule = self._get_explainer().discretizer.names[f][int(x[f])]
+                rule = self.get_explainer().discretizer.names[f][int(x[f])]
             self.conditions.append(rule)
         return self.conditions
+
+    def predict_conjunction_tuple(
+        self,
+        rule_value_set,
+        original_features,
+        perturbed,
+        threshold,
+        predicted_class,
+        bins=None,
+    ):
+        """Calculate the prediction for a conjunctive rule using batched inference."""
+        predict_fn = self.get_explainer().predict_calibrated
+        perturbed = np.array(perturbed, copy=True)
+
+        # Prepare value arrays
+        value_iterables = []
+        for values in rule_value_set[: len(original_features)]:
+            arr = np.asarray(values)
+            if arr.ndim == 0:
+                arr = arr.reshape(1)
+            value_iterables.append(arr)
+
+        if not value_iterables:
+            return 0.0, 0.0, 0.0
+
+        # Generate all combinations in a vectorized fashion
+        grids = np.meshgrid(*value_iterables, indexing="ij")
+        combo_matrix = np.stack(grids, axis=-1).reshape(-1, len(original_features))
+        if combo_matrix.size == 0:
+            return 0.0, 0.0, 0.0
+
+        # Create batch
+        batch = np.tile(perturbed, (combo_matrix.shape[0], 1))
+
+        # Handle bins if provided
+        batch_bins = None
+        if bins is not None:
+            # bins is typically a scalar or 1D array for the single instance being explained
+            # We need to tile it to match the batch size
+            if np.ndim(bins) == 0:
+                batch_bins = np.full(combo_matrix.shape[0], bins)
+            else:
+                # Assuming bins corresponds to the instance, so we tile it
+                # But wait, bins usually has shape (n_samples,)
+                # Here we are explaining one instance, so bins should be a scalar or single-element array?
+                # Let's check how it's passed. In add_conjunctions, it's self.bin which is [instance_bin]
+                # So it is a list/array of size 1.
+                batch_bins = np.tile(bins, combo_matrix.shape[0])
+
+        # Apply perturbations in bulk
+        batch[:, original_features] = combo_matrix
+
+        # Predict
+        p_value, low, high, _ = predict_fn(
+            batch,
+            threshold=threshold,
+            low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
+            classes=predicted_class,
+            bins=batch_bins,
+        )
+
+        return (
+            float(np.mean(p_value)),
+            float(np.mean(low)),
+            float(np.mean(high)),
+        )
 
     def _predict_conjunctive(
         self,
@@ -744,6 +906,7 @@ class CalibratedExplanation(ABC):
         threshold,
         predicted_class,
         bins=None,
+        use_batched=False,
     ):
         """
         Calculate the prediction for a conjunctive rule.
@@ -762,6 +925,8 @@ class CalibratedExplanation(ABC):
             The predicted class label.
         bins : array-like, optional
             The bins for discretization.
+        use_batched : bool, optional
+            Whether to use batched inference.
 
         Returns
         -------
@@ -769,9 +934,28 @@ class CalibratedExplanation(ABC):
             The predicted value, lower bound, upper bound, and count.
         """
         if len(original_features) < 2:
-            raise ValueError("Conjunctive rules require at least two features")
+            from ..utils.exceptions import ValidationError
 
-        predict_fn = self._get_explainer()._predict  # pylint: disable=protected-access
+            raise ValidationError(
+                "Conjunctive rules require at least two features",
+                details={
+                    "param": "original_features",
+                    "count": len(original_features),
+                    "requirement": "minimum 2 features",
+                },
+            )
+
+        if use_batched:
+            return self.predict_conjunction_tuple(
+                rule_value_set,
+                original_features,
+                perturbed,
+                threshold,
+                predicted_class,
+                bins,
+            )
+
+        predict_fn = self.get_explainer().predict_calibrated  # pylint: disable=protected-access
         # Ensure perturbed is a writable copy to avoid "read-only" errors
         perturbed = np.array(perturbed, copy=True)
 
@@ -867,18 +1051,19 @@ class CalibratedExplanation(ABC):
 
         No implementation is provided for the :class:`.FastExplanation` class.
         """
-        try:
-            f = (
-                feature
-                if isinstance(feature, int)
-                else self._get_explainer().feature_names.index(feature)
-            )
-        except ValueError:
+        f = None
+        if isinstance(feature, int):
+            f = feature
+        else:
+            with contextlib.suppress(ValueError):
+                f = self.get_explainer().feature_names.index(feature)
+
+        if f is None:
             warnings.warn(f"Feature {feature} not found", stacklevel=2)
             return self
         if (
-            self._get_explainer().categorical_features is not None
-            and f in self._get_explainer().categorical_features
+            self.get_explainer().categorical_features is not None
+            and f in self.get_explainer().categorical_features
         ):
             warnings.warn(
                 "Alternatives for all categorical features are already included", stacklevel=2
@@ -887,7 +1072,7 @@ class CalibratedExplanation(ABC):
 
         x_copy = np.array(self.x_test, copy=True)
         is_lesser = self._is_lesser(rule_boundary, x_copy[f])
-        new_rule = self._get_rules()
+        new_rule = self.get_rules()
         rule = self._get_rule_str(is_lesser, f, rule_boundary)
         if np.any([new_rule["rule"][i] == rule for i in range(len(new_rule["rule"]))]):
             warnings.warn("Rule already included", stacklevel=2)
@@ -896,13 +1081,13 @@ class CalibratedExplanation(ABC):
         threshold = self.y_threshold
         perturbed_threshold = normalize_threshold(threshold)
         perturbed_bins = np.empty((0,)) if self.bin is not None else None
-        perturbed_x = np.empty((0, self._get_explainer().num_features))
+        perturbed_x = np.empty((0, self.get_explainer().num_features))
         perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
         perturbed_class = np.empty((0,), dtype=int)
 
-        cal_x_f = self._get_explainer().x_cal[:, f]
+        cal_x_f = self.get_explainer().x_cal[:, f]
         feature_values = np.unique(np.array(cal_x_f))
-        sample_percentiles = self._get_explainer().sample_percentiles
+        sample_percentiles = self.get_explainer().sample_percentiles
 
         if is_lesser:
             if not np.any(feature_values < rule_boundary):
@@ -963,8 +1148,7 @@ class CalibratedExplanation(ABC):
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
-        # pylint: disable=protected-access
-        predict, low, high, _ = self._get_explainer()._predict(
+        predict, low, high, _ = self.get_explainer().predict(
             perturbed_x,
             threshold=perturbed_threshold,
             low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
@@ -1028,8 +1212,8 @@ class CalibratedExplanation(ABC):
             The rule string.
         """
         if is_lesser:
-            return f"{self._get_explainer().feature_names[feature]} < {rule_boundary:.2f}"
-        return f"{self._get_explainer().feature_names[feature]} > {rule_boundary:.2f}"
+            return f"{self.get_explainer().feature_names[feature]} < {rule_boundary:.2f}"
+        return f"{self.get_explainer().feature_names[feature]} > {rule_boundary:.2f}"
 
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
@@ -1061,6 +1245,7 @@ class FactualExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Class for storing and visualizing factual explanations.
 
@@ -1099,9 +1284,10 @@ class FactualExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
-        self._get_rules()
+        self.get_rules()
         # Cache per-instance prediction probabilities for golden baseline (classification)
         try:
             if not self.is_regression():
@@ -1125,18 +1311,20 @@ class FactualExplanation(CalibratedExplanation):
                         )
                 else:
                     self.prediction_probabilities = None
-        except Exception:  # pragma: no cover - defensive
+        except (
+            Exception
+        ):  # ADR002_ALLOW: prediction payloads vary across plugins.  # pragma: no cover
             self.prediction_probabilities = None
 
     def __repr__(self):
         """Return a string representation of the factual explanation."""
-        factual = self._get_rules()
+        factual = self.get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
             f"{factual['base_predict'][0]:5.3f} [{factual['base_predict_low'][0]:5.3f}, {factual['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self._rank_features(
+        feature_order = self.rank_features(
             factual["weight"],
             width=np.array(factual["weight_high"]) - np.array(factual["weight_low"]),
             num_to_show=len(factual["rule"]),
@@ -1149,8 +1337,8 @@ class FactualExplanation(CalibratedExplanation):
 
     def build_rules_payload(self) -> Dict[str, Any]:
         """Return structured payload describing factual feature rules."""
-        rules = self._get_rules()
-        prediction_value = CalibratedExplanation._to_python_number(self.prediction.get("predict"))
+        rules = self.get_rules()
+        prediction_value = CalibratedExplanation.to_python_number(self.prediction.get("predict"))
         prediction_interval = CalibratedExplanation._build_interval(
             self.prediction.get("low"),
             self.prediction.get("high"),
@@ -1171,7 +1359,7 @@ class FactualExplanation(CalibratedExplanation):
         base_predict = rules.get("base_predict", [None])
         base_low = rules.get("base_predict_low", [None])
         base_high = rules.get("base_predict_high", [None])
-        baseline_value = CalibratedExplanation._to_python_number(base_predict[0])
+        baseline_value = CalibratedExplanation.to_python_number(base_predict[0])
         if baseline_value is not None:
             metadata["baseline_prediction"] = baseline_value
             metadata["baseline_interval"] = CalibratedExplanation._build_interval(
@@ -1193,7 +1381,7 @@ class FactualExplanation(CalibratedExplanation):
                 rules["feature_value"][idx],
                 rules["value"][idx],
             )
-            weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
+            weight_value = CalibratedExplanation.to_python_number(rules["weight"][idx])
             weight_interval = CalibratedExplanation._build_interval(
                 rules["weight_low"][idx],
                 rules["weight_high"][idx],
@@ -1227,19 +1415,19 @@ class FactualExplanation(CalibratedExplanation):
                     if prediction_representation == "percentile" and not self.is_thresholded()
                     else None
                 ),
-                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
+                threshold=self.normalize_threshold_value() if self.is_thresholded() else None,
                 include_percentiles=(
                     prediction_representation == "percentile" and not self.is_thresholded()
                 ),
             )
             metadata_rule: Dict[str, Any] = {
                 "feature": self._safe_feature_name(feature_index),
-                "feature_index": CalibratedExplanation._to_python_number(feature_index),
+                "feature_index": CalibratedExplanation.to_python_number(feature_index),
                 "weight_uncertainty": weight_uncertainty,
                 "prediction_uncertainty": prediction_uncertainty,
-                "prediction_value": CalibratedExplanation._to_python_number(rules["predict"][idx]),
+                "prediction_value": CalibratedExplanation.to_python_number(rules["predict"][idx]),
                 "condition_text": rules["rule"][idx],
-                "instance_value": CalibratedExplanation._to_python_number(
+                "instance_value": CalibratedExplanation.to_python_number(
                     rules["feature_value"][idx]
                 ),
             }
@@ -1251,14 +1439,14 @@ class FactualExplanation(CalibratedExplanation):
     def _check_preconditions(self):
         """Warn when the selected discretizer is incompatible with factual explanations."""
         if self.is_regression():
-            if not isinstance(self._get_explainer().discretizer, BinaryRegressorDiscretizer):
+            if not isinstance(self.get_explainer().discretizer, BinaryRegressorDiscretizer):
                 warnings.warn(
                     "Factual explanations for regression recommend using the binaryRegressor "
                     + "discretizer. Consider extracting factual explanations using "
                     + "`explainer.explain_factual(test_set)`",
                     stacklevel=2,
                 )
-        elif not isinstance(self._get_explainer().discretizer, BinaryEntropyDiscretizer):
+        elif not isinstance(self.get_explainer().discretizer, BinaryEntropyDiscretizer):
             warnings.warn(
                 "Factual explanations for classification recommend using the "
                 + "binaryEntropy discretizer. Consider extracting factual "
@@ -1266,7 +1454,7 @@ class FactualExplanation(CalibratedExplanation):
                 stacklevel=2,
             )
 
-    def _get_rules(self):
+    def get_rules(self):
         """
         Create factual rules.
 
@@ -1275,96 +1463,115 @@ class FactualExplanation(CalibratedExplanation):
         List[Dict[str, List]]
             A list of dictionaries containing the factual rules.
         """
-        if self._has_conjunctive_rules:
-            return self.conjunctive_rules
-        if self._has_rules:
-            return self.rules
-        self._has_rules = False
         # i = self.index
         instance = np.array(self.x_test, copy=True)
-        factual = {
-            "base_predict": [],
-            "base_predict_low": [],
-            "base_predict_high": [],
-            "predict": [],
-            "predict_low": [],
-            "predict_high": [],
-            "weight": [],
-            "weight_low": [],
-            "weight_high": [],
-            "value": [],
-            "rule": [],
-            "feature": [],
-            "sampled_values": [],
-            "feature_value": [],
-            "is_conjunctive": [],
-            "classes": self.prediction["classes"],
-        }
-        factual["base_predict"].append(self.prediction["predict"])
-        factual["base_predict_low"].append(self.prediction["low"])
-        factual["base_predict_high"].append(self.prediction["high"])
-        rules = self._define_conditions()
+
+        state_helper = ConjunctionState(None)
+        state_helper.state["classes"] = self.prediction["classes"]
+
+        state_helper.set_base_prediction(
+            self.prediction["predict"], self.prediction["low"], self.prediction["high"]
+        )
+
+        rules = self.define_conditions()
+        ignored = self.ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
-            if f in self.calibrated_explanations.features_to_ignore:
+            if f in ignored:
                 continue
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
                 continue
-            factual["predict"].append(self.feature_predict["predict"][f])
-            factual["predict_low"].append(self.feature_predict["low"][f])
-            factual["predict_high"].append(self.feature_predict["high"][f])
-            factual["weight"].append(self.feature_weights["predict"][f])
-            factual["weight_low"].append(self.feature_weights["low"][f])
-            factual["weight_high"].append(self.feature_weights["high"][f])
-            if f in self._get_explainer().categorical_features:
-                if self._get_explainer().categorical_labels is not None:
-                    factual["value"].append(
-                        self._get_explainer().categorical_labels[f][int(instance[f])]
-                    )
+
+            value_str = ""
+            if f in self.get_explainer().categorical_features:
+                if self.get_explainer().categorical_labels is not None:
+                    value_str = self.get_explainer().categorical_labels[f][int(instance[f])]
                 else:
-                    factual["value"].append(str(instance[f]))
+                    value_str = str(instance[f])
             else:
-                factual["value"].append(str(np.around(instance[f], decimals=2)))
-            factual["rule"].append(rules[f])
-            factual["feature"].append(f)
-            factual["sampled_values"].append(self.binned["rule_values"][f][0][-1])
-            factual["feature_value"].append(self.x_test[f])
-            factual["is_conjunctive"].append(False)
-        self.rules = factual
-        self._has_rules = True
+                value_str = str(np.around(instance[f], decimals=2))
+
+            # Calculate weights matching legacy behavior (prediction - instance_predict)
+            # and using instance_predict uncertainty
+            instance_predict = self.feature_predict["predict"][f]
+            instance_low = self.feature_predict["low"][f]
+            instance_high = self.feature_predict["high"][f]
+            prediction = self.prediction["predict"]
+
+            w = prediction - instance_predict
+            w_low = prediction - instance_high if instance_high != np.inf else -np.inf
+            w_high = prediction - instance_low if instance_low != -np.inf else np.inf
+
+            state_helper.add_rule(
+                predict=self.prediction["predict"],
+                low=self.prediction["low"],
+                high=self.prediction["high"],
+                base_predict=instance_predict,
+                value=value_str,
+                feature=f,
+                sampled_values=self.binned["rule_values"][f][0][-1],
+                feature_value=self.x_test[f],
+                rule_text=rules[f],
+                is_conjunctive=False,
+                weight=w,
+                weight_low=w_low,
+                weight_high=w_high,
+            )
+
+        self.rules = state_helper.get_state()
+        self.has_rules = True
         return self.rules
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """Add conjunctive factual rules."""
-        if max_rule_size >= 4:
-            raise ValueError("max_rule_size must be 2 or 3")
+        use_batched = kwargs.get("_use_batched", True)
+        limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
+        if max_rule_size >= 4 and not use_batched:
+            from ..utils.exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "max_rule_size >= 4 requires batched execution (internal flag _use_batched=True)",
+                details={
+                    "param": "max_rule_size",
+                    "value": max_rule_size,
+                    "valid_range": [2, 3],
+                },
+            )
         if max_rule_size < 2:
             return self
 
-        factual = self._get_rules() if not self._has_rules else self.rules
+        if not use_batched:
+            from .legacy_conjunctions import add_conjunctions_factual_legacy
 
-        def _clone_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
-            cloned: Dict[str, Any] = {}
-            for key, value in payload.items():
-                if isinstance(value, list):
-                    cloned[key] = list(value)
-                else:
-                    cloned[key] = value
-            return cloned
+            add_conjunctions_factual_legacy(
+                self, n_top_features=n_top_features, max_rule_size=max_rule_size
+            )
+            return self
 
-        conjunctive_state = (
-            _clone_payload(self.conjunctive_rules)
-            if self._has_conjunctive_rules and self.conjunctive_rules is not None
-            else _clone_payload(factual)
+        factual = self.get_rules() if not self.has_rules else self.rules
+
+        state_helper = ConjunctionState(
+            self.conjunctive_rules
+            if self.has_conjunctive_rules and self.conjunctive_rules is not None
+            else factual
         )
 
-        self._has_conjunctive_rules = False
+        self.has_conjunctive_rules = False
         self.conjunctive_rules = []
 
         threshold = None if self.y_threshold is None else self.y_threshold
         scratch = np.array(self.x_test, copy=True)
         predicted_class = factual["classes"]
-        conjunctive_state["classes"] = predicted_class
+        state_helper.state["classes"] = predicted_class
+        base_weight_array = (
+            np.asarray(factual["weight"], dtype=float) if factual["weight"] else np.array([])
+        )
+        base_width_array = (
+            np.asarray(factual["weight_high"], dtype=float)
+            - np.asarray(factual["weight_low"], dtype=float)
+            if factual["weight"]
+            else np.array([])
+        )
 
         if n_top_features is None:
             n_top_features = len(factual["rule"])
@@ -1384,24 +1591,32 @@ class FactualExplanation(CalibratedExplanation):
             if num_rules == 0:
                 break
 
-            weights_array = np.asarray(conjunctive_state["weight"], dtype=float)
-            width_array = np.asarray(conjunctive_state["weight_high"], dtype=float) - np.asarray(
-                conjunctive_state["weight_low"], dtype=float
-            )
+            weights_array = state_helper.get_weights()
+            width_array = state_helper.get_widths()
+
             top_conjunctives = list(
-                self._rank_features(
+                self.rank_features(
                     weights_array,
                     width=width_array,
                     num_to_show=min(num_rules, n_top_features),
                 )
             )
 
-            covered_combinations = {
-                _normalise_features(conjunctive_state["feature"][i])
-                for i in range(len(conjunctive_state["feature"]))
-            }
+            # Determine outer loop candidates
+            # Legacy behavior: iterate all features
+            if limit_outer_to_ranked:
+                num_outer = min(num_rules, n_top_features)
+                outer_indices = list(
+                    self.rank_features(
+                        base_weight_array,
+                        width=base_width_array if base_width_array.size else None,
+                        num_to_show=num_outer,
+                    )
+                )
+            else:
+                outer_indices = range(len(factual["feature"]))
 
-            for f1, _ in enumerate(factual["feature"]):
+            for f1 in outer_indices:
                 of1 = factual["feature"][f1]
                 sampled_values1 = factual["sampled_values"][f1]
                 rule_value1 = (
@@ -1413,20 +1628,21 @@ class FactualExplanation(CalibratedExplanation):
                 for cf2 in top_conjunctives:
                     rule_values = [rule_value1]
                     original_features = [of1]
-                    of2 = conjunctive_state["feature"][cf2]
+                    of2 = state_helper.get_feature(cf2)
                     target_length = current_size - 1
                     if _feature_length(of2) != target_length:
                         continue
-                    if conjunctive_state["is_conjunctive"][cf2]:
+
+                    if state_helper.is_conjunctive(cf2):
                         if of1 in of2:
                             continue
                         original_features.extend(int(v) for v in of2)
-                        rule_values.extend(list(conjunctive_state["sampled_values"][cf2]))
+                        rule_values.extend(list(state_helper.get_sampled_values(cf2)))
                     else:
                         if of1 == of2:
                             continue
                         original_features.append(of2)
-                        sampled_values2 = conjunctive_state["sampled_values"][cf2]
+                        sampled_values2 = state_helper.get_sampled_values(cf2)
                         rule_values.append(
                             sampled_values2
                             if isinstance(sampled_values2, np.ndarray)
@@ -1434,9 +1650,9 @@ class FactualExplanation(CalibratedExplanation):
                         )
 
                     combo_key = _normalise_features(original_features)
-                    if combo_key in covered_combinations:
+                    if state_helper.has_combination_key(combo_key):
                         continue
-                    covered_combinations.add(combo_key)
+                    state_helper.register_combination_key(combo_key)
 
                     rule_predict, rule_low, rule_high = self._predict_conjunctive(
                         rule_values,
@@ -1445,31 +1661,23 @@ class FactualExplanation(CalibratedExplanation):
                         threshold,
                         predicted_class,
                         bins=self.bin,
+                        use_batched=use_batched,
                     )
 
-                    conjunctive_state["predict"].append(rule_predict)
-                    conjunctive_state["predict_low"].append(rule_low)
-                    conjunctive_state["predict_high"].append(rule_high)
-                    conjunctive_state["weight"].append(rule_predict - self.prediction["predict"])
-                    conjunctive_state["weight_low"].append(
-                        rule_low - self.prediction["predict"] if rule_low != -np.inf else -np.inf
+                    state_helper.add_rule(
+                        predict=rule_predict,
+                        low=rule_low,
+                        high=rule_high,
+                        base_predict=self.prediction["predict"],
+                        value=factual["value"][f1] + "\n" + state_helper.get_value(cf2),
+                        feature=list(original_features),
+                        sampled_values=list(rule_values),
+                        feature_value=None,
+                        rule_text=factual["rule"][f1] + " & \n" + state_helper.get_rule(cf2),
                     )
-                    conjunctive_state["weight_high"].append(
-                        rule_high - self.prediction["predict"] if rule_high != np.inf else np.inf
-                    )
-                    conjunctive_state["value"].append(
-                        factual["value"][f1] + "\n" + conjunctive_state["value"][cf2]
-                    )
-                    conjunctive_state["feature"].append(list(original_features))
-                    conjunctive_state["sampled_values"].append(list(rule_values))
-                    conjunctive_state["feature_value"].append(None)
-                    conjunctive_state["rule"].append(
-                        factual["rule"][f1] + " & \n" + conjunctive_state["rule"][cf2]
-                    )
-                    conjunctive_state["is_conjunctive"].append(True)
 
-        self.conjunctive_rules = conjunctive_state
-        self._has_conjunctive_rules = True
+        self.conjunctive_rules = state_helper.get_state()
+        self.has_conjunctive_rules = True
         return self
 
     def _is_lesser(self, rule_boundary, instance_value):
@@ -1525,7 +1733,7 @@ class FactualExplanation(CalibratedExplanation):
         if uncertainty and self.is_one_sided():
             raise Warning("Interval plot is not supported for one-sided explanations.")
 
-        factual = self._get_rules()  # get_explanation(index)
+        factual = self.get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual["weight"])
@@ -1561,7 +1769,7 @@ class FactualExplanation(CalibratedExplanation):
         )
 
         if rnk_metric == "feature_weight":
-            features_to_plot = self._rank_features(
+            features_to_plot = self.rank_features(
                 factual["weight"], width=width, num_to_show=filter_top
             )
         else:
@@ -1574,15 +1782,15 @@ class FactualExplanation(CalibratedExplanation):
                 w=rnk_weight,
                 metric=rnk_metric,
             )
-            features_to_plot = self._rank_features(width=ranking, num_to_show=filter_top)
+            features_to_plot = self.rank_features(width=ranking, num_to_show=filter_top)
 
         # Prefer explicit feature/column names when available; fall back to rule strings
         column_names = (
             factual.get("feature_names") or factual.get("column_names") or factual.get("rule")
         )
         try:
-            if "classification" in self._get_explainer().mode or self.is_thresholded():
-                _plot_probabilistic(
+            if "classification" in self.get_explainer().mode or self.is_thresholded():
+                plot_probabilistic(
                     self,
                     factual["value"],
                     predict,
@@ -1600,7 +1808,7 @@ class FactualExplanation(CalibratedExplanation):
                     use_legacy=plot_use_legacy,
                 )
             else:
-                _plot_regression(
+                plot_regression(
                     self,
                     factual["value"],
                     predict,
@@ -1617,17 +1825,26 @@ class FactualExplanation(CalibratedExplanation):
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
                 )
-        except RuntimeError as e:
-            if "Agg" in str(e):
-                raise RuntimeError(
+        except (
+            Exception
+        ) as e:  # ADR002_ALLOW: plot renderers may fail on headless hosts.  # pragma: no cover
+            if isinstance(e, RuntimeError) and "Agg" in str(e):
+                from ..utils.exceptions import ConfigurationError
+
+                raise ConfigurationError(
                     "Matplotlib backend 'Agg' does not support show(). "
-                    "Either set show=False or switch to a different backend."
+                    "Either set show=False or switch to a different backend.",
+                    details={
+                        "backend": "Agg",
+                        "operation": "show()",
+                        "solution": "set show=False or use interactive backend",
+                    },
                 ) from e
             raise  # core-only test runs do not fail when visualization extras are
             # unavailable. Tests that require viz should use pytest.importorskip.
             warnings.warn(
                 f"Plotting unavailable: {e}",
-                RuntimeWarning,
+                UserWarning,
                 stacklevel=2,
             )
             return None
@@ -1659,6 +1876,7 @@ class AlternativeExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Class representing an alternative explanation for a given instance.
 
@@ -1697,23 +1915,24 @@ class AlternativeExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
-        self._has_rules = False
-        self._get_rules()
+        self.has_rules = False
+        self.get_rules()
         self.__is_super_explanation = False
         self.__is_semi_explanation = False
         self.__is_counter_explanation = False
 
     def __repr__(self):
         """Return a string representation of the alternative explanation."""
-        alternative = self._get_rules()
+        alternative = self.get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
             f"{alternative['base_predict'][0]:5.3f} [{alternative['base_predict_low'][0]:5.3f}, {alternative['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Prediction':10} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self._rank_features(
+        feature_order = self.rank_features(
             alternative["weight"],
             width=np.array(alternative["weight_high"]) - np.array(alternative["weight_low"]),
             num_to_show=len(alternative["rule"]),
@@ -1726,7 +1945,7 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def build_rules_payload(self) -> Dict[str, Any]:
         """Return structured payload describing alternative feature rules."""
-        rules = self._get_rules()
+        rules = self.get_rules()
         core: Dict[str, Any] = {"kind": "alternative", "feature_rules": []}
         metadata: Dict[str, Any] = {"feature_rules": []}
 
@@ -1752,7 +1971,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 rules["sampled_values"][idx],
                 rules["value"][idx],
             )
-            prediction_value = CalibratedExplanation._to_python_number(rules["predict"][idx])
+            prediction_value = CalibratedExplanation.to_python_number(rules["predict"][idx])
             prediction_interval = CalibratedExplanation._build_interval(
                 rules["predict_low"][idx],
                 rules["predict_high"][idx],
@@ -1773,10 +1992,10 @@ class AlternativeExplanation(CalibratedExplanation):
                 high=rules["predict_high"][idx],
                 representation=prediction_representation,
                 percentiles=(percentiles if prediction_representation == "percentile" else None),
-                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
+                threshold=self.normalize_threshold_value() if self.is_thresholded() else None,
                 include_percentiles=prediction_representation == "percentile",
             )
-            weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
+            weight_value = CalibratedExplanation.to_python_number(rules["weight"][idx])
             weight_uncertainty = self._build_uncertainty_payload(
                 value=rules["weight"][idx],
                 low=rules["weight_low"][idx],
@@ -1787,19 +2006,19 @@ class AlternativeExplanation(CalibratedExplanation):
             )
             metadata_rule: Dict[str, Any] = {
                 "feature": self._safe_feature_name(feature_index),
-                "feature_index": CalibratedExplanation._to_python_number(feature_index),
+                "feature_index": CalibratedExplanation.to_python_number(feature_index),
                 "prediction_uncertainty": prediction_uncertainty,
                 "prediction_value": prediction_value,
                 "weight_value": weight_value,
                 "weight_uncertainty": weight_uncertainty,
                 "condition_text": rules["rule"][idx],
-                "instance_value": CalibratedExplanation._to_python_number(
+                "instance_value": CalibratedExplanation.to_python_number(
                     rules["sampled_values"][idx]
                 ),
-                "alternative_value": CalibratedExplanation._to_python_number(rules["value"][idx]),
+                "alternative_value": CalibratedExplanation.to_python_number(rules["value"][idx]),
             }
             if self.is_thresholded():
-                metadata_rule["threshold"] = self._normalize_threshold_value()
+                metadata_rule["threshold"] = self.normalize_threshold_value()
             metadata["feature_rules"].append(metadata_rule)
 
         metadata["prediction_uncertainty"] = self._build_instance_uncertainty()
@@ -1808,14 +2027,14 @@ class AlternativeExplanation(CalibratedExplanation):
     def _check_preconditions(self):
         """Warn when the configured discretizer is unsuitable for alternative explanations."""
         if self.is_regression():
-            if not isinstance(self._get_explainer().discretizer, RegressorDiscretizer):
+            if not isinstance(self.get_explainer().discretizer, RegressorDiscretizer):
                 warnings.warn(
                     "Alternative explanations for regression recommend using the "
                     + "regressor discretizer. Consider extracting alternative "
                     + "explanations using `explainer.explain_alternatives(test_set)`",
                     stacklevel=2,
                 )
-        elif not isinstance(self._get_explainer().discretizer, EntropyDiscretizer):
+        elif not isinstance(self.get_explainer().discretizer, EntropyDiscretizer):
             warnings.warn(
                 "Alternative explanations for classification recommend using "
                 + "the entropy discretizer. Consider extracting alternative "
@@ -1824,7 +2043,7 @@ class AlternativeExplanation(CalibratedExplanation):
             )
 
     # pylint: disable=too-many-statements, too-many-branches
-    def _get_rules(self):
+    def get_rules(self):
         """
         Create alternative rules.
 
@@ -1833,26 +2052,29 @@ class AlternativeExplanation(CalibratedExplanation):
         Array-like : List[Dict[str, List]]
             A list of dictionaries containing the alternative rules.
         """
-        if self._has_conjunctive_rules:
-            return self.conjunctive_rules
-        if self._has_rules:
-            return self.rules
         self.rules = []
         self.labels = {}  # pylint: disable=attribute-defined-outside-init
         instance = np.array(self.x_test, copy=True)
         instance.flags.writeable = False
         # pylint: disable=protected-access
-        discretized = self._get_explainer()._discretize(instance.reshape(1, -1))[0]
+        discretized = self.get_explainer().discretize(instance.reshape(1, -1))[0]
         instance_predict = self.binned["predict"]
         instance_low = self.binned["low"]
         instance_high = self.binned["high"]
-        alternative = self.__set_up_result()
-        rule_boundaries = self._get_explainer().rule_boundaries(instance)
+
+        state_helper = ConjunctionState(None)
+        state_helper.state["classes"] = self.prediction["classes"]
+        state_helper.set_base_prediction(
+            self.prediction["predict"], self.prediction["low"], self.prediction["high"]
+        )
+
+        rule_boundaries = self.get_explainer().rule_boundaries(instance)
+        ignored = self.ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
-            if f in self.calibrated_explanations.features_to_ignore:
+            if f in ignored:
                 continue
-            if f in self._get_explainer().categorical_features:
-                values = np.array(self._get_explainer().feature_values[f])
+            if f in self.get_explainer().categorical_features:
+                values = np.array(self.get_explainer().feature_values[f])
                 values = np.delete(values, values == discretized[f])
                 for value_bin, value in enumerate(values):
                     # skip if identical to original
@@ -1861,44 +2083,37 @@ class AlternativeExplanation(CalibratedExplanation):
                         and self.prediction["high"] == instance_high[f][value_bin]
                     ):
                         continue
-                    alternative["predict"].append(instance_predict[f][value_bin])
-                    alternative["predict_low"].append(instance_low[f][value_bin])
-                    alternative["predict_high"].append(instance_high[f][value_bin])
-                    alternative["weight"].append(
-                        instance_predict[f][value_bin] - self.prediction["predict"]
-                    )
-                    alternative["weight_low"].append(
-                        instance_low[f][value_bin] - self.prediction["predict"]
-                        if instance_low[f][value_bin] != -np.inf
-                        else instance_low[f][value_bin]
-                    )
-                    alternative["weight_high"].append(
-                        instance_high[f][value_bin] - self.prediction["predict"]
-                        if instance_high[f][value_bin] != np.inf
-                        else instance_high[f][value_bin]
-                    )
-                    if self._get_explainer().categorical_labels is not None:
-                        alternative["value"].append(
-                            self._get_explainer().categorical_labels[f][int(instance[f])]
+
+                    value_str = ""
+                    if self.get_explainer().categorical_labels is not None:
+                        value_str = self.get_explainer().categorical_labels[f][int(instance[f])]
+                    else:
+                        value_str = str(np.around(instance[f], decimals=2))
+
+                    rule_text = ""
+                    if self.get_explainer().categorical_labels is not None:
+                        self.labels[len(state_helper.state["rule"])] = f
+                        rule_text = (
+                            f"{self.get_explainer().feature_names[f]} = "
+                            + f"{self.get_explainer().categorical_labels[f][int(value)]}"
                         )
                     else:
-                        alternative["value"].append(str(np.around(instance[f], decimals=2)))
-                    alternative["feature"].append(f)
-                    alternative["sampled_values"].append(value)
-                    alternative["feature_value"].append(self.x_test[f])
-                    if self._get_explainer().categorical_labels is not None:
-                        self.labels[len(alternative["rule"])] = f
-                        alternative["rule"].append(
-                            f"{self._get_explainer().feature_names[f]} = "
-                            + f"{self._get_explainer().categorical_labels[f][int(value)]}"
-                        )
-                    else:
-                        alternative["rule"].append(
-                            f"{self._get_explainer().feature_names[f]} = {value}"
-                        )
-                    alternative["is_conjunctive"].append(False)
+                        rule_text = f"{self.get_explainer().feature_names[f]} = {value}"
+
+                    state_helper.add_rule(
+                        predict=instance_predict[f][value_bin],
+                        low=instance_low[f][value_bin],
+                        high=instance_high[f][value_bin],
+                        base_predict=self.prediction["predict"],
+                        value=value_str,
+                        feature=f,
+                        sampled_values=value,
+                        feature_value=self.x_test[f],
+                        rule_text=rule_text,
+                        is_conjunctive=False,
+                    )
             else:
-                values = np.array(self._get_explainer().x_cal[:, f])
+                values = np.array(self.get_explainer().x_cal[:, f])
                 lesser = rule_boundaries[f][0]
                 greater = rule_boundaries[f][1]
 
@@ -1908,31 +2123,20 @@ class AlternativeExplanation(CalibratedExplanation):
                     if self.prediction["low"] == safe_mean(
                         instance_low[f][value_bin]
                     ) and self.prediction["high"] == safe_mean(instance_high[f][value_bin]):
-                        continue
-                    alternative["predict"].append(safe_mean(instance_predict[f][value_bin]))
-                    alternative["predict_low"].append(safe_mean(instance_low[f][value_bin]))
-                    alternative["predict_high"].append(safe_mean(instance_high[f][value_bin]))
-                    alternative["weight"].append(
-                        safe_mean(instance_predict[f][value_bin]) - self.prediction["predict"]
-                    )
-                    alternative["weight_low"].append(
-                        safe_mean(instance_low[f][value_bin]) - self.prediction["predict"]
-                        if instance_low[f][value_bin] != -np.inf
-                        else instance_low[f][value_bin]
-                    )
-                    alternative["weight_high"].append(
-                        safe_mean(instance_high[f][value_bin]) - self.prediction["predict"]
-                        if instance_high[f][value_bin] != np.inf
-                        else instance_high[f][value_bin]
-                    )
-                    alternative["value"].append(str(np.around(instance[f], decimals=2)))
-                    alternative["feature"].append(f)
-                    alternative["sampled_values"].append(self.binned["rule_values"][f][0][0])
-                    alternative["feature_value"].append(self.x_test[f])
-                    alternative["rule"].append(
-                        f"{self._get_explainer().feature_names[f]} < {lesser:.2f}"
-                    )
-                    alternative["is_conjunctive"].append(False)
+                        pass
+                    else:
+                        state_helper.add_rule(
+                            predict=safe_mean(instance_predict[f][value_bin]),
+                            low=safe_mean(instance_low[f][value_bin]),
+                            high=safe_mean(instance_high[f][value_bin]),
+                            base_predict=self.prediction["predict"],
+                            value=str(np.around(instance[f], decimals=2)),
+                            feature=f,
+                            sampled_values=self.binned["rule_values"][f][0][0],
+                            feature_value=self.x_test[f],
+                            rule_text=f"{self.get_explainer().feature_names[f]} < {lesser:.2f}",
+                            is_conjunctive=False,
+                        )
                     value_bin = 1
 
                 if np.any(values > greater):
@@ -1940,38 +2144,25 @@ class AlternativeExplanation(CalibratedExplanation):
                     if self.prediction["low"] == safe_mean(
                         instance_low[f][value_bin]
                     ) and self.prediction["high"] == safe_mean(instance_high[f][value_bin]):
-                        continue
-                    alternative["predict"].append(safe_mean(instance_predict[f][value_bin]))
-                    alternative["predict_low"].append(safe_mean(instance_low[f][value_bin]))
-                    alternative["predict_high"].append(safe_mean(instance_high[f][value_bin]))
-                    alternative["weight"].append(
-                        safe_mean(instance_predict[f][value_bin]) - self.prediction["predict"]
-                    )
-                    alternative["weight_low"].append(
-                        safe_mean(instance_low[f][value_bin]) - self.prediction["predict"]
-                        if instance_low[f][value_bin] != -np.inf
-                        else instance_low[f][value_bin]
-                    )
-                    alternative["weight_high"].append(
-                        safe_mean(instance_high[f][value_bin]) - self.prediction["predict"]
-                        if instance_high[f][value_bin] != np.inf
-                        else instance_high[f][value_bin]
-                    )
-                    alternative["value"].append(str(np.around(instance[f], decimals=2)))
-                    alternative["feature"].append(f)
-                    alternative["sampled_values"].append(
-                        self.binned["rule_values"][f][0][
-                            1 if len(self.binned["rule_values"][f][0]) == 3 else 0
-                        ]
-                    )
-                    alternative["feature_value"].append(self.x_test[f])
-                    alternative["rule"].append(
-                        f"{self._get_explainer().feature_names[f]} > {greater:.2f}"
-                    )
-                    alternative["is_conjunctive"].append(False)
+                        pass
+                    else:
+                        state_helper.add_rule(
+                            predict=safe_mean(instance_predict[f][value_bin]),
+                            low=safe_mean(instance_low[f][value_bin]),
+                            high=safe_mean(instance_high[f][value_bin]),
+                            base_predict=self.prediction["predict"],
+                            value=str(np.around(instance[f], decimals=2)),
+                            feature=f,
+                            sampled_values=self.binned["rule_values"][f][0][
+                                1 if len(self.binned["rule_values"][f][0]) == 3 else 0
+                            ],
+                            feature_value=self.x_test[f],
+                            rule_text=f"{self.get_explainer().feature_names[f]} > {greater:.2f}",
+                            is_conjunctive=False,
+                        )
 
-        self.rules = alternative
-        self._has_rules = True
+        self.rules = state_helper.get_state()
+        self.has_rules = True
         return self.rules
 
     def __set_up_result(self):
@@ -2029,7 +2220,7 @@ class AlternativeExplanation(CalibratedExplanation):
         initial_uncertainty = np.abs(self.prediction["high"] - self.prediction["low"])
 
         new_rules = self.__set_up_result()
-        rules = self._get_rules()  # pylint: disable=protected-access
+        rules = self.get_rules()  # pylint: disable=protected-access
         for rule in range(len(rules["rule"])):
             # filter out potential rules if include_potential is False
             if not include_potential and (
@@ -2084,10 +2275,14 @@ class AlternativeExplanation(CalibratedExplanation):
             new_rules["rule"].append(rules["rule"][rule])
             new_rules["feature"].append(rules["feature"][rule])
             new_rules["sampled_values"].append(rules["sampled_values"][rule])
+            if "feature_value" in rules:
+                new_rules["feature_value"].append(rules["feature_value"][rule])
+            else:
+                new_rules["feature_value"].append(None)
             new_rules["is_conjunctive"].append(rules["is_conjunctive"][rule])
         new_rules["classes"] = rules["classes"]
 
-        if self._has_conjunctive_rules:  # pylint: disable=protected-access
+        if self.has_conjunctive_rules:  # pylint: disable=protected-access
             self.__extracted_non_conjunctive_rules(new_rules)
         self.rules = new_rules
         return self
@@ -2159,8 +2354,8 @@ class AlternativeExplanation(CalibratedExplanation):
         self.__is_super_explanation = False
         self.__is_semi_explanation = False
         self.__is_counter_explanation = False
-        self._has_rules = False
-        self._get_rules()
+        self.has_rules = False
+        self.get_rules()
         return self
 
     def super_explanations(self, only_ensured=False, include_potential=False):
@@ -2216,7 +2411,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self.__filter_rules(only_ensured=True, include_potential=include_potential)
         return self
 
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """
         Add conjunctive alternative rules.
 
@@ -2232,12 +2427,31 @@ class AlternativeExplanation(CalibratedExplanation):
         self : :class:`.AlternativeExplanation`
             Returns a self reference, to allow for method chaining
         """
-        if max_rule_size >= 4:
-            raise ValueError("max_rule_size must be 2 or 3")
+        use_batched = kwargs.get("_use_batched", True)
+        limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
+        if max_rule_size >= 4 and not use_batched:
+            from ..utils.exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "max_rule_size >= 4 requires batched execution (internal flag _use_batched=True)",
+                details={
+                    "param": "max_rule_size",
+                    "value": max_rule_size,
+                    "valid_range": [2, 3],
+                },
+            )
         if max_rule_size < 2:
             return self
 
-        alternative = self._get_rules() if not self._has_rules else self.rules
+        if not use_batched:
+            from .legacy_conjunctions import add_conjunctions_alternative_legacy
+
+            add_conjunctions_alternative_legacy(
+                self, n_top_features=n_top_features, max_rule_size=max_rule_size
+            )
+            return self
+
+        alternative = self.get_rules() if not self.has_rules else self.rules
 
         def _clone_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
             cloned: Dict[str, Any] = {}
@@ -2250,17 +2464,28 @@ class AlternativeExplanation(CalibratedExplanation):
 
         conjunctive_state = (
             _clone_payload(self.conjunctive_rules)
-            if self._has_conjunctive_rules and self.conjunctive_rules is not None
+            if self.has_conjunctive_rules and self.conjunctive_rules is not None
             else _clone_payload(alternative)
         )
 
-        self._has_conjunctive_rules = False
+        self.has_conjunctive_rules = False
         self.conjunctive_rules = []
 
         threshold = None if self.y_threshold is None else self.y_threshold
         scratch = np.array(self.x_test, copy=True)
         predicted_class = alternative["classes"]
         conjunctive_state["classes"] = predicted_class
+        base_weight_array = (
+            np.asarray(alternative["weight"], dtype=float)
+            if alternative["weight"]
+            else np.array([])
+        )
+        base_width_array = (
+            np.asarray(alternative["weight_high"], dtype=float)
+            - np.asarray(alternative["weight_low"], dtype=float)
+            if alternative["weight"]
+            else np.array([])
+        )
 
         if n_top_features is None:
             n_top_features = len(alternative["rule"])
@@ -2269,6 +2494,11 @@ class AlternativeExplanation(CalibratedExplanation):
             if isinstance(values, (list, tuple, np.ndarray)):
                 return tuple(sorted(int(v) for v in np.asarray(values).ravel()))
             return (int(values),)
+
+        covered_combinations = {
+            _normalise_features(conjunctive_state["feature"][i])
+            for i in range(len(conjunctive_state["feature"]))
+        }
 
         def _feature_length(candidate: Any) -> int:
             if isinstance(candidate, (list, tuple, np.ndarray)):
@@ -2285,19 +2515,28 @@ class AlternativeExplanation(CalibratedExplanation):
                 conjunctive_state["weight_low"], dtype=float
             )
             top_conjunctives = list(
-                self._rank_features(
+                self.rank_features(
                     weights_array,
                     width=width_array,
                     num_to_show=min(num_rules, n_top_features),
                 )
             )
 
-            covered_combinations = {
-                _normalise_features(conjunctive_state["feature"][i])
-                for i in range(len(conjunctive_state["feature"]))
-            }
+            # Determine outer loop candidates
+            # Legacy behavior: iterate all features
+            if limit_outer_to_ranked:
+                num_outer = min(num_rules, n_top_features)
+                outer_indices = list(
+                    self.rank_features(
+                        base_weight_array,
+                        width=base_width_array if base_width_array.size else None,
+                        num_to_show=num_outer,
+                    )
+                )
+            else:
+                outer_indices = range(len(alternative["feature"]))
 
-            for f1, _ in enumerate(alternative["feature"]):
+            for f1 in outer_indices:
                 of1 = alternative["feature"][f1]
                 sampled_values1 = alternative["sampled_values"][f1]
                 rule_value1 = (
@@ -2344,6 +2583,7 @@ class AlternativeExplanation(CalibratedExplanation):
                         threshold,
                         predicted_class,
                         bins=self.bin,
+                        use_batched=use_batched,
                     )
 
                     conjunctive_state["predict"].append(rule_predict)
@@ -2368,7 +2608,7 @@ class AlternativeExplanation(CalibratedExplanation):
                     conjunctive_state["is_conjunctive"].append(True)
 
         self.conjunctive_rules = conjunctive_state
-        self._has_conjunctive_rules = True
+        self.has_conjunctive_rules = True
         return self
 
     def _is_lesser(self, rule_boundary, instance_value):
@@ -2419,7 +2659,7 @@ class AlternativeExplanation(CalibratedExplanation):
             rnk_weight = 1.0
             rnk_metric = "ensured"
 
-        alternative = self._get_rules()  # get_explanation(index)
+        alternative = self.get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         if len(filename) > 0:
@@ -2452,7 +2692,7 @@ class AlternativeExplanation(CalibratedExplanation):
             return
 
         if rnk_metric == "feature_weight":
-            features_to_plot = self._rank_features(
+            features_to_plot = self.rank_features(
                 feature_weights, width=width, num_to_show=num_to_show_
             )
         else:
@@ -2469,10 +2709,10 @@ class AlternativeExplanation(CalibratedExplanation):
                 w=rnk_weight,
                 metric=rnk_metric,
             )
-            features_to_plot = self._rank_features(width=ranking, num_to_show=num_to_show_)
+            features_to_plot = self.rank_features(width=ranking, num_to_show=num_to_show_)
 
         # Display highest-impact rules at the top: reverse the index order returned by
-        # _rank_features (which yields ascending by design).
+        # rank_features (which yields ascending by design).
         features_to_plot = list(reversed(features_to_plot))
 
         # Filter out rules that don't change the prediction (exactly identical to base).
@@ -2503,7 +2743,7 @@ class AlternativeExplanation(CalibratedExplanation):
             # mismatch in matplotlib.quiver.
             num_to_show_for_plot = min(num_to_show_, len(selected_rule_proba))
 
-            _plot_triangular(
+            plot_triangular(
                 self,
                 proba,
                 uncertainty,
@@ -2519,7 +2759,7 @@ class AlternativeExplanation(CalibratedExplanation):
             return
 
         column_names = alternative["rule"]
-        _plot_alternative(
+        plot_alternative(
             self,
             alternative["value"],
             predict,
@@ -2552,6 +2792,7 @@ class FastExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source="observed",
     ):
         """Class representing fast explanations.
 
@@ -2577,6 +2818,8 @@ class FastExplanation(CalibratedExplanation):
             The threshold for binary classification or regression explanations.
         instance_bin : int, optional
             The bin index of the instance.
+        condition_source : str, default="observed"
+            The source of the conditions for the explanation.
         """
         super().__init__(
             calibrated_explanations,
@@ -2588,19 +2831,20 @@ class FastExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
-        self._get_rules()
+        self.get_rules()
 
     def __repr__(self):
         """Return a string representation of the fast explanation."""
-        fast = self._get_rules()
+        fast = self.get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
             f"   {fast['base_predict'][0]:5.3f}   [{fast['base_predict_low'][0]:5.3f}, {fast['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self._rank_features(
+        feature_order = self.rank_features(
             fast["weight"],
             width=np.array(fast["weight_high"]) - np.array(fast["weight_low"]),
             num_to_show=len(fast["rule"]),
@@ -2620,7 +2864,7 @@ class FastExplanation(CalibratedExplanation):
         """Reuse the factual payload structure for fast explanations."""
         return FactualExplanation.build_rules_payload(self)
 
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """Warn that conjunctions are not supported for ``FastExplanation`` and perform no work.
 
         Parameters
@@ -2662,7 +2906,7 @@ class FastExplanation(CalibratedExplanation):
         pass
 
     # pylint: disable=too-many-statements, too-many-branches
-    def _get_rules(self):
+    def get_rules(self):
         """
         Create fast explanation rules.
 
@@ -2671,11 +2915,6 @@ class FastExplanation(CalibratedExplanation):
         dict
             A dictionary containing the fast explanation rules.
         """
-        if self._has_conjunctive_rules:
-            return self.conjunctive_rules
-        if self._has_rules:
-            return self.rules
-        self._has_rules = False
         # i = self.index
         instance = np.array(self.x_test, copy=True)
         fast = {
@@ -2699,7 +2938,7 @@ class FastExplanation(CalibratedExplanation):
         fast["base_predict"].append(self.prediction["predict"])
         fast["base_predict_low"].append(self.prediction["low"])
         fast["base_predict_high"].append(self.prediction["high"])
-        rules = self._define_conditions()
+        rules = self.define_conditions()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
                 continue
@@ -2709,10 +2948,10 @@ class FastExplanation(CalibratedExplanation):
             fast["weight"].append(self.feature_weights["predict"][f])
             fast["weight_low"].append(self.feature_weights["low"][f])
             fast["weight_high"].append(self.feature_weights["high"][f])
-            if f in self._get_explainer().categorical_features:
-                if self._get_explainer().categorical_labels is not None:
+            if f in self.get_explainer().categorical_features:
+                if self.get_explainer().categorical_labels is not None:
                     fast["value"].append(
-                        self._get_explainer().categorical_labels[f][int(instance[f])]
+                        self.get_explainer().categorical_labels[f][int(instance[f])]
                     )
                 else:
                     fast["value"].append(str(instance[f]))
@@ -2724,10 +2963,10 @@ class FastExplanation(CalibratedExplanation):
             fast["feature_value"].append(None)
             fast["is_conjunctive"].append(False)
         self.rules = fast
-        self._has_rules = True
+        self.has_rules = True
         return self.rules
 
-    def _define_conditions(self):
+    def define_conditions(self):
         """
         Define the rule conditions for the fast explanation.
 
@@ -2737,8 +2976,8 @@ class FastExplanation(CalibratedExplanation):
             A list of conditions for each feature.
         """
         self.conditions = []
-        for f in range(self._get_explainer().num_features):
-            rule = f"{self._get_explainer().feature_names[f]}"
+        for f in range(self.get_explainer().num_features):
+            rule = f"{self.get_explainer().feature_names[f]}"
             self.conditions.append(rule)
         return self.conditions
 
@@ -2793,7 +3032,7 @@ class FastExplanation(CalibratedExplanation):
         if uncertainty and self.is_one_sided():
             raise Warning("Interval plot is not supported for one-sided explanations.")
 
-        factual = self._get_rules()  # get_explanation(index)
+        factual = self.get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual["weight"])
@@ -2829,7 +3068,7 @@ class FastExplanation(CalibratedExplanation):
         )
 
         if rnk_metric == "feature_weight":
-            features_to_plot = self._rank_features(
+            features_to_plot = self.rank_features(
                 factual["weight"], width=width, num_to_show=filter_top
             )
         else:
@@ -2842,14 +3081,14 @@ class FastExplanation(CalibratedExplanation):
                 w=rnk_weight,
                 metric=rnk_metric,
             )
-            features_to_plot = self._rank_features(width=ranking, num_to_show=filter_top)
+            features_to_plot = self.rank_features(width=ranking, num_to_show=filter_top)
 
         # Prefer explicit feature/column names when available; fall back to rule strings
         column_names = (
             factual.get("feature_names") or factual.get("column_names") or factual.get("rule")
         )
-        if "classification" in self._get_explainer().mode or self.is_thresholded():
-            _plot_probabilistic(
+        if "classification" in self.get_explainer().mode or self.is_thresholded():
+            plot_probabilistic(
                 self,
                 factual["value"],
                 predict,
@@ -2867,7 +3106,7 @@ class FastExplanation(CalibratedExplanation):
                 use_legacy=plot_use_legacy,
             )
         else:
-            _plot_regression(
+            plot_regression(
                 self,
                 factual["value"],
                 predict,
