@@ -60,17 +60,18 @@ def test_cache_fallback_logic():
             assert cache_ttl.get("b") == 2
             time.sleep(0.2)
             assert cache_ttl.get("b") is None
+
+            # Test additional operations on fallback
+            cache_ttl["c"] = 3
+            cache_ttl.pop("c")
+            assert "c" not in cache_ttl
+
+            cache_ttl["d"] = 4
+            cache_ttl.clear()
+            assert len(cache_ttl) == 0
     finally:
         sys.modules.clear()
         sys.modules.update(old_modules)
-
-        cache_ttl["c"] = 3
-        cache_ttl.pop("c")
-        assert "c" not in cache_ttl
-
-        cache_ttl["d"] = 4
-        cache_ttl.clear()
-        assert len(cache_ttl) == 0
 
     # Re-import to restore normal state
     if "calibrated_explanations.cache.cache" in sys.modules:

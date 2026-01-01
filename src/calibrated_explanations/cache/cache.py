@@ -81,7 +81,12 @@ except:  # noqa: E722
             """
             value = super().__getitem__(key)
             # mark as recently used
-            self.move_to_end(key)
+            try:
+                self.move_to_end(key)
+            except KeyError:  # pragma: no cover
+                # In some Python versions (e.g. 3.10), OrderedDict.popitem
+                # may trigger __getitem__ after the key is removed.
+                pass
             return value
 
         def get(self, key, default=None):
