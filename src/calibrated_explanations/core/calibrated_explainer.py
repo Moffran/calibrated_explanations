@@ -1749,7 +1749,7 @@ class CalibratedExplainer:
             )
 
         # Legacy path for backward compatibility and testing
-        from .explain._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
+        from .explain import legacy_explain  # pylint: disable=import-outside-toplevel
 
         return legacy_explain(
             self,
@@ -1985,7 +1985,7 @@ class CalibratedExplainer:
         np.ndarray
             The discretized data.
         """
-        from .explain._computation import discretize as _discretize_func  # pylint: disable=import-outside-toplevel
+        from .explain import discretize as _discretize_func  # pylint: disable=import-outside-toplevel
 
         return _discretize_func(self, data)
 
@@ -2004,7 +2004,7 @@ class CalibratedExplainer:
         array-like
             Min and max values for each feature for each instance.
         """
-        from .explain._computation import rule_boundaries as _rule_boundaries  # pylint: disable=import-outside-toplevel
+        from .explain import rule_boundaries as _rule_boundaries  # pylint: disable=import-outside-toplevel
 
         return _rule_boundaries(self, instances, perturbed_instances)
 

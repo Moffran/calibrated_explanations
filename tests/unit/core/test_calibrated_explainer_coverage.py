@@ -765,7 +765,7 @@ def test_explain_mondrian_bins_and_legacy_path(mock_learner, mock_plugin_manager
     args, _ = explainer.explanation_orchestrator.invoke_alternative.call_args
     assert args[3] is explainer.bins
 
-    with patch("calibrated_explanations.core.explain._legacy_explain.explain") as mock_legacy:
+    with patch("calibrated_explanations.core.explain.legacy_explain") as mock_legacy:
         mock_legacy.return_value = "legacy"
         result = explainer(x_test, bins=None, _use_plugin=False)
         assert result == "legacy"
@@ -1183,7 +1183,7 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
         mock_explain.assert_called_once()
 
     # explain_internal with legacy path
-    with patch("calibrated_explanations.core.explain._legacy_explain.explain") as mock_legacy:
+    with patch("calibrated_explanations.core.explain.legacy_explain") as mock_legacy:
         explainer.explain_internal(x_cal, _use_plugin=False)
         mock_legacy.assert_called_once()
 
@@ -1222,12 +1222,12 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     assert explainer.is_fast() is False
 
     # discretize
-    with patch("calibrated_explanations.core.explain._computation.discretize") as mock_disc:
+    with patch("calibrated_explanations.core.explain.discretize") as mock_disc:
         explainer.discretize(x_cal)
         mock_disc.assert_called_once()
 
     # rule_boundaries
-    with patch("calibrated_explanations.core.explain._computation.rule_boundaries") as mock_rb:
+    with patch("calibrated_explanations.core.explain.rule_boundaries") as mock_rb:
         explainer.rule_boundaries(x_cal)
         mock_rb.assert_called_once()
 
