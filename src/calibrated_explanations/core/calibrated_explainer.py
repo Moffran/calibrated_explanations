@@ -1016,11 +1016,6 @@ class CalibratedExplainer:
         if hasattr(self, "_shap_helper"):
             del self._shap_helper
 
-    @shap_helper.setter
-    def shap_helper(self, value: Any) -> None:
-        """Set the SHAP helper."""
-        self._shap_helper = value
-
     @property
     def initialized(self) -> bool:
         """Return True if the explainer is initialized."""
