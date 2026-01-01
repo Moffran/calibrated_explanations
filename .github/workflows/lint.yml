@@ -39,7 +39,7 @@ jobs:
           python scripts/check_adr002_compliance.py
       - name: Upload lint artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: lint-reports
           path: |
