@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import sys
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
-import sys
 
 
 def _load_detector_module():
