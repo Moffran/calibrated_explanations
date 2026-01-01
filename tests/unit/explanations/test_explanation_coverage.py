@@ -172,7 +172,7 @@ def test_explanation_validate_prediction_invariant_none():
 
     # Missing 'predict'
     prediction = {"low": [0.4], "high": [0.6]}
-    exp = ConcreteExplanation(
+    ConcreteExplanation(
         calibrated_explanations=mock_ce,
         index=0,
         x=np.array([[1]]),

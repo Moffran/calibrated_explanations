@@ -1,3 +1,4 @@
+import contextlib
 import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
@@ -511,15 +512,21 @@ def test_external_pipelines(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
     x_test = np.array([[1, 2]])
 
-    with patch("external_plugins.fast_explanations.pipeline.FastExplanationPipeline") as mock_fast:
+    import external_plugins.fast_explanations.pipeline as fast_pipeline_mod
+
+    with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_fast:
         explainer.explain_fast(x_test, _use_plugin=False)
         mock_fast.return_value.explain.assert_called_once()
 
-    with patch("external_plugins.integrations.lime_pipeline.LimePipeline") as mock_lime:
+    import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
+
+    with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
         explainer.explain_lime(x_test)
         mock_lime.return_value.explain.assert_called_once()
 
-    with patch("external_plugins.integrations.shap_pipeline.ShapPipeline") as mock_shap:
+    import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
+
+    with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
         explainer.explain_shap(x_test)
         mock_shap.return_value.explain.assert_called_once()
 
@@ -737,13 +744,15 @@ def test_enable_fast_mode_resets_on_error(mock_learner):
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
-    with patch.object(
-        explainer,
-        "_CalibratedExplainer__initialize_interval_learner_for_fast_explainer",
-        side_effect=RuntimeError("boom"),
+    with (
+        patch.object(
+            explainer,
+            "_CalibratedExplainer__initialize_interval_learner_for_fast_explainer",
+            side_effect=RuntimeError("boom"),
+        ),
+        pytest.raises(RuntimeError, match="boom"),
     ):
-        with pytest.raises(RuntimeError, match="boom"):
-            explainer.enable_fast_mode()
+        explainer.enable_fast_mode()
 
     assert explainer.is_fast() is False
 
@@ -857,22 +866,16 @@ def test_properties_coverage(mock_learner, mock_plugin_manager):
 
     for prop in props:
         # Getter
-        try:
+        with contextlib.suppress(Exception):
             _ = getattr(explainer, prop)
-        except Exception:
-            pass
 
         # Setter
-        try:
+        with contextlib.suppress(Exception):
             setattr(explainer, prop, MagicMock())
-        except Exception:
-            pass
 
         # Deleter
-        try:
+        with contextlib.suppress(Exception):
             delattr(explainer, prop)
-        except Exception:
-            pass
 
 
 def test_serialization_coverage(mock_learner, mock_plugin_manager):
@@ -933,18 +936,12 @@ def test_internal_properties_coverage(mock_learner, mock_plugin_manager):
     ]
 
     for prop in internal_props:
-        try:
+        with contextlib.suppress(Exception):
             _ = getattr(explainer, prop)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             setattr(explainer, prop, MagicMock())
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             delattr(explainer, prop)
-        except Exception:
-            pass
 
 
 def test_deepcopy_coverage(mock_learner, mock_plugin_manager):
@@ -1017,7 +1014,7 @@ def test_init_feature_names_coverage(mock_learner, mock_plugin_manager):
     assert explainer.feature_names_internal == ["0", "1"]
 
 
-def test_parallel_pool_coverage(mock_learner, mock_plugin_manager):
+def test_parallel_pool_reinitialize_coverage(mock_learner, mock_plugin_manager):
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
@@ -1187,36 +1184,40 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
         explainer.explain_internal(x_cal, _use_plugin=False)
         mock_legacy.assert_called_once()
 
-    # explain_fast with legacy path
-    with patch(
-        "external_plugins.fast_explanations.pipeline.FastExplanationPipeline"
-    ) as mock_pipeline:
-        explainer.explain_fast(x_cal, _use_plugin=False)
-        mock_pipeline.assert_called()
+        # explain_fast with legacy path
+        import external_plugins.fast_explanations.pipeline as fast_pipeline_mod
 
-    # explain_lime
-    with patch("external_plugins.integrations.lime_pipeline.LimePipeline") as mock_lime:
-        explainer.explain_lime(x_cal)
-        mock_lime.assert_called()
+        with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_pipeline:
+            explainer.explain_fast(x_cal, _use_plugin=False)
+            mock_pipeline.assert_called()
 
-    # explain_shap
-    with patch("external_plugins.integrations.shap_pipeline.ShapPipeline") as mock_shap:
-        explainer.explain_shap(x_cal)
-        mock_shap.assert_called()
+        # explain_lime
+        import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 
-    # is_lime_enabled / is_shap_enabled
-    explainer.is_lime_enabled(True)
-    explainer.is_lime_enabled(False)
-    explainer.is_lime_enabled()
-    explainer.is_shap_enabled(True)
-    explainer.is_shap_enabled(False)
-    explainer.is_shap_enabled()
+        with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
+            explainer.explain_lime(x_cal)
+            mock_lime.assert_called()
 
-    # is_multiclass
-    explainer.num_classes = 3
-    assert explainer.is_multiclass() is True
-    explainer.num_classes = 2
-    assert explainer.is_multiclass() is False
+        # explain_shap
+        import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
+
+        with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
+            explainer.explain_shap(x_cal)
+            mock_shap.assert_called()
+
+        # is_lime_enabled / is_shap_enabled
+        explainer.is_lime_enabled(True)
+        explainer.is_lime_enabled(False)
+        explainer.is_lime_enabled()
+        explainer.is_shap_enabled(True)
+        explainer.is_shap_enabled(False)
+        explainer.is_shap_enabled()
+
+        # is_multiclass
+        explainer.num_classes = 3
+        assert explainer.is_multiclass() is True
+        explainer.num_classes = 2
+        assert explainer.is_multiclass() is False
 
     # is_fast
     assert explainer.is_fast() is False

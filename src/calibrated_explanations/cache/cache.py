@@ -14,6 +14,7 @@ lifecycle management for versioning, flush/reset operations, and telemetry.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -81,12 +82,10 @@ except:  # noqa: E722
             """
             value = super().__getitem__(key)
             # mark as recently used
-            try:
+            # In some Python versions (e.g. 3.10), OrderedDict.popitem
+            # may trigger __getitem__ after the key is removed.
+            with contextlib.suppress(KeyError):  # pragma: no cover
                 self.move_to_end(key)
-            except KeyError:  # pragma: no cover
-                # In some Python versions (e.g. 3.10), OrderedDict.popitem
-                # may trigger __getitem__ after the key is removed.
-                pass
             return value
 
         def get(self, key, default=None):
@@ -131,7 +130,10 @@ except:  # noqa: E722
             if key in self._expiries and time.time() >= self._expiries.get(key, 0):
                 # expired
                 try:
-                    super().pop(key)
+                    # Use OrderedDict.__delitem__ to avoid recursion if pop calls __getitem__
+                    OrderedDict.__delitem__(self, key)
+                except KeyError:
+                    pass
                 finally:
                     self._expiries.pop(key, None)
                 raise KeyError(key)

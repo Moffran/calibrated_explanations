@@ -8,7 +8,6 @@ def test_calibrated_explainer_deepcopy():
     # Setup a basic explainer
     x_cal = np.array([[1, 2], [3, 4]])
     y_cal = np.array([0, 1])
-    learner = lambda x: np.array([[0.8, 0.2], [0.3, 0.7]])
 
     # We need a learner that has predict_proba if mode is classification
     class MockLearner:

@@ -914,7 +914,9 @@ class CalibratedExplainer:
 
     def initialize_interval_learner_for_fast_explainer(self, *args, **kwargs) -> Any:
         """Public alias for internal interval learner initialization."""
-        return self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer(*args, **kwargs)
+        return self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer(
+            *args, **kwargs
+        )
 
     @interval_plugin_identifiers.deleter
     def interval_plugin_identifiers(self) -> None:

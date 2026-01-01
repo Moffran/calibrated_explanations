@@ -10,6 +10,13 @@
 - **Public API Enforcement & Regression Fixes:** Refactored 28 test files to eliminate private member usage, replacing internal helpers with public APIs like `predict_calibrated`. Resolved 35 integration regressions, including `crepes` 0.9.0 compatibility, numerical stability in golden tests (relaxed tolerance to 1e-8), and suppression of `scipy.optimize` and `pyparsing` deprecation warnings. Expanded the private member allow-list to cover legitimate internal unit tests and false positives from module imports and patches.
 - **Anti-Pattern Remediation & Plugin Stabilization:** Completed comprehensive remediation of internal logic testing (Pattern 1) and dead code (Pattern 3), alongside stabilization of the plugin architecture. Refactored private member accesses to public APIs, established a versioned allow-list for acceptable test internals, and removed dead code. Implemented CI enforcement for anti-pattern violations using the allow-list to prevent future regressions. Detailed API changes are documented in [docs/improvement/remediation_api_changes.md](docs/improvement/remediation_api_changes.md).
 
+### Fixed
+
+- **Python 3.10 Compatibility:** Resolved critical regressions affecting Python 3.10 environments.
+  - Fixed `RecursionError` in `TTLCache` caused by `OrderedDict.pop` triggering recursive `__getitem__` calls; switched to `OrderedDict.__delitem__` for safe expiry.
+  - Fixed `AttributeError` in unit tests when patching `external_plugins` by switching to `patch.object` with explicit imports, ensuring robust resolution of namespace packages.
+  - Fixed `UnboundLocalError` in cache fallback tests by ensuring variables are bound before use in `finally` blocks.
+
 ### Added
 
 - **Contribution Licensing & DCO:** Added explicit Developer Certificate of Origin (DCO) and BSD 3-Clause licensing statements to `README.md` and `GOVERNANCE.md` to clarify contribution expectations.

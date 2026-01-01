@@ -11,7 +11,7 @@ jobs:
     if: ${{!startsWith(github.event.head_commit.message, 'info:') && !startsWith(github.event.head_commit.message, 'Info:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'Docs:')}}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
