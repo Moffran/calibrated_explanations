@@ -24,9 +24,9 @@ jobs:
           cache: 'pip'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install .
-          pip install mypy
+          pip install -r requirements.txt -c constraints.txt
+          pip install . -c constraints.txt
+          pip install mypy -c constraints.txt
       - name: Run mypy (Phase 1B scope)
         shell: bash
         run: |

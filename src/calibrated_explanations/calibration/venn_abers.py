@@ -299,7 +299,7 @@ def exponent_scaling_list(probs, difficulties, beta=5):
         list of float: Scaled probabilities.
     """
     scaled_probs = []
-    for p, difficulty in zip(probs, difficulties):
+    for p, difficulty in zip(probs, difficulties, strict=False):
         if p[0] < 0.5:
             scaled_p = p ** (1 + beta * (1 - difficulty))
         else:

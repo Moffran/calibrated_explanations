@@ -10,12 +10,24 @@ from calibrated_explanations.viz import (
     plotspec_to_dict,
     plotspec_from_dict,
     validate_plotspec,
+    global_plotspec_to_dict,
+    PlotKindRegistry,
 )
 from calibrated_explanations.viz import (
     PlotSpec,
     IntervalHeaderSpec,
     BarHPanelSpec,
     BarItem,
+    GlobalPlotSpec,
+    GlobalSpec,
+    TriangularPlotSpec,
+    TriangularSpec,
+)
+from calibrated_explanations.viz.plotspec import SaveBehavior
+from calibrated_explanations.viz.serializers import (
+    global_plotspec_from_dict,
+    triangular_plotspec_to_dict,
+    triangular_plotspec_from_dict,
 )
 
 
@@ -250,3 +262,94 @@ def test_plotspec_from_dict_casts_values():
         assert bar0.interval_low <= bar0.value <= bar0.interval_high, (
             f"Bar interval violated: {bar0.interval_low} ≤ " f"{bar0.value} ≤ {bar0.interval_high}"
         )
+
+
+def test_plot_kind_registry__should_reject_unknown_kind_when_validating_mode():
+    """Verify unsupported PlotSpec kinds are rejected with guidance."""
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError) as excinfo:
+        PlotKindRegistry.validate_kind_and_mode("unknown_kind", "classification")
+
+    err = excinfo.value
+    assert "Unsupported PlotSpec kind" in str(err)
+    assert err.details is not None
+    assert "supported_kinds" in err.details
+
+
+def test_validate_plotspec__should_require_header_for_factual_probabilistic():
+    """Verify factual probabilistic plots require headers for interval semantics."""
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    payload = {
+        "kind": "factual_probabilistic",
+        "mode": "classification",
+        "feature_entries": [{"name": "f0", "weight": 0.1}],
+        "body": {"xlabel": "Contribution", "ylabel": "Feature"},
+    }
+
+    with pytest.raises(ValidationError) as excinfo:
+        validate_plotspec(payload)
+
+    assert "requires 'header'" in str(excinfo.value)
+
+
+def test_triangular_plotspec_roundtrip__should_preserve_metadata_and_defaults():
+    """Verify triangular plotspec keeps metadata and default fields intact."""
+    spec = TriangularPlotSpec(
+        title="triangle",
+        figure_size=(7.0, 4.0),
+        triangular=TriangularSpec(
+            proba=[0.2, 0.7],
+            uncertainty=[0.1, 0.3],
+            rule_proba=[0.6],
+            rule_uncertainty=[0.4],
+            num_to_show=10,
+            is_probabilistic=False,
+        ),
+        kind="triangular",
+        mode="classification",
+        save_behavior=SaveBehavior(path="out", title="tri", default_exts=("png",)),
+        data_slice_id="slice-1",
+        rendering_seed=42,
+    )
+
+    payload = triangular_plotspec_to_dict(spec)
+    restored = triangular_plotspec_from_dict(payload)
+
+    assert restored.kind == "triangular"
+    assert restored.mode == "classification"
+    assert restored.figure_size == (7.0, 4.0)
+    assert restored.triangular is not None
+    assert restored.triangular.num_to_show == 10
+    assert restored.triangular.is_probabilistic is False
+    assert restored.save_behavior is not None
+    assert restored.save_behavior.default_exts == ("png",)
+    assert restored.data_slice_id == "slice-1"
+    assert restored.rendering_seed == 42
+
+
+def test_global_plotspec_to_dict__should_fall_back_to_defaults_when_values_invalid():
+    """Verify axis hints default when invalid numeric sequences are supplied."""
+    spec = GlobalPlotSpec(
+        title="global",
+        global_entries=GlobalSpec(
+            proba=[object()],
+            predict=None,
+            uncertainty=[0.05, 0.15],
+        ),
+        kind="global_probabilistic",
+        mode="classification",
+    )
+
+    with pytest.warns(UserWarning, match="Failed to cast sequence to floats"):
+        payload = global_plotspec_to_dict(spec)
+
+    inner = payload["plot_spec"]
+    axis_hints = inner.get("axis_hints") or {}
+    assert axis_hints.get("xlim") == [0.0, 1.0]
+    assert axis_hints.get("ylim") == [0.05, 0.15]
+
+    restored = global_plotspec_from_dict(payload)
+    assert restored.kind == "global_probabilistic"
+    assert restored.mode == "classification"

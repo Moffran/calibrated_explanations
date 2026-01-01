@@ -184,7 +184,6 @@ catboost_info/
 coverage.xml
 .coverage
 plots/
-reports/
 .ruff_cache/
 .conda/
 .tests/benchmarks/
@@ -196,3 +195,5 @@ docs/improvement/ignore/
 docs/improvement/adr_mending/
 docs/improvement/archived/
 .ci-env/
+
+evaluation/experimental/

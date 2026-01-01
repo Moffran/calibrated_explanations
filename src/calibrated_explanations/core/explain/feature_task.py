@@ -114,7 +114,7 @@ def assign_weight(
     return [prediction[i] - ip for i, ip in enumerate(instance_predict)]
 
 
-def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
+def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
     (
         feature_index,
@@ -431,7 +431,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         groups = np.split(sorted_indices, start_indices[1:])
 
         numeric_grouped: Dict[Tuple[int, int, Any], np.ndarray] = {}
-        for k, g in zip(unique_keys, groups):
+        for k, g in zip(unique_keys, groups, strict=False):
             inst, bin_val, flag_int = k
             flag = None
             if flag_int == 1:
@@ -483,14 +483,14 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         l_sorted_inv = lower_inverse[l_sort]
         l_uniq, l_starts = np.unique(l_sorted_inv, return_index=True)
         l_splits = np.split(l_sort, l_starts[1:])
-        lower_groups = dict(zip(l_uniq, l_splits))
+        lower_groups = dict(zip(l_uniq, l_splits, strict=False))
 
         # Optimize upper_groups construction (avoid O(N^2))
         u_sort = np.argsort(upper_inverse)
         u_sorted_inv = upper_inverse[u_sort]
         u_uniq, u_starts = np.unique(u_sorted_inv, return_index=True)
         u_splits = np.split(u_sort, u_starts[1:])
-        upper_groups = dict(zip(u_uniq, u_splits))
+        upper_groups = dict(zip(u_uniq, u_splits, strict=False))
 
         lower_cache = {
             val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
@@ -646,4 +646,4 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
 
 # Alias for backward compatibility
-execute_feature_task = _feature_task
+execute_feature_task = feature_task

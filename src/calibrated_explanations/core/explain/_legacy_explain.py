@@ -360,7 +360,7 @@ def explain(
         total_time=total_time,
     )
     explainer.latest_explanation = explanation
-    explainer._last_explanation_mode = explainer._infer_explanation_mode()
+    explainer.last_explanation_mode = explainer.infer_explanation_mode()
     # parity instrumentation removed
     return explanation
 

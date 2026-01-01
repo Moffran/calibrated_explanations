@@ -4,7 +4,7 @@ from pathlib import Path
 from scripts import check_perf_micro
 
 
-def _write(path: Path, payload: dict) -> None:
+def write(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
@@ -31,8 +31,8 @@ def test_missing_explain_metrics_fails(tmp_path):
     baseline_path = tmp_path / "baseline.json"
     current_path = tmp_path / "current.json"
     thresholds_path = Path("tests/benchmarks/perf_thresholds.json")
-    _write(baseline_path, baseline)
-    _write(current_path, current)
+    write(baseline_path, baseline)
+    write(current_path, current)
 
     exit_code = check_perf_micro.main(
         [str(baseline_path), str(current_path), str(thresholds_path)]
@@ -66,8 +66,8 @@ def test_explain_metrics_pass_when_within_threshold(tmp_path, capsys):
     baseline_path = tmp_path / "baseline.json"
     current_path = tmp_path / "current.json"
     thresholds_path = Path("tests/benchmarks/perf_thresholds.json")
-    _write(baseline_path, baseline)
-    _write(current_path, current)
+    write(baseline_path, baseline)
+    write(current_path, current)
 
     exit_code = check_perf_micro.main(
         [str(baseline_path), str(current_path), str(thresholds_path)]

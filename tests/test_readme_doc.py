@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 
-def _run_readme_snippet() -> SimpleNamespace:
+def run_readme_snippet() -> SimpleNamespace:
     from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
     from sklearn.ensemble import RandomForestClassifier
@@ -50,7 +50,7 @@ def _run_readme_snippet() -> SimpleNamespace:
 
 
 def test_readme_quickstart_snippet(enable_fallbacks, capsys):
-    context = _run_readme_snippet()
+    context = run_readme_snippet()
     output = capsys.readouterr().out
     assert "Calibrated probability:" in output
     assert 0.0 <= context.probabilities[0, 1] <= 1.0

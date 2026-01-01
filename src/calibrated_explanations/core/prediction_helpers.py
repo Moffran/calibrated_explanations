@@ -41,7 +41,7 @@ class _ExplainerProtocol(Protocol):
     x_cal: np.ndarray
     interval_learner: Any
 
-    def _is_mondrian(self) -> bool:
+    def is_mondrian(self) -> bool:
         """Return True when a Mondrian (per-bin) calibration is active."""
         ...
 
@@ -64,10 +64,6 @@ class _ExplainerProtocol(Protocol):
         feature: Optional[int] = ...,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Compute calibrated predictions and interval bounds."""
-        ...
-
-    def _discretize(self, x: np.ndarray) -> np.ndarray:
-        """Transform inputs into discretized representations when needed."""
         ...
 
     def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any:
@@ -104,7 +100,12 @@ def initialize_explanation(
     """Initialize explanation object (extracted logic)."""
     from ..explanations import CalibratedExplanations  # pylint: disable=import-outside-toplevel
 
-    if explainer._is_mondrian():  # noqa: SLF001
+    is_mondrian = getattr(explainer, "is_mondrian", False)
+    if callable(is_mondrian):
+        is_mondrian = is_mondrian()
+    if is_mondrian:
+        if bins is None:
+            bins = getattr(explainer, "bins", None)
         if bins is None:
             raise ValidationError("Bins required for Mondrian explanations")
         if len(bins) != len(x):  # pragma: no cover - defensive
@@ -144,7 +145,7 @@ def predict_internal(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Run the internal prediction logic (mechanically moved)."""
     # (Body kept inside calibrated_explainer for now to limit patch size) -- placeholder stub if future isolation needed
-    return explainer._predict(  # noqa: SLF001
+    return explainer.predict_calibrated(
         x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,

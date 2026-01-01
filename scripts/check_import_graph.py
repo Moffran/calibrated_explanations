@@ -96,6 +96,7 @@ class BoundaryConfig:
         ('plugins', 'explanations'): [],
         ('plugins', 'viz'): [],
         ('plugins', 'calibration'): [],
+        ('plugins', 'legacy'): [],
 
         # --- Pattern 9: Visualization hooks from explanations ---
         ('explanations', 'viz'): [],

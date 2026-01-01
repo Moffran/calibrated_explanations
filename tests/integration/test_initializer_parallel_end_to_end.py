@@ -15,7 +15,7 @@ except Exception:  # pragma: no cover - sklearn required in test env
 def make_small_explainer():
     if DummyClassifier is None:
         # fallback simple learner if sklearn is not available
-        class _Fallback:
+        class Fallback:
             def fit(self, x, y):
                 self.fitted_ = True
                 return self
@@ -26,7 +26,7 @@ def make_small_explainer():
             def predict_proba(self, x):
                 return np.vstack([np.zeros(len(x)), np.ones(len(x))]).T
 
-        learner = _Fallback()
+        learner = Fallback()
     else:
         learner = DummyClassifier(strategy="most_frequent")
 

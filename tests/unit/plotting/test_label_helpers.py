@@ -35,11 +35,11 @@ pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
         (("not", "numbers"), ("Target within threshold", "Outside threshold")),
     ],
 )
-def test_derive_threshold_labels(threshold: Any, expected: Tuple[str, str], caplog):
+def testderive_threshold_labels(threshold: Any, expected: Tuple[str, str], caplog):
     """Should derive correct labels for various threshold inputs."""
     # Capture logs to verify debug logging for invalid intervals
     with caplog.at_level(logging.DEBUG):
-        labels = plotting._derive_threshold_labels(threshold)
+        labels = plotting.derive_threshold_labels(threshold)
 
     assert labels == expected
 

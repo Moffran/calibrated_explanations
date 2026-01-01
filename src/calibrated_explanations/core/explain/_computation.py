@@ -20,7 +20,7 @@ from .feature_task import (
     assign_weight_scalar,
 )
 from .feature_task import (
-    _feature_task as feature_task,
+    feature_task as feature_task,
 )
 
 if TYPE_CHECKING:
@@ -147,7 +147,7 @@ def rule_boundaries(
         )  # Ensure perturbed_instances is a numpy array
 
     all_min_max = []
-    for instance, perturbed_instance in zip(instances, perturbed_instances):
+    for instance, perturbed_instance in zip(instances, perturbed_instances, strict=False):
         min_max = []
         for f in range(explainer.num_features):
             if f not in explainer.discretizer.to_discretize:
@@ -382,7 +382,7 @@ def explain_predict_step(
                 ignore_mask[idx, inst_indices] = True
 
     x_cal = explainer.x_cal
-    base_predict, base_low, base_high, predicted_class = explainer._predict(  # pylint: disable=protected-access
+    base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
         x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
     )
 
@@ -576,7 +576,7 @@ def explain_predict_step(
         and isinstance(threshold[0], tuple)
     ):
         perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
-    predict, low, high, _ = explainer._predict(  # pylint: disable=protected-access
+    predict, low, high, _ = explainer.predict_calibrated(
         perturbed_x,
         threshold=perturbed_threshold,
         low_high_percentiles=low_high_percentiles,

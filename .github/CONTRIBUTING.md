@@ -4,13 +4,19 @@ I'm really glad you're reading this, because we need volunteer developers to hel
 
 Since we are now open to contributions, we welcome your feedback, suggestions, and contributions. You can contribute by opening a pull request, filing an issue, or initiating discussions in our [discussion forum](https://github.com/Moffran/calibrated_explanations/discussions). We value your input and look forward to collaborating with you.
 
+## Community health references
+
+- Code of Conduct: see `CODE_OF_CONDUCT.md`.
+- Security reporting: see `SECURITY.md` for private reporting channels.
+- Governance and support: see `GOVERNANCE.md` and `SUPPORT.md`.
+
 ## Roadmap and ADR-driven development
 
-This project follows a written release plan and Architecture Decision Records (ADRs):
-
+- Roadmap: see `ROADMAP.md` for a high-level summary of the current release pillars and the implementation plan that supports them.
 - Release Plan: see `docs/improvement/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
+- Milestone Plan: see `vx.y.z_plan.md` (e.g., `v0.10.1_plan.md`) for detailed checklists that map to each release plan milestone.
 - ADRs: see `docs/improvement/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
-- Documentation: Follow [ADR-027](docs/improvement/adrs/ADR-027-documentation-standard.md) for all documentation structure and audience guidelines.
+- Documentation: Follow [STD-027](docs/standards/STD-027-documentation-audience-standard.md) for all documentation structure and audience guidelines.
 
 Current highlights coming from reported issues and the release plan:
 
@@ -18,6 +24,18 @@ Current highlights coming from reported issues and the release plan:
 - Native non-numeric input support in the wrapper (preprocessing + mapping persistence), tracked in ADR-009.
 
 Prefer small, focused PRs that map to the plan’s daily/weekly slices (e.g., `feat/1b-exceptions`, `feat/1b-validation`).
+
+## Contribution licensing (DCO)
+
+We use the Developer Certificate of Origin (DCO) to confirm that contributions
+are licensed under the project's BSD-3-Clause license. By contributing, you
+agree that your work is original or that you have the right to submit it.
+
+Please add a sign-off line to every commit:
+
+```\nSigned-off-by: Your Name <your.email@example.com>\n```
+
+You can add this automatically with `git commit -s`.
 
 
 ## Feature requests
@@ -46,6 +64,16 @@ PR expectations:
 - If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `tests/benchmarks/` and `scripts/`.
 - For architectural/public changes, include/modify an ADR in `docs/improvement/adrs/` and link it in the PR.
 - **Legacy API compatibility**: Changes to `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods must preserve the documented contract in `docs/improvement/legacy_user_api_contract.md`. The PR template includes a parity review checkpoint; regression tests in `tests/unit/api/test_legacy_user_api_contract.py` enforce this guardrail (ADR-020).
+
+### Dependency constraints
+
+CI and local dev workflows use `constraints.txt` to pin key dependencies. When
+installing dev or doc dependencies locally, add the constraint file:
+
+```bash
+python -m pip install -e .[dev] -c constraints.txt
+python -m pip install -r docs/requirements-doc.txt -c constraints.txt
+```
 
 
 

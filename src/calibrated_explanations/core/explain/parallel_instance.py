@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import warnings
 from time import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -153,7 +154,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                 features_to_ignore_array,
             )
             explainer.latest_explanation = empty_explanation
-            explainer._last_explanation_mode = explainer._infer_explanation_mode()
+            explainer.last_explanation_mode = explainer.infer_explanation_mode()
             return empty_explanation
 
         # Determine chunk size: prefer executor config if set, else fallback to ExplainConfig default
@@ -200,7 +201,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
             )
             result = self._sequential_plugin.execute(chunk_request, config, explainer)
             explainer.latest_explanation = result
-            explainer._last_explanation_mode = explainer._infer_explanation_mode()
+            explainer.last_explanation_mode = explainer.infer_explanation_mode()
             return result
 
         # Prepare sanitized config state (exclude executor to avoid pickling issues)
@@ -251,11 +252,24 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
 
         # Step 5: Execute tasks in parallel
         # Note: _instance_parallel_task is now top-level
-        active_strategy = getattr(executor, "_active_strategy_name", None) or getattr(
+        active_strategy = getattr(executor, "active_strategy_name", None) or getattr(
             executor.config, "strategy", "auto"
         )
         if active_strategy == "auto" and hasattr(executor, "_auto_strategy"):
-            active_strategy = executor._auto_strategy(work_items=n_instances)
+            active_strategy = executor.auto_strategy(work_items=n_instances)
+
+        configured_strategy = getattr(executor.config, "strategy", active_strategy)
+        if (
+            os.name == "nt"
+            and active_strategy in {"threads", "sequential"}
+            and configured_strategy not in {"threads", "sequential"}
+        ):
+            warnings.warn(
+                "Instance-parallel execution on Windows is using a thread/sequential fallback. "
+                "Set CE_PARALLEL=processes or CE_PARALLEL=joblib to keep process-based execution.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         # Route through ParallelExecutor.map() only for the real facade so its
         # telemetry (metrics.submitted/completed) stays accurate (used by the
@@ -293,7 +307,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
 
         # Update explainer state
         explainer.latest_explanation = combined
-        explainer._last_explanation_mode = explainer._infer_explanation_mode()
+        explainer.last_explanation_mode = explainer.infer_explanation_mode()
 
         return combined
 

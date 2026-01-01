@@ -26,8 +26,8 @@ class DummyDescriptor(SimpleNamespace):
         (123, ()),
     ],
 )
-def test_string_tuple_variants(value, expected):
-    assert cli._string_tuple(value) == expected
+def testcoerce_string_tuple_variants(value, expected):
+    assert cli.coerce_string_tuple(value) == expected
 
 
 def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):
@@ -350,6 +350,11 @@ def test_main_list_flow(monkeypatch, capsys):
 
 def test_cli_module_main_entry(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["calibrated_explanations.plugins.cli"])
+
+    # Remove from sys.modules to avoid RuntimeWarning when runpy.run_module is called
+    # since it was already imported at the top of this file.
+    if "calibrated_explanations.plugins.cli" in sys.modules:
+        monkeypatch.delitem(sys.modules, "calibrated_explanations.plugins.cli")
 
     with pytest.raises(SystemExit) as exc:
         runpy.run_module(

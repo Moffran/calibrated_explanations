@@ -28,67 +28,59 @@ def reset_deprecation_state():
 
 
 class TestShouldRaise:
-    """Tests for _should_raise() function."""
+    """Tests for should_raise() function."""
 
     def test_should_raise_when_ce_deprecations_is_error(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='error'."""
+        """should_raise() should return True when CE_DEPRECATIONS='error'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}):
             assert _should_raise() is True
 
     def test_should_raise_when_ce_deprecations_is_raise(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='raise'."""
+        """should_raise() should return True when CE_DEPRECATIONS='raise'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "raise"}):
             assert _should_raise() is True
 
     def test_should_raise_when_ce_deprecations_is_true(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='true'."""
+        """should_raise() should return True when CE_DEPRECATIONS='true'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "true"}):
             assert _should_raise() is True
 
     def test_should_raise_when_ce_deprecations_is_1(self):
-        """_should_raise() should return True when CE_DEPRECATIONS='1'."""
+        """should_raise() should return True when CE_DEPRECATIONS='1'."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "1"}):
             assert _should_raise() is True
 
     def test_should_not_raise_when_ce_deprecations_unset(self):
-        """_should_raise() should return False when CE_DEPRECATIONS is not set."""
+        """should_raise() should return False when CE_DEPRECATIONS is not set."""
         with patch.dict(os.environ, {}, clear=True):
             assert _should_raise() is False
 
     def test_should_not_raise_when_ce_deprecations_is_false(self):
-        """_should_raise() should return False for other values."""
+        """should_raise() should return False for other values."""
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "false"}):
             assert _should_raise() is False
 
     def test_should_not_raise_during_pytest_without_ci(self):
-        """_should_raise() should return False during pytest without CI flags."""
+        """should_raise() should return True when CE_DEPRECATIONS='error' even during pytest."""
+        # Note: The current implementation always honors CE_DEPRECATIONS when set to error values,
+        # regardless of pytest or CI status (per ADR requirements).
         env = {
             "CE_DEPRECATIONS": "error",
             "PYTEST_CURRENT_TEST": "test_module.py::test_func",
         }
-        with patch.dict(os.environ, env), patch(
-            "calibrated_explanations.utils.deprecations._CE_DEPRECATIONS_AT_START",
-            "error",
-        ):
-            # When running pytest locally with CE_DEPRECATIONS set at start,
-            # we should NOT raise even if CE_DEPRECATIONS="error"
-            # This depends on whether CI or GITHUB_ACTIONS is set
-            result = _should_raise()
-            # When pytest is running without CI flags, it should return False
-            # (or True if CI/GITHUB_ACTIONS is set)
-            assert isinstance(result, bool)
+        with patch.dict(os.environ, env):
+            # When CE_DEPRECATIONS="error" is set, should_raise() should return True
+            # regardless of pytest or CI status
+            assert _should_raise() is True
 
     def test_should_raise_during_ci_with_pytest(self):
-        """_should_raise() should return True during CI even with pytest."""
+        """should_raise() should return True during CI with pytest when CE_DEPRECATIONS='error'."""
         env = {
             "CE_DEPRECATIONS": "error",
             "PYTEST_CURRENT_TEST": "test_module.py::test_func",
             "CI": "true",
         }
-        with patch.dict(os.environ, env), patch(
-            "calibrated_explanations.utils.deprecations._CE_DEPRECATIONS_AT_START",
-            "error",
-        ):
+        with patch.dict(os.environ, env):
             assert _should_raise() is True
 
 
@@ -97,16 +89,19 @@ class TestDeprecate:
 
     def test_should_emit_warning_when_not_set_to_raise(self):
         """deprecate() should emit a DeprecationWarning by default."""
-        with patch.dict(os.environ, {}, clear=True), pytest.warns(
-            DeprecationWarning, match="Test warning"
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            pytest.warns(DeprecationWarning, match="Test warning"),
         ):
             deprecate("Test warning", key="test_key_1")
 
     def test_should_raise_deprecation_when_set_to_error(self):
         """deprecate() should raise DeprecationWarning when CE_DEPRECATIONS='error'."""
-        with patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}), patch(
-            "calibrated_explanations.utils.deprecations._should_raise", return_value=True
-        ), pytest.raises(DeprecationWarning, match="Test error message"):
+        with (
+            patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}),
+            patch("calibrated_explanations.utils.deprecations.should_raise", return_value=True),
+            pytest.raises(DeprecationWarning, match="Test error message"),
+        ):
             deprecate("Test error message", key="test_key_error")
 
     def test_should_use_message_as_key_when_key_omitted(self):
@@ -169,8 +164,9 @@ class TestDeprecate:
     def test_should_record_key_when_raising_in_ci(self):
         """deprecate() should record key even when raising in CI (non-pytest mode)."""
         # Use environment without PYTEST_CURRENT_TEST to simulate CI runner
-        with patch.dict(os.environ, {"CI": "true", "CE_DEPRECATIONS": "error"}, clear=True), patch(
-            "calibrated_explanations.utils.deprecations._should_raise", return_value=True
+        with (
+            patch.dict(os.environ, {"CI": "true", "CE_DEPRECATIONS": "error"}, clear=True),
+            patch("calibrated_explanations.utils.deprecations.should_raise", return_value=True),
         ):
             unique_key = "ci_key_unique_raising"
             with pytest.raises(DeprecationWarning):
@@ -186,8 +182,9 @@ class TestDeprecate:
         pytest_test_id = "test_pytest_raise_unique"
         env = {"PYTEST_CURRENT_TEST": pytest_test_id, "CE_DEPRECATIONS": "error", "CI": "true"}
 
-        with patch.dict(os.environ, env), patch(
-            "calibrated_explanations.utils.deprecations._should_raise", return_value=True
+        with (
+            patch.dict(os.environ, env),
+            patch("calibrated_explanations.utils.deprecations.should_raise", return_value=True),
         ):
             unique_key = "pytest_ci_key_unique_raise"
             with pytest.raises(DeprecationWarning):

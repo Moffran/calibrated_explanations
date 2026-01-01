@@ -11,6 +11,7 @@ sprinkling parallel plumbing across sibling packages.
 from __future__ import annotations
 
 import logging
+import numbers
 import time
 import types
 import warnings
@@ -60,7 +61,7 @@ class ExplainParallelRuntime:
             # Fallback warning
             if (
                 self.executor.config.enabled
-                and self.executor._active_strategy_name == "sequential"
+                and self.executor.active_strategy_name == "sequential"
                 and self.executor.config.strategy != "sequential"
             ):
                 warnings.warn(
@@ -93,9 +94,12 @@ class ExplainParallelRuntime:
         configuration so explain strategies do not need to reach into the
         parallel package directly.
         """
-        executor = getattr(explainer, "_perf_parallel", None) or getattr(
-            explainer, "executor", None
-        )
+        executor = getattr(explainer, "parallel_executor", None)
+        if executor is None:
+            if hasattr(explainer, "__dict__") and "_perf_parallel" in explainer.__dict__:
+                executor = explainer.__dict__.get("_perf_parallel")
+            if executor is None:
+                executor = getattr(explainer, "executor", None)
         if executor is not None and not hasattr(executor, "config"):
             executor = None
 
@@ -128,9 +132,17 @@ class ExplainParallelRuntime:
             # internally choose sequential execution based on workload).
             min_instances = 1
         else:
+            min_instances_candidate = getattr(explainer, "min_instances_for_parallel", None)
+            if isinstance(min_instances_candidate, numbers.Number) and not isinstance(
+                min_instances_candidate, bool
+            ):
+                min_instances_value = int(min_instances_candidate)
+            else:
+                min_instances_value = None
+
             min_instances = max(
                 1,
-                getattr(explainer, "min_instances_for_parallel", None)
+                min_instances_value
                 or parallel_config.min_instances_for_parallel
                 or default_min_instances,
             )

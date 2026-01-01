@@ -1,6 +1,7 @@
 import sys
 import time
 import types
+import json
 
 import numpy as np
 import pytest
@@ -12,6 +13,7 @@ from calibrated_explanations.explanations import (
     CalibratedExplanations,
     FrozenCalibratedExplainer,
 )
+from calibrated_explanations.plugins.manager import PluginManager
 from tests.helpers.deprecation import warns_or_raises
 
 
@@ -51,17 +53,39 @@ class DummyCalibratedExplainer:
         self.sample_percentiles = [5.0, 95.0]
         self.is_multiclass = False
         self.discretizer = object()
-        self._discretize = lambda values: values
         self._predict = lambda data: np.ones(len(data))
         self.rule_boundaries = []
         self.learner = "dummy"
         self.difficulty_estimator = "difficulty"
+        self._plugin_manager = PluginManager(self)
 
-    def _preload_lime(self):
+    @property
+    def plugin_manager(self):
+        return self._plugin_manager
+
+    @plugin_manager.setter
+    def plugin_manager(self, value):
+        self._plugin_manager = value
+
+    def discretize(self, values):
+        # Mock discretization for testing
+        return values
+
+    def preload_lime(self, x_cal=None):
         return None, DummyLimeExplanation(self.num_features)
 
-    def _preload_shap(self):
+    def preload_shap(self, x_cal=None):
         return None, DummyShapExplanation(self.num_features)
+
+    def predict_calibrated(self, data):
+        return self._predict(data)
+
+    def infer_explanation_mode(self):
+        return "factual"
+
+    @property
+    def is_mondrian(self):
+        return False
 
     def runtime_telemetry(self):
         return {"explanations": self.num_features}
@@ -77,6 +101,8 @@ class DummyExplanation:
         self.prediction = {"predict": predict}
         self.feature_weights = {"predict": np.array(feature_weights, dtype=float)}
         self.calls = []
+        self.rules = None
+        self.conjunctive_rules = None
 
     def __str__(self):
         return f"dummy-{self.index}"
@@ -105,14 +131,14 @@ class DummyExplanation:
     def ensured_explanations(self):
         self.calls.append(("ensured", None))
 
-    def _rank_features(self, feature_weights, num_to_show=None):
+    def rank_features(self, feature_weights, num_to_show=None):
         order = list(range(len(feature_weights)))
         return order[: num_to_show if num_to_show is not None else len(order)]
 
-    def _define_conditions(self):
+    def define_conditions(self):
         return [f"rule_{i}" for i in range(len(self.feature_weights["predict"]))]
 
-    def _get_rules(self):
+    def get_rules(self):
         return {
             "rule": [f"rule_{self.index}"],
             "base_predict": [0.1],
@@ -218,7 +244,7 @@ def test_getitem_preserves_threshold_variants_and_str():
     assert isinstance(sliced_none, CalibratedExplanations)
     assert sliced_none.y_threshold is None
     none_collection.low_high_percentiles = None
-    assert not none_collection._is_one_sided()
+    assert not none_collection.is_one_sided
 
 
 def test_prediction_related_properties(calibrated_collection):
@@ -358,7 +384,7 @@ def test_finalize_variants(calibrated_collection, monkeypatch):
         DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
     )
     monkeypatch.setattr(explanations_mod, "AlternativeExplanation", FakeAlternative)
-    monkeypatch.setattr(CalibratedExplanations, "_is_alternative", lambda self: True)
+    monkeypatch.setattr(CalibratedExplanations, "is_alternative", lambda self: True)
     alt_result = new_collection.finalize({}, {}, {}, {"predict": 0.2})
     assert isinstance(alt_result, AlternativeExplanations)
 
@@ -381,12 +407,12 @@ def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
 
     called = {}
 
-    def fake_collection_to_batch(collection):
+    def fakecollection_to_batch(collection):
         called["collection"] = collection
         return {"batch": "ok"}
 
     fake_module = types.ModuleType("calibrated_explanations.plugins.builtins")
-    fake_module._collection_to_batch = fake_collection_to_batch
+    fake_module.collection_to_batch = fakecollection_to_batch
     monkeypatch.setitem(sys.modules, "calibrated_explanations.plugins.builtins", fake_module)
     batch = calibrated_collection.to_batch()
     assert batch == {"batch": "ok"}
@@ -456,8 +482,7 @@ def test_conjunction_management(calibrated_collection):
 
 
 def test_alternative_specific_filters(calibrated_collection):
-    alt = AlternativeExplanations.__new__(AlternativeExplanations)
-    alt.__dict__ = calibrated_collection.__dict__.copy()
+    alt = AlternativeExplanations.from_collection(calibrated_collection)
     alt.super_explanations(only_ensured=True, include_potential=False)
     alt.semi_explanations(only_ensured=True, include_potential=False)
     alt.counter_explanations(only_ensured=True, include_potential=False)
@@ -482,34 +507,82 @@ def test_collection_to_json_and_back(calibrated_collection):
     assert all(exp.task == "classification" for exp in exported.explanations)
 
 
+def test_collection_to_json_stream(calibrated_collection):
+    for i, exp in enumerate(calibrated_collection.explanations):
+        exp.provenance = {"steps": np.array([i, i + 1])}
+        exp.metadata = {"scores": np.array([[i]])}
+
+    # Test JSONL format
+    chunks = list(calibrated_collection.to_json_stream(format="jsonl"))
+    assert len(chunks) == len(calibrated_collection) + 2  # metadata + explanations + telemetry
+
+    # First chunk is metadata
+    meta = json.loads(chunks[0])
+    assert "collection" in meta
+    assert meta["schema_version"] == "1.0.0"
+
+    # Last chunk is telemetry
+    telemetry = json.loads(chunks[-1])
+    assert "export_telemetry" in telemetry
+    assert telemetry["export_telemetry"]["export_rows"] == len(calibrated_collection)
+    assert "elapsed_seconds" in telemetry["export_telemetry"]
+    assert "peak_memory_mb" in telemetry["export_telemetry"]
+
+    # Middle chunks are explanations
+    for chunk in chunks[1:-1]:
+        exp_data = json.loads(chunk)
+        assert "schema_version" in exp_data
+        assert exp_data["schema_version"] == "1.0.0"
+
+    # Test chunked format
+    chunks_chunked = list(calibrated_collection.to_json_stream(format="chunked", chunk_size=2))
+    assert len(chunks_chunked) >= 2  # at least metadata and one chunk
+
+    # First is metadata
+    meta_chunked = json.loads(chunks_chunked[0])
+    assert "collection" in meta_chunked
+
+    # Last is telemetry
+    telemetry_chunked = json.loads(chunks_chunked[-1])
+    assert "export_telemetry" in telemetry_chunked
+
+    # Middle chunks are JSON arrays
+    for chunk in chunks_chunked[1:-1]:
+        assert chunk.startswith("[") and chunk.endswith("]")
+        # Parse as JSON array
+        arr = json.loads(chunk)
+        assert isinstance(arr, list)
+        assert len(arr) <= 2  # chunk_size=2
+
+
 def test_legacy_payload_prefers_available_rules(calibrated_collection):
     exp = calibrated_collection.explanations[0]
-    exp._has_conjunctive_rules = True  # pylint: disable=protected-access
+    exp.has_conjunctive_rules = True  # pylint: disable=protected-access
     exp.conjunctive_rules = {"ensured": ["rule-a"]}
-    payload = calibrated_collection._legacy_payload(exp)
+    payload = calibrated_collection.legacy_payload(exp)
     assert payload["rules"] == exp.conjunctive_rules
 
-    exp._has_conjunctive_rules = False  # pylint: disable=protected-access
+    exp.has_conjunctive_rules = False  # pylint: disable=protected-access
     exp.conjunctive_rules = None
     exp.rules = {"ensured": ["rule-b"]}
-    payload_rules = calibrated_collection._legacy_payload(exp)
+    payload_rules = calibrated_collection.legacy_payload(exp)
     assert payload_rules["rules"] == exp.rules
 
     exp.rules = None
-    generated = calibrated_collection._legacy_payload(exp)
+    generated = calibrated_collection.legacy_payload(exp)
     assert "rule" in generated["rules"]
 
 
 def test_internal_helper_accessors(calibrated_collection):
-    assert calibrated_collection._get_explainer() is calibrated_collection.calibrated_explainer
-    rules = calibrated_collection._get_rules()
+    assert calibrated_collection.get_explainer() is calibrated_collection.calibrated_explainer
+    rules = calibrated_collection.get_rules()
     assert len(rules) == len(calibrated_collection)
     calibrated_collection.low_high_percentiles = None
-    assert not calibrated_collection._is_one_sided()
+    assert not calibrated_collection.is_one_sided
 
 
 def test_collection_metadata_includes_runtime(calibrated_collection):
-    metadata = calibrated_collection._collection_metadata()
+    metadata = calibrated_collection.collection_metadata()
     assert metadata["feature_names"] == calibrated_collection.feature_names
     assert metadata["class_labels"] == {"1": "class_one", "0": "class_zero"}
     assert metadata["sample_percentiles"] == [5.0, 95.0]
@@ -532,13 +605,13 @@ def test_frozen_explainer_read_only():
     assert frozen.mode == dummy.mode
     assert frozen.is_multiclass == dummy.is_multiclass
     assert type(frozen.discretizer) is type(dummy.discretizer)
-    assert np.array_equal(frozen._discretize(dummy.x_cal), dummy.x_cal)
+    assert np.array_equal(frozen.discretize(dummy.x_cal), dummy.x_cal)
     assert frozen.rule_boundaries == dummy.rule_boundaries
     assert frozen.learner == dummy.learner
     assert frozen.difficulty_estimator == dummy.difficulty_estimator
-    assert frozen._predict(dummy.x_cal).shape[0] == dummy.x_cal.shape[0]
-    assert callable(frozen._preload_lime)
-    assert callable(frozen._preload_shap)
+    assert frozen.predict(dummy.x_cal).shape[0] == dummy.x_cal.shape[0]
+    assert callable(frozen.preload_lime)
+    assert callable(frozen.preload_shap)
     with pytest.raises(AttributeError):
         frozen.some_attribute = 5
 

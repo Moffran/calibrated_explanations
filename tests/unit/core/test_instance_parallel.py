@@ -15,7 +15,7 @@ import calibrated_explanations.core.explain.parallel_instance as parallel_instan
 from calibrated_explanations.perf import ParallelConfig, ParallelExecutor
 
 
-def _make_dataset() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def make_dataset_helper() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     rng = np.random.RandomState(0)
     x_cal = rng.randn(20, 3)
     y_cal = (x_cal[:, 0] + x_cal[:, 1] > 0).astype(int)
@@ -24,13 +24,13 @@ def _make_dataset() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def test_instance_parallel_matches_sequential_output() -> None:
-    x_cal, y_cal, x_test = _make_dataset()
+    x_cal, y_cal, x_test = make_dataset_helper()
     learner = LogisticRegression(random_state=0, solver="liblinear")
     learner.fit(x_cal, y_cal)
 
     baseline = CalibratedExplainer(learner, x_cal, y_cal, mode="classification")
     baseline.set_discretizer(None)
-    baseline_result = baseline._explain(x_test, _use_plugin=False)
+    baseline_result = baseline.explain_factual(x_test, _use_plugin=False)
 
     parallel_executor = ParallelExecutor(
         ParallelConfig(
@@ -49,7 +49,7 @@ def test_instance_parallel_matches_sequential_output() -> None:
         perf_parallel=parallel_executor,
     )
     parallel.set_discretizer(None)
-    parallel_result = parallel._explain(x_test, _use_plugin=False)
+    parallel_result = parallel.explain_factual(x_test, _use_plugin=False)
 
     assert len(parallel_result) == len(baseline_result)
 
@@ -117,15 +117,26 @@ def test_uses_process_like_strategy_on_windows_by_default(
     )
     monkeypatch.setattr(parallel_instance_mod.os, "name", "nt", raising=False)
 
+    from calibrated_explanations.plugins.manager import PluginManager
+
     class DummyExplainer:
         def __init__(self) -> None:
             self.latest_explanation = None
-            self._last_explanation_mode = None
+            self.last_explanation_mode = None
+            self._plugin_manager = PluginManager(self)
 
-        def _infer_explanation_mode(self):
+        @property
+        def plugin_manager(self):
+            return self._plugin_manager
+
+        @plugin_manager.setter
+        def plugin_manager(self, value):
+            self._plugin_manager = value
+
+        def infer_explanation_mode(self):
             return "factual"
 
-        def _is_mondrian(self):
+        def is_mondrian(self):
             return False
 
         @property
@@ -140,7 +151,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
         def x_cal(self):
             return np.zeros((1, 1))
 
-        def _predict(self, x, threshold=None, low_high_percentiles=None, bins=None, classes=None):
+        def predict(self, x, threshold=None, low_high_percentiles=None, bins=None, classes=None):
             n = x.shape[0]
             return np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n, dtype=int)
 
@@ -155,7 +166,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
         def sample_percentiles(self):
             return [25, 50, 75]
 
-        def _get_calibration_summaries(self, x_cal):
+        def get_calibration_summaries(self, x_cal):
             return {}, {}
 
         @property
@@ -174,7 +185,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
                 strategy="processes",
                 instance_chunk_size=1,
             )
-            self._active_strategy_name = "processes"
+            self.active_strategy_name = "processes"
             self.map_called = False
             self.thread_strategy_called = False
 
@@ -182,10 +193,10 @@ def test_uses_process_like_strategy_on_windows_by_default(
             self.map_called = True
             return [func(item) for item in items]
 
-        def _thread_strategy(self, *args, **kwargs):  # noqa: ANN001,ARG002
+        def thread_strategy(self, *args, **kwargs):  # noqa: ANN001,ARG002
             self.thread_strategy_called = True
             raise AssertionError(
-                "_thread_strategy should not be used when process backends are enabled by default"
+                "thread_strategy should not be used when process backends are enabled by default"
             )
 
     executor = DummyExecutor()

@@ -1,0 +1,19 @@
+{
+  "n": 10000,
+  "chunk_size": 256,
+  "format": "jsonl",
+  "elapsed_seconds": 1.2059221267700195,
+  "peak_memory_mb": 0.0,
+  "telemetry": {
+    "export_telemetry": {
+      "export_rows": 10000,
+      "chunk_size": 256,
+      "mode": "classification",
+      "peak_memory_mb": 2.171,
+      "elapsed_seconds": 1.18,
+      "schema_version": "1.0.0",
+      "build_id": null,
+      "feature_flags": null
+    }
+  }
+}

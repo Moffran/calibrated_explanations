@@ -53,7 +53,7 @@ def run_benchmark(
     builder = ExplainerBuilder(learner)
     config = builder.task("classification" if mode == "classification" else "regression").perf_parallel(False).perf_feature_filter(False).build_config()
     start_time = time.time()
-    explainer = WrapCalibratedExplainer._from_config(config)
+    explainer = WrapCalibratedExplainer.from_config(config)
     explainer.calibrate(x_cal, y_cal)
     _ = explainer.explain_factual(x_test[:3])  # Warm-up run to avoid cold-start effects
 
@@ -65,7 +65,7 @@ def run_benchmark(
     config = builder.task("classification" if mode == "classification" else "regression").perf_parallel(False).perf_feature_filter(False).build_config()
     # Measure init (creation + calibration)
     init_start = time.time()
-    explainer = WrapCalibratedExplainer._from_config(config)
+    explainer = WrapCalibratedExplainer.from_config(config)
     explainer.calibrate(x_cal, y_cal)
     init_duration = time.time() - init_start
     # Measure explanation separately
@@ -85,7 +85,7 @@ def run_benchmark(
     config = builder.task("classification" if mode == "classification" else "regression").perf_parallel(False).perf_feature_filter(True, per_instance_top_k=TOP_K).build_config()
     # Measure init (creation + calibration)
     init_start = time.time()
-    explainer = WrapCalibratedExplainer._from_config(config)
+    explainer = WrapCalibratedExplainer.from_config(config)
     explainer.calibrate(x_cal, y_cal)
     init_duration = time.time() - init_start
     # Measure explanation separately

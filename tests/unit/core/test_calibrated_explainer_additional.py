@@ -7,13 +7,13 @@ method to avoid orphaned tests.
 
 **DELETION COUPLING REQUIREMENTS:**
 When removing deprecated methods from calibrated_explainer.py (e.g., _is_lime_enabled,
-_is_shap_enabled, _preload_lime, _preload_shap, explain_counterfactual), the
+_is_shap_enabled, preload_lime, preload_shap, explain_counterfactual), the
 corresponding tests in this file MUST be removed at the same time:
 
 - Removing CalibratedExplainer._is_lime_enabled → Remove any test_*lime* tests
 - Removing CalibratedExplainer._is_shap_enabled → Remove any test_*shap* tests
-- Removing CalibratedExplainer._preload_lime → Remove any test_*preload_lime* tests
-- Removing CalibratedExplainer._preload_shap → Remove any test_*preload_shap* tests
+- Removing CalibratedExplainer.preload_lime → Remove any test_*preload_lime* tests
+- Removing CalibratedExplainer.preload_shap → Remove any test_*preload_shap* tests
 - Removing CalibratedExplainer.explain_counterfactual → Remove test_explain_counterfactual* tests
 
 See calibrated_explainer.py docstrings for specific test locations.
@@ -26,11 +26,16 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from calibrated_explanations.core.prediction.validation import check_interval_runtime_metadata
 from tests.helpers.model_utils import DummyLearner
 
 
 from calibrated_explanations.core.explain.feature_task import (
-    _feature_task,
+    feature_task,
+)
+from calibrated_explanations.core.explain.helpers import (
+    compute_weight_delta,
+    merge_feature_result,
 )
 from calibrated_explanations.core.calibration_metrics import compute_calibrated_confusion_matrix
 from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
@@ -65,6 +70,8 @@ def test_oob_predictions_multiclass_categorical(monkeypatch: pytest.MonkeyPatch)
     learner = DummyLearner(
         oob_decision_function=np.array([[0.1, 0.2, 0.7], [0.6, 0.2, 0.2], [0.2, 0.5, 0.3]])
     )
+    # Ensure predict_proba returns 3 columns for multiclass OOB test
+    learner.predict_proba = lambda x: np.full((len(x), 3), 0.33)
     x_cal = np.arange(3).reshape(-1, 1)
     y_cal = pd.Categorical(["cat", "dog", "bird"])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)
@@ -97,32 +104,36 @@ def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch
         "capabilities": ("explain", "mode:factual", "task:both"),
     }
 
+    from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+
     assert (
-        explainer._check_explanation_runtime_metadata(metadata, identifier="demo", mode="factual")
+        ExplanationOrchestrator(explainer).check_metadata(
+            metadata, identifier="demo", mode="factual"
+        )
         is None
     )
 
 
-def test_instantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
+def testinstantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    assert explainer._instantiate_plugin(None) is None
+    assert explainer.instantiate_plugin(None) is None
 
     def plugin_factory() -> str:
         return "plugin"
 
     plugin_factory.plugin_meta = {"name": "factory"}  # type: ignore[attr-defined]
-    assert explainer._instantiate_plugin(plugin_factory) is plugin_factory
+    assert explainer.instantiate_plugin(plugin_factory) is plugin_factory
 
     class Prototype:
         def __init__(self) -> None:
             self.value = "fresh"
 
     proto = Prototype()
-    inst = explainer._instantiate_plugin(proto)
+    inst = explainer.instantiate_plugin(proto)
     assert isinstance(inst, Prototype)
     assert inst is not proto
 
@@ -136,9 +147,11 @@ def test_build_interval_context_uses_stored_fast_calibrators(
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     explainer.interval_learner = ["a", "b"]
-    explainer._interval_context_metadata["fast"] = {"fast_calibrators": ("cached",)}
+    explainer.plugin_manager.interval_context_metadata["fast"] = {"fast_calibrators": ("cached",)}
 
-    context = explainer._build_interval_context(fast=True, metadata={"note": "demo"})
+    context = explainer.prediction_orchestrator.build_interval_context(
+        fast=True, metadata={"note": "demo"}
+    )
 
     assert context.metadata["existing_fast_calibrators"] == ("cached",)
     assert context.metadata["note"] == "demo"
@@ -153,9 +166,9 @@ def test_build_interval_context_falls_back_to_interval_learner(
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
     explainer.interval_learner = ["only-fast"]
-    explainer._interval_context_metadata["fast"] = {}
+    explainer.plugin_manager.interval_context_metadata["fast"] = {}
 
-    context = explainer._build_interval_context(fast=True, metadata={})
+    context = explainer.prediction_orchestrator.build_interval_context(fast=True, metadata={})
 
     assert context.metadata["existing_fast_calibrators"] == ("only-fast",)
 
@@ -166,10 +179,12 @@ def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.Monk
     y_cal = np.array([0, 1])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    context = explainer._build_interval_context(fast=True, metadata={})
+    context = explainer.prediction_orchestrator.build_interval_context(fast=True, metadata={})
     calibrators = ["first", "second"]
 
-    explainer._capture_interval_calibrators(context=context, calibrator=calibrators, fast=True)
+    explainer.prediction_orchestrator.capture_interval_calibrators(
+        context=context, calibrator=calibrators, fast=True
+    )
 
     assert context.metadata["fast_calibrators"] == ("first", "second")
 
@@ -211,8 +226,8 @@ def test_ensure_interval_state_and_coerce_override(monkeypatch: pytest.MonkeyPat
     ]:
         delattr(explainer, key)
 
-    explainer._ensure_interval_runtime_state()
-    assert "default" in explainer._interval_plugin_identifiers
+    explainer.prediction_orchestrator.ensure_interval_runtime_state()
+    assert "default" in explainer.plugin_manager.interval_plugin_identifiers
 
 
 def test_interval_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -222,32 +237,37 @@ def test_interval_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression")
 
     base = {"schema_version": 1}
-    assert "metadata unavailable" in explainer._check_interval_runtime_metadata(
-        None, identifier="demo", fast=False
+    assert "metadata unavailable" in check_interval_runtime_metadata(
+        None, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     bad_version = base | {"schema_version": 2}
-    assert "unsupported interval" in explainer._check_interval_runtime_metadata(
-        bad_version, identifier="demo", fast=False
+    assert "unsupported interval" in check_interval_runtime_metadata(
+        bad_version, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     missing_modes = base | {"capabilities": ("interval:regression",)}
-    assert "missing modes" in explainer._check_interval_runtime_metadata(
-        missing_modes, identifier="demo", fast=False
+    assert "missing modes" in check_interval_runtime_metadata(
+        missing_modes, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     wrong_mode = missing_modes | {"modes": ("classification",)}
-    assert "does not support mode" in explainer._check_interval_runtime_metadata(
-        wrong_mode, identifier="demo", fast=False
+    assert "does not support mode" in check_interval_runtime_metadata(
+        wrong_mode, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     missing_caps = missing_modes | {"modes": ("regression",), "capabilities": ()}
-    assert "missing capability" in explainer._check_interval_runtime_metadata(
-        missing_caps, identifier="demo", fast=False
+    assert "missing capability" in check_interval_runtime_metadata(
+        missing_caps, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
     )
 
     ok = missing_caps | {"capabilities": ("interval:regression",), "fast_compatible": True}
-    assert explainer._check_interval_runtime_metadata(ok, identifier="demo", fast=False) is None
+    assert (
+        check_interval_runtime_metadata(
+            ok, identifier="demo", fast=False, mode=explainer.mode, bins=explainer.bins
+        )
+        is None
+    )
 
 
 def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -256,13 +276,17 @@ def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:
     y_cal = np.array([0, 1])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    explainer._interval_plugin_hints = {
+    explainer.plugin_manager.interval_plugin_hints = {
         "factual": ("one", "two"),
         "alternative": ("two", "three"),
         "fast": ("fast-one",),
     }
-    assert explainer._gather_interval_hints(fast=True) == ("fast-one",)
-    assert explainer._gather_interval_hints(fast=False) == ("one", "two", "three")
+    assert explainer.prediction_orchestrator.gather_interval_hints(fast=True) == ("fast-one",)
+    assert explainer.prediction_orchestrator.gather_interval_hints(fast=False) == (
+        "one",
+        "two",
+        "three",
+    )
 
 
 def test_feature_task_ignored_and_no_indices() -> None:
@@ -309,7 +333,7 @@ def test_feature_task_ignored_and_no_indices() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     assert result[0] == 0
     # weights should be zero since feature is ignored
     assert np.allclose(result[1], np.zeros(2))
@@ -365,7 +389,7 @@ def test_feature_task_categorical_no_values() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     # weights should be zeros and binned_result should have zero-length arrays
     assert np.allclose(result[1], np.zeros(2))
     _, binned_result, *_ = (
@@ -421,7 +445,7 @@ def test_feature_task_categorical_with_values() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     # since uncovered.size > 0 weights_predict should be non-zero for at least one instance
     weights = result[1]
     assert np.any(weights != 0.0)
@@ -488,10 +512,10 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
 
         def __init__(self, results):
             self.config = self.Config()
-            self._results = results
+            self.results_data = results
 
         def map(self, func, tasks, work_items=None):
-            return self._results
+            return self.results_data
 
     # prepare two chunk results with one explanation each
     def make_chunk(start, subset):
@@ -639,7 +663,7 @@ def test_feature_task_numeric_branch_basic() -> None:
         x_cal_column,
     )
 
-    result = _feature_task(args)
+    result = feature_task(args)
     # verify shapes and that some weights may be non-zero
     assert isinstance(result, tuple)
     weights = result[1]
@@ -653,13 +677,13 @@ def test_get_calibration_summaries_and_cache(monkeypatch: pytest.MonkeyPatch) ->
     y_cal = np.array([0, 1, 0])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    cat_counts, num_sorted = explainer._get_calibration_summaries()
+    cat_counts, num_sorted = explainer.get_calibration_summaries()
     # categorical_features is empty by default -> no categorical counts
     assert isinstance(cat_counts, dict)
     assert isinstance(num_sorted, dict)
 
     # Calling again should reuse caches (shape unchanged)
-    cat_counts2, num_sorted2 = explainer._get_calibration_summaries()
+    cat_counts2, num_sorted2 = explainer.get_calibration_summaries()
     assert cat_counts2 == cat_counts
     assert all(np.array_equal(num_sorted2[k], v) for k, v in num_sorted.items())
 
@@ -685,25 +709,17 @@ def test_compute_weight_delta_variants_and_merge_feature_result() -> None:
     # compute_weight_delta: scalar baseline vs array perturbed
     scalar_baseline = 1.0
     pert = np.array([0.2, 0.7])
-    deltas = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["compute_weight_delta"]
-    ).compute_weight_delta(scalar_baseline, pert)
+    deltas = compute_weight_delta(scalar_baseline, pert)
     assert isinstance(deltas, np.ndarray)
     assert deltas.shape == pert.shape
 
     # compute_weight_delta: broadcasting path (baseline shape mismatch)
     baseline = np.array([1.0])
     pert2 = np.array([[0.1, 0.2], [0.3, 0.4]])
-    deltas2 = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["compute_weight_delta"]
-    ).compute_weight_delta(baseline, pert2)
+    deltas2 = compute_weight_delta(baseline, pert2)
     assert deltas2.shape == pert2.shape
 
     # merge_feature_result: basic buffer update
-    mod = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["merge_feature_result"]
-    )
-    merge_feature_result = mod.merge_feature_result
 
     n_inst = 2
     n_feat = 3

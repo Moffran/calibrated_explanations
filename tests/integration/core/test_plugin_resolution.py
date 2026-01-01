@@ -71,7 +71,7 @@ class LegacySchemaFactualPlugin(LegacyFactualExplanationPlugin):
 
 
 def make_regression_explainer(regression_dataset, **overrides):
-    from tests._helpers import get_regression_model
+    from tests.helpers.model_utils import get_regression_model
 
     (
         x_prop_train,
@@ -110,8 +110,11 @@ def test_dependency_propagation_and_context_hints(binary_dataset):
         explanations = explainer.explain_factual(x_test)
         assert explanations is not None
 
-        assert explainer._interval_plugin_hints["factual"] == ("tests.interval.pref",)
-        assert explainer._explanation_plugin_identifiers["factual"] == "tests.recording.factual"
+        assert explainer.plugin_manager.interval_plugin_hints["factual"] == ("tests.interval.pref",)
+        assert (
+            explainer.plugin_manager.explanation_plugin_identifiers["factual"]
+            == "tests.recording.factual"
+        )
     finally:
         cleanup_plugin(plugin)
 
@@ -125,9 +128,12 @@ def test_plugin_override_via_env_var(binary_dataset, monkeypatch):
     try:
         explainer, x_test = make_explainer_from_dataset(binary_dataset)
         explanations = explainer.explain_factual(x_test)
-        assert explainer._explanation_plugin_identifiers["factual"] == "tests.recording.factual"
-        assert explainer._interval_plugin_hints["factual"] == ("tests.interval.pref",)
-        fallback_chain = explainer._plot_plugin_fallbacks["factual"]
+        assert (
+            explainer.plugin_manager.explanation_plugin_identifiers["factual"]
+            == "tests.recording.factual"
+        )
+        assert explainer.plugin_manager.interval_plugin_hints["factual"] == ("tests.interval.pref",)
+        fallback_chain = explainer.plugin_manager.plot_plugin_fallbacks["factual"]
         assert fallback_chain[0] == "tests.plot.pref"
         assert fallback_chain[-1] == "legacy"
         runtime_plugin = explainer._explanation_plugin_instances["factual"]
@@ -189,7 +195,7 @@ def test_alternative_classification_records_plot_fallbacks(binary_dataset):
     alternatives = explainer.explore_alternatives(x_test[:2])
     assert alternatives is not None
 
-    fallbacks = explainer._plot_plugin_fallbacks["alternative"]
+    fallbacks = explainer.plugin_manager.plot_plugin_fallbacks["alternative"]
     assert fallbacks[0] == "plot_spec.default"
     assert fallbacks[-1] == "legacy"
 
@@ -210,7 +216,7 @@ def test_alternative_regression_records_plot_fallbacks(regression_dataset):
     alternatives = explainer.explore_alternatives(x_test[:2])
     assert alternatives is not None
 
-    fallbacks = explainer._plot_plugin_fallbacks["alternative"]
+    fallbacks = explainer.plugin_manager.plot_plugin_fallbacks["alternative"]
     assert fallbacks[0] == "plot_spec.default"
     assert fallbacks[-1] == "legacy"
 

@@ -13,7 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for older interpreter
     import tomli as tomllib  # type: ignore[no-redef]
 
 
-def _parse_external_plugins_from_pyproject() -> set[str]:
+def parse_external_plugins_from_pyproject() -> set[str]:
     project_root = Path(__file__).resolve().parents[2]
     pyproject_path = project_root / "pyproject.toml"
     if not pyproject_path.is_file():  # pragma: no cover - defensive branch for odd layouts
@@ -37,10 +37,10 @@ def test_external_plugins_extra_declares_expected_dependencies() -> None:
     try:
         requirements = metadata.requires("calibrated_explanations")
     except metadata.PackageNotFoundError:
-        extras = _parse_external_plugins_from_pyproject()
+        extras = parse_external_plugins_from_pyproject()
     else:
         if requirements is None:
-            extras = _parse_external_plugins_from_pyproject()
+            extras = parse_external_plugins_from_pyproject()
         else:
             extras = {
                 requirement.split(";")[0].strip()
@@ -48,6 +48,6 @@ def test_external_plugins_extra_declares_expected_dependencies() -> None:
                 if 'extra == "external-plugins"' in requirement
             }
             if not extras:
-                extras = _parse_external_plugins_from_pyproject()
+                extras = parse_external_plugins_from_pyproject()
 
     assert extras == expected

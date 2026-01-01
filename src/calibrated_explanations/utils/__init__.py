@@ -37,6 +37,28 @@ from .perturbation import (
 )
 from .rng import set_rng_seed
 
+
+def _ensure_joblib_pool_attribute():
+    """Work around joblib ThreadingBackend expecting a missing `pool` attribute."""
+    try:
+        import joblib._parallel_backends as _joblib_backends
+    except ImportError:
+        return
+
+    if hasattr(_joblib_backends.PoolManagerMixin, "pool"):
+        return
+
+    def _get_pool(self):
+        return getattr(self, "_pool", None)
+
+    def _set_pool(self, value):
+        self._pool = value
+
+    _joblib_backends.PoolManagerMixin.pool = property(_get_pool, _set_pool)
+
+
+_ensure_joblib_pool_attribute()
+
 __all__ = [
     "assert_threshold",
     "BinaryEntropyDiscretizer",

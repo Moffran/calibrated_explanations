@@ -20,6 +20,7 @@ __all__ = [
     "NotFittedError",
     "ConvergenceError",
     "SerializationError",
+    "PlotPluginError",
     "explain_exception",
 ]
 
@@ -98,3 +99,7 @@ def explain_exception(e: Exception) -> str:
             lines.append(f"  Details: {e.details}")
         return "\n".join(lines)
     return str(e)
+
+
+class PlotPluginError(CalibratedError):
+    """Raised when a plot plugin encounters an unrecoverable error or is misconfigured."""

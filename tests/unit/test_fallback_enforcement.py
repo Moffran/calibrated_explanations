@@ -81,9 +81,10 @@ class TestFallbackEnforcement:
     def test_should_detect_fallback_warnings(self):
         """Verify that assert_no_fallbacks_triggered detects fallback warnings."""
         # Act & Assert: Emitting a fallback warning should raise AssertionError
-        with pytest.raises(
-            AssertionError, match="Unexpected fallback warnings detected"
-        ), assert_no_fallbacks_triggered():
+        with (
+            pytest.raises(AssertionError, match="Unexpected fallback warnings detected"),
+            assert_no_fallbacks_triggered(),
+        ):
             warnings.warn("Test fallback warning", UserWarning, stacklevel=2)
 
     def test_should_pass_when_no_fallback_warnings(self):

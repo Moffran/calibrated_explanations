@@ -49,12 +49,12 @@ class DummyModel(BaseEstimator):
         return self
 
 
-def _configured_wrapper(
+def configured_wrapper(
     threshold: float | None, percentiles: tuple[int, int]
 ) -> tuple[WrapCalibratedExplainer, RecordingExplainer]:
     cfg = ExplainerConfig(model=DummyModel(), threshold=threshold, low_high_percentiles=percentiles)
     cfg.model.fit(None, None)
-    wrapper = WrapCalibratedExplainer._from_config(cfg)
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
     recorder = RecordingExplainer()
     wrapper.explainer = recorder
     wrapper.fitted = True
@@ -64,7 +64,7 @@ def _configured_wrapper(
 
 
 def test_config_defaults_forwarded_when_missing() -> None:
-    wrapper, recorder = _configured_wrapper(threshold=0.42, percentiles=(10, 90))
+    wrapper, recorder = configured_wrapper(threshold=0.42, percentiles=(10, 90))
     x = np.ones((3, 2))
 
     wrapper.explain_factual(x)
@@ -78,7 +78,7 @@ def test_config_defaults_forwarded_when_missing() -> None:
 
 
 def test_user_overrides_win_and_aliases_are_dropped() -> None:
-    wrapper, recorder = _configured_wrapper(threshold=0.15, percentiles=(5, 95))
+    wrapper, recorder = configured_wrapper(threshold=0.15, percentiles=(5, 95))
     x = np.ones((2, 2))
 
     if deprecations_error_enabled():
@@ -97,7 +97,7 @@ def test_user_overrides_win_and_aliases_are_dropped() -> None:
 
 
 def test_plot_inherits_threshold_and_bins_from_config_and_mc() -> None:
-    wrapper, recorder = _configured_wrapper(threshold=0.33, percentiles=(20, 80))
+    wrapper, recorder = configured_wrapper(threshold=0.33, percentiles=(20, 80))
     wrapper.mc = lambda x: np.arange(len(x))
     x = np.zeros((4, 2))
 

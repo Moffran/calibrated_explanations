@@ -12,3 +12,16 @@ def get_env_flag(name: str) -> bool:
     """
     val = os.getenv(name, "").strip().lower()
     return val in ("1", "true", "yes", "y")
+
+
+def assert_predictions_match(y_pred1, y_pred2, msg="Predictions don't match"):
+    """Verify predictions match exactly."""
+    assert len(y_pred1) == len(y_pred2), f"{msg}: Different lengths"
+    assert all(y1 == y2 for y1, y2 in zip(y_pred1, y_pred2)), msg
+
+
+def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence bounds"):
+    """Ensure confidence bounds contain predictions."""
+    low, high = bounds
+    for i, pred in enumerate(predictions):
+        assert low[i] <= pred <= high[i], f"{msg} at index {i}"

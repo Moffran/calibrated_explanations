@@ -68,11 +68,11 @@ class ParallelBenchmark:
         # Inject executor into explainer temporarily
         # We look for where the explainer stores its executor
         original_executor = getattr(self.explainer, "executor", None)
-        original_perf_parallel = getattr(self.explainer, "_perf_parallel", None)
+        original_perf_parallel = getattr(self.explainer, "parallel_executor", None)
 
-        # Prefer setting _perf_parallel if it exists, as that's often the internal one
-        if hasattr(self.explainer, "_perf_parallel"):
-            self.explainer._perf_parallel = executor
+        # Prefer setting parallel_executor if it exists, as that's often the internal one
+        if hasattr(self.explainer, "parallel_executor"):
+            self.explainer.parallel_executor = executor
         else:
             self.explainer.executor = executor
 
@@ -102,8 +102,8 @@ class ParallelBenchmark:
             logger.error(f"Benchmark failed for {strategy}/{workers}: {e}")
         finally:
             # Restore original executor
-            if hasattr(self.explainer, "_perf_parallel"):
-                self.explainer._perf_parallel = original_perf_parallel
+            if hasattr(self.explainer, "parallel_executor"):
+                self.explainer.parallel_executor = original_perf_parallel
             else:
                 self.explainer.executor = original_executor
 

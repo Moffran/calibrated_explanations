@@ -253,6 +253,7 @@ def test_triangular_global_and_serialization_helpers__should_produce_correct_plo
         is_probabilistic=False,
     )
     # Domain invariant: triangular plot spec has correct kind
+    assert "plotspec_version" in tri, "Envelope must include 'plotspec_version'"
     assert "plot_spec" in tri, "Result must be wrapped in plot_spec"
     assert (
         tri["plot_spec"]["kind"] == "triangular"
@@ -280,6 +281,7 @@ def test_triangular_global_and_serialization_helpers__should_produce_correct_plo
         is_regularized=False,
     )
     # Domain invariant: global regression spec has correct kind
+    assert "plotspec_version" in global_spec, "Envelope must include 'plotspec_version'"
     assert (
         global_spec["plot_spec"]["kind"] == "global_regression"
     ), "Global builder must produce 'global_regression' kind"

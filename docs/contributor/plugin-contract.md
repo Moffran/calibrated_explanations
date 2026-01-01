@@ -366,9 +366,9 @@ guides.
 
 Use these decision records when designing new plugins:
 
-- [ADR-024 – legacy plot input contracts](../improvement/adrs/ADR-024-legacy-plot-input-contracts.md)
+- [ADR-024 - legacy plot input contracts](../improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   defines PlotSpec and legacy plot inputs that plugins must honour.
-- [ADR-025 – legacy plot rendering semantics](../improvement/adrs/ADR-025-legacy-plot-rendering-semantics.md)
+- [ADR-025 - legacy plot rendering semantics](../improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
   documents rendering semantics so PlotSpec builders remain interchangeable.
 - [ADR-026 – explanation plugin semantics](../improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval

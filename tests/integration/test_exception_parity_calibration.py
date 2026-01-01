@@ -72,7 +72,7 @@ def test_interval_regressor_bins_mismatch_raises_data_shape_error():
         def predict_calibration(self):
             return self.model.predict(self.x_cal)
 
-        def _get_sigma_test(self, x):
+        def get_sigma_test(self, x):
             return np.ones(len(x))
 
         def predict_function(self, x):
@@ -110,7 +110,7 @@ def test_interval_regressor_inconsistent_bins_raises_configuration_error():
         def predict_calibration(self):
             return self.model.predict(self.x_cal)
 
-        def _get_sigma_test(self, x):
+        def get_sigma_test(self, x):
             return np.ones(len(x))
 
         def predict_function(self, x):

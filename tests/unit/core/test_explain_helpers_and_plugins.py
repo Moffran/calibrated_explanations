@@ -1,6 +1,6 @@
 import numpy as np
 
-from calibrated_explanations.core.explain import _helpers as helpers
+from calibrated_explanations.core.explain import helpers as helpers
 from calibrated_explanations.core.explain import sequential, parallel_instance
 from calibrated_explanations.core.explain import feature_task as feature_task_module
 
@@ -183,9 +183,9 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
         "E",
         (),
         {
-            "_get_calibration_summaries": lambda self, x: ({}, {}),
-            "_infer_explanation_mode": lambda self: "factual",
-            "_is_mondrian": lambda self: False,
+            "get_calibration_summaries": lambda self, x: ({}, {}),
+            "infer_explanation_mode": lambda self: "factual",
+            "is_mondrian": property(lambda self: False),
             "mode": "factual",
             "_merge_feature_result": lambda self, *a, **k: helpers.merge_feature_result(*a, **k),
         },
@@ -231,9 +231,9 @@ def test_instance_parallel_plugin_empty_input(monkeypatch):
         "E",
         (),
         {
-            "_get_calibration_summaries": lambda self, x: ({}, {}),
-            "_infer_explanation_mode": lambda self: "factual",
-            "_is_mondrian": lambda self: False,
+            "get_calibration_summaries": lambda self, x: ({}, {}),
+            "infer_explanation_mode": lambda self: "factual",
+            "is_mondrian": property(lambda self: False),
             "mode": "factual",
             "_merge_feature_result": lambda self, *a, **k: helpers.merge_feature_result(*a, **k),
         },
@@ -326,9 +326,9 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
         "E",
         (),
         {
-            "_get_calibration_summaries": lambda self, x: ({}, {}),
-            "_infer_explanation_mode": lambda self: "factual",
-            "_is_mondrian": lambda self: False,
+            "get_calibration_summaries": lambda self, x: ({}, {}),
+            "infer_explanation_mode": lambda self: "factual",
+            "is_mondrian": property(lambda self: False),
             "mode": "factual",
             "_merge_feature_result": lambda self, *a, **k: helpers.merge_feature_result(*a, **k),
             "num_features": 1,
@@ -423,7 +423,7 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
         parallel_instance, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
 
-    # Mock the internal _feature_task to produce deterministic per-feature tuples
+    # Mock the internal feature_task to produce deterministic per-feature tuples
     def fake_feature_task(task):
         f = int(task[0])
         n = int(len(task[1]))
@@ -463,7 +463,7 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
             upper_update,
         )
 
-    monkeypatch.setattr(feature_task_module, "_feature_task", fake_feature_task)
+    monkeypatch.setattr(feature_task_module, "feature_task", fake_feature_task)
 
     # Setup request/config and a simple explainer stub
     req = ExplainRequest(
@@ -490,9 +490,9 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
         "E",
         (),
         {
-            "_get_calibration_summaries": lambda self, x: ({}, {}),
-            "_infer_explanation_mode": lambda self: "factual",
-            "_is_mondrian": lambda self: False,
+            "get_calibration_summaries": lambda self, x: ({}, {}),
+            "infer_explanation_mode": lambda self: "factual",
+            "is_mondrian": property(lambda self: False),
             "mode": "factual",
         },
     )()
@@ -525,7 +525,7 @@ def test_build_feature_tasks_minimal():
     explainer = type(
         "E",
         (),
-        {"_get_calibration_summaries": lambda self, x: ({}, {})},
+        {"get_calibration_summaries": lambda self, x: ({}, {})},
     )()
 
     n_instances = 2
@@ -631,7 +631,13 @@ def test_finalize_explanation_aggregation():
     explanation = SimpleExplanation()
 
     # explainer stub with inference method
-    explainer = type("E", (), {"_infer_explanation_mode": lambda self: "factual"})()
+    explainer = type(
+        "E",
+        (),
+        {
+            "infer_explanation_mode": lambda self: "factual",
+        },
+    )()
 
     out = finalize_explanation(
         explanation,
@@ -703,9 +709,9 @@ def test_finalize_explanation_attaches_per_instance_ignore():
 
     class ExplainerWithFilterState:
         def __init__(self):
-            self._feature_filter_per_instance_ignore = per_instance_ignore
+            self.feature_filter_per_instance_ignore = per_instance_ignore
 
-        def _infer_explanation_mode(self):
+        def infer_explanation_mode(self):
             return "factual"
 
     explainer = ExplainerWithFilterState()

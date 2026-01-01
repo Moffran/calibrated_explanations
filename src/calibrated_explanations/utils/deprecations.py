@@ -21,12 +21,6 @@ _EMITTED: Set[str] = set()
 # the environment during each test run.
 _EMITTED_PER_TEST: Dict[str, Set[str]] = {}
 
-# Snapshot whether `CE_DEPRECATIONS` was present when the module was imported.
-# This allows tests to set the env dynamically and have that take effect,
-# while avoiding forcing developers to unset a global env var before running
-# the test suite if they happened to have it set in their shell.
-_CE_DEPRECATIONS_AT_START = os.getenv("CE_DEPRECATIONS")
-
 
 def _should_raise() -> bool:
     raw = os.getenv("CE_DEPRECATIONS")
@@ -38,6 +32,11 @@ def _should_raise() -> bool:
     # escalate to errors when requested, so we always treat the following
     # values as enabling raise-on-deprecations.
     return raw.lower() in {"1", "true", "error", "raise"}
+
+
+def should_raise() -> bool:
+    """Backwards-compatible alias for _should_raise."""
+    return _should_raise()
 
 
 def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> None:

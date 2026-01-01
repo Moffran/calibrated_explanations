@@ -58,7 +58,7 @@ def _predict_conjunctive_legacy(
             },
         )
 
-    predict_fn = self._get_explainer()._predict  # pylint: disable=protected-access
+    predict_fn = self.get_explainer()._predict  # pylint: disable=protected-access
     # Ensure perturbed is a writable copy to avoid "read-only" errors
     perturbed = np.array(perturbed, copy=True)
 
@@ -142,7 +142,7 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
     if max_rule_size < 2:
         return self
 
-    factual = self._get_rules() if not self._has_rules else self.rules
+    factual = self.get_rules() if not self.has_rules else self.rules
 
     def _clone_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         cloned: Dict[str, Any] = {}
@@ -155,11 +155,11 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
 
     conjunctive_state = (
         _clone_payload(self.conjunctive_rules)
-        if self._has_conjunctive_rules and self.conjunctive_rules is not None
+        if self.has_conjunctive_rules and self.conjunctive_rules is not None
         else _clone_payload(factual)
     )
 
-    self._has_conjunctive_rules = False
+    self.has_conjunctive_rules = False
     self.conjunctive_rules = []
 
     threshold = None if self.y_threshold is None else self.y_threshold
@@ -190,7 +190,7 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
             conjunctive_state["weight_low"], dtype=float
         )
         top_conjunctives = list(
-            self._rank_features(
+            self.rank_features(
                 weights_array,
                 width=width_array,
                 num_to_show=min(num_rules, n_top_features),
@@ -269,7 +269,7 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
                 conjunctive_state["is_conjunctive"].append(True)
 
     self.conjunctive_rules = conjunctive_state
-    self._has_conjunctive_rules = True
+    self.has_conjunctive_rules = True
     return self
 
 
@@ -303,7 +303,7 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
     if max_rule_size < 2:
         return self
 
-    alternative = self._get_rules() if not self._has_rules else self.rules
+    alternative = self.get_rules() if not self.has_rules else self.rules
 
     def _clone_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         cloned: Dict[str, Any] = {}
@@ -316,11 +316,11 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
 
     conjunctive_state = (
         _clone_payload(self.conjunctive_rules)
-        if self._has_conjunctive_rules and self.conjunctive_rules is not None
+        if self.has_conjunctive_rules and self.conjunctive_rules is not None
         else _clone_payload(alternative)
     )
 
-    self._has_conjunctive_rules = False
+    self.has_conjunctive_rules = False
     self.conjunctive_rules = []
 
     threshold = None if self.y_threshold is None else self.y_threshold
@@ -351,7 +351,7 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
             conjunctive_state["weight_low"], dtype=float
         )
         top_conjunctives = list(
-            self._rank_features(
+            self.rank_features(
                 weights_array,
                 width=width_array,
                 num_to_show=min(num_rules, n_top_features),
@@ -433,5 +433,5 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
                 conjunctive_state["is_conjunctive"].append(True)
 
     self.conjunctive_rules = conjunctive_state
-    self._has_conjunctive_rules = True
+    self.has_conjunctive_rules = True
     return self

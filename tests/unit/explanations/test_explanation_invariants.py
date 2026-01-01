@@ -14,7 +14,7 @@ class ConcreteExplanation(CalibratedExplanation):
     def _check_preconditions(self):
         pass
 
-    def _get_rules(self):
+    def get_rules(self):
         return []
 
     def _is_lesser(self, i):

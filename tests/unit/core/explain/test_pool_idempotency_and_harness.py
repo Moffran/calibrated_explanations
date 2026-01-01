@@ -43,7 +43,7 @@ def test_initialize_pool_idempotent_and_config_contains_spec():
 def test_worker_init_callable_installs_harness():
     expl = make_explainer()
     expl.initialize_pool(n_workers=1, pool_at_init=False)
-    cfg = expl._perf_parallel.config
+    cfg = expl.parallel_executor.config
     spec = cfg.worker_init_args[0] if cfg.worker_init_args else {}
 
     # Call worker initializer directly in-process to validate it can install the harness

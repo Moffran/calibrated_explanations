@@ -40,7 +40,7 @@ class ShapPipeline:
         self.explainer = explainer
         self._shap_helper: ShapHelper | None = None
 
-    def _is_shap_enabled(self, is_enabled: bool | None = None) -> bool:
+    def is_shap_enabled(self, is_enabled: bool | None = None) -> bool:
         """Return whether SHAP export is enabled.
 
         Parameters
@@ -59,7 +59,7 @@ class ShapPipeline:
             self._shap_helper.set_enabled(bool(is_enabled))
         return self._shap_helper.is_enabled()
 
-    def _preload_shap(self, num_test: int | None = None) -> tuple[Any, Any]:
+    def preload_shap(self, num_test: int | None = None) -> tuple[Any, Any]:
         """Eagerly compute SHAP explanations to amortize repeated requests.
 
         Parameters
@@ -103,7 +103,7 @@ class ShapPipeline:
         ConfigurationError
             If SHAP is not properly configured or dependencies are missing.
         """
-        shap_explainer, _ = self._preload_shap(num_test=len(x_test))
+        shap_explainer, _ = self.preload_shap(num_test=len(x_test))
 
         if shap_explainer is None:
             raise ConfigurationError(

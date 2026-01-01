@@ -7,22 +7,26 @@ from calibrated_explanations.utils.exceptions import ConfigurationError
 @pytest.fixture
 def mock_explainer():
     explainer = MagicMock()
-    explainer._plugin_manager = MagicMock()
-    explainer._plugin_manager.coerce_plugin_override.return_value = None
+    explainer.plugin_manager = MagicMock()
+    explainer.plugin_manager.coerce_plugin_override.return_value = None
     explainer.mode = "classification"
     explainer.is_multiclass.return_value = False
     explainer.is_fast.return_value = False
-    explainer._CalibratedExplainer__initialized = True
+    explainer.initialized = True
 
     # Initialize interval state
-    explainer._interval_plugin_identifiers = {"default": None, "fast": None}
-    explainer._interval_plugin_fallbacks = {"default": ["default_plugin"], "fast": ["fast_plugin"]}
-    explainer._interval_plugin_hints = {}
-    explainer._interval_context_metadata = {"default": {}, "fast": {}}
-    explainer._telemetry_interval_sources = {"default": None, "fast": None}
-    explainer._interval_preferred_identifier = {"default": None, "fast": None}
-    explainer._interval_plugin_override = None
-    explainer._fast_interval_plugin_override = None
+    explainer.plugin_manager.interval_plugin_identifiers = {"default": None, "fast": None}
+    explainer.plugin_manager.interval_plugin_fallbacks = {
+        "default": ["default_plugin"],
+        "fast": ["fast_plugin"],
+    }
+    explainer.plugin_manager.interval_plugin_hints = {}
+    explainer.plugin_manager.interval_context_metadata = {"default": {}, "fast": {}}
+    explainer.plugin_manager.telemetry_interval_sources = {"default": None, "fast": None}
+    explainer.plugin_manager.interval_preferred_identifier = {"default": None, "fast": None}
+    explainer.plugin_manager.interval_plugin_override = None
+    explainer.plugin_manager.fast_interval_plugin_override = None
+    explainer.instantiate_plugin = MagicMock(side_effect=lambda p: p)
 
     return explainer
 
@@ -60,9 +64,9 @@ def test_resolve_interval_plugin_success(
     mock_desc.plugin = MagicMock()
     mock_find_desc.return_value = mock_desc
 
-    mock_explainer._instantiate_plugin.side_effect = lambda p: p
+    mock_explainer.instantiate_plugin.side_effect = lambda p: p
 
-    plugin, identifier = orchestrator._resolve_interval_plugin(fast=False)
+    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
 
     assert identifier == "default_plugin"
     assert plugin == mock_desc.plugin
@@ -76,7 +80,7 @@ def test_resolve_interval_plugin_denied(mock_is_denied, mock_find_desc, mock_ens
     mock_is_denied.return_value = True
 
     with pytest.raises(ConfigurationError, match="Unable to resolve interval plugin"):
-        orchestrator._resolve_interval_plugin(fast=False)
+        orchestrator.resolve_interval_plugin(fast=False)
 
 
 @patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
@@ -107,7 +111,7 @@ def test_resolve_interval_plugin_metadata_error(
     mock_find_desc.return_value = mock_desc
 
     with pytest.raises(ConfigurationError, match="Unable to resolve interval plugin"):
-        orchestrator._resolve_interval_plugin(fast=False)
+        orchestrator.resolve_interval_plugin(fast=False)
 
 
 @patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
@@ -127,9 +131,9 @@ def test_resolve_interval_plugin_override_object(
     # Setup override object
     mock_override = MagicMock()
     mock_override.plugin_meta = {"name": "override_plugin"}
-    mock_explainer._plugin_manager.coerce_plugin_override.return_value = mock_override
+    mock_explainer.plugin_manager.coerce_plugin_override.return_value = mock_override
 
-    plugin, identifier = orchestrator._resolve_interval_plugin(fast=False)
+    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
 
     assert plugin == mock_override
     assert identifier == "override_plugin"
@@ -150,9 +154,12 @@ def test_resolve_interval_plugin_override_string(
     mock_explainer,
 ):
     mock_is_denied.return_value = False
-    mock_explainer._interval_plugin_override = "override_plugin"
+    mock_explainer.plugin_manager.interval_plugin_override = "override_plugin"
     # The override plugin must be in the fallback chain to be considered
-    mock_explainer._interval_plugin_fallbacks["default"] = ["override_plugin", "default_plugin"]
+    mock_explainer.plugin_manager.interval_plugin_fallbacks["default"] = [
+        "override_plugin",
+        "default_plugin",
+    ]
 
     # Setup descriptor for override
     mock_desc = MagicMock()
@@ -171,9 +178,9 @@ def test_resolve_interval_plugin_override_string(
 
     mock_find_desc.side_effect = find_desc_side_effect
 
-    mock_explainer._instantiate_plugin.side_effect = lambda p: p
+    mock_explainer.instantiate_plugin.side_effect = lambda p: p
 
-    plugin, identifier = orchestrator._resolve_interval_plugin(fast=False)
+    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
 
     assert identifier == "override_plugin"
     assert plugin == mock_desc.plugin
@@ -184,66 +191,71 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
     mock_calibrator = MagicMock()
     mock_plugin.create.return_value = mock_calibrator
 
-    with patch.object(
-        orchestrator, "_resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch.object(orchestrator, "_build_interval_context") as mock_build_context:
+    with (
+        patch.object(
+            orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+        ),
+        patch.object(orchestrator, "build_interval_context") as mock_build_context,
+    ):
         mock_context = MagicMock()
         mock_context.metadata = {}
         mock_build_context.return_value = mock_context
 
-        calibrator, identifier = orchestrator._obtain_interval_calibrator(fast=False, metadata={})
+        calibrator, identifier = orchestrator.obtain_interval_calibrator(fast=False, metadata={})
 
         assert calibrator == mock_calibrator
         assert identifier == "test_plugin"
         mock_plugin.create.assert_called_once()
-        assert mock_explainer._interval_plugin_identifiers["default"] == "test_plugin"
+        assert mock_explainer.plugin_manager.interval_plugin_identifiers["default"] == "test_plugin"
 
 
 def test_obtain_interval_calibrator_failure(orchestrator, mock_explainer):
     mock_plugin = MagicMock()
     mock_plugin.create.side_effect = ValueError("Creation failed")
 
-    with patch.object(
-        orchestrator, "_resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
-    ), patch.object(orchestrator, "_build_interval_context"), pytest.raises(
-        ConfigurationError, match="Interval plugin execution failed"
+    with (
+        patch.object(
+            orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+        ),
+        patch.object(orchestrator, "build_interval_context"),
+        pytest.raises(ConfigurationError, match="Interval plugin execution failed"),
     ):
-        orchestrator._obtain_interval_calibrator(fast=False, metadata={})
+        orchestrator.obtain_interval_calibrator(fast=False, metadata={})
 
 
 def test_check_interval_runtime_metadata_errors(orchestrator, mock_explainer):
     # Test various metadata validation errors
 
     # Missing metadata
-    assert "unavailable" in orchestrator._check_interval_runtime_metadata(
+    assert "unavailable" in orchestrator.check_interval_runtime_metadata(
         None, identifier="test", fast=False
     )
 
     # Wrong schema version
-    assert "schema_version" in orchestrator._check_interval_runtime_metadata(
+    assert "schema_version" in orchestrator.check_interval_runtime_metadata(
         {"schema_version": 2}, identifier="test", fast=False
     )
 
     # Missing modes
-    assert "missing modes" in orchestrator._check_interval_runtime_metadata(
+    assert "missing modes" in orchestrator.check_interval_runtime_metadata(
         {"schema_version": 1}, identifier="test", fast=False
     )
 
     # Wrong mode
     mock_explainer.mode = "classification"
-    assert "does not support mode" in orchestrator._check_interval_runtime_metadata(
+    assert "does not support mode" in orchestrator.check_interval_runtime_metadata(
         {"schema_version": 1, "modes": ("regression",)}, identifier="test", fast=False
     )
 
     # Missing capability
-    assert "missing capability" in orchestrator._check_interval_runtime_metadata(
+    assert "missing capability" in orchestrator.check_interval_runtime_metadata(
         {"schema_version": 1, "modes": ("classification",), "capabilities": ()},
         identifier="test",
         fast=False,
     )
 
     # Not fast compatible
-    assert "not marked fast_compatible" in orchestrator._check_interval_runtime_metadata(
+    assert "not marked fast_compatible" in orchestrator.check_interval_runtime_metadata(
         {
             "schema_version": 1,
             "modes": ("classification",),
@@ -255,7 +267,7 @@ def test_check_interval_runtime_metadata_errors(orchestrator, mock_explainer):
 
     # Requires bins but none
     mock_explainer.bins = None
-    assert "requires bins" in orchestrator._check_interval_runtime_metadata(
+    assert "requires bins" in orchestrator.check_interval_runtime_metadata(
         {
             "schema_version": 1,
             "modes": ("classification",),

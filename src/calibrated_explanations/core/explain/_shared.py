@@ -57,7 +57,7 @@ def build_feature_tasks(
         feature_index_map = {}
 
     # Get calibration summaries for fast lookups
-    categorical_value_counts, numeric_sorted_cache = explainer._get_calibration_summaries(x_cal_np)
+    categorical_value_counts, numeric_sorted_cache = explainer.get_calibration_summaries(x_cal_np)
 
     features_to_ignore_set = set(features_to_ignore_array.tolist())
     features_to_ignore_tuple = tuple(int(f) for f in features_to_ignore_set)
@@ -208,17 +208,17 @@ def finalize_explanation(
     # Attach per-instance feature ignore information when provided by the
     # FAST-based feature filter. This is stored on the explainer by the
     # execution wrapper and propagated here to the explanation container.
-    per_instance_ignore = getattr(explainer, "_feature_filter_per_instance_ignore", None)
+    per_instance_ignore = getattr(explainer, "feature_filter_per_instance_ignore", None)
     if per_instance_ignore is not None:
         with contextlib.suppress(Exception):
             explanation.features_to_ignore_per_instance = per_instance_ignore
     # Clear transient state to avoid accidental reuse across subsequent runs.
     with contextlib.suppress(AttributeError):
-        delattr(explainer, "_feature_filter_per_instance_ignore")
+        del explainer.feature_filter_per_instance_ignore
 
     # Update explainer state
     explainer.latest_explanation = explanation
-    explainer._last_explanation_mode = explainer._infer_explanation_mode()
+    explainer.last_explanation_mode = explainer.infer_explanation_mode()
 
     # parity instrumentation removed
 

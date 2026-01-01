@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://calibrated-explanations.org/schema/plotspec/v1",
+  "title": "PlotSpec",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["plotspec_version", "plot_spec"],
+  "properties": {
+    "plotspec_version": {
+      "type": "string",
+      "description": "PlotSpec schema version (e.g. '1.0.0')."
+    },
+    "title": {
+      "type": ["string", "null"],
+      "description": "Optional plot title."
+    },
+    "figure_size": {
+      "type": ["array", "null"],
+      "items": {"type": "number"},
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Optional figure size as [width, height]."
+    },
+    "plot_spec": {
+      "type": "object",
+      "required": ["kind", "mode"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["factual_probabilistic", "factual_regression", "alternative_probabilistic", "triangular", "global_probabilistic", "global_regression"],
+          "description": "Plot kind identifier."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["classification", "regression"],
+          "description": "Prediction mode."
+        },
+        "feature_order": {
+          "type": ["array", "null"],
+          "items": {"type": "string"},
+          "description": "Optional order of features."
+        },
+        "header": {
+          "type": ["object", "null"],
+          "properties": {
+            "pred": {"type": "number"},
+            "low": {"type": "number"},
+            "high": {"type": "number"},
+            "xlim": {
+              "type": ["array", "null"],
+              "items": {"type": "number"},
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "xlabel": {"type": ["string", "null"]},
+            "ylabel": {"type": ["string", "null"]},
+            "dual": {"type": "boolean"}
+          }
+        },
+        "body": {
+          "type": ["object", "null"],
+          "properties": {
+            "bars_count": {"type": "integer"},
+            "xlabel": {"type": ["string", "null"]},
+            "ylabel": {"type": ["string", "null"]}
+          }
+        },
+        "feature_entries": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "required": ["name", "weight"],
+            "properties": {
+              "index": {"type": "integer"},
+              "name": {"type": "string"},
+              "weight": {"type": "number"},
+              "low": {"type": ["number", "null"]},
+              "high": {"type": ["number", "null"]},
+              "instance_value": {}
+            }
+          }
+        },
+        "triangular": {
+          "type": ["object", "null"],
+          "properties": {
+            "proba": {},
+            "uncertainty": {},
+            "rule_proba": {"type": "array", "items": {"type": "number"}},
+            "rule_uncertainty": {"type": "array", "items": {"type": "number"}},
+            "num_to_show": {"type": "integer"},
+            "is_probabilistic": {"type": "boolean"}
+          }
+        },
+        "global_entries": {
+          "type": ["object", "null"],
+          "properties": {
+            "proba": {"type": ["array", "null"], "items": {"type": "number"}},
+            "predict": {"type": ["array", "null"], "items": {"type": "number"}},
+            "low": {"type": "array", "items": {"type": "number"}},
+            "high": {"type": "array", "items": {"type": "number"}},
+            "uncertainty": {"type": "array", "items": {"type": "number"}},
+            "y_test": {"type": ["array", "null"], "items": {}}
+          }
+        },
+        "save_behavior": {
+          "type": ["object", "null"],
+          "properties": {
+            "path": {"type": ["string", "null"]},
+            "title": {"type": ["string", "null"]},
+            "default_exts": {
+              "type": ["array", "null"],
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "provenance": {
+          "type": ["object", "null"],
+          "properties": {
+            "data_slice_id": {"type": ["string", "null"]},
+            "rendering_seed": {"type": ["integer", "null"]}
+          }
+        }
+      }
+    }
+  }
+}

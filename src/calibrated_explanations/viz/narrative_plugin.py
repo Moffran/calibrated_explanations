@@ -59,6 +59,15 @@ class NarrativePlotPlugin:
         self.default_template = self._get_default_template_path()
         self._template_path = template_path or self.default_template
 
+    @property
+    def template_path(self) -> str:
+        """Public accessor for the active template path.
+
+        Tests should use this non-underscore property instead of inspecting
+        the private `_template_path` attribute.
+        """
+        return self._template_path
+
     @staticmethod
     def _get_default_template_path() -> str:
         """Get the default template path from the package resources.
@@ -199,11 +208,11 @@ class NarrativePlotPlugin:
             )
 
         # Detect problem type and explanation type
-        problem_type = self._detect_problem_type(explanations)
-        explanation_type = "alternative" if self._is_alternative(explanations) else "factual"
+        problem_type = self.detect_problem_type(explanations)
+        explanation_type = "alternative" if self.is_alternative(explanations) else "factual"
 
         # Get feature names
-        feature_names = self._get_feature_names(explanations)
+        feature_names = self.get_feature_names(explanations)
 
         # Initialize narrative generator
         narrator = NarrativeGenerator(template)
@@ -244,7 +253,7 @@ class NarrativePlotPlugin:
         # Format output
         return self._format_output(results, output)
 
-    def _detect_problem_type(self, explanations) -> str:
+    def detect_problem_type(self, explanations) -> str:
         """Detect the problem type from explanations metadata.
 
         Parameters
@@ -296,7 +305,7 @@ class NarrativePlotPlugin:
             # Fallback to regression if detection fails
             return "regression"
 
-    def _get_feature_names(self, explanations) -> Optional[List[str]]:
+    def get_feature_names(self, explanations) -> Optional[List[str]]:
         """Extract feature names from the explainer.
 
         Parameters
@@ -312,15 +321,18 @@ class NarrativePlotPlugin:
         try:
             explainer = explanations.calibrated_explainer
 
-            # Try to get feature names from the underlying explainer
-            if hasattr(explainer, "_explainer"):
-                underlying = explainer._explainer
-                if hasattr(underlying, "feature_names"):
-                    return underlying.feature_names
-
-            # Try direct access
+            # Prefer direct access when available
             if hasattr(explainer, "feature_names"):
-                return explainer.feature_names
+                feature_names = explainer.feature_names
+                if feature_names is not None:
+                    return feature_names
+
+            # Fall back to wrapped explainer instances when direct names are missing.
+            for attr_name in ("explainer", "_explainer"):
+                if hasattr(explainer, attr_name):
+                    underlying = getattr(explainer, attr_name)
+                    if hasattr(underlying, "feature_names"):
+                        return underlying.feature_names
 
             return None
 
@@ -330,7 +342,7 @@ class NarrativePlotPlugin:
                 raise
             return None
 
-    def _is_alternative(self, explanations) -> bool:
+    def is_alternative(self, explanations) -> bool:
         """Check if explanations are alternative explanations.
 
         Parameters
@@ -348,10 +360,10 @@ class NarrativePlotPlugin:
         if "Alternative" in class_name:
             return True
 
-        # Check if the explanations have the _is_alternative method
-        if hasattr(explanations, "_is_alternative"):
+        # Check if the explanations have the is_alternative method
+        if hasattr(explanations, "is_alternative"):
             with contextlib.suppress(AttributeError, TypeError):
-                return explanations._is_alternative()
+                return explanations.is_alternative()
             return False
 
         return False

@@ -4,8 +4,8 @@ from calibrated_explanations.viz import (
     build_regression_bars_spec,
     build_alternative_probabilistic_spec,
     build_alternative_regression_spec,
-    build_triangular_plotspec_dict,
-    build_global_plotspec_dict,
+    build_triangular_plotspec,
+    build_global_plotspec,
 )
 
 
@@ -149,7 +149,7 @@ def triangular_probabilistic():
     uncertainty = np.array([0.05])
     rule_proba = np.array([0.6])
     rule_uncertainty = np.array([0.02])
-    spec = build_triangular_plotspec_dict(
+    spec = build_triangular_plotspec(
         title="triangle",
         proba=proba,
         uncertainty=uncertainty,
@@ -168,7 +168,7 @@ def global_probabilistic_multiclass():
     y_test = np.array([1, 0])
     # uncertainty per-sample (use small values)
     uncertainty = np.full(shape=(proba.shape[0], proba.shape[1]), fill_value=0.01)
-    spec = build_global_plotspec_dict(
+    spec = build_global_plotspec(
         title="global_multi",
         proba=proba,
         predict=None,

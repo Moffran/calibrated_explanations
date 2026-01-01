@@ -79,7 +79,7 @@ def test_classification_matches_legacy():
     explainer.set_discretizer(None)
 
     subset = x_test[:10]
-    modern = explainer._explain(subset, _use_plugin=False)
+    modern = explainer.explain_factual(subset, _use_plugin=False)
     legacy = legacy_explain(explainer, subset)
 
     assert_collection_equal(modern, legacy)
@@ -109,7 +109,7 @@ def test_regression_matches_legacy():
     explainer.set_discretizer(None)
 
     subset = x_test[:10]
-    modern = explainer._explain(subset, _use_plugin=False)
+    modern = explainer.explain_factual(subset, _use_plugin=False)
     legacy = legacy_explain(explainer, subset)
 
     assert_collection_equal(modern, legacy)

@@ -39,7 +39,7 @@ class SimpleExplainerPlugin(LegacyFactualExplanationPlugin):
 
 
 @pytest.fixture(autouse=True)
-def _registry_fixture():
+def registry_fixture():
     """Clear registry before and after each test."""
     clear_explanation_plugins()
     ensure_builtin_plugins()

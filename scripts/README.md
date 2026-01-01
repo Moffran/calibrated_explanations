@@ -2,7 +2,7 @@
 
 - `micro_bench_perf.py`: quick local micro-benchmark for import time, lightweight map throughput, and explanation timings (`explain_factual` / `explore_alternatives`). Supports benchmarking either the current implementation or the legacy explain path via `--explain-backend`.
 - `check_perf_micro.py`: compares two micro-benchmark JSON outputs against `tests/benchmarks/perf_thresholds.json` and fails on import-time and explanation regressions.
-- `check_docstring_coverage.py`: reports module/class/function/method docstring coverage so ADR-018 adoption can be monitored. Use `--fail-under` locally when experimenting with stricter thresholds.
+- `check_docstring_coverage.py`: reports module/class/function/method docstring coverage so Standard-018 adoption can be monitored. Use `--fail-under` locally when experimenting with stricter thresholds.
 
 Example (manual):
 

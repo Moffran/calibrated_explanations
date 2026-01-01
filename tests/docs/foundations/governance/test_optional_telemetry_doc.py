@@ -7,7 +7,7 @@ import logging
 import pytest
 
 
-def _build_classification_context() -> SimpleNamespace:
+def build_classification_context() -> SimpleNamespace:
     from sklearn.datasets import load_breast_cancer
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
@@ -32,7 +32,7 @@ def _build_classification_context() -> SimpleNamespace:
 
 
 def test_optional_telemetry_snippets(enable_fallbacks, tmp_path):
-    context = _build_classification_context()
+    context = build_classification_context()
     explainer = context.explainer
     x_test = context.X_test
 

@@ -1,39 +1,19 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2025-12-23):** Last edited 2025-12-23 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
-# Code Documentation Uplift (ADR-018)
+# Code Documentation Uplift (Standard-018)
 
-This consolidated roadmap merges the ADR-018 docstring strategy with the `pydocstyle` execution guide so contributors have a single reference for planning and day-to-day execution.
+This consolidated roadmap merges the Standard-018 docstring strategy with the `pydocstyle` execution guide so contributors have a single reference for planning and day-to-day execution.
 
 ## Goal
-Achieve consistent, numpydoc-compliant code documentation across the `calibrated_explanations` codebase with measurable coverage thresholds and automated enforcement. Each phase below maps to the release train so stakeholders can see when gates turn on: Phase 0 in v0.8.0, Phase 1 in v0.9.1, Phase 2 in v0.10.0, and Phase 3 carried forward as the v1.0.0 sustainability bar. The uplift depends on the Documentation Overhaul blueprint to keep terminology and examples synchronized across prose and code (apply the same language for calibrated explanations, probabilistic regression, and optional telemetry callouts). Terminology follows hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): phases are numbered plan segments, and release milestones remain the versioned gates.
+Achieve consistent, numpydoc-compliant code documentation across the `calibrated_explanations` codebase with measurable coverage thresholds and automated enforcement. The uplift has progressed to sustainment mode, with current baseline at 94.45% overall coverage and blocking enforcement at ≥94% on mainline CI. Notebook linting is already enforced via `nbqa ruff` in CI. The focus shifts to targeted cleanup of remaining gaps and regression prevention rather than broad phased remediation.
 
-## Phase 0 – Preparation (Week 1)
-1. Ratify ADR-018 and circulate a short style primer in `CONTRIBUTING.md` and the README.
-2. Land shared tooling:
-   - `pydocstyle` configuration targeting numpydoc rules (`convention = numpy`).
-   - Python script that reports docstring coverage per module (baseline script already exists).
-3. Define success metrics: ≥90% public callable coverage and zero undocumented modules by the end of Phase 2.
+## Sustainment Actions
 
-## Phase 1 – Baseline Remediation (Weeks 2-4)
-1. Inventory undocumented callables per subpackage using the coverage script.
-2. Prioritize user-facing areas (`explanations`, `utils`, `plugins`, `api`) for immediate cleanup.
-3. Create parallel issues/checklists for each subpackage with assignees and review deadlines.
-4. Add module summaries and upgrade docstrings to numpydoc format; capture tricky cases in a shared FAQ. Reinforce calibrated explanations/probabilistic regression as the primary narrative in examples and parameter descriptions, pair alternative explanations with triangular plot context, and mark telemetry/performance hooks (including fast explanation plugins) as optional references only.
-5. Track progress in a dashboard (GitHub project or spreadsheet) updated weekly.
-6. Target success metrics per batch before moving to Phase 2: Batch A–C reach ≥90% public callable coverage, Batch D reaches ≥88% (acknowledging plugin sprawl), Batch E ≥85% with an explicit waiver expiry by the next release, and Batch F aligns to the package-wide ≥90% goal.
-
-## Phase 2 – Tooling Enforcement
-1. Enable `pydocstyle` in CI as non-blocking (warning-only) to surface regressions.
-2. Iterate on false positives; extend ignores only when accompanied by inline justification.
-3. Once ≥85% coverage achieved, flip the CI check to blocking for touched files.
-4. Capture and commit the initial failure report before blocking enforcement so future regressions reference a known baseline.
-5. Release cadence alignment: v0.10.0 branch cut flips the blocking check for touched files; v0.10.1 raises the default to package-wide ≥90% and makes waivers expire within one iteration unless renewed with a documented follow-up issue.
-
-## Phase 3 – Continuous Improvement (Ongoing)
-1. Add a documentation coverage badge to README fed by scheduled job.
-2. Extend linting to notebooks/examples via `nbdoclint` or custom hooks.
-3. Review documentation debt quarterly; treat drops below 90% as release blockers.
-4. Encourage contributors to add usage examples that highlight calibrated explanations and probabilistic regression outcomes; integrate with existing documentation CI (ADR-012) for end-to-end validation.
+1. **Monitor coverage and enforce threshold:** Use `scripts/check_docstring_coverage.py` to ensure overall coverage remains ≥94% (current baseline: 94.45%). CI blocks on regressions below this threshold.
+2. **Target remaining docstring gaps:** Run `pydocstyle` on affected packages to identify missing class/method docstrings. Prioritize fixes in modules with gaps (e.g., classes at 98.53%, methods at 92.24%).
+3. **Refresh baseline reports:** Update and re-commit coverage snapshots and pydocstyle baselines in `reports/` after gap closures to maintain accurate known baselines.
+4. **Notebook linting:** Already enforced via `nbqa ruff` in CI; maintain as part of standard linting cadence.
+5. **Test documentation scope:** Confirmed out of scope per `pyproject.toml` `match-dir` exclusion; CI runs `pydocstyle src tests` but config excludes tests, so tests are not enforced. If inclusion desired, update config and plan accordingly.
 
 ## `pydocstyle --convention=numpy` execution guide
 
@@ -69,12 +49,7 @@ For each batch:
 3. Add regression tests or doctests where docstrings reveal missing behavioral details.
 
 #### 2.2 Test Suite (tests/)
-| Batch | Scope | Suggested Strategy |
-|-------|-------|--------------------|
-| G | Top-level fixtures (`_fixtures.py`, `_helpers.py`, `conftest.py`) | Small set of helpers used by many tests; clean documentation here clarifies test utilities. |
-| H | `tests/plugins/` | Aligns with production plugins; can be handled in parallel once the related source files are compliant. |
-| I | `tests/integration/` | Many short modules—tackle in groups of 5–6 files to keep reviews manageable. |
-| J | `tests/unit/` | Highest file count (36). Address per logical sub-module (e.g., group by feature under test). |
+Test documentation is out of scope per `pyproject.toml` `match-dir` exclusion, despite CI running `pydocstyle src tests`. No enforcement or batches planned for tests.
 
 ### 3. Apply Numpy docstring patterns
 While editing, consistently enforce the following conventions:
@@ -85,8 +60,9 @@ While editing, consistently enforce the following conventions:
 - When documenting generators or context managers, prefer `Yields` or `Receives` sections.
 
 ### 4. Automate enforcement
-1. Add a `pydocstyle` invocation to CI (e.g., in `tox.ini`, `noxfile.py`, or the GitHub Actions workflow) once violations in the monitored paths are eliminated.
-2. Update `CONTRIBUTING.md` to instruct contributors to run `pydocstyle --convention=numpy src tests` before submitting pull requests.
+1. `pydocstyle` is invoked in CI on `src tests` (though config excludes tests, so effectively only src).
+2. Docstring coverage enforced at ≥94% via `scripts/check_docstring_coverage.py --fail-under 94.0`.
+3. Update `CONTRIBUTING.md` to instruct contributors to run `pydocstyle --convention=numpy src` and check coverage before submitting pull requests.
 
 ### 5. Track progress
 - Keep the baseline report updated after each merged batch.

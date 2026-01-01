@@ -9,9 +9,9 @@ Last updated: 2025-10-28
 ## Status
 - **State:** Draft (audience-first restructure in progress)
 - **Owner:** Documentation working group
-- **Related ADRs:** ADR-027 (Documentation Audience Standard)
+- **Related Standards:** STD-027 (Documentation Audience Standard)
 
-### ADR-027 status snapshot
+### STD-027 status snapshot
 
 | Item | Status | Notes |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ Establish a single, audience-led plan for rebuilding the documentation set so pr
 - Update cross-links so external plugin bundles, governance policies, and research proofs reinforce the calibrated explanations contract instead of pulling readers into optional tooling prematurely.
 
 ## Implementation checklist (mapped to release milestones)
-1. Update ADR-022 to mark it superseded by ADR-027 and adopt the new documentation standard. (done; completed in v0.8.0)
+1. Update ADR-022 to mark it superseded by STD-027 and adopt the new documentation standard. (done; completed in v0.8.0)
 2. Reorganize the Sphinx toctree so Getting Started appears first and the three audience hubs headline the navigation. (v0.8.0 gate)
 3. Create advanced audience pages and refresh practitioner/researcher/contributor landing copy per the mandates above. (v0.9.1 sustainment)
 4. Consolidate research content under `docs/researcher/` and clean up orphaned references. (v0.9.1)

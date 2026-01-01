@@ -52,7 +52,7 @@ def test_fast_calibration_helper_delegates(monkeypatch):
         captured_calls.append({"fast": fast, "metadata": dict(metadata)})
         return ["fast-cal-1", "fast-cal-2"], "tests.interval.fake"
 
-    monkeypatch.setattr(CalibratedExplainer, "_obtain_interval_calibrator", fake_obtain)
+    monkeypatch.setattr(CalibratedExplainer, "obtain_interval_calibrator", fake_obtain)
 
     explainer = CalibratedExplainer(
         clf,
@@ -80,7 +80,15 @@ class BaseStubExplainer:
 
     def __init__(self, *, mode: str):
         self.mode = mode
-        self._CalibratedExplainer__initialized = False  # match real attribute name
+        self._initialized = False  # match real attribute name
+
+    @property
+    def initialized(self):
+        return self._initialized
+
+    @initialized.setter
+    def initialized(self, value):
+        self._initialized = value
 
     def is_fast(self) -> bool:  # pragma: no cover - concrete subclasses override
         raise NotImplementedError
@@ -141,7 +149,7 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
     )
 
     assert explainer.interval_learner.calls == [((1.0, 2.0, 3.0), (0.1, 0.2, 0.3), {"count": 5})]
-    assert explainer._CalibratedExplainer__initialized is True
+    assert explainer.initialized is True
 
 
 def test_calibration_helpers_deprecation_and_delegate(monkeypatch):

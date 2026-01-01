@@ -2,7 +2,7 @@
 
 # ADR-016: PlotSpec separation and legacy parity
 
-Status: Accepted (updated 2025-10-02)
+Status: Accepted (scoped)
 
 ## Context
 The 0.5.x plotting stack mixed multiple responsibilities inside a handful of matplotlib-heavy functions. As part of the visualization refactor we introduced `PlotSpec` builders and a renderer adapter so that plots can be expressed in a backend-agnostic format. Subsequent revisions of this ADR attempted to document every primitive, colour, and axis detail. That level of prescription has proven counter-productive: the implementation has drifted, tests cannot meet the exhaustive requirements, and the document no longer reflects the hybrid reality where the legacy renderer is still the default code path.
@@ -10,29 +10,21 @@ The 0.5.x plotting stack mixed multiple responsibilities inside a handful of mat
 This update narrows the decision to the essential invariants needed for interoperability and clarifies how legacy rendering coexists with the PlotSpec pathway.
 
 ## Decision
-1. **General Standard for Adapters**
-   - This ADR serves as the authoritative standard for all visualization adapters (e.g., Plotly, HTML, etc.). Adapters must adhere to the semantic requirements defined here but are not bound by pixel-perfect parity with the legacy renderer unless explicitly stated.
+1. **Semantic contract only**
+   - This ADR defines the minimum semantic requirements for PlotSpec payloads so adapters can interpret them consistently.
+   - Exact reproduction of historical colours, layout quirks, and pixel-level rendering is **out of scope** for PlotSpec and remains the responsibility of the legacy renderer.
 
-2. **Plot kinds and metadata**
-   - `PlotSpec.kind` identifies the semantic plot type: `factual_probabilistic`, `alternative_probabilistic`, `factual_regression`, `alternative_regression`, `triangular`, `global_probabilistic`, `global_regression`. Additional kinds may be introduced as needed.
-   - Each spec MUST include `mode` (`"classification" | "regression"`), optional `title`, and `feature_order` (list of indices used for the plot) when features are displayed.
-   - Header/body layouts are optional but when present MUST use the dataclasses defined in `viz/plotspec.py` (`IntervalHeaderSpec`, `BarHPanelSpec`, `BarItem`).
-   - Saving hints are represented via `save_behavior` with keys `{path, title, default_exts}` when callers request filesystem output.
+2. **Plot kinds and metadata (minimal)**
+   - `PlotSpec.kind` identifies the semantic plot type (e.g., probabilistic, regression, triangular, global). Additional kinds may be introduced as needed.
+   - Each spec MUST include `mode` (`"classification" | "regression"`), and SHOULD include `title` and `feature_order` when features are displayed.
+   - Header/body layouts are optional and should use the dataclasses defined in `viz/plotspec.py` when present.
 
-2. **Legacy parity through plugins**
-   - Exact reproduction of historical colours, layout quirks, and interval heuristics is delegated to the `legacy` plot plugin (see ADR-014). PlotSpec builders should focus on semantic correctness, not byte-for-byte parity.
-   - Adapters MAY expose a `legacy_mode` flag that toggles parity behaviour when required for tests, but ADR-016 does not mandate specific hex values or primitive identifiers.
+3. **Validation and testing hooks**
+   - `viz/plotspec.validate_plotspec` performs structural checks (presence of kind/mode, valid dataclass instances, numeric intervals). Builders should call this helper before handing control to adapters.
+   - Tests should assert semantic correctness (ordering, interval coverage, required fields) rather than pixel-perfect colour matching.
 
-3. **Non-panel plots**
-   - Until a richer schema is defined, triangular and global plots MAY return plain dict payloads that follow the structure produced by `viz.builders.build_triangular_plotspec_dict` and `build_global_plotspec_dict`. Adapters are responsible for interpreting these dictionaries.
-   - Future schema enhancements should be versioned and documented alongside builder updates; this ADR intentionally leaves room for evolution.
-
-4. **Validation and testing hooks**
-   - `viz/plotspec.validate_plotspec` performs structural checks (presence of kind/mode, valid dataclass instances, numeric intervals). Builders must call this helper before handing control to adapters.
-   - The matplotlib adapter continues to support `export_drawn_primitives=True`, returning a simplified record of solids/overlays/header elements. Tests may rely on this trace but ADR-016 does not standardise the format beyond requiring that it be JSON-serialisable.
-
-5. **Hybrid execution**
-   - The package supports two execution paths: the legacy renderer (default) and the PlotSpec adapter path (opt-in). Both paths must remain functional. PlotSpec builders should not assume they are the only rendering mechanism.
+4. **Hybrid execution**
+   - The package supports two execution paths: the legacy renderer (default) and the PlotSpec adapter path (opt-in).
    - When the PlotSpec path becomes the default, this ADR should be revisited to tighten requirements and, if necessary, deprecate the legacy plugin.
 
 ## Consequences

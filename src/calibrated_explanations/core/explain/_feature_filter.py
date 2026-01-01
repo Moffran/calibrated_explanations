@@ -85,7 +85,7 @@ class FeatureFilterResult:
     per_instance_ignore: List[np.ndarray]
 
 
-def _safe_len_feature_weights(explanations: CalibratedExplanations) -> int:
+def safe_len_feature_weights(explanations: CalibratedExplanations) -> int:
     """Return the number of features inferred from the first explanation."""
     if not explanations.explanations:
         return 0
@@ -142,7 +142,7 @@ def compute_filtered_features_to_ignore(
             per_instance_ignore=per_instance,
         )
 
-    inferred_num_features = _safe_len_feature_weights(fast_explanations)
+    inferred_num_features = safe_len_feature_weights(fast_explanations)
     num_features = inferred_num_features if num_features is None else int(num_features)
     if num_features <= 0 or inferred_num_features == 0:
         per_instance = [base_ignore_arr.copy() for _ in range(num_instances)]

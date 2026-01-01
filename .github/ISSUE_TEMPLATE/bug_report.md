@@ -7,6 +7,7 @@ assignees: ''
 
 ---
 
+> **Security note:** Please do not file public issues for security\n+> vulnerabilities. Report them privately via `SECURITY.md`.\n+
 **Describe the bug**
 A clear and concise description of what the bug is.
 

@@ -184,9 +184,9 @@ These examples of WrapCalibratedExplainer shows what may only be extended, not r
 - **Release alignment:**
   - v0.9.1: add CI smoke notebooks that replay the README/quickstart flows and fail on API/keyword regressions; wire into ADR-020 status tracking.
   - v0.10.0: introduce automated API diff checks against the captured baseline signatures for `WrapCalibratedExplainer`, `CalibratedExplainer`, and explanation collections; block release if deltas are not annotated with waivers that expire in one iteration.
-  - v0.10.1: convert the notebook/CLI checks into required release gates and ensure legacy alias coverage is either tested or explicitly waived with expiry dates.
+  - v0.10.1: convert the notebook/CLI checks into required release gates and ensure legacy alias coverage is either tested or explicitly waived with expiry versions.
 - **Guardrails and dependencies:**
-  - Tie verification steps to ADR-017 naming waves so module renames run alongside contract tests rather than diverging.
+  - Tie verification steps to Standard-017 naming waves so module renames run alongside contract tests rather than diverging.
   - Keep the enforcement roadmap synced with ADR-020 milestones so legacy API enforcement visibility appears in the release plan tables.
 - **Verification steps:**
   - Notebook smoke tests (classification, regression, probabilistic regression) run with `--nbval` or equivalent to confirm tutorial calls remain valid.

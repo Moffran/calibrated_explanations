@@ -7,6 +7,7 @@
 # -- Path setup --------------------------------------------------------------
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -85,6 +86,10 @@ exclude_patterns = [
     "improvement/archived",
     "improvement/adr_mending",
 ]
+
+# Skip notebooks that require pandoc when it is unavailable (local CI parity).
+if shutil.which("pandoc") is None:
+    exclude_patterns.append("improvement/anti_pattern_gap_analysis.ipynb")
 
 # Skip specific GitHub targets that consistently hit rate limits during local linkcheck runs.
 linkcheck_ignore = [

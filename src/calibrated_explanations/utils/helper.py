@@ -48,7 +48,8 @@ def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:  # 
         os.mkdir(f"plots/{path}")
 
 
-# copied from shap.utils._general.safe_isinstance
+# Adapted from shap.utils._general.safe_isinstance (MIT License).
+# See THIRD_PARTY_NOTICES.md for full license text and attribution.
 def safe_isinstance(obj, class_path_str):
     """Acts as a safe version of isinstance without having to explicitly import packages which may not exist in the users environment.
 
@@ -137,7 +138,8 @@ def safe_import(module_name, class_name=None):
         ) from exc_info
 
 
-# copied from sklearn.utils.validation.check_is_fitted
+# Adapted from sklearn.utils.validation.check_is_fitted (BSD 3-Clause License).
+# See THIRD_PARTY_NOTICES.md for full license text and attribution.
 # pylint: disable=inconsistent-return-statements
 def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     """Perform is_fitted validation for estimator.
@@ -330,10 +332,10 @@ def transform_to_numeric(df, target, mappings=None):
 
             if col != target:
                 categorical_features.append(c)
-                categorical_labels[c] = dict(zip(range(len(uniques)), uniques))
+                categorical_labels[c] = dict(zip(range(len(uniques)), uniques, strict=False))
             else:
-                target_labels = dict(zip(range(len(uniques)), uniques))
-            mapping = dict(zip(uniques, range(len(uniques))))
+                target_labels = dict(zip(range(len(uniques)), uniques, strict=False))
+            mapping = dict(zip(uniques, range(len(uniques)), strict=False))
             if len(mapping) > 5:
                 counts = df[col].value_counts().sort_values(ascending=False)
                 idx = 0

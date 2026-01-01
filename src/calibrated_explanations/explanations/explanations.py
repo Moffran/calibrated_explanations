@@ -4,7 +4,10 @@
 
 from __future__ import annotations
 
+import json
+import logging
 import sys
+import tracemalloc
 import warnings
 from collections.abc import Sequence as ABCSequence
 from copy import copy, deepcopy
@@ -19,6 +22,8 @@ from ..utils.exceptions import ValidationError
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -153,7 +158,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 if isinstance(key[0], (bool, np.bool_)):
                     # Handle boolean indexing
                     new_.explanations = [
-                        exp for exp, include in zip(self.explanations, key) if include
+                        exp for exp, include in zip(self.explanations, key, strict=False) if include
                     ]
                 elif isinstance(key[0], int):
                     # Handle integer list indexing
@@ -209,9 +214,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def to_batch(self):
         """Serialise the collection into an :class:`ExplanationBatch`."""
-        from ..plugins.builtins import _collection_to_batch  # lazy import
+        from ..plugins.builtins import collection_to_batch  # lazy import
 
-        return _collection_to_batch(self)
+        return collection_to_batch(self)
 
     @classmethod
     def from_batch(cls, batch):
@@ -273,6 +278,113 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             payload.setdefault("schema_version", "1.0.0")
         return payload
 
+    def to_json_stream(self, *, chunk_size: int = 256, format: str = "jsonl"):
+        """Stream the collection as JSON.
+
+        This generator yields either a JSON Lines stream or chunked JSON arrays.
+
+        Parameters
+        ----------
+        chunk_size:
+            Number of explanations per yielded chunk (for "chunked") or
+            used only for grouping when `format=="chunked"`.
+        format:
+            Either ``"jsonl"`` (default) for JSON Lines or ``"chunked"`` for
+            chunked JSON arrays.
+
+        Yields
+        ------
+        str
+            UTF-8 JSON fragments (one per yield). The first yielded fragment is
+            a small metadata object describing the collection and the export
+            telemetry.
+        """
+        from ..serialization import to_json as _explanation_to_json
+
+        if format not in {"jsonl", "chunked"}:
+            raise ValidationError("Unsupported stream format", details={"format": format})
+
+        start = time()
+        tracemalloc.start()
+
+        # Prepare collection metadata snapshot (without export telemetry yet)
+        metadata = dict(self._collection_metadata())
+
+        # Yield metadata first as a standalone JSON object line
+        # Telemetry placeholders updated after the stream completes.
+        meta_fragment = {"collection": metadata, "schema_version": "1.0.0"}
+        yield json.dumps(meta_fragment, default=_jsonify)
+
+        # Stream explanations
+        chunk: List[str] = []
+        n = 0
+        for exp in self.explanations:
+            domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
+            provenance = getattr(exp, "provenance", None)
+            metadata_exp = getattr(exp, "metadata", None)
+            if provenance is not None:
+                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+            if metadata_exp is not None:
+                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata_exp))
+            item = _explanation_to_json(domain, include_version=True)
+            line = json.dumps(item, default=_jsonify)
+            n += 1
+            if format == "jsonl":
+                yield line
+            else:  # chunked
+                chunk.append(line)
+                if len(chunk) >= chunk_size:
+                    # yield a JSON array for this chunk
+                    yield "[" + ",".join(chunk) + "]"
+                    chunk = []
+
+        # flush remaining chunk
+        if format == "chunked" and chunk:
+            yield "[" + ",".join(chunk) + "]"
+
+        # stop tracemalloc and capture peak memory
+        peak = tracemalloc.get_traced_memory()[1]
+        tracemalloc.stop()
+        elapsed = time() - start
+
+        # Build telemetry
+        telemetry = {
+            "export_rows": n,
+            "chunk_size": chunk_size,
+            "mode": getattr(self.calibrated_explainer, "mode", None),
+            "peak_memory_mb": round(float(peak) / (1024 * 1024), 3),
+            "elapsed_seconds": round(float(elapsed), 3),
+            "schema_version": "1.0.0",
+            # feature_branch replaced by explicit fields
+            "build_id": None,
+            "feature_flags": None,
+        }
+
+        # Attach minimal telemetry to collection metadata and attempt to store
+        # a more complete record on the underlying explainer if available.
+        try:
+            # minimal metadata
+            metadata.setdefault("export_telemetry", {})
+            metadata["export_telemetry"].update(telemetry)
+            # attempt to update underlying explainer last telemetry
+            underlying = getattr(self.calibrated_explainer, "_explainer", None)
+            if underlying is not None:
+                try:
+                    last = getattr(underlying, "_last_telemetry", None) or {}
+                    last.update({"export": telemetry})
+                    underlying._last_telemetry = last
+                except Exception:  # adr002_allow
+                    # best-effort only: log for observability per fallback policy
+                    _LOGGER.info(
+                        "failed to attach export telemetry to underlying explainer",
+                        exc_info=True,
+                    )
+        except Exception:  # adr002_allow
+            _LOGGER.info("failed to attach export telemetry to collection", exc_info=True)
+
+        # final telemetry fragment
+        yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
+
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
         """Materialise domain explanations from a :meth:`to_json` payload."""
@@ -296,15 +408,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Build a legacy-shaped payload from an explanation instance."""
         rules_blob = None
         # prefer conjunctive rules when present and populated
-        if getattr(exp, "_has_conjunctive_rules", False):
+        if getattr(exp, "has_conjunctive_rules", False):
             rules_blob = getattr(exp, "conjunctive_rules", None)
         if not rules_blob:
             rules_blob = getattr(exp, "rules", None)
-        if not rules_blob and hasattr(exp, "_get_rules"):
+        if not rules_blob and hasattr(exp, "get_rules"):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 try:
-                    rules_blob = exp._get_rules()  # type: ignore[attr-defined]
+                    rules_blob = exp.get_rules()  # type: ignore[attr-defined]
                 except:  # noqa: E722
                     if not isinstance(sys.exc_info()[1], Exception):
                         raise
@@ -377,6 +489,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         }
         return {k: v for k, v in metadata.items() if v is not None}
 
+    # Public wrappers for formerly-private helpers (temporary, Category A remediation)
+    def collection_metadata(self) -> Mapping[str, Any]:
+        """Public wrapper around internal collection metadata helper."""
+        return self._collection_metadata()
+
+    def legacy_payload(self, exp) -> Mapping[str, Any]:
+        """Public wrapper to obtain the legacy payload for an explanation."""
+        return self._legacy_payload(exp)
+
     @property
     def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
         """Return the prediction intervals for each explanation.
@@ -406,7 +527,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if self._feature_names_cache is None:
             # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
             try:
-                self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # noqa: SLF001
+                self._feature_names_cache = self.calibrated_explainer.feature_names
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
@@ -418,7 +539,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return class labels for classification explanations if available."""
         if self._class_labels_cache is None:
             try:
-                labels = getattr(self.calibrated_explainer._explainer, "class_labels", None)  # noqa: SLF001
+                labels = getattr(self.calibrated_explainer, "class_labels", None)
                 if labels is not None and isinstance(labels, dict):
                     # normalize to list ordered by class index if dict provided
                     # assume keys are numeric class indices
@@ -510,28 +631,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-    def _is_probabilistic_regression(self) -> bool:
-        """Check if the explanations use probabilistic regression (thresholded).
-
-        .. deprecated:: 0.10.0
-            Use :attr:`is_probabilistic_regression` instead.
-        """
-        return self.is_probabilistic_regression
-
     @property
     def is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""
         if self.low_high_percentiles is None:
             return False
         return np.isinf(self.get_low_percentile()) or np.isinf(self.get_high_percentile())
-
-    def _is_one_sided(self) -> bool:
-        """Check if the explanations are one-sided.
-
-        .. deprecated:: 0.10.0
-            Use :attr:`is_one_sided` instead.
-        """
-        return self.is_one_sided
 
     def get_confidence(self) -> float:
         """Return the confidence level of the explanations.
@@ -616,7 +721,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         for i, instance in enumerate(self.x_test):
             instance_bin = self.bins[i] if self.bins is not None else None
-            if self._is_alternative():
+            if self.is_alternative():
                 explanation: Union[FactualExplanation, AlternativeExplanation, FastExplanation]
                 explanation = AlternativeExplanation(
                     self,
@@ -646,7 +751,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
-        if self._is_alternative():
+        if self.is_alternative():
             return self.__convert_to_alternative_explanations()
         return self
 
@@ -702,15 +807,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
 
-    def _get_explainer(self):
+    def get_explainer(self):
         """Return the underlying :class:`~calibrated_explanations.core.calibrated_explainer.CalibratedExplainer` instance."""
         return self.calibrated_explainer
 
-    def _get_rules(self):
+    def get_rules(self):
         """Return the materialised rule payload for each explanation in the collection."""
         return [
             # pylint: disable=protected-access
-            explanation._get_rules()
+            explanation.get_rules()
             for explanation in self.explanations
         ]
 
@@ -800,7 +905,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             )
         return self.explanations[index]
 
-    def _is_alternative(self):
+    def is_alternative(self):
         """Return True when the collection represents an alternative explanation workflow."""
         return isinstance(
             self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer)
@@ -1007,7 +1112,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         list of lime.Explanation
             List of LIME explanation objects with the same values as the `CalibratedExplanations`.
         """
-        _, lime_exp = self.calibrated_explainer._preload_lime()  # pylint: disable=protected-access
+        _, lime_exp = self.calibrated_explainer.preload_lime()
         exp = []
         for explanation in self.explanations:  # range(len(self.x[:,0])):
             tmp = deepcopy(lime_exp)
@@ -1029,8 +1134,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 if num_features_to_show is not None
                 else self.calibrated_explainer.num_features
             )
-            features_to_plot = explanation._rank_features(feature_weights, num_to_show=num_to_show)
-            rules = explanation._define_conditions()
+            features_to_plot = explanation.rank_features(feature_weights, num_to_show=num_to_show)
+            define_conditions = getattr(explanation, "define_conditions", None)
+            if define_conditions is None:
+                define_conditions = getattr(explanation, "_define_conditions", None)
+            rules = define_conditions() if define_conditions is not None else []
             for j, f in enumerate(features_to_plot[::-1]):  # pylint: disable=invalid-name
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             del tmp.local_exp[1][num_to_show:]
@@ -1047,7 +1155,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         shap.Explanation
             SHAP explanation object with the same values as the explanation.
         """
-        _, shap_exp = self.calibrated_explainer._preload_shap()  # pylint: disable=protected-access
+        _, shap_exp = self.calibrated_explainer.preload_shap()
         shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
         shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
         shap_exp.data = self.x_test
@@ -1092,6 +1200,42 @@ class AlternativeExplanations(CalibratedExplanations):
                 only_ensured=only_ensured, include_potential=include_potential
             )
         return self
+
+    @classmethod
+    def from_collection(cls, collection: "CalibratedExplanations"):
+        """Create an AlternativeExplanations instance from an existing collection.
+
+        This provides a safe public API for tests and callers that previously
+        constructed an instance via low-level hacks like `__new__` and
+        direct `__dict__` assignment.
+        """
+        inst = cls.__new__(cls)
+        # Copy the public and necessary internal state conservatively.
+        inst.calibrated_explainer = collection.calibrated_explainer
+        inst.condition_source = getattr(collection, "condition_source", None)
+        inst.x_test = getattr(collection, "x_test", None)
+        inst.y_threshold = getattr(collection, "y_threshold", None)
+        inst.low_high_percentiles = getattr(collection, "low_high_percentiles", None)
+        inst.explanations = list(getattr(collection, "explanations", []))
+        inst.start_index = getattr(collection, "start_index", 0)
+        inst.current_index = getattr(collection, "current_index", inst.start_index)
+        inst.end_index = getattr(
+            collection, "end_index", len(inst.x_test[:, 0]) if inst.x_test is not None else 0
+        )
+        inst.bins = getattr(collection, "bins", None)
+        inst.total_explain_time = getattr(collection, "total_explain_time", None)
+        inst.features_to_ignore = list(getattr(collection, "features_to_ignore", []))
+        inst.features_to_ignore_per_instance = getattr(
+            collection, "features_to_ignore_per_instance", None
+        )
+        # Preserve caches if present
+        inst._feature_names_cache = getattr(collection, "_feature_names_cache", None)
+        inst._predictions_cache = getattr(collection, "_predictions_cache", None)
+        inst._probabilities_cache = getattr(collection, "_probabilities_cache", None)
+        inst._lower_cache = getattr(collection, "_lower_cache", None)
+        inst._upper_cache = getattr(collection, "_upper_cache", None)
+        inst._class_labels_cache = getattr(collection, "_class_labels_cache", None)
+        return inst
 
     def semi_explanations(self, only_ensured=False, include_potential=True):
         """
@@ -1180,6 +1324,11 @@ class FrozenCalibratedExplainer:
             The explainer to be wrapped.
         """
         self._explainer = deepcopy(explainer)
+
+    @property
+    def explainer(self):
+        """Return the wrapped explainer instance."""
+        return self._explainer
 
     @property
     def x_cal(self):
@@ -1340,29 +1489,13 @@ class FrozenCalibratedExplainer:
         return self._explainer.discretizer
 
     @property
-    def _discretize(self):
-        """
-        Retrieves the discretize function from the underlying explainer.
-
-        This property provides access to the discretize function used by the explainer, allowing users to understand the discretization process.
-
-        Returns
-        -------
-            function: The discretize function used by the explainer.
-        """
-        return self._explainer._discretize  # pylint: disable=protected-access
+    def discretize(self):
+        """Public accessor for the discretize function (testing helper)."""
+        return self._explainer.discretize
 
     @property
     def rule_boundaries(self):
-        """
-        Retrieves the boundaries for rules in the explainer from the underlying explainer.
-
-        This property provides access to the boundaries for rules used in the explainer, allowing users to understand the discretization process.
-
-        Returns
-        -------
-            list: The boundaries for rules in the explainer.
-        """
+        """Expose the underlying rule boundaries helper."""
         return self._explainer.rule_boundaries
 
     @property
@@ -1392,6 +1525,19 @@ class FrozenCalibratedExplainer:
         return self._explainer.difficulty_estimator
 
     @property
+    def predict_calibrated(self):
+        """
+        Retrieves the predict function from the underlying explainer.
+
+        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
+
+        Returns
+        -------
+            function: The predict function used by the explainer.
+        """
+        return self._explainer.predict_calibrated
+
+    @property
     def _predict(self):
         """
         Retrieves the predict function from the underlying explainer.
@@ -1402,7 +1548,12 @@ class FrozenCalibratedExplainer:
         -------
             function: The predict function used by the explainer.
         """
-        return self._explainer._predict  # pylint: disable=protected-access
+        return self._explainer.predict_calibrated
+
+    @property
+    def predict(self):
+        """Public accessor for the predict function (testing helper)."""
+        return self._explainer.predict_calibrated
 
     @property
     def _preload_lime(self):
@@ -1415,20 +1566,17 @@ class FrozenCalibratedExplainer:
         -------
             function: The preload_lime function used by the explainer.
         """
-        return self._explainer._preload_lime  # pylint: disable=protected-access
+        return self._explainer.preload_lime
 
     @property
-    def _preload_shap(self):
-        """
-        Retrieves the preload_shap function from the underlying explainer.
+    def preload_lime(self):
+        """Public accessor for the lime preload helper (testing helper)."""
+        return self._explainer.preload_lime
 
-        This property provides access to the preload_shap function used by the explainer, allowing users to understand the prediction process.
-
-        Returns
-        -------
-            function: The preload_shap function used by the explainer.
-        """
-        return self._explainer._preload_shap  # pylint: disable=protected-access
+    @property
+    def preload_shap(self):
+        """Public accessor for the shap preload helper (testing helper)."""
+        return self._explainer.preload_shap
 
     def __setattr__(self, key, value):
         """Prevent modification of attributes except for '_explainer'."""

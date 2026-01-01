@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 
 # Simple in-memory CSV read cache to avoid repeated expensive disk reads during tests.
 # Keys are (path, sorted kwargs repr) so callers can pass delimiter/dtype when needed.
-_CSV_CACHE = {}
+CSV_CACHE = {}
 
 
 def read_csv_cached(path: str, **kwargs) -> pd.DataFrame:
@@ -16,10 +16,10 @@ def read_csv_cached(path: str, **kwargs) -> pd.DataFrame:
     tests can mutate the returned DataFrame safely without affecting the cache.
     """
     key = (path, tuple((k, repr(v)) for k, v in sorted(kwargs.items())))
-    if key not in _CSV_CACHE:
-        _CSV_CACHE[key] = pd.read_csv(path, **kwargs)
+    if key not in CSV_CACHE:
+        CSV_CACHE[key] = pd.read_csv(path, **kwargs)
     # Return a copy to make sure tests don't mutate the cached object
-    return _CSV_CACHE[key].copy()
+    return CSV_CACHE[key].copy()
 
 
 def make_binary_dataset():

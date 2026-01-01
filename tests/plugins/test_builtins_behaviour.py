@@ -26,22 +26,22 @@ class SentinelExplainer:
     """Minimal stub exposing the interfaces exercised by the legacy bridge."""
 
     def __init__(self, prediction, *, calibrated_classes=None):
-        self._prediction = prediction
-        self._calibrated_classes = calibrated_classes or ["c0", "c1"]
+        self.prediction_data = prediction
+        self.calibrated_classes_data = calibrated_classes or ["c0", "c1"]
         self.calls: list[tuple[str, tuple, dict]] = []
 
     def predict(self, *args, **kwargs):
         self.calls.append(("predict", args, kwargs))
         if kwargs.get("calibrated"):
-            return self._calibrated_classes
-        return self._prediction
+            return self.calibrated_classes_data
+        return self.prediction_data
 
     def predict_proba(self, *args, **kwargs):  # pragma: no cover - passthrough proxy
         self.calls.append(("predict_proba", args, kwargs))
         return (args, kwargs)
 
 
-def _make_interval_context(**overrides):
+def make_interval_context(**overrides):
     base = {
         "learner": "learner",
         "calibration_splits": [("x_cal", "y_cal")],
@@ -55,7 +55,7 @@ def _make_interval_context(**overrides):
     return IntervalCalibratorContext(**base)
 
 
-def _make_explanation_context(explainer, predict_bridge, **overrides):
+def make_explanation_context(explainer, predict_bridge, **overrides):
     context = {
         "task": "classification",
         "mode": "factual",
@@ -73,22 +73,22 @@ def _make_explanation_context(explainer, predict_bridge, **overrides):
 
 
 def test_derive_threshold_labels_handles_sequences():
-    labels = builtins._derive_threshold_labels([1, 3.75])
+    labels = builtins.derive_threshold_labels([1, 3.75])
     assert labels == ("1.00 <= Y < 3.75", "Outside interval")
 
 
 def test_derive_threshold_labels_handles_scalars_and_errors():
     sentinel = object()
-    assert builtins._derive_threshold_labels(sentinel) == (
+    assert builtins.derive_threshold_labels(sentinel) == (
         "Target within threshold",
         "Outside threshold",
     )
-    assert builtins._derive_threshold_labels(2.5) == ("Y < 2.50", "Y ≥ 2.50")
+    assert builtins.derive_threshold_labels(2.5) == ("Y < 2.50", "Y ≥ 2.50")
 
 
 def test_derive_threshold_labels_logs_interval_failure(caplog):
     caplog.set_level("DEBUG")
-    labels = builtins._derive_threshold_labels(["bad", "value"])
+    labels = builtins.derive_threshold_labels(["bad", "value"])
     assert labels == ("Target within threshold", "Outside threshold")
     assert "Failed to parse threshold" in caplog.text
 
@@ -143,7 +143,7 @@ def test_collection_to_batch_preserves_metadata():
         mode = "factual"
 
     collection = DummyCollection()
-    batch = builtins._collection_to_batch(collection)  # noqa: SLF001
+    batch = builtins.collection_to_batch(collection)  # noqa: SLF001
     assert isinstance(batch, ExplanationBatch)
     assert batch.collection_metadata["container"] is collection
     assert batch.collection_metadata["mode"] == "factual"
@@ -153,7 +153,7 @@ def test_collection_to_batch_defaults_to_factual():
     class EmptyCollection:
         explanations: tuple = ()
 
-    batch = builtins._collection_to_batch(EmptyCollection())  # noqa: SLF001
+    batch = builtins.collection_to_batch(EmptyCollection())  # noqa: SLF001
     assert batch.explanation_cls is builtins.FactualExplanation
 
 
@@ -168,7 +168,7 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
     interval_module.IntervalRegressor = DummyIntervalRegressor
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "regression", "explainer": object()},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -193,7 +193,7 @@ def test_interval_calibrator_create_for_classification(monkeypatch):
     class Explainer:
         predict_function = "sentinel"
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "classification", "explainer": Explainer()},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -208,7 +208,7 @@ def test_interval_calibrator_requires_predict_function(monkeypatch):
     venn_module.VennAbers = object
     monkeypatch.setitem(sys.modules, venn_module.__name__, venn_module)
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "classification"},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -221,7 +221,7 @@ def test_interval_calibrator_requires_explainer_for_regression(monkeypatch):
     interval_module.IntervalRegressor = object
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
-    context = _make_interval_context(metadata={"task": "regression"})
+    context = make_interval_context(metadata={"task": "regression"})
     plugin = builtins.LegacyIntervalCalibratorPlugin()
     with pytest.raises(NotFittedError):
         plugin.create(context)
@@ -235,7 +235,7 @@ def test_explanation_plugin_requires_initialisation():
 
 def test_explanation_initialise_requires_explainer():
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(
+    context = make_explanation_context(
         explainer=None, predict_bridge=builtins.LegacyPredictBridge(SentinelExplainer([1]))
     )
     with pytest.raises(NotFittedError):
@@ -273,7 +273,7 @@ def test_explanation_batch_adapts_legacy_collection(monkeypatch):
 
     explainer = DummyExplainer()
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(
+    context = make_explanation_context(
         explainer=explainer, predict_bridge=DummyBridge(), task="classification"
     )
     plugin.initialize(context)
@@ -429,7 +429,7 @@ def test_plotspec_builder_alternative_regression_threshold(monkeypatch):
 
     class Explanation:
         def __init__(self):
-            self._threshold = (0.25, 0.5)
+            self.threshold_data = (0.25, 0.5)
 
         def is_thresholded(self):
             return True

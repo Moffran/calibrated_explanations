@@ -18,17 +18,17 @@ from tests.helpers.model_utils import (
 def patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
     """Monkeypatch the interval learner factories to return the dummy implementation."""
 
-    def _initialize(explainer: CalibratedExplainer, *args: Any, **kwargs: Any) -> None:
+    def initialize(explainer: CalibratedExplainer, *args: Any, **kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        explainer._CalibratedExplainer__initialized = True
+        explainer.initialized = True
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
-        _initialize,
+        initialize,
     )
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
-        _initialize,
+        initialize,
     )
 
 
@@ -272,33 +272,99 @@ class FakeExplanation:
         percentiles: Tuple[float, float] = None,
         confidence: int = 90,
     ) -> None:
-        self._mode = mode
-        self._thresholded = thresholded
+        self.mode = mode
+        self.thresholded = thresholded
         self.y_threshold = y_threshold
-        self._class_labels = list(class_labels) if class_labels is not None else None
+        self.class_labels = list(class_labels) if class_labels is not None else None
         self.y_minmax = y_minmax
         self.low_high_percentiles = percentiles
         self.prediction = {"classes": 1}
         self.is_multiclass = is_multiclass
-        self._explainer = FakeExplainer(is_multiclass_flag=is_multiclass)
+        self.explainer = FakeExplainer(is_multiclass_flag=is_multiclass)
         self.calibrated_explanations = FakeCalibrationEnvelope(confidence, percentiles)
 
-    def _get_explainer(self) -> FakeExplainer:
+    def get_explainer(self) -> FakeExplainer:
         """Return the embedded fake explainer."""
-        return self._explainer
+        return self.explainer
 
     def get_mode(self) -> str:
         """Return the explanation mode that was set."""
-        return self._mode
+        return self.mode
 
     def get_class_labels(self) -> Sequence[str] | None:
         """Return the configured class labels or None."""
-        return self._class_labels
+        return self.class_labels
 
     def is_thresholded(self) -> bool:
         """Indicate whether the explanation is thresholded."""
-        return self._thresholded
+        return self.thresholded
 
     def is_one_sided(self) -> bool:
         """Indicate whether the explanation produces one-sided intervals."""
         return False
+
+
+def generic_test(cal_exp, x_prop_train, y_prop_train, x, y):
+    """Run a generic calibrated explainer test routine.
+
+    This function encapsulates repeated assertions used across several
+    test modules. Tests should import and call this helper rather than
+    importing from another test module.
+    """
+    cal_exp.fit(x_prop_train, y_prop_train)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
+
+    learner = cal_exp.learner
+
+    from calibrated_explanations.core import WrapCalibratedExplainer
+
+    new_exp = WrapCalibratedExplainer(learner)
+    assert new_exp.fitted
+    assert not new_exp.calibrated
+    assert new_exp.learner == learner
+
+    explainer = getattr(cal_exp, "explainer", None)
+    if explainer is not None:
+        new_exp = WrapCalibratedExplainer(explainer)
+        assert new_exp.fitted
+        assert new_exp.calibrated
+        assert new_exp.explainer == explainer
+        assert new_exp.learner == learner
+
+    cal_exp.plot(x, show=False)
+    cal_exp.plot(x, y, show=False)
+    return cal_exp
+
+
+def initiate_explainer(
+    model,
+    x_cal,
+    y_cal,
+    feature_names,
+    categorical_features,
+    mode,
+    class_labels=None,
+    difficulty_estimator=None,
+    bins=None,
+    fast=False,
+    verbose=False,
+    **kwargs,
+):
+    """Initialize a CalibratedExplainer instance."""
+    from calibrated_explanations.core import CalibratedExplainer
+
+    return CalibratedExplainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names=feature_names,
+        categorical_features=categorical_features,
+        mode=mode,
+        class_labels=class_labels,
+        bins=bins,
+        fast=fast,
+        difficulty_estimator=difficulty_estimator,
+        verbose=verbose,
+        **kwargs,
+    )

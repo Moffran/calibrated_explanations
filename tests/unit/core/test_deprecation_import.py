@@ -52,12 +52,12 @@ def test_core_explain_explain_warns_and_delegates(monkeypatch: pytest.MonkeyPatc
 
     calls = {}
 
-    def _fake_legacy(*args, **kwargs):
+    def fake_legacy_mock(*args, **kwargs):
         calls["args"] = args
         calls["kwargs"] = kwargs
         return "legacy-result"
 
-    stub = types.SimpleNamespace(explain=_fake_legacy)
+    stub = types.SimpleNamespace(explain=fake_legacy_mock)
     monkeypatch.setitem(sys.modules, "calibrated_explanations.core.explain._legacy_explain", stub)
 
     with pytest.warns(DeprecationWarning):

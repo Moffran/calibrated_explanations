@@ -16,11 +16,13 @@ class DummyLearner:
         mode: str = "classification",
         oob_decision_function: Optional[np.ndarray] = None,
         oob_prediction: Optional[np.ndarray] = None,
+        num_classes: int = 2,
     ) -> None:
         self.mode = mode
         self.fitted_ = True  # ensures check_is_fitted succeeds
         self.oob_decision_function_ = oob_decision_function
         self.oob_prediction_ = oob_prediction
+        self.num_classes = num_classes
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> "DummyLearner":  # pragma: no cover - unused
         """Return self without modifying the learner."""
@@ -34,9 +36,11 @@ class DummyLearner:
         """Return constant probabilities that sum to one for classification."""
         x = np.atleast_2d(x)
         if self.mode == "classification":
-            probs = np.zeros((len(x), 2))
+            probs = np.zeros((len(x), self.num_classes))
             probs[:, 0] = 0.4
-            probs[:, 1] = 0.6
+            probs[:, 1] = 0.6 / (self.num_classes - 1) if self.num_classes > 1 else 0.6
+            if self.num_classes > 2:
+                probs[:, 2:] = 0.6 / (self.num_classes - 1)
             return probs
         return np.zeros((len(x), 1))
 

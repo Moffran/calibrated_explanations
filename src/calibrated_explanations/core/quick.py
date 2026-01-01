@@ -59,7 +59,7 @@ def quick_explain(
         threshold=threshold,
         preprocessor=preprocessor,
     )
-    w = WrapCalibratedExplainer._from_config(cfg)  # private constructor by design
+    w = WrapCalibratedExplainer.from_config(cfg)  # private constructor by design
     w.fit(x_train, y_train)
     # Calibrate; pass explicit mode if provided
     cal_kwargs: dict[str, Any] = {}

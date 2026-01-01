@@ -66,13 +66,23 @@ feature-level detail inside analytics tools.
 
 ## Streaming large exports
 
-Streaming delivery remains deferred for v0.9.0 while we monitor batch sizes.
-The OSS scope inventory captures the decision and memory profiling notes so the
-runtime team can revisit chunked exports post-release.
+For large explanation collections, use the experimental streaming export to avoid loading all explanations into memory at once.
 
-- Status: deferred (tracked in `docs/improvement/OSS_CE_scope_and_gaps.md`).
-- Interim guidance: use `to_json()` in manageable batches and persist the
-  resulting files or database rows according to your governance requirements.
+```python
+# Stream explanations as JSON Lines (default)
+for chunk in explanations.to_json_stream(chunk_size=256, format="jsonl"):
+    # Each chunk is a JSON string; write to file or process incrementally
+    print(chunk)  # or fh.write(chunk + "\n")
+
+# Or use chunked JSON arrays
+for chunk in explanations.to_json_stream(chunk_size=256, format="chunked"):
+    # Each chunk is a JSON array string like "[{...},{...},...]"
+    print(chunk)
+```
+
+- **Status:** Experimental in v0.10.1+.
+- **Memory profile:** Tested for < 200 MB peak usage with 10k explanations at `chunk_size=256` (see `reports/streaming_benchmark_v0.10.1.json` for latest results).
+- **Telemetry:** Export metrics (rows, elapsed time, peak memory) are captured in collection metadata and explainer telemetry.
 
 ### Optional extras
 

@@ -80,11 +80,11 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
         explainer.explain_factual(x_test[:2])
         assert plugin._context is None
 
-        chain = explainer._explanation_plugin_fallbacks["factual"]
+        chain = explainer.plugin_manager.explanation_plugin_fallbacks["factual"]
         assert chain[0] == identifier
         assert "core.explanation.factual" in chain
 
-        context = explainer._explanation_contexts["factual"]
+        context = explainer.plugin_manager.explanation_contexts["factual"]
         assert context.interval_settings["dependencies"] == ("core.interval.legacy",)
         fallbacks = context.plot_settings["fallbacks"]
         assert "legacy" in fallbacks

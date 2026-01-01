@@ -29,8 +29,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install . psutil
+          pip install -r requirements.txt -c constraints.txt
+          pip install . psutil -c constraints.txt
 
       - name: Generate new baseline & micro benchmarks
         id: gen

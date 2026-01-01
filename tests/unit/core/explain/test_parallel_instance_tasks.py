@@ -42,12 +42,31 @@ def test_tasks_omit_explainer_when_worker_initializer_present(monkeypatch):
     dummy_exec = DummyExecutor(cfg)
 
     # Prepare a small explainer-like object with minimal attributes used
+    from calibrated_explanations.plugins.manager import PluginManager
+
     class FakeExplainer:
         num_features = 3
         mode = "classification"
+        latest_explanation = None
+        last_explanation_mode = None
 
-        def _infer_explanation_mode(self):
+        def __init__(self):
+            self._plugin_manager = PluginManager(self)
+
+        @property
+        def plugin_manager(self):
+            return self._plugin_manager
+
+        @plugin_manager.setter
+        def plugin_manager(self, value):
+            self._plugin_manager = value
+
+        def infer_explanation_mode(self):
             return "factual"
+
+        @property
+        def is_mondrian(self):
+            return False
 
     explainer = FakeExplainer()
 
@@ -138,7 +157,7 @@ def test_fallback_runs_with_explainer_when_no_harness(monkeypatch):
         def __init__(self):
             self.latest_explanation = None
 
-        def _infer_explanation_mode(self):
+        def infer_explanation_mode(self):
             return "factual"
 
     fake_expl = FakeExplainer()

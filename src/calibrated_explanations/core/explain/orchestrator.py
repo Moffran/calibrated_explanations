@@ -31,7 +31,6 @@ from ...plugins import (
     is_identifier_denied,
     validate_explanation_batch,
 )
-from ...plugins.predict_monitor import PredictBridgeMonitor
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
 from ...utils.exceptions import ConfigurationError
 
@@ -89,14 +88,7 @@ class ExplanationOrchestrator:
         This method is called during explainer initialization to pre-compute the
         plugin resolution chains for all explanation modes.
         """
-        self.explainer._plugin_manager.initialize_chains()
-
-    def _build_plot_chain(self) -> Tuple[str, ...]:
-        """Delegate to PluginManager for plot chain building."""
-        if hasattr(self.explainer, "_plugin_manager"):
-            return self.explainer._plugin_manager._build_plot_chain()
-        # Fallback for test stubs: return empty tuple
-        return ()
+        self.explainer.plugin_manager.initialize_chains()
 
     def set_discretizer(
         self,
@@ -264,7 +256,7 @@ class ExplanationOrchestrator:
         ConfigurationError
             If plugin resolution, initialization, or invocation fails.
         """
-        plugin, _identifier = self._ensure_plugin(mode)
+        plugin, _identifier = self.ensure_plugin(mode)
         per_instance_ignore = None
         features_arg = features_to_ignore or []
         if (
@@ -291,7 +283,7 @@ class ExplanationOrchestrator:
             extras=dict(extras or {}),
             features_to_ignore_per_instance=per_instance_ignore,
         )
-        monitor = self.explainer._bridge_monitors.get(mode)
+        monitor = self.explainer.plugin_manager.get_bridge_monitor(_identifier or mode)
         if monitor is not None:
             monitor.reset_usage()
         try:
@@ -318,18 +310,18 @@ class ExplanationOrchestrator:
         metadata = batch.collection_metadata
         metadata.setdefault("task", self.explainer.mode)
         interval_key = "fast" if mode == "fast" else "default"
-        interval_source = self.explainer._telemetry_interval_sources.get(interval_key)
+        interval_source = self.explainer.plugin_manager.telemetry_interval_sources.get(interval_key)
         if interval_source:
             metadata["interval_source"] = interval_source
             metadata.setdefault("proba_source", interval_source)
         metadata.setdefault(
             "interval_dependencies",
-            tuple(self.explainer._interval_plugin_hints.get(mode, ())),
+            tuple(self.explainer.plugin_manager.interval_plugin_hints.get(mode, ())),
         )
         preprocessor_meta = self.explainer.preprocessor_metadata
         if preprocessor_meta:
             metadata.setdefault("preprocessor", preprocessor_meta)
-        plot_chain = self.explainer._plot_plugin_fallbacks.get(mode)
+        plot_chain = self.explainer.plugin_manager.plot_plugin_fallbacks.get(mode)
         if plot_chain:
             metadata.setdefault("plot_fallbacks", tuple(plot_chain))
             metadata.setdefault("plot_source", plot_chain[0])
@@ -346,7 +338,7 @@ class ExplanationOrchestrator:
         if preprocessor_meta:
             telemetry_payload["preprocessor"] = preprocessor_meta
 
-        self.explainer._last_telemetry = dict(telemetry_payload)
+        self.explainer.plugin_manager.last_telemetry = dict(telemetry_payload)
         # Bridge monitor check: builtin plugins (starting with "core.") use internal
         # execution pipeline and don't need the bridge. Other plugins must use it.
         if (
@@ -364,15 +356,15 @@ class ExplanationOrchestrator:
         container_cls = batch.container_cls
         if hasattr(container_cls, "from_batch"):
             result = container_cls.from_batch(batch)
-            instance_payload = self._build_instance_telemetry_payload(result)
+            instance_payload = ExplanationOrchestrator.build_instance_telemetry_payload(result)
             if instance_payload:
                 telemetry_payload.update(instance_payload)
-                self.explainer._last_telemetry.update(instance_payload)
+                self.explainer.plugin_manager.last_telemetry.update(instance_payload)
             with contextlib.suppress(Exception):
                 result.telemetry = dict(telemetry_payload)
             # parity instrumentation removed
             self.explainer.latest_explanation = result
-            self.explainer._last_explanation_mode = mode
+            self.explainer.plugin_manager.last_explanation_mode = mode
             return result
 
         raise ConfigurationError("Explanation plugin returned a batch that cannot be materialised")
@@ -513,7 +505,7 @@ class ExplanationOrchestrator:
             extras=kwargs,
         )
 
-    def _ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
+    def ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Return the plugin instance for *mode*, initialising on demand.
 
         Parameters
@@ -526,13 +518,13 @@ class ExplanationOrchestrator:
         tuple
             A tuple of (plugin_instance, plugin_identifier).
         """
-        if mode in self.explainer._explanation_plugin_instances:
+        if mode in self.explainer.plugin_manager.explanation_plugin_instances:
             return (
-                self.explainer._explanation_plugin_instances[mode],
-                self.explainer._explanation_plugin_identifiers.get(mode),
+                self.explainer.plugin_manager.explanation_plugin_instances[mode],
+                self.explainer.plugin_manager.explanation_plugin_identifiers.get(mode),
             )
 
-        plugin, identifier = self._resolve_plugin(mode)
+        plugin, identifier = self.resolve_plugin(mode)
         metadata: Mapping[str, Any] | None = None
         if identifier:
             descriptor = find_explanation_descriptor(identifier)
@@ -541,13 +533,13 @@ class ExplanationOrchestrator:
                 interval_dependency = metadata.get("interval_dependency")
                 hints = coerce_string_tuple(interval_dependency)
                 if hints:
-                    self.explainer._interval_plugin_hints[mode] = hints
+                    self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
             else:
                 metadata = getattr(plugin, "plugin_meta", None)
         else:
             metadata = getattr(plugin, "plugin_meta", None)
 
-        error = self._check_metadata(
+        error = self.check_metadata(
             metadata,
             identifier=identifier,
             mode=mode,
@@ -558,9 +550,9 @@ class ExplanationOrchestrator:
         if metadata is not None and not identifier:
             hints = coerce_string_tuple(metadata.get("interval_dependency"))
             if hints:
-                self.explainer._interval_plugin_hints[mode] = hints
+                self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
 
-        context = self._build_context(mode, plugin, identifier)
+        context = self.build_context(mode, plugin, identifier)
         try:
             plugin.initialize(context)
         except (
@@ -570,13 +562,13 @@ class ExplanationOrchestrator:
                 f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
             ) from exc
 
-        self.explainer._explanation_plugin_instances[mode] = plugin
+        self.explainer.plugin_manager.explanation_plugin_instances[mode] = plugin
         if identifier:
-            self.explainer._explanation_plugin_identifiers[mode] = identifier
-        self.explainer._explanation_contexts[mode] = context
+            self.explainer.plugin_manager.explanation_plugin_identifiers[mode] = identifier
+        self.explainer.plugin_manager.explanation_contexts[mode] = context
         return plugin, identifier
 
-    def _resolve_plugin(self, mode: str) -> Tuple[Any, str | None]:
+    def resolve_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Resolve or instantiate the plugin handling *mode*.
 
         Parameters
@@ -596,15 +588,15 @@ class ExplanationOrchestrator:
         """
         ensure_builtin_plugins()
 
-        raw_override = self.explainer._explanation_plugin_overrides.get(mode)
-        override = self.explainer._plugin_manager.coerce_plugin_override(raw_override)
+        raw_override = self.explainer.plugin_manager.explanation_plugin_overrides.get(mode)
+        override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
         if override is not None and not isinstance(override, str):
             plugin = override
             identifier = getattr(plugin, "plugin_meta", {}).get("name")
             return plugin, identifier
 
         preferred_identifier = raw_override if isinstance(raw_override, str) else None
-        chain = self.explainer._explanation_plugin_fallbacks.get(mode, ())
+        chain = self.explainer.plugin_manager.explanation_plugin_fallbacks.get(mode, ())
         if not chain and mode == "fast":
             msg = (
                 "Fast explanation plugin 'core.explanation.fast' is not registered. "
@@ -646,7 +638,7 @@ class ExplanationOrchestrator:
                 continue
 
             meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self._check_metadata(
+            error = self.check_metadata(
                 meta_source,
                 identifier=identifier,
                 mode=mode,
@@ -657,7 +649,7 @@ class ExplanationOrchestrator:
                 errors.append(error)
                 continue
 
-            plugin = self._instantiate_plugin(plugin)
+            plugin = self.instantiate_plugin(plugin)
             try:
                 supports = plugin.supports_mode
             except AttributeError as exc:
@@ -696,7 +688,7 @@ class ExplanationOrchestrator:
             + ("; errors: " + "; ".join(errors) if errors else "")
         )
 
-    def _check_metadata(
+    def check_metadata(
         self,
         metadata: Mapping[str, Any] | None,
         *,
@@ -771,7 +763,7 @@ class ExplanationOrchestrator:
         return None
 
     @staticmethod
-    def _instantiate_plugin(prototype: Any) -> Any:
+    def instantiate_plugin(prototype: Any) -> Any:
         """Best-effort instantiation that avoids sharing state across explainers.
 
         Parameters
@@ -800,11 +792,11 @@ class ExplanationOrchestrator:
                 # pragma: no cover - defensive
                 return prototype
 
-    def _build_context(
+    def build_context(
         self,
         mode: str,
         plugin: Any,
-        identifier: str | None,  # pylint: disable=unused-argument
+        identifier: str | None,
     ) -> ExplanationContext:
         """Construct the immutable context passed to explanation plugins.
 
@@ -824,16 +816,15 @@ class ExplanationOrchestrator:
         """
         helper_handles = {"explainer": self.explainer}
         interval_settings = {
-            "dependencies": self.explainer._interval_plugin_hints.get(mode, ()),
+            "dependencies": self.explainer.plugin_manager.interval_plugin_hints.get(mode, ()),
         }
         plot_chain = self._derive_plot_chain(mode, identifier)
-        self.explainer._plot_plugin_fallbacks[mode] = plot_chain
+        self.explainer.plugin_manager.plot_plugin_fallbacks[mode] = plot_chain
         plot_settings = {"fallbacks": plot_chain}
 
-        monitor = self.explainer._bridge_monitors.get(mode)
-        if monitor is None:
-            monitor = PredictBridgeMonitor(self.explainer._predict_bridge)
-            self.explainer._bridge_monitors[mode] = monitor
+        # Use the bridge monitor for this plugin to track usage.
+        # We use the identifier if available, otherwise fall back to mode.
+        monitor = self.explainer.plugin_manager.get_bridge_monitor(identifier or mode)
 
         context = ExplanationContext(
             task=self.explainer.mode,
@@ -880,7 +871,7 @@ class ExplanationOrchestrator:
                 for hint in coerce_string_tuple(plot_dependency):
                     if hint:
                         preferred.append(hint)
-        base_chain = self.explainer._plot_style_chain or ("legacy",)
+        base_chain = self.explainer.plugin_manager.plot_style_chain or ("legacy",)
         seen: set[str] = set()
         ordered: List[str] = []
         for item in tuple(preferred) + base_chain:
@@ -890,7 +881,7 @@ class ExplanationOrchestrator:
         return tuple(ordered)
 
     @staticmethod
-    def _build_instance_telemetry_payload(explanations: Any) -> Dict[str, Any]:
+    def build_instance_telemetry_payload(explanations: Any) -> Dict[str, Any]:
         """Extract telemetry details from the first explanation instance.
 
         Parameters

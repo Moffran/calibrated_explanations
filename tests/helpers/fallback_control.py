@@ -21,7 +21,7 @@ import pytest
 
 # store original warnings.warn so we can restore it when tests opt-in to
 # fallback behaviour via the `enable_fallbacks` fixture
-_ORIG_WARN: Any | None = None
+ORIGINAL_WARN: Any | None = None
 
 
 def disable_all_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -62,11 +62,11 @@ def disable_all_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     # Prevent runtime fallbacks by converting any runtime "fall...back" UserWarning
     # into an immediate test failure. This catches execution-time supports()/exception
     # fallback paths that are not controlled via env vars (e.g. feature_parallel plugin).
-    global _ORIG_WARN
-    _orig_warn = warnings.warn
-    _ORIG_WARN = _orig_warn
+    global ORIGINAL_WARN
+    original_warn = warnings.warn
+    ORIGINAL_WARN = original_warn
 
-    def _warn_no_fallback(message, category=None, *args, **kwargs):
+    def warn_no_fallback(message, category=None, *args, **kwargs):
         try:
             text = str(message)
         except Exception:
@@ -76,10 +76,10 @@ def disable_all_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
             # `assert_no_fallbacks_triggered` can capture and assert on it.
             # Avoid raising here to let the context manager perform the
             # final assertion/translation to test failure.
-            return _orig_warn(message, category, *args, **kwargs)
-        return _orig_warn(message, category, *args, **kwargs)
+            return original_warn(message, category, *args, **kwargs)
+        return original_warn(message, category, *args, **kwargs)
 
-    monkeypatch.setattr("warnings.warn", _warn_no_fallback)
+    monkeypatch.setattr("warnings.warn", warn_no_fallback)
 
 
 def restore_runtime_warnings(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -89,9 +89,9 @@ def restore_runtime_warnings(monkeypatch: pytest.MonkeyPatch) -> None:
     runtime fallback warnings to be emitted normally instead of being
     converted to failures by the autouse disable fixture.
     """
-    global _ORIG_WARN
-    if _ORIG_WARN is not None:
-        monkeypatch.setattr("warnings.warn", _ORIG_WARN)
+    global ORIGINAL_WARN
+    if ORIGINAL_WARN is not None:
+        monkeypatch.setattr("warnings.warn", ORIGINAL_WARN)
 
 
 def enable_specific_fallback(

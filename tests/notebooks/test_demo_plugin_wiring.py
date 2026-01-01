@@ -75,7 +75,7 @@ class TestNotebookMethodA:
 
     def test_method_a_explainer_initialization(self, enable_fallbacks):
         """Test Method A: Creating CalibratedExplainer with plot_style parameter."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -107,7 +107,7 @@ class TestNotebookMethodA:
 
         # Verify explainer was created with the style
         assert explainer_a is not None
-        assert explainer_a._plot_style_override == "plot_spec.default"
+        assert explainer_a.plot_style_override == "plot_spec.default"
 
         # Generate explanations
         explanations = explainer_a.explain_factual(x_test[:3])
@@ -119,7 +119,7 @@ class TestNotebookMethodB:
 
     def test_method_b_plot_style_override(self, enable_fallbacks):
         """Test Method B: Using style_override in explanations.plot() call."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -165,7 +165,7 @@ class TestNotebookMethodC:
     def test_method_c_environment_configuration(self, enable_fallbacks):
         """Test Method C: Using environment variables for plot style."""
         import os
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -228,7 +228,7 @@ class TestNotebookMethodE:
             _EXPLANATION_PLUGINS,
         )
         from calibrated_explanations.plugins.base import validate_plugin_meta
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -310,7 +310,7 @@ class TestNotebookMethodE:
             ensure_builtin_plugins,
             _EXPLANATION_PLUGINS,
         )
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -374,7 +374,7 @@ class TestNotebookMethodE:
             )
 
             # Verify the plugin was used
-            assert explainer._explanation_plugin_overrides["factual"] == plugin_id
+            assert explainer.explanation_plugin_overrides["factual"] == plugin_id
 
             # Generate explanations
             explanations = explainer.explain_factual(x_test[:3])
@@ -390,7 +390,7 @@ class TestNotebookIntegration:
     def test_full_workflow_with_multiple_methods(self, enable_fallbacks):
         """Test a complete workflow using multiple wiring methods."""
         import os
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler

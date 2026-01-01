@@ -1,3 +1,5 @@
+"""Shared test fixtures for the calibrated_explanations test suite."""
+
 import numpy as np
 import pytest
 

@@ -90,9 +90,39 @@ class WrapCalibratedExplainer:
             return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
+    @property
+    def parallel_executor(self) -> Any:
+        """Expose the internal parallel executor if available."""
+        return getattr(self, "_perf_parallel", None)
+
+    @parallel_executor.setter
+    def parallel_executor(self, value: Any) -> None:
+        """Allow setting the internal parallel executor."""
+        self._perf_parallel = value
+
+    @property
+    def auto_encode(self) -> bool | str:
+        """Get the auto_encode configuration."""
+        return self._auto_encode
+
+    @auto_encode.setter
+    def auto_encode(self, value: bool | str) -> None:
+        """Set the auto_encode configuration."""
+        self._auto_encode = value
+
+    @property
+    def preprocessor(self) -> Any:
+        """Get the preprocessor."""
+        return self._preprocessor
+
+    @preprocessor.setter
+    def preprocessor(self, value: Any) -> None:
+        """Set the preprocessor."""
+        self._preprocessor = value
+
     # internal wiring for config
     @classmethod
-    def _from_config(cls, cfg: ExplainerConfig) -> WrapCalibratedExplainer:
+    def from_config(cls, cfg: ExplainerConfig) -> WrapCalibratedExplainer:
         """Construct a wrapper from an :class:`ExplainerConfig`.
 
         Notes
@@ -119,16 +149,16 @@ class WrapCalibratedExplainer:
             # stash created primitives for downstream use; keep None when disabled
             if perf_factory is not None:
                 cache = perf_factory.make_cache()
-                w._perf_cache = cache  # type: ignore[attr-defined]
+                w.perf_cache = cache  # type: ignore[attr-defined]
                 w._perf_parallel = perf_factory.make_parallel_executor(cache)  # type: ignore[attr-defined]
             else:
-                w._perf_cache = None
+                w.perf_cache = None
                 w._perf_parallel = None
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             exc = sys.exc_info()[1]
-            w._perf_cache = None
+            w.perf_cache = None
             w._perf_parallel = None
             w._logger.debug("Failed to initialize perf primitives from config: %s", exc)
         # Wire internal feature filter config (FAST-based) when present
@@ -271,7 +301,7 @@ class WrapCalibratedExplainer:
                 self.learner,
                 x_cal_local,
                 y_calibration,
-                perf_cache=getattr(self, "_perf_cache", None),
+                perf_cache=getattr(self, "perf_cache", None),
                 perf_parallel=getattr(self, "_perf_parallel", None),
                 **kwargs,
             )
@@ -281,7 +311,7 @@ class WrapCalibratedExplainer:
                 x_cal_local,
                 y_calibration,
                 mode="classification",
-                perf_cache=getattr(self, "_perf_cache", None),
+                perf_cache=getattr(self, "perf_cache", None),
                 perf_parallel=getattr(self, "_perf_parallel", None),
                 **kwargs,
             )
@@ -291,14 +321,14 @@ class WrapCalibratedExplainer:
                 x_cal_local,
                 y_calibration,
                 mode="regression",
-                perf_cache=getattr(self, "_perf_cache", None),
+                perf_cache=getattr(self, "perf_cache", None),
                 perf_parallel=getattr(self, "_perf_parallel", None),
                 **kwargs,
             )
         # Propagate internal feature filter config to explainer when available
         if self.explainer is not None and hasattr(self, "_feature_filter_config"):
             try:
-                self.explainer._feature_filter_config = self._feature_filter_config
+                self.explainer.feature_filter_config = self._feature_filter_config
             except AttributeError:  # pragma: no cover - defensive
                 self._logger.debug(
                     "Failed to attach feature filter config to explainer", exc_info=True
@@ -339,16 +369,6 @@ class WrapCalibratedExplainer:
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explain_factual(x_local, **kwargs)
 
-    def explain_counterfactual(self, x: Any, **kwargs: Any) -> Any:
-        """Generate counterfactual explanations for the test data.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.explain_counterfactual` : Refer to the docstring for explain_counterfactual in CalibratedExplainer for more details.
-
-        """
-        return self.explore_alternatives(x, **kwargs)
-
     def explore_alternatives(self, x: Any, **kwargs: Any) -> Any:
         """Generate alternative explanations for the test data.
 
@@ -375,6 +395,10 @@ class WrapCalibratedExplainer:
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explore_alternatives(x_local, **kwargs)
+
+    def explain_counterfactual(self, x: Any, **kwargs: Any) -> Any:
+        """Alias for explore_alternatives (legacy API)."""
+        return self.explore_alternatives(x, **kwargs)
 
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.
@@ -666,7 +690,20 @@ class WrapCalibratedExplainer:
         """Derive bin assignments from the configured Mondrian categorizer."""
         if isinstance(self.mc, MondrianCategorizer):
             return self.mc.apply(x)
-        return self.mc(x) if self.mc is not None else kwargs.get("bins")
+        if self.mc is not None:
+            return self.mc(x)
+        bins = kwargs.get("bins")
+        if bins is not None:
+            return bins
+        # Fallback to explainer bins for Mondrian mode
+        if (
+            hasattr(self, "explainer")
+            and self.explainer
+            and hasattr(self.explainer, "bins")
+            and self.explainer.is_mondrian()
+        ):
+            return self.explainer.bins
+        return None
 
     @property
     def runtime_telemetry(self) -> Mapping[str, Any]:
@@ -696,7 +733,7 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        return self.explainer._preprocessor_metadata
+        return self.explainer.preprocessor_metadata
 
     def set_preprocessor_metadata(self, metadata: Mapping[str, Any] | None) -> None:
         """Update the stored preprocessing metadata snapshot."""

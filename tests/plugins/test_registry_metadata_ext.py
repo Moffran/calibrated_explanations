@@ -13,25 +13,19 @@ from calibrated_explanations.plugins import registry
 
 
 @pytest.fixture(autouse=True)
-def _isolate_registry(monkeypatch):
-    monkeypatch.setattr(registry, "_REGISTRY", [], raising=False)
-    monkeypatch.setattr(registry, "_TRUSTED", [], raising=False)
-    monkeypatch.setattr(registry, "_EXPLANATION_PLUGINS", {}, raising=False)
-    monkeypatch.setattr(registry, "_INTERVAL_PLUGINS", {}, raising=False)
-    monkeypatch.setattr(registry, "_PLOT_BUILDERS", {}, raising=False)
-    monkeypatch.setattr(registry, "_PLOT_RENDERERS", {}, raising=False)
-    monkeypatch.setattr(registry, "_PLOT_STYLES", {}, raising=False)
-    monkeypatch.setattr(registry, "_TRUSTED_EXPLANATIONS", set(), raising=False)
-    monkeypatch.setattr(registry, "_TRUSTED_INTERVALS", set(), raising=False)
-    monkeypatch.setattr(registry, "_TRUSTED_PLOT_BUILDERS", set(), raising=False)
-    monkeypatch.setattr(registry, "_TRUSTED_PLOT_RENDERERS", set(), raising=False)
-    monkeypatch.setattr(registry, "_WARNED_UNTRUSTED", set(), raising=False)
-    monkeypatch.setattr(registry, "_ENV_TRUST_CACHE", None, raising=False)
+def isolate_registry_fixture(monkeypatch):
+    # Use public clear helpers rather than patching internals.
+    registry.clear()
+    registry.clear_explanation_plugins()
+    registry.clear_interval_plugins()
+    registry.clear_plot_plugins()
+    registry.clear_env_trust_cache()
+    registry.clear_trust_warnings()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None, raising=False)
     yield
 
 
-def _base_meta(**extra):
+def base_meta(**extra):
     meta = {
         "schema_version": 1,
         "name": "tests.meta",
@@ -46,25 +40,25 @@ def _base_meta(**extra):
 def test_env_trusted_names_parses_multiple_delimiters(monkeypatch):
     monkeypatch.setenv("CE_TRUST_PLUGIN", "alpha; beta , gamma,,")
 
-    names = registry._env_trusted_names()
+    names = registry.env_trusted_names()
     assert names == {"alpha", "beta", "gamma"}
 
     # A second call should reuse the cached entries even if the environment changes.
     monkeypatch.setenv("CE_TRUST_PLUGIN", "ignored")
-    assert registry._env_trusted_names() == {"alpha", "beta", "gamma"}
+    assert registry.env_trusted_names() == {"alpha", "beta", "gamma"}
 
 
 def test_should_trust_respects_environment_override(monkeypatch):
     monkeypatch.setenv("CE_TRUST_PLUGIN", "external")
 
     meta = {"name": "external", "trust": False, "trusted": False}
-    assert registry._should_trust(meta) is True
+    assert registry.should_trust(meta) is True
 
 
 def test_update_trust_keys_synchronises_nested_mapping():
     meta = {"trust": {"trusted": False, "other": "value"}}
 
-    registry._update_trust_keys(meta, True)
+    registry.update_trust_keys(meta, True)
 
     assert meta["trusted"] is True
     assert meta["trust"]["trusted"] is True
@@ -75,14 +69,14 @@ def test_warn_untrusted_plugin_only_warns_once():
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", UserWarning)
-        registry._warn_untrusted_plugin(meta, source="entry point")
-        registry._warn_untrusted_plugin(meta, source="entry point")
+        registry.warn_untrusted_plugin(meta, source="entry point")
+        registry.warn_untrusted_plugin(meta, source="entry point")
 
     runtime_warnings = [item for item in caught if item.category is UserWarning]
     assert len(runtime_warnings) == 1
 
 
-def _make_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, Path]:
+def make_module_helper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, Path]:
     module_name = "tests.plugins._checksum_mod"
     module_path = tmp_path / "_checksum_mod.py"
     module_path.write_text("VALUE = 1\n", encoding="utf-8")
@@ -97,7 +91,7 @@ def _make_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, 
 
 
 def test_verify_plugin_checksum_handles_success_failure_and_missing(tmp_path, monkeypatch):
-    module_name, module_path = _make_module(tmp_path, monkeypatch)
+    module_name, module_path = make_module_helper(tmp_path, monkeypatch)
 
     class Plugin:
         __module__ = module_name
@@ -105,71 +99,71 @@ def test_verify_plugin_checksum_handles_success_failure_and_missing(tmp_path, mo
     plugin = Plugin()
     digest = hashlib.sha256(module_path.read_bytes()).hexdigest()
 
-    registry._verify_plugin_checksum(plugin, {"checksum": {"sha256": digest}, "name": "ok"})
+    registry.verify_plugin_checksum(plugin, {"checksum": {"sha256": digest}, "name": "ok"})
 
     with pytest.raises(ValidationError):
-        registry._verify_plugin_checksum(plugin, {"checksum": "deadbeef", "name": "broken"})
+        registry.verify_plugin_checksum(plugin, {"checksum": "deadbeef", "name": "broken"})
 
     module_path.unlink()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", UserWarning)
-        registry._verify_plugin_checksum(plugin, {"checksum": digest, "name": "missing"})
+        registry.verify_plugin_checksum(plugin, {"checksum": digest, "name": "missing"})
     assert any("Cannot verify checksum" in str(item.message) for item in caught)
 
 
 def test_ensure_sequence_validates_inputs():
-    assert registry._ensure_sequence({"values": ["a", "b"]}, "values") == ("a", "b")
+    assert registry.ensure_sequence({"values": ["a", "b"]}, "values") == ("a", "b")
 
     with pytest.raises(ValidationError):
-        registry._ensure_sequence({}, "values")
+        registry.ensure_sequence({}, "values")
     with pytest.raises(ValidationError):
-        registry._ensure_sequence({"values": "single"}, "values")
+        registry.ensure_sequence({"values": "single"}, "values")
     with pytest.raises(ValidationError):
-        registry._ensure_sequence({"values": ["a", 1]}, "values")
+        registry.ensure_sequence({"values": ["a", 1]}, "values")
     with pytest.raises(ValidationError):
-        registry._ensure_sequence({"values": []}, "values")
+        registry.ensure_sequence({"values": []}, "values")
     with pytest.raises(ValidationError):
-        registry._ensure_sequence({"values": ["x"]}, "values", allowed={"y"})
+        registry.ensure_sequence({"values": ["x"]}, "values", allowed={"y"})
 
 
 def test_normalise_dependency_field_optional_and_empty():
     meta = {"deps": ["first", "second"]}
-    normalised = registry._normalise_dependency_field(meta, "deps")
+    normalised = registry.normalise_dependency_field(meta, "deps")
     assert normalised == ("first", "second")
     assert meta["deps"] == normalised
 
     empty_meta = {"deps": ()}
-    assert registry._normalise_dependency_field(empty_meta, "deps", allow_empty=True) == ()
+    assert registry.normalise_dependency_field(empty_meta, "deps", allow_empty=True) == ()
 
-    assert registry._normalise_dependency_field({}, "missing", optional=True) is None
+    assert registry.normalise_dependency_field({}, "missing", optional=True) is None
 
     with pytest.raises(ValidationError):
-        registry._normalise_dependency_field({}, "required")
+        registry.normalise_dependency_field({}, "required")
 
 
 def test_coerce_string_collection_rejects_invalid():
-    assert registry._coerce_string_collection(["a", "b"], key="k") == ("a", "b")
+    assert registry.coerce_string_collection(["a", "b"], key="k") == ("a", "b")
 
     with pytest.raises(ValidationError):
-        registry._coerce_string_collection(1, key="k")
+        registry.coerce_string_collection(1, key="k")
     with pytest.raises(ValidationError):
-        registry._coerce_string_collection(["a", 2], key="k")
+        registry.coerce_string_collection(["a", 2], key="k")
     with pytest.raises(ValidationError):
-        registry._coerce_string_collection([], key="k")
+        registry.coerce_string_collection([], key="k")
 
 
 def test_normalise_tasks_requires_known_values():
     meta = {"tasks": ("classification", "regression")}
-    assert registry._normalise_tasks(meta) == ("classification", "regression")
+    assert registry.normalise_tasks(meta) == ("classification", "regression")
 
     with pytest.raises(ValidationError):
-        registry._normalise_tasks({"tasks": ("unknown",)})
+        registry.normalise_tasks({"tasks": ("unknown",)})
     with pytest.raises(ValidationError):
-        registry._normalise_tasks({})
+        registry.normalise_tasks({})
 
 
 def test_validate_explanation_metadata_requires_trust_key():
-    meta = _base_meta(
+    meta = base_meta(
         modes=("factual",),
         tasks=("classification",),
         dependencies=(),
@@ -179,8 +173,8 @@ def test_validate_explanation_metadata_requires_trust_key():
         registry.validate_explanation_metadata(meta)
 
 
-def _interval_meta(**extra):
-    return _base_meta(
+def interval_meta(**extra):
+    return base_meta(
         capabilities=["interval"],
         modes=("classification",),
         dependencies=(),
@@ -193,10 +187,10 @@ def _interval_meta(**extra):
 
 
 def test_validate_interval_metadata_handles_trust(monkeypatch):
-    meta = _interval_meta()
+    meta = interval_meta()
     registry.validate_interval_metadata(meta)
 
-    meta_with_trusted = _interval_meta(trusted=True)
+    meta_with_trusted = interval_meta(trusted=True)
     registry.validate_interval_metadata(meta_with_trusted)
     assert meta_with_trusted["trust"] is True
 
@@ -205,8 +199,8 @@ def test_validate_interval_metadata_handles_trust(monkeypatch):
         registry.validate_interval_metadata(meta_with_trusted)
 
 
-def _plot_builder_meta(**extra):
-    return _base_meta(
+def plot_builder_meta(**extra):
+    return base_meta(
         capabilities=["plot"],
         style="fancy",
         dependencies=(),
@@ -218,10 +212,10 @@ def _plot_builder_meta(**extra):
 
 
 def test_validate_plot_builder_and_renderer_metadata():
-    builder_meta = _plot_builder_meta()
+    builder_meta = plot_builder_meta()
     registry.validate_plot_builder_metadata(builder_meta)
 
-    renderer_meta = _base_meta(
+    renderer_meta = base_meta(
         capabilities=["plot"],
         dependencies=(),
         output_formats=("png",),
@@ -236,14 +230,20 @@ def test_validate_plot_builder_and_renderer_metadata():
         )
 
 
+def test_validate_plot_builder_accepts_default_renderer():
+    meta = plot_builder_meta(default_renderer="core.plot.legacy")
+    validated = registry.validate_plot_builder_metadata(meta)
+    assert validated.get("default_renderer") == "core.plot.legacy"
+
+
 def test_ensure_string_and_bool_validation():
-    assert registry._ensure_string({"name": "value"}, "name") == "value"
-    assert registry._ensure_bool({"flag": True}, "flag") is True
+    assert registry.ensure_string({"name": "value"}, "name") == "value"
+    assert registry.ensure_bool({"flag": True}, "flag") is True
 
     with pytest.raises(ValidationError):
-        registry._ensure_string({}, "missing")
+        registry.ensure_string({}, "missing")
     with pytest.raises(ValidationError):
-        registry._ensure_bool({}, "missing")
+        registry.ensure_bool({}, "missing")
 
 
 def test_validate_plot_style_metadata_normalises_fields():
@@ -280,9 +280,12 @@ def test_register_plot_style_round_trip():
 
 
 def test_list_plot_builder_descriptors_respects_trust(monkeypatch):
-    registry._PLOT_BUILDERS["a"] = registry.PlotBuilderDescriptor("a", object(), {}, True)
-    registry._PLOT_BUILDERS["b"] = registry.PlotBuilderDescriptor("b", object(), {}, False)
-    registry._TRUSTED_PLOT_BUILDERS.update({"a"})
+    registry.set_plot_builder(
+        "a", registry.PlotBuilderDescriptor("a", object(), {}, True), trusted=True
+    )
+    registry.set_plot_builder(
+        "b", registry.PlotBuilderDescriptor("b", object(), {}, False), trusted=False
+    )
 
     all_ids = [descriptor.identifier for descriptor in registry.list_plot_builder_descriptors()]
     trusted_ids = [
@@ -323,27 +326,43 @@ def test_register_plot_plugin_registers_all_components():
         descriptor = registry.register_plot_plugin("combo", plugin)
 
     assert descriptor.identifier == "combo"
-    assert "combo" in registry._PLOT_BUILDERS
-    assert "combo" in registry._PLOT_RENDERERS
-    assert "combo" in registry._PLOT_STYLES
+    assert "combo" in registry.plot_builders()
+    assert "combo" in registry.plot_renderers()
+    assert "combo" in registry.plot_styles()
 
 
 def test_list_explanation_descriptors_filters_trusted(monkeypatch):
-    descriptor_trusted = registry.ExplanationPluginDescriptor(
-        identifier="trusted",
-        plugin=object(),
-        metadata={},
-        trusted=True,
-    )
-    descriptor_untrusted = registry.ExplanationPluginDescriptor(
-        identifier="untrusted",
-        plugin=object(),
-        metadata={},
-        trusted=False,
-    )
-    registry._EXPLANATION_PLUGINS["trusted"] = descriptor_trusted
-    registry._EXPLANATION_PLUGINS["untrusted"] = descriptor_untrusted
-    registry._TRUSTED_EXPLANATIONS.add("trusted")
+    # Register two simple explanation plugins via public API rather than
+    # mutating internals.
+    class PlugA:
+        plugin_meta = {
+            "schema_version": 1,
+            "capabilities": ["explain"],
+            "name": "trusted",
+            "version": "0.0",
+            "provider": "tests",
+            "modes": ("factual",),
+            "tasks": ("classification",),
+            "dependencies": (),
+            "trust": True,
+        }
+
+    class PlugB:
+        plugin_meta = {
+            "schema_version": 1,
+            "capabilities": ["explain"],
+            "name": "untrusted",
+            "version": "0.0",
+            "provider": "tests",
+            "modes": ("factual",),
+            "tasks": ("classification",),
+            "dependencies": (),
+            "trust": False,
+        }
+
+    registry.clear_explanation_plugins()
+    registry.register_explanation_plugin("trusted", PlugA())
+    registry.register_explanation_plugin("untrusted", PlugB())
 
     all_ids = [descriptor.identifier for descriptor in registry.list_explanation_descriptors()]
     trusted_ids = [
@@ -377,7 +396,7 @@ def test_register_interval_plugin():
     plugin = IntervalPlugin()
     descriptor = registry.register_interval_plugin("test.interval", plugin)
     assert descriptor.identifier == "test.interval"
-    assert "test.interval" in registry._INTERVAL_PLUGINS
+    assert registry.find_interval_plugin("test.interval") is not None
 
 
 def test_register_plot_builder():
@@ -401,7 +420,7 @@ def test_register_plot_builder():
     plugin = PlotBuilder()
     descriptor = registry.register_plot_builder("test.builder", plugin)
     assert descriptor.identifier == "test.builder"
-    assert "test.builder" in registry._PLOT_BUILDERS
+    assert registry.find_plot_builder("test.builder") is not None
 
 
 def test_register_plot_renderer():
@@ -424,7 +443,7 @@ def test_register_plot_renderer():
     plugin = PlotRenderer()
     descriptor = registry.register_plot_renderer("test.renderer", plugin)
     assert descriptor.identifier == "test.renderer"
-    assert "test.renderer" in registry._PLOT_RENDERERS
+    assert registry.find_plot_renderer("test.renderer") is not None
 
 
 def test_register_plot_style():
@@ -442,12 +461,14 @@ def test_register_plot_style():
     }
     descriptor = registry.register_plot_style("test.style", metadata=style_meta)
     assert descriptor.identifier == "test.style"
-    assert "test.style" in registry._PLOT_STYLES
+    assert "test.style" in registry.plot_styles()
 
 
 def test_list_interval_descriptors_filters_trusted(monkeypatch):
     registry.ensure_builtin_plugins()
-    monkeypatch.setattr(registry, "_TRUSTED_INTERVALS", set())
+    # Ensure no intervals are marked trusted for this test using public helpers.
+    for d in registry.list_interval_descriptors():
+        registry.register_interval_plugin(d.identifier, d.plugin, metadata=d.metadata)
 
     all_descriptors = list(registry.list_interval_descriptors())
     trusted_descriptors = list(registry.list_interval_descriptors(trusted_only=True))
@@ -457,7 +478,9 @@ def test_list_interval_descriptors_filters_trusted(monkeypatch):
 
 def test_list_plot_builder_descriptors_filters_trusted(monkeypatch):
     registry.ensure_builtin_plugins()
-    monkeypatch.setattr(registry, "_TRUSTED_PLOT_BUILDERS", set())
+    # Clear trusted flags using public setter.
+    for d in registry.list_plot_builder_descriptors():
+        registry.set_plot_builder(d.identifier, d, trusted=False)
 
     all_descriptors = list(registry.list_plot_builder_descriptors())
     trusted_descriptors = list(registry.list_plot_builder_descriptors(trusted_only=True))
@@ -467,7 +490,7 @@ def test_list_plot_builder_descriptors_filters_trusted(monkeypatch):
 
 def test_register_explanation_plugin_invalid_identifier():
     class Plugin:
-        plugin_meta = _base_meta()
+        plugin_meta = base_meta()
 
     with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_explanation_plugin("", Plugin())
@@ -491,7 +514,7 @@ def test_register_explanation_plugin_invalid_metadata():
 
 def test_register_interval_plugin_invalid_identifier():
     class Plugin:
-        plugin_meta = _base_meta(capabilities=["interval"])
+        plugin_meta = base_meta(capabilities=["interval"])
 
     with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_interval_plugin("", Plugin())
@@ -499,21 +522,21 @@ def test_register_interval_plugin_invalid_identifier():
 
 def test_register_plot_builder_invalid_identifier():
     class Plugin:
-        plugin_meta = _base_meta(capabilities=["plot"])
+        plugin_meta = base_meta(capabilities=["plot"])
 
     with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_plot_builder("", Plugin())
 
 
 def test_validate_interval_metadata_missing_modes():
-    meta = _base_meta(capabilities=["interval"])
+    meta = base_meta(capabilities=["interval"])
 
     with pytest.raises(ValidationError, match="plugin_meta missing required key: modes"):
         registry.validate_interval_metadata(meta)
 
 
 def test_validate_interval_metadata_invalid_modes():
-    meta = _base_meta(capabilities=["interval"])
+    meta = base_meta(capabilities=["interval"])
     meta["modes"] = ("invalid",)
 
     with pytest.raises(ValidationError):
@@ -521,7 +544,7 @@ def test_validate_interval_metadata_invalid_modes():
 
 
 def test_validate_interval_metadata_missing_capabilities():
-    meta = _base_meta(capabilities=["interval"])
+    meta = base_meta(capabilities=["interval"])
     del meta["capabilities"]
 
     with pytest.raises(ValidationError):
@@ -529,7 +552,7 @@ def test_validate_interval_metadata_missing_capabilities():
 
 
 def test_validate_plot_builder_metadata_missing_capabilities():
-    meta = _base_meta(capabilities=["plot"])
+    meta = base_meta(capabilities=["plot"])
     del meta["capabilities"]
 
     with pytest.raises(ValidationError):

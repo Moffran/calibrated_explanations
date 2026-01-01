@@ -83,6 +83,7 @@ addopts = "-q --ignore=tests/unit/viz/test_matplotlib_adapter_additional.py --ig
 testpaths = ["tests"]
 markers = [
     "slow: marks tests as slow (can be skipped in FAST_TESTS)",
+    "integration: marks integration tests",
     "viz: marks visualization tests (optional extras)",
     "viz_render: marks tests that call matplotlib_adapter.render() (may fail with coverage due to lazy loading conflicts per ADR-023)",
     "platform_dependent: marks tests that depend on platform-specific behavior (paths, system calls, etc.)",
@@ -95,8 +96,13 @@ filterwarnings = [
     # Tests that explicitly validate fallback behavior must use the enable_fallbacks fixture
     # Matches variations like "falling back", "fall back", and "fallback"
     "error:.*fall.*back.*:UserWarning",
+    # Ignore deprecation warnings from third-party libraries that are outside our control
+    "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
+    "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
+    "ignore:Auto-close.*backend switching.*:matplotlib._api.deprecation.MatplotlibDeprecationWarning",
     # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
+    "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
     "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",
     "ignore:The 'calibrated_explanations.perf' module is deprecated.*:DeprecationWarning",
     "ignore:Importing from 'calibrated_explanations.core.calibration' is deprecated.*:DeprecationWarning",
@@ -151,6 +157,9 @@ exclude_lines = [
 [tool.coverage.html]
 directory = "coverage_html"
 
+[tool.setuptools]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+
 [tool.setuptools.packages.find]
 where = ["src", "external_plugins"]
 
@@ -161,7 +170,7 @@ calibrated_explanations = ["py.typed", "schemas/*.json", "templates/*.yaml"]
 # Tooling / Quality Gates (Phase 0)
 # ----------------------------
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 line-length = 100
 extend-exclude = ["build", "dist", "benchmarks", "docs/_build", "scripts", "evaluation"]
 
@@ -232,5 +241,5 @@ skips = ["B101"]
 exclude = ["tests", "build", "benchmarks", "notebooks", "scripts", "docs", "dist", "evaluation"]
 
 [tool.codespell]
-skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks"
+skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"
 ignore-words-list = "dataframe,nd"

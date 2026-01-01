@@ -37,17 +37,46 @@ class ShapHelper:
         else:
             self._enabled = True
 
+    # Backwards-compatible aliases
+    def isenabled(self) -> bool:  # pragma: no cover - legacy alias
+        """Legacy alias for is_enabled."""
+        return self.is_enabled()
+
+    def setenabled(self, value: bool) -> None:  # pragma: no cover - legacy alias
+        """Legacy alias for set_enabled."""
+        self.set_enabled(value)
+
+    @property
+    def enabled(self) -> bool:
+        """Compatibility alias for tests that set ``enabled`` directly."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set enabled state without forcing preload."""
+        self._enabled = bool(value)
+
     @property
     def explainer_instance(self) -> Any:
         """Expose the cached SHAP explainer, preloading it if necessary."""
         instance, _ = self.preload()
         return instance
 
+    @explainer_instance.setter
+    def explainer_instance(self, value: Any) -> None:
+        """Allow tests to inject cached explainer instances."""
+        self._explainer_instance = value
+
     @property
     def reference_explanation(self) -> Any:
         """Return the cached explanation, preloading if required."""
         _, explanation = self.preload()
         return explanation
+
+    @reference_explanation.setter
+    def reference_explanation(self, value: Any) -> None:
+        """Allow tests to inject cached reference explanations."""
+        self._reference_explanation = value
 
     def preload(self, num_test: Optional[int] = None) -> Tuple[Any, Any]:
         """Materialize the SHAP explainer when :mod:`shap` is available."""
@@ -58,22 +87,34 @@ class ShapHelper:
             if shape is not None and shape[0] == num_test:
                 return self._explainer_instance, self._reference_explanation
 
-        shap_module = safe_import("shap")
+        try:
+            shap_module = safe_import("shap")
+        except ImportError:
+            self._enabled = False
+            return None, None
         if not shap_module:
+            return None, None
+        x_cal = getattr(self.explainer, "x_cal", None)
+        if x_cal is None:
+            return None, None
+        try:
+            if len(x_cal) == 0:
+                return None, None
+        except TypeError:
             return None, None
 
         def _predict(x):
-            return self.explainer._predict(x)[0]  # pylint: disable=protected-access
+            return self.explainer.predict_calibrated(x)[0]
 
         self._explainer_instance = shap_module.Explainer(
             _predict,
-            self.explainer.x_cal,
+            x_cal,
             feature_names=self.explainer.feature_names,
         )
         self._reference_explanation = (
-            self._explainer_instance(self.explainer.x_cal[0, :].reshape(1, -1))
+            self._explainer_instance(x_cal[0, :].reshape(1, -1))
             if num_test is None
-            else self._explainer_instance(self.explainer.x_cal[:num_test, :])
+            else self._explainer_instance(x_cal[:num_test, :])
         )
         self._enabled = self._explainer_instance is not None
 

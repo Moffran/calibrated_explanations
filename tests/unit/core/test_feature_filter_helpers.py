@@ -12,7 +12,7 @@ from calibrated_explanations.core.explain._feature_filter import (
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 
 
-class _DummyExplainer:
+class DummyExplainer:
     """Minimal explainer stub for constructing CalibratedExplanations."""
 
     def __init__(self, num_features: int) -> None:
@@ -21,21 +21,21 @@ class _DummyExplainer:
         self.num_features = num_features
 
 
-class _DummyFastExplanation:
+class DummyFastExplanation:
     """Minimal FAST explanation stub exposing feature_weights['predict']."""
 
     def __init__(self, weights: np.ndarray) -> None:
         self.feature_weights = {"predict": np.asarray(weights, dtype=float)}
 
 
-def _make_fast_collection(weight_rows: list[np.ndarray]) -> CalibratedExplanations:
+def make_fast_collection(weight_rows: list[np.ndarray]) -> CalibratedExplanations:
     """Helper constructing a FAST-style CalibratedExplanations container."""
     n_instances = len(weight_rows)
     num_features = int(weight_rows[0].shape[0]) if weight_rows else 0
-    explainer = _DummyExplainer(num_features)
+    explainer = DummyExplainer(num_features)
     x = np.zeros((n_instances, num_features))
     collection = CalibratedExplanations(explainer, x, None, None)
-    collection.explanations = [_DummyFastExplanation(row) for row in weight_rows]
+    collection.explanations = [DummyFastExplanation(row) for row in weight_rows]
     return collection
 
 
@@ -47,7 +47,7 @@ def test_compute_filtered_features_to_ignore_keeps_at_most_top_k_per_instance_no
         np.array([10.0, 0.1, 0.2, 0.0]),
         np.array([0.0, 5.0, 0.3, 0.0]),
     ]
-    collection = _make_fast_collection(weights)
+    collection = make_fast_collection(weights)
     num_features = 4
 
     cfg = FeatureFilterConfig(enabled=True, per_instance_top_k=2)
@@ -77,7 +77,7 @@ def test_compute_filtered_features_to_ignore_respects_top_k_with_base_ignore() -
         np.array([10.0, 0.1, 0.2, 0.0]),
         np.array([0.0, 5.0, 3.0, 0.0]),
     ]
-    collection = _make_fast_collection(weights)
+    collection = make_fast_collection(weights)
     num_features = 4
 
     # Feature 1 is always ignored by the explainer; allow filter to pick up to 2 among {0,2,3}.

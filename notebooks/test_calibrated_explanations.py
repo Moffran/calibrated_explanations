@@ -65,7 +65,8 @@ print(
         [
             f"Instance {i}: {exp.prediction['predict']:.3f} [{exp.prediction['low']:5.3f}, {exp.prediction['high']:5.3f}]"
             for i, exp in enumerate(factual_explanations)
-        ]
+        ],
+        strict=False,
     ),
     sep="\n",
 )

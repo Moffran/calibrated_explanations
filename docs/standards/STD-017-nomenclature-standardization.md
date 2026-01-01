@@ -1,8 +1,11 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
-# ADR-017: Internal nomenclature standardisation
+# Standard-017: Internal nomenclature standardisation
 
-Status: Accepted (2025-10-06)
+Formerly ADR-017. Reclassified as an engineering standard to keep ADRs scoped to
+architectural or contract decisions.
+
+Status: Active (2025-10-06)
 
 ## Context
 

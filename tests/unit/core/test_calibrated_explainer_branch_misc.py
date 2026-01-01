@@ -20,7 +20,7 @@ def test_slice_threshold_branches_exercised():
 
     Tests should call explain module functions directly.
     """
-    from calibrated_explanations.core.explain._helpers import slice_threshold
+    from calibrated_explanations.core.explain.helpers import slice_threshold
 
     sentinel = object()
     assert slice_threshold(sentinel, 0, 1, 1) is sentinel
@@ -41,7 +41,7 @@ def test_slice_bins_handles_collections():
 
     Tests should call explain module functions directly.
     """
-    from calibrated_explanations.core.explain._helpers import slice_bins
+    from calibrated_explanations.core.explain.helpers import slice_bins
 
     assert slice_bins(None, 0, 1) is None
 
@@ -55,7 +55,7 @@ def test_slice_bins_handles_collections():
 
 def test_infer_explanation_mode_prefers_discretizer(explainer_factory):
     explainer = explainer_factory()
-    assert explainer._infer_explanation_mode() == "factual"
+    assert explainer.infer_explanation_mode() == "factual"
 
     data = np.array([[0.0], [1.0]])
     labels = np.array([0.0, 1.0])
@@ -67,27 +67,27 @@ def test_infer_explanation_mode_prefers_discretizer(explainer_factory):
         random_state=0,
     )
     explainer.discretizer = discretizer
-    assert explainer._infer_explanation_mode() == "alternative"
+    assert explainer.infer_explanation_mode() == "alternative"
 
 
 def test_set_mode_variants(monkeypatch, explainer_factory):
     explainer = explainer_factory()
 
-    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
+    explainer.set_mode("classification", initialize=False)
     assert explainer.mode == "classification"
     assert explainer.num_classes == 2
 
-    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
+    explainer.set_mode("regression", initialize=False)
     assert explainer.mode == "regression"
     assert explainer.num_classes == 0
 
     with pytest.raises(ValidationError):
-        explainer._CalibratedExplainer__set_mode("unsupported", initialize=False)
+        explainer.set_mode("unsupported", initialize=False)
 
 
 def test_get_sigma_test_uses_difficulty_estimator(explainer_factory):
     explainer = explainer_factory()
-    values = explainer._get_sigma_test(np.zeros((3, explainer.num_features)))
+    values = explainer.get_sigma_test(np.zeros((3, explainer.num_features)))
     assert np.all(values == 1)
 
     class Estimator:
@@ -95,7 +95,7 @@ def test_get_sigma_test_uses_difficulty_estimator(explainer_factory):
             return np.full(x.shape[0], 0.42)
 
     explainer.difficulty_estimator = Estimator()
-    updated = explainer._get_sigma_test(np.zeros((2, explainer.num_features)))
+    updated = explainer.get_sigma_test(np.zeros((2, explainer.num_features)))
     assert np.all(updated == 0.42)
 
 
@@ -138,7 +138,7 @@ def test_reinitialize_updates_state(monkeypatch, explainer_factory):
     assert appended == [(xs, ys)]
     assert np.all(explainer.bins == np.array([0.5, 0.6, 7, 8]))
     assert update_calls and update_calls[0][0] is explainer
-    assert explainer._CalibratedExplainer__initialized is True
+    assert explainer.initialized is True
 
     with pytest.raises(DataShapeError):
         explainer.reinitialize(learner, xs=xs, ys=ys, bins=np.array([1]))

@@ -14,6 +14,8 @@ from __future__ import annotations
 import warnings as _warnings
 
 from ._base import BaseExplainExecutor
+from ._computation import discretize, rule_boundaries
+from ._legacy_explain import explain as legacy_explain
 from ._shared import ExplainConfig, ExplainRequest, ExplainResponse
 from .orchestrator import ExplanationOrchestrator
 from .parallel_instance import InstanceParallelExplainExecutor
@@ -34,6 +36,9 @@ def explain(*args, **kwargs):
 
 __all__ = [
     "explain",
+    "legacy_explain",
+    "discretize",
+    "rule_boundaries",
     "BaseExplainExecutor",
     "ExplainConfig",
     "ExplainRequest",

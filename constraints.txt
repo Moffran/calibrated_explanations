@@ -1,0 +1,14 @@
+# Dependency constraints for development and CI.
+#
+# ONLY absolutely necessary constraints are included here to ensure compatibility
+# where upstream packages have strict requirements (e.g., numpy version splits).
+# All other dependencies use the softer ranges from requirements.txt.
+#
+# Update policy:
+# - Add pins ONLY when CI reveals unavoidable incompatibilities.
+# - Remove pins as soon as upstream fixes the issues.
+
+numpy==1.26.4; python_version < '3.13'
+numpy==2.1.2; python_version >= '3.13'
+scikit-learn==1.4.2; python_version < '3.13'
+scikit-learn==1.5.2; python_version >= '3.13'
