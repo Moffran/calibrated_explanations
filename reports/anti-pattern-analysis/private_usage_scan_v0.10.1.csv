@@ -1,0 +1,250 @@
+file,line,name,type,category,pattern,message
+tests\conftest.py,145,_CalibratedExplainer__initialized,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\docs\contributor\test_plugin_advanced_contract.py,338,_resolve_plot_style_chain,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\docs\contributor\test_plugin_advanced_contract.py,369,_resolve_plot_style_chain,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\docs\contributor\test_plugin_advanced_contract.py,49,_resolve_plot_style_chain,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\docs\contributor\test_plugin_advanced_contract.py,89,_resolve_plot_style_chain,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\helpers\explainer_utils.py,23,_CalibratedExplainer__initialized,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\helpers\explainer_utils.py,275,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\helpers\explainer_utils.py,276,_thresholded,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\helpers\explainer_utils.py,278,_class_labels,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\helpers\explainer_utils.py,283,_explainer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanations.py
+tests\helpers\explainer_utils.py,288,_explainer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanations.py
+tests\helpers\explainer_utils.py,292,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\helpers\explainer_utils.py,296,_class_labels,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\helpers\explainer_utils.py,300,_thresholded,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\integration\core\test_plugin_resolution.py,139,_explanation_plugin_instances,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\integration\plugins\test_explanation_plugin_integration.py,81,_context,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in viz\plugins.py
+tests\integration\viz\test_plots_integration.py,96,_plot_proba_triangle,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in legacy\plotting.py
+tests\integration\viz\test_plots_more.py,12,_plot_proba_triangle,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in legacy\plotting.py
+tests\plugins\test_builtins_behaviour.py,659,_register_builtins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\builtins.py
+tests\plugins\test_builtins_behaviour.py,673,_register_builtins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\builtins.py
+tests\plugins\test_builtins_behaviour.py,136,_supports_calibrated_explainer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\builtins.py
+tests\plugins\test_builtins_behaviour.py,137,_supports_calibrated_explainer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\builtins.py
+tests\plugins\test_builtins_module.py,622,_register_builtins,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\builtins.py
+tests\plugins\test_builtins_module.py,679,_register_builtins,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\builtins.py
+tests\plugins\test_cli.py,102,_emit_explanation_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,103,_emit_interval_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,104,_emit_plot_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,105,_emit_plot_builder_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,106,_emit_plot_renderer_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,146,_cmd_list,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,169,_cmd_list,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,181,_cmd_list,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,198,_cmd_list,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,209,_cmd_list,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,218,_cmd_show,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,227,_cmd_show,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,247,_cmd_show,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,264,_cmd_trust,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,288,_cmd_trust,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli.py,302,_cmd_trust,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,57,_emit_explanation_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,72,_emit_interval_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,91,_emit_plot_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,113,_emit_plot_builder_descriptor,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,127,_cmd_list,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,139,_cmd_show,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_cli_additional.py,157,_cmd_trust,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\cli.py
+tests\plugins\test_runtime_validation.py,37,_explanation_attr,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\plugins\test_runtime_validation.py,44,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\unit\test_explanations_collection.py,56,_predict,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in integrations\shap.py
+tests\unit\test_explanations_collection.py,60,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\test_explanations_collection.py,64,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\test_explanations_collection.py,68,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\test_explanations_collection.py,81,_predict,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in integrations\shap.py
+tests\unit\test_perf_cache_shim.py,17,_hash_part,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in perf\cache.py
+tests\unit\test_perf_cache_shim.py,17,_hash_part,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in perf\cache.py
+tests\unit\test_perf_parallel.py,265,_serial_strategy,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\test_plots_configuration.py,35,_read_plot_pyproject,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\unit\test_plots_configuration.py,26,_read_plot_pyproject,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\unit\test_plots_configuration.py,45,_read_plot_pyproject,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\unit\test_plots_configuration.py,52,_read_plot_pyproject,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\unit\test_plotting.py,135,_get_explainer,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\legacy\test_plotting.py
+tests\unit\test_plotting.py,629,_plot_proba_triangle,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in legacy\plotting.py
+tests\unit\test_plot_spec_default_builder.py,10,_legacy_get_fill_color,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in viz\builders.py
+tests\unit\test_plot_spec_default_builder.py,11,_legacy_get_fill_color,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in viz\builders.py
+tests\unit\test_utils_deprecations.py,55,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\test_utils_deprecations.py,64,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\test_utils_deprecations.py,74,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\test_utils_deprecations.py,53,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\test_utils_deprecations.py,72,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\api\test_config_builder.py,89,_perf_factory,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in api\config.py
+tests\unit\core\test_calibrated_explainer_additional.py,572,_sequential_plugin,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\explain\parallel_instance.py
+tests\unit\core\test_calibrated_explainer_coverage.py,221,_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_coverage.py,222,_fast_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_coverage.py,224,_bridge_monitors,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\test_calibrated_explainer_coverage.py,225,_explanation_plugin_instances,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_coverage.py,239,_pyproject_explanations,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_coverage.py,240,_pyproject_intervals,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_coverage.py,241,_pyproject_plots,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_coverage.py,199,_predict_impl,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\test_calibrated_explainer_coverage.py,210,_predict_impl,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\test_calibrated_explainer_coverage.py,209,_predict_impl,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\test_calibrated_explainer_lime.py,105,_predict,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in integrations\shap.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,30,_fast_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,39,_pyproject_explanations,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,40,_pyproject_intervals,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,41,_pyproject_plots,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,530,_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,557,_CalibratedExplainer__noise_type,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\prediction\test_orchestrator_coverage.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,611,_CalibratedExplainer__fast,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,131,_pyproject_intervals,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,132,_pyproject_plots,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\core\test_calibrated_explainer_runtime_helpers.py,222,_CalibratedExplainer__initialize_interval_learner_for_fast_explainer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\test_calibration_helpers.py,83,_initialized,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\test_calibration_helpers.py
+tests\unit\core\test_calibration_helpers.py,87,_initialized,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\test_calibration_helpers.py
+tests\unit\core\test_calibration_helpers.py,91,_initialized,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\test_calibration_helpers.py
+tests\unit\core\test_instance_parallel.py,126,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\test_instance_parallel.py,130,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\test_instance_parallel.py,134,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\test_interval_regressor.py,521,_y_cal_hat_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,530,_bins_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,182,_append_calibration_buffer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,190,_append_bins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,522,_append_calibration_buffer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,524,_y_cal_hat_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,529,_bins_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,531,_append_bins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,533,_bins_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,541,_append_calibration_buffer,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,543,_y_cal_hat_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,547,_append_bins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,548,_append_bins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,550,_bins_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,659,_append_bins,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,662,_bins_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,663,_bins_size,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,670,_ensure_capacity,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,173,_residual_cal_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,174,_sigma_cal_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,217,_bins_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,534,_bins_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,551,_bins_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,652,_residual_cal_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_interval_regressor.py,653,_sigma_cal_storage,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibration\interval_regressor.py
+tests\unit\core\test_parallel_benchmark.py,32,_parallel_executor,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\test_parallel_benchmark.py
+tests\unit\core\test_parallel_benchmark.py,37,_parallel_executor,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\test_parallel_benchmark.py
+tests\unit\core\test_parallel_benchmark.py,41,_parallel_executor,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\test_parallel_benchmark.py
+tests\unit\core\test_schema_payload_validation.py,20,_schema_json,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in schema\validation.py
+tests\unit\core\test_schema_payload_validation.py,30,_schema_json,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in schema\validation.py
+tests\unit\core\test_wrap_explainer_helpers.py,109,_serialise_preprocessor_value,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,119,_extract_preprocessor_snapshot,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,136,_build_preprocessor_metadata,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,148,_pre_fit_preprocess,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,152,_pre_transform,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,156,_maybe_preprocess_for_inference,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,170,_pre_fit_preprocess,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,172,_pre_fitted,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,174,_pre_transform,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,185,_finalize_fit,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,197,_format_proba_output,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,202,_format_proba_output,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,206,_format_proba_output,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,405,_pre_fit_preprocess,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,407,_pre_fitted,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,88,_normalize_auto_encode_flag,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,90,_normalize_auto_encode_flag,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,92,_normalize_auto_encode_flag,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,94,_normalize_auto_encode_flag,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,132,_build_preprocessor_metadata,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,194,_format_proba_output,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,372,_serialise_preprocessor_value,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,378,_serialise_preprocessor_value,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,387,_pre_fit_preprocess,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,78,_normalize_public_kwargs,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\test_wrap_explainer_helpers.py,81,_normalize_public_kwargs,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\core\explain\test_explain_orchestrator.py,23,_bridge_monitors,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\explain\test_explain_orchestrator.py,476,_derive_plot_chain,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\explain\orchestrator.py
+tests\unit\core\explain\test_orchestrator_coverage.py,447,_derive_plot_chain,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\explain\orchestrator.py
+tests\unit\core\explain\test_parallel_executors.py,148,_sequential_plugin,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\explain\parallel_instance.py
+tests\unit\core\explain\test_parallel_instance_tasks.py,141,_instance_parallel_task,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\explain\parallel_instance.py
+tests\unit\core\explain\test_parallel_instance_tasks.py,183,_instance_parallel_task,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\explain\parallel_instance.py
+tests\unit\core\explain\test_parallel_instance_tasks.py,54,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\explain\test_parallel_instance_tasks.py,58,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\explain\test_parallel_instance_tasks.py,62,_plugin_manager,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\core\explain\test_parallel_lifecycle.py,75,_resolve_strategy,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\core\explain\test_parallel_lifecycle.py,81,_resolve_strategy,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\core\explain\test_parallel_lifecycle.py,91,_resolve_strategy,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\core\explain\test_pool_idempotency_and_harness.py,59,_worker_harness,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\core\prediction\test_orchestrator_coverage.py,670,_CalibratedExplainer__noise_type,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\prediction\test_orchestrator_coverage.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,671,_CalibratedExplainer__scale_factor,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\prediction\test_orchestrator_coverage.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,672,_CalibratedExplainer__severity,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in unit\core\prediction\test_orchestrator_coverage.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,801,_validate_prediction_result,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,806,_validate_prediction_result,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,97,_validate_prediction_result,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,105,_validate_prediction_result,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\core\prediction\test_orchestrator_coverage.py,112,_validate_prediction_result,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\prediction\orchestrator.py
+tests\unit\explanations\test_explanation_helpers.py,117,_build_uncertainty_payload,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,132,_build_interval,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,139,_parse_condition,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,149,_build_condition_payload,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,511,_build_uncertainty_payload,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,522,_build_uncertainty_payload,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,542,_ignored_features_for_instance,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,548,_ignored_features_for_instance,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,555,_build_instance_uncertainty,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,564,_build_instance_uncertainty,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,570,_build_instance_uncertainty,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,601,_build_condition_payload,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,611,_build_condition_payload,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,672,_predict_conjunctive,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,261,_build_interval,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,478,_get_percentiles,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,579,_safe_feature_name,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,580,_safe_feature_name,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,581,_safe_feature_name,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\explanations\test_explanation_helpers.py,689,_predict_conjunctive,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in explanations\explanation.py
+tests\unit\legacy\test_plotting.py,919,_plot_proba_triangle,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in legacy\plotting.py
+tests\unit\legacy\test_plotting.py,154,_MATPLOTLIB_IMPORT_ERROR,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in legacy\plotting.py
+tests\unit\perf\test_cache.py,596,_telemetry,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in cache\cache.py
+tests\unit\perf\test_parallel.py,358,_process_strategy,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\perf\test_parallel.py,587,_get_cgroup_cpu_quota,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\perf\test_parallel.py,607,_get_cgroup_cpu_quota,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in parallel\parallel.py
+tests\unit\plotting\test_label_helpers.py,66,_format_save_path,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\unit\plotting\test_plotting_helpers.py,13,_last_explanation_mode,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plotting\test_plotting_helpers.py,14,_plot_plugin_fallbacks,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plotting\test_plotting_helpers.py,25,_resolve_plot_style_chain,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plotting.py
+tests\unit\plugins\test_execution_strategy_wrappers.py,143,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\unit\plugins\test_execution_strategy_wrappers.py,144,_explanation_attr,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\plugins\test_execution_strategy_wrappers.py,157,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\unit\plugins\test_execution_strategy_wrappers.py,158,_explanation_attr,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\plugins\test_execution_strategy_wrappers.py,164,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\unit\plugins\test_execution_strategy_wrappers.py,165,_explanation_attr,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\plugins\test_execution_strategy_wrappers.py,178,_mode,attribute,Category B: Test Utilities,Pattern 2 (Test Utility Fix),Defined in helpers\explainer_utils.py
+tests\unit\plugins\test_execution_strategy_wrappers.py,179,_explanation_attr,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\plugins\test_execution_strategy_wrappers.py,385,_feature_filter_config,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\plugins\test_execution_strategy_wrappers.py,394,_feature_filter_config,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\wrap_explainer.py
+tests\unit\plugins\test_manager.py,27,_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,28,_fast_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,36,_bridge_monitors,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\plugins\test_manager.py,37,_explanation_plugin_instances,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,78,_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,79,_fast_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,99,_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,100,_fast_interval_plugin_override,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,192,_bridge_monitors,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\plugins\test_manager.py,195,_bridge_monitors,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in core\calibrated_explainer.py
+tests\unit\plugins\test_manager.py,227,_explanation_plugin_instances,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\plugins\test_manager.py,230,_explanation_plugin_instances,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in plugins\manager.py
+tests\unit\utils\test_deprecations_helper.py,23,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,24,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,26,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,27,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,36,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,41,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,46,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,51,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,56,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,61,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,74,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,84,_should_raise,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in utils\deprecations.py
+tests\unit\utils\test_deprecations_helper.py,132,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,150,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,174,_EMITTED,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,191,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,151,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\utils\test_deprecations_helper.py,192,_EMITTED_PER_TEST,attribute,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
+tests\unit\viz\test_narrative_plugin.py,581,_get_feature_names,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in viz\narrative_plugin.py
+tests\unit\viz\test_narrative_plugin.py,585,_get_feature_names,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in viz\narrative_plugin.py
+tests\unit\viz\test_narrative_plugin.py,588,_get_feature_names,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in viz\narrative_plugin.py

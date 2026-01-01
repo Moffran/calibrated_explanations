@@ -184,7 +184,6 @@ catboost_info/
 coverage.xml
 .coverage
 plots/
-reports/
 .ruff_cache/
 .conda/
 .tests/benchmarks/
@@ -196,7 +195,5 @@ docs/improvement/ignore/
 docs/improvement/adr_mending/
 docs/improvement/archived/
 .ci-env/
-scripts/private_usage_report.csv
-reports/private_usage_scan.csv
-reports/test_anti_pattern_report.csv
+
 evaluation/experimental/
