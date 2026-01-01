@@ -42,7 +42,7 @@ def _ensure_joblib_pool_attribute():
     """Work around joblib ThreadingBackend expecting a missing `pool` attribute."""
     try:
         import joblib._parallel_backends as _joblib_backends
-    except Exception:
+    except ImportError:
         return
 
     if hasattr(_joblib_backends.PoolManagerMixin, "pool"):

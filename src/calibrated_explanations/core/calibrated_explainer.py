@@ -370,7 +370,7 @@ class CalibratedExplainer:
         return manager
 
     def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
-        """Internal alias for resolve_parallel_executor."""
+        """Resolve the parallel executor honoring overrides and environment config."""
         return self.resolve_parallel_executor(explicit_executor)
 
     def resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
@@ -554,7 +554,7 @@ class CalibratedExplainer:
         return self.explanation_orchestrator.build_instance_telemetry_payload(explanations)
 
     def _invoke_explanation_plugin(self, *args, **kwargs) -> Any:
-        """Internal alias for invoke_explanation_plugin."""
+        """Invoke the explanation plugin with the given parameters."""
         return self.invoke_explanation_plugin(*args, **kwargs)
 
     def invoke_explanation_plugin(
@@ -1532,7 +1532,7 @@ class CalibratedExplainer:
         return self._shap_helper.preload(num_test=num_test)
 
     def _predict(self, *args, **kwargs) -> Any:
-        """Internal alias for predict_internal."""
+        """Delegate to predict_internal."""
         return self.predict_internal(*args, **kwargs)
 
     def predict_internal(
@@ -1700,7 +1700,7 @@ class CalibratedExplainer:
         )
 
     def _explain(self, *args, **kwargs) -> CalibratedExplanations:
-        """Internal alias for explain_internal."""
+        """Delegate to explain_internal for internal explanation orchestration."""
         return self.explain_internal(*args, **kwargs)
 
     def explain_internal(
