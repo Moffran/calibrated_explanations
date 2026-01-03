@@ -20,6 +20,7 @@ from calibrated_explanations.plugins.intervals import (
     IntervalCalibratorContext,
     IntervalCalibratorPlugin,
 )
+from calibrated_explanations.plugins.interval_wrappers import FastIntervalCalibrator
 from calibrated_explanations.plugins.registry import (
     register_explanation_plugin,
     register_interval_plugin,
@@ -142,9 +143,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
 
             calibrators.append(IntervalRegressor(explainer))
 
-        if isinstance(metadata, dict):
-            metadata.setdefault("fast_calibrators", tuple(calibrators))
-        return calibrators
+        return FastIntervalCalibrator(calibrators)
 
 
 @dataclass

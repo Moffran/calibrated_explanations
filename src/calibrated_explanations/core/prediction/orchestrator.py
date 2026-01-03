@@ -20,24 +20,46 @@ import logging
 import os
 import sys
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
+from collections.abc import Mapping, Sequence
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 import numpy as np
 
 from ...plugins import (
     IntervalCalibratorContext,
+    ClassificationIntervalCalibrator,
+    RegressionIntervalCalibrator,
     ensure_builtin_plugins,
     find_interval_descriptor,
     find_interval_plugin,
     find_interval_plugin_trusted,
     is_identifier_denied,
 )
+from ...plugins.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from ...utils import assert_threshold
 from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 from .validation import check_interval_runtime_metadata
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
+
+
+def _freeze_context_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({k: _freeze_context_value(v) for k, v in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_context_value(item) for item in value)
+    if hasattr(value, "copy") and callable(value.copy):
+        try:
+            return value.copy()
+        except Exception:  # pragma: no cover - defensive
+            return value
+    return value
+
+
+def _freeze_context_mapping(mapping: Mapping[str, Any]) -> Mapping[str, Any]:
+    return MappingProxyType({key: _freeze_context_value(value) for key, value in mapping.items()})
 
 
 class PredictionOrchestrator:
@@ -613,7 +635,7 @@ class PredictionOrchestrator:
         fast: bool,
         metadata: Mapping[str, Any],
     ) -> IntervalCalibratorContext:
-        """Construct the frozen interval calibrator context."""
+        """Construct the interval calibrator context with mutable metadata for plugin use."""
         calibration_splits: Tuple[Any, ...] = ((self.explainer.x_cal, self.explainer.y_cal),)
         bins = {"calibration": self.explainer.bins}
         difficulty = {"estimator": self.explainer.difficulty_estimator}
@@ -652,18 +674,21 @@ class PredictionOrchestrator:
                 )
                 if stored_fast:
                     existing_fast = stored_fast
-            if not existing_fast and isinstance(self.explainer.interval_learner, list):
+            if not existing_fast and is_fast_interval_collection(self.explainer.interval_learner):
                 existing_fast = tuple(self.explainer.interval_learner)
             if existing_fast:
                 enriched_metadata["existing_fast_calibrators"] = tuple(existing_fast)
+        # Return context with completely mutable metadata for plugin execution
+        # Nested values are NOT frozen to avoid breaking code that expects mutable structures
+        # The context becomes immutable after caching in obtain_interval_calibrator()
         return IntervalCalibratorContext(
             learner=self.explainer.learner,
             calibration_splits=calibration_splits,
-            bins=bins,
-            residuals=residuals,
-            difficulty=difficulty,
+            bins=_freeze_context_mapping(bins),
+            residuals=_freeze_context_mapping(residuals),
+            difficulty=_freeze_context_mapping(difficulty),
             metadata=enriched_metadata,
-            fast_flags=fast_flags,
+            fast_flags=_freeze_context_mapping(fast_flags),
         )
 
     def obtain_interval_calibrator(
@@ -686,6 +711,13 @@ class PredictionOrchestrator:
             raise ConfigurationError(
                 f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
             ) from exc
+        self.validate_interval_calibrator(
+            calibrator=calibrator,
+            context=context,
+            identifier=identifier,
+            fast=fast,
+            plugin=plugin,
+        )
         self.capture_interval_calibrators(
             context=context,
             calibrator=calibrator,
@@ -694,13 +726,11 @@ class PredictionOrchestrator:
         key = "fast" if fast else "default"
         self.explainer.plugin_manager.interval_plugin_identifiers[key] = identifier
         self.explainer.plugin_manager.telemetry_interval_sources[key] = identifier
-        metadata_dict: Dict[str, Any]
-        if isinstance(context.metadata, dict):
-            metadata_dict = context.metadata
-        else:
-            metadata_dict = dict(context.metadata)
+        metadata_dict = dict(context.metadata)
         if fast:
-            if isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes)):
+            if isinstance(calibrator, FastIntervalCalibrator):
+                calibrators_tuple = calibrator.calibrators
+            elif isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes)):
                 calibrators_tuple = tuple(calibrator)
             else:
                 calibrators_tuple = (calibrator,)
@@ -710,8 +740,6 @@ class PredictionOrchestrator:
             metadata_dict["calibrator"] = calibrator
         # persist captured metadata for future invocations without sharing references
         self.explainer.plugin_manager.interval_context_metadata[key] = dict(metadata_dict)
-        if metadata_dict is not context.metadata and isinstance(context.metadata, dict):
-            context.metadata.update(metadata_dict)
         return calibrator, identifier
 
     def capture_interval_calibrators(
@@ -723,6 +751,8 @@ class PredictionOrchestrator:
     ) -> None:
         """Record the returned calibrator inside the interval context metadata."""
         metadata = context.metadata
+        # Skip if metadata is immutable (MappingProxyType from frozen context)
+        # Calibrators are cached separately in plugin_manager.interval_context_metadata
         if not isinstance(metadata, dict):
             return
 
@@ -735,3 +765,70 @@ class PredictionOrchestrator:
                 metadata.setdefault("fast_calibrators", (calibrator,))
         else:
             metadata.setdefault("calibrator", calibrator)
+
+    def validate_interval_calibrator(
+        self,
+        *,
+        calibrator: Any,
+        context: IntervalCalibratorContext,
+        identifier: str | None,
+        fast: bool,
+        plugin: Any = None,
+    ) -> None:
+        """Validate interval calibrator protocol conformance.
+        
+        Skips validation for untrusted plugins (they can return anything).
+        Enforces protocol compliance for trusted plugins and builtins.
+        """
+        # Check if plugin is untrusted - if so, skip protocol validation
+        if plugin is not None:
+            plugin_meta = getattr(plugin, "plugin_meta", {})
+            is_trusted = plugin_meta.get("trusted", True)
+            if not is_trusted:
+                # Untrusted plugins can return anything
+                return
+        
+        task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
+        expected = (
+            RegressionIntervalCalibrator
+            if "regression" in task
+            else ClassificationIntervalCalibrator
+        )
+        
+        # For FAST mode: allow Sequence, FastIntervalCalibrator, or protocol-compliant single objects
+        if fast:
+            if calibrator is None:
+                mode = "fast"
+                label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                raise ConfigurationError(
+                    f"Interval plugin '{label}' returned None for {mode} mode."
+                )
+            
+            # Accept FastIntervalCalibrator or Sequence (will validate items later)
+            if isinstance(calibrator, (FastIntervalCalibrator, list, tuple)):
+                return
+            
+            # Also accept protocol-compliant single objects
+            if isinstance(calibrator, expected):
+                return
+            
+            # Otherwise it's invalid
+            mode = "fast"
+            label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+            expected_name = f"FastIntervalCalibrator | Sequence[{expected.__name__}]"
+            actual = type(calibrator).__name__
+            raise ConfigurationError(
+                f"Interval plugin '{label}' returned a non-compliant calibrator for {mode} mode "
+                f"(expected {expected_name}, got {actual})."
+            )
+        else:
+            # For non-FAST mode: single protocol-compliant calibrator
+            if calibrator is None or not isinstance(calibrator, expected):
+                label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                mode = "default"
+                expected_name = expected.__name__
+                actual = type(calibrator).__name__ if calibrator is not None else "None"
+                raise ConfigurationError(
+                    f"Interval plugin '{label}' returned a non-compliant calibrator for {mode} mode "
+                    f"(expected {expected_name}, got {actual})."
+                )

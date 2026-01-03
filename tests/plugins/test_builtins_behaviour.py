@@ -174,7 +174,7 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
     plugin = builtins.LegacyIntervalCalibratorPlugin()
     calibrator = plugin.create(context)
     assert isinstance(calibrator, DummyIntervalRegressor)
-    assert context.metadata["calibrator"] is calibrator
+    # Plugin does not cache the calibrator; orchestrator does that via capture_interval_calibrators
     assert created_with["explainer"] is context.metadata["explainer"]
 
 

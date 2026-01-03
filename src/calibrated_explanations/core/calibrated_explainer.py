@@ -35,6 +35,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         _tomllib = None  # type: ignore[assignment]
 
 # Core imports (no cross-sibling dependencies)
+from ..plugins.interval_wrappers import is_fast_interval_collection
 from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from ..utils.exceptions import (
@@ -2312,7 +2313,7 @@ class CalibratedExplainer:
 
         # Calibrated predictions
         if self.mode == "regression":
-            if isinstance(self.interval_learner, list):
+            if is_fast_interval_collection(self.interval_learner):
                 proba_1, low, high, _ = self.interval_learner[-1].predict_probability(
                     x, y_threshold=threshold, **kwargs
                 )
@@ -2325,7 +2326,7 @@ class CalibratedExplainer:
 
         # Classification - multiclass
         if self.is_multiclass():
-            if isinstance(self.interval_learner, list):
+            if is_fast_interval_collection(self.interval_learner):
                 proba, low, high, _ = self.interval_learner[-1].predict_proba(
                     x, output_interval=True, **kwargs
                 )
@@ -2336,7 +2337,7 @@ class CalibratedExplainer:
             return (proba, (low, high)) if uq_interval else proba
 
         # Classification - binary
-        if isinstance(self.interval_learner, list):
+        if is_fast_interval_collection(self.interval_learner):
             proba, low, high = self.interval_learner[-1].predict_proba(
                 x, output_interval=True, **kwargs
             )

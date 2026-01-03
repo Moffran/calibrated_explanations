@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..plugins.interval_wrappers import is_fast_interval_collection
 from ..utils.exceptions import ConfigurationError
 from ..utils.helper import assign_threshold as normalize_threshold
 
@@ -84,7 +85,7 @@ def update_interval_learner(  # pylint: disable=invalid-name
         )
         explainer.interval_learner = interval
     elif "regression" in explainer.mode:
-        if isinstance(explainer.interval_learner, list):
+        if is_fast_interval_collection(explainer.interval_learner):
             raise ConfigurationError("Fast explanations are not supported in this update path.")
         # update the IntervalRegressor
         explainer.interval_learner.insert_calibration(xs, ys, bins=bins)

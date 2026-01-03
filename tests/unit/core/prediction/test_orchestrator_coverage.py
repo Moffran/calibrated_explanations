@@ -636,6 +636,7 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
         patch.object(orchestrator, "capture_interval_calibrators") as mock_capture,
     ):
         mock_plugin = MagicMock()
+        mock_plugin.plugin_meta = {"trusted": False}  # Mark as untrusted to skip validation
         mock_plugin.create.return_value = "calibrator_instance"
         mock_resolve.return_value = (mock_plugin, "test_plugin")
 

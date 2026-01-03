@@ -7,6 +7,13 @@
 
 ### Added
 
+- **ADR-013: Interval Plugin Protocol Compliance:** Delivered protocol-validated interval calibrators with frozen contexts and CLI diagnostics.
+  - Implemented `FastIntervalCalibrator` wrapper for per-feature calibrator lists with all required protocol methods.
+  - Added runtime protocol validation in `PredictionOrchestrator.validate_interval_calibrator()` for `ClassificationIntervalCalibrator` and `RegressionIntervalCalibrator` compliance.
+  - Implemented context freezing with `_freeze_context_value()` to prevent plugin mutations while keeping metadata mutable.
+  - Updated `LegacyIntervalCalibratorPlugin.create()` to reuse cached calibrators, eliminating redundant initialization.
+  - Added CLI diagnostics: `ce.plugins validate-interval --plugin <id>` and `ce.plugins explain-interval --plugin <id>` for plugin validation and configuration details.
+
 - **ADR-006: Plugin Trust Controls and Diagnostics:** Implemented opt-in trust model for third-party plugins with deny list enforcement, discovery diagnostics, and security documentation.
   - Constrained trust-by-default to in-tree plugins; third-party plugins require explicit approval via `CE_TRUST_PLUGIN` or `pyproject.toml` configuration.
   - Implemented `CE_DENY_PLUGIN` enforcement at discovery and registration gates.

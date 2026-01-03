@@ -49,6 +49,7 @@ from .explanations import (
     ExplanationPlugin,
     ExplanationRequest,
 )
+from .interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from .intervals import IntervalCalibratorContext, IntervalCalibratorPlugin
 from .plots import PlotBuilder, PlotRenderContext, PlotRenderer, PlotRenderResult
 from .predict import PredictBridge
@@ -205,6 +206,28 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
         """Instantiate the legacy interval calibrator for the supplied context."""
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
+        cached = context.metadata.get("calibrator")
+        if cached is not None:
+            return cached
+        explainer = context.metadata.get("explainer")
+        
+        # Try to reuse existing calibrator if it's protocol-compliant and not a FAST collection
+        if explainer is not None:
+            existing = getattr(explainer, "interval_learner", None)
+            if existing is not None and not is_fast_interval_collection(existing):
+                # Import protocol definitions to check compliance
+                from .intervals import (
+                    ClassificationIntervalCalibrator,
+                    RegressionIntervalCalibrator,
+                )
+                expected_protocol = (
+                    RegressionIntervalCalibrator
+                    if "regression" in task
+                    else ClassificationIntervalCalibrator
+                )
+                # Only return if it's protocol-compliant (has required methods)
+                if isinstance(existing, expected_protocol):
+                    return existing
         learner = context.learner
         bins = context.bins.get("calibration")
         difficulty = context.difficulty.get("estimator")
@@ -212,7 +235,6 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         if "regression" in task:
             from ..calibration.interval_regressor import IntervalRegressor
 
-            explainer = context.metadata.get("explainer")
             if explainer is None:
                 raise NotFittedError(
                     "Legacy interval context missing 'explainer' handle",
@@ -242,8 +264,6 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                 difficulty_estimator=difficulty,
                 predict_function=predict_function,
             )
-        if isinstance(context.metadata, dict):
-            context.metadata.setdefault("calibrator", calibrator)
         return calibrator
 
 
@@ -1552,9 +1572,8 @@ def _register_builtin_fast_plugins() -> None:
 
                     calibrators.append(IntervalRegressor(explainer))
 
-                if isinstance(metadata, dict):
-                    metadata.setdefault("fast_calibrators", tuple(calibrators))
-                return calibrators
+                wrapper = FastIntervalCalibrator(calibrators)
+                return wrapper
 
         register_interval_plugin(
             "core.interval.fast",

@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from typing import Any, Sequence
 
 from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple, write_pyproject_section
+from .intervals import IntervalCalibratorPlugin
 from .registry import (
     find_explanation_descriptor,
     find_interval_descriptor,
@@ -306,6 +307,45 @@ def _cmd_validate_plot(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_validate_interval(args: argparse.Namespace) -> int:
+    """Validate an interval plugin by identifier without running explanations."""
+    identifier = args.plugin
+    load_entrypoint_plugins(include_untrusted=True)
+    descriptor = find_interval_descriptor(identifier)
+    if descriptor is None:
+        print(f"Interval plugin '{identifier}' is not registered")
+        return 1
+    plugin = descriptor.plugin
+    if not isinstance(plugin, IntervalCalibratorPlugin):
+        print(f"Interval plugin '{identifier}' does not implement the interval plugin protocol")
+        return 2
+    meta = descriptor.metadata or {}
+    print(f"Interval plugin '{identifier}' validated successfully")
+    print(f"  fast_compatible={meta.get('fast_compatible')}")
+    print(f"  dependencies={', '.join(coerce_string_tuple(meta.get('dependencies'))) or '-'}")
+    return 0
+
+
+def _cmd_explain_interval(args: argparse.Namespace) -> int:
+    """Explain interval plugin configuration and compatibility details."""
+    identifier = args.plugin
+    load_entrypoint_plugins(include_untrusted=True)
+    descriptor = find_interval_descriptor(identifier)
+    if descriptor is None:
+        print(f"Interval plugin '{identifier}' is not registered")
+        return 1
+    meta = descriptor.metadata
+    _emit_header(f"Interval plugin: {identifier}")
+    print(f"trusted={descriptor.trusted}")
+    print(f"fast_compatible={meta.get('fast_compatible')}")
+    print(f"legacy_compatible={meta.get('legacy_compatible')}")
+    print(f"confidence_source={meta.get('confidence_source', '-')}")
+    print(f"modes={', '.join(coerce_string_tuple(meta.get('modes'))) or '-'}")
+    print(f"capabilities={', '.join(coerce_string_tuple(meta.get('capabilities'))) or '-'}")
+    print(f"dependencies={', '.join(coerce_string_tuple(meta.get('dependencies'))) or '-'}")
+    return 0
+
+
 def _cmd_set_default(args: argparse.Namespace) -> int:
     """Set a plot style as the default. Updates registration metadata."""
     style_id = args.style
@@ -474,6 +514,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     validate_plot_parser.add_argument("--builder", required=True, help="Builder identifier")
     validate_plot_parser.set_defaults(func=_cmd_validate_plot)
+
+    validate_interval_parser = subparsers.add_parser(
+        "validate-interval", help="Validate an interval plugin by identifier"
+    )
+    validate_interval_parser.add_argument("--plugin", required=True, help="Interval plugin identifier")
+    validate_interval_parser.set_defaults(func=_cmd_validate_interval)
+
+    explain_interval_parser = subparsers.add_parser(
+        "explain-interval", help="Explain interval plugin configuration details"
+    )
+    explain_interval_parser.add_argument("--plugin", required=True, help="Interval plugin identifier")
+    explain_interval_parser.set_defaults(func=_cmd_explain_interval)
 
     set_default_parser = subparsers.add_parser(
         "set-default", help="Set default plot style (by identifier)"

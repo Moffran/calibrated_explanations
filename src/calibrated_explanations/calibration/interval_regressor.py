@@ -309,6 +309,14 @@ class IntervalRegressor:
             )
         return np.array([[1 - proba[i], proba[i]] for i in range(len(proba))])
 
+    def is_multiclass(self) -> bool:
+        """Return ``False`` for regression calibrators."""
+        return False
+
+    def is_mondrian(self) -> bool:
+        """Return ``True`` when Mondrian binning is enabled."""
+        return self.bins is not None
+
     def pre_fit_for_probabilistic(self):
         """Split the calibration set into two parts.
 

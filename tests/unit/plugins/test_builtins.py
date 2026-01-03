@@ -54,8 +54,11 @@ def test_collection_to_batch_with_items():
 
 def test_legacy_interval_calibrator_plugin_create_regression():
     plugin = builtins.LegacyIntervalCalibratorPlugin()
+    mock_explainer = MagicMock()
+    # Ensure the mock explainer doesn't have interval_learner
+    del mock_explainer.interval_learner
     context = MagicMock()
-    context.metadata = {"task": "regression", "explainer": MagicMock()}
+    context.metadata = {"task": "regression", "explainer": mock_explainer}
     context.calibration_splits = [(np.array([]), np.array([]))]
 
     # We need to mock IntervalRegressor import or ensure it's available
