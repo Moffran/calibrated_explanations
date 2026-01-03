@@ -7,19 +7,21 @@ import pprint
 from collections.abc import Mapping
 from typing import Any, Sequence
 
-from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
+from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple, write_pyproject_section
 from .registry import (
     find_explanation_descriptor,
     find_interval_descriptor,
     find_plot_builder_descriptor,
     find_plot_renderer_descriptor,
     find_plot_style_descriptor,
+    get_last_discovery_report,
     is_identifier_denied,
     list_explanation_descriptors,
     list_interval_descriptors,
     list_plot_builder_descriptors,
     list_plot_renderer_descriptors,
     list_plot_style_descriptors,
+    load_entrypoint_plugins,
     mark_explanation_trusted,
     mark_explanation_untrusted,
     mark_interval_trusted,
@@ -169,11 +171,39 @@ def _emit_plot_renderer_descriptor(descriptor) -> None:
     print(f"    supports_interactive={interactive}; dependencies={dependencies}")
 
 
+def _emit_discovery_report(report) -> None:
+    """Display skipped plugin discovery entries."""
+    if report is None:
+        print("No plugin discovery report available.")
+        return
+
+    def _emit_records(title: str, records) -> None:
+        if not records:
+            return
+        _emit_header(title)
+        for record in records:
+            meta = record.metadata or {}
+            label = _format_common_metadata(meta) if meta else "metadata unavailable"
+            provider = record.provider or "unknown provider"
+            details = ", ".join(f"{k}={v}" for k, v in record.details.items()) or "-"
+            print(f"  - {record.identifier} ({label}; provider={provider}; source={record.source})")
+            print(f"    details={details}")
+        print()
+
+    _emit_records("Discovery skipped: denied", report.skipped_denied)
+    _emit_records("Discovery skipped: untrusted", report.skipped_untrusted)
+    _emit_records("Discovery skipped: checksum failures", report.checksum_failures)
+
+
 def _cmd_list(args: argparse.Namespace) -> int:
     """Handle the `plugins list` subcommand."""
     # Honor the convenience `--plots` flag which acts as an alias for `kind=plots`
     kind = "plots" if getattr(args, "plots", False) else args.kind
     trusted_only = args.trusted_only
+    verbose = args.verbose
+
+    if verbose:
+        load_entrypoint_plugins(include_untrusted=False)
 
     if kind in ("explanations", "all"):
         descriptors = list_explanation_descriptors(trusted_only=trusted_only)
@@ -227,6 +257,10 @@ def _cmd_list(args: argparse.Namespace) -> int:
         else:
             for descriptor in descriptors:
                 _emit_plot_descriptor(descriptor)
+
+    if verbose:
+        print()
+        _emit_discovery_report(get_last_discovery_report())
 
     return 0
 
@@ -319,6 +353,8 @@ def _cmd_show(args: argparse.Namespace) -> int:
     print(f"Identifier : {descriptor.identifier}")
     if hasattr(descriptor, "trusted"):
         print(f"Trusted    : {'yes' if descriptor.trusted else 'no'}")
+    if hasattr(descriptor, "source"):
+        print(f"Source     : {descriptor.source}")
     print("Metadata   :")
     print(pprint.pformat(meta, sort_dicts=True))
     return 0
@@ -348,6 +384,19 @@ def _cmd_trust(args: argparse.Namespace) -> int:
 
     state = "trusted" if action == "trust" else "untrusted"
     print(f"Marked '{descriptor.identifier}' as {state}")
+
+    # Persist to pyproject.toml if possible
+    from ..core.config_helpers import read_pyproject_section
+    current_trusted = set(read_pyproject_section(("tool", "calibrated_explanations", "plugins")).get("trusted", []))
+    if action == "trust":
+        current_trusted.add(identifier)
+    else:
+        current_trusted.discard(identifier)
+    if write_pyproject_section(("tool", "calibrated_explanations", "plugins"), {"trusted": sorted(current_trusted)}):
+        print(f"Persisted trust decision to pyproject.toml")
+    else:
+        print("Warning: Could not persist trust decision to pyproject.toml (tomli_w not available?)")
+
     return 0
 
 
@@ -376,6 +425,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--trusted-only",
         action="store_true",
         help="Only display plugins marked as trusted",
+    )
+    list_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Include discovery diagnostics for skipped plugins",
     )
     list_parser.set_defaults(func=_cmd_list)
 

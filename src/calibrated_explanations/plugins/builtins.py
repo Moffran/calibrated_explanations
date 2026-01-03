@@ -1556,7 +1556,11 @@ def _register_builtin_fast_plugins() -> None:
                     metadata.setdefault("fast_calibrators", tuple(calibrators))
                 return calibrators
 
-        register_interval_plugin("core.interval.fast", BuiltinFastIntervalCalibratorPlugin())
+        register_interval_plugin(
+            "core.interval.fast",
+            BuiltinFastIntervalCalibratorPlugin(),
+            source="builtin",
+        )
 
     if find_explanation_descriptor("core.explanation.fast") is None:
 
@@ -1591,40 +1595,64 @@ def _register_builtin_fast_plugins() -> None:
                     plugin_meta=self.plugin_meta,
                 )
 
-        register_explanation_plugin("core.explanation.fast", BuiltinFastExplanationPlugin())
+        register_explanation_plugin(
+            "core.explanation.fast",
+            BuiltinFastExplanationPlugin(),
+            source="builtin",
+        )
 
 
 def _register_builtins() -> None:
     """Register in-tree plugins with the shared registry."""
-    register_interval_plugin("core.interval.legacy", LegacyIntervalCalibratorPlugin())
+    register_interval_plugin(
+        "core.interval.legacy",
+        LegacyIntervalCalibratorPlugin(),
+        source="builtin",
+    )
 
     # Register execution strategy wrappers first (with higher priority in fallback chain)
     register_explanation_plugin(
-        "core.explanation.factual.sequential", SequentialExplanationPlugin()
+        "core.explanation.factual.sequential",
+        SequentialExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
-        "core.explanation.factual.feature_parallel", FeatureParallelExplanationPlugin()
+        "core.explanation.factual.feature_parallel",
+        FeatureParallelExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
-        "core.explanation.factual.instance_parallel", InstanceParallelExplanationPlugin()
+        "core.explanation.factual.instance_parallel",
+        InstanceParallelExplanationPlugin(),
+        source="builtin",
     )
 
     register_explanation_plugin(
-        "core.explanation.alternative.sequential", SequentialAlternativeExplanationPlugin()
+        "core.explanation.alternative.sequential",
+        SequentialAlternativeExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
         "core.explanation.alternative.feature_parallel",
         FeatureParallelAlternativeExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
         "core.explanation.alternative.instance_parallel",
         InstanceParallelAlternativeExplanationPlugin(),
+        source="builtin",
     )
 
     # Register legacy plugins as fallback defaults
-    register_explanation_plugin("core.explanation.factual", LegacyFactualExplanationPlugin())
     register_explanation_plugin(
-        "core.explanation.alternative", LegacyAlternativeExplanationPlugin()
+        "core.explanation.factual",
+        LegacyFactualExplanationPlugin(),
+        source="builtin",
+    )
+    register_explanation_plugin(
+        "core.explanation.alternative",
+        LegacyAlternativeExplanationPlugin(),
+        source="builtin",
     )
 
     try:
@@ -1647,8 +1675,8 @@ def _register_builtins() -> None:
 
     legacy_builder = LegacyPlotBuilder()
     legacy_renderer = LegacyPlotRenderer()
-    register_plot_builder("core.plot.legacy", legacy_builder)
-    register_plot_renderer("core.plot.legacy", legacy_renderer)
+    register_plot_builder("core.plot.legacy", legacy_builder, source="builtin")
+    register_plot_renderer("core.plot.legacy", legacy_renderer, source="builtin")
     register_plot_style(
         "legacy",
         metadata={
@@ -1664,8 +1692,16 @@ def _register_builtins() -> None:
 
     plotspec_builder = PlotSpecDefaultBuilder()
     plotspec_renderer = PlotSpecDefaultRenderer()
-    register_plot_builder("core.plot.plot_spec.default", plotspec_builder)
-    register_plot_renderer("core.plot.plot_spec.default", plotspec_renderer)
+    register_plot_builder(
+        "core.plot.plot_spec.default",
+        plotspec_builder,
+        source="builtin",
+    )
+    register_plot_renderer(
+        "core.plot.plot_spec.default",
+        plotspec_renderer,
+        source="builtin",
+    )
     register_plot_style(
         "plot_spec.default",
         metadata={

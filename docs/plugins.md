@@ -18,8 +18,50 @@ Notes
 - Plugins are optional and externally distributed. Core workflows work without them (STD-027).
 - Wiring methods (priority order):
   1) Explainer parameters; 2) Environment variables; 3) pyproject.toml; 4) Plugin-declared dependencies.
+- Plugins execute in-process without sandboxing or isolation. Only install and trust
+  plugins from sources you control or have reviewed.
 - Trust/deny controls and discovery are available via the registry and CLI; see contributor docs for details.
 - For detailed wiring (env vars, pyproject, dependency seeding), see {doc}`contributor/extending/plugin-advanced-contract`.
+
+Trust model (who, why, when)
+----------------------------
+
+**Why it exists:** Plugins run in-process with the same permissions as your application.
+That means third-party code can access data, file systems, and network resources.
+The trust model forces explicit operator approval to reduce supply-chain risk and
+avoid accidental execution of unreviewed code.
+
+**How it works (summary):**
+
+- **Built-ins are trusted by default.** Only in-tree plugins ship as auto-trusted.
+- **Third-party plugins require explicit trust.** Set `CE_TRUST_PLUGIN` or add an
+  allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]`.
+- **Denied identifiers are blocked.** `CE_DENY_PLUGIN` skips loading and registration
+  even if a plugin is otherwise discoverable.
+- **Diagnostics are available.** Use the CLI to see trusted vs. untrusted plugins,
+  and include skipped entry points when needed.
+
+**Who should care:**
+
+- **Operators / platform teams:** Govern what plugin code is allowed in production.
+- **Security reviewers:** Audit trust/deny lists and verify plugin provenance.
+- **Plugin authors:** Understand that `trusted` metadata is informational only until
+  an operator explicitly trusts the identifier.
+
+**When to use it:**
+
+- **Development:** Use `CE_TRUST_PLUGIN` for quick, local opt-in.
+- **CI/CD or production:** Prefer the `pyproject.toml` allowlist for auditable,
+  versioned trust decisions.
+- **Incident response or testing:** Use `CE_DENY_PLUGIN` to block a plugin without
+  changing code.
+
+CLI examples:
+
+```bash
+python -m calibrated_explanations.plugins.cli list all --trusted-only
+python -m calibrated_explanations.plugins.cli list all --include-skipped
+```
 
 Writing plot plugins
 --------------------

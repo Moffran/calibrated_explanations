@@ -15,9 +15,9 @@ Extras are opt-in so you only pull the dependencies you need:
 | Extra | Purpose | Install command |
 | ----- | ------- | --------------- |
 | `viz` | Matplotlib-based plotting and PlotSpec adapters. | `pip install "calibrated-explanations[viz]"` |
-| `lime` | LIME integration helpers for hybrid workflows. | `pip install "calibrated-explanations[lime]"` |
 | `notebooks` | Jupyter notebook tutorials with pinned dependencies. | `pip install "calibrated-explanations[notebooks]"` |
 | `dev` | Full development toolchain (linters, docs, tests). | `pip install "calibrated-explanations[dev]"` |
+| `eval` | Benchmarking and evaluation tools. | `pip install "calibrated-explanations[eval]"` |
 | `external-plugins` | Curated optional bundles (e.g., FAST explanations and intervals). | `pip install "calibrated-explanations[external-plugins]"` |
 
 ## conda-forge

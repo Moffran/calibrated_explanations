@@ -10,6 +10,7 @@ from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlu
 from calibrated_explanations.plugins import (
     ensure_builtin_plugins,
     register_explanation_plugin,
+    mark_explanation_trusted,
 )
 from tests.helpers.plugin_utils import cleanup_plugin
 
@@ -123,6 +124,7 @@ def test_plugin_override_via_env_var(binary_dataset, monkeypatch):
     ensure_builtin_plugins()
     plugin = RecordingFactualPlugin()
     register_explanation_plugin("tests.recording.factual", plugin)
+    mark_explanation_trusted("tests.recording.factual")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.recording.factual")
 
     try:

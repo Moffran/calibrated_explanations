@@ -5,6 +5,14 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...main)
 
+### Added
+
+- **ADR-006: Plugin Trust Controls and Diagnostics:** Implemented opt-in trust model for third-party plugins with deny list enforcement, discovery diagnostics, and security documentation.
+  - Constrained trust-by-default to in-tree plugins; third-party plugins require explicit approval via `CE_TRUST_PLUGIN` or `pyproject.toml` configuration.
+  - Implemented `CE_DENY_PLUGIN` enforcement at discovery and registration gates.
+  - Added `PluginDiscoveryReport` to track accepted, skipped, and denied plugins; exposed via `ce.plugins list --verbose`.
+  - Documented "no sandbox" security warning in `docs/plugins.md` with guidance for operators and plugin authors.
+
 ## [v0.10.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.1) - 2026-01-01
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...v0.10.1)

@@ -117,7 +117,7 @@ def test_emit_plot_builder_descriptor_reports_legacy(monkeypatch, capsys):
 
 
 def test_cmd_list_handles_empty_sections(monkeypatch, capsys):
-    args = SimpleNamespace(kind="all", trusted_only=False)
+    args = SimpleNamespace(kind="all", trusted_only=False, verbose=False)
     monkeypatch.setattr(cli, "list_explanation_descriptors", lambda trusted_only: [])
     monkeypatch.setattr(cli, "list_interval_descriptors", lambda trusted_only: [])
     monkeypatch.setattr(cli, "list_plot_builder_descriptors", lambda trusted_only: [])

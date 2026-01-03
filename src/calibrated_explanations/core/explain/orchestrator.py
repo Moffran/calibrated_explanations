@@ -28,6 +28,7 @@ from ...plugins import (
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
+    find_explanation_plugin_trusted,
     is_identifier_denied,
     validate_explanation_batch,
 )
@@ -624,10 +625,13 @@ class ExplanationOrchestrator:
             plugin = None
             if descriptor is not None:
                 metadata = descriptor.metadata
-                if descriptor.trusted:
+                if descriptor.trusted or is_preferred:
                     plugin = descriptor.plugin
             if plugin is None:
-                plugin = find_explanation_plugin(identifier)
+                if is_preferred:
+                    plugin = find_explanation_plugin(identifier)
+                else:
+                    plugin = find_explanation_plugin_trusted(identifier)
             if plugin is None:
                 message = f"{identifier}: not registered"
                 if is_preferred:

@@ -177,8 +177,8 @@ class FastExplanationPlugin(_LegacyExplanationBase):
 
 def register() -> None:
     """Register the FAST interval and explanation plugins with the core registry."""
-    register_interval_plugin("core.interval.fast", FastIntervalCalibratorPlugin())
-    register_explanation_plugin("core.explanation.fast", FastExplanationPlugin())
+    register_interval_plugin("core.interval.fast", FastIntervalCalibratorPlugin(), source="builtin")
+    register_explanation_plugin("core.explanation.fast", FastExplanationPlugin(), source="builtin")
 
 
 __all__ = [

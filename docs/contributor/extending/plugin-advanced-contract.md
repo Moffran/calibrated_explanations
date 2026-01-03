@@ -303,6 +303,8 @@ The registry honours both ``CE_TRUST_PLUGIN`` and ``CE_DENY_PLUGIN`` environment
 variables.
 
 - ``CE_TRUST_PLUGIN`` lists identifiers that should be trusted on discovery.
+- ``[tool.calibrated_explanations.plugins] trusted = ["id"]`` in ``pyproject.toml`` can
+  be used for a versioned allowlist of trusted identifiers.
 - ``CE_DENY_PLUGIN`` blocks specific identifiers while you iterate on them.
 
 Use the CLI to inspect the resulting state after registration:

@@ -11,6 +11,7 @@ from calibrated_explanations.plugins import (
     clear_interval_plugins,
     ensure_builtin_plugins,
     register_interval_plugin,
+    mark_interval_trusted,
 )
 
 
@@ -207,6 +208,7 @@ def test_interval_hint_prioritizes_trusted_plugin(monkeypatch, binary_dataset):
     RecordingIntervalPlugin.last_context = None
     RecordingIntervalPlugin.last_calibrator = None
     descriptor = register_interval_plugin("tests.interval.recording", RecordingIntervalPlugin())
+    mark_interval_trusted(descriptor.identifier)
     try:
         explainer, _ = make_explainer_from_dataset(binary_dataset)
         explainer.plugin_manager.interval_plugin_hints["factual"] = (descriptor.identifier,)  # noqa: SLF001

@@ -142,7 +142,7 @@ def test_cmd_list_all_branches(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_plot_style_descriptors", stub_plot_styles)
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="all", trusted_only=True)
+    args = argparse.Namespace(kind="all", trusted_only=True, verbose=False)
     exit_code = cli._cmd_list(args)
 
     assert exit_code == 0
@@ -165,7 +165,7 @@ def test_cmd_list_explanations_descriptor(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_explanation_descriptors", lambda **kwargs: [descriptor])
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="explanations", trusted_only=False)
+    args = argparse.Namespace(kind="explanations", trusted_only=False, verbose=False)
     exit_code = cli._cmd_list(args)
 
     assert exit_code == 0
@@ -177,7 +177,7 @@ def test_cmd_list_intervals_empty(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_interval_descriptors", lambda **kwargs: [])
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="intervals", trusted_only=False)
+    args = argparse.Namespace(kind="intervals", trusted_only=False, verbose=False)
     exit_code = cli._cmd_list(args)
 
     assert exit_code == 0
@@ -194,7 +194,7 @@ def test_cmd_list_plot_renderers_descriptor(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_plot_renderer_descriptors", stub)
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="plot-renderers", trusted_only=True)
+    args = argparse.Namespace(kind="plot-renderers", trusted_only=True, verbose=False)
     exit_code = cli._cmd_list(args)
 
     assert exit_code == 0
@@ -205,7 +205,7 @@ def test_cmd_list_plot_renderers_descriptor(monkeypatch, capsys):
 def test_cmd_list_plot_styles_none(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_plot_style_descriptors", lambda: [])
 
-    args = argparse.Namespace(kind="plots", trusted_only=False)
+    args = argparse.Namespace(kind="plots", trusted_only=False, verbose=False)
     exit_code = cli._cmd_list(args)
 
     assert exit_code == 0

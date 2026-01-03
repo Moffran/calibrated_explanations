@@ -108,6 +108,7 @@ class TestPluginRegistryIntegration:
         """Verify that trusted plugin metadata is preserved."""
         plugin = TrustedTestPlugin()
         registry.register(plugin)
+        registry.trust_plugin(plugin)
 
         # Check metadata
         assert plugin.plugin_meta["trust"] is True

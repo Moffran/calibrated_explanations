@@ -18,6 +18,11 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _tomllib = None  # type: ignore[assignment]
 
+try:
+    import tomli_w as _tomli_w
+except ModuleNotFoundError:  # pragma: no cover - optional for writing
+    _tomli_w = None  # type: ignore[assignment]
+
 
 def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     """Return a mapping from the requested ``pyproject.toml`` section.
@@ -64,6 +69,61 @@ def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     if isinstance(cursor, dict):
         return dict(cursor)
     return {}
+
+
+def write_pyproject_section(path: Sequence[str], value: Dict[str, Any]) -> bool:
+    """Update a section in pyproject.toml with the given value.
+
+    Parameters
+    ----------
+    path : Sequence[str]
+        Nested keys to traverse in the pyproject.toml structure.
+    value : Dict[str, Any]
+        The value to set at the specified path.
+
+    Returns
+    -------
+    bool
+        True if the file was updated, False otherwise.
+
+    Notes
+    -----
+    This function requires tomli_w to be installed for writing TOML.
+    If not available, it will return False without modifying the file.
+    """
+    if _tomllib is None or _tomli_w is None:
+        return False
+
+    candidate = Path.cwd() / "pyproject.toml"
+    if not candidate.exists():
+        return False
+
+    try:
+        with open(candidate, "rb") as f:
+            data = _tomllib.load(f)
+    except Exception:
+        return False
+
+    # Navigate to the parent of the target section
+    cursor = data
+    for key in path[:-1]:
+        if not isinstance(cursor, dict):
+            return False
+        if key not in cursor:
+            cursor[key] = {}
+        cursor = cursor[key]
+
+    if not isinstance(cursor, dict):
+        return False
+
+    cursor[path[-1]] = value
+
+    try:
+        with open(candidate, "wb") as f:
+            _tomli_w.dump(data, f)
+        return True
+    except Exception:
+        return False
 
 
 def split_csv(value: str | None) -> Tuple[str, ...]:

@@ -11,6 +11,7 @@ from calibrated_explanations.plugins import (
     clear_interval_plugins,
     ensure_builtin_plugins,
     register_interval_plugin,
+    mark_interval_trusted,
 )
 
 
@@ -57,6 +58,7 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
     PyprojectRecordingIntervalPlugin.invocations = []
     plugin = PyprojectRecordingIntervalPlugin()
     descriptor = register_interval_plugin(plugin.plugin_meta["name"], plugin)
+    mark_interval_trusted(descriptor.identifier)
 
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(

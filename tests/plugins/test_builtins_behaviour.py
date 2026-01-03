@@ -643,14 +643,16 @@ def test_register_builtins_uses_registry(monkeypatch):
     recorded = {"interval": [], "explanation": [], "builder": [], "renderer": [], "style": []}
 
     monkeypatch.setattr(
-        builtins, "register_interval_plugin", lambda *a: recorded["interval"].append(a)
+        builtins, "register_interval_plugin", lambda *a, **k: recorded["interval"].append((a, k))
     )
     monkeypatch.setattr(
-        builtins, "register_explanation_plugin", lambda *a: recorded["explanation"].append(a)
+        builtins, "register_explanation_plugin", lambda *args, **kwargs: recorded["explanation"].append(args)
     )
-    monkeypatch.setattr(builtins, "register_plot_builder", lambda *a: recorded["builder"].append(a))
     monkeypatch.setattr(
-        builtins, "register_plot_renderer", lambda *a: recorded["renderer"].append(a)
+        builtins, "register_plot_builder", lambda *a, **k: recorded["builder"].append(a)
+    )
+    monkeypatch.setattr(
+        builtins, "register_plot_renderer", lambda *a, **k: recorded["renderer"].append(a)
     )
     monkeypatch.setattr(
         builtins, "register_plot_style", lambda *a, **k: recorded["style"].append((a, k))
@@ -663,10 +665,10 @@ def test_register_builtins_uses_registry(monkeypatch):
 
 
 def test_register_builtins_handles_missing_fast_plugins(monkeypatch):
-    monkeypatch.setattr(builtins, "register_interval_plugin", lambda *a: None)
-    monkeypatch.setattr(builtins, "register_explanation_plugin", lambda *a: None)
-    monkeypatch.setattr(builtins, "register_plot_builder", lambda *a: None)
-    monkeypatch.setattr(builtins, "register_plot_renderer", lambda *a: None)
+    monkeypatch.setattr(builtins, "register_interval_plugin", lambda *a, **k: None)
+    monkeypatch.setattr(builtins, "register_explanation_plugin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins, "register_plot_builder", lambda *a, **k: None)
+    monkeypatch.setattr(builtins, "register_plot_renderer", lambda *a, **k: None)
     monkeypatch.setattr(builtins, "register_plot_style", lambda *a, **k: None)
     # Ensure import fails even if module existed previously
     sys.modules.pop("external_plugins.fast_explanations", None)

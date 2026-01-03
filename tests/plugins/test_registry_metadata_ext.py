@@ -52,7 +52,7 @@ def test_should_trust_respects_environment_override(monkeypatch):
     monkeypatch.setenv("CE_TRUST_PLUGIN", "external")
 
     meta = {"name": "external", "trust": False, "trusted": False}
-    assert registry.should_trust(meta) is True
+    assert registry.should_trust(meta, identifier="external", source="manual") is True
 
 
 def test_update_trust_keys_synchronises_nested_mapping():
@@ -281,10 +281,10 @@ def test_register_plot_style_round_trip():
 
 def test_list_plot_builder_descriptors_respects_trust(monkeypatch):
     registry.set_plot_builder(
-        "a", registry.PlotBuilderDescriptor("a", object(), {}, True), trusted=True
+        "a", registry.PlotBuilderDescriptor("a", object(), {}, True, "manual"), trusted=True
     )
     registry.set_plot_builder(
-        "b", registry.PlotBuilderDescriptor("b", object(), {}, False), trusted=False
+        "b", registry.PlotBuilderDescriptor("b", object(), {}, False, "manual"), trusted=False
     )
 
     all_ids = [descriptor.identifier for descriptor in registry.list_plot_builder_descriptors()]
@@ -363,6 +363,7 @@ def test_list_explanation_descriptors_filters_trusted(monkeypatch):
     registry.clear_explanation_plugins()
     registry.register_explanation_plugin("trusted", PlugA())
     registry.register_explanation_plugin("untrusted", PlugB())
+    registry.mark_explanation_trusted("trusted")
 
     all_ids = [descriptor.identifier for descriptor in registry.list_explanation_descriptors()]
     trusted_ids = [
@@ -501,7 +502,7 @@ def test_register_explanation_plugin_no_metadata():
         pass
 
     with pytest.raises(ValidationError, match="plugin must expose plugin_meta metadata"):
-        registry.register_explanation_plugin("test", Plugin())
+        registry.register_explanation_plugin("test_no_meta", Plugin())
 
 
 def test_register_explanation_plugin_invalid_metadata():
@@ -509,7 +510,7 @@ def test_register_explanation_plugin_invalid_metadata():
         plugin_meta = {"invalid": "meta"}
 
     with pytest.raises(ValidationError):
-        registry.register_explanation_plugin("test", Plugin())
+        registry.register_explanation_plugin("test_invalid_meta", Plugin())
 
 
 def test_register_interval_plugin_invalid_identifier():

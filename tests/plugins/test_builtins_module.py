@@ -602,18 +602,18 @@ def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
     calls: list[tuple[str, Iterable[str]]] = []
 
     monkeypatch.setattr(
-        builtins_mod, "register_interval_plugin", lambda *args: calls.append(("interval", args))
+        builtins_mod, "register_interval_plugin", lambda *args, **kwargs: calls.append(("interval", args))
     )
     monkeypatch.setattr(
         builtins_mod,
         "register_explanation_plugin",
-        lambda *args: calls.append(("explanation", args)),
+        lambda *args, **kwargs: calls.append(("explanation", args)),
     )
     monkeypatch.setattr(
-        builtins_mod, "register_plot_builder", lambda *args: calls.append(("builder", args))
+        builtins_mod, "register_plot_builder", lambda *args, **kwargs: calls.append(("builder", args))
     )
     monkeypatch.setattr(
-        builtins_mod, "register_plot_renderer", lambda *args: calls.append(("renderer", args))
+        builtins_mod, "register_plot_renderer", lambda *args, **kwargs: calls.append(("renderer", args))
     )
     monkeypatch.setattr(
         builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args))
@@ -670,10 +670,10 @@ def test_register_builtins_imports_fast_plugins(monkeypatch: pytest.MonkeyPatch)
 
     fake_module.register = fake_register
     monkeypatch.setitem(sys.modules, "external_plugins.fast_explanations", fake_module)
-    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args: None)
-    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args: None)
+    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args, **kwargs: None)
     monkeypatch.setattr(builtins_mod, "register_plot_style", lambda *args, **kwargs: None)
 
     _register_builtins()
