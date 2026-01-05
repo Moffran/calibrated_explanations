@@ -285,7 +285,7 @@ class ExplanationOrchestrator:
             bins=tuple(bins) if bins is not None else None,
             features_to_ignore=features_to_ignore_flat,
             extras=dict(extras or {}),
-            features_to_ignore_per_instance=per_instance_ignore,
+            feature_filter_per_instance_ignore=per_instance_ignore,
         )
         monitor = self.explainer.plugin_manager.get_bridge_monitor(_identifier or mode)
         if monitor is not None:

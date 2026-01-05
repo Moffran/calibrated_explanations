@@ -99,6 +99,13 @@ explanations.plot()
 first_explanation = explanations[0]
 ```
 
+**Metadata Attributes:**
+
+When FAST-based feature filtering is enabled (experimental), the `CalibratedExplanations` object may include additional metadata for transparency and debugging:
+
+- `features_to_ignore_per_instance`: A list of numpy arrays, one per instance, containing the feature indices ignored for that instance due to filtering. This is best-effort metadata and not part of the stable API.
+- `feature_filter_per_instance_ignore`: (On the `CalibratedExplainer` instance) The raw ignore masks from the most recent filtered batch.
+
 `{eval-rst}
 .. autoclass:: calibrated_explanations.explanations.explanations.CalibratedExplanations
    :members:

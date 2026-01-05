@@ -108,7 +108,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         # Optional per-instance feature ignore masks produced by the internal
         # FAST-based feature filter. When present, each entry corresponds to
         # the indices ignored for that instance on top of any global ignore.
-        self.features_to_ignore_per_instance: Optional[Sequence[Sequence[int]]] = None
+        self.feature_filter_per_instance_ignore: Optional[Sequence[Sequence[int]]] = None
+        # Optional telemetry from the internal FAST-based feature filter.
+        self.filter_telemetry: Optional[Dict[str, Any]] = None
         # Derived caches (set during finalize of individual explanations)
         self._feature_names_cache: Optional[Sequence[str]] = None  # populated lazily
         self._predictions_cache: Optional[np.ndarray] = None
@@ -181,12 +183,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
             # Preserve per-instance feature ignore masks when present by slicing
             # them in the same way as bins/x_test/y_threshold.
-            masks_value = getattr(self, "features_to_ignore_per_instance", None)
+            masks_value = getattr(self, "feature_filter_per_instance_ignore", None)
             if isinstance(masks_value, ABCSequence):
                 try:
-                    new_.features_to_ignore_per_instance = [masks_value[e.index] for e in new_]
+                    new_.feature_filter_per_instance_ignore = [masks_value[e.index] for e in new_]
                 except IndexError:
-                    new_.features_to_ignore_per_instance = None
+                    new_.feature_filter_per_instance_ignore = None
             # Reset cached aggregates to avoid referencing stale state from the source
             new_._feature_names_cache = None
             new_._predictions_cache = None
@@ -334,9 +336,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         container.total_explain_time = metadata.get(
             "total_explain_time", getattr(template, "total_explain_time", None)
         )
-        container.features_to_ignore_per_instance = metadata.get(
-            "features_to_ignore_per_instance",
-            getattr(template, "features_to_ignore_per_instance", None),
+        container.feature_filter_per_instance_ignore = metadata.get(
+            "feature_filter_per_instance_ignore",
+            getattr(template, "feature_filter_per_instance_ignore", None),
         )
         container.batch_metadata = dict(metadata)
 
@@ -1351,8 +1353,8 @@ class AlternativeExplanations(CalibratedExplanations):
         inst.bins = getattr(collection, "bins", None)
         inst.total_explain_time = getattr(collection, "total_explain_time", None)
         inst.features_to_ignore = list(getattr(collection, "features_to_ignore", []))
-        inst.features_to_ignore_per_instance = getattr(
-            collection, "features_to_ignore_per_instance", None
+        inst.feature_filter_per_instance_ignore = getattr(
+            collection, "feature_filter_per_instance_ignore", None
         )
         # Preserve caches if present
         inst._feature_names_cache = getattr(collection, "_feature_names_cache", None)

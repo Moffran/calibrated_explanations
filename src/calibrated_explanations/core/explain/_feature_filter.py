@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import List
 
 import numpy as np
+import logging
 
 from ...explanations.explanations import CalibratedExplanations
 
@@ -22,6 +23,7 @@ class FeatureFilterConfig:
 
     enabled: bool = False
     per_instance_top_k: int = 8
+    strict_observability: bool = False
 
     @classmethod
     def from_base_and_env(cls, base: "FeatureFilterConfig | None" = None) -> "FeatureFilterConfig":
@@ -29,6 +31,11 @@ class FeatureFilterConfig:
         cfg = FeatureFilterConfig(
             **(base.__dict__ if base is not None else {})
         )  # shallow copy to avoid mutating base
+
+        # Strict observability mode (debug-by-default policy)
+        strict_raw = os.getenv("CE_STRICT_OBSERVABILITY", "").lower()
+        if strict_raw in {"1", "true", "on", "enable"}:
+            cfg.strict_observability = True
 
         raw = os.getenv("CE_FEATURE_FILTER")
         if not raw:
@@ -128,14 +135,27 @@ def compute_filtered_features_to_ignore(
         - ``per_instance_ignore``: per-instance ignore arrays, length equal
           to ``len(fast_explanations.explanations)``.
     """
+    logger = logging.getLogger(__name__)
+    num_instances = len(fast_explanations.explanations)
+    logger.debug(
+        "compute_filtered_features_to_ignore",
+        extra={
+            "enabled": config.enabled,
+            "num_instances": num_instances,
+            "per_instance_top_k": config.per_instance_top_k,
+        },
+    )
     # Normalise baseline ignore set and instance count so that even when
     # filtering is effectively disabled we can return a consistent shape.
     base_ignore_arr = (
         np.asarray(base_ignore, dtype=int) if base_ignore is not None else np.array([], dtype=int)
     )
-    num_instances = len(fast_explanations.explanations)
 
     if not config.enabled or num_instances == 0:
+        logger.debug(
+            "feature filter disabled or empty batch: returning baseline ignore arrays",
+            extra={"enabled": config.enabled, "num_instances": num_instances},
+        )
         per_instance = [base_ignore_arr.copy() for _ in range(num_instances)]
         return FeatureFilterResult(
             global_ignore=base_ignore_arr.copy(),
@@ -145,6 +165,12 @@ def compute_filtered_features_to_ignore(
     inferred_num_features = safe_len_feature_weights(fast_explanations)
     num_features = inferred_num_features if num_features is None else int(num_features)
     if num_features <= 0 or inferred_num_features == 0:
+        msg = "unable to infer feature count; skipping filtering"
+        extra = {"inferred": inferred_num_features, "provided": num_features}
+        if config.strict_observability:
+            logger.warning(msg, extra=extra)
+        else:
+            logger.debug(msg, extra=extra)
         per_instance = [base_ignore_arr.copy() for _ in range(num_instances)]
         return FeatureFilterResult(
             global_ignore=base_ignore_arr.copy(),
@@ -158,12 +184,25 @@ def compute_filtered_features_to_ignore(
     keep_counts = np.zeros(num_features, dtype=int)
 
     per_instance_top_k = max(1, int(config.per_instance_top_k))
+    logger.debug(
+        "feature filter parameters",
+        extra={
+            "per_instance_top_k": per_instance_top_k,
+            "num_features": num_features,
+            "candidates": len(all_features),
+        },
+    )
 
     # Compute per-instance keep/ignore sets based on absolute FAST weights.
     for exp in fast_explanations.explanations:
         weights_mapping = getattr(exp, "feature_weights", None)
         if not isinstance(weights_mapping, dict):
             # No usable weights; keep all non-baseline features for this instance.
+            msg = "instance missing weights mapping; using baseline ignore for this instance"
+            if config.strict_observability:
+                logger.warning(msg)
+            else:
+                logger.debug(msg)
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
             keep_set = all_features - base_ignore_set
@@ -173,6 +212,11 @@ def compute_filtered_features_to_ignore(
             continue
         predict_weights = weights_mapping.get("predict")
         if predict_weights is None:
+            msg = "instance missing 'predict' weights; using baseline ignore"
+            if config.strict_observability:
+                logger.warning(msg)
+            else:
+                logger.debug(msg)
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
             keep_set = all_features - base_ignore_set
@@ -183,6 +227,11 @@ def compute_filtered_features_to_ignore(
 
         weights_arr = np.asarray(predict_weights, dtype=float).reshape(-1)
         if weights_arr.size == 0:
+            msg = "empty weights array for instance; using baseline ignore"
+            if config.strict_observability:
+                logger.warning(msg)
+            else:
+                logger.debug(msg)
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
             keep_set = all_features - base_ignore_set
@@ -264,14 +313,10 @@ def compute_filtered_features_to_ignore(
             positive_indices = candidate_indices[positive_mask]
             positive_counts = candidate_counts[positive_mask]
 
-            global_keep: set[int] = set()
-            if positive_indices.size:
-                k = min(per_instance_top_k, positive_indices.size)
-                order = np.argsort(positive_counts, kind="mergesort")
-                threshold_idx = max(0, positive_indices.size - k)
-                threshold_count = positive_counts[order[threshold_idx]]
-                keep_mask = positive_counts >= threshold_count
-                global_keep = {int(f) for f in positive_indices[keep_mask].tolist()}
+            # Derive global keep set as the union of all per-instance keep sets.
+            # This ensures that if a feature was deemed important for ANY instance,
+            # it is not globally ignored (which would force it to be ignored for ALL).
+            global_keep = {int(f) for f in positive_indices.tolist()}
 
             removable_features = eligible_features - global_keep
             final_global = sorted(set(base_ignore_set) | removable_features)

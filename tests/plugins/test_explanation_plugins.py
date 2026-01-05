@@ -56,7 +56,7 @@ def test_from_batch_reconstructs_container_and_sets_metadata():
         "interval_dependencies": ("core.interval.fast",),
         "plot_source": "plot_spec.default",
         "runtime_telemetry": {"a": 1},
-        "features_to_ignore_per_instance": [(0,)],
+        "feature_filter_per_instance_ignore": [(0,)],
     }
 
     batch = ExplanationBatch(
@@ -72,7 +72,7 @@ def test_from_batch_reconstructs_container_and_sets_metadata():
     # metadata preserved on container.batch_metadata
     for k in ("interval_dependencies", "plot_source", "runtime_telemetry"):
         assert k in container.batch_metadata and container.batch_metadata[k] == meta[k]
-    assert container.features_to_ignore_per_instance == meta["features_to_ignore_per_instance"]
+    assert container.feature_filter_per_instance_ignore == meta["feature_filter_per_instance_ignore"]
 
 
 def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_untrusted():

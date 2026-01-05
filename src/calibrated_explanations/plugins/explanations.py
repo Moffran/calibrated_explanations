@@ -149,7 +149,7 @@ class ExplanationRequest:
     bins: Optional[object]
     features_to_ignore: Sequence[int] | Sequence[Sequence[int]]
     extras: Mapping[str, object] = field(default_factory=dict)
-    features_to_ignore_per_instance: Sequence[Sequence[int]] | None = None
+    feature_filter_per_instance_ignore: Sequence[Sequence[int]] | None = None
 
 
 @dataclass

@@ -171,7 +171,7 @@ def test_invoke_per_instance_ignore(orchestrator, mock_explainer):
 
     args, _ = mock_plugin.explain_batch.call_args
     request = args[1]
-    assert request.features_to_ignore_per_instance == ((0,), (1,))
+    assert request.feature_filter_per_instance_ignore == ((0,), (1,))
     # flat_ignore should be unique union: (0, 1)
     assert set(request.features_to_ignore) == {0, 1}
 

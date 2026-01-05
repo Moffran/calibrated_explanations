@@ -28,6 +28,12 @@
   - Added `PluginDiscoveryReport` to track accepted, skipped, and denied plugins; exposed via `ce.plugins list --verbose`.
   - Documented "no sandbox" security warning in `docs/plugins.md` with guidance for operators and plugin authors.
 
+- **ADR-027: FAST-Based Feature Filtering Finalization:** Completed implementation with observability policy alignment, metadata documentation, and performance tuning examples.
+  - Aligned runtime logging to emit debug messages by default, with warnings only in strict observability mode (`CE_STRICT_OBSERVABILITY`).
+  - Renamed `features_to_ignore_per_instance` to `feature_filter_per_instance_ignore` across the codebase to align with internal naming conventions.
+  - Documented `feature_filter_per_instance_ignore` metadata in API reference for transparency and debugging.
+  - Added performance tuning guide in `docs/practitioner/performance-tuning.md` with configuration examples and telemetry event descriptions.
+
 ## [v0.10.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.1) - 2026-01-01
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...v0.10.1)

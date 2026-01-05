@@ -325,7 +325,7 @@ def explain_predict_step(
     bins: Any,
     features_to_ignore: Any,
     *,
-    features_to_ignore_per_instance: Any | None = None,
+    feature_filter_per_instance_ignore: Any | None = None,
 ) -> ExplainPredictStepResult:
     """Execute the baseline prediction and perturbation planning step.
 
@@ -371,10 +371,10 @@ def explain_predict_step(
     ignore_indices = as_int_array(features_to_ignore)
     if ignore_indices.size:
         ignore_mask[:, ignore_indices] = True
-    if isinstance(features_to_ignore_per_instance, Iterable) and not isinstance(
-        features_to_ignore_per_instance, (str, bytes)
+    if isinstance(feature_filter_per_instance_ignore, Iterable) and not isinstance(
+        feature_filter_per_instance_ignore, (str, bytes)
     ):
-        for idx, inst_mask in enumerate(features_to_ignore_per_instance):
+        for idx, inst_mask in enumerate(feature_filter_per_instance_ignore):
             if idx >= n_instances:
                 break
             inst_indices = as_int_array(inst_mask)

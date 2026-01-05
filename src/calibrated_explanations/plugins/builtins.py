@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
 import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
@@ -182,9 +183,10 @@ def collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
         "bins": getattr(collection, "bins", None),
         "features_to_ignore": getattr(collection, "features_to_ignore", None),
         "low_high_percentiles": getattr(collection, "low_high_percentiles", None),
-        "features_to_ignore_per_instance": getattr(
-            collection, "features_to_ignore_per_instance", None
+        "feature_filter_per_instance_ignore": getattr(
+            collection, "feature_filter_per_instance_ignore", None
         ),
+        "filter_telemetry": getattr(collection, "filter_telemetry", None),
     }
     return ExplanationBatch(
         container_cls=type(collection),
@@ -462,6 +464,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             # never mutates CalibratedExplainer behaviour beyond narrowing the
             # feature set for this batch.
             filtered_request = request
+            filter_telemetry: dict[str, Any] = {}
             try:
                 # Determine base configuration from explainer and environment.
                 base_cfg = self.explainer.feature_filter_config
@@ -472,6 +475,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     and self._mode in ("factual", "alternative")
                 )
                 if use_filter:
+                    filter_telemetry["filter_enabled"] = True
                     explainer = self.explainer
                     # Baseline ignore set: explainer defaults + request-specific.
                     base_explainer_ignore = np.asarray(
@@ -517,16 +521,24 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                                 filter_result.per_instance_ignore
                             )
                         except AttributeError:
-                            logging.getLogger(__name__).debug(
-                                "Unable to attach per-instance feature filter state to explainer",
-                                exc_info=True,
-                            )
+                            msg = "Unable to attach per-instance feature filter state to explainer"
+                            if cfg.strict_observability:
+                                logging.getLogger(__name__).warning(msg, extra={"mode": self._mode})
+                            else:
+                                logging.getLogger(__name__).debug(
+                                    msg,
+                                    extra={"mode": self._mode},
+                                    exc_info=True,
+                                )
 
                         # Debug: log filtered request details for troubleshooting propagation
                         logging.getLogger(__name__).debug(
-                            "Feature filter produced global_ignore(len=%s) extra_ignore(len=%s)",
-                            len(filter_result.global_ignore),
-                            0,
+                            "Feature filter produced global_ignore",
+                            extra={
+                                "global_ignore_len": len(filter_result.global_ignore),
+                                "extra_ignore_len": 0,
+                                "mode": self._mode,
+                            },
                         )
                         # Only propagate the additional ignore indices beyond the explainer defaults.
                         extra_ignore = np.setdiff1d(
@@ -535,8 +547,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             assume_unique=False,
                         )
                         logging.getLogger(__name__).debug(
-                            "Extra ignore computed: len=%s",
-                            len(extra_ignore),
+                            "Extra ignore computed",
+                            extra={"extra_ignore_len": len(extra_ignore), "mode": self._mode},
                         )
                         new_request_ignore = np.union1d(request_ignore, extra_ignore)
                         filtered_request = ExplanationRequest(
@@ -544,15 +556,17 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             low_high_percentiles=request.low_high_percentiles,
                             bins=request.bins,
                             features_to_ignore=tuple(int(f) for f in new_request_ignore.tolist()),
-                            features_to_ignore_per_instance=filter_result.per_instance_ignore,
+                            feature_filter_per_instance_ignore=filter_result.per_instance_ignore,
                             extras=request.extras,
                         )
                     except (AttributeError, CalibratedError, ConfigurationError) as exc_inner:
-                        logging.getLogger(__name__).warning(
-                            "FAST-based feature filter disabled for mode '%s': %s",
-                            self._mode,
-                            exc_inner,
-                        )
+                        filter_telemetry["filter_skipped"] = str(exc_inner)
+                        msg = "FAST-based feature filter disabled"
+                        extra = {"mode": self._mode, "reason": str(exc_inner)}
+                        if cfg.strict_observability:
+                            logging.getLogger(__name__).warning(msg, extra=extra)
+                        else:
+                            logging.getLogger(__name__).debug(msg, extra=extra)
                         # Ensure no stale per-instance state is kept on the explainer.
                         with contextlib.suppress(AttributeError):
                             delattr(explainer, "_feature_filter_per_instance_ignore")
@@ -561,17 +575,25 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             low_high_percentiles=request.low_high_percentiles,
                             bins=request.bins,
                             features_to_ignore=request.features_to_ignore,
-                            features_to_ignore_per_instance=getattr(
-                                request, "features_to_ignore_per_instance", None
+                            feature_filter_per_instance_ignore=getattr(
+                                request, "feature_filter_per_instance_ignore", None
                             ),
                             extras=request.extras,
                         )
             except Exception as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
-                logging.getLogger(__name__).debug(
-                    "FAST feature filter configuration failed for mode '%s': %s",
-                    self._mode,
-                    exc_cfg,
-                )
+                filter_telemetry["filter_error"] = str(exc_cfg)
+                # Re-derive config if it failed before we could use it
+                try:
+                    cfg = FeatureFilterConfig.from_base_and_env(self.explainer.feature_filter_config)
+                except Exception:
+                    cfg = FeatureFilterConfig()
+
+                msg = "FAST feature filter configuration failed"
+                extra = {"mode": self._mode, "error": str(exc_cfg)}
+                if cfg.strict_observability:
+                    logging.getLogger(__name__).warning(msg, extra=extra)
+                else:
+                    logging.getLogger(__name__).debug(msg, extra=extra)
                 with contextlib.suppress(AttributeError):
                     del self.explainer.feature_filter_per_instance_ignore
                 filtered_request = ExplanationRequest(
@@ -579,8 +601,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     low_high_percentiles=request.low_high_percentiles,
                     bins=request.bins,
                     features_to_ignore=request.features_to_ignore,
-                    features_to_ignore_per_instance=getattr(
-                        request, "features_to_ignore_per_instance", None
+                    feature_filter_per_instance_ignore=getattr(
+                        request, "feature_filter_per_instance_ignore", None
                     ),
                     extras=request.extras,
                 )
@@ -591,9 +613,15 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
 
             # Debug: log explain_request ignore fields (helps diagnose propagation)
             logging.getLogger(__name__).debug(
-                "Explain request features_to_ignore: %s; per_instance: %s",
-                getattr(explain_request, "features_to_ignore", None),
-                getattr(explain_request, "features_to_ignore_per_instance", None) is not None,
+                "Explain request features_to_ignore",
+                extra={
+                    "features_to_ignore": getattr(explain_request, "features_to_ignore", None),
+                    "has_per_instance": getattr(
+                        explain_request, "feature_filter_per_instance_ignore", None
+                    )
+                    is not None,
+                    "mode": self._mode,
+                },
             )
 
             # Respect the execution plugin's own capability check when present.
@@ -605,8 +633,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 try:
                     if not supports(explain_request, explain_config):
                         logging.getLogger(__name__).info(
-                            "Execution plugin unsupported; falling back to legacy sequential execution (mode=%s)",
-                            self._mode,
+                            "Execution plugin unsupported; falling back to legacy sequential execution",
+                            extra={"mode": self._mode},
                         )
                         warnings.warn(
                             f"Execution plugin does not support request/config for mode '{self._mode}'; falling back to legacy sequential execution.",
@@ -627,17 +655,19 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         collection = explanation_callable(x, **kwargs)
                         # Attach per-instance feature ignore masks from filtered request
                         per_instance_ignore_from_request = getattr(
-                            filtered_request, "features_to_ignore_per_instance", None
+                            filtered_request, "feature_filter_per_instance_ignore", None
                         )
                         if per_instance_ignore_from_request is not None:
                             with contextlib.suppress(Exception):
-                                collection.features_to_ignore_per_instance = (
+                                collection.feature_filter_per_instance_ignore = (
                                     per_instance_ignore_from_request
                                 )
                                 # Reset rules cache on all explanations so they recompute with the new masks
                                 for exp in getattr(collection, "explanations", []):
                                     with contextlib.suppress(Exception):
                                         exp.reset()
+                        if filter_telemetry:
+                            collection.filter_telemetry = filter_telemetry
                         return collection_to_batch(collection)
                 except Exception as exc_supports:  # ADR002_ALLOW: degrade gracefully on plugin errors.  # pragma: no cover
                     logging.getLogger(__name__).warning(
@@ -667,6 +697,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             explanations = []
 
                         collection = _FallbackCollection()
+                        if filter_telemetry:
+                            collection.filter_telemetry = filter_telemetry
                         return collection_to_batch(collection)
                     kwargs = {
                         "threshold": request.threshold,
@@ -681,17 +713,19 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     collection = explanation_callable(x, **kwargs)
                     # Attach per-instance feature ignore masks from filtered request
                     per_instance_ignore_from_request = getattr(
-                        filtered_request, "features_to_ignore_per_instance", None
+                        filtered_request, "feature_filter_per_instance_ignore", None
                     )
                     if per_instance_ignore_from_request is not None:
                         with contextlib.suppress(Exception):
-                            collection.features_to_ignore_per_instance = (
+                            collection.feature_filter_per_instance_ignore = (
                                 per_instance_ignore_from_request
                             )
                             # Reset rules cache on all explanations so they recompute with the new masks
                             for exp in getattr(collection, "explanations", []):
                                 with contextlib.suppress(Exception):
                                     exp.reset()
+                    if filter_telemetry:
+                        collection.filter_telemetry = filter_telemetry
                     return collection_to_batch(collection)
 
             # Manage executor lifetime across explain runs using the runtime context.
@@ -728,6 +762,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     explanations = []
 
                 collection = _FallbackCollection()
+                if filter_telemetry:
+                    collection.filter_telemetry = filter_telemetry
                 return collection_to_batch(collection)
 
             kwargs = {
@@ -746,11 +782,11 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
         # This ensures that when rules are accessed via get_rules(), they will respect
         # the per-instance masks computed by FAST-based feature filtering.
         per_instance_ignore_from_request = getattr(
-            filtered_request, "features_to_ignore_per_instance", None
+            filtered_request, "feature_filter_per_instance_ignore", None
         )
         if per_instance_ignore_from_request is not None:
             with contextlib.suppress(Exception):
-                collection.features_to_ignore_per_instance = per_instance_ignore_from_request
+                collection.feature_filter_per_instance_ignore = per_instance_ignore_from_request
                 # Reset rules cache on all explanations so they recompute with the new masks
                 for exp in getattr(collection, "explanations", []):
                     with contextlib.suppress(Exception):
@@ -763,6 +799,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     len(getattr(collection, "explanations", [])),
                 )
 
+        if filter_telemetry:
+            collection.filter_telemetry = filter_telemetry
         return collection_to_batch(collection)
 
 

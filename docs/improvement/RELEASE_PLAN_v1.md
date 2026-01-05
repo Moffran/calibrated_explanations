@@ -646,3 +646,19 @@ boundaries. ADR-004 now documents this expectation.
 | 3 | “Task API comparison” reference missing | 3 | 3 | 9 | Get Started hub omits the mandated comparison link, weakening practitioner onboarding. |
 | 4 | Telemetry concept page lacks substance | 4 | 2 | 8 | Flesh out telemetry concept content (required by Standard-004 advanced tracks). |
 | 5 | Researcher future-work ledger absent | 3 | 2 | 6 | Researcher advanced hub lacks the promised roadmap tied to literature references. |
+
+## ADR-027 – FAST-Based Feature Filtering
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Observability policy alignment missing | 0 | 0 | 0 | **COMPLETED.** Runtime logging aligned with debug-by-default and strict-mode warnings. |
+| 2 | Metadata exposure for ignore masks undocumented | 0 | 0 | 0 | **COMPLETED.** `feature_filter_per_instance_ignore` metadata documented in API reference. |
+| 3 | Performance tuning examples missing | 0 | 0 | 0 | **COMPLETED.** Tuning guide added to practitioner playbook. |
+
+## ADR-028 – Logging and Governance Observability
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Domain-based loggers not enforced | 0 | 0 | 0 | **COMPLETED.** Domain-specific loggers (e.g., `calibrated_explanations.core.explain`) implemented. |
+| 2 | Structured logging with `extra` fields missing | 0 | 0 | 0 | **COMPLETED.** Structured logging with `extra` fields implemented per Standard-005. |
+| 3 | Data minimisation in logs unenforced | 0 | 0 | 0 | **COMPLETED.** Logs avoid sensitive data and focus on orchestration/telemetry. |

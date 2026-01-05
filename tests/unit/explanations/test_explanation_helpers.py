@@ -542,13 +542,13 @@ def test_ignored_features_for_instance_combines_global_and_per_instance(simple_e
 
     # Global ignore only
     container.features_to_ignore = [0]
-    container.features_to_ignore_per_instance = [[], []]
+    container.feature_filter_per_instance_ignore = [[], []]
     ignored = explanation.ignored_features_for_instance()
     assert 0 in ignored
 
     # Per-instance ignore for this index should be honoured
     container.features_to_ignore = []
-    container.features_to_ignore_per_instance = [[], [1]]
+    container.feature_filter_per_instance_ignore = [[], [1]]
     ignored = explanation.ignored_features_for_instance()
     assert 1 in ignored
     assert 0 not in ignored

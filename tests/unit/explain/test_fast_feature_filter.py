@@ -39,6 +39,18 @@ def test_global_top_k_respected_when_aggregating_max_abs():
         coll, num_features=num_features, base_ignore=np.array([], dtype=int), config=cfg
     )
 
-    # Number of globally kept features should not exceed per_instance_top_k
+    # Number of globally kept features should be the union of per-instance keeps.
+    # In this test, instances have disjoint top-k sets (0-4, 5-9, 2-6).
+    # The union of these sets is 0-9 (all 10 features).
     kept = num_features - len(result.global_ignore)
-    assert kept <= per_instance_top_k, "Global kept features exceed per-instance top_k"
+    assert kept == 10, "Global kept features should be the union of per-instance keeps"
+    assert result.global_ignore.size == 0, "No features should be globally ignored in this disjoint case"
+
+    # Also assert that the number of features kept per instance is below
+    # per_instance_top_k
+    for i, ignore_arr in enumerate(result.per_instance_ignore):
+        kept_count = num_features - len(ignore_arr)
+        assert kept_count <= per_instance_top_k, (
+            f"Instance {i} kept {kept_count} features, "
+            f"exceeds per_instance_top_k={per_instance_top_k}"
+        )

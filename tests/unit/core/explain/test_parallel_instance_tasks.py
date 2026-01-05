@@ -26,7 +26,7 @@ def make_request(x, low_high_percentiles=(5, 95)):
         low_high_percentiles=low_high_percentiles,
         bins=None,
         features_to_ignore=np.array([]),
-        features_to_ignore_per_instance=None,
+        feature_filter_per_instance_ignore=None,
         use_plugin=False,
         skip_instance_parallel=False,
     )
@@ -175,7 +175,7 @@ def test_fallback_runs_with_explainer_when_no_harness(monkeypatch):
         "bins_slice": None,
         "low_high_percentiles": (5, 95),
         "features_to_ignore_array": np.array([]),
-        "features_to_ignore_per_instance": None,
+        "feature_filter_per_instance_ignore": None,
         "explainer": fake_expl,
         "config_state": {},
     }

@@ -291,7 +291,7 @@ class CalibratedExplanation(ABC):
         """Return the set of feature indices ignored for this instance.
 
         Combines collection-level ``features_to_ignore`` with any
-        per-instance mask exposed via ``features_to_ignore_per_instance``.
+        per-instance mask exposed via ``feature_filter_per_instance_ignore``.
         """
         ignored: set[int] = set()
         global_ignore = getattr(self.calibrated_explanations, "features_to_ignore", None)
@@ -300,7 +300,7 @@ class CalibratedExplanation(ABC):
         ignored.update(collect_ints(global_ignore))
 
         per_instance = getattr(
-            self.calibrated_explanations, "features_to_ignore_per_instance", None
+            self.calibrated_explanations, "feature_filter_per_instance_ignore", None
         )
         instance_mask = None
         if isinstance(per_instance, Sequence) and 0 <= self.index < len(per_instance):
