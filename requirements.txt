@@ -1,13 +1,22 @@
-crepes >= 0.7.1
-ipython >= 8.0
-scikit-learn >= 1.3.0
-matplotlib >= 3.4
-numpy >= 1.20, < 2.3
-venn-abers >= 1.4.1
-psutil >= 5.9
-pyyaml >= 6.0
-openpyxl >= 3.0
-pandas >= 2.0
-cachetools >= 5.0
-pympler >= 1.0
-lime >= 0.2.0
+
+######################################################################
+# requirements.txt: Core runtime dependencies only
+#
+# This file lists only the core dependencies required to run
+# calibrated_explanations, as specified in pyproject.toml [project.dependencies].
+#
+# Do NOT add dev, test, viz, eval, or notebook dependencies here.
+# For development, use the appropriate extras or environment files.
+#
+# Rationale: Ensures pip installs and CI environments are minimal and
+# consistent with the canonical dependency list in pyproject.toml.
+# See ADR-001, ADR-010, and .github/copilot-instructions.md for policy.
+######################################################################
+cachetools
+pympler
+crepes
+venn-abers
+numpy
+pandas
+scikit-learn
+pyyaml

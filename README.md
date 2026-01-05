@@ -28,6 +28,17 @@ before acting.
    ```bash
    python -m pip install calibrated-explanations scikit-learn
    ```
+
+   **Optional extras:**
+   | Extra | Purpose | Key Packages |
+   | :--- | :--- | :--- |
+   | `[viz]` | Plotting and visualizations | `matplotlib` |
+   | `[notebooks]` | Jupyter notebook support | `ipython`, `jupyter` |
+   | `[eval]` | Reproducing benchmarks | `lime`, `shap`, `xgboost`, `scipy` |
+   | `[external-plugins]` | High-performance plugins | `numpy>=1.24`, `pandas>=2.0` |
+
+   Install with: `pip install "calibrated-explanations[viz,notebooks]"`
+
 2. **Run the quickstart** – this mirrors the smoke-tested docs example.
    ```python
    from sklearn.datasets import load_breast_cancer

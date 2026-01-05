@@ -11,6 +11,7 @@ from typing import Any, Callable
 
 import numpy as np
 import pytest
+import importlib
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from tests.helpers.model_utils import DummyLearner, DummyIntervalLearner
@@ -118,6 +119,23 @@ def pytest_sessionstart(session):
         raise pytest.UsageError(msg)
     else:
         warnings.warn(msg)
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip visualization tests when optional viz extras are not installed.
+
+    Tests marked with `@pytest.mark.viz` will be skipped if `matplotlib`
+    cannot be imported. This keeps the test suite green for core-only installs
+    while still running viz tests when the `viz` extras are available.
+    """
+    try:
+        importlib.import_module("matplotlib")
+        return
+    except Exception:
+        skip_marker = pytest.mark.skip(reason="matplotlib is not installed; skipping viz tests")
+        for item in items:
+            if "viz" in item.keywords or "viz_render" in item.keywords:
+                item.add_marker(skip_marker)
 
 
 @pytest.fixture(scope="session")

@@ -3,8 +3,9 @@
 Calibrated Explanations supports an optional, extensible plugin system. By default,
 you don’t need plugins to run calibrated factual and alternative explanations.
 When you want speed-ups (e.g., FAST) or custom visualizations, install a curated
-external bundle and wire it in. If you’re extending the framework, follow the
-plugin contract to preserve calibration semantics.
+external bundle and wire it in. For built-in Matplotlib-based plotting, install
+the `viz` extra: `pip install "calibrated-explanations[viz]"`. If you’re extending
+the framework, follow the plugin contract to preserve calibration semantics.
 
 Choose your path:
 

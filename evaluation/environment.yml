@@ -1,0 +1,16 @@
+name: ce-evaluation
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - lime==0.2.0.1
+    - shap==0.44.0
+    - seaborn
+    - xgboost
+    - scipy
+    - joblib
+    - ucimlrepo
+    - matplotlib

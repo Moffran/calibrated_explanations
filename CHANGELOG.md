@@ -5,7 +5,13 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...main)
 
+### Changed
+
+- **requirements.txt cleanup:** Updated requirements.txt to include only core runtime dependencies, strictly matching [project.dependencies] in pyproject.toml. Removed dev, viz, eval, and notebook dependencies. Rationale: Ensures pip installs and CI are minimal and consistent with canonical dependency list (see ADR-010, .github/copilot-instructions.md).
+
 ### Added
+
+- **ADR-010: Optional Dependency Split + Packaging Compliance:** Completed lean core installation with optional extras for visualization, notebooks, and evaluation. Core dependencies now exclude heavy packages like `ipython`, `lime`, and `matplotlib`, moved to appropriate extras (`viz`, `notebooks`, `eval`). Added pytest hook to auto-skip visualization tests when `matplotlib` is unavailable. Provided evaluation lockfiles (`evaluation/requirements.txt` and `evaluation/environment.yml`) aligned with `[eval]` extras. Updated documentation in README and CONTRIBUTING for extras usage.
 
 - **ADR-015: Explanation Plugin Integration Hardening:** Delivered protocol-validated explanation plugins with trust enforcement, canonical reconstruction, and immutable handles.
   - Implemented `FastExplanationPlugin` as the canonical v1-compliant plugin for fast explanations, replacing legacy internal logic.
