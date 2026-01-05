@@ -37,6 +37,10 @@ export CE_PLOT_STYLE_FALLBACKS="fallback.plot,legacy"
 For **explanation plugins**, use:
 
 ```bash
+# Top-level defaults (applies across modes; fast has its own default)
+export CE_EXPLANATION_PLUGIN="external.hello.explanation"
+export CE_EXPLANATION_PLUGIN_FAST="external.hello.fast"
+
 # Set fallback chain for a specific mode
 export CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS="external.hello.explanation,core.explanation.factual"
 export CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS="external.hello.alternative"

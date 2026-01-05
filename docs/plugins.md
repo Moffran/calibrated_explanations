@@ -63,6 +63,26 @@ python -m calibrated_explanations.plugins.cli list all --trusted-only
 python -m calibrated_explanations.plugins.cli list all --include-skipped
 ```
 
+**Env-var and explicit-trust workflow**
+
+- **Wiring precedence (highest → lowest):**
+  1. Explainer parameters / explicit overrides (constructor kwargs or `PluginManager` overrides).
+  2. Environment variables: `CE_EXPLANATION_PLUGIN` (global) then `CE_EXPLANATION_PLUGIN_<MODE>` (mode-specific); fallbacks may be specified via `<ENV>_FALLBACKS`.
+  3. `pyproject.toml` under `[tool.calibrated_explanations.explanations]`.
+  4. Plugin-declared fallbacks and built-in defaults.
+
+- **Trust semantics (summary):**
+  - Only explicit overrides provided directly to the explainer (step 1) are treated as "explicit" for the trust model. An explicit string override will allow an untrusted plugin to be used but will emit a `UserWarning` prompting you to confirm the plugin source.
+  - Environment variables and `pyproject.toml` entries are *not* considered explicit overrides for bypassing trust; they participate in normal resolution and will not bypass trust checks.
+  - If a *preferred* identifier (selected by env/pyproject/chain logic) is untrusted, resolution fails with a `ConfigurationError` unless the operator explicitly trusts the identifier (see below).
+
+- **Operator controls:**
+  - Use `CE_TRUST_PLUGIN` (comma-separated identifiers) to mark identifiers trusted at runtime.
+  - Add an allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]` for auditable, versioned trust decisions.
+  - Use `CE_DENY_PLUGIN` to block identifiers immediately (useful for incident response or temporary mitigation).
+
+- **Common env keys:** `CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_<MODE>`, `CE_EXPLANATION_PLUGIN_FAST`, `CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`.
+
 Writing plot plugins
 --------------------
 

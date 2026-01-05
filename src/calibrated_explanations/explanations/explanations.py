@@ -221,23 +221,149 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
+        from ..plugins.explanations import ExplanationBatch
         from ..utils.exceptions import SerializationError, ValidationError
 
-        container = batch.collection_metadata.get("container")
-        if container is None:
+        # Check for required batch attributes (duck-typing for flexibility)
+        if not hasattr(batch, 'collection_metadata'):
             raise SerializationError(
-                "ExplanationBatch is missing container metadata",
-                details={"artifact": "ExplanationBatch", "field": "container"},
+                "ExplanationBatch payload has unexpected type",
+                details={
+                    "param": "batch",
+                    "expected_type": "ExplanationBatch",
+                    "actual_type": type(batch).__name__,
+                },
             )
-        if not isinstance(container, cls):
+
+        # Get container_cls if available (may be None for duck-typed batches with template)
+        container_cls = getattr(batch, 'container_cls', None)
+        
+        metadata = dict(batch.collection_metadata)
+        template = metadata.pop("container", None)
+        
+        if container_cls is None and template is not None:
+            container_cls = type(template)
+
+        # If neither container_cls nor template is present, raise error
+        if container_cls is None:
+            raise SerializationError(
+                "ExplanationBatch payload missing container_cls and template",
+                details={
+                    "param": "batch",
+                    "required": "container_cls or collection_metadata['container']",
+                },
+            )
+        
+        # Validate container_cls if present
+        if not issubclass(container_cls, cls):
             raise ValidationError(
                 "ExplanationBatch container metadata has unexpected type",
                 details={
-                    "param": "container",
+                    "param": "container_cls",
                     "expected_type": cls.__name__,
-                    "actual_type": type(container).__name__,
+                    "actual_type": container_cls.__name__,
                 },
             )
+
+        # If template is a valid CalibratedExplanations instance, use it for metadata
+        # but still reconstruct a new container from batch.instances to ensure
+        # canonical reconstruction (ADR-015).
+        if template is not None:
+            if not isinstance(template, cls):
+                raise ValidationError(
+                    "ExplanationBatch container metadata has unexpected type",
+                    details={
+                        "param": "container",
+                        "expected_type": cls.__name__,
+                        "actual_type": type(template).__name__,
+                    },
+                )
+        
+        calibrated_explainer = metadata.get("calibrated_explainer")
+        if calibrated_explainer is None:
+            calibrated_explainer = metadata.get("explainer")
+        if calibrated_explainer is None and template is not None:
+            calibrated_explainer = template.calibrated_explainer
+
+        x_test = metadata.get("x_test")
+        if x_test is None:
+            x_test = metadata.get("x")
+        if x_test is None and template is not None:
+            x_test = template.x_test
+
+        y_threshold = metadata.get("y_threshold")
+        if y_threshold is None and template is not None:
+            y_threshold = template.y_threshold
+
+        bins = metadata.get("bins")
+        if bins is None and template is not None:
+            bins = template.bins
+
+        features_to_ignore = metadata.get("features_to_ignore")
+        if features_to_ignore is None and template is not None:
+            features_to_ignore = template.features_to_ignore
+
+        condition_source = metadata.get("condition_source")
+        if condition_source is None:
+            if template is not None:
+                condition_source = getattr(template, "condition_source", "observed")
+            else:
+                condition_source = "observed"
+
+        if calibrated_explainer is None or x_test is None:
+            raise SerializationError(
+                "ExplanationBatch metadata missing explainer context",
+                details={
+                    "artifact": "ExplanationBatch",
+                    "field": "calibrated_explainer",
+                    "available_keys": tuple(sorted(metadata.keys())),
+                },
+            )
+
+        container = container_cls(
+            calibrated_explainer,
+            x_test,
+            y_threshold,
+            bins,
+            features_to_ignore,
+            condition_source=condition_source,
+        )
+        container.low_high_percentiles = metadata.get(
+            "low_high_percentiles", getattr(template, "low_high_percentiles", None)
+        )
+        container.total_explain_time = metadata.get(
+            "total_explain_time", getattr(template, "total_explain_time", None)
+        )
+        container.features_to_ignore_per_instance = metadata.get(
+            "features_to_ignore_per_instance",
+            getattr(template, "features_to_ignore_per_instance", None),
+        )
+        container.batch_metadata = dict(metadata)
+
+        for index, instance in enumerate(batch.instances):
+            explanation = instance.get("explanation")
+            if explanation is None:
+                raise SerializationError(
+                    "ExplanationBatch instance missing explanation payload",
+                    details={
+                        "artifact": "ExplanationBatch",
+                        "field": "explanation",
+                        "instance_index": index,
+                    },
+                )
+            if not isinstance(explanation, batch.explanation_cls):
+                raise ValidationError(
+                    "ExplanationBatch instance has unexpected explanation type",
+                    details={
+                        "param": "explanation",
+                        "expected_type": batch.explanation_cls.__name__,
+                        "actual_type": type(explanation).__name__,
+                    },
+                )
+            explanation_copy = copy(explanation)
+            explanation_copy.calibrated_explanations = container
+            container.explanations.append(explanation_copy)
+
         return container
 
     # ------------------------------------------------------------------

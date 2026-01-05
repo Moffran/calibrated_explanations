@@ -7,6 +7,7 @@ from collections.abc import Mapping as MappingABC
 from collections.abc import MutableMapping as MutableMappingABC
 from collections.abc import Sequence as SequenceABC
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -43,6 +44,100 @@ class ExplanationContext:
     predict_bridge: PredictBridge
     interval_settings: Mapping[str, object]
     plot_settings: Mapping[str, object]
+
+
+class ExplainerHandle:
+    """Read-only wrapper exposing a constrained explainer API to plugins."""
+
+    __slots__ = ("__explainer", "__metadata")
+
+    def __init__(self, explainer: Any, metadata: Mapping[str, Any]) -> None:
+        self.__explainer = explainer
+        self.__metadata = MappingProxyType(dict(metadata))
+
+    @property
+    def num_features(self) -> int:
+        """Return the number of features."""
+        return self.__explainer.num_features
+    
+    @property
+    def mode(self) -> str:
+        """Return the prediction mode."""
+        return self.__explainer.mode
+    
+    @property
+    def is_multiclass(self) -> bool:
+        """Return True when in multiclass mode."""
+        return self.__explainer.is_multiclass()
+    
+    @property
+    def class_labels(self) -> Any:
+        """Return class labels."""
+        return self.__explainer.class_labels
+    
+    @property
+    def feature_names(self) -> Any:
+        """Return feature names."""
+        return self.__explainer.feature_names
+    
+    @property
+    def features_to_ignore(self) -> Any:
+        """Return features to ignore."""
+        return self.__explainer.features_to_ignore
+    
+    @property
+    def learner(self) -> Any:
+        """Return the underlying learner."""
+        return self.__explainer.learner
+    
+    @property
+    def bins(self) -> Any:
+        """Return bins configuration."""
+        return self.__explainer.bins
+    
+    @property
+    def preprocessor(self) -> Any:
+        """Return the preprocessor if available."""
+        return getattr(self.__explainer, "preprocessor", None)
+
+    @property
+    def feature_filter_config(self) -> Any:
+        """Return the feature filter configuration if available."""
+        return getattr(self.__explainer, "feature_filter_config", None)
+
+    @property
+    def plugin_manager(self) -> Any:
+        """Return the plugin manager if available."""
+        return getattr(self.__explainer, "plugin_manager", None)
+
+    def predict(self, *args: Any, **kwargs: Any) -> Any:
+        """Return calibrated predictions from the underlying explainer."""
+        return self.__explainer.predict(*args, **kwargs)
+
+    def explain_factual(self, *args: Any, **kwargs: Any) -> Any:
+        """Return factual explanations from the underlying explainer."""
+        return self.__explainer.explain_factual(*args, **kwargs)
+
+    def explore_alternatives(self, *args: Any, **kwargs: Any) -> Any:
+        """Return alternative explanations from the underlying explainer."""
+        return self.__explainer.explore_alternatives(*args, **kwargs)
+
+    def explain_fast(self, *args: Any, **kwargs: Any) -> Any:
+        """Return fast explanations from the underlying explainer."""
+        return self.__explainer.explain_fast(*args, **kwargs)
+
+    def get_metadata(self) -> Mapping[str, Any]:
+        """Return immutable metadata describing the explainer and dependencies."""
+        return self.__metadata
+
+    def get_preprocessor_state(self) -> Mapping[str, Any] | None:
+        """Return the preprocessor metadata snapshot when available."""
+        preprocessor_meta = getattr(self.__explainer, "preprocessor_metadata", None)
+        if preprocessor_meta is None:
+            return None
+        if isinstance(preprocessor_meta, MappingABC):
+            return MappingProxyType(dict(preprocessor_meta))
+        return {"value": preprocessor_meta}
 
 
 @dataclass(frozen=True)
@@ -88,6 +183,7 @@ __all__ = [
     "ExplanationContext",
     "ExplanationPlugin",
     "ExplanationRequest",
+    "ExplainerHandle",
     "PluginMeta",
     "validate_explanation_batch",
 ]

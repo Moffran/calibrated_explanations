@@ -36,7 +36,6 @@ from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
-    FastExplanation,
 )
 from ..explanations.explanation import (
     CalibratedExplanation as _AbstractExplanation,
@@ -172,9 +171,20 @@ def collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
     else:
         explanation_cls = FactualExplanation
     instances = tuple({"explanation": exp} for exp in collection.explanations)
+    # Include explicit, commonly-used collection fields so consumers do not
+    # need to rely solely on the template container when reconstructing.
     metadata = {
         "container": collection,
         "mode": getattr(collection, "mode", None),
+        "calibrated_explainer": getattr(collection, "calibrated_explainer", None),
+        "x_test": getattr(collection, "x_test", None),
+        "y_threshold": getattr(collection, "y_threshold", None),
+        "bins": getattr(collection, "bins", None),
+        "features_to_ignore": getattr(collection, "features_to_ignore", None),
+        "low_high_percentiles": getattr(collection, "low_high_percentiles", None),
+        "features_to_ignore_per_instance": getattr(
+            collection, "features_to_ignore_per_instance", None
+        ),
     }
     return ExplanationBatch(
         container_cls=type(collection),
@@ -1581,44 +1591,11 @@ def _register_builtin_fast_plugins() -> None:
             source="builtin",
         )
 
-    if find_explanation_descriptor("core.explanation.fast") is None:
+    from .explanations_fast import (  # pylint: disable=import-outside-toplevel
+        register_fast_explanation_plugin,
+    )
 
-        class BuiltinFastExplanationPlugin(_LegacyExplanationBase):
-            """Legacy wrapper delegating fast explanations to the explainer."""
-
-            plugin_meta = {
-                "name": "core.explanation.fast",
-                "schema_version": 1,
-                "version": package_version,
-                "provider": "calibrated_explanations",
-                "capabilities": [
-                    "explain",
-                    "explanation:fast",
-                    "task:classification",
-                    "task:regression",
-                ],
-                "modes": ("fast",),
-                "tasks": ("classification", "regression"),
-                "dependencies": ("core.interval.fast", "legacy"),
-                "interval_dependency": "core.interval.fast",
-                "plot_dependency": "legacy",
-                "trusted": True,
-                "trust": {"trusted": True},
-            }
-
-            def __init__(self) -> None:
-                super().__init__(
-                    _mode="fast",
-                    _explanation_attr="explain_fast",
-                    _expected_cls=FastExplanation,
-                    plugin_meta=self.plugin_meta,
-                )
-
-        register_explanation_plugin(
-            "core.explanation.fast",
-            BuiltinFastExplanationPlugin(),
-            source="builtin",
-        )
+    register_fast_explanation_plugin()
 
 
 def _register_builtins() -> None:

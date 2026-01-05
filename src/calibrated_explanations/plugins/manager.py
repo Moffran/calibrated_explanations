@@ -119,6 +119,11 @@ class PluginManager:
             "default": None,
             "fast": None,
         }
+        self._explanation_preferred_identifier: Dict[str, str | None] = {
+            "factual": None,
+            "alternative": None,
+            "fast": None,
+        }
         self._interval_context_metadata: Dict[str, Dict[str, Any]] = {
             "default": {},
             "fast": {},
@@ -251,6 +256,22 @@ class PluginManager:
         """Delete the preferred interval identifiers."""
         if hasattr(self, "_interval_preferred_identifier"):
             del self._interval_preferred_identifier
+
+    @property
+    def explanation_preferred_identifier(self) -> Dict[str, str | None]:
+        """Access the preferred explanation identifiers."""
+        return getattr(self, "_explanation_preferred_identifier", {})
+
+    @explanation_preferred_identifier.setter
+    def explanation_preferred_identifier(self, value: Dict[str, str | None]) -> None:
+        """Update the preferred explanation identifiers."""
+        self._explanation_preferred_identifier = value
+
+    @explanation_preferred_identifier.deleter
+    def explanation_preferred_identifier(self) -> None:
+        """Delete the preferred explanation identifiers."""
+        if hasattr(self, "_explanation_preferred_identifier"):
+            del self._explanation_preferred_identifier
 
     @property
     def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
@@ -510,6 +531,7 @@ class PluginManager:
         )
 
         entries: List[str] = []
+        preferred_identifier: str | None = None
 
         # 1. User override
         override = self._explanation_plugin_overrides.get(mode)
@@ -517,10 +539,20 @@ class PluginManager:
             entries.append(override)
 
         # 2. Environment variables
+        default_env_key = (
+            "CE_EXPLANATION_PLUGIN_FAST" if mode == "fast" else "CE_EXPLANATION_PLUGIN"
+        )
+        default_env_value = os.environ.get(default_env_key)
+        if default_env_value:
+            entries.append(default_env_value.strip())
+            preferred_identifier = preferred_identifier or default_env_value.strip()
+
         env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
-        env_value = os.environ.get(env_key)
-        if env_value:
-            entries.append(env_value.strip())
+        if env_key != default_env_key:
+            env_value = os.environ.get(env_key)
+            if env_value:
+                entries.append(env_value.strip())
+                preferred_identifier = preferred_identifier or env_value.strip()
         entries.extend(split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
 
         # 3. pyproject.toml settings
@@ -528,6 +560,7 @@ class PluginManager:
         py_value = py_settings.get(mode)
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
+            preferred_identifier = preferred_identifier or py_value
         entries.extend(coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
 
         # 4. Expand with descriptor fallbacks and deduplicate
@@ -557,6 +590,7 @@ class PluginManager:
                 expanded.append(ext_fast)
                 seen.add(ext_fast)
 
+        self._explanation_preferred_identifier[mode] = preferred_identifier
         return tuple(expanded)
 
     def build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:

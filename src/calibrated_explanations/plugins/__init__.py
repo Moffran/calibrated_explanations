@@ -15,6 +15,7 @@ from .explanations import (  # noqa: F401
     ExplanationContext,
     ExplanationPlugin,
     ExplanationRequest,
+    ExplainerHandle,
     validate_explanation_batch,
 )
 from .intervals import (  # noqa: F401
@@ -76,6 +77,7 @@ __all__ = [
     "ExplanationContext",
     "ExplanationPlugin",
     "ExplanationRequest",
+    "ExplainerHandle",
     "IntervalCalibratorContext",
     "IntervalCalibratorPlugin",
     "PlotArtifact",

@@ -203,7 +203,8 @@ def _cmd_list(args: argparse.Namespace) -> int:
     trusted_only = args.trusted_only
     verbose = args.verbose
 
-    if verbose:
+    # Trigger discovery when verbose or when the user explicitly requests skipped entries
+    if verbose or getattr(args, "include_skipped", False):
         load_entrypoint_plugins(include_untrusted=False)
 
     if kind in ("explanations", "all"):
@@ -259,7 +260,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
             for descriptor in descriptors:
                 _emit_plot_descriptor(descriptor)
 
-    if verbose:
+    if verbose or getattr(args, "include_skipped", False):
         print()
         _emit_discovery_report(get_last_discovery_report())
 
@@ -444,6 +445,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the plugin CLI entry point and return the exit code."""
     parser = argparse.ArgumentParser(
         description="Inspect and manage calibrated_explanations plugin metadata",
+        epilog=(
+            "Defaults can be configured via CE_EXPLANATION_PLUGIN and "
+            "CE_EXPLANATION_PLUGIN_FAST (mode-specific overrides via "
+            "CE_EXPLANATION_PLUGIN_<MODE>)."
+        ),
     )
     subparsers = parser.add_subparsers(dest="command")
 
@@ -470,6 +476,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--verbose",
         action="store_true",
         help="Include discovery diagnostics for skipped plugins",
+    )
+    list_parser.add_argument(
+        "--include-skipped",
+        action="store_true",
+        help="Include skipped discovery entries (denied/untrusted) in the output",
     )
     list_parser.set_defaults(func=_cmd_list)
 

@@ -7,6 +7,14 @@
 
 ### Added
 
+- **ADR-015: Explanation Plugin Integration Hardening:** Delivered protocol-validated explanation plugins with trust enforcement, canonical reconstruction, and immutable handles.
+  - Implemented `FastExplanationPlugin` as the canonical v1-compliant plugin for fast explanations, replacing legacy internal logic.
+  - Hardened `CalibratedExplanations.from_batch` to ensure full instance reconstruction from batch payloads, preventing bypass of canonical initialization even when a template is provided.
+  - Implemented security warnings for untrusted explanation plugins used via explicit overrides in `ExplanationOrchestrator`, ensuring user awareness of potential risks.
+  - Aligned plugin discovery with `CE_TRUST_PLUGIN` and `CE_DENY_PLUGIN` environment variables for consistent security posture.
+  - Enforced immutable `ExplainerHandle` and `ExplanationContext` for plugin interaction, preventing side-effects on core state.
+  - Added comprehensive hardening tests in `tests/unit/plugins/test_adr015_hardening.py` to verify ADR-015 compliance.
+
 - **ADR-013: Interval Plugin Protocol Compliance:** Delivered protocol-validated interval calibrators with frozen contexts and CLI diagnostics.
   - Implemented `FastIntervalCalibrator` wrapper for per-feature calibrator lists with all required protocol methods.
   - Added runtime protocol validation in `PredictionOrchestrator.validate_interval_calibrator()` for `ClassificationIntervalCalibrator` and `RegressionIntervalCalibrator` compliance.

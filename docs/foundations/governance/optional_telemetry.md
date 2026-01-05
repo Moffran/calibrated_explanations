@@ -118,7 +118,7 @@ factual = "core.explanation.factual"
 
 ```bash
 export CE_INTERVAL_PLUGIN=core.interval.fast
-export CE_EXPLANATION_PLUGIN_FACTUAL=core.explanation.factual
+export CE_EXPLANATION_PLUGIN=core.explanation.factual
 ```
 
 Use ``python -m calibrated_explanations.plugins.cli show <identifier>``

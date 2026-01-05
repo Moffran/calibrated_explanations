@@ -62,6 +62,8 @@ $env:CE_PLOT_STYLE = "plot_spec.default"
 $env:CE_PLOT_STYLE_FALLBACKS = "legacy"
 
 # Explanation plugin fallbacks by mode
+$env:CE_EXPLANATION_PLUGIN = "core.explanation.factual"
+$env:CE_EXPLANATION_PLUGIN_FAST = "core.explanation.fast"
 $env:CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS = "core.explanation.factual"
 $env:CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS = "core.explanation.alternative"
 $env:CE_EXPLANATION_PLUGIN_FAST_FALLBACKS = "core.explanation.fast"

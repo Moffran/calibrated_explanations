@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import warnings
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
@@ -25,6 +27,7 @@ from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
     ExplanationContext,
     ExplanationRequest,
+    ExplainerHandle,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
@@ -588,6 +591,22 @@ class ExplanationOrchestrator:
             If no suitable plugin can be resolved.
         """
         ensure_builtin_plugins()
+        # Ensure plugin fallback chains are initialized for this explainer so
+        # explicit overrides, env vars, and pyproject settings are respected
+        # during resolution. Only initialize when the chain for *mode* is
+        # missing to avoid overwriting test-injected or precomputed chains.
+        pm = getattr(self.explainer, "plugin_manager", None)
+        if pm is not None:
+            try:
+                existing = pm.explanation_plugin_fallbacks.get(mode)
+            except Exception:
+                existing = None
+            if not existing:
+                try:
+                    pm.initialize_chains()
+                except Exception:
+                    # Best-effort: resolution should continue even if chain init fails.
+                    pass
 
         raw_override = self.explainer.plugin_manager.explanation_plugin_overrides.get(mode)
         override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
@@ -596,7 +615,11 @@ class ExplanationOrchestrator:
             identifier = getattr(plugin, "plugin_meta", {}).get("name")
             return plugin, identifier
 
-        preferred_identifier = raw_override if isinstance(raw_override, str) else None
+        explicit_override_identifier = raw_override if isinstance(raw_override, str) else None
+        preferred_identifier = explicit_override_identifier or self.explainer.plugin_manager.explanation_preferred_identifier.get(
+            mode
+        )
+        allow_untrusted = explicit_override_identifier is not None
         chain = self.explainer.plugin_manager.explanation_plugin_fallbacks.get(mode, ())
         if not chain and mode == "fast":
             msg = (
@@ -611,12 +634,19 @@ class ExplanationOrchestrator:
         errors: List[str] = []
         for identifier in chain:
             is_preferred = preferred_identifier is not None and identifier == preferred_identifier
+            is_explicit_override = (
+                explicit_override_identifier is not None
+                and identifier == explicit_override_identifier
+            )
             if is_identifier_denied(identifier):
                 message = f"{identifier}: denied via CE_DENY_PLUGIN"
                 if is_preferred:
-                    raise ConfigurationError(
-                        "Explanation plugin override failed: " + message
-                    ) from None
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + message) from None
                 errors.append(message)
                 continue
 
@@ -625,19 +655,36 @@ class ExplanationOrchestrator:
             plugin = None
             if descriptor is not None:
                 metadata = descriptor.metadata
-                if descriptor.trusted or is_preferred:
+                if descriptor.trusted:
+                    plugin = descriptor.plugin
+                elif is_preferred and not allow_untrusted:
+                    raise ConfigurationError(
+                        "Explanation plugin configuration failed: "
+                        + identifier
+                        + " is untrusted; explicitly trust the plugin or pass an explicit override"
+                    ) from None
+                elif is_explicit_override:
+                    warnings.warn(
+                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                        "Ensure you trust the source of this plugin.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
                     plugin = descriptor.plugin
             if plugin is None:
-                if is_preferred:
+                if is_explicit_override:
                     plugin = find_explanation_plugin(identifier)
                 else:
                     plugin = find_explanation_plugin_trusted(identifier)
             if plugin is None:
                 message = f"{identifier}: not registered"
                 if is_preferred:
-                    raise ConfigurationError(
-                        "Explanation plugin override failed: " + message
-                    ) from None
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + message) from None
                 errors.append(message)
                 continue
 
@@ -649,7 +696,12 @@ class ExplanationOrchestrator:
             )
             if error:
                 if is_preferred:
-                    raise ConfigurationError(error) from None
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + error) from None
                 errors.append(error)
                 continue
 
@@ -818,13 +870,21 @@ class ExplanationOrchestrator:
         ExplanationContext
             The constructed context.
         """
-        helper_handles = {"explainer": self.explainer}
+        plot_chain = self._derive_plot_chain(mode, identifier)
+        self.explainer.plugin_manager.plot_plugin_fallbacks[mode] = plot_chain
         interval_settings = {
             "dependencies": self.explainer.plugin_manager.interval_plugin_hints.get(mode, ()),
         }
-        plot_chain = self._derive_plot_chain(mode, identifier)
-        self.explainer.plugin_manager.plot_plugin_fallbacks[mode] = plot_chain
         plot_settings = {"fallbacks": plot_chain}
+        metadata = {
+            "task": self.explainer.mode,
+            "mode": mode,
+            "interval_dependencies": tuple(interval_settings["dependencies"]),
+            "plot_fallbacks": tuple(plot_chain),
+            "plot_source": plot_chain[0] if plot_chain else None,
+        }
+        explainer_handle = ExplainerHandle(self.explainer, metadata)
+        helper_handles = MappingProxyType({"explainer": explainer_handle})
 
         # Use the bridge monitor for this plugin to track usage.
         # We use the identifier if available, otherwise fall back to mode.
