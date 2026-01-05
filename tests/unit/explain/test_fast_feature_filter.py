@@ -44,7 +44,9 @@ def test_global_top_k_respected_when_aggregating_max_abs():
     # The union of these sets is 0-9 (all 10 features).
     kept = num_features - len(result.global_ignore)
     assert kept == 10, "Global kept features should be the union of per-instance keeps"
-    assert result.global_ignore.size == 0, "No features should be globally ignored in this disjoint case"
+    assert (
+        result.global_ignore.size == 0
+    ), "No features should be globally ignored in this disjoint case"
 
     # Also assert that the number of features kept per instance is below
     # per_instance_top_k

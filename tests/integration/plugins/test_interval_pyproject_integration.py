@@ -17,13 +17,13 @@ from calibrated_explanations.plugins import (
 
 class MockIntervalCalibrator:
     """Mock calibrator implementing ClassificationIntervalCalibrator protocol."""
-    
+
     def predict_proba(self, x, *, output_interval=False, classes=None, bins=None):
         return [[0.5, 0.5]]
-    
+
     def is_multiclass(self) -> bool:
         return False
-    
+
     def is_mondrian(self) -> bool:
         return False
 

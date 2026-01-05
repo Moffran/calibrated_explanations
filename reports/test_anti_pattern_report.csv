@@ -1,0 +1,118 @@
+file,line,pattern,snippet
+integration\viz\test_plots_integration.py,96,private helper call,fig = _plots._plot_proba_triangle()
+integration\viz\test_plots_more.py,12,private helper call,fig = plots._plot_proba_triangle()
+plugins\test_builtins_behaviour.py,136,private helper call,assert builtins._supports_calibrated_explainer(DummyExplainer()) is True
+plugins\test_builtins_behaviour.py,137,private helper call,assert builtins._supports_calibrated_explainer(object()) is False
+plugins\test_builtins_behaviour.py,663,private helper call,builtins._register_builtins() # noqa: SLF001
+plugins\test_builtins_behaviour.py,677,private helper call,builtins._register_builtins() # noqa: SLF001
+plugins\test_builtins_module.py,628,private helper call,_register_builtins()
+plugins\test_builtins_module.py,685,private helper call,_register_builtins()
+plugins\test_cli.py,102,private helper call,cli._emit_explanation_descriptor(explanation)
+plugins\test_cli.py,103,private helper call,cli._emit_interval_descriptor(interval)
+plugins\test_cli.py,104,private helper call,cli._emit_plot_descriptor(plot_style)
+plugins\test_cli.py,105,private helper call,cli._emit_plot_builder_descriptor(plot_builder)
+plugins\test_cli.py,106,private helper call,cli._emit_plot_renderer_descriptor(plot_renderer)
+plugins\test_cli.py,146,private helper call,exit_code = cli._cmd_list(args)
+plugins\test_cli.py,169,private helper call,exit_code = cli._cmd_list(args)
+plugins\test_cli.py,181,private helper call,exit_code = cli._cmd_list(args)
+plugins\test_cli.py,198,private helper call,exit_code = cli._cmd_list(args)
+plugins\test_cli.py,209,private helper call,exit_code = cli._cmd_list(args)
+plugins\test_cli.py,218,private helper call,exit_code = cli._cmd_show(args)
+plugins\test_cli.py,227,private helper call,exit_code = cli._cmd_show(args)
+plugins\test_cli.py,247,private helper call,exit_code = cli._cmd_show(args)
+plugins\test_cli.py,264,private helper call,exit_code = cli._cmd_trust(args)
+plugins\test_cli.py,288,private helper call,exit_code = cli._cmd_trust(args)
+plugins\test_cli.py,302,private helper call,exit_code = cli._cmd_trust(args)
+plugins\test_cli_additional.py,57,private helper call,cli._emit_explanation_descriptor(descriptor)
+plugins\test_cli_additional.py,72,private helper call,cli._emit_interval_descriptor(descriptor)
+plugins\test_cli_additional.py,91,private helper call,cli._emit_plot_descriptor(descriptor)
+plugins\test_cli_additional.py,113,private helper call,cli._emit_plot_builder_descriptor(descriptor)
+plugins\test_cli_additional.py,127,private helper call,exit_code = cli._cmd_list(args)
+plugins\test_cli_additional.py,139,private helper call,exit_code = cli._cmd_show(args)
+plugins\test_cli_additional.py,157,private helper call,exit_code = cli._cmd_trust(args)
+plugins\test_explanation_plugins.py,160,private helper call,"desc = _find_desc(""third.party.plugin"")"
+unit\test_explanations_collection.py,81,private helper call,return self._predict(data)
+unit\test_perf_parallel.py,274,private helper call,"results = executor._serial_strategy(tracking_fn, items)"
+unit\test_plots_configuration.py,26,private helper call,assert plotting._read_plot_pyproject() == {}
+unit\test_plots_configuration.py,35,private helper call,config = plotting._read_plot_pyproject()
+unit\test_plots_configuration.py,45,private helper call,assert plotting._read_plot_pyproject() == {}
+unit\test_plots_configuration.py,52,private helper call,assert plotting._read_plot_pyproject() == {}
+unit\test_plotting.py,629,private helper call,fig = plotting._plot_proba_triangle()
+unit\test_plot_spec_default_builder.py,10,private helper call,"REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)"
+unit\test_plot_spec_default_builder.py,11,private helper call,"REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,222,private helper call,explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+unit\core\test_interval_regressor.py,182,private helper call,"regressor._append_calibration_buffer(""y_cal_hat"", np.arange(1, 6, dtype=float).reshape(-1, 1))"
+unit\core\test_interval_regressor.py,190,private helper call,"regressor._append_bins(np.array([[9], [8]]))"
+unit\core\test_interval_regressor.py,522,private helper call,"regressor._append_calibration_buffer(""y_cal_hat"", np.array([]))"
+unit\core\test_interval_regressor.py,531,private helper call,regressor._append_bins(np.array([]))
+unit\core\test_interval_regressor.py,541,private helper call,"regressor._append_calibration_buffer(""y_cal_hat"", appended_calibration)"
+unit\core\test_interval_regressor.py,547,private helper call,"regressor._append_bins(np.array([[2], [3]]))"
+unit\core\test_interval_regressor.py,548,private helper call,"regressor._append_bins(np.array([[4], [5], [6]]))"
+unit\core\test_interval_regressor.py,659,private helper call,"regressor._append_bins(np.array([[1], [2]]))"
+unit\core\test_interval_regressor.py,670,private helper call,"grown = regressor._ensure_capacity(original, size=1, additional=2)"
+unit\core\test_schema_payload_validation.py,20,private helper call,"jsonschema.validate(instance=obj, schema=schema_validation._schema_json())"
+unit\core\test_schema_payload_validation.py,30,private helper call,"jsonschema.validate(instance=bad_payload, schema=schema_validation._schema_json())"
+unit\core\test_wrap_explainer_helpers.py,78,private helper call,"wrapper._normalize_public_kwargs(payload, allowed={""threshold""})"
+unit\core\test_wrap_explainer_helpers.py,81,private helper call,"filtered = wrapper._normalize_public_kwargs(payload, allowed={""threshold""})"
+unit\core\test_wrap_explainer_helpers.py,88,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""auto"""
+unit\core\test_wrap_explainer_helpers.py,90,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""true"""
+unit\core\test_wrap_explainer_helpers.py,92,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""false"""
+unit\core\test_wrap_explainer_helpers.py,94,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""auto"""
+unit\core\test_wrap_explainer_helpers.py,109,private helper call,serialised = wrapper._serialise_preprocessor_value(payload)
+unit\core\test_wrap_explainer_helpers.py,119,private helper call,snapshot = wrapper._extract_preprocessor_snapshot(preprocessor)
+unit\core\test_wrap_explainer_helpers.py,132,private helper call,assert wrapper._build_preprocessor_metadata() is None
+unit\core\test_wrap_explainer_helpers.py,136,private helper call,metadata = wrapper._build_preprocessor_metadata()
+unit\core\test_wrap_explainer_helpers.py,148,private helper call,x_fit = wrapper._pre_fit_preprocess(x)
+unit\core\test_wrap_explainer_helpers.py,152,private helper call,x_transformed = wrapper._pre_transform(x)
+unit\core\test_wrap_explainer_helpers.py,156,private helper call,x_inference = wrapper._maybe_preprocess_for_inference(x)
+unit\core\test_wrap_explainer_helpers.py,170,private helper call,x_fit = wrapper._pre_fit_preprocess(x)
+unit\core\test_wrap_explainer_helpers.py,174,private helper call,x_pred = wrapper._pre_transform(x)
+unit\core\test_wrap_explainer_helpers.py,185,private helper call,wrapper._finalize_fit(reinitialize=True)
+unit\core\test_wrap_explainer_helpers.py,194,private helper call,"assert wrapper._format_proba_output(matrix, False) is matrix"
+unit\core\test_wrap_explainer_helpers.py,197,private helper call,"result_multi = wrapper._format_proba_output(multi, True)"
+unit\core\test_wrap_explainer_helpers.py,202,private helper call,"_, intervals = wrapper._format_proba_output(binary, True)"
+unit\core\test_wrap_explainer_helpers.py,206,private helper call,"_, fallback = wrapper._format_proba_output(vector, True)"
+unit\core\test_wrap_explainer_helpers.py,372,private helper call,assert wrapper._serialise_preprocessor_value(None) is None
+unit\core\test_wrap_explainer_helpers.py,378,private helper call,assert wrapper._serialise_preprocessor_value(custom) == str(custom)
+unit\core\test_wrap_explainer_helpers.py,387,private helper call,assert wrapper._pre_fit_preprocess(data) is data
+unit\core\test_wrap_explainer_helpers.py,405,private helper call,transformed = wrapper._pre_fit_preprocess(data)
+unit\core\explain\test_explain_orchestrator.py,510,private helper call,"chain = orchestrator._derive_plot_chain(""factual"", ""test_plugin"")"
+unit\core\explain\test_orchestrator_coverage.py,471,private helper call,"chain = orchestrator._derive_plot_chain(""factual"", ""plugin1"")"
+unit\core\explain\test_parallel_instance_tasks.py,141,private helper call,"res = _instance_parallel_task((start, stop, state))"
+unit\core\explain\test_parallel_instance_tasks.py,183,private helper call,"res = _instance_parallel_task((0, 2, state))"
+unit\core\prediction\test_orchestrator_coverage.py,97,private helper call,orchestrator._validate_prediction_result(result)
+unit\core\prediction\test_orchestrator_coverage.py,105,private helper call,orchestrator._validate_prediction_result(result)
+unit\core\prediction\test_orchestrator_coverage.py,112,private helper call,orchestrator._validate_prediction_result(result)
+unit\core\prediction\test_orchestrator_coverage.py,819,private helper call,orchestrator._validate_prediction_result(result)
+unit\core\prediction\test_orchestrator_coverage.py,824,private helper call,orchestrator._validate_prediction_result(result)
+unit\explanations\test_explanation_helpers.py,117,private helper call,payload = inst._build_uncertainty_payload(
+unit\explanations\test_explanation_helpers.py,132,private helper call,"interval = CalibratedExplanation._build_interval(0.2, 0.4)"
+unit\explanations\test_explanation_helpers.py,139,private helper call,"op, val = inst._parse_condition(""feat"", ""feat = 3"")"
+unit\explanations\test_explanation_helpers.py,149,private helper call,"payload = inst._build_condition_payload(0, ""feat = 4"", 2.0, 4.0)"
+unit\explanations\test_explanation_helpers.py,265,private helper call,prediction_interval = self._build_interval(
+unit\explanations\test_explanation_helpers.py,482,private helper call,"assert simple_explanation._get_percentiles() == (0.05, 0.95)"
+unit\explanations\test_explanation_helpers.py,515,private helper call,payload = explanation._build_uncertainty_payload(
+unit\explanations\test_explanation_helpers.py,526,private helper call,no_percentiles = explanation._build_uncertainty_payload(
+unit\explanations\test_explanation_helpers.py,559,private helper call,payload = base._build_instance_uncertainty()
+unit\explanations\test_explanation_helpers.py,568,private helper call,threshold_payload = thresholded._build_instance_uncertainty()
+unit\explanations\test_explanation_helpers.py,574,private helper call,probabilistic_payload = probabilistic._build_instance_uncertainty()
+unit\explanations\test_explanation_helpers.py,583,private helper call,"assert explanation._safe_feature_name(1) == ""height"""
+unit\explanations\test_explanation_helpers.py,584,private helper call,"assert explanation._safe_feature_name(5) == ""5"""
+unit\explanations\test_explanation_helpers.py,585,private helper call,"assert explanation._safe_feature_name(""custom"") == ""custom"""
+unit\explanations\test_explanation_helpers.py,605,private helper call,payload = telemetry_explanation._build_condition_payload(
+unit\explanations\test_explanation_helpers.py,615,private helper call,raw_payload = telemetry_explanation._build_condition_payload(
+unit\explanations\test_explanation_helpers.py,676,private helper call,"predict, low, high = explanation._predict_conjunctive("
+unit\explanations\test_explanation_helpers.py,693,private helper call,explanation._predict_conjunctive(
+unit\legacy\test_plotting.py,919,private helper call,plotting._plot_proba_triangle()
+unit\perf\test_parallel.py,358,private helper call,"results = executor._process_strategy(echo, [1, 2])"
+unit\perf\test_parallel.py,587,private helper call,quota = ParallelExecutor._get_cgroup_cpu_quota()
+unit\perf\test_parallel.py,607,private helper call,assert ParallelExecutor._get_cgroup_cpu_quota() == 5
+unit\plotting\test_label_helpers.py,66,private helper call,"result = plotting._format_save_path(base_path, filename)"
+unit\utils\test_deprecations_helper.py,36,private helper call,assert _should_raise() is True
+unit\utils\test_deprecations_helper.py,41,private helper call,assert _should_raise() is True
+unit\utils\test_deprecations_helper.py,46,private helper call,assert _should_raise() is True
+unit\utils\test_deprecations_helper.py,51,private helper call,assert _should_raise() is True
+unit\utils\test_deprecations_helper.py,56,private helper call,assert _should_raise() is False
+unit\utils\test_deprecations_helper.py,61,private helper call,assert _should_raise() is False
+unit\utils\test_deprecations_helper.py,74,private helper call,assert _should_raise() is True
+unit\utils\test_deprecations_helper.py,84,private helper call,assert _should_raise() is True

@@ -626,7 +626,12 @@ def test_load_entrypoint_plugins_include_untrusted(monkeypatch):
 
 def test_load_entrypoint_plugins_trusted_flow(monkeypatch):
     class TrustedPlugin(SimpleExplanationPlugin):
-        plugin_meta = {**SimpleExplanationPlugin.plugin_meta, "name": "entry.trusted", "trust": True, "trusted": True}
+        plugin_meta = {
+            **SimpleExplanationPlugin.plugin_meta,
+            "name": "entry.trusted",
+            "trust": True,
+            "trusted": True,
+        }
 
     plugin = TrustedPlugin()
     entries = [EntryPoint(plugin)]

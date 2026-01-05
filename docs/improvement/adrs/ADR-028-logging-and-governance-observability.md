@@ -2,11 +2,11 @@
 
 # ADR-028: Logging and Governance Observability
 
-Status: Draft  
-Date: 2026-01-05  
-Deciders: Runtime & Governance maintainers  
-Reviewers: TBD  
-Supersedes: None  
+Status: Draft
+Date: 2026-01-05
+Deciders: Runtime & Governance maintainers
+Reviewers: TBD
+Supersedes: None
 Superseded-by: None
 
 ## Context
@@ -221,5 +221,3 @@ Migration guidelines:
   context helper where appropriate.
 - `docs/improvement/ignore/Logging_Analysis.md` — Detailed analysis of current
   logging usage and recommendations that informed this ADR.
-
-

@@ -509,7 +509,9 @@ def test_register_plot_plugin_combines_builder_and_renderer():
                 registry.register_plot_plugin("example.plot.combined", plugin)
         else:
             with warns_or_raises():
-                descriptor = registry.register_plot_plugin("example.plot.combined", plugin, source="builtin")
+                descriptor = registry.register_plot_plugin(
+                    "example.plot.combined", plugin, source="builtin"
+                )
             assert descriptor.identifier == "example.plot.combined"
             assert registry.find_plot_builder("example.plot.combined") is plugin
             assert registry.find_plot_renderer("example.plot.combined") is plugin
@@ -793,10 +795,14 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
         trusted_plugin = TrustedCombo()
         if deprecations_error_enabled():
             with pytest.raises(DeprecationWarning):
-                registry.register_plot_plugin("example.plot.trusted", trusted_plugin, source="builtin")
+                registry.register_plot_plugin(
+                    "example.plot.trusted", trusted_plugin, source="builtin"
+                )
         else:
             with warns_or_raises():
-                registry.register_plot_plugin("example.plot.trusted", trusted_plugin, source="builtin")
+                registry.register_plot_plugin(
+                    "example.plot.trusted", trusted_plugin, source="builtin"
+                )
 
         builder_desc = registry.register_plot_builder("example.plot.untrusted", UntrustedBuilder())
         renderer_desc = registry.register_plot_renderer(

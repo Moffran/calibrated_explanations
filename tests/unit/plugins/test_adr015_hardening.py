@@ -3,17 +3,16 @@
 import os
 import pickle
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from types import MappingProxyType
 
 from calibrated_explanations.plugins.explanations import (
     ExplanationContext,
     ExplainerHandle,
-    ExplanationRequest,
     ExplanationBatch,
 )
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
-from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins.registry import (
     find_explanation_descriptor,
     find_explanation_plugin_trusted,
@@ -24,6 +23,7 @@ from calibrated_explanations.plugins.registry import (
 # Helper classes
 class FakeBridge:
     """Pickleable bridge for testing."""
+
     pass
 
 
@@ -60,7 +60,7 @@ class TestFastExplanationPluginRegistration:
         ensure_builtin_plugins()
         descriptor = find_explanation_descriptor("core.explanation.fast")
         assert descriptor is not None
-        
+
         meta = descriptor.metadata
         assert meta["name"] == "core.explanation.fast"
         assert "interval_dependency" in meta
@@ -94,7 +94,7 @@ class TestCanonicalCollectionReconstruction:
         # Create mock explanation - minimal valid state
         explanation = MagicMock(spec=FactualExplanation)
         explanation.instance_index = 0
-        
+
         metadata = {
             "calibrated_explainer": mock_explainer,
             "x_test": np.array([[1, 2, 3, 4, 5]]),
@@ -195,39 +195,43 @@ class TestTrustEnforcement:
 
     def test_explicit_override_allows_untrusted_with_warning(self, mock_explainer):
         """Test that explicit overrides can use untrusted plugins but log a warning."""
-        import warnings
         from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
         from calibrated_explanations.plugins.registry import (
-            register_explanation_plugin,
             ExplanationPluginDescriptor,
         )
 
         # Register a mock untrusted plugin
         mock_plugin = MagicMock()
         mock_plugin.plugin_meta = {
-            "name": "test.untrusted", 
-            "trusted": False, 
+            "name": "test.untrusted",
+            "trusted": False,
             "schema_version": 1,
             "tasks": ["classification"],
             "modes": ["factual"],
-            "capabilities": ["explain", "explanation:factual", "task:classification"]
+            "capabilities": ["explain", "explanation:factual", "task:classification"],
         }
-        
+
         # We need to bypass the registry's trust check for registration if it has one
         # but here we just want to see if resolve_plugin warns.
-        with patch("calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor") as mock_find:
+        with patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor"
+        ) as mock_find:
             descriptor = MagicMock(spec=ExplanationPluginDescriptor)
             descriptor.plugin = mock_plugin
             descriptor.trusted = False
             descriptor.metadata = mock_plugin.plugin_meta
             mock_find.return_value = descriptor
-            
+
             orchestrator = ExplanationOrchestrator(mock_explainer)
             mock_explainer.mode = "classification"
-            mock_explainer.plugin_manager.explanation_plugin_overrides = {"factual": "test.untrusted"}
+            mock_explainer.plugin_manager.explanation_plugin_overrides = {
+                "factual": "test.untrusted"
+            }
             mock_explainer.plugin_manager.coerce_plugin_override.side_effect = lambda x: x
-            mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ("test.untrusted",)}
-            
+            mock_explainer.plugin_manager.explanation_plugin_fallbacks = {
+                "factual": ("test.untrusted",)
+            }
+
             with pytest.warns(UserWarning, match="Using untrusted explanation plugin"):
                 plugin, identifier = orchestrator.resolve_plugin("factual")
                 assert identifier == "test.untrusted"
@@ -253,7 +257,10 @@ class TestEnvironmentVariableAlignment:
         with patch.dict(os.environ, {"CE_EXPLANATION_PLUGIN": "core.explanation.factual"}):
             chain = pm.build_explanation_chain("factual", "core.explanation.factual.sequential")
             # The top-level env var should appear in the chain
-            assert "core.explanation.factual" in chain or "core.explanation.factual.sequential" in chain
+            assert (
+                "core.explanation.factual" in chain
+                or "core.explanation.factual.sequential" in chain
+            )
 
     def test_ce_explanation_plugin_fast_env_var_honored(self):
         """Test that CE_EXPLANATION_PLUGIN_FAST is recognized for fast mode."""
@@ -281,9 +288,7 @@ class TestEnvironmentVariableAlignment:
                 "CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS": "core.explanation.factual",
             },
         ):
-            chain = pm.build_explanation_chain(
-                "factual", "core.explanation.factual.sequential"
-            )
+            chain = pm.build_explanation_chain("factual", "core.explanation.factual.sequential")
             # Both should appear in the chain
             assert len(chain) > 0
 
@@ -300,7 +305,7 @@ class TestImmutablePluginHandles:
         """Test that helper_handles is wrapped in MappingProxyType."""
         bridge = MagicMock()
         handles = {"explainer": MagicMock()}
-        
+
         context = ExplanationContext(
             task="classification",
             mode="factual",
@@ -336,9 +341,9 @@ class TestImmutablePluginHandles:
         """Test that ExplainerHandle prevents direct reassignment of wrapped object."""
         explainer = MagicMock()
         metadata = {"key": "value"}
-        
+
         handle = ExplainerHandle(explainer, metadata)
-        
+
         # Using __slots__, the handle should not allow new attributes
         # but the private attributes are read-only by design
         # Note: this test verifies the design intent; direct reassignment
@@ -368,7 +373,7 @@ class TestImmutablePluginHandles:
     def test_explanation_context_pickleable_with_proxy(self):
         """Test that ExplanationContext is pickleable with plain dicts."""
         handles = {"test": "value"}
-        
+
         context = ExplanationContext(
             task="classification",
             mode="factual",
@@ -401,7 +406,7 @@ class TestADR015IntegrationFlow:
         from calibrated_explanations.plugins import ensure_builtin_plugins
 
         ensure_builtin_plugins()
-        
+
         # Verify at least one core plugin is registered and trusted
         descriptor = find_explanation_descriptor("core.explanation.factual")
         assert descriptor is not None
@@ -414,7 +419,7 @@ class TestADR015IntegrationFlow:
 
         explainer = MagicMock()
         explainer.num_features = 3
-        
+
         metadata = {
             "calibrated_explainer": explainer,
             "x_test": np.array([[1, 2, 3]]),
@@ -438,7 +443,7 @@ class TestADR015IntegrationFlow:
         )
 
         collection = CalibratedExplanations.from_batch(batch)
-        
+
         # Verify metadata preserved
         batch_meta = getattr(collection, "batch_metadata", {})
         assert batch_meta.get("mode") == "factual"
@@ -451,12 +456,9 @@ class TestADR015IntegrationFlow:
 
         # Create a template instance
         template = CalibratedExplanations(
-            mock_explainer,
-            np.array([[1, 2, 3]]),
-            y_threshold=0.5,
-            bins=None
+            mock_explainer, np.array([[1, 2, 3]]), y_threshold=0.5, bins=None
         )
-        
+
         metadata = {
             "calibrated_explainer": mock_explainer,
             "x_test": np.array([[1, 2, 3]]),
@@ -477,9 +479,11 @@ class TestADR015IntegrationFlow:
         )
 
         collection = CalibratedExplanations.from_batch(batch)
-        
+
         # Verify it's a NEW instance
-        assert collection is not template, "from_batch should return a new instance, not the template"
+        assert (
+            collection is not template
+        ), "from_batch should return a new instance, not the template"
         assert len(collection.explanations) == 1
 
 

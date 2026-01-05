@@ -13,13 +13,10 @@ build_interval_context() which intentionally returns unfrozen contexts for plugi
 from __future__ import annotations
 
 import pytest
-import numpy as np
 from types import MappingProxyType
 
 from tests.helpers.explainer_utils import make_explainer_from_dataset
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
-from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 class TestFrozenContextStructure:
@@ -31,9 +28,9 @@ class TestFrozenContextStructure:
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.bins, MappingProxyType), (
-            f"bins should be MappingProxyType, got {type(context.bins)}"
-        )
+        assert isinstance(
+            context.bins, MappingProxyType
+        ), f"bins should be MappingProxyType, got {type(context.bins)}"
 
     def test_context_residuals_is_mapping_proxy(self, binary_dataset):
         """Context.residuals should be a MappingProxyType."""
@@ -41,9 +38,9 @@ class TestFrozenContextStructure:
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.residuals, MappingProxyType), (
-            f"residuals should be MappingProxyType, got {type(context.residuals)}"
-        )
+        assert isinstance(
+            context.residuals, MappingProxyType
+        ), f"residuals should be MappingProxyType, got {type(context.residuals)}"
 
     def test_context_difficulty_is_mapping_proxy(self, binary_dataset):
         """Context.difficulty should be a MappingProxyType."""
@@ -51,9 +48,9 @@ class TestFrozenContextStructure:
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.difficulty, MappingProxyType), (
-            f"difficulty should be MappingProxyType, got {type(context.difficulty)}"
-        )
+        assert isinstance(
+            context.difficulty, MappingProxyType
+        ), f"difficulty should be MappingProxyType, got {type(context.difficulty)}"
 
     def test_context_metadata_is_dict_for_plugins(self, binary_dataset):
         """Context.metadata should be mutable dict for plugin execution."""
@@ -61,9 +58,10 @@ class TestFrozenContextStructure:
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.metadata, dict) and not isinstance(context.metadata, MappingProxyType), (
-            f"metadata should be dict (not MappingProxyType) for plugin use, got {type(context.metadata)}"
-        )
+        assert (
+            isinstance(context.metadata, dict)
+            and not isinstance(context.metadata, MappingProxyType)
+        ), f"metadata should be dict (not MappingProxyType) for plugin use, got {type(context.metadata)}"
 
     def test_context_fast_flags_is_mapping_proxy(self, binary_dataset):
         """Context.fast_flags should be a MappingProxyType."""
@@ -71,9 +69,9 @@ class TestFrozenContextStructure:
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.fast_flags, MappingProxyType), (
-            f"fast_flags should be MappingProxyType, got {type(context.fast_flags)}"
-        )
+        assert isinstance(
+            context.fast_flags, MappingProxyType
+        ), f"fast_flags should be MappingProxyType, got {type(context.fast_flags)}"
 
     def test_context_calibration_splits_is_tuple(self, binary_dataset):
         """Context.calibration_splits should be an immutable tuple."""
@@ -81,9 +79,9 @@ class TestFrozenContextStructure:
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.calibration_splits, tuple), (
-            f"calibration_splits should be tuple, got {type(context.calibration_splits)}"
-        )
+        assert isinstance(
+            context.calibration_splits, tuple
+        ), f"calibration_splits should be tuple, got {type(context.calibration_splits)}"
 
     def test_context_learner_is_reference(self, binary_dataset):
         """Context.learner should be a direct reference (mutable, intentional)."""
@@ -124,9 +122,9 @@ class TestFrozenContextBinsImmutability:
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
         calibration_bins = context.bins.get("calibration")
-        assert isinstance(calibration_bins, (tuple, type(None))), (
-            f"bins['calibration'] should be tuple or None, got {type(calibration_bins)}"
-        )
+        assert isinstance(
+            calibration_bins, (tuple, type(None))
+        ), f"bins['calibration'] should be tuple or None, got {type(calibration_bins)}"
 
     def test_bins_clear_raises_error(self, binary_dataset):
         """Attempting to clear bins should raise AttributeError (no such method on MappingProxyType)."""
@@ -173,7 +171,9 @@ class TestFrozenContextMetadataImmutability:
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
         # Metadata is mutable (dict) for plugin use
-        assert isinstance(context.metadata, dict) and not isinstance(context.metadata, MappingProxyType)
+        assert isinstance(context.metadata, dict) and not isinstance(
+            context.metadata, MappingProxyType
+        )
         context.metadata["new_key"] = "new_value"
         assert context.metadata["new_key"] == "new_value"
 
@@ -185,9 +185,7 @@ class TestFrozenContextMetadataImmutability:
 
         required_fields = ["task", "mode", "explainer"]
         for field in required_fields:
-            assert field in context.metadata, (
-                f"metadata missing required field '{field}'"
-            )
+            assert field in context.metadata, f"metadata missing required field '{field}'"
 
     def test_metadata_explainer_reference_accessible(self, binary_dataset):
         """Explainer reference in metadata should be accessible (for plugins)."""
@@ -196,9 +194,9 @@ class TestFrozenContextMetadataImmutability:
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
         stored_explainer = context.metadata.get("explainer")
-        assert stored_explainer is explainer, (
-            "Explainer in metadata should reference the original explainer"
-        )
+        assert (
+            stored_explainer is explainer
+        ), "Explainer in metadata should reference the original explainer"
 
 
 class TestFrozenContextDifficultyImmutability:
@@ -266,7 +264,9 @@ class TestFrozenContextFastMode:
         context = orchestrator.build_interval_context(fast=True, metadata={})
 
         # Metadata is mutable even in fast mode (design: mutable for plugins)
-        assert isinstance(context.metadata, dict) and not isinstance(context.metadata, MappingProxyType)
+        assert isinstance(context.metadata, dict) and not isinstance(
+            context.metadata, MappingProxyType
+        )
         context.metadata["test"] = "value"
         assert context.metadata["test"] == "value"
 
@@ -316,7 +316,9 @@ class TestFrozenContextRegressionMode:
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
         # Metadata is mutable dict (design allows plugin mutation during execution)
-        assert isinstance(context.metadata, dict) and not isinstance(context.metadata, MappingProxyType)
+        assert isinstance(context.metadata, dict) and not isinstance(
+            context.metadata, MappingProxyType
+        )
         context.metadata["custom_field"] = "value"
         assert context.metadata["custom_field"] == "value"
 
@@ -327,7 +329,6 @@ class TestFrozenContextRegressionMode:
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
         assert isinstance(context.bins, MappingProxyType)
-
 
 
 class TestContextDatastructureConsistency:

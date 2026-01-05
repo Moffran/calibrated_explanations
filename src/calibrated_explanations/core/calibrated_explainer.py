@@ -35,7 +35,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         _tomllib = None  # type: ignore[assignment]
 
 # Core imports (no cross-sibling dependencies)
-from ..plugins.interval_wrappers import is_fast_interval_collection
+from ..calibration.interval_wrappers import is_fast_interval_collection
 from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from ..utils.exceptions import (

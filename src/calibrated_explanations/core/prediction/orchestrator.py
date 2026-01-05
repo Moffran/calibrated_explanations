@@ -22,13 +22,13 @@ import sys
 import warnings
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
 from ...plugins import (
-    IntervalCalibratorContext,
     ClassificationIntervalCalibrator,
+    IntervalCalibratorContext,
     RegressionIntervalCalibrator,
     ensure_builtin_plugins,
     find_interval_descriptor,
@@ -36,7 +36,7 @@ from ...plugins import (
     find_interval_plugin_trusted,
     is_identifier_denied,
 )
-from ...plugins.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
+from ...calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from ...utils import assert_threshold
 from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 from .validation import check_interval_runtime_metadata
@@ -53,7 +53,7 @@ def _freeze_context_value(value: Any) -> Any:
     if hasattr(value, "copy") and callable(value.copy):
         try:
             return value.copy()
-        except Exception:  # pragma: no cover - defensive
+        except CalibratedError:  # pragma: no cover - defensive
             return value
     return value
 
@@ -776,7 +776,7 @@ class PredictionOrchestrator:
         plugin: Any = None,
     ) -> None:
         """Validate interval calibrator protocol conformance.
-        
+
         Skips validation for untrusted plugins (they can return anything).
         Enforces protocol compliance for trusted plugins and builtins.
         """
@@ -787,31 +787,33 @@ class PredictionOrchestrator:
             if not is_trusted:
                 # Untrusted plugins can return anything
                 return
-        
+
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
         expected = (
             RegressionIntervalCalibrator
             if "regression" in task
             else ClassificationIntervalCalibrator
         )
-        
+
         # For FAST mode: allow Sequence, FastIntervalCalibrator, or protocol-compliant single objects
         if fast:
             if calibrator is None:
                 mode = "fast"
-                label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                label = (
+                    identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                )
                 raise ConfigurationError(
                     f"Interval plugin '{label}' returned None for {mode} mode."
                 )
-            
+
             # Accept FastIntervalCalibrator or Sequence (will validate items later)
             if isinstance(calibrator, (FastIntervalCalibrator, list, tuple)):
                 return
-            
+
             # Also accept protocol-compliant single objects
             if isinstance(calibrator, expected):
                 return
-            
+
             # Otherwise it's invalid
             mode = "fast"
             label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
@@ -824,7 +826,9 @@ class PredictionOrchestrator:
         else:
             # For non-FAST mode: single protocol-compliant calibrator
             if calibrator is None or not isinstance(calibrator, expected):
-                label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                label = (
+                    identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                )
                 mode = "default"
                 expected_name = expected.__name__
                 actual = type(calibrator).__name__ if calibrator is not None else "None"

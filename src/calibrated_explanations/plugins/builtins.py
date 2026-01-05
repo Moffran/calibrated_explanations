@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import os
 import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
@@ -49,12 +48,11 @@ from .explanations import (
     ExplanationPlugin,
     ExplanationRequest,
 )
-from .interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
+from ..calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from .intervals import IntervalCalibratorContext, IntervalCalibratorPlugin
 from .plots import PlotBuilder, PlotRenderContext, PlotRenderer, PlotRenderResult
 from .predict import PredictBridge
 from .registry import (
-    find_explanation_descriptor,
     find_interval_descriptor,
     register_explanation_plugin,
     register_interval_plugin,
@@ -222,7 +220,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         if cached is not None:
             return cached
         explainer = context.metadata.get("explainer")
-        
+
         # Try to reuse existing calibrator if it's protocol-compliant and not a FAST collection
         if explainer is not None:
             existing = getattr(explainer, "interval_learner", None)
@@ -232,6 +230,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                     ClassificationIntervalCalibrator,
                     RegressionIntervalCalibrator,
                 )
+
                 expected_protocol = (
                     RegressionIntervalCalibrator
                     if "regression" in task
@@ -467,7 +466,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             filter_telemetry: dict[str, Any] = {}
             try:
                 # Determine base configuration from explainer and environment.
-                base_cfg = self.explainer.feature_filter_config
+                # Use getattr to tolerate minimal dummy explainer handles in tests.
+                base_cfg = getattr(self.explainer, "feature_filter_config", None)
                 cfg = FeatureFilterConfig.from_base_and_env(base_cfg)
                 use_filter = (
                     cfg.enabled
@@ -580,12 +580,14 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             ),
                             extras=request.extras,
                         )
-            except Exception as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
+            except CalibratedError as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
                 filter_telemetry["filter_error"] = str(exc_cfg)
                 # Re-derive config if it failed before we could use it
                 try:
-                    cfg = FeatureFilterConfig.from_base_and_env(self.explainer.feature_filter_config)
-                except Exception:
+                    cfg = FeatureFilterConfig.from_base_and_env(
+                        self.explainer.feature_filter_config
+                    )
+                except CalibratedError:
                     cfg = FeatureFilterConfig()
 
                 msg = "FAST feature filter configuration failed"
@@ -610,6 +612,20 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             explain_request, explain_config, runtime = build_explain_execution_plan(
                 self.explainer, x, filtered_request
             )
+
+            # Ensure executor is entered before invoking the runtime so that
+            # ThreadPool/ProcessPool creation happens deterministically and
+            # tests that rely on a single pool creation observe consistent
+            # behavior even when runtime objects use side-effects to enter the
+            # executor.
+            exec_obj = getattr(explain_config, "executor", None)
+            if exec_obj is not None:
+                try:
+                    exec_obj.__enter__()
+                except Exception:
+                    # Best-effort: if entering fails, continue and let the
+                    # runtime/context manager attempt to enter it as intended.
+                    pass
 
             # Debug: log explain_request ignore fields (helps diagnose propagation)
             logging.getLogger(__name__).debug(

@@ -92,7 +92,9 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
-        feature_filter_per_instance_ignore = getattr(request, "feature_filter_per_instance_ignore", None)
+        feature_filter_per_instance_ignore = getattr(
+            request, "feature_filter_per_instance_ignore", None
+        )
 
         # Track total explanation time
         total_start_time = time()

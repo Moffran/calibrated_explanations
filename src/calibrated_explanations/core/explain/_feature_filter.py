@@ -7,12 +7,12 @@ callers pass in the relevant explanation containers and configuration.
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from typing import List
 
 import numpy as np
-import logging
 
 from ...explanations.explanations import CalibratedExplanations
 

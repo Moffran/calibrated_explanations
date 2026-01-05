@@ -1,6 +1,4 @@
 import os
-import copy
-import warnings
 from types import MappingProxyType
 
 import numpy as np
@@ -15,11 +13,9 @@ from calibrated_explanations.plugins import (
 )
 from calibrated_explanations.plugins.manager import PluginManager
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
-from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.explanations import ExplainerHandle
-from calibrated_explanations.plugins import find_explanation_plugin
 from calibrated_explanations.plugins import find_explanation_descriptor as _find_desc
-from calibrated_explanations.plugins import find_explanation_plugin_trusted as _find_trusted
 from calibrated_explanations.plugins import ExplanationBatch
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 
@@ -72,7 +68,9 @@ def test_from_batch_reconstructs_container_and_sets_metadata():
     # metadata preserved on container.batch_metadata
     for k in ("interval_dependencies", "plot_source", "runtime_telemetry"):
         assert k in container.batch_metadata and container.batch_metadata[k] == meta[k]
-    assert container.feature_filter_per_instance_ignore == meta["feature_filter_per_instance_ignore"]
+    assert (
+        container.feature_filter_per_instance_ignore == meta["feature_filter_per_instance_ignore"]
+    )
 
 
 def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_untrusted():
@@ -101,7 +99,12 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
             return None
 
         def explain_batch(self, x, request):
-            return ExplanationBatch(container_cls=CalibratedExplanations, explanation_cls=object, instances=[{"explanation": object()}], collection_metadata={})
+            return ExplanationBatch(
+                container_cls=CalibratedExplanations,
+                explanation_cls=object,
+                instances=[{"explanation": object()}],
+                collection_metadata={},
+            )
 
     identifier = "test.explain.plugin"
     # Register the plugin (untrusted by default since not builtin and no operator trust)

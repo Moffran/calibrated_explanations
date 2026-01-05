@@ -6,9 +6,11 @@ configuration sources like pyproject.toml and environment variables.
 
 from __future__ import annotations
 
+
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, Sequence, Tuple
+from calibrated_explanations.core.exceptions import CalibratedError
 
 try:
     import tomllib as _tomllib
@@ -101,7 +103,7 @@ def write_pyproject_section(path: Sequence[str], value: Dict[str, Any]) -> bool:
     try:
         with open(candidate, "rb") as f:
             data = _tomllib.load(f)
-    except Exception:
+    except CalibratedError:
         return False
 
     # Navigate to the parent of the target section
@@ -122,7 +124,7 @@ def write_pyproject_section(path: Sequence[str], value: Dict[str, Any]) -> bool:
         with open(candidate, "wb") as f:
             _tomli_w.dump(data, f)
         return True
-    except Exception:
+    except CalibratedError:
         return False
 
 

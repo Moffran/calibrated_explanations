@@ -82,11 +82,15 @@ class RecordingIntervalPlugin(IntervalCalibratorPlugin):
     def create(self, context, *, fast: bool = False):
         # Check if we already have a calibrator (caching behavior)
         explainer = context.metadata.get("explainer")
-        if explainer is not None and hasattr(explainer, "interval_learner") and explainer.interval_learner is not None:
+        if (
+            explainer is not None
+            and hasattr(explainer, "interval_learner")
+            and explainer.interval_learner is not None
+        ):
             calibrator = explainer.interval_learner
         else:
             calibrator = MockIntervalCalibrator()
-        
+
         type(self).last_context = context
         type(self).last_calibrator = calibrator
         return calibrator
@@ -116,13 +120,17 @@ class RecordingFastIntervalPlugin(IntervalCalibratorPlugin):
         # Check if we have cached fast calibrators in metadata
         existing_fast = context.metadata.get("existing_fast_calibrators")
         if existing_fast:
-            calibrators = list(existing_fast) if isinstance(existing_fast, (tuple, list)) else [existing_fast]
+            calibrators = (
+                list(existing_fast) if isinstance(existing_fast, (tuple, list)) else [existing_fast]
+            )
         else:
             num_features = int(context.metadata.get("num_features", 0) or 0)
             calibrators = [MockIntervalCalibrator() for _ in range(num_features + 1)]
-        
+
         type(self).last_context = context
-        type(self).last_calibrators = tuple(calibrators) if isinstance(calibrators, list) else calibrators
+        type(self).last_calibrators = (
+            tuple(calibrators) if isinstance(calibrators, list) else calibrators
+        )
         return calibrators
 
 
@@ -190,7 +198,8 @@ def test_fast_interval_plugin_constructs_calibrators(binary_dataset):
     ch.initialize_interval_learner(explainer)
     calibrators = explainer.interval_learner
     # FAST mode wraps calibrators in FastIntervalCalibrator (a Sequence wrapper)
-    from calibrated_explanations.plugins.interval_wrappers import FastIntervalCalibrator
+    from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
+
     assert isinstance(calibrators, (list, FastIntervalCalibrator, tuple))
     if isinstance(calibrators, FastIntervalCalibrator):
         calibrators = calibrators.calibrators

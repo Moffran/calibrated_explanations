@@ -2,7 +2,6 @@ import types
 import numpy as np
 
 from calibrated_explanations.plugins import register_explanation_plugin, find_explanation_descriptor
-from calibrated_explanations.plugins.explanations import ExplanationPlugin
 from calibrated_explanations.plugins.manager import PluginManager
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.utils.exceptions import ConfigurationError
@@ -35,7 +34,9 @@ def test_resolve_preferred_untrusted_plugin_raises_configuration_error():
     """When the preferred identifier is untrusted, resolution should fail."""
     identifier = "test.untrusted.plugin"
     # register untrusted plugin explicitly (manual source)
-    register_explanation_plugin(identifier, DummyPlugin(), metadata=DummyPlugin.plugin_meta, source="manual")
+    register_explanation_plugin(
+        identifier, DummyPlugin(), metadata=DummyPlugin.plugin_meta, source="manual"
+    )
     desc = find_explanation_descriptor(identifier)
     assert desc is not None and desc.trusted is False
 

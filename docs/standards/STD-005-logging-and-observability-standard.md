@@ -180,5 +180,3 @@ Contributors MUST:
   feasible, be introduced with a deprecation window or compatibility shim
   (e.g. forwarding governance events to both old and new logger names for one
   minor release).
-
-

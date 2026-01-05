@@ -18,7 +18,7 @@ from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
-from ...plugins.interval_wrappers import is_fast_interval_collection
+from ...calibration.interval_wrappers import is_fast_interval_collection
 from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:

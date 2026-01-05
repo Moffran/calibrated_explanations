@@ -176,8 +176,7 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     warnings.warn(
         "Skipping untrusted plugin '%s' from %s discovered via %s. "
         "Set CE_TRUST_PLUGIN, add it to [tool.calibrated_explanations.plugins].trusted, "
-        "or call trust_plugin('%s') to load it."
-        % (name, provider, source, name),
+        "or call trust_plugin('%s') to load it." % (name, provider, source, name),
         UserWarning,
         stacklevel=3,
     )
@@ -478,7 +477,6 @@ def _ensure_sequence(
     collected: List[str] = []
     for item in value:
         if not isinstance(item, str):
-
             raise ValidationError(
                 f"plugin_meta[{key!r}] must contain only string values",
                 details={

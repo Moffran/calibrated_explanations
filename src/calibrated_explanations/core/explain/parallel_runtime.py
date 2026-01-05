@@ -181,7 +181,9 @@ def build_explain_execution_plan(
     """Prepare explain execution request and config using explain-local rules."""
     prepared_x = validate_and_prepare_input(explainer, x)
     features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
-    feature_filter_per_instance_ignore = getattr(request, "feature_filter_per_instance_ignore", None)
+    feature_filter_per_instance_ignore = getattr(
+        request, "feature_filter_per_instance_ignore", None
+    )
     if isinstance(feature_filter_per_instance_ignore, Iterable) and not isinstance(
         feature_filter_per_instance_ignore, (str, bytes)
     ):

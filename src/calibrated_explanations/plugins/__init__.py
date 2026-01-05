@@ -11,11 +11,11 @@ import contextlib
 from . import registry  # re-export module for convenience
 from .base import ExplainerPlugin, PluginMeta, validate_plugin_meta  # noqa: F401
 from .explanations import (  # noqa: F401
+    ExplainerHandle,
     ExplanationBatch,
     ExplanationContext,
     ExplanationPlugin,
     ExplanationRequest,
-    ExplainerHandle,
     validate_explanation_batch,
 )
 from .intervals import (  # noqa: F401

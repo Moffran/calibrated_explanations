@@ -176,6 +176,9 @@ class ParallelExecutor:
 
     def __enter__(self) -> "ParallelExecutor":
         """Initialize the execution pool if parallelism is enabled."""
+        # Idempotent enter: if already entered, return self without reinitializing
+        if self.pool is not None:
+            return self
         if not self.config.enabled:
             return self
 

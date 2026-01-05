@@ -140,7 +140,9 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
         executor = config.executor
-        feature_filter_per_instance_ignore = getattr(request, "feature_filter_per_instance_ignore", None)
+        feature_filter_per_instance_ignore = getattr(
+            request, "feature_filter_per_instance_ignore", None
+        )
 
         n_instances = x_input.shape[0]
         if n_instances == 0:

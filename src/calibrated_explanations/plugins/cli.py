@@ -7,7 +7,8 @@ import pprint
 from collections.abc import Mapping
 from typing import Any, Sequence
 
-from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple, write_pyproject_section
+from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
+from ..core.config_helpers import write_pyproject_section
 from .intervals import IntervalCalibratorPlugin
 from .registry import (
     find_explanation_descriptor,
@@ -428,15 +429,22 @@ def _cmd_trust(args: argparse.Namespace) -> int:
 
     # Persist to pyproject.toml if possible
     from ..core.config_helpers import read_pyproject_section
-    current_trusted = set(read_pyproject_section(("tool", "calibrated_explanations", "plugins")).get("trusted", []))
+
+    current_trusted = set(
+        read_pyproject_section(("tool", "calibrated_explanations", "plugins")).get("trusted", [])
+    )
     if action == "trust":
         current_trusted.add(identifier)
     else:
         current_trusted.discard(identifier)
-    if write_pyproject_section(("tool", "calibrated_explanations", "plugins"), {"trusted": sorted(current_trusted)}):
-        print(f"Persisted trust decision to pyproject.toml")
+    if write_pyproject_section(
+        ("tool", "calibrated_explanations", "plugins"), {"trusted": sorted(current_trusted)}
+    ):
+        print("Persisted trust decision to pyproject.toml")
     else:
-        print("Warning: Could not persist trust decision to pyproject.toml (tomli_w not available?)")
+        print(
+            "Warning: Could not persist trust decision to pyproject.toml (tomli_w not available?)"
+        )
 
     return 0
 
@@ -529,13 +537,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     validate_interval_parser = subparsers.add_parser(
         "validate-interval", help="Validate an interval plugin by identifier"
     )
-    validate_interval_parser.add_argument("--plugin", required=True, help="Interval plugin identifier")
+    validate_interval_parser.add_argument(
+        "--plugin", required=True, help="Interval plugin identifier"
+    )
     validate_interval_parser.set_defaults(func=_cmd_validate_interval)
 
     explain_interval_parser = subparsers.add_parser(
         "explain-interval", help="Explain interval plugin configuration details"
     )
-    explain_interval_parser.add_argument("--plugin", required=True, help="Interval plugin identifier")
+    explain_interval_parser.add_argument(
+        "--plugin", required=True, help="Interval plugin identifier"
+    )
     explain_interval_parser.set_defaults(func=_cmd_explain_interval)
 
     set_default_parser = subparsers.add_parser(

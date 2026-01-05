@@ -59,42 +59,42 @@ class ExplainerHandle:
     def num_features(self) -> int:
         """Return the number of features."""
         return self.__explainer.num_features
-    
+
     @property
     def mode(self) -> str:
         """Return the prediction mode."""
         return self.__explainer.mode
-    
+
     @property
     def is_multiclass(self) -> bool:
         """Return True when in multiclass mode."""
         return self.__explainer.is_multiclass()
-    
+
     @property
     def class_labels(self) -> Any:
         """Return class labels."""
         return self.__explainer.class_labels
-    
+
     @property
     def feature_names(self) -> Any:
         """Return feature names."""
         return self.__explainer.feature_names
-    
+
     @property
     def features_to_ignore(self) -> Any:
         """Return features to ignore."""
         return self.__explainer.features_to_ignore
-    
+
     @property
     def learner(self) -> Any:
         """Return the underlying learner."""
         return self.__explainer.learner
-    
+
     @property
     def bins(self) -> Any:
         """Return bins configuration."""
         return self.__explainer.bins
-    
+
     @property
     def preprocessor(self) -> Any:
         """Return the preprocessor if available."""

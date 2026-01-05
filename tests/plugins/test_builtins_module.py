@@ -297,6 +297,7 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             created["args"] = args
             created["kwargs"] = kwargs
+
     monkeypatch.setattr(
         "calibrated_explanations.calibration.venn_abers.VennAbers",
         DummyCalibrator,
@@ -601,7 +602,9 @@ def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
     calls: list[tuple[str, Iterable[str]]] = []
 
     monkeypatch.setattr(
-        builtins_mod, "register_interval_plugin", lambda *args, **kwargs: calls.append(("interval", args))
+        builtins_mod,
+        "register_interval_plugin",
+        lambda *args, **kwargs: calls.append(("interval", args)),
     )
     monkeypatch.setattr(
         builtins_mod,
@@ -609,10 +612,14 @@ def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
         lambda *args, **kwargs: calls.append(("explanation", args)),
     )
     monkeypatch.setattr(
-        builtins_mod, "register_plot_builder", lambda *args, **kwargs: calls.append(("builder", args))
+        builtins_mod,
+        "register_plot_builder",
+        lambda *args, **kwargs: calls.append(("builder", args)),
     )
     monkeypatch.setattr(
-        builtins_mod, "register_plot_renderer", lambda *args, **kwargs: calls.append(("renderer", args))
+        builtins_mod,
+        "register_plot_renderer",
+        lambda *args, **kwargs: calls.append(("renderer", args)),
     )
     monkeypatch.setattr(
         builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args))

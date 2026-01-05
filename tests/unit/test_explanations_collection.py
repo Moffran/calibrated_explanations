@@ -433,7 +433,10 @@ def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
     restored = CalibratedExplanations.from_batch(DummyBatch(calibrated_collection))
     # ADR-015: from_batch must reconstruct a new instance even if template is provided
     assert restored is not calibrated_collection
-    assert restored.calibrated_explainer.num_features == calibrated_collection.calibrated_explainer.num_features
+    assert (
+        restored.calibrated_explainer.num_features
+        == calibrated_collection.calibrated_explainer.num_features
+    )
     assert len(restored.explanations) == len(calibrated_collection.explanations)
 
     with pytest.raises(SerializationError):

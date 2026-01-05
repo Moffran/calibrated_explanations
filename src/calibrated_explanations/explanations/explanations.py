@@ -223,11 +223,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
-        from ..plugins.explanations import ExplanationBatch
         from ..utils.exceptions import SerializationError, ValidationError
 
         # Check for required batch attributes (duck-typing for flexibility)
-        if not hasattr(batch, 'collection_metadata'):
+        if not hasattr(batch, "collection_metadata"):
             raise SerializationError(
                 "ExplanationBatch payload has unexpected type",
                 details={
@@ -238,11 +237,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             )
 
         # Get container_cls if available (may be None for duck-typed batches with template)
-        container_cls = getattr(batch, 'container_cls', None)
-        
+        container_cls = getattr(batch, "container_cls", None)
+
         metadata = dict(batch.collection_metadata)
         template = metadata.pop("container", None)
-        
+
         if container_cls is None and template is not None:
             container_cls = type(template)
 
@@ -255,7 +254,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     "required": "container_cls or collection_metadata['container']",
                 },
             )
-        
+
         # Validate container_cls if present
         if not issubclass(container_cls, cls):
             raise ValidationError(
@@ -280,7 +279,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                         "actual_type": type(template).__name__,
                     },
                 )
-        
+
         calibrated_explainer = metadata.get("calibrated_explainer")
         if calibrated_explainer is None:
             calibrated_explainer = metadata.get("explainer")

@@ -25,9 +25,9 @@ import numpy as np
 from ...core.config_helpers import coerce_string_tuple
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
+    ExplainerHandle,
     ExplanationContext,
     ExplanationRequest,
-    ExplainerHandle,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
@@ -599,12 +599,12 @@ class ExplanationOrchestrator:
         if pm is not None:
             try:
                 existing = pm.explanation_plugin_fallbacks.get(mode)
-            except Exception:
+            except CalibratedError:
                 existing = None
             if not existing:
                 try:
                     pm.initialize_chains()
-                except Exception:
+                except CalibratedError:
                     # Best-effort: resolution should continue even if chain init fails.
                     pass
 
@@ -616,8 +616,9 @@ class ExplanationOrchestrator:
             return plugin, identifier
 
         explicit_override_identifier = raw_override if isinstance(raw_override, str) else None
-        preferred_identifier = explicit_override_identifier or self.explainer.plugin_manager.explanation_preferred_identifier.get(
-            mode
+        preferred_identifier = (
+            explicit_override_identifier
+            or self.explainer.plugin_manager.explanation_preferred_identifier.get(mode)
         )
         allow_untrusted = explicit_override_identifier is not None
         chain = self.explainer.plugin_manager.explanation_plugin_fallbacks.get(mode, ())

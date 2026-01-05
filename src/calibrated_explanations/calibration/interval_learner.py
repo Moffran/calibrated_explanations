@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..plugins.interval_wrappers import is_fast_interval_collection
+from .interval_wrappers import is_fast_interval_collection
 from ..utils.exceptions import ConfigurationError
 from ..utils.helper import assign_threshold as normalize_threshold
 

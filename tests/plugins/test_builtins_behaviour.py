@@ -646,7 +646,9 @@ def test_register_builtins_uses_registry(monkeypatch):
         builtins, "register_interval_plugin", lambda *a, **k: recorded["interval"].append((a, k))
     )
     monkeypatch.setattr(
-        builtins, "register_explanation_plugin", lambda *args, **kwargs: recorded["explanation"].append(args)
+        builtins,
+        "register_explanation_plugin",
+        lambda *args, **kwargs: recorded["explanation"].append(args),
     )
     monkeypatch.setattr(
         builtins, "register_plot_builder", lambda *a, **k: recorded["builder"].append(a)
