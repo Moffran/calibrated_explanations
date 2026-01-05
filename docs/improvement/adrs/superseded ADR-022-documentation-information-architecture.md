@@ -2,7 +2,7 @@
 
 # ADR-022: Documentation Information Architecture
 
-> **Note:** This ADR has been superseded by :doc:`../standards/STD-027-documentation-audience-standard`. Do not use for new documentation.
+> **Note:** This ADR has been superseded by :doc:`../standards/STD-004-documentation-audience-standard`. Do not use for new documentation.
 
 Status: Superseded
 Date: 2025-10-12
@@ -13,7 +13,7 @@ Superseded-by: ADR-027-documentation-standard
 
 ## Context
 
-The documentation set has grown organically, mixing audience needs (users, contributors, researchers) in a single navigation tree. Quickstart content is brittle, the plugin guide is stale, and contributor policies crowd the main user journey. Previous efforts (ADR-012 build policy, Standard-018 docstring standard) focus on quality gates but not on information architecture. We need a structured approach before shipping v0.8.0, which introduces telemetry documentation and plugin defaults, to ensure readers can discover relevant material.
+The documentation set has grown organically, mixing audience needs (users, contributors, researchers) in a single navigation tree. Quickstart content is brittle, the plugin guide is stale, and contributor policies crowd the main user journey. Previous efforts (ADR-012 build policy, Standard-002 docstring standard) focus on quality gates but not on information architecture. We need a structured approach before shipping v0.8.0, which introduces telemetry documentation and plugin defaults, to ensure readers can discover relevant material.
 
 ## Decision
 
@@ -53,4 +53,4 @@ Adopt the role-based documentation information architecture defined in `docs/imp
 
 - `docs/improvement/documentation_information_architecture.md`
 - ADR-012: Documentation & Gallery Build Policy
-- Standard-018: Code Documentation Standard
+- Standard-002: Code Documentation Standard

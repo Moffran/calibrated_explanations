@@ -1,6 +1,6 @@
 # Coverage waiver inventory
 
-Track outstanding Standard-019 coverage waivers and remediation ownership. Update
+Track outstanding Standard-003 coverage waivers and remediation ownership. Update
 this table whenever a waiver is issued, extended, or retired so the runtime tech
 lead can audit the state during release preparation.
 

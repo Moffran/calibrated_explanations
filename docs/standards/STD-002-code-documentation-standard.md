@@ -1,6 +1,6 @@
 > **Status note (2025-12-22):** Last edited 2025-12-24 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
-# Standard-018: Code Documentation Standardization
+# Standard-002: Code Documentation Standardization
 
 Formerly ADR-018. Reclassified as an engineering standard to keep ADRs scoped to
 architectural or contract decisions.

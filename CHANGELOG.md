@@ -141,7 +141,7 @@
 
 ### Release Plan Alignment (v0.9.1)
 
-- **Governance & observability hardening (Standard-017/018/019, ADR-020).** Added a per-module coverage gate script with suffix-aware path matching so Standard-019 thresholds are enforced in CI, tightened the `test` workflow to keep the core-only matrix from uploading coverage while still running the full gate on the main job, and switched editable installs for local test runs to reduce dependency skew. An accompanying notebook API auditor tracks use of the documented legacy surface (ADR-020) to keep examples in lockstep with the contract.【F:scripts/check_coverage_gates.py†L1-L102】【F:.github/workflows/test.yml†L33-L99】【F:scripts/audit_notebook_api.py†L1-L144】
+- **Governance & observability hardening (Standard-001/018/019, ADR-020).** Added a per-module coverage gate script with suffix-aware path matching so Standard-003 thresholds are enforced in CI, tightened the `test` workflow to keep the core-only matrix from uploading coverage while still running the full gate on the main job, and switched editable installs for local test runs to reduce dependency skew. An accompanying notebook API auditor tracks use of the documented legacy surface (ADR-020) to keep examples in lockstep with the contract.【F:scripts/check_coverage_gates.py†L1-L102】【F:.github/workflows/test.yml†L33-L99】【F:scripts/audit_notebook_api.py†L1-L144】
 - **Runtime safety and regression coverage:** Added focused CalibratedExplainer regression tests that assert out-of-bag errors propagate, categorical features infer from label mappings, plugin override coercion handles callables/objects, and plugin manager requirements raise clear errors, strengthening the runtime guardrails promised for v0.9.1.【F:tests/unit/core/test_calibrated_explainer_runtime_helpers.py†L1-L220】
 - **Plugin fallback and serialization reliability:** Covered deprecated CalibratedExplainer surfaces with deletion-coupling notes and new tests for plugin fallback chains, interval regressors, and JSON round-trips so the v0.9.1 release ships with explicit removal guidance and resilient persistence paths.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1125-L1914】【F:tests/unit/core/test_calibrated_explainer_additional.py†L1-L200】【F:tests/unit/core/test_calibrated_explainer_plugin_fallbacks.py†L1-L200】【F:tests/unit/core/test_interval_regressor.py†L1-L260】【F:tests/unit/test_serialization.py†L1-L220】
 - **Documentation standardisation.** Expanded the practitioner hub with an explicit wrapper-vs-direct API comparison so parity requirements from the governance plan remain visible, and published a researcher "future work" ledger to keep calibration and interval-regression research directions discoverable alongside the quickstarts.【F:docs/practitioner/index.md†L1-L34】【F:docs/practitioner/task_api_comparison.md†L1-L92】【F:docs/researcher/future_work.md†L1-L109】
@@ -282,7 +282,7 @@
 - **Research-forward storytelling (Task 5):** Maintained research hub call-outs
   across README, overview, and concept guides so every onboarding path links to
   `docs/research/` and `citing.md`, reinforcing the calibration pedigree.【F:README.md†L22-L60】【F:docs/overview/index.md†L1-L62】【F:docs/citing.md†L1-L140】
-- **Standard-018/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
+- **Standard-002/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
   notebook lint to blocking status, retired transitional core/plot shims (removing
   `legacy/_interval_regressor.py`, `legacy/_venn_abers.py`, and `legacy/_plots*.py`),
   and tightened coverage thresholds to 88% alongside Codecov patch gates that focus
@@ -321,7 +321,7 @@
   (`docs/practitioner/advanced/use_plugins.md`), and surfaced the curated
   `external-plugins` install extra in installation docs. Cross-links to the
   external plugin index were added to ensure a coherent, optional plugin story
-  aligned with STD-027 and the plugin ADRs (ADR-006/014/026).【F:docs/plugins.md†L1-L80】【F:docs/practitioner/advanced/use_plugins.md†L1-L200】【F:docs/get-started/installation.md†L1-L120】【F:docs/appendices/external_plugins.md†L1-L160】
+  aligned with Standard-004 and the plugin ADRs (ADR-006/014/026).【F:docs/plugins.md†L1-L80】【F:docs/practitioner/advanced/use_plugins.md†L1-L200】【F:docs/get-started/installation.md†L1-L120】【F:docs/appendices/external_plugins.md†L1-L160】
 - Added runtime performance tuning, governance checklists, and optional telemetry
   guides so compliance and SRE flows stay audience scoped.【F:docs/how-to/tune_runtime_performance.md†L1-L140】【F:docs/governance/release_checklist.md†L40-L92】
 
@@ -331,7 +331,7 @@
   navigation smoke tests, and linkcheck remain blocking, and elevated docstring
   coverage thresholds to 94% via lint automation.【F:.github/workflows/docs.yml†L19-L40】【F:.github/workflows/lint.yml†L38-L86】
 - Raised global coverage minimums to 88% and tightened Codecov calibration
-  patch targets so Standard-019 enforcement captures runtime changes.【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
+  patch targets so Standard-003 enforcement captures runtime changes.【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
 
 ### Tests & Tooling
 
@@ -339,7 +339,7 @@
   legacy plotting regression tests, and introduced performance benchmarks and
   telemetry hooks to monitor the new runtime toggles.【F:tests/plugins/test_builtins_module.py†L1-L180】【F:tests/legacy/test_plotting.py†L1-L200】【F:evaluation/scripts/compare_explain_performance.py†L1-L200】
 - Refreshed reports documenting docstring coverage baselines and lint outputs to
-  back Standard-018's blocking rollout.【F:reports/docstring_coverage_20251025.txt†L1-L32】【F:reports/pydocstyle-baseline.txt†L1-L120】
+  back Standard-002's blocking rollout.【F:reports/docstring_coverage_20251025.txt†L1-L32】【F:reports/pydocstyle-baseline.txt†L1-L120】
 
 
 
@@ -360,7 +360,7 @@
 - Promoted PlotSpec rendering to the canonical pipeline by introducing the
   snake_case `calibrated_explanations.plotting` module, moving legacy
   Matplotlib helpers into `legacy/plotting.py`, and keeping `_plots*` only as
-  warning shims to satisfy Standard-017 phase-two renames. Runtime and tests now
+  warning shims to satisfy Standard-001 phase-two renames. Runtime and tests now
   import from the new modules, and telemetry records the PlotSpec defaults for
   auditability.
 - Raised pytest's coverage floor to 85% and enabled Codecov patch gating on calibration/runtime modules, keeping CI focused on uncertainty-critical paths.
@@ -404,16 +404,16 @@
 
 - ADR-013 and ADR-015 marked Accepted with implementation notes summarising the
   registry-backed runtime.
-- Standard-017/Standard-018 ratified with quick-reference style excerpts in
+- Standard-001/Standard-002 ratified with quick-reference style excerpts in
   `CONTRIBUTING.md` and contributor docs.
-- Harmonised `core.validation` docstrings with numpy-style lint guardrails (Standard-018).
+- Harmonised `core.validation` docstrings with numpy-style lint guardrails (Standard-002).
 
 ### CI
 
 - Shared `.coveragerc` published and the test workflow now enforces
-  `--cov-fail-under=80` to meet Standard-019 phase 1 requirements (with gradual increase for each new version).
+  `--cov-fail-under=80` to meet Standard-003 phase 1 requirements (with gradual increase for each new version).
 - Lint workflow surfaces Ruff naming warnings and docstring lint/coverage
-  reports, providing guardrails for Standard-017/Standard-018 adoption.
+  reports, providing guardrails for Standard-001/Standard-002 adoption.
 
 #### Public API updates in v0.7.0
 This document summarises the signature adjustments introduced while aligning the
@@ -453,7 +453,7 @@ and notebooks accordingly.【F:src/calibrated_explanations/explanations/explanat
 
 ### Fixed
 
-- Fixed test helper stubs and plugin descriptors to satisfy Ruff naming guardrails (Standard-017), keeping `ruff check --select N` green.
+- Fixed test helper stubs and plugin descriptors to satisfy Ruff naming guardrails (Standard-001), keeping `ruff check --select N` green.
 
 ## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 

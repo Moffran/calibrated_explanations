@@ -1,6 +1,6 @@
 > **Status note (2025-12-22):** Last edited 2025-12-22 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
-# Standard-019: Test Coverage Standardization
+# Standard-003: Test Coverage Standardization
 
 Formerly ADR-019. Reclassified as an engineering standard to keep ADRs scoped to
 architectural or contract decisions.

@@ -1,8 +1,8 @@
 > **Status note (2025-12-23):** Last edited 2025-12-23 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
-# Code Documentation Uplift (Standard-018)
+# Code Documentation Uplift (Standard-002)
 
-This consolidated roadmap merges the Standard-018 docstring strategy with the `pydocstyle` execution guide so contributors have a single reference for planning and day-to-day execution.
+This consolidated roadmap merges the Standard-002 docstring strategy with the `pydocstyle` execution guide so contributors have a single reference for planning and day-to-day execution.
 
 ## Goal
 Achieve consistent, numpydoc-compliant code documentation across the `calibrated_explanations` codebase with measurable coverage thresholds and automated enforcement. The uplift has progressed to sustainment mode, with current baseline at 94.45% overall coverage and blocking enforcement at ≥94% on mainline CI. Notebook linting is already enforced via `nbqa ruff` in CI. The focus shifts to targeted cleanup of remaining gaps and regression prevention rather than broad phased remediation.

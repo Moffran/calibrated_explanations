@@ -1,4 +1,4 @@
-# Standard-027: Documentation Audience Standard
+# Standard-004: Documentation Audience Standard
 
 > **Status note (2025-12-23):** Last edited 2025-12-23 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Completed (see Adoption Plan).
 
@@ -48,5 +48,5 @@ Adopt an audience-led documentation structure anchored on three journeys—pract
 ## References
 - Documentation Overhaul Blueprint (docs/improvement/documentation_overhaul.md)
 - ADR-012: Documentation & Gallery Build Policy
-- Standard-018: Code Documentation Standard
+- Standard-002: Code Documentation Standard
 - ADR-026: Explanation Plugin Semantics
