@@ -310,11 +310,20 @@ def update_plot_config(new_config):
         for key, value in values.items():
             config[section][key] = str(value)
 
-    # Write updated config to file
+    # Write updated config to file, normalising trailing newlines so
+    # repeated writes don't accumulate blank lines.
+    from io import StringIO
+
     config_path = _plot_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    with config_path.open("w", encoding="utf-8") as f:
-        config.write(f)
+
+    buf = StringIO()
+    config.write(buf)
+    text = buf.getvalue()
+    # Normalise line endings and ensure exactly one trailing newline
+    text = text.replace("\r\n", "\n").rstrip("\n") + "\n"
+    with config_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
 
 
 def __setup_plot_style(style_override=None):
