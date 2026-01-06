@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import logging
 import warnings
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
@@ -23,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
+from ...logging import ensure_logging_context_filter, logging_context, telemetry_diagnostic_mode
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
     ExplainerHandle,
@@ -42,6 +44,8 @@ if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
+_TELEMETRY_LOGGER = logging.getLogger("calibrated_explanations.telemetry.explanation")
+ensure_logging_context_filter()
 
 
 class ExplanationOrchestrator:
@@ -261,6 +265,9 @@ class ExplanationOrchestrator:
             If plugin resolution, initialization, or invocation fails.
         """
         plugin, _identifier = self.ensure_plugin(mode)
+        explainer_identifier = getattr(self.explainer, "explainer_id", None) or str(
+            id(self.explainer)
+        )
         per_instance_ignore = None
         features_arg = features_to_ignore or []
         if (
@@ -277,39 +284,44 @@ class ExplanationOrchestrator:
         else:
             features_to_ignore_flat = tuple(features_arg)
 
-        request = ExplanationRequest(
-            threshold=threshold,
-            low_high_percentiles=(
-                tuple(low_high_percentiles) if low_high_percentiles is not None else None
-            ),
-            bins=tuple(bins) if bins is not None else None,
-            features_to_ignore=features_to_ignore_flat,
-            extras=dict(extras or {}),
-            feature_filter_per_instance_ignore=per_instance_ignore,
-        )
-        monitor = self.explainer.plugin_manager.get_bridge_monitor(_identifier or mode)
-        if monitor is not None:
-            monitor.reset_usage()
-        try:
-            batch = plugin.explain_batch(x, request)
-        except (
-            Exception
-        ) as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
-            raise ConfigurationError(
-                f"Explanation plugin execution failed for mode '{mode}': {exc}"
-            ) from exc
-        try:
-            validate_explanation_batch(
-                batch,
-                expected_mode=mode,
-                expected_task=self.explainer.mode,
+        with logging_context(
+            mode=mode,
+            plugin_identifier=_identifier or mode,
+            explainer_id=explainer_identifier,
+        ):
+            request = ExplanationRequest(
+                threshold=threshold,
+                low_high_percentiles=(
+                    tuple(low_high_percentiles) if low_high_percentiles is not None else None
+                ),
+                bins=tuple(bins) if bins is not None else None,
+                features_to_ignore=features_to_ignore_flat,
+                extras=dict(extras or {}),
+                feature_filter_per_instance_ignore=per_instance_ignore,
             )
-        except (
-            Exception
-        ) as exc:  # ADR002_ALLOW: rewrap validation errors with context.  # pragma: no cover
-            raise ConfigurationError(
-                f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
-            ) from exc
+            monitor = self.explainer.plugin_manager.get_bridge_monitor(_identifier or mode)
+            if monitor is not None:
+                monitor.reset_usage()
+            try:
+                batch = plugin.explain_batch(x, request)
+            except (
+                Exception
+            ) as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
+                raise ConfigurationError(
+                    f"Explanation plugin execution failed for mode '{mode}': {exc}"
+                ) from exc
+            try:
+                validate_explanation_batch(
+                    batch,
+                    expected_mode=mode,
+                    expected_task=self.explainer.mode,
+                )
+            except (
+                Exception
+            ) as exc:  # ADR002_ALLOW: rewrap validation errors with context.  # pragma: no cover
+                raise ConfigurationError(
+                    f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
+                ) from exc
 
         metadata = batch.collection_metadata
         metadata.setdefault("task", self.explainer.mode)
@@ -364,6 +376,30 @@ class ExplanationOrchestrator:
             if instance_payload:
                 telemetry_payload.update(instance_payload)
                 self.explainer.plugin_manager.last_telemetry.update(instance_payload)
+            telemetry_snapshot_keys = (
+                "interval_dependencies",
+                "full_probabilities_shape",
+                "full_probabilities_summary",
+                "plot_source",
+                "plot_fallbacks",
+                "interval_source",
+                "proba_source",
+                "mode",
+                "task",
+            )
+            telemetry_snapshot = {
+                key: telemetry_payload.get(key)
+                for key in telemetry_snapshot_keys
+                if telemetry_payload.get(key) is not None
+            }
+            log_extra = {
+                "mode": mode,
+                "plugin_identifier": _identifier or mode,
+                "explainer_id": explainer_identifier,
+                "telemetry_snapshot": telemetry_snapshot,
+                "telemetry_fields": tuple(sorted(telemetry_payload.keys())),
+            }
+            _TELEMETRY_LOGGER.info("explanation telemetry payload constructed", extra=log_extra)
             with contextlib.suppress(Exception):
                 result.telemetry = dict(telemetry_payload)
             # parity instrumentation removed
@@ -966,9 +1002,62 @@ class ExplanationOrchestrator:
         ):  # ADR002_ALLOW: telemetry is optional and best-effort.  # pragma: no cover
             # pragma: no cover - defensive: empty or non-indexable containers
             return {}
+
+        # If explanation exposes `to_telemetry` and it returns a dict, preserve
+        # that dict exactly (backwards-compatible behavior).
         builder = getattr(first_explanation, "to_telemetry", None)
+        payload: Dict[str, Any] = {}
         if callable(builder):
-            payload = builder()
-            if isinstance(payload, dict):
-                return payload
-        return {}
+            try:
+                candidate = builder()
+                if isinstance(candidate, dict):
+                    payload.update(candidate)
+            except Exception:
+                # best-effort only; fall through to extract compact telemetry
+                pass
+
+        # Fallback: build compact telemetry from available prediction payloads
+        try:
+            full_probs = None
+            if hasattr(first_explanation, "prediction"):
+                full_probs = first_explanation.prediction.get("__full_probabilities__")
+            diag_mode = telemetry_diagnostic_mode()
+            if full_probs is not None:
+                arr = np.asarray(full_probs)
+                # Only expose telemetry for bona-fide arrays/collections
+                if getattr(arr, "size", 0) > 0:
+                    payload.setdefault("full_probabilities_shape", tuple(arr.shape))
+                    with contextlib.suppress(Exception):
+                        payload.setdefault(
+                            "full_probabilities_summary",
+                            {
+                                "mean": float(np.mean(arr)),
+                                "min": float(np.min(arr)),
+                                "max": float(np.max(arr)),
+                            },
+                        )
+                    if diag_mode:
+                        payload.setdefault("full_probabilities", full_probs)
+            # Also propagate interval dependency hints if present on the instance
+            try:
+                deps = getattr(first_explanation, "metadata", None) or {}
+                if not deps and callable(builder):
+                    # if builder didn't return dict, attempt to call a safe helper
+                    with contextlib.suppress(Exception):
+                        t = builder()
+                        if isinstance(t, dict):
+                            deps = t
+                if isinstance(deps, dict):
+                    interval_deps = (
+                        deps.get("interval_dependencies")
+                        or deps.get("metadata", {}).get("interval_dependencies")
+                    )
+                    if interval_deps:
+                        payload.setdefault("interval_dependencies", interval_deps)
+            except Exception:
+                pass
+        except Exception:
+            # best-effort enrichment only
+            pass
+
+        return payload

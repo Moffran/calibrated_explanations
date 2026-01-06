@@ -20,6 +20,7 @@ from typing import (
     Type,
     runtime_checkable,
 )
+import numpy as np
 
 if TYPE_CHECKING:
     from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
@@ -150,6 +151,43 @@ class ExplanationRequest:
     features_to_ignore: Sequence[int] | Sequence[Sequence[int]]
     extras: Mapping[str, object] = field(default_factory=dict)
     feature_filter_per_instance_ignore: Sequence[Sequence[int]] | None = None
+
+    def __post_init__(self) -> None:
+        """Freeze mutable fields such as `bins` and `extras` for safety.
+
+        This ensures plugins cannot mutate shared request state (Mondrian
+        bins in particular) by converting arrays/lists into tuples and
+        mapping payloads into read-only proxies.
+        """
+
+        def _freeze_value(val: object) -> object:
+            # numpy arrays -> nested tuples
+            if isinstance(val, np.ndarray):
+                try:
+                    return tuple(_freeze_value(x) for x in val.tolist())
+                except Exception:
+                    return tuple(val.tolist())
+            if isinstance(val, (list, tuple)):
+                return tuple(_freeze_value(x) for x in val)
+            # mappings -> MappingProxyType with frozen values
+            if isinstance(val, MappingABC):
+                return MappingProxyType({k: _freeze_value(v) for k, v in val.items()})
+            return val
+
+        # Freeze bins if present
+        frozen_bins = None if self.bins is None else _freeze_value(self.bins)
+        object.__setattr__(self, "bins", frozen_bins)
+
+        # Freeze extras into an immutable mapping
+        try:
+            frozen_extras = (
+                MappingProxyType({k: _freeze_value(v) for k, v in dict(self.extras).items()})
+                if self.extras is not None
+                else MappingProxyType({})
+            )
+        except Exception:
+            frozen_extras = MappingProxyType(dict(self.extras or {}))
+        object.__setattr__(self, "extras", frozen_extras)
 
 
 @dataclass

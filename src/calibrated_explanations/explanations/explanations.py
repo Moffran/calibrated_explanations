@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
+from ..logging import telemetry_diagnostic_mode
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from .adapters import legacy_to_domain
@@ -340,6 +341,43 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             getattr(template, "feature_filter_per_instance_ignore", None),
         )
         container.batch_metadata = dict(metadata)
+
+        # Propagate any full probability cube from instances into batch metadata
+        # (keeps collection metadata aligned with telemetry exports). Also
+        # populate a minimal `telemetry` attribute on the materialised
+        # container so callers using `from_batch` directly receive the
+        # same dependency hints and probability summaries as the orchestrator.
+        try:
+            full_probs = None
+            for inst in getattr(batch, "instances", ()):
+                pred = inst.get("prediction") if isinstance(inst, dict) else None
+                if isinstance(pred, dict) and "__full_probabilities__" in pred:
+                    full_probs = pred.get("__full_probabilities__")
+                    break
+            if full_probs is not None:
+                container.batch_metadata.setdefault("__full_probabilities__", full_probs)
+                try:
+                    arr = np.asarray(full_probs)
+                    container.telemetry = {
+                        "full_probabilities_shape": tuple(arr.shape),
+                        "full_probabilities_summary": {
+                            "mean": float(np.mean(arr)),
+                            "min": float(np.min(arr)),
+                            "max": float(np.max(arr)),
+                        },
+                        "interval_dependencies": metadata.get("interval_dependencies"),
+                    }
+                except Exception:
+                    # Best-effort only
+                    container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
+            else:
+                container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
+        except Exception:
+            # Best-effort: ensure telemetry attribute exists
+            try:
+                container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
+            except Exception:
+                pass
 
         for index, instance in enumerate(batch.instances):
             explanation = instance.get("explanation")

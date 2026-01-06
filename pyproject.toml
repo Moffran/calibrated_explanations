@@ -310,3 +310,4 @@ exclude = [
 [tool.codespell]
 skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"
 ignore-words-list = "dataframe,nd"
+ords-list = "dataframe,nd"
