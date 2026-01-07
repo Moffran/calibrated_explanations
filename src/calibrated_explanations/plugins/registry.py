@@ -30,6 +30,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
 from .. import __version__ as package_version
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
+from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ValidationError
 from .base import ExplainerPlugin, validate_plugin_meta
 
@@ -46,6 +47,7 @@ _WARNED_UNTRUSTED: set[str] = set()
 _LAST_DISCOVERY_REPORT: "PluginDiscoveryReport | None" = None
 
 _LOGGER = logging.getLogger(__name__)
+ensure_logging_context_filter()
 
 
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -180,6 +182,18 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
         UserWarning,
         stacklevel=3,
     )
+    # Governance log for plugin trust decision
+    governance_logger = logging.getLogger("calibrated_explanations.governance.plugins")
+    ensure_logging_context_filter("calibrated_explanations.governance.plugins")
+    with logging_context(plugin_identifier=name):
+        governance_logger.info(
+            "Plugin trust decision: skipped untrusted plugin",
+            extra={
+                "provider": provider,
+                "source": source,
+                "decision": "skipped_untrusted",
+            }
+        )
     _WARNED_UNTRUSTED.add(name)
 
 
@@ -982,59 +996,60 @@ def register_explanation_plugin(
     source: str = "manual",
 ) -> ExplanationPluginDescriptor:
     """Register an explanation plugin under the given identifier."""
-    if not isinstance(identifier, str) or not identifier:
-        raise ValidationError(
-            "identifier must be a non-empty string",
-            details={
-                "param": "identifier",
-                "expected_type": "str",
-                "expected_empty": False,
-                "actual_type": type(identifier).__name__,
-            },
-        )
-    if is_identifier_denied(identifier):
-        raise ValidationError(
-            f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
-            details={"param": "identifier", "identifier": identifier},
-        )
-    raw_meta = metadata or getattr(plugin, "plugin_meta", None)
-    if raw_meta is None:
-        raise ValidationError(
-            "plugin must expose plugin_meta metadata",
-            details={"param": "plugin", "required_attribute": "plugin_meta"},
-        )
-    meta: Dict[str, Any] = dict(raw_meta)
-    validate_plugin_meta(meta)
-    meta = validate_explanation_metadata(meta)
-    trusted = _should_trust(meta, identifier=identifier, source=source)
-    _update_trust_keys(meta, trusted)
-    _verify_plugin_checksum(plugin, meta)
-    if "checksum" in meta:
-        trusted = True
+    with logging_context(plugin_identifier=identifier):
+        if not isinstance(identifier, str) or not identifier:
+            raise ValidationError(
+                "identifier must be a non-empty string",
+                details={
+                    "param": "identifier",
+                    "expected_type": "str",
+                    "expected_empty": False,
+                    "actual_type": type(identifier).__name__,
+                },
+            )
+        if is_identifier_denied(identifier):
+            raise ValidationError(
+                f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
+                details={"param": "identifier", "identifier": identifier},
+            )
+        raw_meta = metadata or getattr(plugin, "plugin_meta", None)
+        if raw_meta is None:
+            raise ValidationError(
+                "plugin must expose plugin_meta metadata",
+                details={"param": "plugin", "required_attribute": "plugin_meta"},
+            )
+        meta: Dict[str, Any] = dict(raw_meta)
+        validate_plugin_meta(meta)
+        meta = validate_explanation_metadata(meta)
+        trusted = _should_trust(meta, identifier=identifier, source=source)
         _update_trust_keys(meta, trusted)
-    if isinstance(raw_meta, dict):
-        raw_meta["trusted"] = meta["trusted"]
-        raw_meta["trust"] = meta["trust"]
+        _verify_plugin_checksum(plugin, meta)
+        if "checksum" in meta:
+            trusted = True
+            _update_trust_keys(meta, trusted)
+        if isinstance(raw_meta, dict):
+            raw_meta["trusted"] = meta["trusted"]
+            raw_meta["trust"] = meta["trust"]
 
-    descriptor = ExplanationPluginDescriptor(
-        identifier=identifier,
-        plugin=plugin,
-        metadata=meta,
-        trusted=trusted,
-        source=source,
-    )
-    _EXPLANATION_PLUGINS[identifier] = descriptor
-    if trusted:
-        _TRUSTED_EXPLANATIONS.add(identifier)
-    else:
-        _TRUSTED_EXPLANATIONS.discard(identifier)
+        descriptor = ExplanationPluginDescriptor(
+            identifier=identifier,
+            plugin=plugin,
+            metadata=meta,
+            trusted=trusted,
+            source=source,
+        )
+        _EXPLANATION_PLUGINS[identifier] = descriptor
+        if trusted:
+            _TRUSTED_EXPLANATIONS.add(identifier)
+        else:
+            _TRUSTED_EXPLANATIONS.discard(identifier)
 
-    # Maintain backwards compatibility with the legacy list registry.
-    register(plugin, source=source, identifier=identifier)
-    if trusted:
-        trust_plugin(plugin)
+        # Maintain backwards compatibility with the legacy list registry.
+        register(plugin, source=source, identifier=identifier)
+        if trusted:
+            trust_plugin(plugin)
 
-    return descriptor
+        return descriptor
 
 
 def find_explanation_descriptor(identifier: str) -> ExplanationPluginDescriptor | None:
@@ -1064,50 +1079,51 @@ def register_interval_plugin(
     source: str = "manual",
 ) -> IntervalPluginDescriptor:
     """Register an interval plugin descriptor."""
-    if not isinstance(identifier, str) or not identifier:
-        raise ValidationError(
-            "identifier must be a non-empty string",
-            details={
-                "param": "identifier",
-                "expected_type": "str",
-                "expected_empty": False,
-                "actual_type": type(identifier).__name__,
-            },
-        )
-    if is_identifier_denied(identifier):
-        raise ValidationError(
-            f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
-            details={"param": "identifier", "identifier": identifier},
-        )
-    raw_meta = metadata or getattr(plugin, "plugin_meta", None)
-    if raw_meta is None:
-        raise ValidationError(
-            "plugin must expose plugin_meta metadata",
-            details={"param": "plugin", "required_attribute": "plugin_meta"},
-        )
-    meta: Dict[str, Any] = dict(raw_meta)
-    validate_plugin_meta(meta)
-    validate_interval_metadata(meta)
-    trusted = _should_trust(meta, identifier=identifier, source=source)
-    _update_trust_keys(meta, trusted)
-    _verify_plugin_checksum(plugin, meta)
-    if isinstance(raw_meta, dict):
-        raw_meta["trusted"] = meta["trusted"]
-        raw_meta["trust"] = meta["trust"]
+    with logging_context(plugin_identifier=identifier):
+        if not isinstance(identifier, str) or not identifier:
+            raise ValidationError(
+                "identifier must be a non-empty string",
+                details={
+                    "param": "identifier",
+                    "expected_type": "str",
+                    "expected_empty": False,
+                    "actual_type": type(identifier).__name__,
+                },
+            )
+        if is_identifier_denied(identifier):
+            raise ValidationError(
+                f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
+                details={"param": "identifier", "identifier": identifier},
+            )
+        raw_meta = metadata or getattr(plugin, "plugin_meta", None)
+        if raw_meta is None:
+            raise ValidationError(
+                "plugin must expose plugin_meta metadata",
+                details={"param": "plugin", "required_attribute": "plugin_meta"},
+            )
+        meta: Dict[str, Any] = dict(raw_meta)
+        validate_plugin_meta(meta)
+        validate_interval_metadata(meta)
+        trusted = _should_trust(meta, identifier=identifier, source=source)
+        _update_trust_keys(meta, trusted)
+        _verify_plugin_checksum(plugin, meta)
+        if isinstance(raw_meta, dict):
+            raw_meta["trusted"] = meta["trusted"]
+            raw_meta["trust"] = meta["trust"]
 
-    descriptor = IntervalPluginDescriptor(
-        identifier=identifier,
-        plugin=plugin,
-        metadata=meta,
-        trusted=trusted,
-        source=source,
-    )
-    _INTERVAL_PLUGINS[identifier] = descriptor
-    if trusted:
-        _TRUSTED_INTERVALS.add(identifier)
-    else:
-        _TRUSTED_INTERVALS.discard(identifier)
-    return descriptor
+        descriptor = IntervalPluginDescriptor(
+            identifier=identifier,
+            plugin=plugin,
+            metadata=meta,
+            trusted=trusted,
+            source=source,
+        )
+        _INTERVAL_PLUGINS[identifier] = descriptor
+        if trusted:
+            _TRUSTED_INTERVALS.add(identifier)
+        else:
+            _TRUSTED_INTERVALS.discard(identifier)
+        return descriptor
 
 
 def find_interval_descriptor(identifier: str) -> IntervalPluginDescriptor | None:
@@ -1426,6 +1442,7 @@ def get_last_discovery_report() -> PluginDiscoveryReport | None:
 
 def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[ExplainerPlugin, ...]:
     """Discover plugins advertised via entry points."""
+    ensure_logging_context_filter()
     loaded: list[ExplainerPlugin] = []
     report = PluginDiscoveryReport()
     global _LAST_DISCOVERY_REPORT
@@ -1545,6 +1562,19 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 UserWarning,
                 stacklevel=2,
             )
+            # Governance log for plugin deny decision
+            governance_logger = logging.getLogger("calibrated_explanations.governance.plugins")
+            ensure_logging_context_filter("calibrated_explanations.governance.plugins")
+            with logging_context(plugin_identifier=meta_name):
+                governance_logger.info(
+                    "Plugin trust decision: skipped denied plugin",
+                    extra={
+                        "provider": meta.get("provider", provider),
+                        "source": "entrypoint",
+                        "decision": "skipped_denied",
+                        "deny_source": "CE_DENY_PLUGIN",
+                    }
+                )
             continue
 
         trusted = _should_trust(meta, identifier=identifier, source="entrypoint")

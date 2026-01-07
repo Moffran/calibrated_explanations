@@ -37,6 +37,7 @@ from ...plugins import (
     is_identifier_denied,
 )
 from ...calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
+from ...logging import logging_context, update_logging_context
 from ...utils import assert_threshold
 from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 from .validation import check_interval_runtime_metadata
@@ -700,24 +701,28 @@ class PredictionOrchestrator:
         """Resolve and instantiate the interval calibrator for the active mode."""
         self.ensure_interval_runtime_state()
         hints = self.gather_interval_hints(fast=fast)
-        plugin, identifier = self.resolve_interval_plugin(fast=fast, hints=hints)
-        context = self.build_interval_context(fast=fast, metadata=metadata)
-        try:
-            calibrator = plugin.create(context, fast=fast)
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            exc = sys.exc_info()[1]
-            raise ConfigurationError(
-                f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
-            ) from exc
-        self.validate_interval_calibrator(
-            calibrator=calibrator,
-            context=context,
-            identifier=identifier,
-            fast=fast,
-            plugin=plugin,
-        )
+        with logging_context(
+            explainer_id=getattr(self.explainer, "id", None),
+        ):
+            plugin, identifier = self.resolve_interval_plugin(fast=fast, hints=hints)
+            with logging_context(plugin_identifier=identifier):
+                context = self.build_interval_context(fast=fast, metadata=metadata)
+                try:
+                    calibrator = plugin.create(context, fast=fast)
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
+                    raise ConfigurationError(
+                        f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
+                    ) from exc
+                self.validate_interval_calibrator(
+                    calibrator=calibrator,
+                    context=context,
+                    identifier=identifier,
+                    fast=fast,
+                    plugin=plugin,
+            )
         self.capture_interval_calibrators(
             context=context,
             calibrator=calibrator,

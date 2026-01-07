@@ -11,6 +11,18 @@
 
 ### Added
 
+- **ADR-028 & Standard-005: Normalized Logging & Context Propagation:** Implemented structured logging domains and threaded context propagation across the core engine.
+  - Normalized logger namespaces (e.g., `calibrated_explanations.core.explain`, `calibrated_explanations.plugins.registry`) for consistent filtering.
+  - Introduced `logging_context` usage in `PredictionOrchestrator` and `ExplanationOrchestrator` to automatically tag logs with `explainer_id` and `plugin_identifier`.
+  - Updated `PluginRegistry` to propagate logging context during plugin lifecycle events.
+  - Added "Logging and Observability" guidelines to `CONTRIBUTING.md` and `optional_telemetry.md`, enforcing Standard-005 governance.
+
+- **ADR-021 & ADR-026: Extended Telemetry and Payload Hardening:** Enhanced runtime payloads with deeper telemetry and enforced invariant safety for v1.0.0-rc.
+  - Surfaced FAST probability cubes and interval dependency hints in runtime payloads for enhanced transparency.
+  - Implemented frozen bin metadata to ensure deterministic explanation reconstruction across serialization boundaries.
+  - Enforced calorie-aligned interval safety across all explanation bridges, strictly maintaining `low <= predict <= high` invariants.
+  - Hardened JSON serialization to support complex nested telemetry and metadata objects.
+
 - **ADR-010: Optional Dependency Split + Packaging Compliance:** Completed lean core installation with optional extras for visualization, notebooks, and evaluation. Core dependencies now exclude heavy packages like `ipython`, `lime`, and `matplotlib`, moved to appropriate extras (`viz`, `notebooks`, `eval`). Added pytest hook to auto-skip visualization tests when `matplotlib` is unavailable. Provided evaluation lockfiles (`evaluation/requirements.txt` and `evaluation/environment.yml`) aligned with `[eval]` extras. Updated documentation in README and CONTRIBUTING for extras usage.
 
 - **ADR-015: Explanation Plugin Integration Hardening:** Delivered protocol-validated explanation plugins with trust enforcement, canonical reconstruction, and immutable handles.

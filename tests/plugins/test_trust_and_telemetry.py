@@ -1,5 +1,7 @@
 import types
 import numpy as np
+import logging
+import pytest
 
 from calibrated_explanations.plugins import register_explanation_plugin, find_explanation_descriptor
 from calibrated_explanations.plugins.manager import PluginManager
@@ -68,3 +70,31 @@ def test_build_instance_telemetry_payload_includes_probability_cube_shape():
     cube = payload.get("__full_probabilities__")
     assert cube is not None
     assert getattr(cube, "shape", None) == (2, 3, 4)
+
+
+def test_governance_logging_for_untrusted_plugin(caplog, monkeypatch):
+    """Test that governance logs are emitted for untrusted plugin warnings."""
+    from calibrated_explanations.plugins.registry import _warn_untrusted_plugin
+
+    # Mock the warnings.warn to avoid actual warnings
+    warned = []
+    original_warn = __import__('warnings').warn
+    def mock_warn(*args, **kwargs):
+        warned.append(args)
+    monkeypatch.setattr('warnings.warn', mock_warn)
+
+    # Clear any previous warnings
+    from calibrated_explanations.plugins.registry import _WARNED_UNTRUSTED
+    _WARNED_UNTRUSTED.clear()
+
+    meta = {"name": "test.untrusted", "provider": "test"}
+    with caplog.at_level(logging.INFO):
+        _warn_untrusted_plugin(meta, source="test")
+
+    # Check that governance log was emitted
+    governance_logs = [record for record in caplog.records if 'governance' in record.name]
+    assert len(governance_logs) == 1
+    log = governance_logs[0]
+    assert log.name == "calibrated_explanations.governance.plugins"
+    assert "Plugin trust decision: skipped untrusted plugin" in log.message
+    assert log.plugin_identifier == "test.untrusted"  # Should be set by context

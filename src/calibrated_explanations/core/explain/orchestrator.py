@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
-from ...logging import ensure_logging_context_filter, logging_context, telemetry_diagnostic_mode
+from ...logging import ensure_logging_context_filter, logging_context, telemetry_diagnostic_mode, update_logging_context
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
     ExplainerHandle,
@@ -558,49 +558,56 @@ class ExplanationOrchestrator:
         tuple
             A tuple of (plugin_instance, plugin_identifier).
         """
-        if mode in self.explainer.plugin_manager.explanation_plugin_instances:
-            return (
-                self.explainer.plugin_manager.explanation_plugin_instances[mode],
-                self.explainer.plugin_manager.explanation_plugin_identifiers.get(mode),
-            )
-
-        plugin, identifier = self.resolve_plugin(mode)
-        metadata: Mapping[str, Any] | None = None
-        if identifier:
-            descriptor = find_explanation_descriptor(identifier)
-            if descriptor:
-                metadata = descriptor.metadata
-                interval_dependency = metadata.get("interval_dependency")
-                hints = coerce_string_tuple(interval_dependency)
-                if hints:
-                    self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
-            else:
-                metadata = getattr(plugin, "plugin_meta", None)
-        else:
-            metadata = getattr(plugin, "plugin_meta", None)
-
-        error = self.check_metadata(
-            metadata,
-            identifier=identifier,
+        # Set logging context for plugin resolution
+        with logging_context(
+            explainer_id=getattr(self.explainer, "id", None),
             mode=mode,
-        )
-        if error:
-            raise ConfigurationError(error)
+        ):
+            if mode in self.explainer.plugin_manager.explanation_plugin_instances:
+                return (
+                    self.explainer.plugin_manager.explanation_plugin_instances[mode],
+                    self.explainer.plugin_manager.explanation_plugin_identifiers.get(mode),
+                )
 
-        if metadata is not None and not identifier:
-            hints = coerce_string_tuple(metadata.get("interval_dependency"))
-            if hints:
-                self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
+            plugin, identifier = self.resolve_plugin(mode)
+            # Update context with resolved plugin identifier
+            with logging_context(plugin_identifier=identifier):
+                metadata: Mapping[str, Any] | None = None
+                if identifier:
+                    descriptor = find_explanation_descriptor(identifier)
+                    if descriptor:
+                        metadata = descriptor.metadata
+                        interval_dependency = metadata.get("interval_dependency")
+                        hints = coerce_string_tuple(interval_dependency)
+                        if hints:
+                            self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
+                    else:
+                        metadata = getattr(plugin, "plugin_meta", None)
+                else:
+                    metadata = getattr(plugin, "plugin_meta", None)
 
-        context = self.build_context(mode, plugin, identifier)
-        try:
-            plugin.initialize(context)
-        except (
-            Exception
-        ) as exc:  # ADR002_ALLOW: wrap plugin initialization failure.  # pragma: no cover
-            raise ConfigurationError(
-                f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
-            ) from exc
+                error = self.check_metadata(
+                    metadata,
+                    identifier=identifier,
+                    mode=mode,
+                )
+                if error:
+                    raise ConfigurationError(error)
+
+                if metadata is not None and not identifier:
+                    hints = coerce_string_tuple(metadata.get("interval_dependency"))
+                    if hints:
+                        self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
+
+                context = self.build_context(mode, plugin, identifier)
+                try:
+                    plugin.initialize(context)
+                except (
+                    Exception
+                ) as exc:  # ADR002_ALLOW: wrap plugin initialization failure.  # pragma: no cover
+                    raise ConfigurationError(
+                        f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
+                    ) from exc
 
         self.explainer.plugin_manager.explanation_plugin_instances[mode] = plugin
         if identifier:

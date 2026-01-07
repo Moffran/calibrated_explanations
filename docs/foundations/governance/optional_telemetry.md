@@ -72,6 +72,17 @@ renderer. If a fallback occurs (for example, the legacy Matplotlib
 renderer), the fallback list records the full chain so dashboards can
 differentiate first-choice and recovery paths.
 
+## Logging and observability
+
+Telemetry integrates with the project's structured logging system
+(ADR-028, Standard-005). Logs under ``calibrated_explanations.telemetry.*``
+domains carry telemetry payloads as structured fields, enabling
+machine-readable evidence for governance and compliance.
+
+The shared logging context helper propagates identifiers such as
+``explainer_id``, ``plugin_identifier``, and ``mode`` into all log
+records, supporting correlation across distributed deployments.
+
 ## Persisting telemetry
 
 Telemetry payloads are JSON serialisable and can be stored alongside

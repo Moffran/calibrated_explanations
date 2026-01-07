@@ -54,7 +54,7 @@ def update_logging_context(**kwargs: Any) -> None:
     """Update structured logging context fields present in kwargs."""
 
     for key, value in kwargs.items():
-        if key in _context_vars and value is not None:
+        if key in _context_vars:
             _context_vars[key].set(value)
 
 
@@ -64,7 +64,7 @@ def logging_context(**kwargs: Any) -> Iterator[None]:
 
     tokens = {}
     for key, value in kwargs.items():
-        if key in _context_vars and value is not None:
+        if key in _context_vars:
             tokens[key] = _context_vars[key].set(value)
     try:
         yield
@@ -78,7 +78,8 @@ class LoggingContextFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:  # pragma: no cover - simple pass-through
         context = get_logging_context()
-        for key, value in context.items():
+        for key in _CONTEXT_KEYS:
+            value = context.get(key)
             setattr(record, key, value)
         return True
 

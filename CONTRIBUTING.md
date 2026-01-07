@@ -46,6 +46,14 @@ pip install -e .[viz]
 pytest
 ```
 
+Logging and Observability
+-------------------------
+
+We follow [Standard-005](docs/standards/STD-005-logging-and-observability-standard.md) for logging. When adding new features:
+1. Use the appropriate logger domain (e.g. `calibrated_explanations.core.*`, `calibrated_explanations.plugins.*`).
+2. Use `calibrated_explanations.logging.logging_context` to propagate identifiers like `explainer_id` or `plugin_identifier`.
+3. Consult [ADR-028](docs/improvement/adrs/ADR-028-logging-and-governance-observability.md) for architecture details.
+
 Notes
 -----
 - The test suite automatically skips tests marked with `@pytest.mark.viz` when
