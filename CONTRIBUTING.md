@@ -46,6 +46,34 @@ pip install -e .[viz]
 pytest
 ```
 
+CLI and plugin configuration
+----------------------------
+
+- The plugin CLI entry point is available as `ce.plugins` (packaged via
+  `pyproject.toml`). Use it to inspect registered plugins and trust state:
+
+```powershell
+ce.plugins list all
+```
+
+- Configure plugins via environment variables or explainer kwargs:
+  - Env vars: `CE_EXPLANATION_PLUGIN`, `CE_INTERVAL_PLUGIN`,
+    `CE_INTERVAL_PLUGIN_FAST`, `CE_PLOT_STYLE`, plus their `*_FALLBACKS`
+    counterparts.
+  - Explainer kwargs: `factual_plugin`, `alternative_plugin`, `fast_plugin`,
+    `interval_plugin`, `fast_interval_plugin`, and `plot_style`.
+    - Preferred FAST activation: pass `fast=True` to `CalibratedExplainer` to
+      enable FAST-mode execution. `fast_plugin` remains available when you need
+      to target a specific FAST implementation, but `fast=True` is the primary
+      activation mechanism.
+
+Style guardrails
+----------------
+
+- Naming and documentation conventions are enforced in CI (Ruff naming + pydocstyle).
+- Review the quick-reference checklist in `.github/CONTRIBUTING.md` before
+  submitting changes that touch public APIs or new modules.
+
 Logging and Observability
 -------------------------
 

@@ -178,6 +178,9 @@ underlying estimator and read the returned intervals.
   [release notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/release_notes.html)
   and the project
   [CHANGELOG](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md).
+- **Plugin CLI** – inspect registered plugins and trust state with
+  `ce.plugins list all` (see the
+  [CLI reference](https://calibrated-explanations.readthedocs.io/en/latest/api/cli.html)).
 - **Project governance** – review
   [GOVERNANCE.md](https://github.com/Moffran/calibrated_explanations/blob/main/GOVERNANCE.md),
   [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md),

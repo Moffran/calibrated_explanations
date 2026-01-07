@@ -122,8 +122,14 @@ def is_identifier_denied(identifier: str) -> bool:
 
 def _should_trust(meta: Mapping[str, Any], *, identifier: str, source: str) -> bool:
     """Return whether *identifier* should be trusted by default."""
+    # Builtin plugins are trusted by definition.
     if source == "builtin":
         return True
+
+    # All non-builtin plugins (including entry-point and external/manual
+    # registrations) must be explicitly allowed by the operator. The
+    # operator-provided allowlist is sourced from CE_TRUST_PLUGIN and
+    # the pyproject.toml trusted list.
     trusted_ids = _trusted_identifiers()
     return identifier in trusted_ids
 
@@ -1440,6 +1446,24 @@ def get_last_discovery_report() -> PluginDiscoveryReport | None:
     return _LAST_DISCOVERY_REPORT
 
 
+def get_discovery_report() -> PluginDiscoveryReport:
+    """Return a thread-safe snapshot of the most recent discovery report.
+
+    This returns an independent copy so callers can inspect the report
+    without risk of concurrent mutation by later discovery runs.
+    """
+    if _LAST_DISCOVERY_REPORT is None:
+        return PluginDiscoveryReport()
+
+    # Create a shallow copy of each list to create a snapshot.
+    return PluginDiscoveryReport(
+        skipped_untrusted=list(_LAST_DISCOVERY_REPORT.skipped_untrusted),
+        skipped_denied=list(_LAST_DISCOVERY_REPORT.skipped_denied),
+        checksum_failures=list(_LAST_DISCOVERY_REPORT.checksum_failures),
+        accepted=list(_LAST_DISCOVERY_REPORT.accepted),
+    )
+
+
 def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[ExplainerPlugin, ...]:
     """Discover plugins advertised via entry points."""
     ensure_logging_context_filter()
@@ -2041,6 +2065,7 @@ __all__ = [
     "find_plot_plugin",
     "find_plot_plugin_trusted",
     "get_last_discovery_report",
+    "get_discovery_report",
     "list_explanation_descriptors",
     "list_interval_descriptors",
     "list_plot_builder_descriptors",

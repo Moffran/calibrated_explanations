@@ -96,7 +96,7 @@ behavior across development and distribution.
 ### Configuration structure
 
 ```toml
-[tool.calibrated-explanations.plots]
+[tool.calibrated_explanations.plots]
 # Primary plot style selector
 style = "my.custom.plot"
 
@@ -107,16 +107,18 @@ style_fallbacks = [
     "legacy",
 ]
 
-[tool.calibrated-explanations.intervals]
-# Primary interval calibrator plugin
-plugin = "external.hello.interval"
+# Primary interval calibrator plugin (default/fast mode)
+[tool.calibrated_explanations.intervals]
+default = "external.hello.interval"
+fast = "core.interval.fast"
 
 # Fallback chain
-fallbacks = [
+default_fallbacks = [
     "core.interval.legacy",
 ]
+fast_fallbacks = ["core.interval.fast", "core.interval.legacy"]
 
-[tool.calibrated-explanations.explanations]
+[tool.calibrated_explanations.explanations]
 # Per-mode plugin configuration
 factual = "external.hello.explanation"
 alternative = "core.explanation.alternative"
@@ -132,7 +134,7 @@ When your package includes a plot plugin, document project defaults in `pyprojec
 name = "my-calibrated-plots"
 dependencies = ["calibrated-explanations>=0.9.0"]
 
-[tool.calibrated-explanations.plots]
+[tool.calibrated_explanations.plots]
 style = "my.beautiful.plot"
 style_fallbacks = ["plot_spec.default", "legacy"]
 ```
@@ -146,7 +148,7 @@ When multiple configuration methods are active, this priority order applies:
 
 1. Explainer parameter: `CalibratedExplainer(..., plot_style="explicit")`
 2. Environment variable: `CE_PLOT_STYLE="from_env"`
-3. pyproject.toml: `[tool.calibrated-explanations.plots] style = "from_project"`
+3. pyproject.toml: `[tool.calibrated_explanations.plots] style = "from_project"`
 4. Explanation plugin metadata: `"plot_dependency": "from_plugin"`
 5. Default fallback: `"plot_spec.default"` → `"legacy"`
 

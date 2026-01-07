@@ -311,11 +311,13 @@ export CE_EXPLANATION_PLUGIN_FACTUAL="core.explanation.factual.feature_parallel"
   `"task:regression"`, `"rules:conjunctions"`) so downstream tooling can reason
   about plugin features without inspecting code. Metadata validation is
   implemented alongside existing registry checks.
-- `CalibratedExplainer` accepts keyword overrides per mode
+  `CalibratedExplainer` accepts keyword overrides per mode
   (`factual_plugin`, `alternative_plugin`, `fast_plugin`) and honours
   environment variables (`CE_EXPLANATION_PLUGIN_FACTUAL`,
-  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`). Project
-  configuration mirrors these keys under
+  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`). Prefer
+  enabling FAST-mode by passing `fast=True` to `CalibratedExplainer`; use
+  `fast_plugin` only when you need to target a specific FAST implementation.
+  Project configuration mirrors these keys under
   `[tool.calibrated_explanations.explanations]` and may supply mode-specific
   fallback arrays. CLI helpers mirror the interval/plot commands for listing,
   validating, and setting explanation plugins.

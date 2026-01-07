@@ -8,6 +8,11 @@ Plugins are optional. Start with the calibrated explanations workflow first; onl
 - You need a different plot style or visualization backend via PlotSpec.
 - Your team maintains a vetted plugin aligned to the CE contract.
 
+Note: FAST-mode plugins are opt-in only. By design the runtime will not include
+FAST implementations in the default fallback chains for `factual` or
+`alternative` explanations — you must explicitly request FAST via the
+`fast_plugin` argument or `CE_EXPLANATION_PLUGIN_FAST` / `CE_INTERVAL_PLUGIN_FAST`.
+
 ## Install and register
 
 Install the curated bundle and register the FAST plugins when needed:
@@ -33,16 +38,30 @@ explainer = CalibratedExplainer(
     # Explanation plugin choice by mode
     factual_plugin="core.explanation.factual",   # or an external id
     alternative_plugin="core.explanation.alternative",
-    fast_plugin="core.explanation.fast",        # used by explain_fast(), not by explain_factual()
     # Interval calibrator and plot style
-    default_interval_plugin="core.interval.fast",  # or external interval id
+    interval_plugin="core.interval.legacy",  # or external interval id
     plot_style="plot_spec.default",                 # or a custom style id
 )
 
 explanations = explainer.explain_factual(x_test)
 explanations.plot()  # uses plot_style and fallbacks
+```
 
-# Use the fast mode to invoke the fast plugin
+```python
+from calibrated_explanations import CalibratedExplainer
+
+explainer = CalibratedExplainer(
+    model, x_cal, y_cal,
+    # To activate FAST mode globally
+    fast=True,
+    # or select a specific FAST plugin
+    fast_plugin="core.explanation.fast",
+    # Interval calibrator and plot style
+    interval_plugin="core.interval.fast",  # or external interval id
+    plot_style="plot_spec.default",                 # or a custom style id
+)
+
+# Use the fast mode to invoke the fast execution path
 fast_batch = explainer.explain_fast(x_test)
 fast_batch.plot()
 ```
@@ -68,7 +87,9 @@ $env:CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS = "core.explanation.factual"
 $env:CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS = "core.explanation.alternative"
 $env:CE_EXPLANATION_PLUGIN_FAST_FALLBACKS = "core.explanation.fast"
 
-# Interval plugin fallback chain
+# Interval plugin defaults + fallback chain
+$env:CE_INTERVAL_PLUGIN = "core.interval.fast"
+$env:CE_INTERVAL_PLUGIN_FAST = "core.interval.fast"
 $env:CE_INTERVAL_PLUGIN_FALLBACKS = "core.interval.fast,core.interval.legacy"
 ```
 

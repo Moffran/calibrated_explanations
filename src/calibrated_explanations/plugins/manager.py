@@ -578,7 +578,25 @@ class PluginManager:
                         expanded.append(fallback)
                         seen.add(fallback)
 
-        # 5. Add default and mode-specific fallbacks
+        # 5. Filter out any FAST-mode identifiers when building chains for
+        # non-fast modes. FAST is opt-in and must never be implicitly added
+        # to the default fallback chain for `factual`/`alternative` modes.
+        if mode != "fast":
+            def _is_fast_id(idt: str) -> bool:
+                # Treat identifiers that explicitly reference 'fast' as FAST-mode
+                # identifiers. This covers patterns like 'core.explanation.fast',
+                # 'core.explanation.fast.sequential', and mode-suffixed forms.
+                parts = idt.replace(":", ".").split(".")
+                return "fast" in parts
+
+            filtered: List[str] = []
+            for ident in expanded:
+                if _is_fast_id(ident):
+                    continue
+                filtered.append(ident)
+            expanded = filtered
+
+        # 6. Add default and mode-specific fallbacks
         if default_identifier and default_identifier not in seen:
             expanded.append(default_identifier)
             seen.add(default_identifier)
