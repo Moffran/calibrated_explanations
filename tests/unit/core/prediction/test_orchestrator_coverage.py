@@ -9,6 +9,11 @@ from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     ValidationError,
 )
+from calibrated_explanations.plugins.intervals import (
+    IntervalCalibratorContext,
+    RegressionIntervalCalibrator,
+    ClassificationIntervalCalibrator,
+)
 from calibrated_explanations.utils import exceptions as core_exceptions
 
 
@@ -1037,3 +1042,79 @@ def test_check_interval_runtime_metadata_fast_incompatible_duplicate(orchestrato
 
     error = orchestrator.check_interval_runtime_metadata(metadata, identifier="test", fast=True)
     assert "not marked fast_compatible" in error
+
+
+def test_validate_interval_calibrator_fast_mode_deep_validation_failure(orchestrator, mock_explainer):
+    """Test that validate_interval_calibrator performs deep validation in FAST mode."""
+    from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
+
+    # Create a simple invalid calibrator class
+    class InvalidCalibrator:
+        pass
+
+    # Create a FastIntervalCalibrator with one invalid item
+    fast_calibrator = FastIntervalCalibrator([InvalidCalibrator()])
+
+    context = IntervalCalibratorContext(
+        learner=MagicMock(),
+        calibration_splits=(MagicMock(),),
+        bins={},
+        residuals={},
+        difficulty={},
+        metadata={"task": "classification"},
+        fast_flags={"fast": True},
+    )
+
+    with pytest.raises(ConfigurationError, match="Interval calibrator at index 0.*is non-compliant"):
+        orchestrator.validate_interval_calibrator(
+            calibrator=fast_calibrator,
+            context=context,
+            identifier="test_plugin",
+            fast=True,
+        )
+
+
+def test_fast_interval_calibrator_protocol_compliance():
+    """Test that FastIntervalCalibrator implements the full protocol."""
+    from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
+
+    # Create a mock calibrator that implements the protocol
+    mock_calibrator = MagicMock()
+    mock_calibrator.predict_proba.return_value = None
+    mock_calibrator.predict_probability.return_value = None
+    mock_calibrator.predict_uncertainty.return_value = None
+    mock_calibrator.is_multiclass.return_value = False
+    mock_calibrator.is_mondrian.return_value = False
+    mock_calibrator.pre_fit_for_probabilistic.return_value = None
+    mock_calibrator.compute_proba_cal.return_value = None
+    mock_calibrator.insert_calibration.return_value = None
+
+    fast_calibrator = FastIntervalCalibrator([mock_calibrator])
+
+    # Check isinstance for both protocols
+    assert isinstance(fast_calibrator, ClassificationIntervalCalibrator)
+    assert isinstance(fast_calibrator, RegressionIntervalCalibrator)
+
+
+def test_build_interval_context_metadata_immutable(orchestrator, mock_explainer):
+    """Test that build_interval_context returns immutable metadata."""
+    mock_explainer.mode = "classification"
+    mock_explainer.learner = MagicMock()
+    mock_explainer.x_cal = MagicMock()
+    mock_explainer.y_cal = MagicMock()
+    mock_explainer.bins = {}
+    mock_explainer.difficulty_estimator = MagicMock()
+    mock_explainer.plugin_manager.interval_context_metadata = {"default": {}}
+    mock_explainer.categorical_features = ()
+    mock_explainer.num_features = 5
+    mock_explainer.seed = None
+    mock_explainer.rng = None
+    mock_explainer._CalibratedExplainer__noise_type = None
+    mock_explainer._CalibratedExplainer__scale_factor = None
+    mock_explainer._CalibratedExplainer__severity = None
+
+    context = orchestrator.build_interval_context(fast=False, metadata={})
+
+    # Try to mutate metadata - should raise TypeError
+    with pytest.raises(TypeError):
+        context.metadata["new_key"] = "value"

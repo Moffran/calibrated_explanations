@@ -688,7 +688,7 @@ class PredictionOrchestrator:
             bins=_freeze_context_mapping(bins),
             residuals=_freeze_context_mapping(residuals),
             difficulty=_freeze_context_mapping(difficulty),
-            metadata=enriched_metadata,
+            metadata=_freeze_context_mapping(enriched_metadata),
             fast_flags=_freeze_context_mapping(fast_flags),
         )
 
@@ -811,8 +811,19 @@ class PredictionOrchestrator:
                     f"Interval plugin '{label}' returned None for {mode} mode."
                 )
 
-            # Accept FastIntervalCalibrator or Sequence (will validate items later)
+            # Accept FastIntervalCalibrator or Sequence (validate items now)
             if isinstance(calibrator, (FastIntervalCalibrator, list, tuple)):
+                # Deep validation: check each item in the sequence
+                for idx, item in enumerate(calibrator):
+                    if not isinstance(item, expected):
+                        mode = "fast"
+                        label = f"{identifier or '<unknown>'}[{idx}]"
+                        expected_name = expected.__name__
+                        actual = type(item).__name__
+                        raise ConfigurationError(
+                            f"Interval calibrator at index {idx} in '{label}' is non-compliant for {mode} mode "
+                            f"(expected {expected_name}, got {actual})."
+                        )
                 return
 
             # Also accept protocol-compliant single objects

@@ -66,6 +66,34 @@ class FastIntervalCalibrator(Sequence[Any]):
     ) -> Any:
         return self._default().predict_proba(*args, **kwargs)
 
+    def predict_probability(self, x: Any) -> Any:
+        """Return calibrated low/high probabilities for *x*."""
+        return self._default().predict_probability(x)
+
+    def predict_uncertainty(self, x: Any) -> Any:
+        """Return uncertainty estimates for *x*."""
+        return self._default().predict_uncertainty(x)
+
+    def is_multiclass(self) -> bool:
+        """Return ``True`` when the calibrator handles multiclass data."""
+        return self._default().is_multiclass()
+
+    def is_mondrian(self) -> bool:
+        """Return ``True`` when Mondrian binning is enabled."""
+        return self._default().is_mondrian()
+
+    def pre_fit_for_probabilistic(self, x: Any, y: Any) -> None:
+        """Prepare the calibrator for probabilistic inference."""
+        self._default().pre_fit_for_probabilistic(x, y)
+
+    def compute_proba_cal(self, x: Any, y: Any, *, weights: Any | None = None) -> Any:
+        """Compute probability calibration adjustments."""
+        return self._default().compute_proba_cal(x, y, weights=weights)
+
+    def insert_calibration(self, x: Any, y: Any, *, warm_start: bool = False) -> None:
+        """Insert additional calibration samples."""
+        self._default().insert_calibration(x, y, warm_start=warm_start)
+
 def is_fast_interval_collection(value: Any) -> bool:
     """Return True when *value* is a FAST interval calibrator collection."""
     return isinstance(value, (FastIntervalCalibrator, list, tuple))
