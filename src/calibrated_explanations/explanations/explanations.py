@@ -422,7 +422,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             When ``True`` (default) the ``schema_version`` field is included on
             the top-level payload as well as on each explanation entry.
         """
-        from ..serialization import to_json as _explanation_to_json
+        from ..serialization import to_json as _explanation_to_json, validate_payload as _validate_payload
 
         instances = []
         for exp in self.explanations:
@@ -441,6 +441,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         }
         if include_version:
             payload.setdefault("schema_version", "1.0.0")
+
         return payload
 
     def to_json_stream(self, *, chunk_size: int = 256, format: str = "jsonl"):
