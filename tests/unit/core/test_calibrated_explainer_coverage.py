@@ -1178,49 +1178,44 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
         mock_invoke.assert_called_once()
 
     # __call__
-    with patch.object(explainer, "explain_internal") as mock_explain:
+    with patch.object(explainer, "_explain") as mock_explain:
         explainer(x_cal)
         mock_explain.assert_called_once()
 
-    # explain_internal with legacy path
-    with patch("calibrated_explanations.core.explain.legacy_explain") as mock_legacy:
-        explainer.explain_internal(x_cal, _use_plugin=False)
-        mock_legacy.assert_called_once()
+    # explain_fast with legacy path
+    import external_plugins.fast_explanations.pipeline as fast_pipeline_mod
 
-        # explain_fast with legacy path
-        import external_plugins.fast_explanations.pipeline as fast_pipeline_mod
+    with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_pipeline:
+        explainer.explain_fast(x_cal, _use_plugin=False)
+        mock_pipeline.assert_called()
+        
+    # explain_lime
+    import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 
-        with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_pipeline:
-            explainer.explain_fast(x_cal, _use_plugin=False)
-            mock_pipeline.assert_called()
+    with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
+        explainer.explain_lime(x_cal)
+        mock_lime.assert_called()
 
-        # explain_lime
-        import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
+    # explain_shap
+    import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
 
-        with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
-            explainer.explain_lime(x_cal)
-            mock_lime.assert_called()
+    with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
+        explainer.explain_shap(x_cal)
+        mock_shap.assert_called()
 
-        # explain_shap
-        import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
+    # is_lime_enabled / is_shap_enabled
+    explainer.is_lime_enabled(True)
+    explainer.is_lime_enabled(False)
+    explainer.is_lime_enabled()
+    explainer.is_shap_enabled(True)
+    explainer.is_shap_enabled(False)
+    explainer.is_shap_enabled()
 
-        with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
-            explainer.explain_shap(x_cal)
-            mock_shap.assert_called()
-
-        # is_lime_enabled / is_shap_enabled
-        explainer.is_lime_enabled(True)
-        explainer.is_lime_enabled(False)
-        explainer.is_lime_enabled()
-        explainer.is_shap_enabled(True)
-        explainer.is_shap_enabled(False)
-        explainer.is_shap_enabled()
-
-        # is_multiclass
-        explainer.num_classes = 3
-        assert explainer.is_multiclass() is True
-        explainer.num_classes = 2
-        assert explainer.is_multiclass() is False
+    # is_multiclass
+    explainer.num_classes = 3
+    assert explainer.is_multiclass() is True
+    explainer.num_classes = 2
+    assert explainer.is_multiclass() is False
 
     # is_fast
     assert explainer.is_fast() is False

@@ -1696,20 +1696,6 @@ class CalibratedExplainer:
         )
 
     def _explain(self, *args, **kwargs) -> CalibratedExplanations:
-        """Delegate to explain_internal for internal explanation orchestration."""
-        return self.explain_internal(*args, **kwargs)
-
-    def explain_internal(
-        self,
-        x,
-        threshold=None,
-        low_high_percentiles=(5, 95),
-        bins=None,
-        features_to_ignore=None,
-        *,
-        _use_plugin: bool = True,
-        _skip_instance_parallel: bool = False,
-    ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
         This is an internal orchestration primitive that delegates to the explanation orchestrator.
@@ -1731,6 +1717,20 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        # Delegate the args to the actual implementation
+        return self._explain_impl(*args, **kwargs)
+
+    def _explain_impl(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        bins=None,
+        features_to_ignore=None,
+        *,
+        _use_plugin: bool = True,
+        _skip_instance_parallel: bool = False,
+    ) -> CalibratedExplanations:
         if bins is None and self.is_mondrian():
             bins = self.bins
         # Thin delegator to orchestrator
