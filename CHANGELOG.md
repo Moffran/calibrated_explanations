@@ -48,6 +48,7 @@
 
 - **ADR-027: FAST-Based Feature Filtering Finalization:** Completed implementation with observability policy alignment, metadata documentation, and performance tuning examples.
   - Aligned runtime logging to emit debug messages by default, with warnings only in strict observability mode (`CE_STRICT_OBSERVABILITY`).
+  - Added detailed debug logs for per-instance and global feature acceptance/rejection in FAST filtering to trace accepted/rejected features.
   - Renamed `features_to_ignore_per_instance` to `feature_filter_per_instance_ignore` across the codebase to align with internal naming conventions.
   - Documented `feature_filter_per_instance_ignore` metadata in API reference for transparency and debugging.
   - Added performance tuning guide in `docs/practitioner/performance-tuning.md` with configuration examples and telemetry event descriptions.

@@ -46,7 +46,7 @@ _PYPROJECT_TRUST_CACHE: set[str] | None = None
 _WARNED_UNTRUSTED: set[str] = set()
 _LAST_DISCOVERY_REPORT: "PluginDiscoveryReport | None" = None
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger("calibrated_explanations.governance.registry")
 ensure_logging_context_filter()
 
 

@@ -136,7 +136,7 @@ def compute_filtered_features_to_ignore(
         - ``per_instance_ignore``: per-instance ignore arrays, length equal
           to ``len(fast_explanations.explanations)``.
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("calibrated_explanations.core.explain.feature_filter")
     num_instances = len(fast_explanations.explanations)
     logger.debug(
         "compute_filtered_features_to_ignore",
@@ -195,6 +195,7 @@ def compute_filtered_features_to_ignore(
     )
 
     # Compute per-instance keep/ignore sets based on absolute FAST weights.
+    instance_index = 0
     for exp in fast_explanations.explanations:
         weights_mapping = getattr(exp, "feature_weights", None)
         if not isinstance(weights_mapping, dict):
@@ -210,6 +211,7 @@ def compute_filtered_features_to_ignore(
             for feature in keep_set:
                 keep_counts[int(feature)] += 1
             per_instance_keep.append(keep_set)
+            instance_index += 1
             continue
         predict_weights = weights_mapping.get("predict")
         if predict_weights is None:
@@ -224,6 +226,7 @@ def compute_filtered_features_to_ignore(
             for feature in keep_set:
                 keep_counts[int(feature)] += 1
             per_instance_keep.append(keep_set)
+            instance_index += 1
             continue
 
         weights_arr = np.asarray(predict_weights, dtype=float).reshape(-1)
@@ -239,6 +242,7 @@ def compute_filtered_features_to_ignore(
             for feature in keep_set:
                 keep_counts[int(feature)] += 1
             per_instance_keep.append(keep_set)
+            instance_index += 1
             continue
 
         # Align to num_features by truncation or padding with zeros as needed.
@@ -254,6 +258,7 @@ def compute_filtered_features_to_ignore(
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
             per_instance_keep.append(set())
+            instance_index += 1
             continue
 
         candidate_indices = np.asarray(sorted(candidates_for_filter), dtype=int)
@@ -268,11 +273,21 @@ def compute_filtered_features_to_ignore(
             keep_features = {int(f) for f in top_indices.tolist()}
         extra_ignore = candidates_for_filter - keep_features
 
+        logger.debug(
+            "per-instance feature filter",
+            extra={
+                "instance_index": instance_index,
+                "keep_features": sorted(keep_features),
+                "rejected_features": sorted(extra_ignore),
+            },
+        )
+
         for feature in keep_features:
             keep_counts[int(feature)] += 1
         per_instance_keep.append(keep_features)
         ignore_total = sorted(set(extra_ignore) | base_ignore_set)
         per_instance_ignore.append(np.asarray(ignore_total, dtype=int))
+        instance_index += 1
 
     # Derive a batch-level global ignore set using per-instance keep coverage.
     # Only features observed in every FAST explanation are eligible for
@@ -320,6 +335,13 @@ def compute_filtered_features_to_ignore(
             global_keep = {int(f) for f in positive_indices.tolist()}
 
             removable_features = eligible_features - global_keep
+            logger.debug(
+                "global feature filter",
+                extra={
+                    "global_keep": sorted(global_keep),
+                    "global_rejected": sorted(removable_features),
+                },
+            )
             final_global = sorted(set(base_ignore_set) | removable_features)
             global_ignore = np.asarray(final_global, dtype=int)
 
