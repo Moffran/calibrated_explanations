@@ -18,6 +18,18 @@ class IntervalCalibratorContext:
     metadata: Mapping[str, Any]
     fast_flags: Mapping[str, Any]
 
+    def __post_init__(self) -> None:
+        # Ensure the top-level metadata is a plain mutable dict so plugins
+        # can record temporary state during execution. The dataclass is
+        # frozen to prevent attribute reassignment, but the metadata object
+        # itself should be mutable for plugin authors. We defensively copy
+        # whatever mapping-like object was provided into a new dict.
+        try:
+            meta = dict(self.metadata) if self.metadata is not None else {}
+        except Exception:
+            meta = {} if self.metadata is None else {k: v for k, v in getattr(self.metadata, "items", lambda: ())()}
+        object.__setattr__(self, "metadata", meta)
+
 
 @runtime_checkable
 class ClassificationIntervalCalibrator(Protocol):

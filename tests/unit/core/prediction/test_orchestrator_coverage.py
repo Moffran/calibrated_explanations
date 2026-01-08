@@ -1096,8 +1096,8 @@ def test_fast_interval_calibrator_protocol_compliance():
     assert isinstance(fast_calibrator, RegressionIntervalCalibrator)
 
 
-def test_build_interval_context_metadata_immutable(orchestrator, mock_explainer):
-    """Test that build_interval_context returns immutable metadata."""
+def test_build_interval_context_metadata_mutable(orchestrator, mock_explainer):
+    """Test that build_interval_context exposes mutable metadata for plugins."""
     mock_explainer.mode = "classification"
     mock_explainer.learner = MagicMock()
     mock_explainer.x_cal = MagicMock()
@@ -1115,6 +1115,8 @@ def test_build_interval_context_metadata_immutable(orchestrator, mock_explainer)
 
     context = orchestrator.build_interval_context(fast=False, metadata={})
 
-    # Try to mutate metadata - should raise TypeError
-    with pytest.raises(TypeError):
-        context.metadata["new_key"] = "value"
+    assert isinstance(context.metadata, dict)
+
+    # Metadata should remain open to plugin mutations during execution
+    context.metadata["new_key"] = "value"
+    assert context.metadata["new_key"] == "value"

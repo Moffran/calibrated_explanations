@@ -186,6 +186,12 @@ def plotspec_to_dict(spec: PlotSpec) -> Dict[str, Any]:
         inner["feature_entries"] = None
         inner["uncertainty"] = False
 
+    # Default style metadata required by the plotspec schema; use a
+    # conservative default so builders that rely on plotspec dicts pass
+    # strict validation when jsonschema is available in tests.
+    if inner.get("style") is None:
+        inner["style"] = "default"
+
     # Save behavior and provenance
     if spec.save_behavior is not None:
         sb = spec.save_behavior

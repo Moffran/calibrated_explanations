@@ -12,8 +12,69 @@ from typing import Any, Callable
 import numpy as np
 import pytest
 import importlib
+from importlib.util import find_spec
+from _pytest.fixtures import FixtureRequest
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+
+@pytest.fixture(autouse=True)
+def skip_viz_if_missing(request: FixtureRequest):
+    """Auto-skip tests marked with ``viz`` or ``viz_render`` when matplotlib is missing.
+
+    This keeps the test-suite runnable in minimal environments while allowing
+    viz tests to run when the optional `[viz]` extras are installed in CI.
+    """
+    if request.node.get_closest_marker("viz") or request.node.get_closest_marker("viz_render"):
+        if find_spec("matplotlib") is None:
+            pytest.skip("matplotlib not installed; skipping viz tests")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _debug_matplotlib_session_state(request: FixtureRequest):
+    """Write a small debug file describing matplotlib import state for debugging.
+
+    This is a temporary diagnostic helper to reproduce a failing import that
+    appears only under pytest (with coverage). It records `sys.modules` keys
+    related to matplotlib and a few attributes that tests rely on.
+    """
+    import sys
+    import json
+    import importlib
+    from pathlib import Path
+
+    root = Path(request.config.rootpath)
+    out = root / ".pytest_matplotlib_debug.json"
+    try:
+        found = find_spec("matplotlib") is not None
+        mods = [k for k in sys.modules.keys() if k.startswith("matplotlib")]
+        modules = {}
+        for m in mods:
+            mod = sys.modules.get(m)
+            try:
+                modules[m] = {
+                    "repr": repr(mod),
+                    "file": getattr(mod, "__file__", None),
+                    "has_artist": hasattr(mod, "artist"),
+                    "has_figure": hasattr(mod, "figure"),
+                    "spec": getattr(mod, "__spec__", None).name if getattr(mod, "__spec__", None) else None,
+                }
+            except Exception:
+                modules[m] = {"repr": "<uninspectable>"}
+
+        data = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "matplotlib_findable": found,
+            "sys_path": list(sys.path),
+            "matplotlib_modules": modules,
+        }
+        out.write_text(json.dumps(data, indent=2), encoding="utf8")
+    except Exception:
+        # Best-effort only; don't fail the test session because of debugging.
+        pass
+    yield
+
+"""Avoid heavy top-level imports (CalibratedExplainer) to keep pytest
+collection fast. Imports of the explainer class are performed lazily inside
+fixtures that require it."""
 from tests.helpers.model_utils import DummyLearner, DummyIntervalLearner
 from tests.helpers.utils import get_env_flag
 
@@ -67,7 +128,122 @@ def scan_and_check(root: Path):
 
 def pytest_sessionstart(session):
     """Enforce private-member policy at session start with warnings or errors."""
-    root = Path(session.config.rootpath)
+    tracer_enabled = os.environ.get("CE_MPL_IMPORT_TRACER") == "1"
+    if tracer_enabled:
+        # Install a temporary import tracer for matplotlib to capture import-time
+        # activity during test collection and early test execution. This helps
+        # identify which test/module triggers partial or fake `matplotlib` entries
+        # in `sys.modules` that later cause AttributeError in pyplot imports.
+        try:
+            import builtins
+            import sys
+            _orig_import = builtins.__import__
+
+            def _tracing_import(name, globals=None, locals=None, fromlist=(), level=0):
+                # If importing any matplotlib submodule, proactively import a
+                # small set of commonly-used submodules first so that import-time
+                # attribute lookups (e.g., decorators in `pyplot`) succeed even
+                # when tests or other code have manipulated `sys.modules`.
+                try:
+                    if isinstance(name, str) and name.startswith("matplotlib"):
+                        preload = (
+                            "matplotlib._api",
+                            "matplotlib.artist",
+                            "matplotlib.figure",
+                            "matplotlib.axes",
+                            "matplotlib.image",
+                            "matplotlib.cm",
+                            "matplotlib.colors",
+                            "matplotlib.transforms",
+                            "matplotlib.path",
+                            "matplotlib.collections",
+                            "matplotlib.lines",
+                            "matplotlib.patches",
+                            "matplotlib.text",
+                            "matplotlib.textpath",
+                            "matplotlib.font_manager",
+                            "matplotlib.backend_bases",
+                            "matplotlib.backends",
+                        )
+                        for sub in preload:
+                            try:
+                                try:
+                                    _orig_import(sub, None, None, (), 0)
+                                except Exception:
+                                    try:
+                                        importlib.import_module(sub)
+                                    except Exception:
+                                        pass
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+                mod = _orig_import(name, globals, locals, fromlist, level)
+                try:
+                    if name == "matplotlib" or (isinstance(name, str) and name.startswith("matplotlib.")):
+                        root = Path(session.config.rootpath)
+                        out = root / ".pytest_matplotlib_imports.log"
+                        entry = {
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "import_name": name,
+                            "module_repr": repr(mod),
+                            "module_file": getattr(mod, "__file__", None),
+                            "sys_modules_keys": [k for k in sys.modules.keys() if k.startswith("matplotlib")],
+                        }
+                        try:
+                            with out.open("a", encoding="utf8") as fh:
+                                fh.write(json.dumps(entry) + "\n")
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                return mod
+
+            builtins.__import__ = _tracing_import
+        except Exception:
+            # Best-effort tracing only
+            pass
+        try:
+            if find_spec("matplotlib") is not None:
+                mpl = importlib.import_module("matplotlib")
+                preload = (
+                    "matplotlib._api",
+                    "matplotlib.artist",
+                    "matplotlib.figure",
+                    "matplotlib.axes",
+                    "matplotlib.image",
+                    "matplotlib.cm",
+                    "matplotlib.colors",
+                    "matplotlib.transforms",
+                    "matplotlib.path",
+                    "matplotlib.collections",
+                    "matplotlib.lines",
+                    "matplotlib.patches",
+                    "matplotlib.text",
+                    "matplotlib.textpath",
+                    "matplotlib.font_manager",
+                    "matplotlib.backend_bases",
+                    "matplotlib.backends",
+                )
+                for name in preload:
+                    try:
+                        sub = importlib.import_module(name)
+                        parts = name.split(".")
+                        if len(parts) >= 2 and parts[0] == "matplotlib":
+                            top = parts[1]
+                            if not hasattr(mpl, top):
+                                try:
+                                    setattr(mpl, top, sub)
+                                except Exception:
+                                    pass
+                    except Exception:
+                        # best-effort; do not fail the test session
+                        pass
+        except Exception:
+            pass
+        root = Path(session.config.rootpath)
+    else:
+        root = Path(session.config.rootpath)
     findings = scan_and_check(root)
     if not findings:
         return
@@ -162,7 +338,7 @@ def sample_limit():
 
 
 @pytest.fixture
-def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., CalibratedExplainer]:
+def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "CalibratedExplainer"]:
     """Return a factory that builds fully initialized CalibratedExplainer instances."""
 
     def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
@@ -186,6 +362,10 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., Calibrat
         y_cal: np.ndarray | None = None,
         **kwargs: Any,
     ) -> CalibratedExplainer:
+        # Local import to avoid importing the full calibrated_explainer module
+        # during pytest collection. This keeps `pytest` responsive when run
+        # without needing the full plotting/calibration stack.
+        from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
         if learner is None:
             learner = DummyLearner(mode=mode)
         if x_cal is None:

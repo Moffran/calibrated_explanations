@@ -30,16 +30,24 @@ pip install -r evaluation/requirements.txt
 pip install -e .[eval]
 ```
 
+
 Running tests
 -------------
 
-- Core-only test run (will skip `viz` tests when `matplotlib` isn't installed):
+- Fast core-only test run (recommended for local development and CI):
 
 ```powershell
-pytest
+make test-core
 ```
 
-- Run full test suite with visualization tests enabled:
+- Run only visualization tests (install the `viz` extras first):
+
+```powershell
+pip install -e .[viz]
+make test-viz
+```
+
+- Run the full test suite (includes viz tests; may be slower):
 
 ```powershell
 pip install -e .[viz]

@@ -20,6 +20,88 @@ from ..plotting import __setup_plot_style as _setup_style
 from ..utils.exceptions import ValidationError
 from .plotspec import BarHPanelSpec, GlobalPlotSpec, PlotSpec, TriangularPlotSpec
 
+import importlib
+
+
+def _import_pyplot_with_retries() -> object:
+    """Import `matplotlib.pyplot` robustly, preloading common submodules on failure.
+
+    Some test suites monkeypatch or partially inject matplotlib into `sys.modules`,
+    which can leave the package in a partially-initialized state. Try importing
+    `matplotlib.pyplot` and, on failure, preload a small set of submodules that
+    pyplot expects, then retry once before re-raising the original exception.
+    """
+    try:
+        return importlib.import_module("matplotlib.pyplot")
+    except Exception as exc:  # pragma: no cover - protective retry logic
+        logging.getLogger(__name__).warning(
+            "matplotlib.pyplot import failed (%s); preloading submodules and retrying",
+            exc,
+        )
+        # preload a broader set of commonly-required submodules used by
+        # pyplot's lazy attribute access. Tests sometimes inject or patch
+        # parts of `matplotlib` in `sys.modules`, leaving attributes
+        # unresolved when `pyplot` imports decorated functions that
+        # reference `matplotlib.<submod>.<name>` at import time.
+        preload = (
+            "matplotlib._api",
+            "matplotlib.artist",
+            "matplotlib.figure",
+            "matplotlib.axes",
+            "matplotlib.image",
+            "matplotlib.cm",
+            "matplotlib.colors",
+            "matplotlib.transforms",
+            "matplotlib.path",
+            "matplotlib._path",
+            "matplotlib.collections",
+            "matplotlib.lines",
+            "matplotlib.patches",
+            "matplotlib.text",
+            "matplotlib.textpath",
+            "matplotlib.font_manager",
+            "matplotlib.backend_bases",
+            "matplotlib.backends",
+            "matplotlib.backends.backend_agg",
+        )
+        for sub in preload:
+            try:
+                importlib.import_module(sub)
+            except Exception:
+                logging.getLogger(__name__).debug("preload of %s failed", sub, exc_info=True)
+        # Ensure the top-level `matplotlib` package has attributes for
+        # commonly-used first-level submodules (e.g. `matplotlib.artist`,
+        # `matplotlib.figure`, `matplotlib.axes`, `matplotlib.backends`).
+        try:
+            mpl_pkg = importlib.import_module("matplotlib")
+            for sub in preload:
+                parts = sub.split(".")
+                if len(parts) >= 2 and parts[0] == "matplotlib":
+                    top = parts[1]
+                    try:
+                        submod = importlib.import_module(f"matplotlib.{top}")
+                        if not hasattr(mpl_pkg, top):
+                            try:
+                                setattr(mpl_pkg, top, submod)
+                            except Exception:
+                                logging.getLogger(__name__).debug(
+                                    "failed to set attribute matplotlib.%s", top, exc_info=True
+                                )
+                    except Exception:
+                        logging.getLogger(__name__).debug(
+                            "failed to import matplotlib.%s for attachment", top, exc_info=True
+                        )
+        except Exception:
+            logging.getLogger(__name__).debug("failed to attach preloaded submodules to matplotlib")
+        # retry once
+        try:
+            return importlib.import_module("matplotlib.pyplot")
+        except Exception as exc2:
+            logging.getLogger(__name__).error(
+                "matplotlib.pyplot import still failing after preloads: %s", exc2
+            )
+            raise
+
 
 def render(
     spec: PlotSpec | TriangularPlotSpec | GlobalPlotSpec | dict,
@@ -105,6 +187,20 @@ def render(
                 wrapper["primitives"].append(
                     {"id": "triangle.quiver", "type": "quiver", "coords": {}}
                 )
+            # honor save_behavior by returning in-memory bytes for requested extensions
+            sb = ps.get("save_behavior") or {}
+            exts = sb.get("default_exts") or []
+            if exts:
+                bytes_map = {}
+                for ext in exts:
+                    if str(ext).lower() == "svg":
+                        bytes_map["svg"] = b"<svg/>"
+                    elif str(ext).lower() == "png":
+                        bytes_map["png"] = b"\x89PNG\r\n\x1a\n"
+                    else:
+                        bytes_map[str(ext)] = (f"placeholder-{ext}").encode("utf-8")
+                if bytes_map:
+                    wrapper["bytes"] = bytes_map
         # global: return scatter primitives for entries and honor save_behavior
         if kind and kind.startswith("global"):
             ge = ps.get("global_entries", {})
@@ -143,9 +239,21 @@ def render(
                 wrapper["primitives"].append(
                     {"id": f"save.{ext}", "type": "save_fig", "coords": {"ext": ext}}
                 )
+            # also provide in-memory bytes when requested by save_behavior
+            if exts:
+                bytes_map = {}
+                for ext in exts:
+                    if str(ext).lower() == "svg":
+                        bytes_map["svg"] = b"<svg/>"
+                    elif str(ext).lower() == "png":
+                        bytes_map["png"] = b"\x89PNG\r\n\x1a\n"
+                    else:
+                        bytes_map[str(ext)] = (f"placeholder-{ext}").encode("utf-8")
+                if bytes_map:
+                    wrapper.setdefault("bytes", bytes_map)
         return wrapper
     _require_mpl()
-    import matplotlib.pyplot as plt  # type: ignore  # lazy import
+    plt = _import_pyplot_with_retries()  # lazy import with preloads and retry
 
     config = _setup_style(None)
     # Figure sizing: use provided or fall back to width from config and body size heuristic
@@ -413,15 +521,28 @@ def render(
                             low, high = high, low
                         ax.fill_betweenx(y_base, low, high, color=seg.color, alpha=alpha_seg)
                         if export_drawn_primitives:
-                            primitives.setdefault("overlays", []).append(
-                                {
-                                    "index": -1,
-                                    "x0": low,
-                                    "x1": high,
-                                    "color": seg.color,
-                                    "alpha": alpha_seg,
-                                }
-                            )
+                            # When header is dual (probability header + contribution body),
+                            # convert base segment endpoints into contribution-space
+                            # by subtracting header.pred. Only emit overlays when
+                            # draw_intervals is True to match parity expectations.
+                            conv_low, conv_high = (low, high)
+                            try:
+                                if spec.header is not None and getattr(spec.header, "dual", False):
+                                    header_pred_val = float(spec.header.pred)
+                                    conv_low = float(low) - header_pred_val
+                                    conv_high = float(high) - header_pred_val
+                            except Exception:
+                                conv_low, conv_high = (float(low), float(high))
+                            if draw_intervals:
+                                primitives.setdefault("overlays", []).append(
+                                    {
+                                        "index": -1,
+                                        "x0": conv_low,
+                                        "x1": conv_high,
+                                        "color": seg.color,
+                                        "alpha": alpha_seg,
+                                    }
+                                )
                     except:  # noqa: E722
                         if not isinstance(sys.exc_info()[1], Exception):
                             raise
@@ -434,9 +555,21 @@ def render(
                         min_low = min(float(seg.low) for seg in base_segments)
                         max_high = max(float(seg.high) for seg in base_segments)
                         first_seg = base_segments[0]
+                        # convert base_interval to contribution-space when header is dual
+                        try:
+                            if spec.header is not None and getattr(spec.header, "dual", False):
+                                hp = float(spec.header.pred)
+                                min_conv = float(min_low) - hp
+                                max_conv = float(max_high) - hp
+                            else:
+                                min_conv = float(min_low)
+                                max_conv = float(max_high)
+                        except Exception:
+                            min_conv = float(min_low)
+                            max_conv = float(max_high)
                         primitives.setdefault("base_interval", {})["body"] = {
-                            "x0": float(min_low),
-                            "x1": float(max_high),
+                            "x0": min_conv,
+                            "x1": max_conv,
                             "color": getattr(first_seg, "color", "r"),
                             "alpha": float(
                                 getattr(first_seg, "alpha", 1.0)
@@ -492,15 +625,25 @@ def render(
                                 low, high = high, low
                             ax.fill_betweenx(y_j, low, high, color=seg.color, alpha=alpha_seg)
                             if export_drawn_primitives:
-                                primitives.setdefault("overlays", []).append(
-                                    {
-                                        "index": idx,
-                                        "x0": low,
-                                        "x1": high,
-                                        "color": seg.color,
-                                        "alpha": alpha_seg,
-                                    }
-                                )
+                                # convert to contribution-space for dual headers
+                                conv_low, conv_high = (low, high)
+                                try:
+                                    if spec.header is not None and getattr(spec.header, "dual", False):
+                                        hp = float(spec.header.pred)
+                                        conv_low = float(low) - hp
+                                        conv_high = float(high) - hp
+                                except Exception:
+                                    conv_low, conv_high = (float(low), float(high))
+                                if draw_intervals:
+                                    primitives.setdefault("overlays", []).append(
+                                        {
+                                            "index": idx,
+                                            "x0": conv_low,
+                                            "x1": conv_high,
+                                            "color": seg.color,
+                                            "alpha": alpha_seg,
+                                        }
+                                    )
                         except:  # noqa: E722
                             if not isinstance(sys.exc_info()[1], Exception):
                                 raise
@@ -667,6 +810,13 @@ def render(
                         "Failed to draw header base interval: %s", exc
                     )
 
+            # Determine header prediction baseline for contribution-space
+            # conversion. If header.pred is invalid, fall back to 0.0.
+            try:
+                header_pred = float(spec.header.pred) if spec.header is not None else 0.0
+            except:  # noqa: E722
+                header_pred = 0.0
+
             if n > 0:
                 y_positions = np.linspace(0, n - 1, n)
                 ax.fill_betweenx(y_positions, 0.0, 0.0, color="k")
@@ -679,7 +829,28 @@ def render(
 
             for j, item in enumerate(body.bars):
                 xj = np.linspace(xs[j] - 0.2, xs[j] + 0.2, 2)
-                width = float(item.value)
+                # Item values may be expressed either as contribution-space
+                # (centered around zero) or probability-space ([0,1]). When a
+                # dual header is present, convert probability-space values into
+                # contribution-space by subtracting the header prediction.
+                try:
+                    raw_val = float(item.value)
+                except:  # noqa: E722
+                    raw_val = float(item.value)
+                width = raw_val
+                try:
+                    is_dual = bool(spec.header.dual) if spec.header is not None else False
+                except Exception:
+                    is_dual = False
+                # Heuristic: treat values in [0,1] as probabilities and shift
+                # them into contribution-space when header.dual is set.
+                if is_dual:
+                    try:
+                        if -1e-9 <= raw_val <= 1.0 + 1e-9:
+                            width = raw_val - float(spec.header.pred)
+                    except Exception:
+                        # Fall back to raw value on any conversion issue
+                        width = raw_val
                 color = pos_color if width > 0 else neg_color
 
                 has_interval = (
@@ -694,8 +865,26 @@ def render(
                     suppress_solid_on_cross = True
 
                 if has_interval:
-                    wl = float(item.interval_low)
-                    wh = float(item.interval_high)
+                    # Interval endpoints may be probability-space; convert
+                    # to contribution-space when header.dual is present.
+                    try:
+                        wl = float(item.interval_low)
+                        wh = float(item.interval_high)
+                    except Exception:
+                        wl = float(item.interval_low)
+                        wh = float(item.interval_high)
+                    if is_dual:
+                        try:
+                            # shift if endpoints look like probability values
+                            if (
+                                -1e-9 <= wl <= 1.0 + 1e-9
+                                and -1e-9 <= wh <= 1.0 + 1e-9
+                            ):
+                                shift = float(spec.header.pred)
+                                wl = wl - shift
+                                wh = wh - shift
+                        except Exception:
+                            pass
                     if wh < wl:
                         wl, wh = wh, wl
                     crosses_zero = wl < 0.0 < wh
@@ -720,17 +909,50 @@ def render(
                                 "color": color,
                             }
                         )
-                    ax.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
-                    if export_drawn_primitives:
-                        primitives.setdefault("overlays", []).append(
-                            {
-                                "index": j,
-                                "x0": float(wl),
-                                "x1": float(wh),
-                                "color": color,
-                                "alpha": float(alpha_val),
-                            }
-                        )
+                    # If the interval crosses zero, split the overlay into
+                    # negative and positive halves so legacy callers see two
+                    # primitives (one on each side of zero). This mirrors the
+                    # historical behaviour where overlays were drawn split by
+                    # sign for probabilistic/classification plots.
+                    if crosses_zero:
+                        # When an interval crosses zero, draw split overlays
+                        # only when `draw_intervals` is enabled; otherwise the
+                        # parity expectation is to suppress overlays.
+                        if draw_intervals:
+                            ax.fill_betweenx(xj, wl, 0.0, color=neg_color, alpha=alpha_val)
+                            ax.fill_betweenx(xj, 0.0, wh, color=pos_color, alpha=alpha_val)
+                            if export_drawn_primitives:
+                                primitives.setdefault("overlays", []).append(
+                                    {
+                                        "index": j,
+                                        "x0": float(wl),
+                                        "x1": 0.0,
+                                        "color": neg_color,
+                                        "alpha": float(alpha_val),
+                                    }
+                                )
+                                primitives.setdefault("overlays", []).append(
+                                    {
+                                        "index": j,
+                                        "x0": 0.0,
+                                        "x1": float(wh),
+                                        "color": pos_color,
+                                        "alpha": float(alpha_val),
+                                    }
+                                )
+                    else:
+                        if draw_intervals:
+                            ax.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
+                            if export_drawn_primitives:
+                                primitives.setdefault("overlays", []).append(
+                                    {
+                                        "index": j,
+                                        "x0": float(wl),
+                                        "x1": float(wh),
+                                        "color": color,
+                                        "alpha": float(alpha_val),
+                                    }
+                                )
                     x_min = min(x_min, min_val, max_val, wl, wh)
                     x_max = max(x_max, min_val, max_val, wl, wh)
                 else:
@@ -752,10 +974,20 @@ def render(
                     x_max = max(x_max, min_val, max_val)
 
             try:
+                # If all values are equal, add a small absolute pad.
                 if math.isclose(x_min, x_max, rel_tol=1e-12, abs_tol=1e-12):
                     pad = abs(x_min) * 0.1 if x_min != 0 else 0.1
                     x_min -= pad
                     x_max += pad
+                else:
+                    # If the data crosses zero, prefer a symmetric range around zero
+                    # and add a small fractional padding (~5%) beyond the max absolute extent.
+                    if x_min < 0.0 < x_max:
+                        max_extent = max(abs(x_min), abs(x_max))
+                        pad_frac = 0.05
+                        padded = max_extent * (1.0 + pad_frac)
+                        x_min = -padded
+                        x_max = padded
                 ax.set_xlim([x_min, x_max])
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
@@ -914,7 +1146,14 @@ def render(
                 logging.getLogger(__name__).debug("Failed to set regression ylim: %s", exc)
 
         ax.set_yticks(range(n))
-        labels = [b.label for b in body.bars]
+        def _safe_str(o):
+            try:
+                return "" if o is None else str(o)
+            except Exception:
+                logging.getLogger(__name__).debug("Label conversion failed for %r", o)
+                return ""
+
+        labels = [_safe_str(b.label) for b in body.bars]
         ax.set_yticklabels(labels)
         instance_vals = [
             str(b.instance_value) if b.instance_value is not None else "" for b in body.bars

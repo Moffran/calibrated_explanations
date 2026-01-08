@@ -39,7 +39,13 @@ from ...plugins import (
 from ...calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from ...logging import logging_context, update_logging_context
 from ...utils import assert_threshold
-from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
+from ...utils.exceptions import (
+    CalibratedError,
+    ConfigurationError,
+    DataShapeError,
+    NotFittedError,
+    ValidationError,
+)
 from .validation import check_interval_runtime_metadata
 
 if TYPE_CHECKING:
@@ -679,16 +685,18 @@ class PredictionOrchestrator:
                 existing_fast = tuple(self.explainer.interval_learner)
             if existing_fast:
                 enriched_metadata["existing_fast_calibrators"] = tuple(existing_fast)
-        # Return context with completely mutable metadata for plugin execution
-        # Nested values are NOT frozen to avoid breaking code that expects mutable structures
-        # The context becomes immutable after caching in obtain_interval_calibrator()
+        # Freeze nested metadata values for safety but keep the top-level
+        # metadata as a plain mutable dict so plugins can add entries during
+        # execution. The context will be frozen when persisted by
+        # `obtain_interval_calibrator()`.
+        metadata_for_plugins = {key: _freeze_context_value(value) for key, value in enriched_metadata.items()}
         return IntervalCalibratorContext(
             learner=self.explainer.learner,
             calibration_splits=calibration_splits,
             bins=_freeze_context_mapping(bins),
             residuals=_freeze_context_mapping(residuals),
             difficulty=_freeze_context_mapping(difficulty),
-            metadata=_freeze_context_mapping(enriched_metadata),
+            metadata=metadata_for_plugins,
             fast_flags=_freeze_context_mapping(fast_flags),
         )
 

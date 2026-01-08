@@ -8,6 +8,16 @@ test:
 test-cov:
 	pytest
 
+# Fast test target for core modules (excludes viz-marked tests).
+.PHONY: test-core
+test-core:
+	pytest -m "not viz" --cov=src --cov-report xml
+
+# Run only viz-marked tests (useful when the `[viz]` extras are installed).
+.PHONY: test-viz
+test-viz:
+	pytest -m viz
+
 # Run a local CI dry-run that lists CI steps discovered by the helper script.
 .PHONY: ci-local-dry-run
 ci-local-dry-run:

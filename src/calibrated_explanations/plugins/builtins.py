@@ -1427,6 +1427,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 "threshold_label": threshold_label,
             }
 
+            header_labels_explicit = bool(payload.get("neg_label") or payload.get("pos_label"))
             if "regression" in variant_hint:
                 thresholded = builder_kwargs.pop("is_thresholded")
                 threshold_label_text = builder_kwargs.pop("threshold_label")
@@ -1441,8 +1442,8 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     classification_kwargs["pos_label"] = pos_label
                     classification_kwargs["xlabel"] = threshold_label_text or "Probability"
                     classification_kwargs["xlim"] = (0.0, 1.0)
-                    classification_kwargs["xticks"] = [float(x) for x in np.linspace(0.0, 1.0, 11)]
                     classification_kwargs["y_minmax"] = None
+                    classification_kwargs["explicit_header_labels"] = header_labels_explicit
                     return build_alternative_probabilistic_spec(**classification_kwargs)
                 else:
                     builder_kwargs.pop("threshold_value", None)
@@ -1452,6 +1453,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 {
                     "neg_label": payload.get("neg_label"),
                     "pos_label": payload.get("pos_label"),
+                    "explicit_header_labels": header_labels_explicit,
                 }
             )
             builder_kwargs.pop("threshold_value", None)

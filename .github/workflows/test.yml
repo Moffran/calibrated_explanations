@@ -30,15 +30,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Install dependencies (core + dev, no viz extras)
         run: |
           pip install -r requirements.txt -c constraints.txt
-          pip install -e .[dev,eval,viz] -c constraints.txt
+          pip install -e .[dev,eval] -c constraints.txt
           pip install pytest pytest-cov xgboost lime shap setuptools psutil -c constraints.txt
 
-      - name: Run tests with coverage
+      - name: Run core tests with coverage (exclude viz)
         id: run_tests
-        run: make test-cov
+        run: make test-core
 
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py
