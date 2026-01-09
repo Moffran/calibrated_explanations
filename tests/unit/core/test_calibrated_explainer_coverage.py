@@ -750,7 +750,7 @@ def test_enable_fast_mode_resets_on_error(mock_learner):
     with (
         patch.object(
             explainer,
-            "_CalibratedExplainer__initialize_interval_learner_for_fast_explainer",
+            "initialize_interval_learner_for_fast_explainer",
             side_effect=RuntimeError("boom"),
         ),
         pytest.raises(RuntimeError, match="boom"),

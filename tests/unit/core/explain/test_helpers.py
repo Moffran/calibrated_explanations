@@ -179,7 +179,7 @@ def test_should_delegate_to_internal_helpers_when_called(func_name, args, kwargs
         calls.append((stub_args, stub_kwargs))
         return "sentinel"
 
-    monkeypatch.setattr(helpers._impl, func_name, stub)
+    monkeypatch.setattr(helpers.impl, func_name, stub)
 
     result = getattr(helpers, func_name)(*args, **kwargs)
 

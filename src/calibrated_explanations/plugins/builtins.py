@@ -286,6 +286,16 @@ class _LegacyExplanationBase(ExplanationPlugin):
     _explanation_attr: str
     _expected_cls: type[_AbstractExplanation]
 
+    @property
+    def mode(self) -> str:
+        """Expose the explanation mode for the plugin."""
+        return self._mode
+
+    @property
+    def explanation_attr(self) -> str:
+        """Expose the explanation attribute name used for delegated calls."""
+        return self._explanation_attr
+
     plugin_meta: Mapping[str, Any]
     _context: ExplanationContext | None = None
     _bridge: PredictBridge | None = None
@@ -1786,3 +1796,8 @@ __all__ = [
     "PlotSpecDefaultRenderer",
     "LegacyPredictBridge",
 ]
+
+
+# Public alias for testing purposes (to avoid private member access in tests)
+register_builtins = _register_builtins
+supports_calibrated_explainer = _supports_calibrated_explainer

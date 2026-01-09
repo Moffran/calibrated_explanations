@@ -803,6 +803,16 @@ def _plot_proba_triangle():
     plt.plot((x + 0.5 - x) / (1 + x), x, color="black")
 
 
+def plot_proba_triangle():
+    """Public wrapper for drawing the probability triangle in legacy API.
+
+    This calls the internal plotting helper but guards optional matplotlib
+    availability like other public plotting helpers.
+    """
+    __require_matplotlib()
+    return _plot_proba_triangle()
+
+
 # pylint: disable=invalid-name
 def __color_brew(n):
     """Return ``n`` visually distinct colors using a HSV sweep."""

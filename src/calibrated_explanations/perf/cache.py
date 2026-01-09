@@ -38,6 +38,7 @@ make_key = _cache.make_key
 # Expose implementation details so legacy monkeypatch targets continue to work
 default_size_estimator = _cache.default_size_estimator
 _hash_part = _cache._hash_part
+hash_part = _cache.hash_part
 monotonic = _cache.monotonic
 
 

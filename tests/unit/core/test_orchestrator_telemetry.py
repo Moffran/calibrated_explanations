@@ -6,10 +6,10 @@ from calibrated_explanations.core.explain.orchestrator import ExplanationOrchest
 class DummyExplanation:
     def __init__(self, probs, deps=None):
         self.prediction = {"__full_probabilities__": probs}
-        self._deps = deps or ("a", "b")
+        self.deps = deps or ("a", "b")
 
     def to_telemetry(self):
-        return {"interval_dependencies": tuple(self._deps)}
+        return {"interval_dependencies": tuple(self.deps)}
 
 
 def test_build_instance_telemetry_payload_includes_full_prob_summary_and_deps():

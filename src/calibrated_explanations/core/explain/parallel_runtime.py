@@ -320,3 +320,4 @@ def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
 
     globals()["explain_slice"] = explain_slice
     globals()["_worker_harness"] = types.SimpleNamespace(explain_slice=explain_slice)
+    globals()["worker_harness"] = globals()["_worker_harness"]

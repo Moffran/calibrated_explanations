@@ -866,7 +866,7 @@ def test_ensure_builtin_plugins_invokes_register(monkeypatch):
     called = []
 
     monkeypatch.setattr(
-        "calibrated_explanations.plugins.builtins._register_builtins",
+        "calibrated_explanations.plugins.builtins.register_builtins",
         lambda: called.append(True),
     )
 

@@ -140,8 +140,8 @@ class TestExecutionStrategyPluginAttributes:
     def test_sequential_factual_plugin_attributes(self):
         """Sequential factual plugin should have correct base attributes."""
         plugin = SequentialExplanationPlugin()
-        assert plugin._mode == "factual"
-        assert plugin._explanation_attr == "explain_factual"
+        assert plugin.mode == "factual"
+        assert plugin.explanation_attr == "explain_factual"
         assert plugin.execution_plugin_class is not None
 
     # def test_feature_parallel_factual_plugin_attributes(self):
@@ -154,15 +154,15 @@ class TestExecutionStrategyPluginAttributes:
     def test_instance_parallel_factual_plugin_attributes(self):
         """Instance-parallel factual plugin should have correct base attributes."""
         plugin = InstanceParallelExplanationPlugin()
-        assert plugin._mode == "factual"
-        assert plugin._explanation_attr == "explain_factual"
+        assert plugin.mode == "factual"
+        assert plugin.explanation_attr == "explain_factual"
         assert plugin.execution_plugin_class is not None
 
     def test_sequential_alternative_plugin_attributes(self):
         """Sequential alternative plugin should have correct base attributes."""
         plugin = SequentialAlternativeExplanationPlugin()
-        assert plugin._mode == "alternative"
-        assert plugin._explanation_attr == "explore_alternatives"
+        assert plugin.mode == "alternative"
+        assert plugin.explanation_attr == "explore_alternatives"
         assert plugin.execution_plugin_class is not None
 
     # def test_feature_parallel_alternative_plugin_attributes(self):
@@ -175,8 +175,8 @@ class TestExecutionStrategyPluginAttributes:
     def test_instance_parallel_alternative_plugin_attributes(self):
         """Instance-parallel alternative plugin should have correct base attributes."""
         plugin = InstanceParallelAlternativeExplanationPlugin()
-        assert plugin._mode == "alternative"
-        assert plugin._explanation_attr == "explore_alternatives"
+        assert plugin.mode == "alternative"
+        assert plugin.explanation_attr == "explore_alternatives"
         assert plugin.execution_plugin_class is not None
 
 
@@ -382,7 +382,7 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
             # No baseline ignore; all filtering comes from FAST + request.
             self.features_to_ignore = np.array([], dtype=int)
             self.num_features = num_features
-            self._feature_filter_config = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
+            self.feature_filter_config_value = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
             from unittest.mock import MagicMock
 
             self.plugin_manager = MagicMock()
@@ -391,7 +391,7 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
         @property
         def feature_filter_config(self):
             """Expose the feature filter configuration."""
-            return self._feature_filter_config
+            return self.feature_filter_config_value
 
         # Orchestrator-like interface used by the wrapper
         def invoke(

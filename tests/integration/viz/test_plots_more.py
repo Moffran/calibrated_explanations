@@ -9,7 +9,7 @@ plots = importlib.import_module("calibrated_explanations.viz.plots")
 
 def test_plot_proba_triangle_returns_fig():
     # Should return a matplotlib Figure and not raise
-    fig = plots._plot_proba_triangle()
+    fig = plots.plot_proba_triangle()
     import matplotlib.figure as _mf
 
     assert isinstance(fig, _mf.Figure)

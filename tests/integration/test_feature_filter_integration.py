@@ -32,7 +32,7 @@ def test_explain_factual_respects_per_instance_top_k():
 
     # Explain a handful of instances and assert each final explanation respects the top-k
     explanations = wrapper.explain_factual(x_test[:5])
-    per_k = getattr(getattr(wrapper, "_feature_filter_config", None), "per_instance_top_k", None)
+    per_k = getattr(getattr(wrapper, "feature_filter_config", None), "per_instance_top_k", None)
     assert per_k is not None
     for i, e in enumerate(explanations):
         rules = e.get_rules()["rule"]

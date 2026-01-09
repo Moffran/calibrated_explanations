@@ -79,6 +79,10 @@ def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, Calibrate
     return start_idx, result
 
 
+# Public alias for testing
+instance_parallel_task = _instance_parallel_task
+
+
 class InstanceParallelExplainExecutor(BaseExplainExecutor):
     """Instance-parallel explain execution strategy.
 
@@ -90,6 +94,10 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
     def __init__(self):
         """Initialize the plugin with a sequential plugin for chunk processing."""
         self._sequential_plugin = SequentialExplainExecutor()
+
+    @property
+    def sequential_plugin(self):
+        return self._sequential_plugin
 
     @property
     def name(self) -> str:

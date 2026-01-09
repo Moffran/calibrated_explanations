@@ -3,7 +3,7 @@ from calibrated_explanations.viz.plotspec import PlotSpec
 from calibrated_explanations.viz.plotspec import BarHPanelSpec, BarItem
 
 
-def _minimal_args():
+def minimal_args():
     predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
     feature_weights = {"predict": [0.5], "low": [0.2], "high": [0.8]}
     return dict(
@@ -20,7 +20,7 @@ def _minimal_args():
 
 
 def test_builder_does_not_create_header_without_explicit_xticks():
-    args = _minimal_args()
+    args = minimal_args()
     # do not supply xticks -> should not force a header unless other hints present
     ps = build_alternative_probabilistic_spec(**args)
     if isinstance(ps, PlotSpec):
@@ -30,7 +30,7 @@ def test_builder_does_not_create_header_without_explicit_xticks():
 
 
 def test_builder_attaches_base_lines_when_header_present():
-    args = _minimal_args()
+    args = minimal_args()
     # supply explicit xticks so header_needed becomes True
     args["xticks"] = (0.0, 1.0)
     ps = build_alternative_probabilistic_spec(**args)

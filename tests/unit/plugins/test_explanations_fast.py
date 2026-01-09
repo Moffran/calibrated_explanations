@@ -40,5 +40,5 @@ def test_should_register_builtin_when_missing(monkeypatch):
     assert captured["source"] == "builtin"
     plugin = captured["plugin"]
     assert plugin.plugin_meta["name"] == "core.explanation.fast"
-    assert getattr(plugin, "_explanation_attr") == "explain_fast"
+    assert plugin.explanation_attr == "explain_fast"
     assert getattr(plugin, "plugin_meta")["interval_dependency"] == "core.interval.fast"

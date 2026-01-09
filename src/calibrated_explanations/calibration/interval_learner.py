@@ -137,7 +137,7 @@ def initialize_interval_learner_for_fast_explainer(explainer: CalibratedExplaine
     """Initialize the interval learner in fast explanation mode.
 
     This is a mechanical extraction of
-    ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``
+    ``CalibratedExplainer.initialize_interval_learner_for_fast_explainer``
     that maintains the original behavior while enabling independent testing.
 
     Parameters

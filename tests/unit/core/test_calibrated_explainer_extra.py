@@ -63,16 +63,16 @@ def test_calibrated_explainer_close():
 
     # Test close when no pool is initialized
     explainer.close()
-    assert getattr(explainer, "_perf_parallel", None) is None
+    assert getattr(explainer, "perf_parallel", None) is None
 
     # Test close when pool is initialized (mocking ParallelExecutor)
     from unittest.mock import MagicMock
 
     mock_perf = MagicMock()
-    setattr(explainer, "_perf_parallel", mock_perf)
+    explainer.perf_parallel = mock_perf
     explainer.close()
     mock_perf.__exit__.assert_called_once()
-    assert getattr(explainer, "_perf_parallel", None) is None
+    assert getattr(explainer, "perf_parallel", None) is None
 
 
 def test_calibrated_explainer_context_manager():
@@ -98,7 +98,7 @@ def test_calibrated_explainer_context_manager():
         # initialize_pool should have been called
 
     # After context, close should have been called
-    assert getattr(explainer, "_perf_parallel", None) is None
+    assert getattr(explainer, "perf_parallel", None) is None
 
 
 def test_calibrated_explainer_deleters():

@@ -265,7 +265,7 @@ def test_calibrate_with_string_labels_oob(binary_dataset):
         x_prop_train,
         y_prop_train,
         _x_cal,
-        _y_cal,
+        y_cal_unused,
         _x_test,
         _y_test,
         _,

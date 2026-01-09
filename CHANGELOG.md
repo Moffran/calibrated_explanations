@@ -17,6 +17,8 @@
   - Updated `PluginRegistry` to propagate logging context during plugin lifecycle events.
   - Added "Logging and Observability" guidelines to `CONTRIBUTING.md` and `optional_telemetry.md`, enforcing Standard-005 governance.
 
+- **Release Task 6 (v0.10.2_plan.md):** Completed enforcement of zero private member usage in tests for v0.10.2. Pruned private_member_allowlist.json to legacy-only entries expiring v0.11.0. Refactored core violations to public APIs, including public properties for pyproject settings (fast, noise_type, scale_factor, severity), public aliases for CLI functions, and public method aliases for internal logic. Dead code violations resolved via public aliases. CI now enforces zero unallowlisted private member access.
+
 - **ADR-021 & ADR-026: Extended Telemetry and Payload Hardening:** Enhanced runtime payloads with deeper telemetry and enforced invariant safety for v1.0.0-rc.
   - Surfaced FAST probability cubes and interval dependency hints in runtime payloads for enhanced transparency.
   - Implemented frozen bin metadata to ensure deterministic explanation reconstruction across serialization boundaries.

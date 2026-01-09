@@ -17,7 +17,7 @@ def test_golden_fixture_validates_with_jsonschema():
     obj = json.loads(p.read_text(encoding="utf-8"))
 
     # This will raise jsonschema.ValidationError on failure
-    jsonschema.validate(instance=obj, schema=schema_validation._schema_json())
+    jsonschema.validate(instance=obj, schema=schema_validation.schema_json())
 
 
 def test_missing_required_fields_rejected_by_jsonschema():
@@ -27,4 +27,4 @@ def test_missing_required_fields_rejected_by_jsonschema():
     bad_payload = {"task": "classification"}  # missing required keys like 'rules'
 
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(instance=bad_payload, schema=schema_validation._schema_json())
+        jsonschema.validate(instance=bad_payload, schema=schema_validation.schema_json())

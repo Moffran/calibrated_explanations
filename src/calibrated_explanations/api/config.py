@@ -63,6 +63,10 @@ class ExplainerConfig:
     perf_feature_filter_enabled: bool = False
     perf_feature_filter_per_instance_top_k: int = 8
 
+    @property
+    def perf_factory(self):
+        return getattr(self, '_perf_factory', None)
+
 
 class ExplainerBuilder:
     """Fluent helper to assemble an :class:`ExplainerConfig`.

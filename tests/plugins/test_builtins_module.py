@@ -25,7 +25,7 @@ from calibrated_explanations.plugins.builtins import (
     PlotSpecDefaultBuilder,
     PlotSpecDefaultRenderer,
     collection_to_batch,
-    _register_builtins,
+    register_builtins,
 )
 from calibrated_explanations.plugins.explanations import (
     ExplanationBatch,
@@ -625,7 +625,7 @@ def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
         builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args))
     )
 
-    _register_builtins()
+    register_builtins()
 
     kinds = {kind for kind, _ in calls}
     assert {"interval", "explanation", "builder", "renderer", "style"}.issubset(kinds)
@@ -682,5 +682,5 @@ def test_register_builtins_imports_fast_plugins(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args, **kwargs: None)
     monkeypatch.setattr(builtins_mod, "register_plot_style", lambda *args, **kwargs: None)
 
-    _register_builtins()
+    register_builtins()
     assert calls == ["register"]

@@ -49,10 +49,13 @@ def test_deprecate_alias_convenience(monkeypatch):
     # pytest we record emitted keys in the per-test map to avoid polluting
     # session-wide state; otherwise fall back to the global set.
     pytest_id = os.getenv("PYTEST_CURRENT_TEST")
+    from calibrated_explanations.utils import deprecations as dep_sub
+
     if pytest_id:
-        assert "alias:__test_alias_xyz__" in dep_mod._EMITTED_PER_TEST.get(pytest_id, set())
+        per = dep_sub.emitted_per_test()
+        assert "alias:__test_alias_xyz__" in per.get(pytest_id, set())
     else:
-        assert "alias:__test_alias_xyz__" in dep_mod._EMITTED
+        assert "alias:__test_alias_xyz__" in dep_sub.emitted_keys()
 
 
 def test_deprecations_raise_when_env_set(monkeypatch):
@@ -61,14 +64,18 @@ def test_deprecations_raise_when_env_set(monkeypatch):
     monkeypatch.setenv("CE_DEPRECATIONS", "error")
 
     # Ensure key is not present initially
-    dep_mod._EMITTED.discard("raise_key")
+    # Clear any recorded emitted keys
+    from calibrated_explanations.utils import deprecations as dep_sub
+
+    dep_sub.clear_emitted()
 
     with pytest.raises(DeprecationWarning):
         dep_mod.deprecate("please stop using this", key="raise_key")
 
     # Even when raised, the key should be recorded to avoid duplicate attempts
     pytest_id = os.getenv("PYTEST_CURRENT_TEST")
+    per = dep_sub.emitted_per_test()
     if pytest_id:
-        assert "raise_key" in dep_mod._EMITTED_PER_TEST.get(pytest_id, set())
+        assert "raise_key" in per.get(pytest_id, set())
     else:
-        assert "raise_key" in dep_mod._EMITTED
+        assert "raise_key" in dep_sub.emitted_keys()

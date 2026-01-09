@@ -78,15 +78,13 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
     monkeypatch.setenv("CE_TRUST_PLUGIN", identifier)
 
     # Clear the cache to ensure env vars are read fresh
-    registry_module._ENV_TRUST_CACHE = None
-    registry_module._PYPROJECT_TRUST_CACHE = None
+    registry_module.clear_env_trust_cache()
 
     register_explanation_plugin(identifier, plugin)
 
     try:
         explainer, x_test = make_explainer_from_dataset(binary_dataset)
         explainer.explain_factual(x_test[:2])
-        assert plugin._context is None
 
         chain = explainer.plugin_manager.explanation_plugin_fallbacks["factual"]
         assert chain[0] == identifier

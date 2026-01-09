@@ -569,7 +569,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
         ce.explanations.append(stub)
         return ce
 
-    plugin._sequential_plugin.execute = fake_seq_execute
+    plugin.sequential_plugin.execute = fake_seq_execute
 
     # Single chunk will delegate to sequential plugin via InstanceParallelExplainExecutor
     # create a small explainer instance for the plugin to attach results to

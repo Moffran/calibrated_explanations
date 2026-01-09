@@ -262,6 +262,9 @@ class PredictionOrchestrator:
                     stacklevel=2,
                 )
 
+    # Public alias for testing
+    validate_prediction_result = _validate_prediction_result
+
     def predict_internal(self, *args, **kwargs) -> Any:
         """Public alias for internal predict implementation."""
         return self._predict_impl(*args, **kwargs)
@@ -666,9 +669,9 @@ class PredictionOrchestrator:
         enriched_metadata.setdefault(
             "noise_config",
             {
-                "noise_type": getattr(self.explainer, "_CalibratedExplainer__noise_type", None),
-                "scale_factor": getattr(self.explainer, "_CalibratedExplainer__scale_factor", None),
-                "severity": getattr(self.explainer, "_CalibratedExplainer__severity", None),
+                "noise_type": getattr(self.explainer, "noise_type", None),
+                "scale_factor": getattr(self.explainer, "scale_factor", None),
+                "severity": getattr(self.explainer, "severity", None),
                 "seed": getattr(self.explainer, "seed", None),
                 "rng": getattr(self.explainer, "rng", None),
             },

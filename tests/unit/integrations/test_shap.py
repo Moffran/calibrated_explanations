@@ -52,9 +52,9 @@ def test_should_use_cached_explainer_when_shape_matches(monkeypatch: pytest.Monk
     helper = ShapHelper(explainer=DummyExplainer(np.ones((2, 2))))
     cached_explainer = object()
     cached_reference = FakeExplanation(np.ones((1, 2)))
-    helper._enabled = True
-    helper._explainer_instance = cached_explainer
-    helper._reference_explanation = cached_reference
+    helper.enabled = True
+    helper.explainer_instance = cached_explainer
+    helper.reference_explanation = cached_reference
 
     monkeypatch.setattr(shap_module, "safe_import", lambda _: (_ for _ in ()).throw(AssertionError))
 
@@ -73,22 +73,22 @@ def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.Monke
 
     assert explainer is None
     assert reference is None
-    assert helper._enabled is False
+    assert helper.enabled is False
 
 
 def test_should_return_cached_when_shape_matches(monkeypatch: pytest.MonkeyPatch) -> None:
     """Cached reference with matching shape should be reused."""
     helper = ShapHelper(explainer=DummyExplainer(np.ones((2, 2))))
-    helper._enabled = True
-    helper._explainer_instance = "cached"
-    helper._reference_explanation = FakeExplanation(np.ones((2, 2)))
+    helper.enabled = True
+    helper.explainer_instance = "cached"
+    helper.reference_explanation = FakeExplanation(np.ones((2, 2)))
 
     monkeypatch.setattr(shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError))
 
     cached_instance, cached_reference = helper.preload(num_test=2)
 
     assert cached_instance == "cached"
-    assert cached_reference is helper._reference_explanation
+    assert cached_reference is helper.reference_explanation
 
 
 def test_should_return_none_when_shap_missing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -128,7 +128,7 @@ def test_should_build_and_cache_explainer_when_shap_available(monkeypatch: pytes
     assert isinstance(explainer, FakeShap.Explainer)
     assert isinstance(reference, FakeExplanation)
     assert reference.shape[0] == 1
-    assert helper._enabled is True
+    assert helper.enabled is True
 
     # Subsequent call with matching shape should reuse the cache
     monkeypatch.setattr(shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError))

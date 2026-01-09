@@ -17,12 +17,12 @@ def test_initialize_pool_idempotent_and_config_contains_spec():
 
     # First initialization should create and enter the pool
     expl.initialize_pool(n_workers=1, pool_at_init=True)
-    first = getattr(expl, "_perf_parallel", None)
+    first = getattr(expl, "perf_parallel", None)
     assert first is not None
 
     # Re-initializing should be a no-op and keep the same executor
     expl.initialize_pool(n_workers=1, pool_at_init=True)
-    assert getattr(expl, "_perf_parallel") is first
+    assert getattr(expl, "perf_parallel") is first
 
     cfg = first.config
     # Worker initializer should be configured when pool_at_init=True
@@ -35,9 +35,9 @@ def test_initialize_pool_idempotent_and_config_contains_spec():
 
     # Closing should clean up and be idempotent
     expl.close()
-    assert getattr(expl, "_perf_parallel", None) is None
+    assert getattr(expl, "perf_parallel", None) is None
     expl.close()
-    assert getattr(expl, "_perf_parallel", None) is None
+    assert getattr(expl, "perf_parallel", None) is None
 
 
 def test_worker_init_callable_installs_harness():
@@ -55,7 +55,7 @@ def test_worker_init_callable_installs_harness():
 
     import calibrated_explanations.core.explain.parallel_runtime as pr
 
-    assert hasattr(pr, "_worker_harness")
-    assert hasattr(pr._worker_harness, "explain_slice")
+    assert hasattr(pr, "worker_harness")
+    assert hasattr(pr.worker_harness, "explain_slice")
 
     expl.close()

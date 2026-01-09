@@ -86,4 +86,4 @@ def test_builder_swallows_perf_factory_errors(monkeypatch):
 
     cfg = builder.build_config()
 
-    assert cfg._perf_factory is None  # type: ignore[attr-defined]
+    assert cfg.perf_factory is None

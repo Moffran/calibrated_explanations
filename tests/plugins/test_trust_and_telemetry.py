@@ -74,7 +74,7 @@ def test_build_instance_telemetry_payload_includes_probability_cube_shape():
 
 def test_governance_logging_for_untrusted_plugin(caplog, monkeypatch):
     """Test that governance logs are emitted for untrusted plugin warnings."""
-    from calibrated_explanations.plugins.registry import _warn_untrusted_plugin
+    from calibrated_explanations.plugins.registry import warn_untrusted_plugin, clear_trust_warnings
 
     # Mock the warnings.warn to avoid actual warnings
     warned = []
@@ -84,12 +84,11 @@ def test_governance_logging_for_untrusted_plugin(caplog, monkeypatch):
     monkeypatch.setattr('warnings.warn', mock_warn)
 
     # Clear any previous warnings
-    from calibrated_explanations.plugins.registry import _WARNED_UNTRUSTED
-    _WARNED_UNTRUSTED.clear()
+    clear_trust_warnings()
 
     meta = {"name": "test.untrusted", "provider": "test"}
     with caplog.at_level(logging.INFO):
-        _warn_untrusted_plugin(meta, source="test")
+        warn_untrusted_plugin(meta, source="test")
 
     # Check that governance log was emitted
     governance_logs = [record for record in caplog.records if 'governance' in record.name]

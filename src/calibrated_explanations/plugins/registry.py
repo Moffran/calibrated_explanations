@@ -246,6 +246,12 @@ def clear_env_trust_cache() -> None:
     _PYPROJECT_TRUST_CACHE = None
 
 
+def set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None:
+    """Set the pyproject trust cache for tests."""
+    global _PYPROJECT_TRUST_CACHE
+    _PYPROJECT_TRUST_CACHE = None if trusted is None else set(trusted)
+
+
 def clear_trust_warnings() -> None:
     """Clear the warned-untrusted set (testing helper)."""
     _WARNED_UNTRUSTED.clear()
@@ -991,7 +997,7 @@ def ensure_builtin_plugins() -> None:
 
     from . import builtins as _builtins  # Local import avoids circular dependency
 
-    _builtins._register_builtins()
+    _builtins.register_builtins()
 
 
 def register_explanation_plugin(

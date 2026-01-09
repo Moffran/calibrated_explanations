@@ -468,7 +468,7 @@ def test_derive_plot_chain(orchestrator, mock_explainer):
         mock_desc.metadata = {"plot_dependency": ("dep1",)}
         mock_find.return_value = mock_desc
 
-        chain = orchestrator._derive_plot_chain("factual", "plugin1")
+        chain = orchestrator.derive_plot_chain("factual", "plugin1")
         assert chain == ("dep1", "base")
 
 

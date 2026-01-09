@@ -1130,7 +1130,17 @@ class CalibratedExplainer:
         if not self.is_fast():
             try:
                 self._CalibratedExplainer__fast = True
-                self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+                # Prefer calling the public method name so unit tests that patch
+                # `initialize_interval_learner_for_fast_explainer` observe the
+                # raised exception. Fall back to the name-mangled implementation
+                # if the public alias is absent.
+                init_fn = getattr(
+                    self, "initialize_interval_learner_for_fast_explainer", None
+                )
+                if callable(init_fn):
+                    init_fn()
+                else:
+                    self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
             except Exception:  # adr002_allow
                 self._CalibratedExplainer__fast = False
                 raise
@@ -1530,6 +1540,10 @@ class CalibratedExplainer:
     def _predict(self, *args, **kwargs) -> Any:
         """Delegate to predict_internal."""
         return self.predict_internal(*args, **kwargs)
+
+    def predict(self, *args, **kwargs) -> Any:
+        """Public alias for _predict for testing."""
+        return self._predict(*args, **kwargs)
 
     def predict_internal(
         self,
@@ -2394,6 +2408,71 @@ class CalibratedExplainer:
             predict_function on the calibration data.
         """
         return self.predict_function(self.x_cal)
+
+    # Public alias for testing purposes (to avoid private member access in tests)
+    @property
+    def fast(self) -> bool:
+        return self.__fast
+
+    @fast.setter
+    def fast(self, value: bool) -> None:
+        self.__fast = value
+
+    @property
+    def _fast(self) -> bool:
+        return self.fast
+
+    @_fast.setter
+    def _fast(self, value: bool) -> None:
+        self.fast = value
+
+    @property
+    def noise_type(self) -> str:
+        return self.__noise_type
+
+    @noise_type.setter
+    def noise_type(self, value: str) -> None:
+        self.__noise_type = value
+
+    @property
+    def _noise_type(self) -> str:
+        return self.noise_type
+
+    @_noise_type.setter
+    def _noise_type(self, value: str) -> None:
+        self.noise_type = value
+
+    @property
+    def scale_factor(self) -> float | None:
+        return self.__scale_factor
+
+    @scale_factor.setter
+    def scale_factor(self, value: float | None) -> None:
+        self.__scale_factor = value
+
+    @property
+    def _scale_factor(self) -> float | None:
+        return self.scale_factor
+
+    @_scale_factor.setter
+    def _scale_factor(self, value: float | None) -> None:
+        self.scale_factor = value
+
+    @property
+    def severity(self) -> float | None:
+        return self.__severity
+
+    @severity.setter
+    def severity(self, value: float | None) -> None:
+        self.__severity = value
+
+    @property
+    def _severity(self) -> float | None:
+        return self.severity
+
+    @_severity.setter
+    def _severity(self, value: float | None) -> None:
+        self.severity = value
 
 
 __all__ = ["CalibratedExplainer"]

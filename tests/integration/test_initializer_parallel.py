@@ -23,6 +23,6 @@ def test_initializer_based_pool_warmup():
     # Initialize pool with warm-up initializer; this should create a ParallelExecutor
     explainer.initialize_pool(n_workers=1, pool_at_init=True)
 
-    assert getattr(explainer, "_perf_parallel", None) is not None
+    assert getattr(explainer, "perf_parallel", None) is not None
     # Close resources
     explainer.close()

@@ -271,7 +271,7 @@ class TestParallelExecutor:
             return x * 2
 
         items = [1, 2, 3]
-        results = executor._serial_strategy(tracking_fn, items)
+        results = executor.serial_strategy(tracking_fn, items)
 
         assert results == [2, 4, 6]
         assert call_order == [1, 2, 3]

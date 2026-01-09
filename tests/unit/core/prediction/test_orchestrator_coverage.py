@@ -99,7 +99,7 @@ def test_validate_prediction_result_valid(orchestrator):
     result = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
-        orchestrator._validate_prediction_result(result)
+        orchestrator.validate_prediction_result(result)
         assert len(record) == 0
 
 
@@ -107,14 +107,14 @@ def test_validate_prediction_result_invalid_low_high(orchestrator):
     # low > high
     result = (np.array([0.5]), np.array([0.7]), np.array([0.6]), None)
     with pytest.warns(UserWarning, match="Prediction interval invariant violated"):
-        orchestrator._validate_prediction_result(result)
+        orchestrator.validate_prediction_result(result)
 
 
 def test_validate_prediction_result_invalid_predict(orchestrator):
     # predict > high
     result = (np.array([0.8]), np.array([0.4]), np.array([0.6]), None)
     with pytest.warns(UserWarning, match="Prediction invariant violated"):
-        orchestrator._validate_prediction_result(result)
+        orchestrator.validate_prediction_result(result)
 
 
 def testpredict_impl_not_fitted(orchestrator, mock_explainer):
@@ -690,9 +690,9 @@ def test_build_interval_context(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.interval_context_metadata = {"default": {"stored": "meta"}}
 
     # Mock private attributes for noise config
-    mock_explainer._CalibratedExplainer__noise_type = "noise"
-    mock_explainer._CalibratedExplainer__scale_factor = 0.1
-    mock_explainer._CalibratedExplainer__severity = 0.5
+    mock_explainer.noise_type = "noise"
+    mock_explainer.scale_factor = 0.1
+    mock_explainer.severity = 0.5
     mock_explainer.seed = 42
     mock_explainer.rng = "rng"
 
@@ -821,12 +821,12 @@ def test_predict_no_cache(orchestrator, mock_explainer):
 def test_validate_prediction_result_none(orchestrator):
     result = (None, None, None, None)
     # Should not raise or warn
-    orchestrator._validate_prediction_result(result)
+    orchestrator.validate_prediction_result(result)
 
 
 def test_validate_prediction_result_empty(orchestrator):
     result = (np.array([]), np.array([]), np.array([]), None)
-    orchestrator._validate_prediction_result(result)
+    orchestrator.validate_prediction_result(result)
 
 
 def test_check_interval_runtime_metadata_requires_bins(orchestrator, mock_explainer):
@@ -1109,9 +1109,9 @@ def test_build_interval_context_metadata_mutable(orchestrator, mock_explainer):
     mock_explainer.num_features = 5
     mock_explainer.seed = None
     mock_explainer.rng = None
-    mock_explainer._CalibratedExplainer__noise_type = None
-    mock_explainer._CalibratedExplainer__scale_factor = None
-    mock_explainer._CalibratedExplainer__severity = None
+    mock_explainer.noise_type = None
+    mock_explainer.scale_factor = None
+    mock_explainer.severity = None
 
     context = orchestrator.build_interval_context(fast=False, metadata={})
 

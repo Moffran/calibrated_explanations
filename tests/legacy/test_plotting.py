@@ -225,12 +225,29 @@ def test_compose_save_target_handles_directories(tmp_path):
 
 def test_require_matplotlib_reports_original_error(monkeypatch):
     from calibrated_explanations.utils.exceptions import ConfigurationError
+    import builtins
+    import importlib
 
-    monkeypatch.setattr(plotting, "plt", None)
-    monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("boom"))
-    with pytest.raises(ConfigurationError) as exc_info:
-        plotting.__require_matplotlib()
-    assert "Original import error: boom" in str(exc_info.value)
+    # Simulate matplotlib import failure by patching __import__
+    real_import = builtins.__import__
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name.startswith("matplotlib"):
+            raise ImportError("boom")
+        return real_import(name, globals, locals, fromlist, level)
+
+    with monkeypatch.context() as ctx:
+        ctx.setattr(builtins, "__import__", fake_import)
+        # Reload the module to trigger the import error capture
+        importlib.reload(plotting)
+        # Verify public behavior: attempting to use plotting raises ConfigurationError
+        # with the original import error message
+        with pytest.raises(ConfigurationError) as exc_info:
+            plotting.__require_matplotlib()
+        assert "Original import error: boom" in str(exc_info.value)
+
+    # Restore the module
+    importlib.reload(plotting)
 
 
 def testplot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):

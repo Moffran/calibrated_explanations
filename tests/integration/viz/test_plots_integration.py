@@ -93,7 +93,7 @@ def testplot_global_non_probabilistic_runs_without_error():
 
 
 def test_plot_proba_triangle_returns_figure():
-    fig = _plots._plot_proba_triangle()
+    fig = _plots.plot_proba_triangle()
     assert fig is not None
 
 

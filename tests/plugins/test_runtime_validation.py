@@ -34,14 +34,14 @@ class NonPredictingFactualPlugin(LegacyFactualExplanationPlugin):
     def explain_batch(self, x, request):
         if self.explainer is None:
             raise RuntimeError("explainer handle was not initialised")
-        explanation_callable = getattr(self.explainer, self._explanation_attr)
+        explanation_callable = getattr(self.explainer, self.explanation_attr)
         kwargs = {
             "threshold": request.threshold,
             "low_high_percentiles": request.low_high_percentiles,
             "bins": request.bins,
             "_use_plugin": False,
         }
-        if self._mode != "fast":
+        if self.mode != "fast":
             kwargs["features_to_ignore"] = request.features_to_ignore
         collection = explanation_callable(x, **kwargs)
         return collection.to_batch()

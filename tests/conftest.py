@@ -1,6 +1,7 @@
 """Shared pytest fixtures for CalibratedExplainer tests."""
 
 from __future__ import annotations
+import ast
 import json
 import re
 import warnings
@@ -29,7 +30,7 @@ def skip_viz_if_missing(request: FixtureRequest):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _debug_matplotlib_session_state(request: FixtureRequest):
+def debug_matplotlib_session_state(request: FixtureRequest):
     """Write a small debug file describing matplotlib import state for debugging.
 
     This is a temporary diagnostic helper to reproduce a failing import that
@@ -75,6 +76,7 @@ def _debug_matplotlib_session_state(request: FixtureRequest):
 """Avoid heavy top-level imports (CalibratedExplainer) to keep pytest
 collection fast. Imports of the explainer class are performed lazily inside
 fixtures that require it."""
+from tests.helpers.analysis_utils import extract_private_symbols_from_ast, parse_version_token
 from tests.helpers.model_utils import DummyLearner, DummyIntervalLearner
 from tests.helpers.utils import get_env_flag
 
@@ -97,13 +99,37 @@ def load_allowlist(path: Path):
 
 
 def is_expired(entry: dict) -> bool:
-    """Return True when the allowlist entry expiry is in the past."""
+    """Return True when the allowlist entry expiry is in the past.
+
+    Supports two expiry formats:
+    - ISO date strings parsable by ``datetime.fromisoformat``
+    - Semantic version tokens like ``v0.11.0`` which expire when the
+      package version is greater-or-equal to the token.
+    """
     expiry = entry.get("expiry")
     if not expiry:
         return False
+
+    # Try ISO date first
     try:
         dt = datetime.fromisoformat(expiry)
         return dt.date() < datetime.utcnow().date()
+    except Exception:
+        pass
+
+    # Fallback: accept semantic version tokens like 'v0.11.0'
+    target = parse_version_token(expiry)
+    if target is None:
+        return False
+
+    try:
+        # Import package version in a minimal way
+        from calibrated_explanations import __version__ as pkg_version  # local import
+
+        current = parse_version_token(pkg_version)
+        if current is None:
+            return False
+        return current >= target
     except Exception:
         return False
 
@@ -119,8 +145,10 @@ def scan_and_check(root: Path):
             txt = p.read_text(encoding="utf8")
         except Exception:
             continue
-        syms = {m.lstrip(".") for m in ATTR_RE.findall(txt)}
-        syms.update(m for m in GETATTR_RE.findall(txt))
+        syms = extract_private_symbols_from_ast(txt, p)
+        if syms is None:
+            syms = {m.lstrip(".") for m in ATTR_RE.findall(txt)}
+            syms.update(m for m in GETATTR_RE.findall(txt))
         if syms:
             findings.append((p, sorted(syms)))
     return findings
@@ -137,9 +165,9 @@ def pytest_sessionstart(session):
         try:
             import builtins
             import sys
-            _orig_import = builtins.__import__
+            orig_import = builtins.__import__
 
-            def _tracing_import(name, globals=None, locals=None, fromlist=(), level=0):
+            def tracing_import(name, globals=None, locals=None, fromlist=(), level=0):
                 # If importing any matplotlib submodule, proactively import a
                 # small set of commonly-used submodules first so that import-time
                 # attribute lookups (e.g., decorators in `pyplot`) succeed even
@@ -147,7 +175,6 @@ def pytest_sessionstart(session):
                 try:
                     if isinstance(name, str) and name.startswith("matplotlib"):
                         preload = (
-                            "matplotlib._api",
                             "matplotlib.artist",
                             "matplotlib.figure",
                             "matplotlib.axes",
@@ -168,7 +195,7 @@ def pytest_sessionstart(session):
                         for sub in preload:
                             try:
                                 try:
-                                    _orig_import(sub, None, None, (), 0)
+                                    orig_import(sub, None, None, (), 0)
                                 except Exception:
                                     try:
                                         importlib.import_module(sub)
@@ -178,7 +205,7 @@ def pytest_sessionstart(session):
                                 pass
                 except Exception:
                     pass
-                mod = _orig_import(name, globals, locals, fromlist, level)
+                mod = orig_import(name, globals, locals, fromlist, level)
                 try:
                     if name == "matplotlib" or (isinstance(name, str) and name.startswith("matplotlib.")):
                         root = Path(session.config.rootpath)
@@ -199,7 +226,7 @@ def pytest_sessionstart(session):
                     pass
                 return mod
 
-            builtins.__import__ = _tracing_import
+            builtins.__import__ = tracing_import
         except Exception:
             # Best-effort tracing only
             pass
@@ -207,7 +234,6 @@ def pytest_sessionstart(session):
             if find_spec("matplotlib") is not None:
                 mpl = importlib.import_module("matplotlib")
                 preload = (
-                    "matplotlib._api",
                     "matplotlib.artist",
                     "matplotlib.figure",
                     "matplotlib.axes",
@@ -250,6 +276,7 @@ def pytest_sessionstart(session):
 
     allowlist_path = root / ".github" / "private_member_allowlist.json"
     allowlist = load_allowlist(allowlist_path)
+    non_legacy_allowlist = []
     allowed = set()
     expired_allowed = []
     for e in allowlist:
@@ -262,6 +289,17 @@ def pytest_sessionstart(session):
                 expired_allowed.append(e)
             else:
                 allowed.add(key)
+                if key[0] and "/legacy/" not in key[0]:
+                    non_legacy_allowlist.append(e)
+
+    if non_legacy_allowlist:
+        msg_lines = [
+            "Private-member allowlist entries exist outside tests/legacy/.",
+            "Please refactor the tests to use public APIs and remove these entries.",
+        ]
+        for entry in non_legacy_allowlist:
+            msg_lines.append(f"- {entry.get('file')} ({entry.get('symbol')}) expires {entry.get('expiry')}")
+        raise pytest.UsageError("\n".join(msg_lines))
 
     violations = []
     for p, syms in findings:
@@ -274,6 +312,10 @@ def pytest_sessionstart(session):
     if not violations:
         if expired_allowed:
             warnings.warn("Some allowlist entries are expired; please review them.")
+        if non_legacy_allowlist:
+            warnings.warn(
+                "Private-member allowlist entries exist outside tests/legacy; please refactor and prune."
+            )
         return
 
     msg_lines = [
@@ -288,13 +330,8 @@ def pytest_sessionstart(session):
     )
     msg = "\n".join(msg_lines)
 
-    # Fail in CI (GitHub Actions) or when explicitly requested via env var
-    ci = os.environ.get("GITHUB_ACTIONS") == "true"
-    hard_fail = os.environ.get("CE_FAIL_PRIVATE_TESTS") == "1"
-    if ci or hard_fail:
-        raise pytest.UsageError(msg)
-    else:
-        warnings.warn(msg)
+    # Always fail when violations are present to keep local runs aligned with CI.
+    raise pytest.UsageError(msg)
 
 
 def pytest_collection_modifyitems(config, items):
@@ -343,7 +380,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "Calibra
 
     def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
+        setattr(explainer, "_CalibratedExplainer__initialized", True)  # noqa: SLF001
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",

@@ -988,6 +988,9 @@ class ExplanationOrchestrator:
                 seen.add(item)
         return tuple(ordered)
 
+    # Public alias for testing
+    derive_plot_chain = _derive_plot_chain
+
     @staticmethod
     def build_instance_telemetry_payload(explanations: Any) -> Dict[str, Any]:
         """Extract telemetry details from the first explanation instance.

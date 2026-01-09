@@ -582,6 +582,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     return int(args.func(args))
 
 
+# Public aliases for testing purposes (to avoid private member access in tests)
+emit_explanation_descriptor = _emit_explanation_descriptor
+emit_interval_descriptor = _emit_interval_descriptor
+emit_plot_descriptor = _emit_plot_descriptor
+emit_plot_builder_descriptor = _emit_plot_builder_descriptor
+emit_plot_renderer_descriptor = _emit_plot_renderer_descriptor
+cmd_list = _cmd_list
+cmd_show = _cmd_show
+cmd_trust = _cmd_trust
+
+
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
     import sys
 

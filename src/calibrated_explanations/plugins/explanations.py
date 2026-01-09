@@ -107,6 +107,11 @@ class ExplainerHandle:
         return getattr(self.__explainer, "feature_filter_config", None)
 
     @property
+    def x_cal(self) -> Any:
+        """Expose calibration features when plugins need direct access."""
+        return getattr(self.__explainer, "x_cal", None)
+
+    @property
     def plugin_manager(self) -> Any:
         """Return the plugin manager if available."""
         return getattr(self.__explainer, "plugin_manager", None)
@@ -114,6 +119,13 @@ class ExplainerHandle:
     def predict(self, *args: Any, **kwargs: Any) -> Any:
         """Return calibrated predictions from the underlying explainer."""
         return self.__explainer.predict(*args, **kwargs)
+
+    def predict_calibrated(self, *args: Any, **kwargs: Any) -> Any:
+        """Forward-compatible shim for plugins expecting calibrated prediction API."""
+        func = getattr(self.__explainer, "predict_calibrated", None)
+        if func is None:
+            raise AttributeError("underlying explainer does not expose 'predict_calibrated'")
+        return func(*args, **kwargs)
 
     def explain_factual(self, *args: Any, **kwargs: Any) -> Any:
         """Return factual explanations from the underlying explainer."""

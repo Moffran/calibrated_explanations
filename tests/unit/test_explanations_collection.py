@@ -53,19 +53,11 @@ class DummyCalibratedExplainer:
         self.sample_percentiles = [5.0, 95.0]
         self.is_multiclass = False
         self.discretizer = object()
-        self._predict = lambda data: np.ones(len(data))
+        self.predict_func = lambda data: np.ones(len(data))
         self.rule_boundaries = []
         self.learner = "dummy"
         self.difficulty_estimator = "difficulty"
-        self._plugin_manager = PluginManager(self)
-
-    @property
-    def plugin_manager(self):
-        return self._plugin_manager
-
-    @plugin_manager.setter
-    def plugin_manager(self, value):
-        self._plugin_manager = value
+        self.plugin_manager = PluginManager(self)
 
     def discretize(self, values):
         # Mock discretization for testing
@@ -78,7 +70,7 @@ class DummyCalibratedExplainer:
         return None, DummyShapExplanation(self.num_features)
 
     def predict_calibrated(self, data):
-        return self._predict(data)
+        return self.predict_func(data)
 
     def infer_explanation_mode(self):
         return "factual"

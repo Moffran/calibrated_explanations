@@ -20,7 +20,7 @@ def mock_explainer():
     explainer.condition_source = "observed"
     explainer.discretizer = None
     explainer.plugin_manager = MagicMock()
-    explainer._bridge_monitors = {}
+    explainer.bridge_monitors = {}
     explainer.telemetry_interval_sources = {}
     explainer.interval_plugin_hints = {}
     explainer.plugin_manager.plot_plugin_fallbacks = {}
@@ -507,7 +507,7 @@ def test_derive_plot_chain(orchestrator, mock_explainer):
         "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
         return_value=mock_descriptor,
     ):
-        chain = orchestrator._derive_plot_chain("factual", "test_plugin")
+        chain = orchestrator.derive_plot_chain("factual", "test_plugin")
         assert chain == ("dep", "base")
 
 

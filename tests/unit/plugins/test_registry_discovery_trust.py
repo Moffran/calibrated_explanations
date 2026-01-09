@@ -9,21 +9,21 @@ from calibrated_explanations.plugins import registry
 class FakeEntryPoint:
     def __init__(self, name, plugin, dist_name=None):
         self.name = name
-        self._plugin = plugin
+        self.plugin = plugin
         self.dist = types.SimpleNamespace(name=dist_name) if dist_name else None
         self.module = None
         self.attr = None
 
     def load(self):
-        return self._plugin
+        return self.plugin
 
 
 class FakeEntryPoints:
     def __init__(self, eps):
-        self._eps = list(eps)
+        self.entry_points = list(eps)
 
     def select(self, group=None):
-        return list(self._eps)
+        return list(self.entry_points)
 
 
 def make_plugin(name):
@@ -101,7 +101,7 @@ def test_entrypoint_trusted_via_pyproject(monkeypatch):
     # Clear env cache to ensure only pyproject is considered
     registry.clear_env_trust_cache()
     # Prime the pyproject trust cache to the expected value
-    registry._PYPROJECT_TRUST_CACHE = {name}
+    registry.set_pyproject_trust_cache_for_testing({name})
     monkeypatch.setattr(importlib_metadata, "entry_points", lambda: FakeEntryPoints([ep]))
 
     loaded = registry.load_entrypoint_plugins()

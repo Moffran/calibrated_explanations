@@ -155,4 +155,4 @@ def test_explainer_builder_perf_factory_failure(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr("calibrated_explanations.api.config._perf_from_config", boom)
     cfg = builder.build_config()
-    assert getattr(cfg, "_perf_factory") is None
+    assert cfg.perf_factory is None

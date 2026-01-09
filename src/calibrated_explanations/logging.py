@@ -29,6 +29,12 @@ def _coerce_bool(value: str | bool | None) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on", "enable"}
 
 
+def coerce_bool(value: str | bool | None) -> bool:
+    """Public wrapper for boolean coercion used in telemetry config parsing."""
+
+    return _coerce_bool(value)
+
+
 def telemetry_diagnostic_mode() -> bool:
     """Return whether telemetry should emit full diagnostic payloads.
 
@@ -38,10 +44,10 @@ def telemetry_diagnostic_mode() -> bool:
 
     env_value = os.environ.get("CE_TELEMETRY_DIAGNOSTIC_MODE")
     if env_value is not None:
-        return _coerce_bool(env_value)
+        return coerce_bool(env_value)
 
     config = read_pyproject_section(("tool", "calibrated_explanations", "telemetry"))
-    return _coerce_bool(config.get("diagnostic_mode")) if config else False
+    return coerce_bool(config.get("diagnostic_mode")) if config else False
 
 
 def get_logging_context() -> Dict[str, Any]:
@@ -102,4 +108,5 @@ __all__ = [
     "logging_context",
     "ensure_logging_context_filter",
     "LoggingContextFilter",
+    "coerce_bool",
 ]

@@ -141,7 +141,7 @@ def test_resolve_strategy_variants(monkeypatch):
 
     config.strategy = "processes"
     strategy = ParallelExecutor(config).resolve_strategy()
-    assert strategy.func.__name__ == "_process_strategy"
+    assert strategy.func.__name__ == "process_strategy"
 
     config.strategy = "joblib"
     resolved = ParallelExecutor(config).resolve_strategy()
@@ -355,7 +355,7 @@ def test_process_strategy(monkeypatch):
     )
     config = ParallelConfig(enabled=True, strategy="processes", max_workers=3, min_batch_size=1)
     executor = ParallelExecutor(config, cache=cache)
-    results = executor._process_strategy(echo, [1, 2])
+    results = executor.process_strategy(echo, [1, 2])
     assert results == [1, 2]
     assert cache.reset_calls == 1
     assert recorded["max_workers"] == 3
@@ -584,7 +584,7 @@ def test_get_cgroup_cpu_quota_reads_v2(monkeypatch):
         "posix",
         raising=False,
     )
-    quota = ParallelExecutor._get_cgroup_cpu_quota()
+    quota = ParallelExecutor.get_cgroup_cpu_quota()
     assert quota == 2
 
 
@@ -604,7 +604,7 @@ def test_get_cgroup_cpu_quota_reads_v1(monkeypatch):
         "posix",
         raising=False,
     )
-    assert ParallelExecutor._get_cgroup_cpu_quota() == 5
+    assert ParallelExecutor.get_cgroup_cpu_quota() == 5
 
 
 def test_auto_strategy_respects_ci_and_workload(monkeypatch):
@@ -633,7 +633,7 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
     )
     monkeypatch.setattr(
         ParallelExecutor,
-        "_get_cgroup_cpu_quota",
+        "get_cgroup_cpu_quota",
         staticmethod(lambda: None),
     )
 

@@ -75,16 +75,17 @@ def test_ensure_logging_context_filter_duplicate():
 
 
 def test_should_coerce_bool_with_various_inputs(monkeypatch):
-    from calibrated_explanations.logging import _coerce_bool
-    assert _coerce_bool(True) is True
-    assert _coerce_bool(False) is False
-    assert _coerce_bool(None) is False
-    assert _coerce_bool("1") is True
-    assert _coerce_bool("yes") is True
-    assert _coerce_bool("ON") is True
-    assert _coerce_bool("enable") is True
-    assert _coerce_bool("0") is False
-    assert _coerce_bool("random") is False
+    from calibrated_explanations.logging import coerce_bool
+
+    assert coerce_bool(True) is True
+    assert coerce_bool(False) is False
+    assert coerce_bool(None) is False
+    assert coerce_bool("1") is True
+    assert coerce_bool("yes") is True
+    assert coerce_bool("ON") is True
+    assert coerce_bool("enable") is True
+    assert coerce_bool("0") is False
+    assert coerce_bool("random") is False
 
 
 def test_should_set_none_values_in_logging_context_to_clear():

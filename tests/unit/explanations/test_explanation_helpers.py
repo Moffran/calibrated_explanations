@@ -114,7 +114,7 @@ def testto_python_number_and_normalize_compute_confidence():
 
 def test_build_uncertainty_payload_and_interval():
     inst = DummyExplanation()
-    payload = inst._build_uncertainty_payload(
+    payload = inst.build_uncertainty_payload(
         value=0.7,
         low=0.6,
         high=0.8,
@@ -129,14 +129,14 @@ def test_build_uncertainty_payload_and_interval():
     assert payload["raw_percentiles"] == [0.05, 0.95]
     assert payload["confidence_level"] == pytest.approx(0.9)
 
-    interval = CalibratedExplanation._build_interval(0.2, 0.4)
+    interval = CalibratedExplanation.build_interval(0.2, 0.4)
     assert interval == {"lower": 0.2, "upper": 0.4}
 
 
 def test_convert_and_parse_condition_and_build_payload():
     inst = DummyExplanation()
     # parse equality with single =
-    op, val = inst._parse_condition("feat", "feat = 3")
+    op, val = inst.parse_condition("feat", "feat = 3")
     assert op == "=="
     assert val == "3"
     # convert numeric
@@ -146,7 +146,7 @@ def test_convert_and_parse_condition_and_build_payload():
     assert inst.convert_condition_value("inf", 0) == float("inf")
     assert inst.convert_condition_value("foo", 0) == "foo"
 
-    payload = inst._build_condition_payload(0, "feat = 4", 2.0, 4.0)
+    payload = inst.build_condition_payload(0, "feat = 4", 2.0, 4.0)
     assert payload["feature"] == "feat"
     assert payload["operator"] == "=="
     assert payload["value"] == 4.0
@@ -262,7 +262,7 @@ class SimpleExplanation(explanation_module.CalibratedExplanation):
         rules = getattr(self, "rules", None) or getattr(self, "mock_rules", None) or {}
         if isinstance(rules, dict) and "feature" in rules:
             return explanation_module.FactualExplanation.build_rules_payload(self)
-        prediction_interval = self._build_interval(
+        prediction_interval = explanation_module.CalibratedExplanation.build_interval(
             self.prediction.get("low"),
             self.prediction.get("high"),
         )
@@ -479,7 +479,7 @@ def test_percentile_helpers():
 
 
 def test_get_percentiles_and_one_sided(simple_explanation):
-    assert simple_explanation._get_percentiles() == (0.05, 0.95)
+    assert simple_explanation.get_percentiles() == (0.05, 0.95)
     assert not simple_explanation.is_one_sided()
 
     simple_explanation.calibrated_explanations.low_high_percentiles = (-np.inf, 95)
@@ -512,7 +512,7 @@ def testnormalize_threshold_value_handles_sequences():
 
 def test_build_uncertainty_payload_controls_percentiles():
     explanation = make_explanation()
-    payload = explanation._build_uncertainty_payload(
+    payload = explanation.build_uncertainty_payload(
         value=np.array([0.6]),
         low=0.4,
         high=0.8,
@@ -523,7 +523,7 @@ def test_build_uncertainty_payload_controls_percentiles():
     assert payload["raw_percentiles"] == [0.05, 0.95]
     assert payload["confidence_level"] == pytest.approx(0.9)
 
-    no_percentiles = explanation._build_uncertainty_payload(
+    no_percentiles = explanation.build_uncertainty_payload(
         value=0.6,
         low=0.4,
         high=0.8,
@@ -556,7 +556,7 @@ def test_ignored_features_for_instance_combines_global_and_per_instance(simple_e
 
 def test_build_instance_uncertainty_for_modes():
     base = make_explanation()
-    payload = base._build_instance_uncertainty()
+    payload = base.build_instance_uncertainty()
     assert payload["representation"] == "percentile"
     assert payload["raw_percentiles"] == [0.05, 0.95]
 
@@ -565,13 +565,13 @@ def test_build_instance_uncertainty_for_modes():
     thresholded.mock_rules = rules
     thresholded.rules = rules
     thresholded.has_rules_flag = True
-    threshold_payload = thresholded._build_instance_uncertainty()
+    threshold_payload = thresholded.build_instance_uncertainty()
     assert threshold_payload["representation"] == "threshold"
     assert threshold_payload["threshold"] == [0.2, 0.8]
     assert threshold_payload["raw_percentiles"] is None
 
     probabilistic = make_explanation(mode="classification")
-    probabilistic_payload = probabilistic._build_instance_uncertainty()
+    probabilistic_payload = probabilistic.build_instance_uncertainty()
     assert probabilistic_payload["representation"] == "venn_abers"
     assert probabilistic_payload["raw_percentiles"] is None
 
@@ -580,9 +580,9 @@ def test_safe_feature_name_conversion():
     explanation = make_explanation()
     explainer = explanation.get_explainer()
     explainer.feature_names = ["age", "height", "weight"]
-    assert explanation._safe_feature_name(1) == "height"
-    assert explanation._safe_feature_name(5) == "5"
-    assert explanation._safe_feature_name("custom") == "custom"
+    assert explanation.safe_feature_name(1) == "height"
+    assert explanation.safe_feature_name(5) == "5"
+    assert explanation.safe_feature_name("custom") == "custom"
 
 
 def test_convert_condition_value_special_tokens():
@@ -602,7 +602,7 @@ def test_convert_condition_value_special_tokens():
 
 
 def test_build_condition_payload_parses_rules(telemetry_explanation):
-    payload = telemetry_explanation._build_condition_payload(
+    payload = telemetry_explanation.build_condition_payload(
         feature_index=0,
         rule_text="f0 >= 0.4",
         feature_value=np.array([0.1]),
@@ -612,7 +612,7 @@ def test_build_condition_payload_parses_rules(telemetry_explanation):
     assert payload["operator"] == ">="
     assert payload["value"] == pytest.approx(0.4)
 
-    raw_payload = telemetry_explanation._build_condition_payload(
+    raw_payload = telemetry_explanation.build_condition_payload(
         feature_index="custom",
         rule_text="",
         feature_value=None,
@@ -673,7 +673,7 @@ def test_to_telemetry_includes_serialized_rules(telemetry_explanation):
 def test_predict_conjunctive_average():
     explanation = make_explanation()
     perturbed = np.array(explanation.x_test[1], copy=True)
-    predict, low, high = explanation._predict_conjunctive(
+    predict, low, high = explanation.predict_conjunctive(
         [np.array([0.1, 0.2]), np.array([0.3, 0.4])],
         [0, 1],
         perturbed,
@@ -690,7 +690,7 @@ def test_predict_conjunctive_requires_multiple_features():
 
     explanation = make_explanation()
     with pytest.raises(ValidationError):
-        explanation._predict_conjunctive(
+        explanation.predict_conjunctive(
             [np.array([0.1])],
             [0],
             np.array(explanation.x_test[1], copy=True),

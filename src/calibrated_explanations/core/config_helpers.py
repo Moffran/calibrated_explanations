@@ -26,6 +26,32 @@ except ModuleNotFoundError:  # pragma: no cover - optional for writing
     _tomli_w = None  # type: ignore[assignment]
 
 
+# Sentinel to distinguish explicit `None` from omitted arguments
+_UNSET = object()
+
+
+def get_toml_modules_for_testing() -> tuple[Any, Any]:
+    """Return the current TOML reader/writer modules (testing helper)."""
+
+    return _tomllib, _tomli_w
+
+
+def set_toml_modules_for_testing(
+    *, tomllib: Any | None = _UNSET, tomli_w: Any | None = _UNSET
+) -> None:
+    """Override TOML reader/writer modules for tests without private access.
+
+    Use a sentinel default so callers can explicitly set a module to ``None``
+    (for example to simulate an unavailable writer) without being ignored.
+    """
+
+    global _tomllib, _tomli_w  # noqa: PLW0603 - test override helper
+    if tomllib is not _UNSET:
+        _tomllib = tomllib
+    if tomli_w is not _UNSET:
+        _tomli_w = tomli_w
+
+
 def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     """Return a mapping from the requested ``pyproject.toml`` section.
 

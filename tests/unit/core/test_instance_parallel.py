@@ -123,15 +123,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
         def __init__(self) -> None:
             self.latest_explanation = None
             self.last_explanation_mode = None
-            self._plugin_manager = PluginManager(self)
-
-        @property
-        def plugin_manager(self):
-            return self._plugin_manager
-
-        @plugin_manager.setter
-        def plugin_manager(self, value):
-            self._plugin_manager = value
+            self.plugin_manager = PluginManager(self)
 
         def infer_explanation_mode(self):
             return "factual"

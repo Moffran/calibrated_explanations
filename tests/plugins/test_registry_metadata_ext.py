@@ -77,8 +77,8 @@ def test_warn_untrusted_plugin_only_warns_once():
 
 
 def make_module_helper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, Path]:
-    module_name = "tests.plugins._checksum_mod"
-    module_path = tmp_path / "_checksum_mod.py"
+    module_name = "tests.plugins.checksum_mod"
+    module_path = tmp_path / "checksum_mod.py"
     module_path.write_text("VALUE = 1\n", encoding="utf-8")
 
     spec = importlib.util.spec_from_file_location(module_name, module_path)

@@ -29,3 +29,14 @@ def test_as_int_array_filters_non_integer_values() -> None:
     """Ensure the numpy array only contains successfully converted integers."""
     raw_values = ["7", 8.0, "skip", b"9"]
     assert np.array_equal(as_int_array(raw_values), np.array([7, 8, 9], dtype=int))
+
+
+def test_coerce_to_int_handles_whitespace_and_invalid_strings() -> None:
+    assert coerce_to_int("  12 ") == 12
+    assert coerce_to_int(" ") is None
+    assert coerce_to_int("not digits") is None
+
+
+def test_collect_ints_handles_integrals_and_iterables() -> None:
+    assert collect_ints(5) == [5]
+    assert collect_ints((1, b"2", 3.0, None, "x")) == [1, 2, 3]

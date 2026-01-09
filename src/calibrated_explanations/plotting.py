@@ -136,6 +136,11 @@ def _read_plot_pyproject() -> Dict[str, Any]:
     return {}
 
 
+def read_plot_pyproject() -> Dict[str, Any]:
+    """Public accessor for reading the plots pyproject section."""
+    return _read_plot_pyproject()
+
+
 def split_csv(value: Any) -> Sequence[str]:
     """Normalize comma-separated labels into a tuple."""
     if not value:
@@ -160,6 +165,11 @@ def _format_save_path(base_path: Any, filename: str) -> str:
             return f"{base_path}{filename}"
         return str(Path(base_path) / filename)
     return str(Path(str(base_path)) / filename)
+
+
+def format_save_path(base_path: Any, filename: str) -> str:
+    """Public accessor for path formatting heuristics."""
+    return _format_save_path(base_path, filename)
 
 
 def _resolve_explainer_from_explanation(explanation: Any) -> Any:
@@ -1612,6 +1622,11 @@ def _plot_proba_triangle():
     x = np.arange(0, 0.5, 0.005)
     plt.plot((x + 0.5 - x) / (1 + x), x, color="black")
     return fig
+
+
+def plot_proba_triangle():
+    """Public accessor so tests can exercise the probability triangle helper."""
+    return _plot_proba_triangle()
 
 
 # pylint: disable=invalid-name

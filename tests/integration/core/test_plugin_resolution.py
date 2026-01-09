@@ -138,7 +138,7 @@ def test_plugin_override_via_env_var(binary_dataset, monkeypatch):
         fallback_chain = explainer.plugin_manager.plot_plugin_fallbacks["factual"]
         assert fallback_chain[0] == "tests.plot.pref"
         assert fallback_chain[-1] == "legacy"
-        runtime_plugin = explainer._explanation_plugin_instances["factual"]
+        runtime_plugin = explainer.plugin_manager.explanation_plugin_instances["factual"]
         assert isinstance(runtime_plugin, RecordingFactualPlugin)
         assert runtime_plugin.initialized_context is not None
         assert runtime_plugin.initialized_context.interval_settings["dependencies"] == (

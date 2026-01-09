@@ -916,3 +916,29 @@ class PluginManager:
 
         # Initialize interval learner
         initialize_interval_learner(self.explainer)
+
+
+# Public aliases for testing purposes (to avoid private member access in tests)
+@property
+def pyproject_explanations(self) -> Dict[str, Any] | None:
+    return self._pyproject_explanations
+
+@pyproject_explanations.setter
+def pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
+    self._pyproject_explanations = value
+
+@property
+def pyproject_intervals(self) -> Dict[str, Any] | None:
+    return self._pyproject_intervals
+
+@pyproject_intervals.setter
+def pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
+    self._pyproject_intervals = value
+
+@property
+def pyproject_plots(self) -> Dict[str, Any] | None:
+    return self._pyproject_plots
+
+@pyproject_plots.setter
+def pyproject_plots(self, value: Dict[str, Any] | None) -> None:
+    self._pyproject_plots = value

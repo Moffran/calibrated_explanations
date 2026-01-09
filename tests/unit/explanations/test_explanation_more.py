@@ -45,6 +45,9 @@ def make_container_and_explainer():
         def get_explainer(self):
             return self.explainer
 
+        def get_explainer(self):
+            return self.explainer
+
     return ContainerStub(), ContainerStub().get_explainer()
 
 

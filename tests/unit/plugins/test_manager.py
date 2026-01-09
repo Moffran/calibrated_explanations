@@ -24,8 +24,8 @@ class TestPluginManagerInitialization:
 
         assert manager.explainer is mock_explainer
         assert manager.explanation_plugin_overrides == {}
-        assert manager._interval_plugin_override is None
-        assert manager._fast_interval_plugin_override is None
+        assert manager.interval_plugin_override is None
+        assert manager.fast_interval_plugin_override is None
         assert manager.plot_style_override is None
 
     def test_init_creates_empty_caches(self):
@@ -33,8 +33,8 @@ class TestPluginManagerInitialization:
         mock_explainer = Mock()
         manager = PluginManager(mock_explainer)
 
-        assert manager._bridge_monitors == {}
-        assert manager._explanation_plugin_instances == {}
+        assert manager.bridge_monitors == {}
+        assert manager.explanation_plugin_instances == {}
         assert manager.explanation_plugin_identifiers == {}
 
     def test_init_creates_empty_fallback_chains(self):
@@ -75,8 +75,8 @@ class TestPluginManagerInitializeFromKwargs:
         kwargs = {"interval_plugin": "my_interval", "fast_interval_plugin": "my_fast_interval"}
         manager.initialize_from_kwargs(kwargs)
 
-        assert manager._interval_plugin_override == "my_interval"
-        assert manager._fast_interval_plugin_override == "my_fast_interval"
+        assert manager.interval_plugin_override == "my_interval"
+        assert manager.fast_interval_plugin_override == "my_fast_interval"
 
     def test_initialize_plot_override(self):
         """should_initialize_plot_style_override_from_kwargs."""
@@ -96,8 +96,8 @@ class TestPluginManagerInitializeFromKwargs:
         kwargs = {}
         manager.initialize_from_kwargs(kwargs)
 
-        assert manager._interval_plugin_override is None
-        assert manager._fast_interval_plugin_override is None
+        assert manager.interval_plugin_override is None
+        assert manager.fast_interval_plugin_override is None
         assert manager.plot_style_override is None
 
 
@@ -189,10 +189,10 @@ class TestBridgeMonitorManagement:
         manager = PluginManager(mock_explainer)
 
         _ = manager.get_bridge_monitor("my_plugin")
-        assert len(manager._bridge_monitors) == 1
+        assert len(manager.bridge_monitors) == 1
 
         manager.clear_bridge_monitors()
-        assert len(manager._bridge_monitors) == 0
+        assert len(manager.bridge_monitors) == 0
 
 
 class TestExplanationPluginInstanceManagement:
@@ -224,10 +224,10 @@ class TestExplanationPluginInstanceManagement:
 
         manager.set_explanation_plugin_instance("id1", Mock())
         manager.set_explanation_plugin_instance("id2", Mock())
-        assert len(manager._explanation_plugin_instances) == 2
+        assert len(manager.explanation_plugin_instances) == 2
 
         manager.clear_explanation_plugin_instances()
-        assert len(manager._explanation_plugin_instances) == 0
+        assert len(manager.explanation_plugin_instances) == 0
 
 
 class TestExplanationPluginIdentifierManagement:

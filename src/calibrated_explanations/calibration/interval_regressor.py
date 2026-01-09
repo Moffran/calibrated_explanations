@@ -112,6 +112,16 @@ class IntervalRegressor:
         setattr(self, storage_attr, storage)
         setattr(self, size_attr, size + values.size)
 
+    # Backwards-compatible public wrapper
+    def append_calibration_buffer(self, name, values, sigma=None):
+        """Public compatibility wrapper for older call sites/tests.
+
+        Older tests call `append_calibration_buffer(name, values)` (two args).
+        Keep a tolerant signature that accepts an optional third `sigma`
+        parameter and forwards to the internal implementation.
+        """
+        return self._append_calibration_buffer(name, values)
+
     def _append_bins(self, values):
         """Append Mondrian bin assignments while reusing allocated storage."""
         values = np.asarray(values)
@@ -564,3 +574,37 @@ class IntervalRegressor:
             value = value.reshape(-1)
         self._bins_storage = np.array(value, copy=True)
         self._bins_size = self._bins_storage.shape[0]
+
+    # Public properties for testing
+    @property
+    def bins_size(self):
+        return self._bins_size
+
+    @property
+    def bins_storage(self):
+        return self._bins_storage
+
+    @property
+    def residual_cal_storage(self):
+        return self._residual_cal_storage
+
+    @property
+    def sigma_cal_storage(self):
+        return self._sigma_cal_storage
+
+    @property
+    def y_cal_hat_size(self):
+        return self._y_cal_hat_size
+
+    def append_bins(self, values):
+        return self._append_bins(values)
+
+    def append_calibration_buffer(self, name, values, sigma=None):
+        """Backward-compatible wrapper accepting either (name, values)
+        or the newer (y_cal_hat, residual, sigma) shape. The public test
+        API uses (name, values) so forward to the internal helper.
+        """
+        return self._append_calibration_buffer(name, values)
+
+    def ensure_capacity(self, storage, current_size, required_size):
+        return self._ensure_capacity(storage, current_size, required_size)

@@ -15,7 +15,6 @@ from calibrated_explanations.plugins.manager import PluginManager
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.explanations import ExplainerHandle
-from calibrated_explanations.plugins import find_explanation_descriptor as _find_desc
 from calibrated_explanations.plugins import ExplanationBatch
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 
@@ -123,7 +122,7 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
     expl = DummyExplainerObj()
 
     # Explicit override set to identifier
-    expl.plugin_manager._explanation_plugin_overrides = {"fast": identifier}
+    expl.plugin_manager.explanation_plugin_overrides = {"fast": identifier}
 
     orch = ExplanationOrchestrator(expl)
 
@@ -157,7 +156,7 @@ def test_third_party_trust_flag_ignored_unless_operator_trusts():
         }
 
     register_explanation_plugin("third.party.plugin", TPlugin(), source="external")
-    desc = _find_desc("third.party.plugin")
+    desc = find_explanation_descriptor("third.party.plugin")
     assert desc is not None
     # Descriptor should not be marked trusted just because metadata claimed it
     assert desc.trusted is False

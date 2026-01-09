@@ -133,8 +133,8 @@ def test_supports_calibrated_explainer_uses_safe_isinstance(monkeypatch):
 
     module.CalibratedExplainer = DummyExplainer
     monkeypatch.setitem(sys.modules, module.__name__, module)
-    assert builtins._supports_calibrated_explainer(DummyExplainer()) is True
-    assert builtins._supports_calibrated_explainer(object()) is False
+    assert builtins.supports_calibrated_explainer(DummyExplainer()) is True
+    assert builtins.supports_calibrated_explainer(object()) is False
 
 
 def test_collection_to_batch_preserves_metadata():
@@ -660,7 +660,7 @@ def test_register_builtins_uses_registry(monkeypatch):
         builtins, "register_plot_style", lambda *a, **k: recorded["style"].append((a, k))
     )
 
-    builtins._register_builtins()  # noqa: SLF001
+    builtins.register_builtins()  # noqa: SLF001
     assert recorded["interval"]
     assert len(recorded["explanation"]) >= 2
     assert any(item[0] == "core.plot.plot_spec.default" for item in recorded["builder"])
@@ -674,4 +674,4 @@ def test_register_builtins_handles_missing_fast_plugins(monkeypatch):
     monkeypatch.setattr(builtins, "register_plot_style", lambda *a, **k: None)
     # Ensure import fails even if module existed previously
     sys.modules.pop("external_plugins.fast_explanations", None)
-    builtins._register_builtins()  # noqa: SLF001
+    builtins.register_builtins()  # noqa: SLF001

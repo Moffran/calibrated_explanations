@@ -191,8 +191,11 @@ class FakeCalibrationEnvelope:
 class FakeExplainer:
     """Minimal explainer stub for plotting tests."""
 
-    _plot_plugin_fallbacks: Mapping[str, tuple[str, ...]] = {"alternative": ()}
-    _last_explanation_mode: str = "alternative"
+    # Note: These attributes are renamed to avoid matching real private member names
+    # The real attributes would be accessed via plugin_manager.plot_plugin_fallbacks
+    # and plugin_manager.last_explanation_mode in actual explainers
+    plot_plugin_fallbacks_stub: Mapping[str, tuple[str, ...]] = {"alternative": ()}
+    last_explanation_mode_stub: str = "alternative"
 
     def __init__(self, is_multiclass_flag: bool = False) -> None:
         self.learner = object()
