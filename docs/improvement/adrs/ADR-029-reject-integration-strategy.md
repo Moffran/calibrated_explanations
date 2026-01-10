@@ -34,9 +34,9 @@ This ADR captures decisions and open questions across four areas:
 
 ### Decision 1 — Invocation model
 
-**Decision:** Adopt A3. Use a **Policy Enum** for reject integration.
+**Decision:** Adopt A3. Use a **Policy Enum** named `RejectPolicy` for reject integration.
 
-**Rationale:** This provides explicit behavior and optional, flexible integration paths without changing the default behavior (which remains "no reject"). It is cleaner than boolean flags and more discoverable than global config.
+**Rationale:** A policy enum cleanly separates *how/when* reject is applied from *which* reject strategy is used. It provides explicit behavior, is more discoverable than booleans, and makes future invocation plugins easier to add without breaking defaults.
 
 ### Decision 2 — Strategy extensibility
 
@@ -56,8 +56,19 @@ This ADR captures decisions and open questions across four areas:
 ## Open Questions
 
 ### Invocation model
-- What are the specific enum members (e.g., `RejectPolicy.NONE`, `RejectPolicy.Submit`, etc.)?
+- What are the specific enum members and their semantics?
 - How does the policy interact with legacy `reject=True` initialization?
+
+Proposed `RejectPolicy` members (for discussion and initial implementation):
+
+- `NONE` — Default. No reject integration; legacy behaviour unchanged.
+- `PREDICT_AND_FLAG` — Always run prediction; include a `rejected` flag in the `RejectResult` envelope but do not change whether an explanation is produced.
+- `EXPLAIN_ALL` — Always produce explanations for all instances; include reject status in the envelope when applicable.
+- `EXPLAIN_REJECTS` — Always predict; produce explanations only for instances that are rejected (useful for audit-focused workflows).
+- `EXPLAIN_NON_REJECTS` — Always predict; produce explanations only for non-rejected instances (useful to avoid explaining decisions you won't act on).
+- `SKIP_ON_REJECT` — If an instance is rejected, skip prediction and explanation (short-circuit); otherwise proceed. Useful for strict gating where further computation should be avoided.
+
+These members cover common integration patterns; additional policies may be added later (e.g., sampling-based explanation policies, delayed-explain modes, or hybrid policies).
 
 ### Strategy extensibility
 - What lifecycle hooks are required for registry-managed strategies (init, fit, update, invalidate)?
@@ -167,6 +178,37 @@ This ADR captures decisions and open questions across four areas:
 - **Output:** When reject is enabled via policy, the return type will be a structured envelope (e.g., `RejectResult` or similar) containing explanation and status.
 - **Strategy:** Extensibility is handled via a lightweight registry within the `RejectOrchestrator`.
 - **Visualization:** No changes to visualization; users handle reject visualization manually if needed.
+
+## Implementation plan (recommended)
+
+1. Publish the clarified ADR (this document) and cross-link it from `RELEASE_PLAN_v1.md` and v0.10.2 release documentation.
+2. Define `RejectPolicy` enum in `src/calibrated_explanations/core/reject.py` (or a closely related module) with the initial members listed above and docstrings explaining semantics.
+3. Define a `RejectResult` envelope dataclass in `src/calibrated_explanations/explanations/reject.py` that contains at minimum: `prediction` (optional), `explanation` (optional), `rejected: bool`, `policy: RejectPolicy`, and `metadata`.
+4. Add a `RejectOrchestrator` component (new `core/prediction/reject_orchestrator.py`) that:
+	- Hosts a lightweight registry of reject strategies (B2).
+	- Exposes a `resolve_strategy(identifier_or_none)` method and lifecycle hooks (`init`, `fit`, `invalidate`).
+	- Provides a `apply_policy(policy, inputs, explainer_handle, **kwargs)` entry point that returns a `RejectResult`.
+5. Wire the `RejectOrchestrator` into the existing prediction/explanation orchestrator: add an optional `reject_policy: RejectPolicy = RejectPolicy.NONE` parameter to the explanation entry point(s) and have the orchestrator delegate to `RejectOrchestrator.apply_policy(...)` when `policy != NONE`.
+
+	- Allow `reject_policy` to be specified per call (e.g., `explainer.explain(..., reject_policy=...)`) so invocation semantics can vary for the same explainer instance.
+	- Also support an explainer-level default: allow setting a persistent `reject_policy` via the explainer constructor or during `calibrate(...)` (e.g., `explainer.calibrate(..., default_reject_policy=...)`). Per-call parameters should override the explainer-level default.
+
+		- Important constraint for wrappers: `WrapCalibratedExplainer.__init__` MUST NOT accept `default_reject_policy` as a constructor argument. Wrapper-level defaults should be provided only through `calibrate(...)` (the wrapper may pass the value through to the underlying `CalibratedExplainer`). This enforces a single public entrypoint for explainer-level defaults and avoids surprising state during wrapper construction.
+
+		- Operational rule: Selecting any non-`NONE` `RejectPolicy` MUST implicitly enable the reject orchestration (equivalent to `reject=True`) for the affected call(s) or explainer-level default. In practice this means that supplying `reject_policy != RejectPolicy.NONE` (per-call or via explainer default) triggers `RejectOrchestrator` initialization and evaluation even if the legacy `reject` flag was `False`.
+6. Implement a default built-in reject strategy (the current behaviour) that preserves existing semantics and is registered under the orchestrator's registry as `builtin.default`.
+7. Add CI tests that exercise each `RejectPolicy` member, ensuring return schemas and interactions with existing explanation consumers remain backward compatible when `NONE` is used.
+8. Update documentation and examples: `docs/improvement/` release plan, add `docs/reject.md`, and user-facing examples demonstrating the common policies.
+9. Defer visualization integration until a separate ADR or plugin is proposed.
+
+## Verification checklist (recommended additions)
+
+- `RejectPolicy` is implemented and documented in `src/`.
+- `RejectResult` envelope type exists and is used when non-`NONE` policies are selected.
+- `RejectOrchestrator` registry contains `builtin.default` strategy and can be extended via registry APIs.
+- Orchestrator entry points accept a `reject_policy` parameter and default to `NONE`.
+- Unit tests cover the schema and behavior for each policy and assert legacy behaviour remains unchanged when `NONE` is used.
+- ADR-029 is published and linked from the release plan.
 
 ## Future Considerations
 

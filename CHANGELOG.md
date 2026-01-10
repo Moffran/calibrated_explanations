@@ -11,6 +11,7 @@
 
 ### Added
 
+- **ADR-029: Reject policy orchestration (v0.10.2):** Added the `RejectPolicy` enum, `RejectResult` envelope, and `RejectOrchestrator` registry, wiring per-call and explainer-level policies through prediction/explanation entry points while keeping `NONE` fully backward compatible. Documented usage in `docs/improvement/reject_policy_usage.md` and linked ADR-029 into the release notes.
 - **ADR-028 & Standard-005: Normalized Logging & Context Propagation:** Implemented structured logging domains and threaded context propagation across the core engine.
   - Normalized logger namespaces (e.g., `calibrated_explanations.core.explain`, `calibrated_explanations.plugins.registry`) for consistent filtering.
   - Introduced `logging_context` usage in `PredictionOrchestrator` and `ExplanationOrchestrator` to automatically tag logs with `explainer_id` and `plugin_identifier`.

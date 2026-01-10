@@ -132,6 +132,7 @@ class PredictionOrchestrator:
         classes=None,
         bins=None,
         feature=None,
+        reject_policy: Any | None = None,
         **kwargs,
     ):
         """Execute a prediction with optional uncertainty quantification.
@@ -165,6 +166,7 @@ class PredictionOrchestrator:
             classes=classes,
             bins=bins,
             feature=feature,
+            reject_policy=reject_policy,
             **kwargs,
         )
 
@@ -176,6 +178,7 @@ class PredictionOrchestrator:
         classes=None,
         bins=None,
         feature=None,
+        reject_policy: Any | None = None,
         **kwargs,
     ):
         """Cache-aware wrapper around _predict_impl.
@@ -185,6 +188,42 @@ class PredictionOrchestrator:
         """
         cache = getattr(self.explainer, "perf_cache", None)
         cache_enabled = getattr(cache, "enabled", False)
+        # Reject policy handling: delegate to RejectOrchestrator when enabled
+        from calibrated_explanations.core.reject.policy import RejectPolicy
+
+        effective_policy = None
+        if reject_policy is not None:
+            try:
+                effective_policy = RejectPolicy(reject_policy)
+            except Exception:
+                effective_policy = RejectPolicy.NONE
+        else:
+            effective_policy = RejectPolicy.NONE
+
+        if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
+            # Ensure reject orchestrator is available (implicit enable)
+            try:
+                _ = self.explainer.reject_orchestrator
+            except Exception:
+                try:
+                    self.explainer.plugin_manager.initialize_orchestrators()
+                except Exception:
+                    pass
+
+            def _predict_fn(x_subset, **kw):
+                return self._predict_impl(
+                    x_subset,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    classes=classes,
+                    bins=kw.get("bins", bins),
+                    feature=feature,
+                    **kw,
+                )
+
+            return self.explainer.reject_orchestrator.apply_policy(
+                effective_policy, x, explain_fn=_predict_fn, bins=bins
+            )
         key_parts = None
         if cache_enabled:
             x_arr = np.asarray(x)

@@ -234,6 +234,8 @@ class ExplanationOrchestrator:
         bins: Any,
         features_to_ignore: Any,
         extras: Mapping[str, Any] | None = None,
+        reject_policy: Any | None = None,
+        _ce_skip_reject: bool = False,
     ) -> Any:
         """Execute the full explanation pipeline for the given mode.
 
@@ -264,6 +266,43 @@ class ExplanationOrchestrator:
         ConfigurationError
             If plugin resolution, initialization, or invocation fails.
         """
+        # Reject orchestration is opt-in: only engage when reject_policy is
+        # explicitly provided for this call. This preserves legacy behavior
+        # and avoids changing mocked call args when reject_policy=None.
+        from ...core.reject.policy import RejectPolicy
+
+        if not _ce_skip_reject and reject_policy is not None:
+            try:
+                effective_policy = RejectPolicy(reject_policy)
+            except Exception:
+                effective_policy = RejectPolicy.NONE
+
+            if effective_policy is not RejectPolicy.NONE:
+                # Ensure reject orchestrator is available (implicit enable)
+                try:
+                    _ = self.explainer.reject_orchestrator
+                except Exception:
+                    try:
+                        self.explainer.plugin_manager.initialize_orchestrators()
+                    except Exception:
+                        pass
+
+                def _explain_fn(x_subset, **inner_kw):
+                    return self.invoke(
+                        mode,
+                        x_subset,
+                        threshold,
+                        low_high_percentiles,
+                        inner_kw.get("bins", bins),
+                        features_to_ignore,
+                        extras=extras,
+                        _ce_skip_reject=True,
+                    )
+
+                return self.explainer.reject_orchestrator.apply_policy(
+                    effective_policy, x, explain_fn=_explain_fn, bins=bins
+                )
+
         plugin, _identifier = self.ensure_plugin(mode)
         explainer_identifier = getattr(self.explainer, "explainer_id", None) or str(
             id(self.explainer)
@@ -418,6 +457,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        reject_policy: Any | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute factual explanation with automatic discretizer setting.
@@ -475,6 +515,7 @@ class ExplanationOrchestrator:
             bins=bins,
             features_to_ignore=features_to_ignore,
             extras=kwargs,
+            **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
     def invoke_alternative(  # pylint: disable=invalid-name
@@ -486,6 +527,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        reject_policy: Any | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute alternative explanation with automatic discretizer setting.
@@ -543,6 +585,7 @@ class ExplanationOrchestrator:
             bins=bins,
             features_to_ignore=features_to_ignore,
             extras=kwargs,
+            **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
     def ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:

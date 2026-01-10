@@ -307,6 +307,11 @@ class WrapCalibratedExplainer:
             kwargs.setdefault("preprocessor_metadata", preprocessor_metadata)
         self._logger.info("Calibrating with %s samples", getattr(x_calibration, "shape", ["?"])[0])
 
+        # Allow passing a default reject policy from the wrapper into the explainer
+        if "default_reject_policy" in kwargs:
+            # pass-through to CalibratedExplainer
+            pass
+
         if "mode" in kwargs:
             self.explainer = CalibratedExplainer(
                 self.learner,

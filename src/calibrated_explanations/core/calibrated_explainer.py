@@ -42,6 +42,7 @@ from ..utils.exceptions import (
     DataShapeError,
     ValidationError,
 )
+from .reject.policy import RejectPolicy
 
 # Lazy imports deferred to avoid cross-sibling coupling
 # These are imported inside methods/properties where used
@@ -247,6 +248,10 @@ class CalibratedExplainer:
         self._lime_helper = LimeHelper(self)
         self._shap_helper = ShapHelper(self)
         self.reject = kwargs.get("reject", False)
+        # Optional default reject policy for explainer-level defaults
+        from .reject.policy import RejectPolicy as _RejectPolicy
+
+        self.default_reject_policy = kwargs.get("default_reject_policy", _RejectPolicy.NONE)
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.set_mode(str.lower(mode), initialize=False)
@@ -568,17 +573,66 @@ class CalibratedExplainer:
         features_to_ignore: Any,
         *,
         extras: Mapping[str, Any] | None = None,
+        reject_policy: Any | None = None,
     ) -> Any:
         """Delegate to ExplanationOrchestrator."""
-        return self.explanation_orchestrator.invoke(
-            mode,
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            extras=extras,
-        )
+        # Backwards compatible behavior:
+        # - only apply reject orchestration when reject_policy is explicitly provided
+        # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
+        from .reject.policy import RejectPolicy
+
+        if reject_policy is None:
+            return self.explanation_orchestrator.invoke(
+                mode,
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                extras=extras,
+            )
+
+        try:
+            effective_policy = RejectPolicy(reject_policy)
+        except Exception:
+            effective_policy = RejectPolicy.NONE
+
+        if effective_policy is RejectPolicy.NONE:
+            return self.explanation_orchestrator.invoke(
+                mode,
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                extras=extras,
+            )
+
+        # Policy enabled: ensure reject orchestration and delegate via RejectOrchestrator
+        def _explain_fn(x_subset, **kw):
+            return self.explanation_orchestrator.invoke(
+                mode,
+                x_subset,
+                threshold,
+                low_high_percentiles,
+                kw.get("bins", bins),
+                features_to_ignore,
+                extras=extras,
+                _ce_skip_reject=True,
+            )
+
+        # Implicitly enable reject orchestration
+        try:
+            # ensure plugin manager has set up orchestrators
+            _ = self.reject_orchestrator
+        except Exception:
+            # fallback: initialize via plugin manager if available
+            try:
+                self.plugin_manager.initialize_orchestrators()
+            except Exception:
+                pass
+
+        return self.reject_orchestrator.apply_policy(effective_policy, x, explain_fn=_explain_fn, bins=bins)
 
     def ensure_interval_runtime_state(self) -> None:
         """Delegate to PredictionOrchestrator."""
@@ -1556,6 +1610,76 @@ class CalibratedExplainer:
         **kwargs,
     ):
         """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
+        # Internal skip flag: when True, bypass reject orchestration. This is
+        # used by internal callers (e.g., RejectOrchestrator) to obtain a raw
+        # prediction without re-entering the reject flow.
+        if "_ce_skip_reject" in kwargs:
+            # consume internal-only flag and proceed without reject handling
+            kwargs.pop("_ce_skip_reject")
+            orchestrator = self.prediction_orchestrator
+            if hasattr(orchestrator, "predict_internal"):
+                return orchestrator.predict_internal(
+                    x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    classes=classes,
+                    bins=bins,
+                    feature=feature,
+                    **kwargs,
+                )
+            return orchestrator.predict(
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=classes,
+                bins=bins,
+                feature=feature,
+                **kwargs,
+            )
+
+        # Support per-call reject policy selection. When a non-NONE policy is
+        # selected, delegate to the RejectOrchestrator and return a RejectResult
+        # envelope. Per-call policy overrides the explainer-level default.
+        from .reject.policy import RejectPolicy
+
+        # Pop per-call policy if provided so downstream orchestrators don't
+        # receive unexpected kwargs. Only an explicit per-call policy will
+        # trigger reject orchestration here. Explainer-level defaults are
+        # handled at the top-level explanation APIs (e.g., `explain_factual`).
+        per_call_policy = None
+        if "reject_policy" in kwargs:
+            per_call_policy = kwargs.pop("reject_policy")
+
+        if per_call_policy is None:
+            effective_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
+        else:
+            try:
+                effective_policy = RejectPolicy(per_call_policy)
+            except Exception:
+                effective_policy = RejectPolicy.NONE
+
+        if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
+            # Ensure reject orchestrator is available (implicit enable)
+            try:
+                _ = self.reject_orchestrator
+            except Exception:
+                try:
+                    self.plugin_manager.initialize_orchestrators()
+                except Exception:
+                    pass
+
+            orchestrator = self.prediction_orchestrator
+
+            def _predict_fn(x_subset, **kw):
+                # Call the lower-level orchestrator implementation to avoid
+                # recursing back into CalibratedExplainer.predict.
+                if hasattr(orchestrator, "predict_internal"):
+                    return orchestrator.predict_internal(x_subset, **kw)
+                return orchestrator.predict(x_subset, **kw)
+
+            return self.reject_orchestrator.apply_policy(
+                effective_policy, x, explain_fn=_predict_fn, bins=bins, **kwargs
+            )
         # Delegate directly to the orchestrator implementation method so
         # tests that inject a minimal/mock PluginManager (with a
         # `_prediction_orchestrator` stub) can set `_predict_impl.return_value`.
@@ -1621,16 +1745,20 @@ class CalibratedExplainer:
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
-            return self.explanation_orchestrator.invoke_factual(
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                discretizer=discretizer,
-                _use_plugin=_use_plugin,
+            reject_policy = kwargs.pop("reject_policy", None)
+            invoke_kwargs = {
+                "x": x,
+                "threshold": threshold,
+                "low_high_percentiles": low_high_percentiles,
+                "bins": bins,
+                "features_to_ignore": features_to_ignore,
+                "discretizer": discretizer,
+                "_use_plugin": _use_plugin,
                 **kwargs,
-            )
+            }
+            if reject_policy is not None:
+                invoke_kwargs["reject_policy"] = reject_policy
+            return self.explanation_orchestrator.invoke_factual(**invoke_kwargs)
 
     def explore_alternatives(
         self,
@@ -1673,16 +1801,20 @@ class CalibratedExplainer:
         discretizer = "regressor" if "regression" in self.mode else "entropy"
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
-            return self.explanation_orchestrator.invoke_alternative(
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                discretizer=discretizer,
-                _use_plugin=_use_plugin,
+            reject_policy = kwargs.pop("reject_policy", None)
+            invoke_kwargs = {
+                "x": x,
+                "threshold": threshold,
+                "low_high_percentiles": low_high_percentiles,
+                "bins": bins,
+                "features_to_ignore": features_to_ignore,
+                "discretizer": discretizer,
+                "_use_plugin": _use_plugin,
                 **kwargs,
-            )  # type: ignore[return-value]
+            }
+            if reject_policy is not None:
+                invoke_kwargs["reject_policy"] = reject_policy
+            return self.explanation_orchestrator.invoke_alternative(**invoke_kwargs)  # type: ignore[return-value]
 
     def __call__(
         self,
@@ -1692,6 +1824,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        reject_policy: Any | None = None,
         _use_plugin: bool = True,
         _skip_instance_parallel: bool = False,
     ) -> CalibratedExplanations:
@@ -1699,14 +1832,20 @@ class CalibratedExplainer:
 
         Since v0.4.0, this method is equivalent to the `_explain` method.
         """
+        call_kwargs: dict[str, Any] = {
+            "_use_plugin": _use_plugin,
+            "_skip_instance_parallel": _skip_instance_parallel,
+        }
+        if reject_policy is not None:
+            call_kwargs["reject_policy"] = reject_policy
+
         return self._explain(
             x,
             threshold,
             low_high_percentiles,
             bins,
             features_to_ignore,
-            _use_plugin=_use_plugin,
-            _skip_instance_parallel=_skip_instance_parallel,
+            **call_kwargs,
         )
 
     def _explain(self, *args, **kwargs) -> CalibratedExplanations:
@@ -1742,6 +1881,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        reject_policy: Any | None = None,
         _use_plugin: bool = True,
         _skip_instance_parallel: bool = False,
     ) -> CalibratedExplanations:
@@ -1750,6 +1890,11 @@ class CalibratedExplainer:
         # Thin delegator to orchestrator
         if _use_plugin:
             mode = self.infer_explanation_mode()
+            invoke_kwargs: dict[str, Any] = {
+                "extras": {"mode": mode, "_skip_instance_parallel": _skip_instance_parallel}
+            }
+            if reject_policy is not None:
+                invoke_kwargs["reject_policy"] = reject_policy
             return self.explanation_orchestrator.invoke(
                 mode,
                 x,
@@ -1757,7 +1902,7 @@ class CalibratedExplainer:
                 low_high_percentiles,
                 bins,
                 features_to_ignore,
-                extras={"mode": mode, "_skip_instance_parallel": _skip_instance_parallel},
+                **invoke_kwargs,
             )
 
         # Legacy path for backward compatibility and testing
@@ -1797,6 +1942,7 @@ class CalibratedExplainer:
         low_high_percentiles=(5, 95),
         bins=None,
         *,
+        reject_policy: Any | None = None,
         _use_plugin: bool = True,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data.
@@ -1836,6 +1982,7 @@ class CalibratedExplainer:
                 bins,
                 tuple(self.features_to_ignore),
                 extras={"mode": "fast"},
+                reject_policy=reject_policy,
             )
 
         # Delegate to external plugin pipeline for non-plugin path
