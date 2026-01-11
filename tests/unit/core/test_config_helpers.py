@@ -20,14 +20,14 @@ ORIG_TOMLLIB, ORIG_TOMLI_W = config_helpers.get_toml_modules_for_testing()
 # add a small shim that stores finalizers and runs them when the
 # monkeypatch `undo()` method is called at test teardown.
 if not hasattr(pytest.MonkeyPatch, "addfinalizer"):
-    _orig_undo = pytest.MonkeyPatch.undo
+    orig_undo = pytest.MonkeyPatch.undo
 
-    def _addfinalizer(self, func):
+    def addfinalizer(self, func):
         if not hasattr(self, "ce_finalizers"):
             self.ce_finalizers = []
         self.ce_finalizers.append(func)
 
-    def _undo_with_finalizers(self):
+    def undo_with_finalizers(self):
         # run stored finalizers first (LIFO), then perform original undo
         if hasattr(self, "ce_finalizers"):
             for f in reversed(self.ce_finalizers):
@@ -36,10 +36,10 @@ if not hasattr(pytest.MonkeyPatch, "addfinalizer"):
                 except Exception:
                     # avoid masking original teardown behaviour
                     pass
-        return _orig_undo(self)
+        return orig_undo(self)
 
-    pytest.MonkeyPatch.addfinalizer = _addfinalizer
-    pytest.MonkeyPatch.undo = _undo_with_finalizers
+    pytest.MonkeyPatch.addfinalizer = addfinalizer
+    pytest.MonkeyPatch.undo = undo_with_finalizers
 
 
 def reset_toml_modules() -> None:

@@ -1,8 +1,1 @@
 file,line,pattern,snippet
-unit\calibration\test_summaries.py,51,private helper call,facade = _CacheFacadeFake(
-unit\calibration\test_summaries.py,57,private helper call,explainer = _ExplainerLike(
-unit\calibration\test_summaries.py,74,private helper call,facade = _CacheFacadeFake(cached=None)
-unit\calibration\test_summaries.py,75,private helper call,explainer = _ExplainerLike(
-unit\calibration\test_summaries.py,104,private helper call,"facade = _CacheFacadeFake(cached=({0: {""x"": 1}}, {0: np.asarray([1])}))"
-unit\calibration\test_summaries.py,105,private helper call,explainer = _ExplainerLike(
-unit\core\test_config_helpers.py,39,private helper call,return _orig_undo(self)

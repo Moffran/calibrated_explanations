@@ -48,6 +48,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 **Standard-001 – Nomenclature Standardization:** Remediation plan in `Standard-001_nomenclature_remediation.md`; phased renames and shims tracked across releases.
 **Standard-002 – Code Documentation Standardisation:** Accepted and rolled out in batches; numpydoc/pydocstyle enforcement staged with release branches treated as blocking once baselines met.
 **Standard-003 – Test Coverage Standard:** Accepted. Package floor and critical-path thresholds defined (90% package, 95% critical paths); CI/gates staged and waiver governance enforced per appendix.
+**ADR-030 – Test Quality Priorities and Enforcement:** Accepted. Quality criteria (determinism, public contracts, assertions) defined; enforcement via extended anti-pattern scans and marker hygiene. Remediation steps mapped to v0.10.2–v1.0.0 per initial test quality report.
 **ADR-020 – Legacy User API Stability:** Legacy contract enforcement and parity tests tracked across v0.9.1–v0.10.x release gates; appendix retains details.
 **ADR-021 – Calibrated Interval Semantics:** Completed in v0.10.0; invariant enforcement and JSON-safe serialization implemented.
 **ADR-022 – Documentation Information Architecture:** Superseded by Standard-004; see Standard-004 for IA expectations.
@@ -67,7 +68,9 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 | v0.9.1 | Audience hubs sustained; quickstart smoke tests block release. | Phase 1 batches A–C targeted for ≥90%; docs examples aligned with new IA. | XML+Codecov upload required; gating rising toward 90%. | Phase 1 cleanup in progress with measurement checkpoints. | Rollback: pin docs to last green build; coverage waivers require dated follow-up issues. |
 | v0.10.0 | Doc gate holds prior bar; no new IA work planned. | Phase 2 blocking check for touched files; waivers time-bounded. | `fail_under=90` enforced; plugin/plotting module thresholds scheduled. | Release mapping added; refactors aligned with legacy API tests. | Risk: refactors (explain plugins, boundary split) may churn coverage; branch cut requires rerunning gates. |
 | v0.10.1 | Doc hubs refreshed with telemetry/performance opt-in notes. | Package-wide ≥90% expected; notebook/example lint extended. | Module thresholds hardened; waiver expiry versions mandatory. | Phase metrics reviewed; % renamed modules tracked. | Rollback: if module gates fail, defer release or lower threshold with explicit expiry in checklist. |
-| v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals completed; legacy API guard tests green. | Risks surface inline in milestone gates; rollback paths documented per gate. |
+| v0.10.2 | No changes planned. | No changes planned. | No changes planned. | No changes planned. | Test quality remediation: fix private-member violations in tests per ADR-030. |
+| v0.11.0 | No changes planned. | No changes planned. | No changes planned. | No changes planned. | Test quality tooling: extend anti-pattern detector for assertions and determinism per ADR-030. |
+| v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals completed; legacy API guard tests green. | Test quality ratification: zero-tolerance enforcement for new quality rules per ADR-030; risks surface inline in milestone gates; rollback paths documented per gate. |
 
 ### v0.6.x (stabilisation patches)
 
@@ -233,6 +236,7 @@ Release gate: Payload round-trips verified, PlotSpec/visualization plugin regist
 8. Adopt ADR-028 logging and governance observability architecture and enforce Standard-005 logging and observability rules across core, plugins, and governance surfaces for v0.10.2-touched code paths, including domain-based logger usage, context propagation, and data minimisation (see ADR-028 status appendix and Standard-005).
 9. Publish [ADR-029](docs/improvement/adrs/ADR-029-reject-integration-strategy.md) (Reject Integration Strategy) decisions and open questions, and record the deferred strategy/visualization decisions with follow-up tasks in the v0.10.2 plan.
 10. Add an interval summary selection enum to choose between regularized mean (default), mean, lower bound, or upper bound for probabilistic predictions and explanations, and document the task in the v0.10.2 plan.
+11. Enforce Step 1 of ADR-030 test quality remediation: fix the 7 identified private-member usage violations in `tests/unit/calibration/test_summaries.py` and `tests/unit/core/test_config_helpers.py` to achieve zero violations per `scripts/detect_test_anti_patterns.py`.
 
 Release gate: Plugin registries enforce trust and protocol policies, extras install cleanly with documentation parity, runtime telemetry captures interval metadata, FAST/CLI flows succeed end-to-end, and logging/governance observability align with ADR-028 and Standard-005 for all v0.10.2 changes (see ADR status appendix in this document).
 
@@ -244,6 +248,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 4. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry, ensuring ongoing monitoring after v1.0.0 (see ADR status appendix in this document).
 5. Change default behavior for `condition_source` to `"prediction"` in `CalibratedExplainer` and related components. Update all relevant documentation, including the upgrade checklist, to inform users of this change and provide guidance on how to adjust their implementations if they previously relied on the default `"observed"` setting. This change aims to enhance the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels. Plan for this change to be communicated clearly in the v1.0.0 release notes and upgrade guides (see ADR status appendix in this document).
 6. Empty the private member allow-list (`.github/private_member_allowlist.json`) as part of the final Pattern 1 remediation hardening. All remaining private member usages in tests must be refactored to public APIs or justified as permanent exceptions in the remediation plan.
+7. Extend test quality tooling per ADR-030: update `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` to flag tests without assertions and unseeded random usage, preparing for zero-tolerance enforcement in v1.0.0.
 
 Release gate: Domain/preprocessing pipelines operate on ADR-compliant models with telemetry coverage, naming lint metrics published, and no outstanding ADR exceptions ahead of v1.0.0-rc (see ADR status appendix in this document)
 
@@ -295,6 +300,7 @@ ready for pilot customers.
 5. Finalise versioned documentation hosting and publish long-term dashboard
    links (coverage, doc lint, notebooks) so the IA plan’s success metrics are met
    when GA lands.【F:docs/improvement/documentation_information_architecture.md†L108-L118】
+6. Ratify ADR-030 test quality enforcement: ensure extended anti-pattern scans are in CI, marker hygiene is enforced, and mutation testing is optional for core modules.
 
 Release gate: Tagged release artifacts available, documentation hubs updated with
 versioned hosting and public dashboards, caching/parallel toggles operating

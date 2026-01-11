@@ -2,7 +2,7 @@
 
 # ADR-030: Test Quality Priorities and Enforcement
 
-Status: Proposed
+Status: Accepted
 Date: 2026-01-11
 Deciders: Core maintainers
 Reviewers: TBD
@@ -96,7 +96,8 @@ static audits. Specifically:
     (baseline existing debt, then ratchet down).
 
 - **Marker hygiene**:
-  - Keep the existing test directory conventions.
+  - Adopt a hybrid taxonomy: auto-infer `unit`, `integration`, `e2e` from directory paths; require explicit `slow` and `viz` markers on new files.
+  - Allow overrides via decorators and use CI warnings for mismatches.
   - Enforce marker registration and use for slow/integration tests as part of
     pytest config and CI, starting as advisory and moving to blocking once the
     suite is fully tagged.
@@ -131,12 +132,14 @@ Negative/Risks:
   mocking heuristics; add allowlists only with justification.
 - Phase 3: enforce marker hygiene and slow-test budgets once tagging is complete.
 
-## Open Questions
+## Resolved Questions
 
-- What marker taxonomy best fits the current tests (`unit`, `integration`, `e2e`,
-  `slow`, `viz`), and should any be mandatory on new files?
-- Which modules are “core logic” for optional mutation testing in nightly CI?
+Based on analysis of current test practices (directory-based organization, ~2000 tests, coverage gates), the following resolutions are adopted:
+
+- **Marker Taxonomy:** Adopt a hybrid approach with auto-inference from directory paths for `unit`, `integration`, `e2e`, but require explicit `slow` and `viz` markers on new files. Allow overrides via decorators and use CI warnings for mismatches. This balances rigor with practicality, leveraging existing structure while enforcing critical markers to support suite health and runtime budgets.
+
+- **Mutation Testing Modules:** Limit to core calibration and explanation modules (`src/calibrated_explanations/calibration/` and `src/calibrated_explanations/core/`), excluding plugins and viz for nightly CI. This focuses on high-priority, deterministic logic without overloading the large suite, aligning with public-contract testing priorities.
 
 ## Implementation status
 
-- 2025-03-06 – Drafted ADR with priorities and enforcement plan; no code changes yet.
+- 2026-01-11 – Drafted ADR with priorities and enforcement plan; resolved open questions on marker taxonomy and mutation testing modules; no code changes yet.

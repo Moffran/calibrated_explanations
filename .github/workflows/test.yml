@@ -129,7 +129,6 @@ jobs:
     name: Anti-pattern Audit
     needs: test
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -142,6 +141,12 @@ jobs:
       - name: Run anti-pattern detector
         run: |
           python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
+          # Fail if any violations found
+          if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
+            echo "Anti-pattern violations detected:"
+            cat reports/test_anti_pattern_report.csv
+            exit 1
+          fi
 
       - name: Upload anti-pattern report
         uses: actions/upload-artifact@v6

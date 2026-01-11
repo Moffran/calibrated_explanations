@@ -11,7 +11,7 @@ from calibrated_explanations.calibration.summaries import (
 
 
 @dataclass
-class _CacheFacadeFake:
+class CacheFacadeFake:
     cached: tuple[dict[int, dict[object, int]], dict[int, np.ndarray]] | None = None
     invalidated: bool = False
     set_calls: int = 0
@@ -35,7 +35,7 @@ class _CacheFacadeFake:
         self.cached = None
 
 
-class _ExplainerLike:
+class ExplainerLike:
     def __init__(self, *, x_cal: np.ndarray, categorical_features: list[int], num_features: int):
         self.x_cal = x_cal
         self.categorical_features = categorical_features
@@ -48,13 +48,13 @@ class _ExplainerLike:
 
 def test_get_calibration_summaries__should_return_facade_cached_payload_when_present():
     # Arrange
-    facade = _CacheFacadeFake(
+    facade = CacheFacadeFake(
         cached=(
             {1: {"a": 2}},
             {0: np.asarray([0, 0, 1])},
         )
     )
-    explainer = _ExplainerLike(
+    explainer = ExplainerLike(
         x_cal=np.asarray([[0, "a"], [1, "a"], [0, "a"]], dtype=object),
         categorical_features=[1],
         num_features=2,
@@ -71,8 +71,8 @@ def test_get_calibration_summaries__should_return_facade_cached_payload_when_pre
 
 def test_get_calibration_summaries__should_compute_and_store_when_facade_cache_miss():
     # Arrange
-    facade = _CacheFacadeFake(cached=None)
-    explainer = _ExplainerLike(
+    facade = CacheFacadeFake(cached=None)
+    explainer = ExplainerLike(
         x_cal=np.asarray([[0, "a"], [1, "b"], [0, "a"]], dtype=object),
         categorical_features=[1],
         num_features=2,
@@ -101,8 +101,8 @@ def test_get_calibration_summaries__should_compute_and_store_when_facade_cache_m
 
 def test_invalidate_calibration_summaries__should_clear_instance_caches_and_facade():
     # Arrange
-    facade = _CacheFacadeFake(cached=({0: {"x": 1}}, {0: np.asarray([1])}))
-    explainer = _ExplainerLike(
+    facade = CacheFacadeFake(cached=({0: {"x": 1}}, {0: np.asarray([1])}))
+    explainer = ExplainerLike(
         x_cal=np.asarray([[0, "a"]], dtype=object),
         categorical_features=[1],
         num_features=2,
