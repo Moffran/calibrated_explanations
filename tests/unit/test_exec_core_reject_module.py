@@ -21,3 +21,4 @@ def test_execute_core_reject_module_from_file():
     assert hasattr(module, "RejectPolicy")
     assert hasattr(module, "is_policy_enabled")
     assert module.is_policy_enabled("none") is False
+    assert module.is_policy_enabled(object()) is False

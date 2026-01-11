@@ -157,7 +157,7 @@ def test_explain_factual_delegates(mock_learner, mock_plugin_manager):
     args, kwargs = (
         mock_plugin_manager.return_value.explanation_orchestrator.invoke_factual.call_args
     )
-    assert args[0] is x_test
+    assert kwargs["x"] is x_test
 
 
 def test_explore_alternatives_delegates(mock_learner, mock_plugin_manager):
@@ -172,7 +172,7 @@ def test_explore_alternatives_delegates(mock_learner, mock_plugin_manager):
     args, kwargs = (
         mock_plugin_manager.return_value.explanation_orchestrator.invoke_alternative.call_args
     )
-    assert args[0] is x_test
+    assert kwargs["x"] is x_test
 
 
 def test_explain_fast_delegates(mock_learner, mock_plugin_manager):
@@ -769,13 +769,13 @@ def test_explain_mondrian_bins_and_legacy_path(mock_learner, mock_plugin_manager
     x_test = np.array([[3, 4]])
     explainer.explanation_orchestrator.invoke_factual.return_value = "factual"
     explainer.explain_factual(x_test)
-    args, _ = explainer.explanation_orchestrator.invoke_factual.call_args
-    assert args[3] is explainer.bins
+    _, kwargs = explainer.explanation_orchestrator.invoke_factual.call_args
+    assert kwargs["bins"] is explainer.bins
 
     explainer.explanation_orchestrator.invoke_alternative.return_value = "alternative"
     explainer.explore_alternatives(x_test)
-    args, _ = explainer.explanation_orchestrator.invoke_alternative.call_args
-    assert args[3] is explainer.bins
+    _, kwargs = explainer.explanation_orchestrator.invoke_alternative.call_args
+    assert kwargs["bins"] is explainer.bins
 
     with patch("calibrated_explanations.core.explain.legacy_explain") as mock_legacy:
         mock_legacy.return_value = "legacy"

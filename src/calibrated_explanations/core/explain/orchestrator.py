@@ -149,7 +149,7 @@ class ExplanationOrchestrator:
         condition_labels = None
         if selected_condition_source == "prediction":
             predictions = self.explainer.predict(
-                x_cal, calibrated=True, uq_interval=False, bins=self.explainer.bins
+                x_cal, calibrated=True, uq_interval=False, bins=self.explainer.bins, _ce_skip_reject=True
             )
             if isinstance(predictions, tuple):
                 predictions = predictions[0]
@@ -266,14 +266,20 @@ class ExplanationOrchestrator:
         ConfigurationError
             If plugin resolution, initialization, or invocation fails.
         """
-        # Reject orchestration is opt-in: only engage when reject_policy is
-        # explicitly provided for this call. This preserves legacy behavior
-        # and avoids changing mocked call args when reject_policy=None.
+        # Reject orchestration:
+        # - default behavior remains "no reject" (ADR-029)
+        # - if reject_policy is not provided (None), fall back to the explainer's
+        #   default_reject_policy
+        # - per-call policy overrides the explainer-level default
         from ...core.reject.policy import RejectPolicy
 
-        if not _ce_skip_reject and reject_policy is not None:
+        if not _ce_skip_reject:
+            candidate_policy = reject_policy
+            if candidate_policy is None:
+                candidate_policy = getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE)
+
             try:
-                effective_policy = RejectPolicy(reject_policy)
+                effective_policy = RejectPolicy(candidate_policy)
             except Exception:
                 effective_policy = RejectPolicy.NONE
 

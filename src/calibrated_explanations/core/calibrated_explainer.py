@@ -576,24 +576,19 @@ class CalibratedExplainer:
         reject_policy: Any | None = None,
     ) -> Any:
         """Delegate to ExplanationOrchestrator."""
-        # Backwards compatible behavior:
-        # - only apply reject orchestration when reject_policy is explicitly provided
+        # Reject integration (ADR-029):
+        # - default remains RejectPolicy.NONE (no reject)
+        # - per-call reject_policy overrides the explainer-level default_reject_policy
+        # Backward compatibility:
         # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
         from .reject.policy import RejectPolicy
 
-        if reject_policy is None:
-            return self.explanation_orchestrator.invoke(
-                mode,
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                extras=extras,
-            )
+        candidate_policy = reject_policy
+        if candidate_policy is None:
+            candidate_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
 
         try:
-            effective_policy = RejectPolicy(reject_policy)
+            effective_policy = RejectPolicy(candidate_policy)
         except Exception:
             effective_policy = RejectPolicy.NONE
 

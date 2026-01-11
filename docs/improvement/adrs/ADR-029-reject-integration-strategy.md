@@ -2,7 +2,7 @@
 
 # ADR-029 — Reject Integration Strategy
 
-Status: Proposed
+Status: Accepted
 
 Date: 2026-01-06
 
@@ -59,7 +59,7 @@ This ADR captures decisions and open questions across four areas:
 - What are the specific enum members and their semantics?
 - How does the policy interact with legacy `reject=True` initialization?
 
-Proposed `RejectPolicy` members (for discussion and initial implementation):
+Defined `RejectPolicy` members (implemented in `core.reject.policy`):
 
 - `NONE` — Default. No reject integration; legacy behaviour unchanged.
 - `PREDICT_AND_FLAG` — Always run prediction; include a `rejected` flag in the `RejectResult` envelope but do not change whether an explanation is produced.

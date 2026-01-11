@@ -383,7 +383,11 @@ def explain_predict_step(
 
     x_cal = explainer.x_cal
     base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
-        x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+        x,
+        threshold=threshold,
+        low_high_percentiles=low_high_percentiles,
+        bins=bins,
+        _ce_skip_reject=True,
     )
 
     prediction = {
@@ -582,6 +586,7 @@ def explain_predict_step(
         low_high_percentiles=low_high_percentiles,
         classes=perturbed_class,
         bins=perturbed_bins,
+        _ce_skip_reject=True,
     )
     predict = np.array(predict)
     low = np.array(low)
