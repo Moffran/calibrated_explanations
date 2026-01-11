@@ -112,6 +112,20 @@ class SequentialExplainExecutor(BaseExplainExecutor):
         instance_start_time = time()
 
         # Step 1: Get predictions for original test instances
+        import inspect  # local import to avoid top-level dependency
+
+        predict_fn = explain_predict_step
+        call_kwargs: dict = {
+            "feature_filter_per_instance_ignore": feature_filter_per_instance_ignore
+        }
+        # Only include interval_summary if the target function supports it
+        try:
+            sig = inspect.signature(predict_fn)
+            if "interval_summary" in sig.parameters:
+                call_kwargs["interval_summary"] = request.interval_summary
+        except Exception:  # pragma: no cover - defensive
+            pass
+
         (
             predict,
             low,
@@ -127,14 +141,14 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             perturbed_bins,
             perturbed_x,
             perturbed_class,
-        ) = explain_predict_step(
+        ) = predict_fn(
             explainer,
             x_input,
             request.threshold,
             request.low_high_percentiles,
             request.bins,
             features_to_ignore_array,
-            feature_filter_per_instance_ignore=feature_filter_per_instance_ignore,
+            **call_kwargs,
         )
 
         # Step 2: Initialize data structures to store feature-level results

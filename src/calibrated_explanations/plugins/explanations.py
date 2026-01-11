@@ -107,6 +107,30 @@ class ExplainerHandle:
         return getattr(self.__explainer, "feature_filter_config", None)
 
     @property
+    def discretizer(self) -> Any:
+        """Return the discretizer if available."""
+        return getattr(self.__explainer, "discretizer", None)
+
+    @property
+    def sample_percentiles(self) -> Any:
+        """Return sample percentiles if available."""
+        return getattr(self.__explainer, "sample_percentiles", None)
+
+    def get_calibration_summaries(self, *args: Any, **kwargs: Any) -> Any:
+        """Return calibration summaries from the underlying explainer."""
+        return self.__explainer.get_calibration_summaries(*args, **kwargs)
+
+    @property
+    def y_cal(self) -> Any:
+        """Return y_cal if available."""
+        return getattr(self.__explainer, "y_cal", None)
+
+    @property
+    def categorical_features(self) -> Any:
+        """Return categorical_features if available."""
+        return getattr(self.__explainer, "categorical_features", None)
+
+    @property
     def x_cal(self) -> Any:
         """Expose calibration features when plugins need direct access."""
         return getattr(self.__explainer, "x_cal", None)
@@ -115,6 +139,26 @@ class ExplainerHandle:
     def plugin_manager(self) -> Any:
         """Return the plugin manager if available."""
         return getattr(self.__explainer, "plugin_manager", None)
+
+    @property
+    def latest_explanation(self) -> Any:
+        """Expose the latest explanation attached to the underlying explainer."""
+        return getattr(self.__explainer, "latest_explanation", None)
+
+    @latest_explanation.setter
+    def latest_explanation(self, value: Any) -> None:
+        """Allow plugins to set the latest explanation on the underlying explainer."""
+        setattr(self.__explainer, "latest_explanation", value)
+
+    @property
+    def last_explanation_mode(self) -> Any:
+        """Expose the last explanation mode recorded on the underlying explainer."""
+        return getattr(self.__explainer, "last_explanation_mode", None)
+
+    @last_explanation_mode.setter
+    def last_explanation_mode(self, value: Any) -> None:
+        """Allow plugins to set the last explanation mode on the underlying explainer."""
+        setattr(self.__explainer, "last_explanation_mode", value)
 
     def predict(self, *args: Any, **kwargs: Any) -> Any:
         """Return calibrated predictions from the underlying explainer."""
@@ -131,9 +175,9 @@ class ExplainerHandle:
         """Return factual explanations from the underlying explainer."""
         return self.__explainer.explain_factual(*args, **kwargs)
 
-    def explore_alternatives(self, *args: Any, **kwargs: Any) -> Any:
-        """Return alternative explanations from the underlying explainer."""
-        return self.__explainer.explore_alternatives(*args, **kwargs)
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the underlying explainer."""
+        return getattr(self.__explainer, name)
 
     def explain_fast(self, *args: Any, **kwargs: Any) -> Any:
         """Return fast explanations from the underlying explainer."""
@@ -161,6 +205,7 @@ class ExplanationRequest:
     low_high_percentiles: Optional[Tuple[float, float]]
     bins: Optional[object]
     features_to_ignore: Sequence[int] | Sequence[Sequence[int]]
+    interval_summary: Optional[object] = None
     extras: Mapping[str, object] = field(default_factory=dict)
     feature_filter_per_instance_ignore: Sequence[Sequence[int]] | None = None
 

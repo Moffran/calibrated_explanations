@@ -341,6 +341,9 @@ class ExplanationOrchestrator:
                 ),
                 bins=tuple(bins) if bins is not None else None,
                 features_to_ignore=features_to_ignore_flat,
+                interval_summary=(extras or {}).get(
+                    "interval_summary", self.explainer.interval_summary
+                ),
                 extras=dict(extras or {}),
                 feature_filter_per_instance_ignore=per_instance_ignore,
             )
@@ -511,6 +514,7 @@ class ExplanationOrchestrator:
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
+                interval_summary=kwargs.get("interval_summary", self.explainer.interval_summary),
             )
 
         return self.invoke(
@@ -581,6 +585,7 @@ class ExplanationOrchestrator:
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
+                interval_summary=kwargs.get("interval_summary", self.explainer.interval_summary),
             )
 
         return self.invoke(

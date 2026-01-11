@@ -66,9 +66,9 @@ class FastIntervalCalibrator(Sequence[Any]):
     ) -> Any:
         return self._default().predict_proba(*args, **kwargs)
 
-    def predict_probability(self, x: Any) -> Any:
+    def predict_probability(self, *args, **kwargs) -> Any:
         """Return calibrated low/high probabilities for *x*."""
-        return self._default().predict_probability(x)
+        return self._default().predict_probability(*args, **kwargs)
 
     def predict_uncertainty(self, x: Any) -> Any:
         """Return uncertainty estimates for *x*."""

@@ -325,6 +325,7 @@ def explain_predict_step(
     bins: Any,
     features_to_ignore: Any,
     *,
+    interval_summary: Any | None = None,
     feature_filter_per_instance_ignore: Any | None = None,
 ) -> ExplainPredictStepResult:
     """Execute the baseline prediction and perturbation planning step.
@@ -380,7 +381,10 @@ def explain_predict_step(
             inst_indices = as_int_array(inst_mask)
             if inst_indices.size:
                 ignore_mask[idx, inst_indices] = True
-
+    
+    # print(f"DEBUG: explainer type: {type(explainer)}")
+    # print(f"DEBUG: explainer.is_multiclass type: {type(explainer.is_multiclass)}")
+    
     x_cal = explainer.x_cal
     base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
         x,
@@ -388,33 +392,44 @@ def explain_predict_step(
         low_high_percentiles=low_high_percentiles,
         bins=bins,
         _ce_skip_reject=True,
+        interval_summary=interval_summary,
     )
 
+    is_mc_property = (
+        explainer.is_multiclass()
+        if callable(explainer.is_multiclass)
+        else explainer.is_multiclass
+    )
     prediction = {
         "predict": base_predict,
         "low": base_low,
         "high": base_high,
-        "classes": (predicted_class if explainer.is_multiclass() else np.ones(base_predict.shape)),
+        "classes": (predicted_class if is_mc_property else np.ones(base_predict.shape)),
     }
     if explainer.mode == "classification":  # store full calibrated probability matrix
+        is_mc = (
+            explainer.is_multiclass()
+            if callable(explainer.is_multiclass)
+            else explainer.is_multiclass
+        )
         try:  # pragma: no cover - defensive
-            if explainer.is_multiclass():
+            if is_mc:
                 if explainer.is_fast():
                     full_probs = explainer.interval_learner[  # pylint: disable=protected-access
                         explainer.num_features
-                    ].predict_proba(x, bins=bins)
+                    ].predict_proba(x, bins=bins, interval_summary=interval_summary)
                 else:
                     full_probs = explainer.interval_learner.predict_proba(  # pylint: disable=protected-access
-                        x, bins=bins
+                        x, bins=bins, interval_summary=interval_summary
                     )
             else:  # binary
                 if explainer.is_fast():
                     full_probs = explainer.interval_learner[  # pylint: disable=protected-access
                         explainer.num_features
-                    ].predict_proba(x, bins=bins)
+                    ].predict_proba(x, bins=bins, interval_summary=interval_summary)
                 else:
                     full_probs = explainer.interval_learner.predict_proba(  # pylint: disable=protected-access
-                        x, bins=bins
+                        x, bins=bins, interval_summary=interval_summary
                     )
             prediction["__full_probabilities__"] = full_probs
         except (AttributeError, CalibratedError) as exc:

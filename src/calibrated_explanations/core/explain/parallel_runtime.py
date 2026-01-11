@@ -204,6 +204,7 @@ def build_explain_execution_plan(
         bins=request.bins,
         features_to_ignore=features_to_ignore_array,
         feature_filter_per_instance_ignore=feature_filter_per_instance_ignore,
+        interval_summary=getattr(request, "interval_summary", None),
         use_plugin=False,
         skip_instance_parallel=False,
     )

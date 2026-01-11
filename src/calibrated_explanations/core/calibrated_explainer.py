@@ -43,6 +43,7 @@ from ..utils.exceptions import (
     ValidationError,
 )
 from .reject.policy import RejectPolicy
+from .prediction.interval_summary import IntervalSummary, coerce_interval_summary
 
 # Lazy imports deferred to avoid cross-sibling coupling
 # These are imported inside methods/properties where used
@@ -175,6 +176,9 @@ class CalibratedExplainer:
         self.sample_percentiles = kwargs.get("sample_percentiles", [25, 50, 75])
         self.verbose = kwargs.get("verbose", False)
         self.bins = bins
+        self.interval_summary = coerce_interval_summary(
+            kwargs.get("interval_summary", IntervalSummary.REGULARIZED_MEAN)
+        )
 
         self.__fast = kwargs.get("fast", False)
         self.__noise_type = kwargs.get("noise_type", "uniform")
@@ -1543,6 +1547,7 @@ class CalibratedExplainer:
         classes: Any = None,
         bins: Any = None,
         feature: int | None = None,
+        interval_summary: Any | None = None,
         **kwargs,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
         """Predict calibrated values and intervals."""
@@ -1553,6 +1558,7 @@ class CalibratedExplainer:
             classes=classes,
             bins=bins,
             feature=feature,
+            interval_summary=interval_summary,
             **kwargs,
         )
 
@@ -1602,6 +1608,7 @@ class CalibratedExplainer:
         classes=None,
         bins=None,
         feature=None,
+        interval_summary=None,
         **kwargs,
     ):
         """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
@@ -1620,6 +1627,7 @@ class CalibratedExplainer:
                     classes=classes,
                     bins=bins,
                     feature=feature,
+                    interval_summary=interval_summary,
                     **kwargs,
                 )
             return orchestrator.predict(
@@ -1629,6 +1637,7 @@ class CalibratedExplainer:
                 classes=classes,
                 bins=bins,
                 feature=feature,
+                interval_summary=interval_summary,
                 **kwargs,
             )
 
@@ -1673,7 +1682,12 @@ class CalibratedExplainer:
                 return orchestrator.predict(x_subset, **kw)
 
             return self.reject_orchestrator.apply_policy(
-                effective_policy, x, explain_fn=_predict_fn, bins=bins, **kwargs
+                effective_policy,
+                x,
+                explain_fn=_predict_fn,
+                bins=bins,
+                interval_summary=interval_summary,
+                **kwargs,
             )
         # Delegate directly to the orchestrator implementation method so
         # tests that inject a minimal/mock PluginManager (with a
@@ -1689,6 +1703,7 @@ class CalibratedExplainer:
                 classes=classes,
                 bins=bins,
                 feature=feature,
+                interval_summary=interval_summary,
                 **kwargs,
             )
         return orchestrator.predict(
@@ -1698,6 +1713,7 @@ class CalibratedExplainer:
             classes=classes,
             bins=bins,
             feature=feature,
+            interval_summary=interval_summary,
             **kwargs,
         )
 
@@ -2355,6 +2371,10 @@ class CalibratedExplainer:
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
+        if "interval_summary" not in kwargs or kwargs["interval_summary"] is None:
+            kwargs["interval_summary"] = self.interval_summary
+        else:
+            kwargs["interval_summary"] = coerce_interval_summary(kwargs["interval_summary"])
 
         if not calibrated:
             if self.mode == "regression":
@@ -2454,6 +2474,9 @@ class CalibratedExplainer:
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
+
+        # Inject default interval_summary if not provided
+        kwargs.setdefault("interval_summary", self.interval_summary)
 
         if not calibrated:
             if threshold is not None:

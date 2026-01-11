@@ -16,6 +16,7 @@ import numpy as np
 from ..utils import safe_first_element
 from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
 from .venn_abers import VennAbers
+import inspect
 
 
 class IntervalRegressor:
@@ -156,7 +157,7 @@ class IntervalRegressor:
         return new_storage
 
     # pylint: disable=too-many-locals
-    def predict_probability(self, x, y_threshold, bins=None):
+    def predict_probability(self, x, y_threshold, bins=None, interval_summary=None):
         """Predict probabilistic regression probabilities with confidence intervals.
 
         Probabilistic regression (also called thresholded regression in the architecture layer)
@@ -174,6 +175,8 @@ class IntervalRegressor:
         bins
             array-like of shape (n_samples,), default=None
             Mondrian categories
+        interval_summary
+            Strategy for selecting the point estimate from interval bounds.
 
         Returns
         -------
@@ -209,11 +212,17 @@ class IntervalRegressor:
         if np.isscalar(self.y_threshold) or isinstance(self.y_threshold, tuple):
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
-            proba, low, high = self.split["va"].predict_proba(
-                x,
-                output_interval=True,
-                bins=normalized_bins if normalized_bins is not None else None,
-            )
+            # Call predict_proba defensively: pass only supported kwargs
+            predict_fn = getattr(self.split["va"], "predict_proba")
+            sig = inspect.signature(predict_fn)
+            call_kwargs = {}
+            if "output_interval" in sig.parameters:
+                call_kwargs["output_interval"] = True
+            if "bins" in sig.parameters:
+                call_kwargs["bins"] = normalized_bins if normalized_bins is not None else None
+            if "interval_summary" in sig.parameters:
+                call_kwargs["interval_summary"] = interval_summary
+            proba, low, high = predict_fn(x, **call_kwargs)
             return proba[:, 1], low, high, None
 
         bins = iter_bins
@@ -222,9 +231,16 @@ class IntervalRegressor:
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            p, low, high = self.split["va"].predict_proba(
-                x[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
-            )
+            predict_fn = getattr(self.split["va"], "predict_proba")
+            sig = inspect.signature(predict_fn)
+            call_kwargs = {}
+            if "output_interval" in sig.parameters:
+                call_kwargs["output_interval"] = True
+            if "bins" in sig.parameters:
+                call_kwargs["bins"] = [bins[i]]
+            if "interval_summary" in sig.parameters:
+                call_kwargs["interval_summary"] = interval_summary
+            p, low, high = predict_fn(x[i, :].reshape(1, -1), **call_kwargs)
             p = safe_first_element(p, col=1)
             low = safe_first_element(low)
             high = safe_first_element(high)

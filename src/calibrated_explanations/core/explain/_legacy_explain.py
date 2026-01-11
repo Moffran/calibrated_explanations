@@ -34,6 +34,7 @@ def explain(
     bins=None,
     *,
     features_to_ignore: Optional[Sequence[int]] = None,
+    interval_summary: Any | None = None,
 ):
     """Legacy implementation of :meth:`CalibratedExplainer.explain`.
 
@@ -81,6 +82,7 @@ def explain(
         low_high_percentiles,
         bins,
         features_to_ignore,
+        interval_summary=interval_summary,
     )
 
     feature_weights: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}

@@ -46,6 +46,7 @@ from ...utils.exceptions import (
     NotFittedError,
     ValidationError,
 )
+from .interval_summary import coerce_interval_summary
 from .validation import check_interval_runtime_metadata
 
 if TYPE_CHECKING:
@@ -337,6 +338,7 @@ class PredictionOrchestrator:
         classes=None,
         bins=None,
         feature=None,
+        interval_summary=None,
         **kwargs,
     ):
         """Execute the internal prediction method for classification and regression cases.
@@ -368,9 +370,9 @@ class PredictionOrchestrator:
         Returns
         -------
         predict : ndarray of shape (n_samples,)
-            The prediction for the test data. For classification, this is the regularized probability
-            of the positive class, derived using the intervals from VennAbers. For regression, this is the
-            median prediction from the ConformalPredictiveSystem.
+            The prediction for the test data. For classification, this is the selected summary of the
+            Venn-Abers interval (regularized mean by default) for the positive class. For regression,
+            this is the median prediction from the ConformalPredictiveSystem.
         low : ndarray of shape (n_samples,)
             The lower bound of the prediction interval. For classification, this is derived using
             VennAbers. For regression, this is the lower percentile given as parameter, derived from the
@@ -391,6 +393,9 @@ class PredictionOrchestrator:
             bins = np.asarray(bins)
         if not self.explainer.initialized:
             raise NotFittedError("The learner must be initialized before calling predict.")
+        interval_summary = coerce_interval_summary(
+            interval_summary if interval_summary is not None else self.explainer.interval_summary
+        )
         if feature is None and self.explainer.is_fast():
             feature = self.explainer.num_features  # Use the calibrator defined using X_cal
         if self.explainer.mode == "classification":
@@ -398,10 +403,20 @@ class PredictionOrchestrator:
                 if self.explainer.is_fast():
                     predict, low, high, new_classes = self.explainer.interval_learner[
                         feature
-                    ].predict_proba(x, output_interval=True, classes=classes, bins=bins)
+                    ].predict_proba(
+                        x,
+                        output_interval=True,
+                        classes=classes,
+                        bins=bins,
+                        interval_summary=interval_summary,
+                    )
                 else:
                     predict, low, high, new_classes = self.explainer.interval_learner.predict_proba(
-                        x, output_interval=True, classes=classes, bins=bins
+                        x,
+                        output_interval=True,
+                        classes=classes,
+                        bins=bins,
+                        interval_summary=interval_summary,
                     )
                 if classes is None:
                     return (
@@ -416,11 +431,11 @@ class PredictionOrchestrator:
 
             if self.explainer.is_fast():
                 predict, low, high = self.explainer.interval_learner[feature].predict_proba(
-                    x, output_interval=True, bins=bins
+                    x, output_interval=True, bins=bins, interval_summary=interval_summary
                 )
             else:
                 predict, low, high = self.explainer.interval_learner.predict_proba(
-                    x, output_interval=True, bins=bins
+                    x, output_interval=True, bins=bins, interval_summary=interval_summary
                 )
             return predict[:, 1], low, high, None
         if "regression" in self.explainer.mode:
@@ -500,10 +515,12 @@ class PredictionOrchestrator:
             try:
                 if self.explainer.is_fast():
                     return self.explainer.interval_learner[feature].predict_probability(
-                        x, threshold, bins=bins
+                        x, threshold, bins=bins, interval_summary=interval_summary
                     )
                 # pylint: disable=unexpected-keyword-arg
-                return self.explainer.interval_learner.predict_probability(x, threshold, bins=bins)
+                return self.explainer.interval_learner.predict_probability(
+                    x, threshold, bins=bins, interval_summary=interval_summary
+                )
             except:  # noqa: E722 - ADR-002: Use bare except + sys.exc_info to avoid catching 'Exception' explicitly
                 exc = sys.exc_info()[1]
                 if not isinstance(exc, Exception):

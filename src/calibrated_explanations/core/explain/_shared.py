@@ -251,6 +251,10 @@ class ExplainRequest:
 
     features_to_ignore: np.ndarray
     """Array of feature indices to skip during perturbation."""
+
+    interval_summary: Optional[Any] = None
+    """Interval summary strategy (REGULARIZED_MEAN, MEAN, etc.)."""
+
     extras: Any | None = None
     """Opaque extras forwarded from the explanation request (unused by executors)."""
     feature_filter_per_instance_ignore: Any | None = None

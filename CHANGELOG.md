@@ -56,6 +56,8 @@
   - Documented `feature_filter_per_instance_ignore` metadata in API reference for transparency and debugging.
   - Added performance tuning guide in `docs/practitioner/performance-tuning.md` with configuration examples and telemetry event descriptions.
 
+- **Interval Summary Selection (Release Task 10):** Added `IntervalSummary` enum logic to `CalibratedExplainer`, `PredictionOrchestrator`, and `ExplainOrchestrator` to support choosing between `regularized_mean` (default), `mean`, `lower`, and `upper` for probabilistic predictions and explanations. Updated `predict_proba`, `predict_calibrated`, `explain_factual`, and `explore_alternatives` (including legacy paths) to respect the selected summary strategy.
+
 ## [v0.10.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.1) - 2026-01-01
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...v0.10.1)

@@ -42,6 +42,7 @@ class ClassificationIntervalCalibrator(Protocol):
         output_interval: bool = False,
         classes: Sequence[Any] | None = None,
         bins: Sequence[Any] | None = None,
+        interval_summary: Any | None = None,
     ) -> Any:
         """Return calibrated probabilities or intervals for *x*."""
 
@@ -56,7 +57,7 @@ class ClassificationIntervalCalibrator(Protocol):
 class RegressionIntervalCalibrator(ClassificationIntervalCalibrator, Protocol):
     """Protocol extending classification calibrators with regression helpers."""
 
-    def predict_probability(self, x: Any) -> Any:
+    def predict_probability(self, x: Any, *, interval_summary: Any | None = None) -> Any:
         """Return calibrated low/high probabilities for *x*."""
 
     def predict_uncertainty(self, x: Any) -> Any:
