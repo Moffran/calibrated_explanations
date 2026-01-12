@@ -12,7 +12,7 @@ __all__ = ["FastIntervalCalibrator", "is_fast_interval_collection"]
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from calibrated_explanations.core.exceptions import CalibratedError
+from ..utils.exceptions import CalibratedError
 
 
 class FastIntervalCalibrator(Sequence[Any]):

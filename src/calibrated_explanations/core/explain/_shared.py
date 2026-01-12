@@ -271,6 +271,17 @@ class ExplainRequest:
     instance_slice: Optional[Tuple[int, int]] = None
     """(start, stop) indices when processing instance chunk."""
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 @dataclass
 class ExplainResponse:

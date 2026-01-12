@@ -6,6 +6,7 @@ This file lists prioritized private-member symbols with recommended actions.
 
 | Name | Count | In Src | Samples |
 | :--- | :--- | :--- | :--- |
-| _CacheFacadeFake | 3 | False | tests\unit\calibration\test_summaries.py:51;tests\unit\calibration\test_summaries.py:74;tests\unit\calibration\test_summaries.py:104 |
-| _ExplainerLike | 3 | False | tests\unit\calibration\test_summaries.py:57;tests\unit\calibration\test_summaries.py:75;tests\unit\calibration\test_summaries.py:105 |
-| _orig_undo | 1 | False | tests\unit\core\test_config_helpers.py:39 |
+| _cmd_validate_plot | 3 | True | tests\unit\plugins\test_cli_coverage.py:96;tests\unit\plugins\test_cli_coverage.py:103;tests\unit\plugins\test_cli_coverage.py:112 |
+| _format_common_metadata | 3 | True | tests\unit\plugins\test_cli_coverage.py:36;tests\unit\plugins\test_cli_coverage.py:37;tests\unit\plugins\test_cli_coverage.py:40 |
+| _cmd_list | 2 | True | tests\unit\plugins\test_cli_coverage.py:65;tests\unit\plugins\test_cli_coverage.py:83 |
+| _emit_header | 1 | True | tests\unit\plugins\test_cli_coverage.py:28 |

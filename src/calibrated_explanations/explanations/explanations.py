@@ -33,6 +33,17 @@ class ExportedExplanationCollection:
     metadata: Mapping[str, Any]
     explanations: Sequence[DomainExplanation]
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 def _jsonify(value: Any) -> Any:
     """Convert numpy objects and arrays into JSON-serialisable primitives."""

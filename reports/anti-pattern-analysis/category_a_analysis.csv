@@ -1,1 +1,5 @@
 name,def_file,test_usages,src_usages,is_name_mangled,allow_list_candidate,reason,remediation_strategy
+_cmd_validate_plot,calibrated_explanations\plugins\cli.py,3,1,False,False,,Refactor to public API
+_format_common_metadata,calibrated_explanations\plugins\cli.py,3,10,False,False,,Refactor to public API
+_cmd_list,calibrated_explanations\plugins\cli.py,2,2,False,False,,Refactor to public API
+_emit_header,calibrated_explanations\plugins\cli.py,1,14,False,False,,Refactor to public API

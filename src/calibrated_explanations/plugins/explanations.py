@@ -47,6 +47,17 @@ class ExplanationContext:
     interval_settings: Mapping[str, object]
     plot_settings: Mapping[str, object]
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 class ExplainerHandle:
     """Read-only wrapper exposing a constrained explainer API to plugins."""
@@ -246,6 +257,17 @@ class ExplanationRequest:
         except Exception:  # adr002_allow
             frozen_extras = MappingProxyType(dict(self.extras or {}))
         object.__setattr__(self, "extras", frozen_extras)
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 @dataclass

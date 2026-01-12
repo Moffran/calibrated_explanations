@@ -1,4 +1,5 @@
 name,count,samples,in_src
-_CacheFacadeFake,3,tests\unit\calibration\test_summaries.py:51;tests\unit\calibration\test_summaries.py:74;tests\unit\calibration\test_summaries.py:104,False
-_ExplainerLike,3,tests\unit\calibration\test_summaries.py:57;tests\unit\calibration\test_summaries.py:75;tests\unit\calibration\test_summaries.py:105,False
-_orig_undo,1,tests\unit\core\test_config_helpers.py:39,False
+_cmd_validate_plot,3,tests\unit\plugins\test_cli_coverage.py:96;tests\unit\plugins\test_cli_coverage.py:103;tests\unit\plugins\test_cli_coverage.py:112,True
+_format_common_metadata,3,tests\unit\plugins\test_cli_coverage.py:36;tests\unit\plugins\test_cli_coverage.py:37;tests\unit\plugins\test_cli_coverage.py:40,True
+_cmd_list,2,tests\unit\plugins\test_cli_coverage.py:65;tests\unit\plugins\test_cli_coverage.py:83,True
+_emit_header,1,tests\unit\plugins\test_cli_coverage.py:28,True

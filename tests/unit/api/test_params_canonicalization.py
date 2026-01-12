@@ -1,8 +1,13 @@
+import pytest
+import warnings
+
 from calibrated_explanations.api.params import (
     ALIAS_MAP,
     canonicalize_kwargs,
     validate_param_combination,
+    warn_on_aliases,
 )
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_alias_mapping_adds_canonical_when_missing():
@@ -36,3 +41,24 @@ def test_alias_map_contains_expected_minimal_keys():
     # Guard minimal surface; can expand later
     for k in ("alpha", "alphas", "n_jobs"):
         assert k in ALIAS_MAP
+
+
+def test_validate_param_combination_raises_on_conflict():
+    kwargs = {"threshold": 0.5, "confidence_level": 0.95}
+    with pytest.raises(ConfigurationError, match="mutually exclusive"):
+        validate_param_combination(kwargs)
+
+
+def test_warn_on_aliases_emits_warning():
+    kwargs = {"alpha": (5, 95)}
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        warn_on_aliases(kwargs)
+        # Check that warnings were issued
+        assert len(w) >= 1
+        # Check that at least one is UserWarning or DeprecationWarning
+        categories = [warn.category for warn in w]
+        assert UserWarning in categories or DeprecationWarning in categories
+        # Check message
+        messages = [str(warn.message) for warn in w]
+        assert any("alpha" in msg and "deprecated" in msg.lower() for msg in messages)

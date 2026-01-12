@@ -873,6 +873,17 @@ class ExplanationPluginDescriptor:
         """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 @dataclass(frozen=True)
 class IntervalPluginDescriptor:
@@ -887,6 +898,17 @@ class IntervalPluginDescriptor:
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
         """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 _EXPLANATION_PLUGINS: Dict[str, ExplanationPluginDescriptor] = {}
@@ -910,6 +932,17 @@ class PlotBuilderDescriptor:
         """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 @dataclass(frozen=True)
 class PlotRendererDescriptor:
@@ -925,6 +958,17 @@ class PlotRendererDescriptor:
         """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 @dataclass(frozen=True)
 class PlotStyleDescriptor:
@@ -936,6 +980,17 @@ class PlotStyleDescriptor:
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
         """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 _PLOT_BUILDERS: Dict[str, PlotBuilderDescriptor] = {}
@@ -1435,6 +1490,17 @@ class PluginDiscoveryRecord:
     source: str
     metadata: Mapping[str, Any] | None = field(default=None, repr=False)
     details: Mapping[str, Any] = field(default_factory=dict, repr=False)
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 @dataclass

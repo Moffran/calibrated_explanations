@@ -46,6 +46,17 @@ class PlotRenderContext:
     save_ext: str | Sequence[str] | None
     options: Mapping[str, Any]
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
 
 @dataclass
 class PlotRenderResult:
