@@ -24,7 +24,11 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
-from ...logging import ensure_logging_context_filter, logging_context, telemetry_diagnostic_mode, update_logging_context
+from ...logging import (
+    ensure_logging_context_filter,
+    logging_context,
+    telemetry_diagnostic_mode,
+)
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
     ExplainerHandle,
@@ -149,7 +153,11 @@ class ExplanationOrchestrator:
         condition_labels = None
         if selected_condition_source == "prediction":
             predictions = self.explainer.predict(
-                x_cal, calibrated=True, uq_interval=False, bins=self.explainer.bins, _ce_skip_reject=True
+                x_cal,
+                calibrated=True,
+                uq_interval=False,
+                bins=self.explainer.bins,
+                _ce_skip_reject=True,
             )
             if isinstance(predictions, tuple):
                 predictions = predictions[0]
@@ -276,21 +284,23 @@ class ExplanationOrchestrator:
         if not _ce_skip_reject:
             candidate_policy = reject_policy
             if candidate_policy is None:
-                candidate_policy = getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE)
+                candidate_policy = getattr(
+                    self.explainer, "default_reject_policy", RejectPolicy.NONE
+                )
 
             try:
                 effective_policy = RejectPolicy(candidate_policy)
-            except Exception:
+            except Exception:  # adr002_allow
                 effective_policy = RejectPolicy.NONE
 
             if effective_policy is not RejectPolicy.NONE:
                 # Ensure reject orchestrator is available (implicit enable)
                 try:
                     _ = self.explainer.reject_orchestrator
-                except Exception:
+                except Exception:  # adr002_allow
                     try:
                         self.explainer.plugin_manager.initialize_orchestrators()
-                    except Exception:
+                    except Exception:  # adr002_allow
                         pass
 
                 def _explain_fn(x_subset, **inner_kw):
@@ -352,9 +362,7 @@ class ExplanationOrchestrator:
                 monitor.reset_usage()
             try:
                 batch = plugin.explain_batch(x, request)
-            except (
-                Exception
-            ) as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
+            except Exception as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
                 raise ConfigurationError(
                     f"Explanation plugin execution failed for mode '{mode}': {exc}"
                 ) from exc
@@ -1076,7 +1084,7 @@ class ExplanationOrchestrator:
                 candidate = builder()
                 if isinstance(candidate, dict):
                     payload.update(candidate)
-            except Exception:
+            except Exception:  # adr002_allow
                 # best-effort only; fall through to extract compact telemetry
                 pass
 
@@ -1112,15 +1120,14 @@ class ExplanationOrchestrator:
                         if isinstance(t, dict):
                             deps = t
                 if isinstance(deps, dict):
-                    interval_deps = (
-                        deps.get("interval_dependencies")
-                        or deps.get("metadata", {}).get("interval_dependencies")
-                    )
+                    interval_deps = deps.get("interval_dependencies") or deps.get(
+                        "metadata", {}
+                    ).get("interval_dependencies")
                     if interval_deps:
                         payload.setdefault("interval_dependencies", interval_deps)
-            except Exception:
+            except Exception:  # adr002_allow
                 pass
-        except Exception:
+        except Exception:  # adr002_allow
             # best-effort enrichment only
             pass
 

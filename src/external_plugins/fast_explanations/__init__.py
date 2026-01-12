@@ -14,9 +14,9 @@ from typing import Any
 import numpy as np
 
 from calibrated_explanations import __version__ as package_version
+from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
 from calibrated_explanations.explanations.explanation import FastExplanation
 from calibrated_explanations.plugins.builtins import _LegacyExplanationBase
-from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
 from calibrated_explanations.plugins.intervals import (
     IntervalCalibratorContext,
     IntervalCalibratorPlugin,

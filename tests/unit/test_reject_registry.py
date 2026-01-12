@@ -35,10 +35,18 @@ def test_register_custom_strategy_and_apply():
 
     def custom_strategy(policy, x, explain_fn=None, **kwargs):
         # Return a recognizable RejectResult
-        return RejectResult(prediction=["ok"], explanation=None, rejected=[True], policy=RejectPolicy.PREDICT_AND_FLAG, metadata={"custom": True})
+        return RejectResult(
+            prediction=["ok"],
+            explanation=None,
+            rejected=[True],
+            policy=RejectPolicy.PREDICT_AND_FLAG,
+            metadata={"custom": True},
+        )
 
     ro.register_strategy("custom.foo", custom_strategy)
-    res = ro.apply_policy(RejectPolicy.PREDICT_AND_FLAG, x=[1], explain_fn=None, strategy="custom.foo")
+    res = ro.apply_policy(
+        RejectPolicy.PREDICT_AND_FLAG, x=[1], explain_fn=None, strategy="custom.foo"
+    )
     assert isinstance(res, RejectResult)
     assert res.metadata is not None and res.metadata.get("custom") is True
 

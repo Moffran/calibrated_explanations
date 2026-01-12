@@ -45,24 +45,18 @@ if not hasattr(pytest.MonkeyPatch, "addfinalizer"):
 def reset_toml_modules() -> None:
     """Restore TOML reader/writer modules when needed."""
 
-    config_helpers.set_toml_modules_for_testing(
-        tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W
-    )
+    config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W)
 
 
 @pytest.fixture(autouse=True)
 def ensure_toml_modules_restored() -> Iterator[None]:
     """Always restore the TOML modules before and after each test."""
 
-    config_helpers.set_toml_modules_for_testing(
-        tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W
-    )
+    config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W)
     try:
         yield
     finally:
-        config_helpers.set_toml_modules_for_testing(
-            tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W
-        )
+        config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W)
 
 
 @pytest.mark.parametrize(
@@ -167,7 +161,9 @@ def testread_pyproject_section_integration(tmp_path, monkeypatch):
     }
 
 
-def test_read_pyproject_section_handles_load_error(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_read_pyproject_section_handles_load_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """Load errors should be swallowed as empty config."""
     module = config_helpers
 
@@ -221,7 +217,9 @@ def test_write_pyproject_section_rejects_non_mapping_prefix(
     assert write_pyproject_section(("tool", "calibrated_explanations"), {"k": "v"}) is False
 
 
-def test_write_pyproject_section_rejects_non_mapping_leaf(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_write_pyproject_section_rejects_non_mapping_leaf(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """Non-dict parent values should not be mutated."""
     module = config_helpers
 
@@ -241,10 +239,14 @@ def test_write_pyproject_section_rejects_non_mapping_leaf(monkeypatch: pytest.Mo
     reset_toml_modules()
     config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=DummyTomliW)
 
-    assert write_pyproject_section(("tool", "calibrated_explanations", "logging"), {"k": "v"}) is False
+    assert (
+        write_pyproject_section(("tool", "calibrated_explanations", "logging"), {"k": "v"}) is False
+    )
 
 
-def test_write_pyproject_section_handles_writer_failure(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_write_pyproject_section_handles_writer_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """Writer exceptions should return False."""
     module = config_helpers
 
@@ -261,7 +263,9 @@ def test_write_pyproject_section_handles_writer_failure(monkeypatch: pytest.Monk
     assert write_pyproject_section(("tool", "calibrated_explanations"), {"k": "v"}) is False
 
 
-def test_read_pyproject_section_reraises_base_exception(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+def test_read_pyproject_section_reraises_base_exception(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     """Non-Exception errors should bubble up."""
     module = config_helpers
 
@@ -295,7 +299,9 @@ def test_write_pyproject_section_stops_on_non_mapping_cursor(
     reset_toml_modules()
     config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=DummyTomliW)
 
-    assert write_pyproject_section(("tool", "calibrated_explanations", "logging"), {"k": "v"}) is False
+    assert (
+        write_pyproject_section(("tool", "calibrated_explanations", "logging"), {"k": "v"}) is False
+    )
 
 
 def test_write_pyproject_section_requires_writer(monkeypatch: pytest.MonkeyPatch, tmp_path):
@@ -310,7 +316,9 @@ def test_write_pyproject_section_requires_writer(monkeypatch: pytest.MonkeyPatch
     assert write_pyproject_section(("tool", "calibrated_explanations"), {"key": "value"}) is False
 
 
-def test_write_pyproject_section_returns_false_on_load_error(monkeypatch: pytest.MonkeyPatch, tmp_path):
+def test_write_pyproject_section_returns_false_on_load_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
     """Should short-circuit when loading pyproject fails."""
     module = config_helpers
 
@@ -354,4 +362,7 @@ def test_write_pyproject_section_updates_nested_path(monkeypatch: pytest.MonkeyP
 
     assert write_pyproject_section(path, payload) is True
     assert RecordingTomliW.dumped is not None
-    assert RecordingTomliW.dumped.get("tool", {}).get("calibrated_explanations", {}).get("logging") == payload
+    assert (
+        RecordingTomliW.dumped.get("tool", {}).get("calibrated_explanations", {}).get("logging")
+        == payload
+    )

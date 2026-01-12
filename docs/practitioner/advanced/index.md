@@ -26,4 +26,5 @@ use_plugins
 parallel_execution_playbook
 ../../foundations/how-to/plot_with_plotspec
 ../../foundations/concepts/telemetry
+../performance-tuning
 ```

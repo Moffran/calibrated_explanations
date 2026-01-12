@@ -8,9 +8,9 @@ import numpy as np
 from crepes import ConformalClassifier
 from crepes.extras import hinge
 
+from ...explanations.reject import RejectResult
 from ...utils.exceptions import ValidationError
 from .policy import RejectPolicy
-from ...explanations.reject import RejectResult
 
 
 class RejectOrchestrator:
@@ -97,7 +97,9 @@ class RejectOrchestrator:
         rejected = np.sum(prediction_set, axis=1) != 1
         return rejected, error_rate, reject_rate
 
-    def apply_policy(self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+    def apply_policy(
+        self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
+    ):
         """Apply a `RejectPolicy` to inputs and optionally produce predictions/explanations.
 
         Parameters
@@ -113,7 +115,9 @@ class RejectOrchestrator:
         # By default, resolve to `builtin.default` which preserves legacy semantics.
         strategy_name = kwargs.pop("strategy", None)
         strategy = self.resolve_strategy(strategy_name)
-        return strategy(policy, x, explain_fn=explain_fn, bins=bins, confidence=confidence, **kwargs)
+        return strategy(
+            policy, x, explain_fn=explain_fn, bins=bins, confidence=confidence, **kwargs
+        )
 
     # --- Registry helpers -------------------------------------------------
     def register_strategy(self, name: str, fn: Any) -> None:
@@ -123,9 +127,9 @@ class RejectOrchestrator:
         return a `RejectResult`.
         """
         if not isinstance(name, str) or not name:
-            raise ValueError("strategy name must be a non-empty string")
+            raise ValidationError("strategy name must be a non-empty string")
         if not callable(fn):
-            raise ValueError("strategy must be callable")
+            raise ValidationError("strategy must be callable")
         self._strategies[name] = fn
 
     def resolve_strategy(self, identifier: str | None):
@@ -145,25 +149,35 @@ class RejectOrchestrator:
         raise KeyError(f"Reject strategy '{identifier}' is not registered")
 
     # --- Builtin strategy (preserve previous apply_policy impl) -----------
-    def _builtin_strategy(self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+    def _builtin_strategy(
+        self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
+    ):
         """Builtin strategy that preserves the previous `apply_policy` semantics."""
         try:
             policy = RejectPolicy(policy)
-        except Exception:
+        except Exception:  # adr002_allow
             policy = RejectPolicy.NONE
 
         # If NONE, return a simple envelope indicating no action
         if policy is RejectPolicy.NONE:
-            return RejectResult(prediction=None, explanation=None, rejected=None, policy=policy, metadata=None)
+            return RejectResult(
+                prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
+            )
 
         # Ensure reject learner is initialized (implicit enable)
         if getattr(self.explainer, "reject_learner", None) is None:
             # Best-effort initialization using explainer calibration set
             try:
                 self.initialize_reject_learner()
-            except Exception:
+            except Exception:  # adr002_allow
                 # If initialization fails, surface minimal metadata but continue
-                return RejectResult(prediction=None, explanation=None, rejected=None, policy=policy, metadata={"init_error": True})
+                return RejectResult(
+                    prediction=None,
+                    explanation=None,
+                    rejected=None,
+                    policy=policy,
+                    metadata={"init_error": True},
+                )
 
         rejected, error_rate, reject_rate = self.predict_reject(x, bins=bins, confidence=confidence)
 
@@ -186,7 +200,7 @@ class RejectOrchestrator:
                 inner_kwargs = dict(kwargs) if kwargs is not None else {}
                 inner_kwargs["_ce_skip_reject"] = True
                 prediction = self.explainer.predict(x, **inner_kwargs)
-            except Exception:
+            except Exception:  # adr002_allow
                 prediction = None
 
         # Obtain explanations via provided callable according to policy
@@ -198,17 +212,23 @@ class RejectOrchestrator:
                     # explain only rejected instances
                     idx = [i for i, r in enumerate(rejected) if r]
                     explanation = explain_fn([x[i] for i in idx], **kwargs) if idx else None
-                elif policy is RejectPolicy.EXPLAIN_NON_REJECTS:
-                    idx = [i for i, r in enumerate(rejected) if not r]
-                    explanation = explain_fn([x[i] for i in idx], **kwargs) if idx else None
-                elif policy is RejectPolicy.SKIP_ON_REJECT:
+                elif (
+                    policy is RejectPolicy.EXPLAIN_NON_REJECTS
+                    or policy is RejectPolicy.SKIP_ON_REJECT
+                ):
                     idx = [i for i, r in enumerate(rejected) if not r]
                     explanation = explain_fn([x[i] for i in idx], **kwargs) if idx else None
                 elif policy is RejectPolicy.PREDICT_AND_FLAG:
                     # do not generate explanations, only flag
                     explanation = None
-            except Exception:
+            except Exception:  # adr002_allow
                 explanation = None
 
         metadata = {"error_rate": error_rate, "reject_rate": reject_rate}
-        return RejectResult(prediction=prediction, explanation=explanation, rejected=rejected, policy=policy, metadata=metadata)
+        return RejectResult(
+            prediction=prediction,
+            explanation=explanation,
+            rejected=rejected,
+            policy=policy,
+            metadata=metadata,
+        )

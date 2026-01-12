@@ -14,9 +14,9 @@ import warnings
 import numpy as np
 import venn_abers as va
 
+from ..core.prediction.interval_summary import IntervalSummary, coerce_interval_summary
 from ..utils import convert_targets_to_numeric
 from ..utils.exceptions import ConfigurationError
-from ..core.prediction.interval_summary import IntervalSummary, coerce_interval_summary
 
 
 class VennAbers:
@@ -182,7 +182,9 @@ class VennAbers:
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
-    def predict_proba(self, x, output_interval=False, classes=None, bins=None, interval_summary=None):
+    def predict_proba(
+        self, x, output_interval=False, classes=None, bins=None, interval_summary=None
+    ):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
         Parameters

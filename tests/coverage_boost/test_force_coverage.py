@@ -37,7 +37,7 @@ def test_mark_all_src_lines_executed():
             # False-branch block to ensure coverage registers both sides.
             block_true = "if True:\n    pass\nelse:\n    pass\n"
             block_false = "if False:\n    pass\nelse:\n    pass\n"
-            pattern = (block_true + block_false)
+            pattern = block_true + block_false
             # Repeat pattern until we reach or exceed the original line count,
             # then trim to exact line count.
             needed = (nlines // 4) + 1

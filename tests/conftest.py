@@ -1,7 +1,6 @@
 """Shared pytest fixtures for CalibratedExplainer tests."""
 
 from __future__ import annotations
-import ast
 import json
 import re
 import warnings
@@ -39,7 +38,6 @@ def debug_matplotlib_session_state(request: FixtureRequest):
     """
     import sys
     import json
-    import importlib
     from pathlib import Path
 
     root = Path(request.config.rootpath)
@@ -56,7 +54,9 @@ def debug_matplotlib_session_state(request: FixtureRequest):
                     "file": getattr(mod, "__file__", None),
                     "has_artist": hasattr(mod, "artist"),
                     "has_figure": hasattr(mod, "figure"),
-                    "spec": getattr(mod, "__spec__", None).name if getattr(mod, "__spec__", None) else None,
+                    "spec": getattr(mod, "__spec__", None).name
+                    if getattr(mod, "__spec__", None)
+                    else None,
                 }
             except Exception:
                 modules[m] = {"repr": "<uninspectable>"}
@@ -72,6 +72,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
         # Best-effort only; don't fail the test session because of debugging.
         pass
     yield
+
 
 """Avoid heavy top-level imports (CalibratedExplainer) to keep pytest
 collection fast. Imports of the explainer class are performed lazily inside
@@ -165,6 +166,7 @@ def pytest_sessionstart(session):
         try:
             import builtins
             import sys
+
             orig_import = builtins.__import__
 
             def tracing_import(name, globals=None, locals=None, fromlist=(), level=0):
@@ -207,7 +209,9 @@ def pytest_sessionstart(session):
                     pass
                 mod = orig_import(name, globals, locals, fromlist, level)
                 try:
-                    if name == "matplotlib" or (isinstance(name, str) and name.startswith("matplotlib.")):
+                    if name == "matplotlib" or (
+                        isinstance(name, str) and name.startswith("matplotlib.")
+                    ):
                         root = Path(session.config.rootpath)
                         out = root / ".pytest_matplotlib_imports.log"
                         entry = {
@@ -215,7 +219,9 @@ def pytest_sessionstart(session):
                             "import_name": name,
                             "module_repr": repr(mod),
                             "module_file": getattr(mod, "__file__", None),
-                            "sys_modules_keys": [k for k in sys.modules.keys() if k.startswith("matplotlib")],
+                            "sys_modules_keys": [
+                                k for k in sys.modules.keys() if k.startswith("matplotlib")
+                            ],
                         }
                         try:
                             with out.open("a", encoding="utf8") as fh:
@@ -298,7 +304,9 @@ def pytest_sessionstart(session):
             "Please refactor the tests to use public APIs and remove these entries.",
         ]
         for entry in non_legacy_allowlist:
-            msg_lines.append(f"- {entry.get('file')} ({entry.get('symbol')}) expires {entry.get('expiry')}")
+            msg_lines.append(
+                f"- {entry.get('file')} ({entry.get('symbol')}) expires {entry.get('expiry')}"
+            )
         raise pytest.UsageError("\n".join(msg_lines))
 
     violations = []
@@ -403,6 +411,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "Calibra
         # during pytest collection. This keeps `pytest` responsive when run
         # without needing the full plotting/calibration stack.
         from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+
         if learner is None:
             learner = DummyLearner(mode=mode)
         if x_cal is None:

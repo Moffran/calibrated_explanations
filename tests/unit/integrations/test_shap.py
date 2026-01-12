@@ -67,7 +67,9 @@ def test_should_use_cached_explainer_when_shape_matches(monkeypatch: pytest.Monk
 def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """ImportError disables the helper and returns empty result."""
     helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(ImportError("missing")))
+    monkeypatch.setattr(
+        shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(ImportError("missing"))
+    )
 
     explainer, reference = helper.preload()
 
@@ -83,7 +85,9 @@ def test_should_return_cached_when_shape_matches(monkeypatch: pytest.MonkeyPatch
     helper.explainer_instance = "cached"
     helper.reference_explanation = FakeExplanation(np.ones((2, 2)))
 
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError))
+    monkeypatch.setattr(
+        shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError)
+    )
 
     cached_instance, cached_reference = helper.preload(num_test=2)
 
@@ -116,7 +120,9 @@ def test_should_return_none_when_calibration_data_unusable(
     assert reference is None
 
 
-def test_should_build_and_cache_explainer_when_shap_available(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_should_build_and_cache_explainer_when_shap_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Happy path should build and reuse the cached explainer."""
     x_cal = np.arange(4, dtype=float).reshape(2, 2)
     helper = ShapHelper(explainer=DummyExplainer(x_cal))
@@ -131,7 +137,9 @@ def test_should_build_and_cache_explainer_when_shap_available(monkeypatch: pytes
     assert helper.enabled is True
 
     # Subsequent call with matching shape should reuse the cache
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError))
+    monkeypatch.setattr(
+        shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError)
+    )
     cached_same_shape = helper.preload(num_test=1)
     cached_default = helper.preload()
 

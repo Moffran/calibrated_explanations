@@ -6,10 +6,10 @@ configuration sources like pyproject.toml and environment variables.
 
 from __future__ import annotations
 
-
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, Sequence, Tuple
+
 from calibrated_explanations.core.exceptions import CalibratedError
 
 try:

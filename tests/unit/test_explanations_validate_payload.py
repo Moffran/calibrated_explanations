@@ -1,9 +1,7 @@
 import pytest
-import numpy as np
 from unittest.mock import MagicMock
 
 import calibrated_explanations.serialization as serialization
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
 from calibrated_explanations.utils.exceptions import ValidationError
 
 

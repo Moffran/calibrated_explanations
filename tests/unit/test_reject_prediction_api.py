@@ -22,7 +22,9 @@ class DummyRejectOrch:
         pred = None
         if explain_fn is not None:
             pred = explain_fn(x)
-        return RejectResult(prediction=pred, explanation=None, rejected=False, policy=policy, metadata={})
+        return RejectResult(
+            prediction=pred, explanation=None, rejected=False, policy=policy, metadata={}
+        )
 
 
 def test_predict_delegates_to_reject_orchestrator_for_non_none_policy():
@@ -62,9 +64,7 @@ def test_per_call_none_overrides_explainer_default_policy():
     dummy.plugin_manager = SimpleNamespace(initialize_orchestrators=lambda: None)
     dummy.default_reject_policy = RejectPolicy.EXPLAIN_ALL
 
-    result = CalibratedExplainer.predict_internal(
-        dummy, x=[10], reject_policy=RejectPolicy.NONE
-    )
+    result = CalibratedExplainer.predict_internal(dummy, x=[10], reject_policy=RejectPolicy.NONE)
 
     assert isinstance(result, tuple)
     assert dummy.reject_orchestrator.called is False

@@ -1188,7 +1188,7 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_pipeline:
         explainer.explain_fast(x_cal, _use_plugin=False)
         mock_pipeline.assert_called()
-        
+
     # explain_lime
     import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 

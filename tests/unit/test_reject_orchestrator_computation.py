@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from calibrated_explanations.core.reject.orchestrator import RejectOrchestrator
 
@@ -97,7 +96,9 @@ def test_initialize_and_predict_reject_multiclass(monkeypatch):
     proba2 = np.tile(np.array([0.4, 0.6]), (2, 1))
     classes2 = np.array([0, 1])
     expl.interval_learner = DummyIntervalLearner(proba2, classes2)
-    rejected, error_rate, reject_rate = orch.predict_reject(x=[[10], [20]], bins=None, confidence=0.95)
+    rejected, error_rate, reject_rate = orch.predict_reject(
+        x=[[10], [20]], bins=None, confidence=0.95
+    )
     assert isinstance(rejected, np.ndarray)
     assert rejected.shape[0] == 2
 

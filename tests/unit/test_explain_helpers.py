@@ -72,8 +72,22 @@ def test_merge_feature_result_updates_buffers():
     rule_values = [dict() for _ in range(n_instances)]
     # use lists for predict/low/high so per-feature assignments accept arrays
     instance_binned = [
-        {"predict": [None] * n_features, "low": [None] * n_features, "high": [None] * n_features, "current_bin": np.full(n_features, -1), "counts": [None] * n_features, "fractions": [None] * n_features},
-        {"predict": [None] * n_features, "low": [None] * n_features, "high": [None] * n_features, "current_bin": np.full(n_features, -1), "counts": [None] * n_features, "fractions": [None] * n_features},
+        {
+            "predict": [None] * n_features,
+            "low": [None] * n_features,
+            "high": [None] * n_features,
+            "current_bin": np.full(n_features, -1),
+            "counts": [None] * n_features,
+            "fractions": [None] * n_features,
+        },
+        {
+            "predict": [None] * n_features,
+            "low": [None] * n_features,
+            "high": [None] * n_features,
+            "current_bin": np.full(n_features, -1),
+            "counts": [None] * n_features,
+            "fractions": [None] * n_features,
+        },
     ]
 
     rule_boundaries = np.zeros((n_instances, n_features, 2), dtype=float)

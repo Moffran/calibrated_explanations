@@ -26,8 +26,12 @@ class IntervalCalibratorContext:
         # whatever mapping-like object was provided into a new dict.
         try:
             meta = dict(self.metadata) if self.metadata is not None else {}
-        except Exception:
-            meta = {} if self.metadata is None else {k: v for k, v in getattr(self.metadata, "items", lambda: ())()}
+        except Exception:  # adr002_allow
+            meta = (
+                {}
+                if self.metadata is None
+                else {k: v for k, v in getattr(self.metadata, "items", lambda: ())()}
+            )
         object.__setattr__(self, "metadata", meta)
 
 

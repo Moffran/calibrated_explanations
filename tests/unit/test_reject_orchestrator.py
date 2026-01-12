@@ -25,7 +25,13 @@ def test_register_and_resolve_strategy_and_apply():
 
     # register a custom strategy
     def strat(policy, x, **kwargs):
-        return RejectResult(prediction=[42], explanation=None, rejected=[False], policy=policy, metadata={"ok": True})
+        return RejectResult(
+            prediction=[42],
+            explanation=None,
+            rejected=[False],
+            policy=policy,
+            metadata={"ok": True},
+        )
 
     ro.register_strategy("my.strat", strat)
     resolved = ro.resolve_strategy("my.strat")

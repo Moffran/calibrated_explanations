@@ -7,6 +7,7 @@ and Venn-Abers scaling to deliver calibrated probabilities and intervals.
 Part of ADR-001: Core Decomposition Boundaries (Stage 1a).
 """
 
+import inspect
 import numbers
 from functools import singledispatchmethod
 
@@ -16,7 +17,6 @@ import numpy as np
 from ..utils import safe_first_element
 from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
 from .venn_abers import VennAbers
-import inspect
 
 
 class IntervalRegressor:
@@ -213,7 +213,7 @@ class IntervalRegressor:
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
             # Call predict_proba defensively: pass only supported kwargs
-            predict_fn = getattr(self.split["va"], "predict_proba")
+            predict_fn = self.split["va"].predict_proba
             sig = inspect.signature(predict_fn)
             call_kwargs = {}
             if "output_interval" in sig.parameters:
@@ -231,7 +231,7 @@ class IntervalRegressor:
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            predict_fn = getattr(self.split["va"], "predict_proba")
+            predict_fn = self.split["va"].predict_proba
             sig = inspect.signature(predict_fn)
             call_kwargs = {}
             if "output_interval" in sig.parameters:

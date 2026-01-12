@@ -593,7 +593,7 @@ class CalibratedExplainer:
 
         try:
             effective_policy = RejectPolicy(candidate_policy)
-        except Exception:
+        except Exception:  # adr002_allow
             effective_policy = RejectPolicy.NONE
 
         if effective_policy is RejectPolicy.NONE:
@@ -624,14 +624,16 @@ class CalibratedExplainer:
         try:
             # ensure plugin manager has set up orchestrators
             _ = self.reject_orchestrator
-        except Exception:
+        except Exception:  # adr002_allow
             # fallback: initialize via plugin manager if available
             try:
                 self.plugin_manager.initialize_orchestrators()
-            except Exception:
+            except Exception:  # adr002_allow
                 pass
 
-        return self.reject_orchestrator.apply_policy(effective_policy, x, explain_fn=_explain_fn, bins=bins)
+        return self.reject_orchestrator.apply_policy(
+            effective_policy, x, explain_fn=_explain_fn, bins=bins
+        )
 
     def ensure_interval_runtime_state(self) -> None:
         """Delegate to PredictionOrchestrator."""
@@ -1187,9 +1189,7 @@ class CalibratedExplainer:
                 # `initialize_interval_learner_for_fast_explainer` observe the
                 # raised exception. Fall back to the name-mangled implementation
                 # if the public alias is absent.
-                init_fn = getattr(
-                    self, "initialize_interval_learner_for_fast_explainer", None
-                )
+                init_fn = getattr(self, "initialize_interval_learner_for_fast_explainer", None)
                 if callable(init_fn):
                     init_fn()
                 else:
@@ -1644,7 +1644,6 @@ class CalibratedExplainer:
         # Support per-call reject policy selection. When a non-NONE policy is
         # selected, delegate to the RejectOrchestrator and return a RejectResult
         # envelope. Per-call policy overrides the explainer-level default.
-        from .reject.policy import RejectPolicy
 
         # Pop per-call policy if provided so downstream orchestrators don't
         # receive unexpected kwargs. Only an explicit per-call policy will
@@ -1659,17 +1658,17 @@ class CalibratedExplainer:
         else:
             try:
                 effective_policy = RejectPolicy(per_call_policy)
-            except Exception:
+            except Exception:  # adr002_allow
                 effective_policy = RejectPolicy.NONE
 
         if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
             # Ensure reject orchestrator is available (implicit enable)
             try:
                 _ = self.reject_orchestrator
-            except Exception:
+            except Exception:  # adr002_allow
                 try:
                     self.plugin_manager.initialize_orchestrators()
-                except Exception:
+                except Exception:  # adr002_allow
                     pass
 
             orchestrator = self.prediction_orchestrator

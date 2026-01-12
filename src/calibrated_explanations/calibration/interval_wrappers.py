@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 """Protocol-aware interval calibrator wrappers (ADR-013)."""
 __all__ = ["FastIntervalCalibrator", "is_fast_interval_collection"]
 
 
 from collections.abc import Iterable, Sequence
 from typing import Any
+
 from calibrated_explanations.core.exceptions import CalibratedError
 
 
@@ -93,6 +95,7 @@ class FastIntervalCalibrator(Sequence[Any]):
     def insert_calibration(self, x: Any, y: Any, *, warm_start: bool = False) -> None:
         """Insert additional calibration samples."""
         self._default().insert_calibration(x, y, warm_start=warm_start)
+
 
 def is_fast_interval_collection(value: Any) -> bool:
     """Return True when *value* is a FAST interval calibrator collection."""

@@ -582,6 +582,7 @@ class PluginManager:
         # non-fast modes. FAST is opt-in and must never be implicitly added
         # to the default fallback chain for `factual`/`alternative` modes.
         if mode != "fast":
+
             def _is_fast_id(idt: str) -> bool:
                 # Treat identifiers that explicitly reference 'fast' as FAST-mode
                 # identifiers. This covers patterns like 'core.explanation.fast',
@@ -923,21 +924,26 @@ class PluginManager:
 def pyproject_explanations(self) -> Dict[str, Any] | None:
     return self._pyproject_explanations
 
+
 @pyproject_explanations.setter
 def pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
     self._pyproject_explanations = value
+
 
 @property
 def pyproject_intervals(self) -> Dict[str, Any] | None:
     return self._pyproject_intervals
 
+
 @pyproject_intervals.setter
 def pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
     self._pyproject_intervals = value
 
+
 @property
 def pyproject_plots(self) -> Dict[str, Any] | None:
     return self._pyproject_plots
+
 
 @pyproject_plots.setter
 def pyproject_plots(self, value: Dict[str, Any] | None) -> None:

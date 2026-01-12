@@ -381,10 +381,10 @@ def explain_predict_step(
             inst_indices = as_int_array(inst_mask)
             if inst_indices.size:
                 ignore_mask[idx, inst_indices] = True
-    
+
     # print(f"DEBUG: explainer type: {type(explainer)}")
     # print(f"DEBUG: explainer.is_multiclass type: {type(explainer.is_multiclass)}")
-    
+
     x_cal = explainer.x_cal
     base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
         x,
@@ -396,9 +396,7 @@ def explain_predict_step(
     )
 
     is_mc_property = (
-        explainer.is_multiclass()
-        if callable(explainer.is_multiclass)
-        else explainer.is_multiclass
+        explainer.is_multiclass() if callable(explainer.is_multiclass) else explainer.is_multiclass
     )
     prediction = {
         "predict": base_predict,

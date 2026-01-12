@@ -237,6 +237,7 @@ ignore = [
     "S",
     "B",
     "I001",
+    "N806",
 ]
 "src/calibrated_explanations/core/calibrated_explainer.py" = [
     "I001",
@@ -245,6 +246,9 @@ ignore = [
 "src/calibrated_explanations/core/prediction_helpers.py" = [
     "I001",
     "UP006",
+]
+"src/calibrated_explanations/core/wrap_explainer.py" = [
+    "N803",
 ]
 
 [tool.ruff.format]

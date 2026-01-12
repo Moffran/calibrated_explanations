@@ -28,6 +28,7 @@ from ..utils.exceptions import CalibratedError, ConfigurationError, NotFittedErr
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
     pass
+from ..calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
     FeatureFilterConfig,
     FeatureFilterResult,
@@ -48,7 +49,6 @@ from .explanations import (
     ExplanationPlugin,
     ExplanationRequest,
 )
-from ..calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from .intervals import IntervalCalibratorContext, IntervalCalibratorPlugin
 from .plots import PlotBuilder, PlotRenderContext, PlotRenderer, PlotRenderResult
 from .predict import PredictBridge
@@ -632,7 +632,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             if exec_obj is not None:
                 try:
                     exec_obj.__enter__()
-                except Exception:
+                except Exception:  # adr002_allow
                     # Best-effort: if entering fails, continue and let the
                     # runtime/context manager attempt to enter it as intended.
                     pass

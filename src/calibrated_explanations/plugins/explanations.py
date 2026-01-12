@@ -20,6 +20,7 @@ from typing import (
     Type,
     runtime_checkable,
 )
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -148,7 +149,7 @@ class ExplainerHandle:
     @latest_explanation.setter
     def latest_explanation(self, value: Any) -> None:
         """Allow plugins to set the latest explanation on the underlying explainer."""
-        setattr(self.__explainer, "latest_explanation", value)
+        self.__explainer.latest_explanation = value
 
     @property
     def last_explanation_mode(self) -> Any:
@@ -158,7 +159,7 @@ class ExplainerHandle:
     @last_explanation_mode.setter
     def last_explanation_mode(self, value: Any) -> None:
         """Allow plugins to set the last explanation mode on the underlying explainer."""
-        setattr(self.__explainer, "last_explanation_mode", value)
+        self.__explainer.last_explanation_mode = value
 
     def predict(self, *args: Any, **kwargs: Any) -> Any:
         """Return calibrated predictions from the underlying explainer."""
@@ -222,7 +223,7 @@ class ExplanationRequest:
             if isinstance(val, np.ndarray):
                 try:
                     return tuple(_freeze_value(x) for x in val.tolist())
-                except Exception:
+                except Exception:  # adr002_allow
                     return tuple(val.tolist())
             if isinstance(val, (list, tuple)):
                 return tuple(_freeze_value(x) for x in val)
@@ -242,7 +243,7 @@ class ExplanationRequest:
                 if self.extras is not None
                 else MappingProxyType({})
             )
-        except Exception:
+        except Exception:  # adr002_allow
             frozen_extras = MappingProxyType(dict(self.extras or {}))
         object.__setattr__(self, "extras", frozen_extras)
 

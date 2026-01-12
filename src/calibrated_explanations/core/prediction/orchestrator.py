@@ -26,6 +26,8 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
+from ...calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
+from ...logging import logging_context
 from ...plugins import (
     ClassificationIntervalCalibrator,
     IntervalCalibratorContext,
@@ -36,8 +38,6 @@ from ...plugins import (
     find_interval_plugin_trusted,
     is_identifier_denied,
 )
-from ...calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
-from ...logging import logging_context, update_logging_context
 from ...utils import assert_threshold
 from ...utils.exceptions import (
     CalibratedError,
@@ -196,7 +196,7 @@ class PredictionOrchestrator:
         if reject_policy is not None:
             try:
                 effective_policy = RejectPolicy(reject_policy)
-            except Exception:
+            except Exception:  # adr002_allow
                 effective_policy = RejectPolicy.NONE
         else:
             effective_policy = RejectPolicy.NONE
@@ -205,10 +205,10 @@ class PredictionOrchestrator:
             # Ensure reject orchestrator is available (implicit enable)
             try:
                 _ = self.explainer.reject_orchestrator
-            except Exception:
+            except Exception:  # adr002_allow
                 try:
                     self.explainer.plugin_manager.initialize_orchestrators()
-                except Exception:
+                except Exception:  # adr002_allow
                     pass
 
             def _predict_fn(x_subset, **kw):
@@ -748,7 +748,9 @@ class PredictionOrchestrator:
         # metadata as a plain mutable dict so plugins can add entries during
         # execution. The context will be frozen when persisted by
         # `obtain_interval_calibrator()`.
-        metadata_for_plugins = {key: _freeze_context_value(value) for key, value in enriched_metadata.items()}
+        metadata_for_plugins = {
+            key: _freeze_context_value(value) for key, value in enriched_metadata.items()
+        }
         return IntervalCalibratorContext(
             learner=self.explainer.learner,
             calibration_splits=calibration_splits,
@@ -789,7 +791,7 @@ class PredictionOrchestrator:
                     identifier=identifier,
                     fast=fast,
                     plugin=plugin,
-            )
+                )
         self.capture_interval_calibrators(
             context=context,
             calibrator=calibrator,

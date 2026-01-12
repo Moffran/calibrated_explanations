@@ -8,4 +8,3 @@ def test_is_policy_enabled_basic():
     assert is_policy_enabled("none") is False
     assert is_policy_enabled(None) is False
     assert is_policy_enabled(12345) is False
-

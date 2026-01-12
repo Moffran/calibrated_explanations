@@ -1,5 +1,4 @@
 import logging
-import os
 
 import pytest
 
@@ -34,9 +33,7 @@ def test_should_fall_back_to_pyproject_when_env_missing(monkeypatch):
         return {"diagnostic_mode": True}
 
     monkeypatch.delenv("CE_TELEMETRY_DIAGNOSTIC_MODE", raising=False)
-    monkeypatch.setattr(
-        "calibrated_explanations.logging.read_pyproject_section", _fake_pyproject
-    )
+    monkeypatch.setattr("calibrated_explanations.logging.read_pyproject_section", _fake_pyproject)
 
     assert telemetry_diagnostic_mode() is True
 

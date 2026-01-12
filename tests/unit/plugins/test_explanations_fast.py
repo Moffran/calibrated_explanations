@@ -5,9 +5,12 @@ from __future__ import annotations
 from calibrated_explanations.plugins import explanations_fast
 from calibrated_explanations.plugins.explanations_fast import register_fast_explanation_plugin
 
+
 def test_should_skip_registration_when_descriptor_exists(monkeypatch):
     """Should not register when a descriptor already exists."""
-    monkeypatch.setattr(explanations_fast, "find_explanation_descriptor", lambda _identifier: object())
+    monkeypatch.setattr(
+        explanations_fast, "find_explanation_descriptor", lambda _identifier: object()
+    )
 
     captured = []
 

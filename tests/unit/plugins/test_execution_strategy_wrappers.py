@@ -382,7 +382,9 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
             # No baseline ignore; all filtering comes from FAST + request.
             self.features_to_ignore = np.array([], dtype=int)
             self.num_features = num_features
-            self.feature_filter_config_value = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
+            self.feature_filter_config_value = FeatureFilterConfig(
+                enabled=True, per_instance_top_k=1
+            )
             from unittest.mock import MagicMock
 
             self.plugin_manager = MagicMock()

@@ -65,7 +65,7 @@ class ExplainerConfig:
 
     @property
     def perf_factory(self):
-        return getattr(self, '_perf_factory', None)
+        return getattr(self, "_perf_factory", None)
 
 
 class ExplainerBuilder:

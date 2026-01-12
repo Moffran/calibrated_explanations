@@ -4,7 +4,6 @@ import numpy as np
 
 from calibrated_explanations.plugins import PlotRenderContext
 from calibrated_explanations.plugins.builtins import PlotSpecDefaultBuilder
-from calibrated_explanations.viz import _legacy_get_fill_color
 from calibrated_explanations.viz import legacy_get_fill_color
 from calibrated_explanations.viz import PlotSpec
 

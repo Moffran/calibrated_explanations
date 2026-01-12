@@ -4,7 +4,7 @@ import contextlib
 import contextvars
 import logging
 import os
-from typing import Any, Dict, Iterator, Mapping
+from typing import Any, Dict, Iterator
 
 from .core.config_helpers import read_pyproject_section
 

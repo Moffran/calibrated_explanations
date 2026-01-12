@@ -198,7 +198,7 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
                 "provider": provider,
                 "source": source,
                 "decision": "skipped_untrusted",
-            }
+            },
         )
     _WARNED_UNTRUSTED.add(name)
 
@@ -1603,7 +1603,7 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                         "source": "entrypoint",
                         "decision": "skipped_denied",
                         "deny_source": "CE_DENY_PLUGIN",
-                    }
+                    },
                 )
             continue
 

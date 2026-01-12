@@ -32,7 +32,9 @@ def extract_private_symbols_from_ast(txt: str, path: Path) -> Set[str] | None:
             if len(node.args) >= 2:
                 arg = node.args[1]
                 val = None
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):  # pragma: no branch
+                if isinstance(arg, ast.Constant) and isinstance(
+                    arg.value, str
+                ):  # pragma: no branch
                     val = arg.value
                 elif isinstance(arg, ast.Str):  # pragma: no branch - Python <3.8 compatibility
                     val = arg.s  # type: ignore[attr-defined]

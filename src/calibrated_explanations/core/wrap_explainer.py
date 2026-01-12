@@ -188,7 +188,9 @@ class WrapCalibratedExplainer:
             enabled = getattr(cfg, "perf_feature_filter_enabled", False)
             per_instance_top_k = getattr(cfg, "perf_feature_filter_per_instance_top_k", 8)
             w._feature_filter_config = SimpleNamespace(
-                enabled=bool(enabled), per_instance_top_k=max(1, int(per_instance_top_k)), strict_observability=False
+                enabled=bool(enabled),
+                per_instance_top_k=max(1, int(per_instance_top_k)),
+                strict_observability=False,
             )
             _logging.getLogger(__name__).debug("Using fallback feature_filter_config")
         # Wire optional preprocessing in a controlled way (only if provided)
@@ -363,7 +365,7 @@ class WrapCalibratedExplainer:
         the internally-stored config, otherwise delegate to the explainer.
         """
         if hasattr(self, "_feature_filter_config"):
-            return getattr(self, "_feature_filter_config")
+            return self._feature_filter_config
         if self.explainer is not None:
             return getattr(self.explainer, "feature_filter_config", None)
         return None
@@ -983,25 +985,106 @@ class WrapCalibratedExplainer:
         return self._build_preprocessor_metadata()
 
     def pre_fit_preprocess(self, x: Any) -> Any:
+        """Preprocess data before fitting.
+
+        Parameters
+        ----------
+        x : Any
+            The input data.
+
+        Returns
+        -------
+        Any
+            The preprocessed data.
+        """
         return self._pre_fit_preprocess(x)
 
     def pre_transform(self, X: Any) -> Any:
+        """Preprocess data for transformation.
+
+        Parameters
+        ----------
+        X : Any
+            The input data.
+
+        Returns
+        -------
+        Any
+            The preprocessed data.
+        """
         return self._pre_transform(X)
 
     def maybe_preprocess_for_inference(self, X: Any) -> Any:
+        """Preprocess data for inference if needed.
+
+        Parameters
+        ----------
+        X : Any
+            The input data.
+
+        Returns
+        -------
+        Any
+            The preprocessed data.
+        """
         return self._maybe_preprocess_for_inference(X)
 
     @property
     def pre_fitted(self) -> bool:
+        """Check if the preprocessor is pre-fitted.
+
+        Returns
+        -------
+        bool
+            True if pre-fitted, False otherwise.
+        """
         return self._pre_fitted
 
     def finalize_fit(self, reinitialize: bool) -> WrapCalibratedExplainer:
+        """Finalize the fitting process.
+
+        Parameters
+        ----------
+        reinitialize : bool
+            Whether to reinitialize.
+
+        Returns
+        -------
+        WrapCalibratedExplainer
+            The finalized explainer.
+        """
         return self._finalize_fit(reinitialize)
 
     def format_proba_output(self, proba: Any, uq_interval: bool) -> Any:
+        """Format the probability output.
+
+        Parameters
+        ----------
+        proba : Any
+            The probability values.
+        uq_interval : bool
+            Whether to include uncertainty interval.
+
+        Returns
+        -------
+        Any
+            The formatted output.
+        """
         return self._format_proba_output(proba, uq_interval)
 
     def normalize_auto_encode_flag(self, auto_encode: Any = None) -> bool:
+        """Normalize the auto encode flag.
+
+        Parameters
+        ----------
+        auto_encode : Any, optional
+            The auto encode value.
+
+        Returns
+        -------
+        bool
+            The normalized flag.
+        """
         # Public adapter: legacy callers may pass no argument. The
         # internal helper reads `self._auto_encode` so ignore any
         # provided value and delegate to the internal normaliser.

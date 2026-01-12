@@ -1,6 +1,5 @@
 from calibrated_explanations.viz.builders import build_alternative_probabilistic_spec
 from calibrated_explanations.viz.plotspec import PlotSpec
-from calibrated_explanations.viz.plotspec import BarHPanelSpec, BarItem
 
 
 def minimal_args():

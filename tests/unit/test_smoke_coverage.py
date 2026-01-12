@@ -24,7 +24,11 @@ def test_smoke_import_key_modules():
         _ = getattr(mod, "__name__", None)
 
     # Exercise a few small functions from heavy modules to cover branches
-    from calibrated_explanations.plugins.builtins import derive_threshold_labels, LegacyPredictBridge
+    from calibrated_explanations.plugins.builtins import (
+        derive_threshold_labels,
+        LegacyPredictBridge,
+    )
+
     # Sequence threshold
     assert derive_threshold_labels([0, 1])
     # Scalar threshold

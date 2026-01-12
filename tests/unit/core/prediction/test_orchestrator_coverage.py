@@ -1044,7 +1044,9 @@ def test_check_interval_runtime_metadata_fast_incompatible_duplicate(orchestrato
     assert "not marked fast_compatible" in error
 
 
-def test_validate_interval_calibrator_fast_mode_deep_validation_failure(orchestrator, mock_explainer):
+def test_validate_interval_calibrator_fast_mode_deep_validation_failure(
+    orchestrator, mock_explainer
+):
     """Test that validate_interval_calibrator performs deep validation in FAST mode."""
     from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
 
@@ -1065,7 +1067,9 @@ def test_validate_interval_calibrator_fast_mode_deep_validation_failure(orchestr
         fast_flags={"fast": True},
     )
 
-    with pytest.raises(ConfigurationError, match="Interval calibrator at index 0.*is non-compliant"):
+    with pytest.raises(
+        ConfigurationError, match="Interval calibrator at index 0.*is non-compliant"
+    ):
         orchestrator.validate_interval_calibrator(
             calibrator=fast_calibrator,
             context=context,

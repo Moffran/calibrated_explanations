@@ -1,4 +1,5 @@
 """Reject policy enum and helpers."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -28,5 +29,5 @@ def is_policy_enabled(policy: Any) -> bool:
     """Return True if the provided policy requires reject orchestration."""
     try:
         return RejectPolicy(policy) is not RejectPolicy.NONE
-    except Exception:
+    except Exception:  # adr002_allow
         return False

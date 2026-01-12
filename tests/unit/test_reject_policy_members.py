@@ -35,7 +35,13 @@ class DummyRejectOrch:
         self.called = False
         self.args = None
         self.last_policy = None
-        self.return_value = return_value or RejectResult(prediction=None, explanation=None, rejected=None, policy=RejectPolicy.PREDICT_AND_FLAG, metadata={})
+        self.return_value = return_value or RejectResult(
+            prediction=None,
+            explanation=None,
+            rejected=None,
+            policy=RejectPolicy.PREDICT_AND_FLAG,
+            metadata={},
+        )
 
     def apply_policy(self, policy, x, explain_fn=None, bins=None, **kwargs):
         self.called = True

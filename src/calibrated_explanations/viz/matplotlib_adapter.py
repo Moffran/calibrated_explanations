@@ -6,6 +6,7 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 
 from __future__ import annotations
 
+import importlib
 import io
 import logging
 import math
@@ -20,8 +21,6 @@ from ..plotting import __setup_plot_style as _setup_style
 from ..utils.exceptions import ValidationError
 from .plotspec import BarHPanelSpec, GlobalPlotSpec, PlotSpec, TriangularPlotSpec
 
-import importlib
-
 
 def _import_pyplot_with_retries() -> object:
     """Import `matplotlib.pyplot` robustly, preloading common submodules on failure.
@@ -33,7 +32,7 @@ def _import_pyplot_with_retries() -> object:
     """
     try:
         return importlib.import_module("matplotlib.pyplot")
-    except Exception as exc:  # pragma: no cover - protective retry logic
+    except Exception as exc:  # adr002_allow  # pragma: no cover - protective retry logic
         logging.getLogger(__name__).warning(
             "matplotlib.pyplot import failed (%s); preloading submodules and retrying",
             exc,
@@ -67,7 +66,7 @@ def _import_pyplot_with_retries() -> object:
         for sub in preload:
             try:
                 importlib.import_module(sub)
-            except Exception:
+            except Exception:  # adr002_allow
                 logging.getLogger(__name__).debug("preload of %s failed", sub, exc_info=True)
         # Ensure the top-level `matplotlib` package has attributes for
         # commonly-used first-level submodules (e.g. `matplotlib.artist`,
@@ -83,20 +82,20 @@ def _import_pyplot_with_retries() -> object:
                         if not hasattr(mpl_pkg, top):
                             try:
                                 setattr(mpl_pkg, top, submod)
-                            except Exception:
+                            except Exception:  # adr002_allow
                                 logging.getLogger(__name__).debug(
                                     "failed to set attribute matplotlib.%s", top, exc_info=True
                                 )
-                    except Exception:
+                    except Exception:  # adr002_allow
                         logging.getLogger(__name__).debug(
                             "failed to import matplotlib.%s for attachment", top, exc_info=True
                         )
-        except Exception:
+        except Exception:  # adr002_allow
             logging.getLogger(__name__).debug("failed to attach preloaded submodules to matplotlib")
         # retry once
         try:
             return importlib.import_module("matplotlib.pyplot")
-        except Exception as exc2:
+        except Exception as exc2:  # adr002_allow
             logging.getLogger(__name__).error(
                 "matplotlib.pyplot import still failing after preloads: %s", exc2
             )
@@ -531,7 +530,7 @@ def render(
                                     header_pred_val = float(spec.header.pred)
                                     conv_low = float(low) - header_pred_val
                                     conv_high = float(high) - header_pred_val
-                            except Exception:
+                            except Exception:  # adr002_allow
                                 conv_low, conv_high = (float(low), float(high))
                             if draw_intervals:
                                 primitives.setdefault("overlays", []).append(
@@ -564,7 +563,7 @@ def render(
                             else:
                                 min_conv = float(min_low)
                                 max_conv = float(max_high)
-                        except Exception:
+                        except Exception:  # adr002_allow
                             min_conv = float(min_low)
                             max_conv = float(max_high)
                         primitives.setdefault("base_interval", {})["body"] = {
@@ -628,11 +627,13 @@ def render(
                                 # convert to contribution-space for dual headers
                                 conv_low, conv_high = (low, high)
                                 try:
-                                    if spec.header is not None and getattr(spec.header, "dual", False):
+                                    if spec.header is not None and getattr(
+                                        spec.header, "dual", False
+                                    ):
                                         hp = float(spec.header.pred)
                                         conv_low = float(low) - hp
                                         conv_high = float(high) - hp
-                                except Exception:
+                                except Exception:  # adr002_allow
                                     conv_low, conv_high = (float(low), float(high))
                                 if draw_intervals:
                                     primitives.setdefault("overlays", []).append(
@@ -840,7 +841,7 @@ def render(
                 width = raw_val
                 try:
                     is_dual = bool(spec.header.dual) if spec.header is not None else False
-                except Exception:
+                except Exception:  # adr002_allow
                     is_dual = False
                 # Heuristic: treat values in [0,1] as probabilities and shift
                 # them into contribution-space when header.dual is set.
@@ -848,7 +849,7 @@ def render(
                     try:
                         if -1e-9 <= raw_val <= 1.0 + 1e-9:
                             width = raw_val - float(spec.header.pred)
-                    except Exception:
+                    except Exception:  # adr002_allow
                         # Fall back to raw value on any conversion issue
                         width = raw_val
                 color = pos_color if width > 0 else neg_color
@@ -870,20 +871,17 @@ def render(
                     try:
                         wl = float(item.interval_low)
                         wh = float(item.interval_high)
-                    except Exception:
+                    except Exception:  # adr002_allow
                         wl = float(item.interval_low)
                         wh = float(item.interval_high)
                     if is_dual:
                         try:
                             # shift if endpoints look like probability values
-                            if (
-                                -1e-9 <= wl <= 1.0 + 1e-9
-                                and -1e-9 <= wh <= 1.0 + 1e-9
-                            ):
+                            if -1e-9 <= wl <= 1.0 + 1e-9 and -1e-9 <= wh <= 1.0 + 1e-9:
                                 shift = float(spec.header.pred)
                                 wl = wl - shift
                                 wh = wh - shift
-                        except Exception:
+                        except Exception:  # adr002_allow
                             pass
                     if wh < wl:
                         wl, wh = wh, wl
@@ -1146,10 +1144,11 @@ def render(
                 logging.getLogger(__name__).debug("Failed to set regression ylim: %s", exc)
 
         ax.set_yticks(range(n))
+
         def _safe_str(o):
             try:
                 return "" if o is None else str(o)
-            except Exception:
+            except Exception:  # adr002_allow
                 logging.getLogger(__name__).debug("Label conversion failed for %r", o)
                 return ""
 

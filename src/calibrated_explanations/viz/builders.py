@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import math
 import sys
+from dataclasses import asdict, is_dataclass
 from typing import Any, Sequence
 
 import numpy as np
@@ -30,7 +31,6 @@ from .serializers import (
     triangular_plotspec_to_dict,
     validate_plotspec,
 )
-from dataclasses import asdict, is_dataclass
 
 
 class _PlotSpecDictWrapper(dict):
@@ -58,7 +58,7 @@ class _PlotSpecDictWrapper(dict):
         if hasattr(spec, name):
             try:
                 setattr(spec, name, value)
-            except Exception:
+            except Exception:  # adr002_allow
                 serialized = _serialize_plot_attr(value)
             else:
                 serialized = _serialize_plot_attr(value)
@@ -68,6 +68,7 @@ class _PlotSpecDictWrapper(dict):
             super().__setitem__(name, serialized)
         else:
             super().__setitem__(name, value)
+
 
 _PROBABILITY_TOL = 1e-9
 
@@ -653,7 +654,7 @@ def build_alternative_probabilistic_spec(
     if header is not None:
         try:
             body.base_lines = ((base_pred, REGRESSION_BAR_COLOR, 0.3),)
-        except Exception:
+        except Exception:  # adr002_allow
             body.base_lines = None
 
     spec = PlotSpec(title=title, figure_size=(10.0, height), header=header, body=body)

@@ -123,7 +123,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             sig = inspect.signature(predict_fn)
             if "interval_summary" in sig.parameters:
                 call_kwargs["interval_summary"] = request.interval_summary
-        except Exception:  # pragma: no cover - defensive
+        except Exception:  # adr002_allow  # pragma: no cover - defensive
             pass
 
         (

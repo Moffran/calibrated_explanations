@@ -291,8 +291,8 @@ def test_transform_to_numeric_handles_high_cardinality():
         }
     )
 
-    transformed, categorical_features, categorical_labels, _, mappings = helper.transform_to_numeric(
-        df.copy(), "target"
+    transformed, categorical_features, categorical_labels, _, mappings = (
+        helper.transform_to_numeric(df.copy(), "target")
     )
 
     assert categorical_features == [1]

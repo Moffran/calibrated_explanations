@@ -1,4 +1,5 @@
 """Interval summary selection for probabilistic predictions."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -24,7 +25,7 @@ def coerce_interval_summary(value: Any) -> IntervalSummary:
     """Return a validated IntervalSummary, defaulting to REGULARIZED_MEAN."""
     try:
         return IntervalSummary(value)
-    except Exception:
+    except Exception:  # adr002_allow
         return IntervalSummary.REGULARIZED_MEAN
 
 

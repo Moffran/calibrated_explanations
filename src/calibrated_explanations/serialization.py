@@ -55,8 +55,9 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
     _validate_invariants(payload)
     try:
         validate_payload(payload)
-    except Exception as exc:
+    except Exception as exc:  # adr002_allow
         from .utils.exceptions import ValidationError
+
         raise ValidationError(
             "Serialization failed schema validation",
             details={"error": str(exc)},

@@ -1,7 +1,6 @@
 import types
 import numpy as np
 import logging
-import pytest
 
 from calibrated_explanations.plugins import register_explanation_plugin, find_explanation_descriptor
 from calibrated_explanations.plugins.manager import PluginManager
@@ -78,10 +77,12 @@ def test_governance_logging_for_untrusted_plugin(caplog, monkeypatch):
 
     # Mock the warnings.warn to avoid actual warnings
     warned = []
-    original_warn = __import__('warnings').warn
+    original_warn = __import__("warnings").warn
+
     def mock_warn(*args, **kwargs):
         warned.append(args)
-    monkeypatch.setattr('warnings.warn', mock_warn)
+
+    monkeypatch.setattr("warnings.warn", mock_warn)
 
     # Clear any previous warnings
     clear_trust_warnings()
@@ -91,7 +92,7 @@ def test_governance_logging_for_untrusted_plugin(caplog, monkeypatch):
         warn_untrusted_plugin(meta, source="test")
 
     # Check that governance log was emitted
-    governance_logs = [record for record in caplog.records if 'governance' in record.name]
+    governance_logs = [record for record in caplog.records if "governance" in record.name]
     assert len(governance_logs) == 1
     log = governance_logs[0]
     assert log.name == "calibrated_explanations.governance.plugins"

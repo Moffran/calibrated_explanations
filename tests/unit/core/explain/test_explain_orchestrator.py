@@ -541,9 +541,7 @@ def test_should_propagate_interval_dependencies_in_telemetry(orchestrator, mock_
         patch(
             "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
         ),
-        patch.object(
-            ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}
-        ),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
     ):
         result = orchestrator.invoke(
             mode="factual",
@@ -556,9 +554,7 @@ def test_should_propagate_interval_dependencies_in_telemetry(orchestrator, mock_
 
     assert mock_batch.collection_metadata["interval_dependencies"] == ("dep-a",)
     assert result.telemetry["interval_dependencies"] == ("dep-a",)
-    assert mock_explainer.plugin_manager.last_telemetry["interval_dependencies"] == (
-        "dep-a",
-    )
+    assert mock_explainer.plugin_manager.last_telemetry["interval_dependencies"] == ("dep-a",)
 
 
 @pytest.mark.parametrize("invoker_name", ("invoke_factual", "invoke_alternative"))
@@ -591,9 +587,7 @@ def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
         patch(
             "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
         ),
-        patch.object(
-            ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}
-        ),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
     ):
         getattr(orchestrator, invoker_name)(
             x=np.array([[1, 2]]),
@@ -626,9 +620,7 @@ def test_should_propagate_interval_dependencies_in_telemetry_for_fast(orchestrat
         patch(
             "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
         ),
-        patch.object(
-            ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}
-        ),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
     ):
         result = orchestrator.invoke(
             mode="fast",
@@ -641,6 +633,4 @@ def test_should_propagate_interval_dependencies_in_telemetry_for_fast(orchestrat
 
     assert mock_batch.collection_metadata["interval_dependencies"] == ("dep-fast",)
     assert result.telemetry["interval_dependencies"] == ("dep-fast",)
-    assert mock_explainer.plugin_manager.last_telemetry["interval_dependencies"] == (
-        "dep-fast",
-    )
+    assert mock_explainer.plugin_manager.last_telemetry["interval_dependencies"] == ("dep-fast",)

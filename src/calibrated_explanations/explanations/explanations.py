@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
-from ..logging import telemetry_diagnostic_mode
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from .adapters import legacy_to_domain
@@ -367,16 +366,22 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                         },
                         "interval_dependencies": metadata.get("interval_dependencies"),
                     }
-                except Exception:
+                except Exception:  # adr002_allow
                     # Best-effort only
-                    container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
+                    container.telemetry = {
+                        "interval_dependencies": metadata.get("interval_dependencies")
+                    }
             else:
-                container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
-        except Exception:
+                container.telemetry = {
+                    "interval_dependencies": metadata.get("interval_dependencies")
+                }
+        except Exception:  # adr002_allow
             # Best-effort: ensure telemetry attribute exists
             try:
-                container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
-            except Exception:
+                container.telemetry = {
+                    "interval_dependencies": metadata.get("interval_dependencies")
+                }
+            except Exception:  # adr002_allow
                 pass
 
         for index, instance in enumerate(batch.instances):
@@ -422,7 +427,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             When ``True`` (default) the ``schema_version`` field is included on
             the top-level payload as well as on each explanation entry.
         """
-        from ..serialization import to_json as _explanation_to_json, validate_payload as _validate_payload
+        from ..serialization import to_json as _explanation_to_json
 
         instances = []
         for exp in self.explanations:
@@ -1491,7 +1496,9 @@ class FrozenCalibratedExplainer:
         """
         try:
             self._explainer = deepcopy(explainer)
-        except Exception:  # pragma: no cover - defensive fallback for unpickleable state
+        except (
+            Exception
+        ):  # adr002_allow  # pragma: no cover - defensive fallback for unpickleable state
             # Deepcopy of complex explainer objects can fail; log at DEBUG
             # instead of emitting a RuntimeWarning to avoid noisy test output.
             try:
@@ -1500,11 +1507,12 @@ class FrozenCalibratedExplainer:
                 logging.getLogger(__name__).debug(
                     "Deepcopy of explainer failed; using original instance for frozen wrapper"
                 )
-            except Exception:
+            except Exception:  # adr002_allow
                 # If logging fails, fall back to warnings to preserve behavior
                 warnings.warn(
                     "Deepcopy of explainer failed; using original instance for frozen wrapper",
-                    RuntimeWarning,
+                    UserWarning,
+                    stacklevel=2,
                 )
             self._explainer = explainer
 

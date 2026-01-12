@@ -5,7 +5,11 @@ from calibrated_explanations.plugins import builtins, explanations_fast
 
 def test_register_fast_explanation_skips_when_descriptor_present(monkeypatch):
     monkeypatch.setattr(explanations_fast, "find_explanation_descriptor", lambda name: object())
-    monkeypatch.setattr(explanations_fast, "register_explanation_plugin", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not register")))
+    monkeypatch.setattr(
+        explanations_fast,
+        "register_explanation_plugin",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not register")),
+    )
 
     explanations_fast.register_fast_explanation_plugin()
 

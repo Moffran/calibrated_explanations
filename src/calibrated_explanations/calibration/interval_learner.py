@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .interval_wrappers import is_fast_interval_collection
 from ..utils.exceptions import ConfigurationError
 from ..utils.helper import assign_threshold as normalize_threshold
+from .interval_wrappers import is_fast_interval_collection
 
 if TYPE_CHECKING:
     from calibrated_explanations.core import CalibratedExplainer

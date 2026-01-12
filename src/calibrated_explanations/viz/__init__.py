@@ -19,7 +19,6 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         REGRESSION_BAR_COLOR,
         REGRESSION_BASE_COLOR,
         _legacy_get_fill_color,
-        legacy_get_fill_color,
         build_alternative_probabilistic_spec,
         build_alternative_regression_spec,
         build_factual_probabilistic_plotspec_dict,
@@ -28,6 +27,7 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         build_regression_bars_spec,
         build_triangular_plotspec,
         is_valid_probability_values,
+        legacy_get_fill_color,
     )
     from .matplotlib_adapter import render
     from .narrative_plugin import NarrativePlotPlugin
