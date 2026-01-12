@@ -65,6 +65,7 @@ class ExplainerConfig:
 
     @property
     def perf_factory(self):
+        """Factory for performance telemetry."""
         return getattr(self, "_perf_factory", None)
 
 

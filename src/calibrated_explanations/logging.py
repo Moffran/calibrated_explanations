@@ -1,3 +1,9 @@
+"""Logging utilities for calibrated explanations.
+
+This module provides logging configuration, context management, and telemetry
+support for the calibrated explanations library.
+"""
+
 from __future__ import annotations
 
 import contextlib
@@ -31,7 +37,6 @@ def _coerce_bool(value: str | bool | None) -> bool:
 
 def coerce_bool(value: str | bool | None) -> bool:
     """Public wrapper for boolean coercion used in telemetry config parsing."""
-
     return _coerce_bool(value)
 
 
@@ -41,7 +46,6 @@ def telemetry_diagnostic_mode() -> bool:
     Reads ``CE_TELEMETRY_DIAGNOSTIC_MODE`` or ``[tool.calibrated_explanations.telemetry]``
     ``diagnostic_mode`` from pyproject.toml. Env var takes precedence.
     """
-
     env_value = os.environ.get("CE_TELEMETRY_DIAGNOSTIC_MODE")
     if env_value is not None:
         return coerce_bool(env_value)
@@ -52,13 +56,11 @@ def telemetry_diagnostic_mode() -> bool:
 
 def get_logging_context() -> Dict[str, Any]:
     """Return current structured logging context."""
-
     return {key: var.get() for key, var in _context_vars.items() if var.get() is not None}
 
 
 def update_logging_context(**kwargs: Any) -> None:
     """Update structured logging context fields present in kwargs."""
-
     for key, value in kwargs.items():
         if key in _context_vars:
             _context_vars[key].set(value)
@@ -67,7 +69,6 @@ def update_logging_context(**kwargs: Any) -> None:
 @contextlib.contextmanager
 def logging_context(**kwargs: Any) -> Iterator[None]:
     """Context manager to temporarily set logging context fields."""
-
     tokens = {}
     for key, value in kwargs.items():
         if key in _context_vars:
@@ -83,6 +84,7 @@ class LoggingContextFilter(logging.Filter):
     """Logging filter that injects structured context into records."""
 
     def filter(self, record: logging.LogRecord) -> bool:  # pragma: no cover - simple pass-through
+        """Inject structured context into the log record."""
         context = get_logging_context()
         for key in _CONTEXT_KEYS:
             value = context.get(key)
@@ -92,7 +94,6 @@ class LoggingContextFilter(logging.Filter):
 
 def ensure_logging_context_filter(logger_name: str = "calibrated_explanations") -> None:
     """Attach the context filter to the root calibrated_explanations logger once."""
-
     logger = logging.getLogger(logger_name)
     # Avoid duplicate filters
     for existing in logger.filters:

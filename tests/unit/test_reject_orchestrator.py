@@ -3,6 +3,7 @@ import pytest
 from calibrated_explanations.core.reject.orchestrator import RejectOrchestrator
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectResult
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 class DummyExplainer:
@@ -45,9 +46,9 @@ def test_register_and_resolve_strategy_and_apply():
 def test_register_strategy_invalid_inputs():
     expl = DummyExplainer()
     ro = RejectOrchestrator(expl)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ro.register_strategy("", lambda: None)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ro.register_strategy("name", object())
 
 

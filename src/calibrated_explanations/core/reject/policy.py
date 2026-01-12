@@ -1,6 +1,4 @@
-"""Reject policy enum placed under the `core.reject` package to avoid
-module/package name collisions.
-"""
+"""Reject policy enum placed under the `core.reject` package to avoid module/package name collisions."""
 
 from __future__ import annotations
 

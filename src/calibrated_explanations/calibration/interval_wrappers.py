@@ -1,6 +1,11 @@
+"""Protocol-aware interval calibrator wrappers (ADR-013).
+
+This module provides wrappers for interval calibrators that implement
+sequence protocols for efficient access and delegation.
+"""
+
 from __future__ import annotations
 
-"""Protocol-aware interval calibrator wrappers (ADR-013)."""
 __all__ = ["FastIntervalCalibrator", "is_fast_interval_collection"]
 
 
@@ -66,6 +71,7 @@ class FastIntervalCalibrator(Sequence[Any]):
         *args,
         **kwargs,
     ) -> Any:
+        """Predict calibrated probabilities using the default calibrator."""
         return self._default().predict_proba(*args, **kwargs)
 
     def predict_probability(self, *args, **kwargs) -> Any:

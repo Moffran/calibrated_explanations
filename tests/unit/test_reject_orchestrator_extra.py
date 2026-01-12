@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from calibrated_explanations.core.reject.orchestrator import RejectOrchestrator
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectResult
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 def make_stub():
@@ -35,8 +36,8 @@ def test_register_strategy_validation_errors():
     stub = make_stub()
     ro = RejectOrchestrator(stub)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ro.register_strategy("", lambda: None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ro.register_strategy("valid.name", 123)

@@ -36,8 +36,6 @@ def extract_private_symbols_from_ast(txt: str, path: Path) -> Set[str] | None:
                     arg.value, str
                 ):  # pragma: no branch
                     val = arg.value
-                elif isinstance(arg, ast.Str):  # pragma: no branch - Python <3.8 compatibility
-                    val = arg.s  # type: ignore[attr-defined]
                 if val and val.startswith("_") and not val.startswith("__"):
                     syms.add(val)
     return syms

@@ -2576,6 +2576,13 @@ class CalibratedExplainer:
     # Public alias for testing purposes (to avoid private member access in tests)
     @property
     def fast(self) -> bool:
+        """Whether to use fast mode.
+
+        Returns
+        -------
+        bool
+            True if fast mode is enabled.
+        """
         return self.__fast
 
     @fast.setter
@@ -2592,6 +2599,13 @@ class CalibratedExplainer:
 
     @property
     def noise_type(self) -> str:
+        """The type of noise to use.
+
+        Returns
+        -------
+        str
+            The noise type.
+        """
         return self.__noise_type
 
     @noise_type.setter
@@ -2608,6 +2622,13 @@ class CalibratedExplainer:
 
     @property
     def scale_factor(self) -> float | None:
+        """The scale factor for perturbations.
+
+        Returns
+        -------
+        float | None
+            The scale factor.
+        """
         return self.__scale_factor
 
     @scale_factor.setter
@@ -2624,6 +2645,13 @@ class CalibratedExplainer:
 
     @property
     def severity(self) -> float | None:
+        """The severity of perturbations.
+
+        Returns
+        -------
+        float | None
+            The severity.
+        """
         return self.__severity
 
     @severity.setter

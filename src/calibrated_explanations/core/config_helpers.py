@@ -32,7 +32,6 @@ _UNSET = object()
 
 def get_toml_modules_for_testing() -> tuple[Any, Any]:
     """Return the current TOML reader/writer modules (testing helper)."""
-
     return _tomllib, _tomli_w
 
 
@@ -44,7 +43,6 @@ def set_toml_modules_for_testing(
     Use a sentinel default so callers can explicitly set a module to ``None``
     (for example to simulate an unavailable writer) without being ignored.
     """
-
     global _tomllib, _tomli_w  # noqa: PLW0603 - test override helper
     if tomllib is not _UNSET:
         _tomllib = tomllib

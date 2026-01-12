@@ -103,13 +103,22 @@ class RejectOrchestrator:
         """Apply a `RejectPolicy` to inputs and optionally produce predictions/explanations.
 
         Parameters
-        - policy: RejectPolicy selected by the caller
-        - x: input instances
-        - explain_fn: optional callable `explain_fn(x_subset, **kwargs)` returning explanations
-        - bins, confidence: passed to reject prediction
+        ----------
+        policy : RejectPolicy
+            Selected by the caller.
+        x :
+            Input instances.
+        explain_fn : callable, optional
+            Callable `explain_fn(x_subset, **kwargs)` returning explanations.
+        bins :
+            Passed to reject prediction.
+        confidence : float, default 0.95
+            Passed to reject prediction.
 
         Returns
-        - RejectResult envelope with `prediction`, `explanation`, `rejected`, `policy`, and `metadata`.
+        -------
+        RejectResult
+            Envelope with `prediction`, `explanation`, `rejected`, `policy`, and `metadata`.
         """
         # Allow callers to select a strategy identifier via the `strategy` kwarg.
         # By default, resolve to `builtin.default` which preserves legacy semantics.

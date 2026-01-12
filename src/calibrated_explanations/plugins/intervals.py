@@ -19,6 +19,7 @@ class IntervalCalibratorContext:
     fast_flags: Mapping[str, Any]
 
     def __post_init__(self) -> None:
+        """Post-initialization hook for the dataclass."""
         # Ensure the top-level metadata is a plain mutable dict so plugins
         # can record temporary state during execution. The dataclass is
         # frozen to prevent attribute reassignment, but the metadata object
@@ -33,6 +34,28 @@ class IntervalCalibratorContext:
                 else {k: v for k, v in getattr(self.metadata, "items", lambda: ())()}
             )
         object.__setattr__(self, "metadata", meta)
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
+    def __setstate__(self, state):
+        """Set state for unpickling.
+
+        Parameters
+        ----------
+        state : dict
+            The state dictionary.
+        """
+        # Restore the dict
+        self.__dict__.update(state)
 
 
 @runtime_checkable

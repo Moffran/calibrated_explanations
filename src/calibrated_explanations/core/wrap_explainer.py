@@ -976,12 +976,43 @@ class WrapCalibratedExplainer:
 
     # Public aliases for testing
     def serialise_preprocessor_value(self, value: Any) -> Any:
+        """Serialise a preprocessor value for storage.
+
+        Parameters
+        ----------
+        value : Any
+            The value to serialise.
+
+        Returns
+        -------
+        Any
+            The serialised value.
+        """
         return self._serialise_preprocessor_value(value)
 
     def extract_preprocessor_snapshot(self, preprocessor: Any) -> dict[str, Any] | None:
+        """Extract a snapshot of the preprocessor state.
+
+        Parameters
+        ----------
+        preprocessor : Any
+            The preprocessor to snapshot.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            The snapshot dictionary or None.
+        """
         return self._extract_preprocessor_snapshot(preprocessor)
 
     def build_preprocessor_metadata(self) -> Dict[str, Any]:
+        """Build metadata for the preprocessor.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The metadata dictionary.
+        """
         return self._build_preprocessor_metadata()
 
     def pre_fit_preprocess(self, x: Any) -> Any:
@@ -1091,6 +1122,20 @@ class WrapCalibratedExplainer:
         return self._normalize_auto_encode_flag()
 
     def normalize_public_kwargs(self, payload: Any = None, **kwargs: Any) -> Dict[str, Any]:
+        """Normalize public keyword arguments.
+
+        Parameters
+        ----------
+        payload : Any, optional
+            The payload.
+        **kwargs : Any
+            Additional keyword arguments.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The normalized kwargs.
+        """
         # Accept either positional (payload, allowed=...) or keyword-only usage
         if payload is None:
             return self._normalize_public_kwargs(**kwargs)
@@ -1098,7 +1143,37 @@ class WrapCalibratedExplainer:
 
     @property
     def cfg(self) -> Any:
+        """Configuration property.
+
+        Returns
+        -------
+        Any
+            The configuration.
+        """
         return self._cfg
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        state = self.__dict__.copy()
+        # Exclude mc as it may contain unpicklable objects like RNG in mappingproxy
+        state["mc"] = None
+        return state
+
+    def __setstate__(self, state):
+        """Set state for unpickling.
+
+        Parameters
+        ----------
+        state : dict
+            The state dictionary.
+        """
+        self.__dict__.update(state)
 
 
 __all__ = ["WrapCalibratedExplainer"]

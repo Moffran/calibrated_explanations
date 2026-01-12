@@ -97,6 +97,13 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
 
     @property
     def sequential_plugin(self):
+        """The sequential plugin for fallback.
+
+        Returns
+        -------
+        SequentialExplainExecutor
+            The sequential plugin.
+        """
         return self._sequential_plugin
 
     @property
