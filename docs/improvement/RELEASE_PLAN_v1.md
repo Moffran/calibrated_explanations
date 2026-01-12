@@ -56,6 +56,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 **ADR-024 – Legacy Plot Input Contracts:** Deprecated; legacy plotting maintained in `docs/maintenance/legacy-plotting-reference.md` and gaps retired.
 **ADR-025 – Legacy Plot Rendering Semantics:** Deprecated; pixel-level rendering semantics moved to maintenance reference and gaps retired.
 **ADR-026 – Explanation Plugin Semantics:** Hardening and invariant requirements tracked for v0.10.2; appendix contains the unified gap coverage.
+**ADR-031 – Calibrator Serialization & State Persistence:** Drafted for v0.11.x; versioned calibrator primitives and explainer save/load contracts to be implemented after mapping persistence work.
 **Standard-004 – Documentation Standard (Audience Hubs):** Completed. Audience hubs implemented; PR template parity and hub ownership recorded.
 
 ## Release milestones
@@ -237,18 +238,25 @@ Release gate: Payload round-trips verified, PlotSpec/visualization plugin regist
 9. Publish {doc}`adrs/ADR-029-reject-integration-strategy` (Reject Integration Strategy) decisions and open questions, and record the deferred strategy/visualization decisions with follow-up tasks in the v0.10.2 plan.
 10. Add an interval summary selection enum to choose between regularized mean (default), mean, lower bound, or upper bound for probabilistic predictions and explanations, and document the task in the v0.10.2 plan.
 11. Enforce Step 1 of ADR-030 test quality remediation: fix the 7 identified private-member usage violations in `tests/unit/calibration/test_summaries.py` and `tests/unit/core/test_config_helpers.py` to achieve zero violations per `scripts/detect_test_anti_patterns.py`.
+12. Add `PluginDiscoveryReport` diagnostics and expose skipped/untrusted/denied entries via `ce.plugins report` or `ce.plugins list --include-skipped`, plus interval validation CLI commands (gate: CLI + unit tests).
+13. Implement pyproject trust allowlist support (`[tool.calibrated_explanations.plugins].trusted`) with packaging guidance and tests for opt-in trust resolution (gate: docs + unit tests).
+14. Add parity reference harness fixtures and `parity_compare` helper with a small CI job to validate canonical outputs (gate: parity fixtures and CI run green).
+15. Require canonical in-tree FAST explanation plugin registration and enforce trusted-only resolution defaults, logging any explicit override for untrusted plugins (gate: plugin registry tests and legacy parity).
+16. Ship plugin diagnostics and packaging documentation updates that reflect ADR-006/ADR-013/ADR-015 enforcement and warn explicitly about in-process, non-sandboxed execution (gate: doc updates in plugins guide) 
 
 Release gate: Plugin registries enforce trust and protocol policies, extras install cleanly with documentation parity, runtime telemetry captures interval metadata, FAST/CLI flows succeed end-to-end, and logging/governance observability align with ADR-028 and Standard-005 for all v0.10.2 changes (see ADR status appendix in this document).
 
 ### v0.11.0 (domain model & preprocessing finalisation)
 
 1. Make the ADR-008 domain model authoritative—run runtime flows on domain objects, fix legacy round-trips, add calibration/model metadata, publish golden fixtures, and harden `_safe_pick` (see ADR status appendix in this document).
-2. Complete ADR-009 preprocessing automation with built-in encoding, unseen-category enforcement, dtype diagnostics, and aligned telemetry/docs (see ADR status appendix in this document).
+2. Complete ADR-009 preprocessing automation with `auto_encode='auto'`, unseen-category enforcement, mapping export/import helpers, dtype diagnostics, and aligned telemetry/docs (see ADR status appendix in this document).
 3. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, reporting lint telemetry, and confining transitional shims to `legacy/` (see ADR status appendix in this document).
 4. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry, ensuring ongoing monitoring after v1.0.0 (see ADR status appendix in this document).
 5. Change default behavior for `condition_source` to `"prediction"` in `CalibratedExplainer` and related components. Update all relevant documentation, including the upgrade checklist, to inform users of this change and provide guidance on how to adjust their implementations if they previously relied on the default `"observed"` setting. This change aims to enhance the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels. Plan for this change to be communicated clearly in the v1.0.0 release notes and upgrade guides (see ADR status appendix in this document).
 6. Empty the private member allow-list (`.github/private_member_allowlist.json`) as part of the final Pattern 1 remediation hardening. All remaining private member usages in tests must be refactored to public APIs or justified as permanent exceptions in the remediation plan.
 7. Extend test quality tooling per ADR-030: update `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` to flag tests without assertions and unseeded random usage, preparing for zero-tolerance enforcement in v1.0.0.
+8. Add ADR-031 calibrator persistence: versioned `to_primitive`/`from_primitive` contracts plus `Explainer.save_state()`/`load_state()` (gate: round-trip tests and schema version policy).
+9. Provide an OSS performance harness template for semi/fully-online latency measurements with README guidance (gate: sample run and documented workflow).
 
 Release gate: Domain/preprocessing pipelines operate on ADR-compliant models with telemetry coverage, naming lint metrics published, and no outstanding ADR exceptions ahead of v1.0.0-rc (see ADR status appendix in this document)
 

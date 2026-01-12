@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-009: Input Preprocessing & Mapping Persistence Policy
 
@@ -21,7 +21,13 @@ usability and reproducibility.
 - Keep the core numeric; add preprocessing in the wrapper layer:
   - `wrap_explainer.py` learns/applies preprocessing (either built-in `transform_to_numeric` or a user-supplied transformer/pipeline).
   - Add configuration: `auto_encode=True|False|'auto'`, `preprocessor: Optional[Transformer]`, and policy for unseen categories (`'ignore'|'error'`).
+  - `auto_encode='auto'` is the automatic encoding mode; it deterministically
+    learns mappings during fit/init and applies them during inference.
+  - Default unseen-category policy is `'error'`; `'ignore'` is an explicit opt-in.
   - Persist mapping artifacts on the explainer; attach mapping metadata to Explanation provenance.
+  - Provide mapping persistence helpers:
+    `Explainer.export_mapping() -> dict` and `Explainer.import_mapping(mapping: dict) -> None`.
+    Mapping primitives must be JSON-safe for serialization.
 - Validation (`core/validation.py`) detects DataFrames/non-numeric columns and enforces NaN/dtype policies, returning actionable errors.
 
 ## Consequences
@@ -50,10 +56,14 @@ Implemented:
 
 Pending:
 
-- Automatic encoding path (`auto_encode='auto'`) and mapping persistence helpers for that mode with deterministic mapping storage on the wrapper.
-- Unseen-category policy behavior and documentation (default `'error'`, configurable `'ignore'`).
+- Automatic encoding path (`auto_encode='auto'`) and mapping persistence helpers
+  for that mode with deterministic mapping storage on the wrapper.
+- Unseen-category policy behavior and documentation (default `'error'`,
+  configurable `'ignore'`).
+- Mapping export/import helpers with JSON-safe primitives and documentation
+  examples.
 
 ## Open Questions
 
-- Where to store mappings (in-memory only vs. optional serialization helpers)? Start in-memory with API hooks for export/import.
-- Default `auto_encode` value and policy for unseen categories; propose default `'auto'` and `'error'` respectively, reconsider after user feedback.
+- Where to store mappings (in-memory only vs. optional serialization helpers)?
+  Start in-memory with API hooks for export/import.
