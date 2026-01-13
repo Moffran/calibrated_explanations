@@ -16,6 +16,7 @@ from .registry import (
     find_plot_builder_descriptor,
     find_plot_renderer_descriptor,
     find_plot_style_descriptor,
+    get_discovery_report,
     get_last_discovery_report,
     is_identifier_denied,
     list_explanation_descriptors,
@@ -268,6 +269,15 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_report(args: argparse.Namespace) -> int:
+    """Handle the `plugins report` subcommand."""
+    # Trigger discovery to populate the report
+    load_entrypoint_plugins(include_untrusted=True)
+    report = get_discovery_report()
+    _emit_discovery_report(report)
+    return 0
+
+
 def _cmd_validate_plot(args: argparse.Namespace) -> int:
     """Validate a plot builder by identifier by attempting a dry build."""
     builder_id = args.builder
@@ -492,6 +502,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     list_parser.set_defaults(func=_cmd_list)
 
+    report_parser = subparsers.add_parser(
+        "report",
+        help="Show plugin discovery report with accepted/skipped details",
+    )
+    report_parser.set_defaults(func=_cmd_report)
+
     show_parser = subparsers.add_parser("show", help="Show metadata for a plugin")
     show_parser.add_argument("identifier", help="Plugin identifier to inspect")
     show_parser.add_argument(
@@ -591,6 +607,7 @@ emit_plot_renderer_descriptor = _emit_plot_renderer_descriptor
 cmd_list = _cmd_list
 cmd_show = _cmd_show
 cmd_trust = _cmd_trust
+cmd_report = _cmd_report
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry point

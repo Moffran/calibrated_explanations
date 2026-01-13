@@ -22,6 +22,7 @@ from calibrated_explanations.plugins.cli import (
     _cmd_validate_interval,
     _cmd_set_default,
     _cmd_show,
+    _cmd_report,
 )
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
 
@@ -316,3 +317,22 @@ class TestCliCoverage:
         assert "Trusted    : yes" in captured.out
         assert "Source     : repo" in captured.out
         assert "Metadata   :" in captured.out
+
+    @patch("calibrated_explanations.plugins.cli.load_entrypoint_plugins")
+    @patch("calibrated_explanations.plugins.cli.get_discovery_report")
+    def test_cmd_report(self, mock_get_report, mock_load, capsys):
+        """Test report command triggers discovery and emits report."""
+        report = SimpleNamespace(
+            skipped_denied=[],
+            skipped_untrusted=[],
+            checksum_failures=[],
+            accepted=[],
+        )
+        mock_get_report.return_value = report
+        
+        exit_code = _cmd_report(Mock())
+        
+        assert exit_code == 0
+        mock_load.assert_called_once_with(include_untrusted=True)
+        mock_get_report.assert_called_once()
+        # _emit_discovery_report is called, but since report is empty, no specific assertions
