@@ -31,6 +31,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Tuple
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ValidationError
+from .. import __version__ as package_version
 from .base import ExplainerPlugin, validate_plugin_meta
 
 _REGISTRY: List[ExplainerPlugin] = []
