@@ -28,6 +28,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
+from .. import __version__ as package_version
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ValidationError

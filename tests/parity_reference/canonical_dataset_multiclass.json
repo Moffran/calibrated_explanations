@@ -1,0 +1,11 @@
+{
+  "mode": "classification",
+  "categorical_features": [],
+  "class_labels": ["A", "B", "C"],
+  "feature_names": ["f0", "f1"],
+  "x_cal": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [2.0,2.0]],
+  "y_cal": ["A", "B", "C", "C"],
+  "x_train": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [2.0,2.0]],
+  "y_train": ["A", "B", "C", "C"],
+  "x_test": [[0.1, 0.0], [1.5, 1.5]]
+}

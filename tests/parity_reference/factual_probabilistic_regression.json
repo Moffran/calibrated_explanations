@@ -1,0 +1,72 @@
+[
+  {
+    "explanation_type": "factual",
+    "index": 0,
+    "metadata": null,
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 1.3877787807814457e-17
+    },
+    "provenance": null,
+    "rules": [
+      {
+        "bin_index": null,
+        "feature": 0,
+        "feature_value": 0.5,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "x0 <= 1.50",
+        "rule_prediction": {
+          "high": Infinity,
+          "low": -Infinity,
+          "predict": 2.3333333333333335
+        },
+        "rule_weight": {
+          "high": Infinity,
+          "low": -Infinity,
+          "predict": -2.3333333333333335
+        },
+        "value_str": "0.5"
+      }
+    ],
+    "schema_version": "1.0.0",
+    "task": "regression"
+  },
+  {
+    "explanation_type": "factual",
+    "index": 1,
+    "metadata": null,
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 2.0
+    },
+    "provenance": null,
+    "rules": [
+      {
+        "bin_index": null,
+        "feature": 0,
+        "feature_value": 2.5,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "x0 > 1.50",
+        "rule_prediction": {
+          "high": Infinity,
+          "low": -Infinity,
+          "predict": 0.3333333333333333
+        },
+        "rule_weight": {
+          "high": Infinity,
+          "low": -Infinity,
+          "predict": 1.6666666666666667
+        },
+        "value_str": "2.5"
+      }
+    ],
+    "schema_version": "1.0.0",
+    "task": "regression"
+  }
+]

@@ -1,0 +1,127 @@
+[
+  {
+    "explanation_type": "alternative",
+    "index": 0,
+    "metadata": null,
+    "prediction": {
+      "__full_probabilities__": [
+        [
+          [
+            0.5970149253731343,
+            0.17910447761194032,
+            0.22388059701492538
+          ],
+          [
+            0.1739130434782609,
+            0.1739130434782609,
+            0.6521739130434782
+          ]
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "classes": 0,
+      "high": 0.8955223880597015,
+      "low": 0.44776119402985076,
+      "predict": 0.5970149253731343
+    },
+    "provenance": null,
+    "rules": [
+      {
+        "bin_index": null,
+        "feature": 0,
+        "feature_value": 0.1,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "f0 > 0.50",
+        "rule_prediction": {
+          "high": 0.22388059701492538,
+          "low": 0.0,
+          "predict": 0.1791044776119403
+        },
+        "rule_weight": {
+          "high": 0.5970149253731343,
+          "low": 0.3731343283582089,
+          "predict": 0.417910447761194
+        },
+        "value_str": "0.1"
+      },
+      {
+        "bin_index": null,
+        "feature": 1,
+        "feature_value": 0.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "f1 > 0.50",
+        "rule_prediction": {
+          "high": 0.21739130434782608,
+          "low": 0.0,
+          "predict": 0.1739130434782609
+        },
+        "rule_weight": {
+          "high": 0.5970149253731343,
+          "low": 0.3796236210253082,
+          "predict": 0.4231018818948734
+        },
+        "value_str": "0.0"
+      }
+    ],
+    "schema_version": "1.0.0",
+    "task": "classification"
+  },
+  {
+    "explanation_type": "alternative",
+    "index": 1,
+    "metadata": null,
+    "prediction": {
+      "__full_probabilities__": [
+        [
+          [
+            0.5970149253731343,
+            0.17910447761194032,
+            0.22388059701492538
+          ],
+          [
+            0.1739130434782609,
+            0.1739130434782609,
+            0.6521739130434782
+          ]
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "classes": 2,
+      "high": 0.8695652173913044,
+      "low": 0.5797101449275363,
+      "predict": 0.6521739130434782
+    },
+    "provenance": null,
+    "rules": [
+      {
+        "bin_index": null,
+        "feature": 1,
+        "feature_value": 1.5,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "f1 < 0.50",
+        "rule_prediction": {
+          "high": 0.8695652173913044,
+          "low": 0.5797101449275363,
+          "predict": 0.6521739130434782
+        },
+        "rule_weight": {
+          "high": 0.0724637681159419,
+          "low": -0.21739130434782628,
+          "predict": 0.0
+        },
+        "value_str": "1.5"
+      }
+    ],
+    "schema_version": "1.0.0",
+    "task": "classification"
+  }
+]

@@ -604,6 +604,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                         raise
                     rules_blob = {}
 
+        explanation_type = "factual"
+        if isinstance(exp, AlternativeExplanation):
+            explanation_type = "alternative"
+        elif isinstance(exp, FastExplanation):
+            explanation_type = "fast"
+
         payload: dict[str, Any] = {
             "task": getattr(
                 exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
@@ -612,6 +618,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             "feature_weights": _jsonify(getattr(exp, "feature_weights", {})),
             "feature_predict": _jsonify(getattr(exp, "feature_predict", {})),
             "prediction": _jsonify(getattr(exp, "prediction", {})),
+            "explanation_type": explanation_type,
         }
         return payload
 

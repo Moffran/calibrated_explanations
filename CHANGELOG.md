@@ -13,6 +13,9 @@
 
 - **ADR-029: Reject policy orchestration (v0.10.2):** Added the `RejectPolicy` enum, `RejectResult` envelope, and `RejectOrchestrator` registry, wiring per-call and explainer-level policies through prediction/explanation entry points while keeping `NONE` fully backward compatible. Documented usage in `docs/improvement/reject_policy_usage.md` and linked ADR-029 into the release notes.
 - **Plugin discovery & CLI diagnostics:** Added `PluginDiscoveryReport` to surface accepted/skipped plugins, `ce.plugins report`, and `ce.plugins list --include-skipped` for diagnostic output; included unit tests for the API and CLI formatting.
+
+- **Parity reference harness & canonical fixtures:** Added `tests/parity_reference/run_parity_reference.py`, canonical datasets, and golden fixtures for classification, regression, multiclass, and probabilistic regression. Added `parity_compare` helper tests and CI parity job to run the harness across datasets; this harness is the canonical OSS parity/regression gate.
+
 - **ADR-030: Private Member Usage Remediation and CI Anti-Pattern Audit:** Remediated private-member usage in tests and added a CI anti-pattern audit to fail on new anti-patterns.
 - **ADR-028 & Standard-005: Normalized Logging & Context Propagation:** Implemented structured logging domains and threaded context propagation across the core engine.
   - Normalized logger namespaces (e.g., `calibrated_explanations.core.explain`, `calibrated_explanations.plugins.registry`) for consistent filtering.

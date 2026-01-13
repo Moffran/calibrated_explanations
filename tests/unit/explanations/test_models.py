@@ -124,3 +124,40 @@ class TestModels:
         legacy = {"rules": []} # List instead of dict
         expl = from_legacy_dict(0, legacy)
         assert expl.rules == []
+
+
+@pytest.mark.parametrize(
+    ("explicit_type", "expected"),
+    [
+        ("alternative", "alternative"),
+        ("factual", "factual"),
+        ("fast", "fast"),
+        ("unknown", "factual"),
+        ("fastish", "factual"),
+    ],
+)
+def test_from_legacy_dict_respects_explicit_type(explicit_type, expected):
+    legacy = {
+        "explanation_type": explicit_type,
+        "prediction": {},
+        "rules": {"rule": [], "feature": []},
+        "feature_weights": {},
+        "feature_predict": {"predict": []},
+    }
+    expl = from_legacy_dict(0, legacy)
+    assert expl.explanation_type == expected
+
+
+def test_from_legacy_dict_legacy_feature_predict_heuristic():
+    legacy = {
+        "prediction": {},
+        "rules": {"rule": [], "feature": []},
+        "feature_weights": {},
+        "feature_predict": {"predict": []},
+    }
+    expl = from_legacy_dict(0, legacy)
+    assert expl.explanation_type == "alternative"
+
+    legacy.pop("feature_predict", None)
+    expl = from_legacy_dict(0, legacy)
+    assert expl.explanation_type == "factual"

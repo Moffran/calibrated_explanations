@@ -14,6 +14,8 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
+VALID_EXPLANATION_TYPES = {"alternative", "factual", "fast"}
+
 
 @dataclass
 class FeatureRule:
@@ -118,7 +120,14 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
                 value_str=value_str,
             )
             rules_out.append(fr)
-    explanation_type = "alternative" if "feature_predict" in payload else "factual"
+    raw_type = payload.get("explanation_type")
+    explanation_type = _normalize_explanation_type(raw_type)
+    if explanation_type is None:
+        explanation_type = (
+            "factual"
+            if raw_type is not None
+            else ("alternative" if "feature_predict" in payload else "factual")
+        )
     return Explanation(
         task=str(payload.get("task", "unknown")),
         index=idx,
@@ -126,6 +135,13 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
         prediction=prediction,
         rules=rules_out,
     )
+
+
+def _normalize_explanation_type(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip().lower()
+    return normalized if normalized in VALID_EXPLANATION_TYPES else None
 
 
 __all__ = ["Explanation", "FeatureRule", "from_legacy_dict"]

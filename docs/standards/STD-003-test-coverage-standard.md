@@ -37,6 +37,13 @@ while right-sizing enforcement for OSS development:
   gate at **≥88%** for modified lines/files. This is advisory on OSS/mainline and blocking on
   release/stable branches. Pull requests that lower patch coverage below the threshold must
   justify waivers in the review checklist.
+- **Parity reference harness:** Maintain canonical parity fixtures (factual, alternatives, fast,
+  predictions) under `tests/parity_reference/` and require the parity harness job to pass in CI.
+  The canonical harness entrypoint is `tests/parity_reference/run_parity_reference.py`; run it locally with::
+
+      python tests/parity_reference/run_parity_reference.py --dataset <classification|regression|multiclass|probabilistic_regression>
+
+  Use `--update` to refresh golden fixtures after intentional changes to explanation outputs. This harness is the canonical regression gate for OSS parity checks.
 - **Documented exemptions:** Generated code, visualization golden files, and deprecated
   shims can be excluded via `.coveragerc` with explicit comments that describe the rationale
   and expiry date.

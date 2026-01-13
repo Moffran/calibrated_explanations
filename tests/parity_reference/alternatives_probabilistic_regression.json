@@ -1,0 +1,32 @@
+[
+  {
+    "explanation_type": "alternative",
+    "index": 0,
+    "metadata": null,
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 1.3877787807814457e-17
+    },
+    "provenance": null,
+    "rules": [],
+    "schema_version": "1.0.0",
+    "task": "regression"
+  },
+  {
+    "explanation_type": "alternative",
+    "index": 1,
+    "metadata": null,
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 2.0
+    },
+    "provenance": null,
+    "rules": [],
+    "schema_version": "1.0.0",
+    "task": "regression"
+  }
+]

@@ -77,6 +77,31 @@ jobs:
       - name: Run core test subset (skip viz)
         run: pytest -q -k "not viz" --no-cov
 
+  parity-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies (core only)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install . -c constraints.txt
+
+      - name: Run parity reference harness for all datasets
+        run: |
+          python tests/parity_reference/run_parity_reference.py --dataset classification
+          python tests/parity_reference/run_parity_reference.py --dataset regression
+          python tests/parity_reference/run_parity_reference.py --dataset multiclass
+          python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression
+
   viz-only:
     runs-on: ubuntu-latest
     steps:
