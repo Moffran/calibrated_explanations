@@ -40,6 +40,7 @@
   - Aligned plugin discovery with `CE_TRUST_PLUGIN` and `CE_DENY_PLUGIN` environment variables for consistent security posture.
   - Enforced immutable `ExplainerHandle` and `ExplanationContext` for plugin interaction, preventing side-effects on core state.
   - Added comprehensive hardening tests in `tests/unit/plugins/test_adr015_hardening.py` to verify ADR-015 compliance.
+  - Added trusted-only enforcement warnings for explicit explanation plugin overrides, smoke coverage for in-tree FAST plugin registration, and clarified ADR-015 environment variable documentation.
 
 - **ADR-013: Interval Plugin Protocol Compliance:** Delivered protocol-validated interval calibrators with frozen contexts and CLI diagnostics.
   - Implemented `FastIntervalCalibrator` wrapper for per-feature calibrator lists with all required protocol methods.

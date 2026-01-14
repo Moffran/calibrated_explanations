@@ -718,6 +718,16 @@ class ExplanationOrchestrator:
         if override is not None and not isinstance(override, str):
             plugin = override
             identifier = getattr(plugin, "plugin_meta", {}).get("name")
+            meta = getattr(plugin, "plugin_meta", {})
+            if isinstance(meta, Mapping):
+                trusted = meta.get("trusted", meta.get("trust", True))
+                if not bool(trusted):
+                    warnings.warn(
+                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                        "Ensure you trust the source of this plugin.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
             return plugin, identifier
 
         explicit_override_identifier = raw_override if isinstance(raw_override, str) else None

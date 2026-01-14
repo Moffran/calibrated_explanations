@@ -68,7 +68,9 @@ python -m calibrated_explanations.plugins.cli list all --include-skipped
 
 - **Wiring precedence (highest → lowest):**
   1. Explainer parameters / explicit overrides (constructor kwargs or `PluginManager` overrides).
-  2. Environment variables: `CE_EXPLANATION_PLUGIN` (global) then `CE_EXPLANATION_PLUGIN_<MODE>` (mode-specific); fallbacks may be specified via `<ENV>_FALLBACKS`.
+  2. Environment variables: `CE_EXPLANATION_PLUGIN` (global) then the ADR-015 mode keys
+     (`CE_EXPLANATION_PLUGIN_FACTUAL`, `CE_EXPLANATION_PLUGIN_ALTERNATIVE`,
+     `CE_EXPLANATION_PLUGIN_FAST`); fallbacks may be specified via `<ENV>_FALLBACKS`.
   3. `pyproject.toml` under `[tool.calibrated_explanations.explanations]`.
   4. Plugin-declared fallbacks and built-in defaults.
 
@@ -82,7 +84,9 @@ python -m calibrated_explanations.plugins.cli list all --include-skipped
   - Add an allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]` for auditable, versioned trust decisions.
   - Use `CE_DENY_PLUGIN` to block identifiers immediately (useful for incident response or temporary mitigation).
 
-- **Common env keys:** `CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_<MODE>`, `CE_EXPLANATION_PLUGIN_FAST`, `CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`.
+- **Common env keys:** `CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_FACTUAL`,
+  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`,
+  `CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`.
 
 Writing plot plugins
 --------------------

@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
-from calibrated_explanations.plugins import explanations_fast
+from calibrated_explanations.plugins import ensure_builtin_plugins, explanations_fast
 from calibrated_explanations.plugins.explanations_fast import register_fast_explanation_plugin
+from calibrated_explanations.plugins.registry import find_explanation_descriptor
+
+
+def test_fast_explanation_plugin_registered_by_default():
+    """FAST plugin should be registered during builtin initialization."""
+    ensure_builtin_plugins()
+    descriptor = find_explanation_descriptor("core.explanation.fast")
+    assert descriptor is not None
+    assert descriptor.trusted is True
 
 
 def test_should_skip_registration_when_descriptor_exists(monkeypatch):

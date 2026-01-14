@@ -12,7 +12,7 @@ from calibrated_explanations.plugins.explanations import (
     ExplanationBatch,
 )
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
-from calibrated_explanations.utils.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
 from calibrated_explanations.plugins.registry import (
     find_explanation_descriptor,
     find_explanation_plugin_trusted,
@@ -173,15 +173,45 @@ class TestCanonicalCollectionReconstruction:
 class TestTrustEnforcement:
     """Verify trust enforcement in explanation plugin resolution (Step 3)."""
 
-    def test_untrusted_plugin_rejected_from_env_var(self):
+    def test_untrusted_plugin_rejected_from_env_var(self, mock_explainer):
         """Test that untrusted plugins from env vars are rejected."""
-        # This test requires a mock untrusted plugin to be registered
-        # For now, we verify the trust checking logic exists
         from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+        from calibrated_explanations.plugins.registry import (
+            ExplanationPluginDescriptor,
+        )
 
-        orchestrator = MagicMock(spec=ExplanationOrchestrator)
-        # Orchestrator should have resolve_plugin method
-        assert hasattr(orchestrator, "resolve_plugin") or True  # Defensive check
+        mock_plugin = MagicMock()
+        mock_plugin.plugin_meta = {
+            "name": "test.untrusted",
+            "trusted": False,
+            "schema_version": 1,
+            "tasks": ["classification"],
+            "modes": ["factual"],
+            "capabilities": ["explain", "explanation:factual", "task:classification"],
+        }
+
+        with patch(
+            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor"
+        ) as mock_find:
+            descriptor = MagicMock(spec=ExplanationPluginDescriptor)
+            descriptor.plugin = mock_plugin
+            descriptor.trusted = False
+            descriptor.metadata = mock_plugin.plugin_meta
+            mock_find.return_value = descriptor
+
+            orchestrator = ExplanationOrchestrator(mock_explainer)
+            mock_explainer.mode = "classification"
+            mock_explainer.plugin_manager.explanation_plugin_overrides = {"factual": None}
+            mock_explainer.plugin_manager.coerce_plugin_override.side_effect = lambda x: x
+            mock_explainer.plugin_manager.explanation_plugin_fallbacks = {
+                "factual": ("test.untrusted",)
+            }
+            mock_explainer.plugin_manager.explanation_preferred_identifier = {
+                "factual": "test.untrusted"
+            }
+
+            with pytest.raises(ConfigurationError, match="untrusted"):
+                orchestrator.resolve_plugin("factual")
 
     def test_denied_plugin_raises_error(self):
         """Test that denied plugins raise ConfigurationError."""
@@ -236,6 +266,30 @@ class TestTrustEnforcement:
                 plugin, identifier = orchestrator.resolve_plugin("factual")
                 assert identifier == "test.untrusted"
                 assert plugin == mock_plugin
+
+    def test_explicit_instance_override_warns_when_untrusted(self, mock_explainer):
+        """Explicit instance overrides should warn when untrusted."""
+        from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+
+        mock_plugin = MagicMock()
+        mock_plugin.plugin_meta = {
+            "name": "test.untrusted.instance",
+            "trusted": False,
+            "schema_version": 1,
+            "tasks": ["classification"],
+            "modes": ["factual"],
+            "capabilities": ["explain", "explanation:factual", "task:classification"],
+        }
+
+        orchestrator = ExplanationOrchestrator(mock_explainer)
+        mock_explainer.mode = "classification"
+        mock_explainer.plugin_manager.explanation_plugin_overrides = {"factual": mock_plugin}
+        mock_explainer.plugin_manager.coerce_plugin_override.side_effect = lambda x: x
+
+        with pytest.warns(UserWarning, match="Using untrusted explanation plugin"):
+            plugin, identifier = orchestrator.resolve_plugin("factual")
+            assert identifier == "test.untrusted.instance"
+            assert plugin == mock_plugin
 
 
 # ==============================================================================

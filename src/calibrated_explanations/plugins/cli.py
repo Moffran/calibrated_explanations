@@ -465,8 +465,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         description="Inspect and manage calibrated_explanations plugin metadata",
         epilog=(
             "Defaults can be configured via CE_EXPLANATION_PLUGIN and "
-            "CE_EXPLANATION_PLUGIN_FAST (mode-specific overrides via "
-            "CE_EXPLANATION_PLUGIN_<MODE>)."
+            "CE_EXPLANATION_PLUGIN_FAST, with mode-specific overrides via "
+            "CE_EXPLANATION_PLUGIN_FACTUAL, CE_EXPLANATION_PLUGIN_ALTERNATIVE, "
+            "and CE_EXPLANATION_PLUGIN_FAST."
         ),
     )
     subparsers = parser.add_subparsers(dest="command")
