@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
+from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Any, Mapping, MutableMapping, Protocol, Sequence, runtime_checkable
 
 
 @dataclass(frozen=True)
 class IntervalCalibratorContext:
-    """Frozen view of calibration artefacts provided to interval plugins."""
+    """Frozen view of calibration artefacts provided to interval plugins.
+
+    Metadata is exposed as an immutable mapping; use ``plugin_state`` for transient storage.
+    """
 
     learner: object
     calibration_splits: Sequence[Any]
@@ -17,23 +21,24 @@ class IntervalCalibratorContext:
     difficulty: Mapping[str, Any]
     metadata: Mapping[str, Any]
     fast_flags: Mapping[str, Any]
+    plugin_state: MutableMapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Post-initialization hook for the dataclass."""
-        # Ensure the top-level metadata is a plain mutable dict so plugins
-        # can record temporary state during execution. The dataclass is
-        # frozen to prevent attribute reassignment, but the metadata object
-        # itself should be mutable for plugin authors. We defensively copy
-        # whatever mapping-like object was provided into a new dict.
+        # Ensure metadata is always exposed as an immutable mapping.
+        raw_metadata = self.metadata or {}
         try:
-            meta = dict(self.metadata) if self.metadata is not None else {}
+            normalized = dict(raw_metadata)
         except Exception:  # adr002_allow
-            meta = (
+            normalized = (
                 {}
-                if self.metadata is None
-                else {k: v for k, v in getattr(self.metadata, "items", lambda: ())()}
+                if raw_metadata is None
+                else {k: v for k, v in getattr(raw_metadata, "items", lambda: ())()}
             )
-        object.__setattr__(self, "metadata", meta)
+        object.__setattr__(self, "metadata", MappingProxyType(normalized))
+        # Ensure plugin_state is mutable so plugins can store transient data.
+        if not isinstance(self.plugin_state, MutableMapping):  # pragma: no cover - defensive
+            object.__setattr__(self, "plugin_state", dict(self.plugin_state))  # type: ignore[arg-type]
 
     def __getstate__(self):
         """Get state for pickling.
@@ -54,7 +59,13 @@ class IntervalCalibratorContext:
         state : dict
             The state dictionary.
         """
-        # Restore the dict
+        metadata = state.get("metadata")
+        if metadata is not None:
+            state = dict(state)
+            state["metadata"] = MappingProxyType(dict(metadata))
+        plugin_state = state.get("plugin_state")
+        if plugin_state is not None and not isinstance(plugin_state, MutableMapping):
+            state["plugin_state"] = dict(plugin_state)
         self.__dict__.update(state)
 
 

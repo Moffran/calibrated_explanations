@@ -10,11 +10,17 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import List
+from typing import Any, List
 
 import numpy as np
 
 from ...explanations.explanations import CalibratedExplanations
+from ...logging import ensure_logging_context_filter
+
+
+_GOVERNANCE_LOGGER_NAME = "calibrated_explanations.governance.feature_filter"
+_governance_logger = logging.getLogger(_GOVERNANCE_LOGGER_NAME)
+ensure_logging_context_filter(_GOVERNANCE_LOGGER_NAME)
 
 
 @dataclass
@@ -90,6 +96,28 @@ class FeatureFilterResult:
 
     global_ignore: np.ndarray
     per_instance_ignore: List[np.ndarray]
+
+
+def emit_feature_filter_governance_event(
+    *,
+    decision: str,
+    level: int = logging.INFO,
+    reason: str | None = None,
+    strict: bool | None = None,
+    **extra_fields: Any,
+) -> None:
+    """Emit a structured governance log entry for the feature filter."""
+    payload: dict[str, Any] = {"decision": decision}
+    if reason is not None:
+        payload["reason"] = reason
+    if strict is not None:
+        payload["strict_observability"] = strict
+    payload.update(extra_fields)
+    _governance_logger.log(
+        level,
+        f"Feature filter governance event ({decision})",
+        extra=payload,
+    )
 
 
 def safe_len_feature_weights(explanations: CalibratedExplanations) -> int:
@@ -169,6 +197,15 @@ def compute_filtered_features_to_ignore(
         extra = {"inferred": inferred_num_features, "provided": num_features}
         if config.strict_observability:
             logger.warning(msg, extra=extra)
+            emit_feature_filter_governance_event(
+                decision="feature_filter_missing_feature_count",
+                level=logging.WARNING,
+                reason=msg,
+                strict=True,
+                num_instances=num_instances,
+                inferred=inferred_num_features,
+                provided=num_features,
+            )
         else:
             logger.debug(msg, extra=extra)
         per_instance = [base_ignore_arr.copy() for _ in range(num_instances)]
@@ -202,6 +239,14 @@ def compute_filtered_features_to_ignore(
             msg = "instance missing weights mapping; using baseline ignore for this instance"
             if config.strict_observability:
                 logger.warning(msg)
+                emit_feature_filter_governance_event(
+                    decision="feature_filter_missing_weights_mapping",
+                    level=logging.WARNING,
+                    reason=msg,
+                    strict=True,
+                    instance_index=instance_index,
+                    num_instances=num_instances,
+                )
             else:
                 logger.debug(msg)
             ignore_set = sorted(base_ignore_set)
@@ -217,6 +262,14 @@ def compute_filtered_features_to_ignore(
             msg = "instance missing 'predict' weights; using baseline ignore"
             if config.strict_observability:
                 logger.warning(msg)
+                emit_feature_filter_governance_event(
+                    decision="feature_filter_missing_predict_weights",
+                    level=logging.WARNING,
+                    reason=msg,
+                    strict=True,
+                    instance_index=instance_index,
+                    num_instances=num_instances,
+                )
             else:
                 logger.debug(msg)
             ignore_set = sorted(base_ignore_set)
@@ -233,6 +286,14 @@ def compute_filtered_features_to_ignore(
             msg = "empty weights array for instance; using baseline ignore"
             if config.strict_observability:
                 logger.warning(msg)
+                emit_feature_filter_governance_event(
+                    decision="feature_filter_empty_weights",
+                    level=logging.WARNING,
+                    reason=msg,
+                    strict=True,
+                    instance_index=instance_index,
+                    num_instances=num_instances,
+                )
             else:
                 logger.debug(msg)
             ignore_set = sorted(base_ignore_set)
@@ -354,4 +415,9 @@ def compute_filtered_features_to_ignore(
     return FeatureFilterResult(global_ignore=global_ignore, per_instance_ignore=per_instance_ignore)
 
 
-__all__ = ["FeatureFilterConfig", "FeatureFilterResult", "compute_filtered_features_to_ignore"]
+__all__ = [
+    "FeatureFilterConfig",
+    "FeatureFilterResult",
+    "compute_filtered_features_to_ignore",
+    "emit_feature_filter_governance_event",
+]

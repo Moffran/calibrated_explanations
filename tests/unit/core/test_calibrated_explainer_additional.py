@@ -186,7 +186,7 @@ def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.Monk
         context=context, calibrator=calibrators, fast=True
     )
 
-    assert context.metadata["fast_calibrators"] == ("first", "second")
+    assert context.plugin_state["fast_calibrators"] == ("first", "second")
 
 
 def test_x_y_cal_setters_and_append(monkeypatch: pytest.MonkeyPatch) -> None:

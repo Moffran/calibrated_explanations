@@ -142,15 +142,14 @@ class TestBuiltinsCoverage:
 
     def test_legacy_interval_calibrator_plugin_returns_cached(self):
         plugin = LegacyIntervalCalibratorPlugin()
-        context = make_interval_context("classification")
         sentinel = object()
-        context.metadata["calibrator"] = sentinel
+        context = make_interval_context("classification", metadata={"calibrator": sentinel})
         assert plugin.create(context) is sentinel
 
     def test_legacy_interval_calibrator_plugin_regression_path(self, monkeypatch):
         plugin = LegacyIntervalCalibratorPlugin()
-        context = make_interval_context("regression")
-        context.metadata["explainer"] = Mock()
+        explainer = Mock()
+        context = make_interval_context("regression", metadata={"explainer": explainer})
         context.metadata["explainer"].interval_learner = None
 
         called = {}

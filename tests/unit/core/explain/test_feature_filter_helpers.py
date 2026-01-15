@@ -1,9 +1,11 @@
+import logging
 import numpy as np
 import pytest
 
 from calibrated_explanations.core.explain._feature_filter import (
     FeatureFilterConfig,
     compute_filtered_features_to_ignore,
+    emit_feature_filter_governance_event,
 )
 
 
@@ -300,3 +302,64 @@ def test_compute_filtered_features_drops_unused_candidates():
     )
 
     assert np.array_equal(result.global_ignore, np.array([1, 2], dtype=int))
+
+
+def test_governance_logger_records_strict_warnings(caplog):
+    """Strict observability warnings should emit governance logs with structured context."""
+    from unittest.mock import MagicMock
+
+    cfg = FeatureFilterConfig(enabled=True, per_instance_top_k=1, strict_observability=True)
+    mock_collection = MagicMock()
+    mock_exp = MagicMock()
+    mock_exp.feature_weights = None
+    mock_collection.explanations = [mock_exp]
+
+    caplog.set_level(logging.WARNING, logger="calibrated_explanations.governance.feature_filter")
+    compute_filtered_features_to_ignore(
+        mock_collection,
+        num_features=3,
+        base_ignore=np.array([], dtype=int),
+        config=cfg,
+    )
+
+    governance_records = [
+        rec
+        for rec in caplog.records
+        if rec.name == "calibrated_explanations.governance.feature_filter"
+    ]
+    decisions = {rec.decision for rec in governance_records}
+    assert decisions & {
+        "feature_filter_missing_feature_count",
+        "feature_filter_missing_weights_mapping",
+        "feature_filter_missing_predict_weights",
+        "feature_filter_empty_weights",
+    }
+    assert any(getattr(rec, "strict_observability", None) is True for rec in governance_records)
+
+
+def test_governance_logger_records_skip_and_error_decisions(caplog):
+    """Skip and error transitions should be logged under the governance domain."""
+    caplog.set_level(logging.INFO, logger="calibrated_explanations.governance.feature_filter")
+
+    emit_feature_filter_governance_event(
+        decision="filter_skipped",
+        mode="factual",
+        reason="skip reason",
+        strict=False,
+    )
+    emit_feature_filter_governance_event(
+        decision="filter_error",
+        mode="factual",
+        reason="error reason",
+        strict=True,
+    )
+
+    governance_records = [
+        rec
+        for rec in caplog.records
+        if rec.name == "calibrated_explanations.governance.feature_filter"
+    ]
+    decisions = {rec.decision for rec in governance_records}
+    assert {"filter_skipped", "filter_error"} <= decisions
+    assert any(rec.strict_observability is False for rec in governance_records)
+    assert any(rec.strict_observability is True for rec in governance_records)

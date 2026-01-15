@@ -160,20 +160,20 @@ def test_obtain_interval_calibrator_fast_metadata(orchestrator, mock_explainer):
 def test_capture_interval_calibrators_fast_sequence(orchestrator):
     """Test _capture_interval_calibrators with sequence (lines 730)."""
     context = MagicMock()
-    context.metadata = {}
+    context.plugin_state = {}
 
     calibrators = [MagicMock(), MagicMock()]
 
     orchestrator.capture_interval_calibrators(context=context, calibrator=calibrators, fast=True)
 
-    assert "fast_calibrators" in context.metadata
-    assert context.metadata["fast_calibrators"] == tuple(calibrators)
+    assert "fast_calibrators" in context.plugin_state
+    assert context.plugin_state["fast_calibrators"] == tuple(calibrators)
 
 
 def test_capture_interval_calibrators_not_dict(orchestrator):
     """Test _capture_interval_calibrators when metadata is not dict (line 723)."""
     context = MagicMock()
-    context.metadata = "not a dict"
+    context.plugin_state = "not a dict"
 
     # Should just return without error
     orchestrator.capture_interval_calibrators(context=context, calibrator=None, fast=True)

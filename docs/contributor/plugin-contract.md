@@ -72,6 +72,8 @@ class HelloIntervalCalibratorPlugin(IntervalCalibratorPlugin):
             )] + [RegressionIntervalCalibrator()]
 ```
 
+**Note:** `IntervalCalibratorContext` is frozen by design. `context.metadata` is exposed as an immutable mapping so plugins cannot mutate shared explainer state, while `context.plugin_state` provides a mutable dictionary for storing transient, per-execution scratch data (e.g., caching intermediate summaries or heuristics) without leaking back into the explainer.
+
 ### 2. Validate and register the interval calibrator
 
 ```python

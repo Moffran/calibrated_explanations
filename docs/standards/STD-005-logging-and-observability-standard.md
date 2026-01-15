@@ -1,11 +1,11 @@
-> **Status note (2026-01-05):** Last edited 2026-01-05 · Archive after: Retain indefinitely as an engineering standard · Implementation window: v0.10.2 and onwards.
+> **Status note (2026-01-15):** Last edited 2026-01-15 · Archive after: Retain indefinitely as an engineering standard · Implementation window: v0.10.2 and onwards.
 
 # Standard-005: Logging and Observability
 
 Formerly part of an ad-hoc logging practice. Reclassified and consolidated as an
 engineering standard so ADRs can focus on architectural and contract decisions.
 
-Status: Draft (2026-01-05) — to be enforced starting with the v0.10.2 milestone.
+Status: Accepted (2026-01-15) — to be enforced starting with the v0.10.2 milestone.
 
 ## 1. Purpose
 
@@ -116,9 +116,25 @@ Contributors MUST:
     in a thread- or task-local store.
   - Installs a logging `Filter` that injects this context into all project log
     records.
+  - The helper is implemented in `calibrated_explanations.logging.ensure_logging_context_filter`
+    and may be bound to any logger that emits telemetry or governance events.
 - Contributors SHOULD prefer using the context helper over manually attaching
   `extra` fields when the same context applies to multiple log calls within a
   request or batch.
+
+Commonly, modules follow the pattern below so the context filter is attached once:
+
+```python
+import logging
+from calibrated_explanations.logging import ensure_logging_context_filter
+
+logger = logging.getLogger(__name__)
+ensure_logging_context_filter(logger.name)
+```
+
+Calling `ensure_logging_context_filter` with the logger name guarantees the shared
+fields (`explainer_id`, `mode`, `plugin_identifier`, etc.) appear on every record
+emitted from that logger.
 
 ## 6. Governance vs Operational Logs
 

@@ -284,9 +284,11 @@ def test_interval_plugin_requires_handles_and_returns_calibrator(monkeypatch: py
     with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
 
-    context.metadata["explainer"] = SimpleNamespace()
-    calibrator = LegacyIntervalCalibratorPlugin().create(context)
-    assert created["args"] == (context.metadata["explainer"],)
+    context_with_explainer = make_interval_context(
+        "regression", metadata={"explainer": SimpleNamespace()}
+    )
+    calibrator = LegacyIntervalCalibratorPlugin().create(context_with_explainer)
+    assert created["args"] == (context_with_explainer.metadata["explainer"],)
     assert calibrator is not None
 
 
@@ -303,8 +305,10 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
         DummyCalibrator,
         raising=False,
     )
-    context = make_interval_context("classification")
-    context.metadata["explainer"] = SimpleNamespace(predict_function=lambda x: x)
+    context = make_interval_context(
+        "classification",
+        metadata={"explainer": SimpleNamespace(predict_function=lambda x: x)},
+    )
     calibrator = LegacyIntervalCalibratorPlugin().create(context)
 
     assert created["args"][0] is context.calibration_splits[0][0]

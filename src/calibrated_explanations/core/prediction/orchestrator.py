@@ -20,7 +20,7 @@ import logging
 import os
 import sys
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, MutableMapping, Sequence
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -701,7 +701,7 @@ class PredictionOrchestrator:
         fast: bool,
         metadata: Mapping[str, Any],
     ) -> IntervalCalibratorContext:
-        """Construct the interval calibrator context with mutable metadata for plugin use."""
+        """Construct the interval calibrator context with immutable metadata (plugins get scratch state via ``plugin_state``)."""
         calibration_splits: Tuple[Any, ...] = ((self.explainer.x_cal, self.explainer.y_cal),)
         bins = {"calibration": self.explainer.bins}
         difficulty = {"estimator": self.explainer.difficulty_estimator}
@@ -744,10 +744,9 @@ class PredictionOrchestrator:
                 existing_fast = tuple(self.explainer.interval_learner)
             if existing_fast:
                 enriched_metadata["existing_fast_calibrators"] = tuple(existing_fast)
-        # Freeze nested metadata values for safety but keep the top-level
-        # metadata as a plain mutable dict so plugins can add entries during
-        # execution. The context will be frozen when persisted by
-        # `obtain_interval_calibrator()`.
+        # Freeze nested metadata values for safety and keep the top-level
+        # metadata as an immutable mapping; plugins that need transient state
+        # should use ``plugin_state`` instead.
         metadata_for_plugins = {
             key: _freeze_context_value(value) for key, value in enriched_metadata.items()
         }
@@ -824,21 +823,19 @@ class PredictionOrchestrator:
         fast: bool,
     ) -> None:
         """Record the returned calibrator inside the interval context metadata."""
-        metadata = context.metadata
-        # Skip if metadata is immutable (MappingProxyType from frozen context)
-        # Calibrators are cached separately in plugin_manager.interval_context_metadata
-        if not isinstance(metadata, dict):
+        plugin_state = getattr(context, "plugin_state", None)
+        if not isinstance(plugin_state, MutableMapping):  # pragma: no cover - defensive
             return
 
         if fast:
             if isinstance(calibrator, Sequence) and not isinstance(
                 calibrator, (str, bytes, bytearray)
             ):
-                metadata.setdefault("fast_calibrators", tuple(calibrator))
+                plugin_state.setdefault("fast_calibrators", tuple(calibrator))
             elif calibrator is not None:
-                metadata.setdefault("fast_calibrators", (calibrator,))
+                plugin_state.setdefault("fast_calibrators", (calibrator,))
         else:
-            metadata.setdefault("calibrator", calibrator)
+            plugin_state.setdefault("calibrator", calibrator)
 
     def validate_interval_calibrator(
         self,

@@ -83,6 +83,9 @@ The shared logging context helper propagates identifiers such as
 ``explainer_id``, ``plugin_identifier``, and ``mode`` into all log
 records, supporting correlation across distributed deployments.
 
+Feature filtering emits governance events under ``calibrated_explanations.governance.feature_filter`` (see :doc:`../standards/STD-005-logging-and-observability-standard`)
+when strict observability notices or skips/errors occur so operators can route those records to a separate audit sink if required.
+
 ## Persisting telemetry
 
 Telemetry payloads are JSON serialisable and can be stored alongside

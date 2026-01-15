@@ -33,6 +33,7 @@ from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
     FeatureFilterConfig,
     FeatureFilterResult,
     compute_filtered_features_to_ignore,
+    emit_feature_filter_governance_event,
 )
 from ..explanations.explanation import (
     AlternativeExplanation,
@@ -577,6 +578,16 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             logging.getLogger(__name__).warning(msg, extra=extra)
                         else:
                             logging.getLogger(__name__).debug(msg, extra=extra)
+                        level = (
+                            logging.WARNING if cfg.strict_observability else logging.INFO
+                        )
+                        emit_feature_filter_governance_event(
+                            decision="filter_skipped",
+                            level=level,
+                            reason=str(exc_inner),
+                            strict=cfg.strict_observability,
+                            mode=self._mode,
+                        )
                         # Ensure no stale per-instance state is kept on the explainer.
                         with contextlib.suppress(AttributeError):
                             delattr(explainer, "_feature_filter_per_instance_ignore")
@@ -606,18 +617,26 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     logging.getLogger(__name__).warning(msg, extra=extra)
                 else:
                     logging.getLogger(__name__).debug(msg, extra=extra)
-                with contextlib.suppress(AttributeError):
-                    del self.explainer.feature_filter_per_instance_ignore
-                filtered_request = ExplanationRequest(
-                    threshold=request.threshold,
-                    low_high_percentiles=request.low_high_percentiles,
-                    bins=request.bins,
-                    features_to_ignore=request.features_to_ignore,
-                    feature_filter_per_instance_ignore=getattr(
-                        request, "feature_filter_per_instance_ignore", None
-                    ),
-                    extras=request.extras,
+                level = logging.WARNING if cfg.strict_observability else logging.INFO
+                emit_feature_filter_governance_event(
+                    decision="filter_error",
+                    level=level,
+                    reason=str(exc_cfg),
+                    strict=cfg.strict_observability,
+                    mode=self._mode,
                 )
+            with contextlib.suppress(AttributeError):
+                del self.explainer.feature_filter_per_instance_ignore
+            filtered_request = ExplanationRequest(
+                threshold=request.threshold,
+                low_high_percentiles=request.low_high_percentiles,
+                bins=request.bins,
+                features_to_ignore=request.features_to_ignore,
+                feature_filter_per_instance_ignore=getattr(
+                    request, "feature_filter_per_instance_ignore", None
+                ),
+                extras=request.extras,
+            )
 
             explain_request, explain_config, runtime = build_explain_execution_plan(
                 self.explainer, x, filtered_request

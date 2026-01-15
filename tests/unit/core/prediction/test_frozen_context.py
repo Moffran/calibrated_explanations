@@ -1,13 +1,13 @@
 """Tests for interval context immutability enforcement (ADR-013).
 
 This module verifies the immutability design for interval contexts:
-- Contexts are built with mutable metadata to allow plugins to function
-- After plugin execution, metadata is frozen for caching via obtain_interval_calibrator()
-- bins, residuals, difficulty, fast_flags remain frozen throughout execution
-- This design allows plugin operations while ensuring cached contexts are immutable
+- Context metadata is provided as an immutable mapping so plugins cannot
+  mutate shared explainer state.
+- ``plugin_state`` is available as a mutable scratch pad for plugin-specific
+  transient data during execution.
+- Bins, residuals, difficulty, and fast_flags remain frozen throughout.
 
-Note: These tests verify the frozen state AFTER plugin execution, not during
-build_interval_context() which intentionally returns unfrozen contexts for plugins.
+Note: These tests focus on the structures returned by ``build_interval_context``.
 """
 
 from __future__ import annotations
@@ -52,16 +52,15 @@ class TestFrozenContextStructure:
             context.difficulty, MappingProxyType
         ), f"difficulty should be MappingProxyType, got {type(context.difficulty)}"
 
-    def test_context_metadata_is_dict_for_plugins(self, binary_dataset):
-        """Context.metadata should be mutable dict for plugin execution."""
+    def test_context_metadata_is_mapping_proxy_for_plugins(self, binary_dataset):
+        """Context.metadata should be a MappingProxyType for plugin execution."""
         explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert (
-            isinstance(context.metadata, dict)
-            and not isinstance(context.metadata, MappingProxyType)
-        ), f"metadata should be dict (not MappingProxyType) for plugin use, got {type(context.metadata)}"
+        assert isinstance(
+            context.metadata, MappingProxyType
+        ), f"metadata should be MappingProxyType for plugin use, got {type(context.metadata)}"
 
     def test_context_fast_flags_is_mapping_proxy(self, binary_dataset):
         """Context.fast_flags should be a MappingProxyType."""
@@ -72,6 +71,16 @@ class TestFrozenContextStructure:
         assert isinstance(
             context.fast_flags, MappingProxyType
         ), f"fast_flags should be MappingProxyType, got {type(context.fast_flags)}"
+
+    def test_context_plugin_state_is_mutable_dict(self, binary_dataset):
+        """Context.plugin_state should be a mutable dict for plugin scratch data."""
+        explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
+        orchestrator = PredictionOrchestrator(explainer)
+        context = orchestrator.build_interval_context(fast=False, metadata={})
+
+        assert isinstance(context.plugin_state, dict)
+        context.plugin_state["scratch"] = True
+        assert context.plugin_state["scratch"] is True
 
     def test_context_calibration_splits_is_tuple(self, binary_dataset):
         """Context.calibration_splits should be an immutable tuple."""
@@ -162,20 +171,24 @@ class TestFrozenContextResidualsImmutability:
 
 
 class TestFrozenContextMetadataImmutability:
-    """Verify metadata is mutable for plugin execution, nested dicts still frozen."""
+    """Verify metadata is immutable yet still exposes required fields."""
 
-    def test_metadata_is_mutable_dict_for_plugins(self, binary_dataset):
-        """Metadata should be a mutable dict for plugin execution."""
+    def test_metadata_is_mapping_proxy_for_plugins(self, binary_dataset):
+        """Metadata should be a MappingProxyType for plugin execution."""
         explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        # Metadata is mutable (dict) for plugin use
-        assert isinstance(context.metadata, dict) and not isinstance(
-            context.metadata, MappingProxyType
-        )
-        context.metadata["new_key"] = "new_value"
-        assert context.metadata["new_key"] == "new_value"
+        assert isinstance(context.metadata, MappingProxyType)
+
+    def test_metadata_mutation_raises_type_error(self, binary_dataset):
+        """Attempting to mutate metadata should raise a TypeError."""
+        explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
+        orchestrator = PredictionOrchestrator(explainer)
+        context = orchestrator.build_interval_context(fast=False, metadata={})
+
+        with pytest.raises(TypeError):
+            context.metadata["new_key"] = "new_value"  # type: ignore
 
     def test_metadata_contains_required_fields(self, binary_dataset):
         """Metadata should contain required fields for plugin execution."""
@@ -257,18 +270,15 @@ class TestFrozenContextFastMode:
         with pytest.raises(TypeError, match="does not support item assignment"):
             context.bins["test"] = "value"
 
-    def test_fast_context_metadata_mutable_for_plugins(self, binary_dataset):
-        """Metadata in fast mode should be mutable dict for plugin execution."""
+    def test_fast_context_metadata_is_mapping_proxy(self, binary_dataset):
+        """Metadata in fast mode should remain immutable for plugin execution."""
         explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=True, metadata={})
 
-        # Metadata is mutable even in fast mode (design: mutable for plugins)
-        assert isinstance(context.metadata, dict) and not isinstance(
-            context.metadata, MappingProxyType
-        )
-        context.metadata["test"] = "value"
-        assert context.metadata["test"] == "value"
+        assert isinstance(context.metadata, MappingProxyType)
+        context.plugin_state["test"] = "value"
+        assert context.plugin_state["test"] == "value"
 
     def test_fast_context_preserves_existing_fast_calibrators(self, binary_dataset):
         """Metadata should preserve existing fast calibrators when available."""
@@ -287,15 +297,15 @@ class TestFrozenContextFastMode:
 class TestFrozenContextClassificationMode:
     """Verify frozen context design in classification mode specifically."""
 
-    def test_classification_context_metadata_mutable(self, binary_dataset):
-        """Metadata should be mutable (dict) in classification mode."""
+    def test_classification_context_metadata_is_mapping_proxy(self, binary_dataset):
+        """Metadata should remain immutable in classification mode."""
         explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        assert isinstance(context.metadata, dict)
-        context.metadata["custom_field"] = "value"
-        assert context.metadata.get("mode") == "classification"
+        assert isinstance(context.metadata, MappingProxyType)
+        context.plugin_state["custom_field"] = "value"
+        assert context.plugin_state["custom_field"] == "value"
 
     def test_classification_context_bins_frozen(self, binary_dataset):
         """Bins should be frozen in classification mode."""
@@ -309,18 +319,15 @@ class TestFrozenContextClassificationMode:
 class TestFrozenContextRegressionMode:
     """Verify frozen context design in regression mode."""
 
-    def test_regression_context_metadata_mutable(self, binary_dataset):
-        """Metadata should be mutable (dict) in regression mode."""
+    def test_regression_context_metadata_is_mapping_proxy(self, binary_dataset):
+        """Metadata should remain immutable in regression mode."""
         explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
-        # Metadata is mutable dict (design allows plugin mutation during execution)
-        assert isinstance(context.metadata, dict) and not isinstance(
-            context.metadata, MappingProxyType
-        )
-        context.metadata["custom_field"] = "value"
-        assert context.metadata["custom_field"] == "value"
+        assert isinstance(context.metadata, MappingProxyType)
+        context.plugin_state["custom_field"] = "value"
+        assert context.plugin_state["custom_field"] == "value"
 
     def test_regression_context_bins_frozen(self, binary_dataset):
         """Bins should be frozen (tested with binary dataset for simplicity)."""
@@ -373,15 +380,17 @@ class TestContextImmutabilityPluginSafety:
         with pytest.raises(TypeError):
             context.bins["plugin_cache"] = {}  # type: ignore
 
-    def test_plugin_can_mutate_metadata_during_execution(self, binary_dataset):
-        """Plugins CAN mutate metadata during execution (it's a mutable dict)."""
+    def test_plugin_can_use_plugin_state_for_mutation(self, binary_dataset):
+        """Plugins should use plugin_state for transient mutation instead of metadata."""
         explainer, _ = make_explainer_from_dataset(binary_dataset, mode="classification")
         orchestrator = PredictionOrchestrator(explainer)
         context = orchestrator.build_interval_context(fast=False, metadata={})
 
         # Metadata is mutable during execution phase
-        context.metadata["calibrator"] = None
-        assert context.metadata["calibrator"] is None
+        with pytest.raises(TypeError):
+            context.metadata["calibrator"] = None  # type: ignore
+        context.plugin_state["calibrator"] = None
+        assert context.plugin_state["calibrator"] is None
 
     def test_difficulty_remains_frozen_for_protection(self, binary_dataset):
         """Difficulty dict remains frozen even though metadata is mutable."""

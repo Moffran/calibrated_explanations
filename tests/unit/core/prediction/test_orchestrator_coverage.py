@@ -1,5 +1,6 @@
 import pytest
 import warnings
+from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
@@ -779,16 +780,16 @@ def testpredict_impl_regression_probabilistic_crepes_error_reraise(orchestrator,
 
 def test_capture_interval_calibrators(orchestrator):
     context = MagicMock()
-    context.metadata = {}
+    context.plugin_state = {}
 
     # Fast mode
     orchestrator.capture_interval_calibrators(context=context, calibrator=["c1", "c2"], fast=True)
-    assert context.metadata["fast_calibrators"] == ("c1", "c2")
+    assert context.plugin_state["fast_calibrators"] == ("c1", "c2")
 
     # Default mode
-    context.metadata = {}
+    context.plugin_state = {}
     orchestrator.capture_interval_calibrators(context=context, calibrator="c1", fast=False)
-    assert context.metadata["calibrator"] == "c1"
+    assert context.plugin_state["calibrator"] == "c1"
 
 
 def testgather_interval_hints(orchestrator, mock_explainer):
@@ -1100,8 +1101,8 @@ def test_fast_interval_calibrator_protocol_compliance():
     assert isinstance(fast_calibrator, RegressionIntervalCalibrator)
 
 
-def test_build_interval_context_metadata_mutable(orchestrator, mock_explainer):
-    """Test that build_interval_context exposes mutable metadata for plugins."""
+def test_build_interval_context_metadata_immutable(orchestrator, mock_explainer):
+    """Test that build_interval_context exposes immutable metadata and plugin_state."""
     mock_explainer.mode = "classification"
     mock_explainer.learner = MagicMock()
     mock_explainer.x_cal = MagicMock()
@@ -1116,11 +1117,12 @@ def test_build_interval_context_metadata_mutable(orchestrator, mock_explainer):
     mock_explainer.noise_type = None
     mock_explainer.scale_factor = None
     mock_explainer.severity = None
-
     context = orchestrator.build_interval_context(fast=False, metadata={})
 
-    assert isinstance(context.metadata, dict)
+    assert isinstance(context.metadata, MappingProxyType)
 
-    # Metadata should remain open to plugin mutations during execution
-    context.metadata["new_key"] = "value"
-    assert context.metadata["new_key"] == "value"
+    # Metadata should remain read-only; plugins should use plugin_state.
+    with pytest.raises(TypeError):
+        context.metadata["new_key"] = "value"  # type: ignore
+    context.plugin_state["new_key"] = "value"
+    assert context.plugin_state["new_key"] == "value"
