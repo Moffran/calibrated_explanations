@@ -600,15 +600,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 # Public aliases for testing purposes (to avoid private member access in tests)
+emit_header = _emit_header
+format_common_metadata = _format_common_metadata
 emit_explanation_descriptor = _emit_explanation_descriptor
 emit_interval_descriptor = _emit_interval_descriptor
 emit_plot_descriptor = _emit_plot_descriptor
 emit_plot_builder_descriptor = _emit_plot_builder_descriptor
 emit_plot_renderer_descriptor = _emit_plot_renderer_descriptor
+emit_discovery_report = _emit_discovery_report
 cmd_list = _cmd_list
 cmd_show = _cmd_show
 cmd_trust = _cmd_trust
 cmd_report = _cmd_report
+cmd_validate_plot = _cmd_validate_plot
+cmd_validate_interval = _cmd_validate_interval
+cmd_set_default = _cmd_set_default
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry point

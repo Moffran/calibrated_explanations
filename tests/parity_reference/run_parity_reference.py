@@ -53,11 +53,11 @@ def build_payload(exp: Any) -> dict[str, Any]:
         "feature_weights": getattr(exp, "feature_weights", {}),
         "feature_predict": getattr(exp, "feature_predict", {}),
         "prediction": getattr(exp, "prediction", {}),
-        "explanation_type": _explanation_type_from_instance(exp),
+        "explanation_type": explanation_type_from_instance(exp),
     }
 
 
-def _explanation_type_from_instance(exp: Any) -> str:
+def explanation_type_from_instance(exp: Any) -> str:
     if isinstance(exp, AlternativeExplanation):
         return "alternative"
     if isinstance(exp, FastExplanation):

@@ -184,8 +184,9 @@ We adopt the following phased migration plan, aligned with release milestones:
     ADR.
 
 - **v0.11.0 and v1.0.0-rc:**
-  - Extend context propagation to checkpoints, rollback, and any additional
-    governance surfaces introduced by enterprise or governance-related features.
+- Extend context propagation to checkpoints, rollback, and any additional
+  governance surfaces introduced by downstream extensions or governance-related
+  features.
   - Finalise helper configuration APIs and example logging configurations (text
     vs JSON) for production deployments.
   - Update release gates so that governance logs are treated as part of the

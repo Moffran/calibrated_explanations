@@ -126,7 +126,7 @@ live in CI with coverage thresholds enforcing ≥90% package-level coverage.
    fixtures so callers see the calibrated probability interval reflected in the
    API response.【F:src/calibrated_explanations/core/calibrated_explainer.py†L760-L820】
 4. Document telemetry schema (interval_source/proba_source/plot_source) for
-   enterprise integrations and provide examples in docs/plugins.md.
+   downstream integrations and provide examples in docs/plugins.md.
 5. Review preprocessing persistence contract (ADR-009) to confirm saved
    preprocessor metadata matches expectations.【F:docs/improvement/adrs/ADR-009-input-preprocessing-and-mapping-policy.md†L1-L80】
 6. Execute Standard-001 Phase 2 renames with legacy shims isolated under a
@@ -257,6 +257,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 7. Extend test quality tooling per ADR-030: update `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` to flag tests without assertions and unseeded random usage, preparing for zero-tolerance enforcement in v1.0.0.
 8. Add ADR-031 calibrator persistence: versioned `to_primitive`/`from_primitive` contracts plus `Explainer.save_state()`/`load_state()` (gate: round-trip tests and schema version policy).
 9. Provide an OSS performance harness template for semi/fully-online latency measurements with README guidance (gate: sample run and documented workflow).
+10. Perform an ADR gap closure analysis and implementation for any remaining gaps. 
 
 Release gate: Domain/preprocessing pipelines operate on ADR-compliant models with telemetry coverage, naming lint metrics published, and no outstanding ADR exceptions ahead of v1.0.0-rc (see ADR status appendix in this document)
 
@@ -296,7 +297,7 @@ ready for pilot customers.
 
 1. Announce the stable plugin/telemetry contracts and publish the final
    compatibility statement across README, CHANGELOG, and docs hub.
-2. Tag the v1.0.0 release, backport documentation to enterprise extension
+2. Tag the v1.0.0 release, backport documentation to downstream extension
    repositories, and circulate the upgrade checklist to partners with caching
    and parallelisation guidance.
 3. Validate telemetry, plugin registries, cache behaviour, and worker scaling in
@@ -337,7 +338,7 @@ maintenance cadences scheduled.
   ADR-003/ADR-004 rollout notes as needed.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】
 - Evaluate additional renderer plugins (plotly) after verifying PlotSpec default
   adoption.
-- Plan schema v2 requirements with enterprise consumers before making breaking
+- Plan schema v2 requirements with downstream consumers before making breaking
   changes.
 
 # Appendix ADR Gap Status

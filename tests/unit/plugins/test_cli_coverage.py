@@ -9,20 +9,20 @@ from io import StringIO
 
 from calibrated_explanations.plugins.cli import (
     coerce_string_tuple,
-    _emit_header,
-    _format_common_metadata,
-    _cmd_list,
-    _emit_explanation_descriptor,
-    _emit_interval_descriptor,
-    _emit_plot_descriptor,
-    _emit_plot_builder_descriptor,
-    _emit_plot_renderer_descriptor,
-    _emit_discovery_report,
-    _cmd_validate_plot,
-    _cmd_validate_interval,
-    _cmd_set_default,
-    _cmd_show,
-    _cmd_report,
+    emit_header,
+    format_common_metadata,
+    cmd_list,
+    emit_explanation_descriptor,
+    emit_interval_descriptor,
+    emit_plot_descriptor,
+    emit_plot_builder_descriptor,
+    emit_plot_renderer_descriptor,
+    emit_discovery_report,
+    cmd_validate_plot,
+    cmd_validate_interval,
+    cmd_set_default,
+    cmd_show,
+    cmd_report,
 )
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
 
@@ -38,7 +38,7 @@ class TestCliCoverage:
         
     def test_emit_header(self, capsys):
         """Test simple header emission."""
-        _emit_header("Test Header")
+        emit_header("Test Header")
         captured = capsys.readouterr()
         assert "Test Header" in captured.out
         assert "===========" in captured.out
@@ -46,11 +46,11 @@ class TestCliCoverage:
     def test_format_common_metadata(self):
         """Test metadata formatting."""
         meta = {"name": "Test Plugin", "schema_version": "1.0.0"}
-        assert "name=Test Plugin" in _format_common_metadata(meta)
-        assert "schema_version=1.0.0" in _format_common_metadata(meta)
+        assert "name=Test Plugin" in format_common_metadata(meta)
+        assert "schema_version=1.0.0" in format_common_metadata(meta)
         
         meta_empty = {}
-        assert "name=<unnamed>" in _format_common_metadata(meta_empty)
+        assert "name=<unnamed>" in format_common_metadata(meta_empty)
         
     @patch("calibrated_explanations.plugins.cli.list_explanation_descriptors")
     def test_cmd_list_explanations(self, mock_list, capsys):
@@ -75,7 +75,7 @@ class TestCliCoverage:
         
         mock_list.return_value = [desc]
         
-        exit_code = _cmd_list(args)
+        exit_code = cmd_list(args)
         assert exit_code == 0
         captured = capsys.readouterr()
         assert "Explanation plugins" in captured.out
@@ -93,7 +93,7 @@ class TestCliCoverage:
         
         mock_list.return_value = []
         
-        exit_code = _cmd_list(args)
+        exit_code = cmd_list(args)
         assert exit_code == 0
         captured = capsys.readouterr()
         assert "<none>" in captured.out
@@ -110,7 +110,7 @@ class TestCliCoverage:
         
         mock_list.return_value = []
         
-        exit_code = _cmd_list(args)
+        exit_code = cmd_list(args)
         assert exit_code == 0
         captured = capsys.readouterr()
         assert "<none>" in captured.out
@@ -123,14 +123,14 @@ class TestCliCoverage:
         
         # Case 1: builder not found
         mock_find.return_value = None
-        exit_code = _cmd_validate_plot(args)
+        exit_code = cmd_validate_plot(args)
         assert exit_code == 1
         
         # Case 2: build fail
         builder = Mock()
         builder.build.side_effect = Exception("Build error")
         mock_find.return_value = builder
-        exit_code = _cmd_validate_plot(args)
+        exit_code = cmd_validate_plot(args)
         assert exit_code == 2
         
         # Case 3: success
@@ -139,14 +139,14 @@ class TestCliCoverage:
         
         with patch("calibrated_explanations.viz.serializers.validate_plotspec") as mock_val:
             mock_val.return_value = None # success
-            exit_code = _cmd_validate_plot(args)
+            exit_code = cmd_validate_plot(args)
             assert exit_code == 0 # Should count as success if no exception raised
 
         # Case 4: invalid plotspec
         builder.build.return_value = {"plot_spec": "invalid"}
         with patch("calibrated_explanations.viz.serializers.validate_plotspec") as mock_val:
             mock_val.side_effect = Exception("Invalid plotspec")
-            exit_code = _cmd_validate_plot(args)
+            exit_code = cmd_validate_plot(args)
             assert exit_code == 3
 
     def test_emit_descriptor_helpers_and_discovery(self, capsys):
@@ -185,11 +185,11 @@ class TestCliCoverage:
         )
 
         with patch("calibrated_explanations.plugins.cli.is_identifier_denied", return_value=True):
-            _emit_explanation_descriptor(desc)
-        _emit_interval_descriptor(interval_desc)
-        _emit_plot_descriptor(plot_desc)
-        _emit_plot_builder_descriptor(builder_desc)
-        _emit_plot_renderer_descriptor(renderer_desc)
+            emit_explanation_descriptor(desc)
+        emit_interval_descriptor(interval_desc)
+        emit_plot_descriptor(plot_desc)
+        emit_plot_builder_descriptor(builder_desc)
+        emit_plot_renderer_descriptor(renderer_desc)
 
         record = SimpleNamespace(
             identifier="skipped.plugin",
@@ -203,8 +203,8 @@ class TestCliCoverage:
             skipped_untrusted=[record],
             checksum_failures=[record],
         )
-        _emit_discovery_report(report)
-        _emit_discovery_report(None)
+        emit_discovery_report(report)
+        emit_discovery_report(None)
 
         captured = capsys.readouterr()
         assert "denied via CE_DENY_PLUGIN" in captured.out
@@ -252,7 +252,7 @@ class TestCliCoverage:
             patch("calibrated_explanations.plugins.cli.list_plot_style_descriptors", return_value=[plot_desc]), \
             patch("calibrated_explanations.plugins.cli.get_last_discovery_report", return_value=report), \
             patch("calibrated_explanations.plugins.cli.is_identifier_denied", return_value=False):
-            exit_code = _cmd_list(args)
+            exit_code = cmd_list(args)
 
         assert exit_code == 0
         assert mock_load.called
@@ -265,7 +265,7 @@ class TestCliCoverage:
         descriptor = SimpleNamespace(plugin=DummyIntervalPlugin(), metadata={"fast_compatible": True, "dependencies": ["dep"]})
         with patch("calibrated_explanations.plugins.cli.load_entrypoint_plugins"), \
             patch("calibrated_explanations.plugins.cli.find_interval_descriptor", return_value=descriptor):
-            exit_code = _cmd_validate_interval(Mock(plugin="interval"))
+            exit_code = cmd_validate_interval(Mock(plugin="interval"))
         captured = capsys.readouterr()
         assert exit_code == 0
         assert "validated successfully" in captured.out
@@ -286,7 +286,7 @@ class TestCliCoverage:
         with patch("calibrated_explanations.plugins.registry.find_plot_style_descriptor", return_value=style_desc), \
             patch("calibrated_explanations.plugins.registry.list_plot_style_descriptors", return_value=descriptors), \
             patch("calibrated_explanations.plugins.cli.register_plot_style", side_effect=fake_register):
-            exit_code = _cmd_set_default(args)
+            exit_code = cmd_set_default(args)
 
         captured = capsys.readouterr()
         assert exit_code == 0
@@ -296,7 +296,7 @@ class TestCliCoverage:
     def test_cmd_show_missing_and_found(self, capsys):
         args = Mock(kind="explanations", identifier="missing")
         with patch("calibrated_explanations.plugins.cli.find_explanation_descriptor", return_value=None):
-            exit_code = _cmd_show(args)
+            exit_code = cmd_show(args)
         captured = capsys.readouterr()
         assert exit_code == 1
         assert "Explanation plugin 'missing' is not registered" in captured.out
@@ -310,7 +310,7 @@ class TestCliCoverage:
         )
 
         with patch("calibrated_explanations.plugins.cli.find_plot_style_descriptor", return_value=descriptor):
-            exit_code = _cmd_show(args_found)
+            exit_code = cmd_show(args_found)
         captured = capsys.readouterr()
         assert exit_code == 0
         assert "Identifier : style.id" in captured.out
@@ -330,9 +330,9 @@ class TestCliCoverage:
         )
         mock_get_report.return_value = report
         
-        exit_code = _cmd_report(Mock())
+        exit_code = cmd_report(Mock())
         
         assert exit_code == 0
         mock_load.assert_called_once_with(include_untrusted=True)
         mock_get_report.assert_called_once()
-        # _emit_discovery_report is called, but since report is empty, no specific assertions
+        # emit_discovery_report is called, but since report is empty, no specific assertions
