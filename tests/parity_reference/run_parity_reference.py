@@ -25,14 +25,17 @@ ROOT = Path(__file__).resolve().parent
 
 
 def load_json(path: Path) -> Any:
+    """Load JSON data from a file path."""
     return json.loads(path.read_text())
 
 
 def dump_json(path: Path, payload: Any) -> None:
+    """Dump JSON data to a file path."""
     path.write_text(json.dumps(to_serializable(payload), indent=2, sort_keys=True))
 
 
 def to_serializable(obj: Any) -> Any:
+    """Convert an object to a JSON-serializable format."""
     if isinstance(obj, dict):
         return {k: to_serializable(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -47,6 +50,7 @@ def to_serializable(obj: Any) -> Any:
 
 
 def build_payload(exp: Any) -> dict[str, Any]:
+    """Build a payload dictionary from an explanation object."""
     return {
         "task": getattr(exp, "get_mode", lambda: "unknown")(),
         "rules": getattr(exp, "rules", {"rule": [], "feature": []}),
@@ -58,6 +62,7 @@ def build_payload(exp: Any) -> dict[str, Any]:
 
 
 def explanation_type_from_instance(exp: Any) -> str:
+    """Determine the explanation type from an instance."""
     if isinstance(exp, AlternativeExplanation):
         return "alternative"
     if isinstance(exp, FastExplanation):
@@ -68,6 +73,7 @@ def explanation_type_from_instance(exp: Any) -> str:
 
 
 def build_explainer(dataset: dict[str, Any], *, fast: bool = False) -> CalibratedExplainer:
+    """Build a CalibratedExplainer from dataset configuration."""
     mode = dataset.get("mode", "classification")
     x_train = np.array(dataset.get("x_train", []), dtype=float)
     y_train = np.array(dataset.get("y_train", []))
@@ -83,7 +89,11 @@ def build_explainer(dataset: dict[str, Any], *, fast: bool = False) -> Calibrate
     if len(x_train) > 0:
         model.fit(x_train, y_train)
 
-    y_cal_arr = np.array(dataset["y_cal"], dtype=float) if mode == "regression" else np.array(dataset["y_cal"])
+    y_cal_arr = (
+        np.array(dataset["y_cal"], dtype=float)
+        if mode == "regression"
+        else np.array(dataset["y_cal"])
+    )
     return CalibratedExplainer(
         model,
         np.array(dataset["x_cal"], dtype=float),
@@ -98,6 +108,7 @@ def build_explainer(dataset: dict[str, Any], *, fast: bool = False) -> Calibrate
 
 
 def compute_outputs(dataset: dict[str, Any]) -> dict[str, Any]:
+    """Compute explanation outputs for a dataset."""
     x_test = np.array(dataset["x_test"], dtype=float)
     explainer = build_explainer(dataset)
 
@@ -131,6 +142,7 @@ def compute_outputs(dataset: dict[str, Any]) -> dict[str, Any]:
 
 
 def compare_payload(name: str, expected: Any, actual: Any) -> list[dict[str, Any]]:
+    """Compare expected and actual payloads, printing diffs if any."""
     diffs = parity_compare(expected, actual, rtol=1e-6, atol=1e-8)
     if diffs:
         print(f"::group::{name} parity diffs")
@@ -141,7 +153,12 @@ def compare_payload(name: str, expected: Any, actual: Any) -> list[dict[str, Any
 
 
 def run(dataset_name: str = "classification", update: bool = False) -> int:
-    dataset_path = ROOT / f"canonical_dataset_{dataset_name}.json" if dataset_name != "classification" else ROOT / "canonical_dataset.json"
+    """Run parity reference computation for a dataset."""
+    dataset_path = (
+        ROOT / f"canonical_dataset_{dataset_name}.json"
+        if dataset_name != "classification"
+        else ROOT / "canonical_dataset.json"
+    )
     if not dataset_path.exists():
         print(f"Dataset fixture not found: {dataset_path}")
         return 2
@@ -150,10 +167,18 @@ def run(dataset_name: str = "classification", update: bool = False) -> int:
     outputs = compute_outputs(dataset)
 
     fixtures = {
-        "predictions": ROOT / f"predictions_{dataset_name}.json" if dataset_name != "classification" else ROOT / "predictions.json",
-        "factual": ROOT / f"factual_{dataset_name}.json" if dataset_name != "classification" else ROOT / "factual.json",
-        "alternatives": ROOT / f"alternatives_{dataset_name}.json" if dataset_name != "classification" else ROOT / "alternatives.json",
-        "fast": ROOT / f"fast_{dataset_name}.json" if dataset_name != "classification" else ROOT / "fast.json",
+        "predictions": ROOT / f"predictions_{dataset_name}.json"
+        if dataset_name != "classification"
+        else ROOT / "predictions.json",
+        "factual": ROOT / f"factual_{dataset_name}.json"
+        if dataset_name != "classification"
+        else ROOT / "factual.json",
+        "alternatives": ROOT / f"alternatives_{dataset_name}.json"
+        if dataset_name != "classification"
+        else ROOT / "alternatives.json",
+        "fast": ROOT / f"fast_{dataset_name}.json"
+        if dataset_name != "classification"
+        else ROOT / "fast.json",
     }
 
     if update:
@@ -175,6 +200,7 @@ def run(dataset_name: str = "classification", update: bool = False) -> int:
 
 
 def main() -> None:
+    """Run the parity reference script."""
     parser = argparse.ArgumentParser(description="Run parity reference harness.")
     parser.add_argument(
         "--update",

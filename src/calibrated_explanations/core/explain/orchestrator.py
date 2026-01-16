@@ -339,6 +339,47 @@ class ExplanationOrchestrator:
         else:
             features_to_ignore_flat = tuple(features_arg)
 
+        # Attempt FAST-based feature filtering if enabled and not already overridden by user
+        feature_filter_config = getattr(self.explainer, "feature_filter_config", None)
+        if (
+            mode in {"factual", "alternative"}
+            and per_instance_ignore is None
+            and feature_filter_config
+            and getattr(feature_filter_config, "enabled", False)
+        ):
+            try:
+                from ._feature_filter import compute_filtered_features_to_ignore
+
+                # Run a lightweight FAST explanation on the same batch
+                fast_results = self.invoke(
+                    mode="fast",
+                    x=x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    bins=bins,
+                    # Pass the baseline ignore set so FAST respects it
+                    features_to_ignore=features_to_ignore_flat,
+                    extras=extras,
+                    _ce_skip_reject=True,
+                )
+                
+                filter_res = compute_filtered_features_to_ignore(
+                    fast_results,
+                    num_features=getattr(self.explainer, "num_features", None),
+                    base_ignore=np.array(features_to_ignore_flat, dtype=int),
+                    config=feature_filter_config,
+                )
+                
+                # Update ignore sets with the filtered results
+                features_to_ignore_flat = tuple(int(f) for f in filter_res.global_ignore)
+                per_instance_ignore = tuple(
+                    tuple(int(f) for f in row) for row in filter_res.per_instance_ignore
+                )
+            except Exception as exc:  # adr002_allow
+                logging.getLogger(__name__).warning(
+                    "FAST feature filtering failed; proceeding with baseline ignores: %s", exc
+                )
+
         with logging_context(
             mode=mode,
             plugin_identifier=_identifier or mode,

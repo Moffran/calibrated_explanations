@@ -96,7 +96,7 @@ def test_cli_report_command(monkeypatch, capsys):
         checksum_failures=[],
         accepted=[],
     )
-    
+
     monkeypatch.setattr(cli_module, "load_entrypoint_plugins", lambda include_untrusted: None)
     monkeypatch.setattr(cli_module, "get_discovery_report", lambda: report)
 

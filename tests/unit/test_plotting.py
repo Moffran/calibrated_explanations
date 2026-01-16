@@ -13,7 +13,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     from calibrated_explanations import plotting
 
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+pytestmark = [pytest.mark.viz, pytest.mark.filterwarnings("ignore::DeprecationWarning")]
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")

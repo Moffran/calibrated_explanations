@@ -1,7 +1,6 @@
 """Integration test for quick_explain API."""
 
 import numpy as np
-import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from calibrated_explanations.api.quick import quick_explain
@@ -43,7 +42,7 @@ def test_quick_explain_binary_classification():
     # Check that result is returned
     assert result is not None
     # Check that it has some attributes
-    assert hasattr(result, 'explanations')
+    assert hasattr(result, "explanations")
 
 
 def test_quick_explain_regression():
@@ -65,6 +64,7 @@ def test_quick_explain_regression():
 
     # Use RandomForest
     from sklearn.ensemble import RandomForestRegressor
+
     model = RandomForestRegressor(n_estimators=10, random_state=42)
 
     # Call quick_explain
@@ -81,7 +81,7 @@ def test_quick_explain_regression():
     # Check that result is returned
     assert result is not None
     # Check that it has some attributes
-    assert hasattr(result, 'explanations')
+    assert hasattr(result, "explanations")
 
 
 def test_explainer_builder_integration():
@@ -120,7 +120,7 @@ def test_explainer_builder_integration():
 
     # Check
     assert result is not None
-    assert hasattr(result, 'explanations')
+    assert hasattr(result, "explanations")
 
 
 def test_explainer_builder_regression():
@@ -141,6 +141,7 @@ def test_explainer_builder_regression():
 
     # Use RandomForest
     from sklearn.ensemble import RandomForestRegressor
+
     model = RandomForestRegressor(n_estimators=10, random_state=42)
 
     # Use ExplainerBuilder
@@ -159,4 +160,4 @@ def test_explainer_builder_regression():
 
     # Check
     assert result is not None
-    assert hasattr(result, 'explanations')
+    assert hasattr(result, "explanations")

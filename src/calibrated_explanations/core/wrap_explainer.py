@@ -345,12 +345,7 @@ class WrapCalibratedExplainer:
             )
         # Propagate internal feature filter config to explainer when available
         if self.explainer is not None and hasattr(self, "_feature_filter_config"):
-            try:
-                self.explainer.feature_filter_config = self._feature_filter_config
-            except AttributeError:  # pragma: no cover - defensive
-                self._logger.debug(
-                    "Failed to attach feature filter config to explainer", exc_info=True
-                )
+            self.explainer.feature_filter_config = self._feature_filter_config
         self.calibrated = True
         if preprocessor_metadata is not None and self.explainer is not None:
             with suppress(AttributeError):

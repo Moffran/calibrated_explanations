@@ -14,7 +14,9 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 import copy
+import logging
 import sys
+import warnings
 import contextlib
 from time import time
 from typing import TYPE_CHECKING
@@ -378,6 +380,99 @@ class CalibratedExplainer:
                 },
             )
         return manager
+
+    def get_plugin_manager(self) -> PluginManager:
+        """Return the active plugin manager, applying any derived defaults.
+
+        Wrapper layers must not mutate plugin manager state directly. Any
+        runtime-derived plugin preferences (for example, feature filter
+        execution requirements) are enforced here so orchestration remains
+        centralized in the explainer/manager layers.
+        """
+        manager = self.require_plugin_manager()
+        self._enforce_feature_filter_plugin_preferences(manager)
+        return manager
+
+    def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
+        cfg = getattr(self, "_feature_filter_config", None)
+        enabled = getattr(cfg, "enabled", False)
+        if enabled is not True:
+            return
+
+        override_id = "core.explanation.factual.sequential"
+        logger = logging.getLogger(__name__)
+
+        try:
+            chain = manager.explanation_plugin_fallbacks.get("factual", ())
+        except Exception as exc:  # adr002_allow
+            logger.warning(
+                "Failed to read explanation plugin fallback chain; feature filter enforcement skipped: %s",
+                exc,
+                exc_info=True,
+            )
+            warnings.warn(
+                "Feature filter is enabled but plugin fallback chain could not be read; "
+                "continuing with the configured explanation plugin selection.",
+                UserWarning,
+                stacklevel=3,
+            )
+            return
+
+        if chain and chain[0] == override_id:
+            return
+
+        if not chain:
+            try:
+                manager.initialize_chains()
+                chain = manager.explanation_plugin_fallbacks.get("factual", ())
+            except Exception as exc:  # adr002_allow
+                logger.warning(
+                    "Failed to initialize plugin chains; feature filter enforcement skipped: %s",
+                    exc,
+                    exc_info=True,
+                )
+                warnings.warn(
+                    "Feature filter is enabled but plugin chains could not be initialized; "
+                    "continuing with the configured explanation plugin selection.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                return
+
+            if chain and chain[0] == override_id:
+                return
+
+        previous = chain[0] if chain else None
+        logger.warning(
+            "Feature filter enabled; forcing factual explanation plugin to '%s' (was '%s')",
+            override_id,
+            previous,
+            extra={"mode": "factual", "plugin_identifier": override_id},
+        )
+        warnings.warn(
+            f"Feature filter is enabled; overriding the factual explanation plugin from '{previous}' "
+            f"to '{override_id}'.",
+            UserWarning,
+            stacklevel=3,
+        )
+
+        try:
+            manager.explanation_plugin_overrides["factual"] = override_id
+            manager.clear_explanation_plugin_instances()
+            manager.clear_explanation_plugin_identifiers()
+            manager.initialize_chains()
+        except Exception as exc:  # adr002_allow
+            logger.warning(
+                "Failed to enforce factual explanation plugin for feature filter: %s",
+                exc,
+                exc_info=True,
+            )
+            warnings.warn(
+                "Feature filter is enabled but forcing the factual explanation plugin failed; "
+                "continuing with the configured explanation plugin selection.",
+                UserWarning,
+                stacklevel=3,
+            )
 
     def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
         """Resolve the parallel executor honoring overrides and environment config."""
@@ -809,7 +904,7 @@ class CalibratedExplainer:
     @property
     def plugin_manager(self) -> PluginManager:
         """Public accessor for the active PluginManager."""
-        return self.require_plugin_manager()
+        return self.get_plugin_manager()
 
     @plugin_manager.setter
     def plugin_manager(self, value: Any) -> None:

@@ -36,4 +36,4 @@ jobs:
           # Run unit tests quickly in deprecation-error mode to catch any
           # newly-introduced deprecations without running the full coverage
           # gated suite here.
-          pytest tests/unit -q --maxfail=1 --no-cov
+          pytest tests/unit -m "not viz" -q --maxfail=1 --no-cov

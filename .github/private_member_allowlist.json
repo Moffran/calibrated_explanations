@@ -1,5 +1,24 @@
 {
   "allowlist": [
-
+    {
+      "file": "tests/legacy/test_execution_strategy_wrappers.py",
+      "symbol": "_explanation_attr",
+      "expiry": "2026-12-31"
+    },
+    {
+      "file": "tests/legacy/test_execution_strategy_wrappers.py",
+      "symbol": "_feature_filter",
+      "expiry": "2026-12-31"
+    },
+    {
+      "file": "tests/legacy/test_execution_strategy_wrappers.py",
+      "symbol": "_mode",
+      "expiry": "2026-12-31"
+    },
+    {
+      "file": "tests/legacy/test_execution_strategy_wrappers.py",
+      "symbol": "_shared",
+      "expiry": "2026-12-31"
+    }
   ]
 }

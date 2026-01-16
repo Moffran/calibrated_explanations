@@ -1,7 +1,10 @@
 import pytest
 
-from calibrated_explanations.viz import builders, serializers, matplotlib_adapter
-from calibrated_explanations.viz.plotspec import SaveBehavior
+try:
+    from calibrated_explanations.viz import builders, serializers, matplotlib_adapter
+    from calibrated_explanations.viz.plotspec import SaveBehavior
+except ModuleNotFoundError:
+    pytest.skip("viz not available", allow_module_level=True)
 
 pytestmark = pytest.mark.viz
 

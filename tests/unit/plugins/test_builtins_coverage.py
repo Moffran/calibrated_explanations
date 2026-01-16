@@ -1,6 +1,7 @@
 """Unit tests for coverage of builtins.py."""
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 import numpy as np
 from calibrated_explanations.plugins.builtins import (
     derive_threshold_labels,
@@ -28,17 +29,18 @@ def make_interval_context(task, metadata=None):
         fast_flags={},
     )
 
+
 class TestBuiltinsCoverage:
     def test_derive_threshold_labels(self):
         """Test derive_threshold_labels heuristic."""
         # Case 1: scalar
         labels = derive_threshold_labels(0.5)
         assert labels == ("Y < 0.50", "Y ≥ 0.50")
-        
+
         # Case 2: interval (sequence)
         labels = derive_threshold_labels([0.4, 0.6])
         assert labels == ("0.40 <= Y < 0.60", "Outside interval")
-        
+
         # Case 3: invalid/string?
         labels = derive_threshold_labels("foo")
         assert labels == ("Target within threshold", "Outside threshold")
@@ -50,21 +52,21 @@ class TestBuiltinsCoverage:
         probs = np.array([[0.2, 0.8]])
         low = np.array([[0.1, 0.7]])
         high = np.array([[0.3, 0.9]])
-        
+
         def predict_side_effect(*args, **kwargs):
-            if kwargs.get('uq_interval'):
+            if kwargs.get("uq_interval"):
                 return (probs, (low, high))
-            if kwargs.get('calibrated'):
+            if kwargs.get("calibrated"):
                 return probs
-            return probs # Default
+            return probs  # Default
 
         mock_explainer.predict.side_effect = predict_side_effect
-        mock_explainer.predict_proba.return_value = probs    
+        mock_explainer.predict_proba.return_value = probs
 
         bridge = LegacyPredictBridge(mock_explainer)
 
         result = bridge.predict("X", mode="classification", task="classification")
-        
+
         assert "classes" in result
         np.testing.assert_array_equal(result["classes"], probs)
         np.testing.assert_array_equal(result["predict"], probs)
@@ -76,32 +78,32 @@ class TestBuiltinsCoverage:
     def test_legacy_predict_bridge_regression_invariants(self):
         """Test invariant checks in LegacyPredictBridge."""
         mock_explainer = Mock()
-        
+
         # 1. Low > High
         probs = np.array([0.5])
-        low = np.array([0.6]) # > high
+        low = np.array([0.6])  # > high
         high = np.array([0.4])
-        
+
         mock_explainer.predict.return_value = (probs, (low, high))
         bridge = LegacyPredictBridge(mock_explainer)
-        
+
         with pytest.raises(ValidationError, match="Interval invariant violated"):
             bridge.predict("X", mode="regression", task="regression")
-            
+
         # 2. Prediction outside interval
-        probs = np.array([0.9]) # > high
+        probs = np.array([0.9])  # > high
         low = np.array([0.4])
         high = np.array([0.6])
-        
+
         mock_explainer.predict.return_value = (probs, (low, high))
-        
+
         with pytest.raises(ValidationError, match="Prediction invariant violated"):
             bridge.predict("X", mode="regression", task="regression")
 
     def test_collection_to_batch(self):
         """Test collection_to_batch helper."""
         pass
-        
+
     def test_legacy_interval_calibrator_plugin_create_missing_explainer(self):
         """Test LegacyIntervalCalibratorPlugin create method errors."""
         plugin = LegacyIntervalCalibratorPlugin()
@@ -112,13 +114,14 @@ class TestBuiltinsCoverage:
         context.difficulty = {"estimator": None}
         context.calibration_splits = [(None, None)]
         context.learner = None
-        
+
         # When explainer is None in context.metadata
         with pytest.raises(NotFittedError):
             plugin.create(context)
 
     def test_collection_to_batch_includes_metadata(self):
         """Ensure expanded metadata travels through the batch helper."""
+
         class DummyCollection:
             def __init__(self):
                 self.explanations = [Mock()]
@@ -178,6 +181,7 @@ class TestBuiltinsCoverage:
             def __init__(self, *args, **kwargs):
                 called["args"] = args
                 called["kwargs"] = kwargs
+
         monkeypatch.setattr(
             "calibrated_explanations.calibration.venn_abers.VennAbers",
             DummyVennAbers,

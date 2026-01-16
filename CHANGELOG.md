@@ -9,6 +9,10 @@
 
 - **requirements.txt cleanup:** Updated requirements.txt to include only core runtime dependencies, strictly matching [project.dependencies] in pyproject.toml. Removed dev, viz, eval, and notebook dependencies. Rationale: Ensures pip installs and CI are minimal and consistent with canonical dependency list (see ADR-010, .github/copilot-instructions.md).
 
+### Fixed
+
+- **Fast Feature Filtering Integration:** Fixed a critical issue where the FAST feature filtering logic (ADR-027) was implemented but not invoked during factual/alternative explanation requests. Feature filtering now correctly runs the lightweight FAST pass and filters features according to the configuration.
+
 ### Added
 
 - **ADR-029: Reject policy orchestration (v0.10.2):** Added the `RejectPolicy` enum, `RejectResult` envelope, and `RejectOrchestrator` registry, wiring per-call and explainer-level policies through prediction/explanation entry points while keeping `NONE` fully backward compatible. Documented usage in `docs/improvement/reject_policy_usage.md` and linked ADR-029 into the release notes.

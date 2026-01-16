@@ -50,15 +50,21 @@ def test_validate_param_combination_raises_on_conflict():
 
 
 def test_warn_on_aliases_emits_warning():
+    import os
+
     kwargs = {"alpha": (5, 95)}
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        warn_on_aliases(kwargs)
-        # Check that warnings were issued
-        assert len(w) >= 1
-        # Check that at least one is UserWarning or DeprecationWarning
-        categories = [warn.category for warn in w]
-        assert UserWarning in categories or DeprecationWarning in categories
-        # Check message
-        messages = [str(warn.message) for warn in w]
-        assert any("alpha" in msg and "deprecated" in msg.lower() for msg in messages)
+    if os.getenv("CE_DEPRECATIONS") in ("error", "raise", "strict"):
+        with pytest.raises(DeprecationWarning, match="alpha"):
+            warn_on_aliases(kwargs)
+    else:
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            warn_on_aliases(kwargs)
+            # Check that warnings were issued
+            assert len(w) >= 1
+            # Check that at least one is UserWarning or DeprecationWarning
+            categories = [warn.category for warn in w]
+            assert UserWarning in categories or DeprecationWarning in categories
+            # Check message
+            messages = [str(warn.message) for warn in w]
+            assert any("alpha" in msg and "deprecated" in msg.lower() for msg in messages)

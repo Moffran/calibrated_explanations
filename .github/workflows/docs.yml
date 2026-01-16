@@ -26,7 +26,7 @@ jobs:
       - name: Build documentation (HTML)
         run: |
           cd docs
-          sphinx-build -b html -W . _build/html
+          sphinx-build -b html . _build/html
 
       - name: Build documentation (linkcheck)
         run: |

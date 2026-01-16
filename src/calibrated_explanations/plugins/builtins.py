@@ -578,9 +578,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             logging.getLogger(__name__).warning(msg, extra=extra)
                         else:
                             logging.getLogger(__name__).debug(msg, extra=extra)
-                        level = (
-                            logging.WARNING if cfg.strict_observability else logging.INFO
-                        )
+                        level = logging.WARNING if cfg.strict_observability else logging.INFO
                         emit_feature_filter_governance_event(
                             decision="filter_skipped",
                             level=level,

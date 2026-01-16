@@ -5,8 +5,12 @@ import pytest
 
 from calibrated_explanations.plugins import PlotRenderContext
 from calibrated_explanations.plugins.builtins import PlotSpecDefaultBuilder
-from calibrated_explanations.viz import legacy_get_fill_color
-from calibrated_explanations.viz import PlotSpec
+
+try:
+    from calibrated_explanations.viz import legacy_get_fill_color
+    from calibrated_explanations.viz import PlotSpec
+except ModuleNotFoundError:
+    pytest.skip("viz not available", allow_module_level=True)
 
 pytestmark = pytest.mark.viz
 

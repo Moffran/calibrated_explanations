@@ -1,5 +1,4 @@
 import importlib
-import warnings
 
 import pytest
 

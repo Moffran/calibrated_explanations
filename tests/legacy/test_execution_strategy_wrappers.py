@@ -1,6 +1,91 @@
+"""Unit tests for execution strategy wrapper explanation plugins.
+
+Tests verify that:
+- Wrapper plugins are properly registered
+- Metadata declares correct fallback chains
+- Wrapper plugins delegate to execution plugins
+- Fallback to legacy implementation works when execution fails
+- Internal FAST-based feature filtering integrates without breaking behaviour
+"""
+
+from __future__ import annotations
+
+import numpy as np
 import pytest
 
-pytest.skip("Tests moved to tests/legacy; skip unit duplicate.", allow_module_level=True)
+from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
+from calibrated_explanations.plugins.explanations import ExplanationContext, ExplanationRequest
+from calibrated_explanations.plugins import registry
+from calibrated_explanations.plugins.builtins import (
+    # FeatureParallelAlternativeExplanationPlugin,
+    # FeatureParallelExplanationPlugin,
+    InstanceParallelAlternativeExplanationPlugin,
+    InstanceParallelExplanationPlugin,
+    SequentialAlternativeExplanationPlugin,
+    SequentialExplanationPlugin,
+)
+from calibrated_explanations.core.explain._feature_filter import FeatureFilterConfig
+
+
+class TestExecutionStrategyPluginRegistration:
+    """Test that execution strategy wrapper plugins are registered correctly."""
+
+    def test_sequential_factual_plugin_registered(self):
+        """Sequential factual plugin should be registered."""
+        descriptor = registry.find_explanation_descriptor("core.explanation.factual.sequential")
+        assert descriptor is not None
+        assert descriptor.identifier == "core.explanation.factual.sequential"
+        assert "factual" in descriptor.metadata.get("modes", ())
+        assert descriptor.trusted
+
+    def test_feature_parallel_factual_plugin_registered(self):
+        """Feature-parallel factual plugin should be registered."""
+        descriptor = registry.find_explanation_descriptor(
+            "core.explanation.factual.feature_parallel"
+        )
+        assert descriptor is not None
+        assert descriptor.identifier == "core.explanation.factual.feature_parallel"
+        assert "factual" in descriptor.metadata.get("modes", ())
+        assert descriptor.trusted
+
+    def test_instance_parallel_factual_plugin_registered(self):
+        """Instance-parallel factual plugin should be registered."""
+        descriptor = registry.find_explanation_descriptor(
+            "core.explanation.factual.instance_parallel"
+        )
+        assert descriptor is not None
+        assert descriptor.identifier == "core.explanation.factual.instance_parallel"
+        assert "factual" in descriptor.metadata.get("modes", ())
+        assert descriptor.trusted
+
+    def test_sequential_alternative_plugin_registered(self):
+        """Sequential alternative plugin should be registered."""
+        descriptor = registry.find_explanation_descriptor("core.explanation.alternative.sequential")
+        assert descriptor is not None
+        assert descriptor.identifier == "core.explanation.alternative.sequential"
+        assert "alternative" in descriptor.metadata.get("modes", ())
+        assert descriptor.trusted
+
+    def test_feature_parallel_alternative_plugin_registered(self):
+        """Feature-parallel alternative plugin should be registered."""
+        descriptor = registry.find_explanation_descriptor(
+            "core.explanation.alternative.feature_parallel"
+        )
+        assert descriptor is not None
+        assert descriptor.identifier == "core.explanation.alternative.feature_parallel"
+        assert "alternative" in descriptor.metadata.get("modes", ())
+        assert descriptor.trusted
+
+    def test_instance_parallel_alternative_plugin_registered(self):
+        """Instance-parallel alternative plugin should be registered."""
+        descriptor = registry.find_explanation_descriptor(
+            "core.explanation.alternative.instance_parallel"
+        )
+        assert descriptor is not None
+        assert descriptor.identifier == "core.explanation.alternative.instance_parallel"
+        assert "alternative" in descriptor.metadata.get("modes", ())
+        assert descriptor.trusted
 
 
 class TestExecutionStrategyPluginMetadata:
@@ -62,8 +147,8 @@ class TestExecutionStrategyPluginAttributes:
     # def test_feature_parallel_factual_plugin_attributes(self):
     #     """Feature-parallel factual plugin should have correct base attributes."""
     #     plugin = FeatureParallelExplanationPlugin()
-    #     assert plugin.mode == "factual"
-    #     assert plugin.explanation_attr == "explain_factual"
+    #     assert plugin._mode == "factual"
+    #     assert plugin._explanation_attr == "explain_factual"
     #     assert plugin.execution_plugin_class is not None
 
     def test_instance_parallel_factual_plugin_attributes(self):
@@ -83,8 +168,8 @@ class TestExecutionStrategyPluginAttributes:
     # def test_feature_parallel_alternative_plugin_attributes(self):
     #     """Feature-parallel alternative plugin should have correct base attributes."""
     #     plugin = FeatureParallelAlternativeExplanationPlugin()
-    #     assert plugin.mode == "alternative"
-    #     assert plugin.explanation_attr == "explore_alternatives"
+    #     assert plugin._mode == "alternative"
+    #     assert plugin._explanation_attr == "explore_alternatives"
     #     assert plugin.execution_plugin_class is not None
 
     def test_instance_parallel_alternative_plugin_attributes(self):
@@ -189,7 +274,7 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
             return DummyCollection()
 
     def fake_build_explain_execution_plan(_explainer, _x, _request):  # noqa: ARG001
-            from calibrated_explanations.core.explain import ExplainConfig, ExplainRequest
+        from calibrated_explanations.core.explain import ExplainConfig, ExplainRequest
         from unittest.mock import MagicMock
 
         runtime = MagicMock()
@@ -330,14 +415,14 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
 
     def fake_build_explain_execution_plan(_explainer, _x, req: ExplanationRequest):  # noqa: ARG001
         """Capture the features_to_ignore after filtering and return a stub plan."""
-        from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+        from calibrated_explanations.core.explain import ExplainConfig, ExplainRequest
         from unittest.mock import MagicMock
 
         runtime = MagicMock()
         runtime.__enter__.return_value = runtime
         runtime.__exit__.return_value = None
 
-            recorded_request["features_to_ignore"] = tuple(req.features_to_ignore)
+        recorded_request["features_to_ignore"] = tuple(req.features_to_ignore)
         return (
             ExplainRequest(
                 x=None,
@@ -437,7 +522,7 @@ def test_should_warn_and_fallback_to_legacy_when_execution_plugin_raises(
             return DummyLegacyCollection()
 
     def fake_build_explain_execution_plan(_explainer, _x, _request):  # noqa: ARG001
-        from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+        from calibrated_explanations.core.explain import ExplainConfig, ExplainRequest
         from unittest.mock import MagicMock
 
         runtime = MagicMock()

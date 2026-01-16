@@ -145,8 +145,11 @@ def test_obtain_interval_calibrator_fast_metadata(orchestrator, mock_explainer):
     mock_calibrator = MagicMock()
     mock_plugin.create.return_value = mock_calibrator
 
-    with patch.object(
-        orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+    with (
+        patch.object(
+            orchestrator, "resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+        ),
+        patch.object(orchestrator, "validate_interval_calibrator"),
     ):
         calibrator, identifier = orchestrator.obtain_interval_calibrator(fast=True, metadata={})
 

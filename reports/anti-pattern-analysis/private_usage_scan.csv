@@ -1,10 +1,1 @@
 file,line,name,type,category,pattern,message
-tests\unit\plugins\test_cli_coverage.py,28,_emit_header,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,65,_cmd_list,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,83,_cmd_list,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,96,_cmd_validate_plot,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,103,_cmd_validate_plot,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,36,_format_common_metadata,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,37,_format_common_metadata,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,40,_format_common_metadata,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py
-tests\unit\plugins\test_cli_coverage.py,112,_cmd_validate_plot,function_call,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\plugins\cli.py

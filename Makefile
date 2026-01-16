@@ -11,7 +11,7 @@ test-cov:
 # Fast test target for core modules (excludes viz-marked tests).
 .PHONY: test-core
 test-core:
-	pytest -m "not viz" --cov=src --cov-report xml
+	export HOME="$USERPROFILE" && pytest -m "not viz" --cov=src --cov-report xml
 
 # Run only viz-marked tests (useful when the `[viz]` extras are installed).
 .PHONY: test-viz

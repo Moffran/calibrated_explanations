@@ -115,24 +115,28 @@ def test_pyproject_allowlist_trusts_only_specified_plugins(monkeypatch):
     """Test that pyproject allowlist trusts only specified plugins, others remain untrusted."""
     trusted_name = "trusted.plugin"
     untrusted_name = "untrusted.plugin"
-    
+
     trusted_plugin = make_plugin(trusted_name)
     untrusted_plugin = make_plugin(untrusted_name)
-    
+
     trusted_ep = FakeEntryPoint(trusted_name, trusted_plugin)
     untrusted_ep = FakeEntryPoint(untrusted_name, untrusted_plugin)
-    
+
     # Monkeypatch pyproject read to include only the trusted identifier
     from calibrated_explanations.core import config_helpers
 
     monkeypatch.setattr(
-        config_helpers, "read_pyproject_section", lambda *args, **kwargs: {"trusted": (trusted_name,)}
+        config_helpers,
+        "read_pyproject_section",
+        lambda *args, **kwargs: {"trusted": (trusted_name,)},
     )
     # Clear env cache to ensure only pyproject is considered
     registry.clear_env_trust_cache()
     # Prime the pyproject trust cache to the expected value
     registry.set_pyproject_trust_cache_for_testing({trusted_name})
-    monkeypatch.setattr(importlib_metadata, "entry_points", lambda: FakeEntryPoints([trusted_ep, untrusted_ep]))
+    monkeypatch.setattr(
+        importlib_metadata, "entry_points", lambda: FakeEntryPoints([trusted_ep, untrusted_ep])
+    )
 
     loaded = registry.load_entrypoint_plugins()
     assert len(loaded) == 1  # Only the trusted one should be loaded

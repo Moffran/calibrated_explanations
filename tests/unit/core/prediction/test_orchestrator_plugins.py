@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
 from calibrated_explanations.utils.exceptions import ConfigurationError
+from calibrated_explanations.plugins.intervals import ClassificationIntervalCalibrator
 
 
 @pytest.fixture
@@ -188,7 +189,7 @@ def test_resolve_interval_plugin_override_string(
 
 def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
     mock_plugin = MagicMock()
-    mock_calibrator = MagicMock()
+    mock_calibrator = MagicMock(spec=ClassificationIntervalCalibrator)
     mock_plugin.create.return_value = mock_calibrator
 
     with (

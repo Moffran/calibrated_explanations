@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -28,7 +28,6 @@ def parity_compare(
     atol : float
         Absolute tolerance for numeric comparisons.
     """
-
     diffs: list[dict[str, Any]] = []
 
     def normalize(value: Any) -> Any:
@@ -48,8 +47,11 @@ def parity_compare(
         return isinstance(value, (int, float, np.number)) and not isinstance(value, bool)
 
     def both_nan(left: Any, right: Any) -> bool:
-        return is_number(left) and is_number(right) and math.isnan(float(left)) and math.isnan(
-            float(right)
+        return (
+            is_number(left)
+            and is_number(right)
+            and math.isnan(float(left))
+            and math.isnan(float(right))
         )
 
     def add_diff(path: str, expected_value: Any, actual_value: Any, reason: str) -> None:
@@ -94,7 +96,7 @@ def parity_compare(
         if isinstance(expected_value, list) and isinstance(actual_value, list):
             if len(expected_value) != len(actual_value):
                 add_diff(path, len(expected_value), len(actual_value), "length_mismatch")
-            for idx, (left, right) in enumerate(zip(expected_value, actual_value)):
+            for idx, (left, right) in enumerate(zip(expected_value, actual_value, strict=False)):
                 compare(left, right, f"{path}[{idx}]")
             return
 

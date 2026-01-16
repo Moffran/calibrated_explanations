@@ -17,7 +17,6 @@ import numpy as np
 from ...explanations.explanations import CalibratedExplanations
 from ...logging import ensure_logging_context_filter
 
-
 _GOVERNANCE_LOGGER_NAME = "calibrated_explanations.governance.feature_filter"
 _governance_logger = logging.getLogger(_GOVERNANCE_LOGGER_NAME)
 ensure_logging_context_filter(_GOVERNANCE_LOGGER_NAME)
@@ -328,7 +327,7 @@ def compute_filtered_features_to_ignore(
         if k <= 0:
             keep_features = set()
         else:
-            ranking = np.argsort(candidate_scores, kind="mergesort")
+            ranking = np.argsort(candidate_scores)
             top_indices = candidate_indices[ranking[-k:]]
             keep_features = {int(f) for f in top_indices.tolist()}
         extra_ignore = candidates_for_filter - keep_features

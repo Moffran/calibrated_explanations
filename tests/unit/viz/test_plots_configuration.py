@@ -2,7 +2,10 @@ import pytest
 
 pytestmark = pytest.mark.viz
 
-from calibrated_explanations.viz import plots as plotting
+try:
+    from calibrated_explanations.viz import plots as plotting
+except ModuleNotFoundError:
+    pytest.skip("viz not available", allow_module_level=True)
 
 
 @pytest.fixture(autouse=True)
