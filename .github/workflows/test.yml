@@ -43,14 +43,8 @@ jobs:
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-
-      - name: Check per-module coverage gates
-        run: python scripts/check_coverage_gates.py coverage.xml
+      - name: (coverage steps removed) Skip uploading coverage and gates here
+        run: echo "Coverage upload and gate checks moved to dedicated coverage workflow"
 
   core-only:
     runs-on: ubuntu-latest

@@ -386,13 +386,17 @@ def explain_predict_step(
     # print(f"DEBUG: explainer.is_multiclass type: {type(explainer.is_multiclass)}")
 
     x_cal = explainer.x_cal
+    # Use the explainer's default interval summary for the base point
+    # prediction used in explanations. Per-call `interval_summary` controls
+    # how full-probabilities/intervals are summarised but should not alter
+    # the canonical point prediction embedded in factual explanations.
     base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
         x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,
         bins=bins,
         _ce_skip_reject=True,
-        interval_summary=interval_summary,
+        interval_summary=None,
     )
 
     is_mc_property = (

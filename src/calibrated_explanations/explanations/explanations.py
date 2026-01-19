@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import sys
@@ -280,16 +281,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         # If template is a valid CalibratedExplanations instance, use it for metadata
         # but still reconstruct a new container from batch.instances to ensure
         # canonical reconstruction (ADR-015).
-        if template is not None:
-            if not isinstance(template, cls):
-                raise ValidationError(
-                    "ExplanationBatch container metadata has unexpected type",
-                    details={
-                        "param": "container",
-                        "expected_type": cls.__name__,
-                        "actual_type": type(template).__name__,
-                    },
-                )
+        if template is not None and not isinstance(template, cls):
+            raise ValidationError(
+                "ExplanationBatch container metadata has unexpected type",
+                details={
+                    "param": "container",
+                    "expected_type": cls.__name__,
+                    "actual_type": type(template).__name__,
+                },
+            )
 
         calibrated_explainer = metadata.get("calibrated_explainer")
         if calibrated_explainer is None:
@@ -357,43 +357,26 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         # populate a minimal `telemetry` attribute on the materialised
         # container so callers using `from_batch` directly receive the
         # same dependency hints and probability summaries as the orchestrator.
-        try:
-            full_probs = None
-            for inst in getattr(batch, "instances", ()):
-                pred = inst.get("prediction") if isinstance(inst, dict) else None
-                if isinstance(pred, dict) and "__full_probabilities__" in pred:
-                    full_probs = pred.get("__full_probabilities__")
-                    break
-            if full_probs is not None:
-                container.batch_metadata.setdefault("__full_probabilities__", full_probs)
-                try:
-                    arr = np.asarray(full_probs)
-                    container.telemetry = {
-                        "full_probabilities_shape": tuple(arr.shape),
-                        "full_probabilities_summary": {
-                            "mean": float(np.mean(arr)),
-                            "min": float(np.min(arr)),
-                            "max": float(np.max(arr)),
-                        },
-                        "interval_dependencies": metadata.get("interval_dependencies"),
-                    }
-                except Exception:  # adr002_allow
-                    # Best-effort only
-                    container.telemetry = {
-                        "interval_dependencies": metadata.get("interval_dependencies")
-                    }
-            else:
+        container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
+        full_probs = None
+        for inst in getattr(batch, "instances", ()):
+            pred = inst.get("prediction") if isinstance(inst, dict) else None
+            if isinstance(pred, dict) and "__full_probabilities__" in pred:
+                full_probs = pred.get("__full_probabilities__")
+                break
+        if full_probs is not None:
+            container.batch_metadata.setdefault("__full_probabilities__", full_probs)
+            with contextlib.suppress(Exception):  # adr002_allow
+                arr = np.asarray(full_probs)
                 container.telemetry = {
-                    "interval_dependencies": metadata.get("interval_dependencies")
+                    "full_probabilities_shape": tuple(arr.shape),
+                    "full_probabilities_summary": {
+                        "mean": float(np.mean(arr)),
+                        "min": float(np.min(arr)),
+                        "max": float(np.max(arr)),
+                    },
+                    "interval_dependencies": metadata.get("interval_dependencies"),
                 }
-        except Exception:  # adr002_allow
-            # Best-effort: ensure telemetry attribute exists
-            try:
-                container.telemetry = {
-                    "interval_dependencies": metadata.get("interval_dependencies")
-                }
-            except Exception:  # adr002_allow
-                pass
 
         for index, instance in enumerate(batch.instances):
             explanation = instance.get("explanation")

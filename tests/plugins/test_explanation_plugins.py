@@ -147,7 +147,7 @@ def test_third_party_trust_flag_ignored_unless_operator_trusts():
             "name": "third.party.plugin",
             "schema_version": 1,
             "version": "0",
-            "provider": "thirdparty",
+            "provider": "third-party",
             "capabilities": ("explain", "explanation:fast", "task:classification"),
             "modes": ("fast",),
             "tasks": ("classification",),
@@ -183,6 +183,6 @@ def test_explainerhandle_metadata_is_immutable():
     dummy = Dummy()
     h = ExplainerHandle(dummy, {"k": "v"})
     meta = h.get_metadata()
-    assert isinstance(meta, MappingProxyType) or isinstance(meta, dict)
+    assert isinstance(meta, (MappingProxyType, dict))
     with pytest.raises(TypeError):
         meta["k"] = "x"

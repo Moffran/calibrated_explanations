@@ -350,8 +350,8 @@ class TestContextDatastructureConsistency:
         context2 = orchestrator.build_interval_context(fast=False, metadata={})
 
         # Both should be MappingProxyType
-        assert type(context1.bins) == type(context2.bins)
-        assert type(context1.metadata) == type(context2.metadata)
+        assert type(context1.bins) is type(context2.bins)
+        assert type(context1.metadata) is type(context2.metadata)
 
         # Should be independent instances (new MappingProxyType each time)
         assert context1.bins is not context2.bins

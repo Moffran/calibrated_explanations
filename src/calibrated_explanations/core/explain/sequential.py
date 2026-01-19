@@ -7,6 +7,7 @@ fallback strategy and reference implementation for behavioralequivalence tests.
 
 from __future__ import annotations
 
+import contextlib
 from time import time
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -119,12 +120,10 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             "feature_filter_per_instance_ignore": feature_filter_per_instance_ignore
         }
         # Only include interval_summary if the target function supports it
-        try:
+        with contextlib.suppress(Exception):  # adr002_allow  # pragma: no cover - defensive
             sig = inspect.signature(predict_fn)
             if "interval_summary" in sig.parameters:
                 call_kwargs["interval_summary"] = request.interval_summary
-        except Exception:  # adr002_allow  # pragma: no cover - defensive
-            pass
 
         (
             predict,

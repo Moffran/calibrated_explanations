@@ -77,7 +77,6 @@ def test_governance_logging_for_untrusted_plugin(caplog, monkeypatch):
 
     # Mock the warnings.warn to avoid actual warnings
     warned = []
-    original_warn = __import__("warnings").warn
 
     def mock_warn(*args, **kwargs):
         warned.append(args)

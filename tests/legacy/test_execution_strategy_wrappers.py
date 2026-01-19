@@ -429,7 +429,9 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
                 threshold=None,
                 low_high_percentiles=(0.05, 0.95),
                 bins=None,
-                features_to_ignore=np.asarray(req.features_to_ignore or (), dtype=int),
+                features_to_ignore=np.asarray(
+                    req.features_to_ignore if req.features_to_ignore is not None else (), dtype=int
+                ),
                 use_plugin=False,
                 skip_instance_parallel=False,
             ),
@@ -479,9 +481,9 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
     )
 
     class NoopExecutionPlugin:
-        def execute(self, explainer, x, request):
+        def execute(self, request, config, explainer):
             # Call the fake to capture the request
-            fake_build_explain_execution_plan(explainer, x, request)
+            fake_build_explain_execution_plan(explainer, request.x, request)
 
             class DummyCollection:
                 mode = "factual"

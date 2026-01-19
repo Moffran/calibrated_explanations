@@ -5,17 +5,17 @@ from calibrated_explanations.viz.plotspec import PlotSpec
 def minimal_args():
     predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
     feature_weights = {"predict": [0.5], "low": [0.2], "high": [0.8]}
-    return dict(
-        title="t",
-        predict=predict,
-        feature_weights=feature_weights,
-        features_to_plot=[0],
-        column_names=None,
-        rule_labels=None,
-        instance=None,
-        y_minmax=None,
-        interval=True,
-    )
+    return {
+        "title": "t",
+        "predict": predict,
+        "feature_weights": feature_weights,
+        "features_to_plot": [0],
+        "column_names": None,
+        "rule_labels": None,
+        "instance": None,
+        "y_minmax": None,
+        "interval": True,
+    }
 
 
 def test_builder_does_not_create_header_without_explicit_xticks():

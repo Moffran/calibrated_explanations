@@ -1,3 +1,4 @@
+import contextlib
 from types import SimpleNamespace
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -46,13 +47,11 @@ class DummyRejectOrch:
     def apply_policy(self, policy, x, explain_fn=None, bins=None, **kwargs):
         self.called = True
         self.last_policy = policy
-        self.args = dict(policy=policy, x=x, bins=bins)
+        self.args = {"policy": policy, "x": x, "bins": bins}
         # If an explain_fn/predict_fn was provided, call it to emulate inner behavior
         if explain_fn is not None:
-            try:
-                inner = explain_fn(x)
-            except Exception:
-                inner = None
+            with contextlib.suppress(Exception):
+                explain_fn(x)
             return self.return_value
         return self.return_value
 

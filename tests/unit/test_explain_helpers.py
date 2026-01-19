@@ -69,7 +69,7 @@ def test_merge_feature_result_updates_buffers():
         ),
     ]
 
-    rule_values = [dict() for _ in range(n_instances)]
+    rule_values = [{} for _ in range(n_instances)]
     # use lists for predict/low/high so per-feature assignments accept arrays
     instance_binned = [
         {

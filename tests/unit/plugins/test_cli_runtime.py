@@ -102,7 +102,7 @@ def test_cli_report_command(monkeypatch, capsys):
 
     exit_code = cli_module.main(["report"])
 
-    output = capsys.readouterr().out
+    _ = capsys.readouterr().out
     assert exit_code == 0
     # The _emit_discovery_report should be called, but since the report is empty, it should print nothing or minimal output
 

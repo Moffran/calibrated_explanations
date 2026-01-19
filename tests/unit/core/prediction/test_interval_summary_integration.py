@@ -38,10 +38,18 @@ def test_interval_summary_selection_behavior():
     # We expect p_lower <= p_mean <= p_upper
     # Note: predict_proba returns (n_samples, 2), we look at column 1 for positive class.
 
+    assert p_reg.shape == p_mean.shape == p_lower.shape == p_upper.shape
+
     pos_lower = p_lower[:, 1]
+    pos_mean = p_mean[:, 1]
+    pos_reg = p_reg[:, 1]
     pos_upper = p_upper[:, 1]
 
     assert np.all(pos_lower <= pos_upper)
+    assert np.all(pos_lower <= pos_mean)
+    assert np.all(pos_mean <= pos_upper)
+    assert np.all(pos_lower <= pos_reg)
+    assert np.all(pos_reg <= pos_upper)
 
     # With enough samples, we expect some differences if interval is not zero
     # Just asserting it runs without error and respects logic roughly is enough for integration
@@ -68,6 +76,7 @@ def test_interval_summary_propagation_to_explanations():
 
     low_upper = exp_upper[0].prediction["low"]
     high_upper = exp_upper[0].prediction["high"]
+    assert np.all(np.asarray(low_upper) <= np.asarray(high_upper))
 
     # For UPPER, prediction should equal high bound
     # Note: interval_summary may not affect the prediction in explanations
@@ -77,6 +86,8 @@ def test_interval_summary_propagation_to_explanations():
     exp_lower = explainer.explain_factual(X_test, interval_summary=IntervalSummary.LOWER)
     pred_lower = exp_lower[0].prediction["predict"]
     low_lower = exp_lower[0].prediction["low"]
+    high_lower = exp_lower[0].prediction["high"]
+    assert np.all(np.asarray(low_lower) <= np.asarray(high_lower))
 
     # For LOWER, prediction should equal low bound
     # Note: interval_summary may not affect the prediction in explanations

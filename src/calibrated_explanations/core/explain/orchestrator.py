@@ -42,7 +42,7 @@ from ...plugins import (
     validate_explanation_batch,
 )
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
-from ...utils.exceptions import ConfigurationError
+from ...utils.exceptions import CalibratedError, ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -298,10 +298,8 @@ class ExplanationOrchestrator:
                 try:
                     _ = self.explainer.reject_orchestrator
                 except Exception:  # adr002_allow
-                    try:
+                    with contextlib.suppress(Exception):
                         self.explainer.plugin_manager.initialize_orchestrators()
-                    except Exception:  # adr002_allow
-                        pass
 
                 def _explain_fn(x_subset, **inner_kw):
                     return self.invoke(
@@ -344,8 +342,8 @@ class ExplanationOrchestrator:
         if (
             mode in {"factual", "alternative"}
             and per_instance_ignore is None
-            and feature_filter_config
-            and getattr(feature_filter_config, "enabled", False)
+            and feature_filter_config is not None
+            and getattr(feature_filter_config, "enabled", False) is True
         ):
             try:
                 from ._feature_filter import compute_filtered_features_to_ignore
@@ -362,14 +360,14 @@ class ExplanationOrchestrator:
                     extras=extras,
                     _ce_skip_reject=True,
                 )
-                
+
                 filter_res = compute_filtered_features_to_ignore(
                     fast_results,
                     num_features=getattr(self.explainer, "num_features", None),
                     base_ignore=np.array(features_to_ignore_flat, dtype=int),
                     config=feature_filter_config,
                 )
-                
+
                 # Update ignore sets with the filtered results
                 features_to_ignore_flat = tuple(int(f) for f in filter_res.global_ignore)
                 per_instance_ignore = tuple(
@@ -743,16 +741,12 @@ class ExplanationOrchestrator:
         # missing to avoid overwriting test-injected or precomputed chains.
         pm = getattr(self.explainer, "plugin_manager", None)
         if pm is not None:
-            try:
+            existing = None
+            with contextlib.suppress(CalibratedError):
                 existing = pm.explanation_plugin_fallbacks.get(mode)
-            except CalibratedError:
-                existing = None
             if not existing:
-                try:
+                with contextlib.suppress(CalibratedError):
                     pm.initialize_chains()
-                except CalibratedError:
-                    # Best-effort: resolution should continue even if chain init fails.
-                    pass
 
         raw_override = self.explainer.plugin_manager.explanation_plugin_overrides.get(mode)
         override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
@@ -1130,17 +1124,15 @@ class ExplanationOrchestrator:
         # that dict exactly (backwards-compatible behavior).
         builder = getattr(first_explanation, "to_telemetry", None)
         payload: Dict[str, Any] = {}
+        builder_payload = None
         if callable(builder):
-            try:
-                candidate = builder()
-                if isinstance(candidate, dict):
-                    payload.update(candidate)
-            except Exception:  # adr002_allow
-                # best-effort only; fall through to extract compact telemetry
-                pass
+            with contextlib.suppress(Exception):
+                builder_payload = builder()
+                if isinstance(builder_payload, dict):
+                    payload.update(builder_payload)
 
         # Fallback: build compact telemetry from available prediction payloads
-        try:
+        with contextlib.suppress(Exception):
             full_probs = None
             if hasattr(first_explanation, "prediction"):
                 full_probs = first_explanation.prediction.get("__full_probabilities__")
@@ -1162,24 +1154,14 @@ class ExplanationOrchestrator:
                     if diag_mode:
                         payload.setdefault("full_probabilities", full_probs)
             # Also propagate interval dependency hints if present on the instance
-            try:
-                deps = getattr(first_explanation, "metadata", None) or {}
-                if not deps and callable(builder):
-                    # if builder didn't return dict, attempt to call a safe helper
-                    with contextlib.suppress(Exception):
-                        t = builder()
-                        if isinstance(t, dict):
-                            deps = t
-                if isinstance(deps, dict):
-                    interval_deps = deps.get("interval_dependencies") or deps.get(
-                        "metadata", {}
-                    ).get("interval_dependencies")
-                    if interval_deps:
-                        payload.setdefault("interval_dependencies", interval_deps)
-            except Exception:  # adr002_allow
-                pass
-        except Exception:  # adr002_allow
-            # best-effort enrichment only
-            pass
+            deps = getattr(first_explanation, "metadata", None) or {}
+            if not deps and isinstance(builder_payload, dict):
+                deps = builder_payload
+            if isinstance(deps, dict):
+                interval_deps = deps.get("interval_dependencies") or deps.get("metadata", {}).get(
+                    "interval_dependencies"
+                )
+                if interval_deps:
+                    payload.setdefault("interval_dependencies", interval_deps)
 
         return payload

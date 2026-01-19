@@ -39,7 +39,7 @@ class DummyRejectOrch:
 
     def apply_policy(self, policy, x, explain_fn=None, bins=None, **kwargs):
         self.called = True
-        self.args = dict(policy=policy, x=x, bins=bins)
+        self.args = {"policy": policy, "x": x, "bins": bins}
         return self.return_value
 
 

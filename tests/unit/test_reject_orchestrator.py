@@ -25,7 +25,7 @@ def test_register_and_resolve_strategy_and_apply():
     assert res.prediction is None and res.explanation is None
 
     # register a custom strategy
-    def strat(policy, x, **kwargs):
+    def strategy(policy, x, **kwargs):
         return RejectResult(
             prediction=[42],
             explanation=None,
@@ -34,11 +34,11 @@ def test_register_and_resolve_strategy_and_apply():
             metadata={"ok": True},
         )
 
-    ro.register_strategy("my.strat", strat)
-    resolved = ro.resolve_strategy("my.strat")
-    assert resolved is strat
+    ro.register_strategy("my.strategy", strategy)
+    resolved = ro.resolve_strategy("my.strategy")
+    assert resolved is strategy
 
-    out = ro.apply_policy(RejectPolicy.PREDICT_AND_FLAG, x=[1], strategy="my.strat")
+    out = ro.apply_policy(RejectPolicy.PREDICT_AND_FLAG, x=[1], strategy="my.strategy")
     assert out.prediction == [42]
     assert out.metadata == {"ok": True}
 

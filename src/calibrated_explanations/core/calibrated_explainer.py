@@ -721,10 +721,8 @@ class CalibratedExplainer:
             _ = self.reject_orchestrator
         except Exception:  # adr002_allow
             # fallback: initialize via plugin manager if available
-            try:
+            with contextlib.suppress(Exception):
                 self.plugin_manager.initialize_orchestrators()
-            except Exception:  # adr002_allow
-                pass
 
         return self.reject_orchestrator.apply_policy(
             effective_policy, x, explain_fn=_explain_fn, bins=bins
@@ -1691,10 +1689,6 @@ class CalibratedExplainer:
         """Delegate to predict_internal."""
         return self.predict_internal(*args, **kwargs)
 
-    def predict(self, *args, **kwargs) -> Any:
-        """Public alias for _predict for testing."""
-        return self._predict(*args, **kwargs)
-
     def predict_internal(
         self,
         x,
@@ -1761,10 +1755,8 @@ class CalibratedExplainer:
             try:
                 _ = self.reject_orchestrator
             except Exception:  # adr002_allow
-                try:
+                with contextlib.suppress(Exception):
                     self.plugin_manager.initialize_orchestrators()
-                except Exception:  # adr002_allow
-                    pass
 
             orchestrator = self.prediction_orchestrator
 

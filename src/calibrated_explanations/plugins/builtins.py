@@ -551,6 +551,20 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                                 "mode": self._mode,
                             },
                         )
+                        # Log exact ignore arrays for troubleshooting
+                        logging.getLogger(__name__).debug(
+                            "Feature filter arrays",
+                            extra={
+                                "global_ignore": getattr(filter_result, "global_ignore", None),
+                                "base_explainer_ignore": getattr(
+                                    base_explainer_ignore, "tolist", lambda: base_explainer_ignore
+                                )(),
+                                "request_ignore": getattr(
+                                    request_ignore, "tolist", lambda: request_ignore
+                                )(),
+                                "mode": self._mode,
+                            },
+                        )
                         # Only propagate the additional ignore indices beyond the explainer defaults.
                         extra_ignore = np.setdiff1d(
                             filter_result.global_ignore,
@@ -623,18 +637,13 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     strict=cfg.strict_observability,
                     mode=self._mode,
                 )
+            # Preserve any per-instance state on the explainer, but avoid
+            # unconditionally clobbering `filtered_request` which would discard
+            # FAST-produced ignore indices. Keep existing `filtered_request` if
+            # the filter successfully populated it; otherwise the inner
+            # exception handlers above already set a safe fallback.
             with contextlib.suppress(AttributeError):
                 del self.explainer.feature_filter_per_instance_ignore
-            filtered_request = ExplanationRequest(
-                threshold=request.threshold,
-                low_high_percentiles=request.low_high_percentiles,
-                bins=request.bins,
-                features_to_ignore=request.features_to_ignore,
-                feature_filter_per_instance_ignore=getattr(
-                    request, "feature_filter_per_instance_ignore", None
-                ),
-                extras=request.extras,
-            )
 
             explain_request, explain_config, runtime = build_explain_execution_plan(
                 self.explainer, x, filtered_request
@@ -647,12 +656,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             # executor.
             exec_obj = getattr(explain_config, "executor", None)
             if exec_obj is not None:
-                try:
+                with contextlib.suppress(Exception):  # adr002_allow
                     exec_obj.__enter__()
-                except Exception:  # adr002_allow
-                    # Best-effort: if entering fails, continue and let the
-                    # runtime/context manager attempt to enter it as intended.
-                    pass
 
             # Debug: log explain_request ignore fields (helps diagnose propagation)
             logging.getLogger(__name__).debug(
@@ -665,6 +670,10 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     is not None,
                     "mode": self._mode,
                 },
+            )
+            # Also emit a simple debug message with the values (easier to capture)
+            logging.getLogger(__name__).debug(
+                f"ExplainRequest.features_to_ignore={getattr(explain_request, 'features_to_ignore', None)} mode={self._mode}"
             )
 
             # Respect the execution plugin's own capability check when present.

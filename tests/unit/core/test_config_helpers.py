@@ -1,5 +1,6 @@
 """Tests for configuration helper utilities."""
 
+import contextlib
 import os
 from typing import Any, Iterator
 import pytest
@@ -31,11 +32,8 @@ if not hasattr(pytest.MonkeyPatch, "addfinalizer"):
         # run stored finalizers first (LIFO), then perform original undo
         if hasattr(self, "ce_finalizers"):
             for f in reversed(self.ce_finalizers):
-                try:
+                with contextlib.suppress(Exception):
                     f()
-                except Exception:
-                    # avoid masking original teardown behaviour
-                    pass
         return orig_undo(self)
 
     pytest.MonkeyPatch.addfinalizer = addfinalizer
@@ -99,7 +97,6 @@ def testread_pyproject_section_handles_multiple_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
 ) -> None:
     """Test that read_pyproject_section handles various edge cases and fallbacks."""
-    module = config_helpers
     monkeypatch.chdir(tmp_path)
     monkeypatch.addfinalizer(
         lambda: config_helpers.set_toml_modules_for_testing(
@@ -165,7 +162,6 @@ def test_read_pyproject_section_handles_load_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Load errors should be swallowed as empty config."""
-    module = config_helpers
 
     class FailingToml:
         @staticmethod
@@ -184,7 +180,6 @@ def test_write_pyproject_section_returns_false_when_missing_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Missing pyproject should short-circuit early."""
-    module = config_helpers
 
     class DummyTomliW:
         @staticmethod
@@ -202,7 +197,6 @@ def test_write_pyproject_section_rejects_non_mapping_prefix(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Non-dict traversal should return False."""
-    module = config_helpers
 
     class DummyTomliW:
         @staticmethod
@@ -221,7 +215,6 @@ def test_write_pyproject_section_rejects_non_mapping_leaf(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Non-dict parent values should not be mutated."""
-    module = config_helpers
 
     class DummyTomliW:
         @staticmethod
@@ -248,12 +241,11 @@ def test_write_pyproject_section_handles_writer_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Writer exceptions should return False."""
-    module = config_helpers
 
     class FailingWriter:
         @staticmethod
         def dump(_data: dict[str, Any], _fh) -> None:
-            raise module.CalibratedError("fail")
+            raise config_helpers.CalibratedError("fail")
 
     monkeypatch.chdir(tmp_path)
     (tmp_path / "pyproject.toml").write_text("[tool]\nname='demo'\n", encoding="utf-8")
@@ -267,7 +259,6 @@ def test_read_pyproject_section_reraises_base_exception(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Non-Exception errors should bubble up."""
-    module = config_helpers
 
     class Exploder:
         @staticmethod
@@ -287,7 +278,6 @@ def test_write_pyproject_section_stops_on_non_mapping_cursor(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Traversal should fail when encountering a non-dict parent."""
-    module = config_helpers
 
     class DummyTomliW:
         @staticmethod
@@ -306,7 +296,6 @@ def test_write_pyproject_section_stops_on_non_mapping_cursor(
 
 def test_write_pyproject_section_requires_writer(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """Should return False when toml writer is unavailable."""
-    module = config_helpers
     monkeypatch.chdir(tmp_path)
     (tmp_path / "pyproject.toml").write_text("[tool]\n", encoding="utf-8")
 
@@ -320,12 +309,11 @@ def test_write_pyproject_section_returns_false_on_load_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ):
     """Should short-circuit when loading pyproject fails."""
-    module = config_helpers
 
     class DummyTomllib:
         @staticmethod
         def load(_fh: Any) -> dict[str, Any]:
-            raise module.CalibratedError("boom")
+            raise config_helpers.CalibratedError("boom")
 
     class DummyTomliW:
         @staticmethod
@@ -342,7 +330,6 @@ def test_write_pyproject_section_returns_false_on_load_error(
 
 def test_write_pyproject_section_updates_nested_path(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """Should update nested section and persist through writer stub."""
-    module = config_helpers
 
     class RecordingTomliW:
         dumped: dict[str, Any] | None = None

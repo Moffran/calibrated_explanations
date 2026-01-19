@@ -12,6 +12,7 @@
 ### Fixed
 
 - **Fast Feature Filtering Integration:** Fixed a critical issue where the FAST feature filtering logic (ADR-027) was implemented but not invoked during factual/alternative explanation requests. Feature filtering now correctly runs the lightweight FAST pass and filters features according to the configuration.
+- **Test additions:** Added deterministic unit tests to exercise `ExplanationRequest` freezing/validation and the FAST feature filter behaviour to improve CI coverage and ensure adherence to ADR-030 testing priorities.
 
 ### Added
 

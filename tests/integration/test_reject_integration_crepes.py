@@ -1,18 +1,18 @@
 import pytest
 
+from calibrated_explanations.core.reject.policy import RejectPolicy
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.explanations.reject import RejectResult
+
 # Skip this integration test if heavy deps are not installed
 pytest.importorskip("crepes")
 pytest.importorskip("sklearn")
 
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.datasets import make_classification
-
-from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from calibrated_explanations.core.reject.policy import RejectPolicy
-from calibrated_explanations.explanations.reject import RejectResult
-
 
 def test_integration_reject_policy_predict_and_flag_runs_and_returns_envelope():
+    from sklearn.datasets import make_classification
+    from sklearn.tree import DecisionTreeClassifier
+
     X, y = make_classification(n_samples=120, n_features=6, random_state=0)
     # split into fit / calibrate / test
     X_fit, y_fit = X[:50], y[:50]

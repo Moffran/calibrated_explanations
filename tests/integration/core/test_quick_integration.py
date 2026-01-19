@@ -11,10 +11,10 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 def test_quick_explain_binary_classification():
     """Test quick_explain with binary classification."""
     # Generate simple binary classification data
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_samples = 100
     n_features = 4
-    X = np.random.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     y = (X[:, 0] + X[:, 1] > 0).astype(int)
 
     # Split into train, cal, test
@@ -23,7 +23,6 @@ def test_quick_explain_binary_classification():
     X_cal = X[60:80]
     y_cal = y[60:80]
     X_test = X[80:]
-    y_test = y[80:]
 
     # Use RandomForest
     model = RandomForestClassifier(n_estimators=10, random_state=42)
@@ -48,11 +47,11 @@ def test_quick_explain_binary_classification():
 def test_quick_explain_regression():
     """Test quick_explain with regression."""
     # Generate simple regression data
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_samples = 100
     n_features = 4
-    X = np.random.randn(n_samples, n_features)
-    y = X[:, 0] + X[:, 1] + np.random.randn(n_samples) * 0.1
+    X = rng.standard_normal((n_samples, n_features))
+    y = X[:, 0] + X[:, 1] + rng.standard_normal(n_samples) * 0.1
 
     # Split into train, cal, test
     X_train = X[:60]
@@ -60,7 +59,6 @@ def test_quick_explain_regression():
     X_cal = X[60:80]
     y_cal = y[60:80]
     X_test = X[80:]
-    y_test = y[80:]
 
     # Use RandomForest
     from sklearn.ensemble import RandomForestRegressor
@@ -87,10 +85,10 @@ def test_quick_explain_regression():
 def test_explainer_builder_integration():
     """Integration test for ExplainerBuilder with WrapCalibratedExplainer."""
     # Generate simple binary classification data
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_samples = 100
     n_features = 4
-    X = np.random.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     y = (X[:, 0] + X[:, 1] > 0).astype(int)
 
     # Split into train, cal, test
@@ -126,11 +124,11 @@ def test_explainer_builder_integration():
 def test_explainer_builder_regression():
     """Integration test for ExplainerBuilder with regression."""
     # Generate simple regression data
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_samples = 100
     n_features = 4
-    X = np.random.randn(n_samples, n_features)
-    y = X[:, 0] + X[:, 1] + np.random.randn(n_samples) * 0.1
+    X = rng.standard_normal((n_samples, n_features))
+    y = X[:, 0] + X[:, 1] + rng.standard_normal(n_samples) * 0.1
 
     # Split into train, cal, test
     X_train = X[:60]

@@ -1,3 +1,4 @@
+import contextlib
 import importlib
 import pytest
 
@@ -61,10 +62,8 @@ def test_smoke_import_key_modules():
     assert "triangular" in kinds
     assert PlotKindRegistry.is_supported_kind("triangular")
     PlotKindRegistry.validate_kind_and_mode("triangular", "classification")
-    try:
+    with contextlib.suppress(Exception):
         PlotKindRegistry.validate_kind_and_mode("unknown_kind", "classification")
-    except Exception:
-        pass
     _ = PlotKindRegistry.get_kind_requirements("triangular")
     # Touch plotting helpers
     import calibrated_explanations.plotting as plotting

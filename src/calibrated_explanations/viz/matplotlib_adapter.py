@@ -6,6 +6,7 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import io
 import logging
@@ -875,14 +876,12 @@ def render(
                         wl = float(item.interval_low)
                         wh = float(item.interval_high)
                     if is_dual:
-                        try:
+                        with contextlib.suppress(Exception):  # adr002_allow
                             # shift if endpoints look like probability values
                             if -1e-9 <= wl <= 1.0 + 1e-9 and -1e-9 <= wh <= 1.0 + 1e-9:
                                 shift = float(spec.header.pred)
                                 wl = wl - shift
                                 wh = wh - shift
-                        except Exception:  # adr002_allow
-                            pass
                     if wh < wl:
                         wl, wh = wh, wl
                     crosses_zero = wl < 0.0 < wh

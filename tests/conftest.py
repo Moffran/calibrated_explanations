@@ -1,19 +1,33 @@
 """Shared pytest fixtures for CalibratedExplainer tests."""
 
 from __future__ import annotations
+
+import contextlib
+import importlib
 import json
+import os
 import re
 import warnings
 from datetime import datetime
+from importlib.util import find_spec
 from pathlib import Path
-import os
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import pytest
-import importlib
-from importlib.util import find_spec
 from _pytest.fixtures import FixtureRequest
+
+from tests.helpers.analysis_utils import extract_private_symbols_from_ast, parse_version_token
+from tests.helpers.fixtures import (  # noqa: F401, pylint: disable=unused-import
+    binary_dataset,
+    multiclass_dataset,
+    regression_dataset,
+)
+from tests.helpers.model_utils import DummyIntervalLearner, DummyLearner
+from tests.helpers.utils import get_env_flag
+
+if TYPE_CHECKING:
+    from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
 @pytest.fixture(autouse=True)
@@ -23,9 +37,9 @@ def skip_viz_if_missing(request: FixtureRequest):
     This keeps the test-suite runnable in minimal environments while allowing
     viz tests to run when the optional `[viz]` extras are installed in CI.
     """
-    if request.node.get_closest_marker("viz") or request.node.get_closest_marker("viz_render"):
-        if find_spec("matplotlib") is None:
-            pytest.skip("matplotlib not installed; skipping viz tests")
+    is_viz = request.node.get_closest_marker("viz") or request.node.get_closest_marker("viz_render")
+    if is_viz and find_spec("matplotlib") is None:
+        pytest.skip("matplotlib not installed; skipping viz tests")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,7 +58,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
     out = root / ".pytest_matplotlib_debug.json"
     try:
         found = find_spec("matplotlib") is not None
-        mods = [k for k in sys.modules.keys() if k.startswith("matplotlib")]
+        mods = [k for k in sys.modules if k.startswith("matplotlib")]
         modules = {}
         for m in mods:
             mod = sys.modules.get(m)
@@ -73,16 +87,6 @@ def debug_matplotlib_session_state(request: FixtureRequest):
         pass
     yield
 
-
-"""Avoid heavy top-level imports (CalibratedExplainer) to keep pytest
-collection fast. Imports of the explainer class are performed lazily inside
-fixtures that require it."""
-from tests.helpers.analysis_utils import extract_private_symbols_from_ast, parse_version_token
-from tests.helpers.model_utils import DummyLearner, DummyIntervalLearner
-from tests.helpers.utils import get_env_flag
-
-# Import additional fixtures from _fixtures module
-from tests.helpers.fixtures import binary_dataset, regression_dataset, multiclass_dataset  # noqa: F401, pylint: disable=unused-import
 
 ATTR_RE = re.compile(r"\._(?!_)[A-Za-z0-9_]+")
 GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(?!__)(_[A-Za-z0-9_]+)'")
@@ -195,16 +199,11 @@ def pytest_sessionstart(session):
                             "matplotlib.backends",
                         )
                         for sub in preload:
-                            try:
-                                try:
-                                    orig_import(sub, None, None, (), 0)
-                                except Exception:
-                                    try:
-                                        importlib.import_module(sub)
-                                    except Exception:
-                                        pass
-                            except Exception:
-                                pass
+                            with contextlib.suppress(Exception):
+                                orig_import(sub, None, None, (), 0)
+                                continue
+                            with contextlib.suppress(Exception):
+                                importlib.import_module(sub)
                 except Exception:
                     pass
                 mod = orig_import(name, globals, locals, fromlist, level)
@@ -220,7 +219,7 @@ def pytest_sessionstart(session):
                             "module_repr": repr(mod),
                             "module_file": getattr(mod, "__file__", None),
                             "sys_modules_keys": [
-                                k for k in sys.modules.keys() if k.startswith("matplotlib")
+                                k for k in sys.modules if k.startswith("matplotlib")
                             ],
                         }
                         try:
@@ -264,10 +263,8 @@ def pytest_sessionstart(session):
                         if len(parts) >= 2 and parts[0] == "matplotlib":
                             top = parts[1]
                             if not hasattr(mpl, top):
-                                try:
+                                with contextlib.suppress(Exception):
                                     setattr(mpl, top, sub)
-                                except Exception:
-                                    pass
                     except Exception:
                         # best-effort; do not fail the test session
                         pass

@@ -102,7 +102,6 @@ def test_explain_happy_path_classification(pipeline, explainer):
     x_test = np.array([[1.0, 2.0, 3.0]])
 
     # Mock predictions
-    n_samples = x_test.shape[0]
     n_features = 3
     predict = np.array([0.8])
     low = np.array([0.7])

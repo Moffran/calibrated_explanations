@@ -310,6 +310,7 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
         metadata={"explainer": SimpleNamespace(predict_function=lambda x: x)},
     )
     calibrator = LegacyIntervalCalibratorPlugin().create(context)
+    assert calibrator is not None
 
     assert created["args"][0] is context.calibration_splits[0][0]
     # Plugin does not cache the calibrator; orchestrator does that via capture_interval_calibrators

@@ -49,7 +49,7 @@ def test_plotting_deprecation_warning(monkeypatch) -> None:
 
     with pytest.warns(DeprecationWarning, match="plotting"):
         # Access the deprecated plotting attribute
-        plotting = calibrated_explanations.plotting
+        _ = calibrated_explanations.plotting
 
 
 def test_lazy_getattr_missing_attribute() -> None:

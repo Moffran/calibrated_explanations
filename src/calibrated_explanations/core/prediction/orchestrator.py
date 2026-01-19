@@ -206,10 +206,8 @@ class PredictionOrchestrator:
             try:
                 _ = self.explainer.reject_orchestrator
             except Exception:  # adr002_allow
-                try:
+                with contextlib.suppress(Exception):
                     self.explainer.plugin_manager.initialize_orchestrators()
-                except Exception:  # adr002_allow
-                    pass
 
             def _predict_fn(x_subset, **kw):
                 return self._predict_impl(

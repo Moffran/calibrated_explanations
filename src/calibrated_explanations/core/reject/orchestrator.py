@@ -151,8 +151,8 @@ class RejectOrchestrator:
             # default fallback
             try:
                 return self._strategies["builtin.default"]
-            except KeyError:
-                raise KeyError("builtin.default strategy not registered")
+            except KeyError as exc:
+                raise KeyError("builtin.default strategy not registered") from exc
         if identifier in self._strategies:
             return self._strategies[identifier]
         raise KeyError(f"Reject strategy '{identifier}' is not registered")

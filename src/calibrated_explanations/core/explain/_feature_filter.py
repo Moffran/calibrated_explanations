@@ -386,7 +386,6 @@ def compute_filtered_features_to_ignore(
             candidate_counts = keep_counts[candidate_indices]
             positive_mask = candidate_counts > 0
             positive_indices = candidate_indices[positive_mask]
-            positive_counts = candidate_counts[positive_mask]
 
             # Derive global keep set as the union of all per-instance keep sets.
             # This ensures that if a feature was deemed important for ANY instance,

@@ -621,13 +621,6 @@ class IntervalRegressor:
         """Append new Mondrian bin assignments to storage."""
         return self._append_bins(values)
 
-    def append_calibration_buffer(self, name, values, sigma=None):
-        """Backward-compatible wrapper accepting either (name, values) or the newer (y_cal_hat, residual, sigma) shape.
-
-        The public test API uses (name, values) so forward to the internal helper.
-        """
-        return self._append_calibration_buffer(name, values)
-
     def ensure_capacity(self, storage, current_size, required_size):
         """Ensure storage has capacity for required size."""
         return self._ensure_capacity(storage, current_size, required_size)

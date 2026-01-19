@@ -22,11 +22,11 @@ def test_builtin_default_registered():
     stub = make_stub()
     ro = RejectOrchestrator(stub)
     # builtin.default should resolve via the public resolver
-    strat = ro.resolve_strategy(None)
-    assert callable(strat)
+    strategy = ro.resolve_strategy(None)
+    assert callable(strategy)
     # also resolve by explicit identifier
-    strat2 = ro.resolve_strategy("builtin.default")
-    assert strat2 is strat
+    strategy2 = ro.resolve_strategy("builtin.default")
+    assert strategy2 is strategy
 
 
 def test_register_custom_strategy_and_apply():

@@ -31,9 +31,7 @@ class IntervalCalibratorContext:
             normalized = dict(raw_metadata)
         except Exception:  # adr002_allow
             normalized = (
-                {}
-                if raw_metadata is None
-                else {k: v for k, v in getattr(raw_metadata, "items", lambda: ())()}
+                {} if raw_metadata is None else dict(getattr(raw_metadata, "items", lambda: ())())
             )
         object.__setattr__(self, "metadata", MappingProxyType(normalized))
         # Ensure plugin_state is mutable so plugins can store transient data.
