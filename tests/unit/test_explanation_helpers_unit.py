@@ -30,7 +30,7 @@ def test_normalize_percentile_and_confidence():
     assert CalibratedExplanation.compute_confidence_level((None, 0.9)) is None
 
 
-class _DummyExplainer:
+class DummyExplainer:
     def __init__(self):
         self.y_cal = np.array([0.0, 1.0])
         self.mode = "regression"
@@ -40,9 +40,9 @@ class _DummyExplainer:
         return False
 
 
-class _DummyCollection:
+class DummyCollection:
     def __init__(self):
-        self.explainer = _DummyExplainer()
+        self.explainer = DummyExplainer()
         self.features_to_ignore = None
         self.feature_filter_per_instance_ignore = None
         self.low_high_percentiles = (5, 95)
@@ -69,7 +69,7 @@ class DummyExplanation(CalibratedExplanation):
 
 
 def make_instance():
-    collection = _DummyCollection()
+    collection = DummyCollection()
     binned = {"f": [[0]]}
     feature_weights = {"f": [[1.0, 2.0]]}
     feature_predict = {"f": [[0.1, 0.2]]}
@@ -114,7 +114,7 @@ def test_condition_parsing_and_payload_public_api():
 
 
 def test_ignored_and_rank_features_errors():
-    col = _DummyCollection()
+    col = DummyCollection()
     col.features_to_ignore = (1,)
     col.feature_filter_per_instance_ignore = [[2]]
     binned = {"f": [[0]]}
@@ -138,7 +138,7 @@ def test_ignored_and_rank_features_errors():
 
 
 def test_normalize_threshold_value_variants():
-    col = _DummyCollection()
+    col = DummyCollection()
     binned = {"f": [[0]]}
     feature_weights = {"f": [[1.0]]}
     feature_predict = {"f": [[0.1]]}

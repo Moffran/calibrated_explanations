@@ -13,7 +13,7 @@ def test_derive_threshold_labels_fallback():
 
 
 def test_legacy_predict_bridge_classification_returns_classes():
-    class _ExplainerForClass:
+    class ExplainerForClass:
         def predict(self, x, uq_interval=False, bins=None, calibrated=False):
             if uq_interval:
                 return np.array([0.5]), (np.array([0.1]), np.array([0.9]))
@@ -21,7 +21,7 @@ def test_legacy_predict_bridge_classification_returns_classes():
                 return np.array(["cls1", "cls2"])
             return np.array([0.5])
 
-    expl = _ExplainerForClass()
+    expl = ExplainerForClass()
     bridge = LegacyPredictBridge(expl)
     out = bridge.predict([[1]], mode="classification", task="classification")
     assert "classes" in out
@@ -47,7 +47,7 @@ def test_derive_threshold_labels_interval_and_scalar():
     assert pos2.startswith("Y < 5.00")
 
 
-class _ExplainerSimple:
+class ExplainerSimple:
     def predict(self, x, uq_interval=False, bins=None, calibrated=False):
         if uq_interval:
             # return preds, (low, high)
@@ -58,14 +58,14 @@ class _ExplainerSimple:
 
 
 def test_legacy_predict_bridge_regression_happy_path():
-    expl = _ExplainerSimple()
+    expl = ExplainerSimple()
     bridge = LegacyPredictBridge(expl)
     out = bridge.predict([[1]], mode="regression", task="regression")
     assert "predict" in out and out["predict"].shape[0] == 1
     assert "low" in out and "high" in out
 
 
-class _ExplainerBadInterval:
+class ExplainerBadInterval:
     def predict(self, x, uq_interval=False, bins=None, calibrated=False):
         if uq_interval:
             # low > high to trigger ValidationError
@@ -74,7 +74,7 @@ class _ExplainerBadInterval:
 
 
 def test_legacy_predict_bridge_invalid_interval_raises():
-    expl = _ExplainerBadInterval()
+    expl = ExplainerBadInterval()
     bridge = LegacyPredictBridge(expl)
     with pytest.raises(ValidationError):
         bridge.predict([[1], [2]], mode="regression", task="regression")

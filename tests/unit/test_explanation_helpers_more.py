@@ -125,7 +125,7 @@ import pytest
 from calibrated_explanations.utils.exceptions import ValidationError
 
 
-class _DummyExplainer:
+class DummyExplainer:
     def __init__(self):
         self.y_cal = np.array([0.0, 1.0])
         self.mode = "regression"
@@ -135,9 +135,9 @@ class _DummyExplainer:
         return False
 
 
-class _DummyCollection:
+class DummyCollection:
     def __init__(self):
-        self.explainer = _DummyExplainer()
+        self.explainer = DummyExplainer()
         self.features_to_ignore = None
         self.feature_filter_per_instance_ignore = None
         self.low_high_percentiles = (5, 95)
@@ -164,7 +164,7 @@ class DummyExplanation(CalibratedExplanation):
 
 
 def make_instance():
-    collection = _DummyCollection()
+    collection = DummyCollection()
     # inputs are mappings from keys -> sequences; CalibratedExplanation picks index 0
     binned = {"f": [[0]]}
     feature_weights = {"f": [[1.0, 2.0]]}
@@ -233,7 +233,7 @@ def test_condition_parsing_and_payload():
 
 
 def test_ignored_features_and_rank_features():
-    col = _DummyCollection()
+    col = DummyCollection()
     col.features_to_ignore = (1,)
     col.feature_filter_per_instance_ignore = [[2]]
     binned = {"f": [[0]]}
@@ -263,7 +263,7 @@ def test_ignored_features_and_rank_features():
 
 def test_normalize_threshold_value_variants():
     # scalar threshold
-    col = _DummyCollection()
+    col = DummyCollection()
     binned = {"f": [[0]]}
     feature_weights = {"f": [[1.0]]}
     feature_predict = {"f": [[0.1]]}

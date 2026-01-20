@@ -7,7 +7,7 @@ from calibrated_explanations.plugins.builtins import (
     derive_threshold_labels,
     LegacyPredictBridge,
     collection_to_batch,
-    _supports_calibrated_explainer,
+    supports_calibrated_explainer,
 )
 from calibrated_explanations.utils.exceptions import ValidationError
 
@@ -45,7 +45,7 @@ def test_supports_calibrated_explainer_true():
     sys.modules[mod_name] = fake_mod
 
     inst = CalibratedExplainer()
-    assert _supports_calibrated_explainer(inst) is True
+    assert supports_calibrated_explainer(inst) is True
 
 
 def test_collection_to_batch_variants():
@@ -166,4 +166,4 @@ def test_legacy_predict_bridge_classification_classes_present():
 
 
 def test_supports_calibrated_explainer_false_for_plain_object():
-    assert _supports_calibrated_explainer(object()) is False
+    assert supports_calibrated_explainer(object()) is False

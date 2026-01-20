@@ -72,7 +72,7 @@ def test_extracted_non_conjunctive_rules_filters_via_public_flow():
     from calibrated_explanations.explanations import legacy_conjunctions
 
     class FakeExplainer:
-        def _predict(self, X, threshold, low_high_percentiles, classes, bins):
+        def _predict(self, x, threshold, low_high_percentiles, classes, bins):
             return [0.9], [0.8], [1.0], 1
 
     class S:

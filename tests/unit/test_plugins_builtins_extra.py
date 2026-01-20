@@ -3,7 +3,7 @@ import sys
 import types
 
 from calibrated_explanations.plugins.builtins import (
-    _supports_calibrated_explainer,
+    supports_calibrated_explainer,
     collection_to_batch,
 )
 
@@ -21,7 +21,7 @@ def test_supports_calibrated_explainer_true():
     sys.modules[mod_name] = fake_mod
 
     inst = CalibratedExplainer()
-    assert _supports_calibrated_explainer(inst) is True
+    assert supports_calibrated_explainer(inst) is True
 
 
 def test_collection_to_batch_minimal():
