@@ -1,7 +1,9 @@
 import math
 import numpy as np
+import pytest
 
 from calibrated_explanations.explanations.explanation import CalibratedExplanation
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 def test_to_python_number_and_build_interval():
@@ -120,9 +122,7 @@ def test_build_condition_payload_and_threshold_normalize():
     assert inst.normalize_threshold_value() == [0.2, 0.8]
 
 
-import pytest
-
-from calibrated_explanations.utils.exceptions import ValidationError
+# moved imports to top
 
 
 class DummyExplainer:
@@ -254,7 +254,7 @@ def test_ignored_features_and_rank_features():
 
     # rank by width
     idxs = inst.rank_features(feature_weights=None, width=[0.1, 0.5, 0.2], num_to_show=2)
-    assert set(idxs) == set([1, 2])
+    assert set(idxs) == {1, 2}
 
     # error when neither provided
     with pytest.raises(ValidationError):
@@ -313,7 +313,7 @@ def test_build_uncertainty_payload_and_ranking_both_args():
     feature_weights = [0.1, -0.9, 0.2]
     width = [0.05, 0.2, 0.1]
     top = inst.rank_features(feature_weights=feature_weights, width=width, num_to_show=2)
-    assert set(top) == set([1, 2])
+    assert set(top) == {1, 2}
 
 
 def test_convert_condition_value_fallback_and_parse_raw():

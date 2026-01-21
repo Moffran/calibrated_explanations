@@ -40,4 +40,4 @@ def should_compute_global_ignore_for_fast_collection():
     # Assert: result has per-instance masks and global ignore includes feature 3
     assert hasattr(result, "per_instance_ignore")
     # global_ignore is a numpy array; check that 3 is included
-    assert 3 in set(int(x) for x in getattr(result, "global_ignore", []))
+    assert 3 in {int(x) for x in getattr(result, "global_ignore", [])}

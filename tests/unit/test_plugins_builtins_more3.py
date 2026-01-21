@@ -48,4 +48,4 @@ def test_collection_to_batch_minimal():
 
     c = DummyCollection()
     batch = collection_to_batch(c)
-    assert batch.container_cls == type(c)
+    assert batch.container_cls is type(c)

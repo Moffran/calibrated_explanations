@@ -8,6 +8,7 @@ import logging as _logging
 import sys
 import warnings as _warnings
 from contextlib import suppress
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 
 from crepes.extras import MondrianCategorizer
@@ -1156,8 +1157,32 @@ class WrapCalibratedExplainer:
             The state dictionary.
         """
         state = self.__dict__.copy()
+
         # Exclude mc as it may contain unpicklable objects like RNG in mappingproxy
         state["mc"] = None
+
+        # Convert any types.MappingProxyType (mappingproxy) instances to plain
+        # dicts recursively so pickle/joblib can serialize them.
+        def _convert(obj: Any) -> Any:
+            if isinstance(obj, MappingProxyType):
+                return dict(obj)
+            if isinstance(obj, dict):
+                return {k: _convert(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple, set)):
+                cls = type(obj)
+                converted = [_convert(v) for v in obj]
+                return cls(converted)
+            return obj
+
+        for k, v in list(state.items()):
+            try:
+                state[k] = _convert(v)
+            except Exception as exc:
+                # Defensive: if conversion fails, leave original value and
+                # hope it's picklable; avoid failing during state build.
+                with suppress(Exception):
+                    self._logger.debug("__getstate__ conversion skipped for %s: %s", k, exc)
+                continue
         return state
 
     def __setstate__(self, state):

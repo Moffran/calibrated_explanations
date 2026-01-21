@@ -22,7 +22,7 @@ def should_freeze_request_and_validate_batch_when_given_numpy_arrays():
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=FactualExplanation,
-        instances=tuple([{"explanation": object()}]),
+        instances=({"explanation": object()},),
         collection_metadata={"mode": "factual"},
     )
 

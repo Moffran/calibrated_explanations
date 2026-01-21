@@ -34,7 +34,6 @@ def test_load_entrypoint_plugins_skips_denied_identifier(monkeypatch):
     # Force denial
     monkeypatch.setattr(registry, "is_identifier_denied", lambda ident: True)
 
-    report_before = registry.get_discovery_report()
     loaded = registry.load_entrypoint_plugins(include_untrusted=True)
     assert loaded == ()
     report = registry.get_discovery_report()

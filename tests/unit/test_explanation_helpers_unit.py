@@ -97,7 +97,7 @@ def test_build_interval_and_uncertainty_payload_and_ranking():
 
     # ranking by width
     idxs = inst.rank_features(feature_weights=None, width=[0.1, 0.5, 0.2], num_to_show=2)
-    assert set(idxs) == set([1, 2])
+    assert set(idxs) == {1, 2}
 
 
 def test_condition_parsing_and_payload_public_api():
