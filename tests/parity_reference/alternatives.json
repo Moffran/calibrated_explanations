@@ -1,0 +1,377 @@
+[
+  {
+    "explanation_type": "alternative",
+    "index": 0,
+    "metadata": null,
+    "prediction": {
+      "__full_probabilities__": [
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ]
+      ],
+      "classes": 1.0,
+      "high": 0.5384615384615384,
+      "low": 0.46153846153846156,
+      "predict": 0.5
+    },
+    "provenance": null,
+    "rules": [
+      {
+        "bin_index": null,
+        "feature": 1,
+        "feature_value": 103.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "Glucose > 144.50",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384616,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153838,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "103.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 2,
+        "feature_value": 80.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BloodPressure < 68.00",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.46153846153846156,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.038461538461538436,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "80.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 2,
+        "feature_value": 80.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BloodPressure > 84.00",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "80.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 3,
+        "feature_value": 11.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "SkinThickness > 16.00",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "11.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 4,
+        "feature_value": 82.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "Insulin > 144.00",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.46153846153846156,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.038461538461538436,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "82.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 5,
+        "feature_value": 19.4,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BMI > 24.45",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "19.4"
+      },
+      {
+        "bin_index": null,
+        "feature": 6,
+        "feature_value": 0.491,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "DiabetesPedigreeFunction < 0.22",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "0.49"
+      },
+      {
+        "bin_index": null,
+        "feature": 6,
+        "feature_value": 0.491,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "DiabetesPedigreeFunction > 0.52",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "0.49"
+      },
+      {
+        "bin_index": null,
+        "feature": 7,
+        "feature_value": 22.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "Age > 28.50",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "22.0"
+      }
+    ],
+    "schema_version": "1.0.0",
+    "task": "classification"
+  },
+  {
+    "explanation_type": "alternative",
+    "index": 1,
+    "metadata": null,
+    "prediction": {
+      "__full_probabilities__": [
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ]
+      ],
+      "classes": 1.0,
+      "high": 0.5384615384615384,
+      "low": 0.46153846153846156,
+      "predict": 0.5
+    },
+    "provenance": null,
+    "rules": [
+      {
+        "bin_index": null,
+        "feature": 1,
+        "feature_value": 158.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "Glucose < 144.50",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384616,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153838,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "158.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 2,
+        "feature_value": 76.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BloodPressure < 68.00",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.46153846153846156,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.038461538461538436,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "76.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 2,
+        "feature_value": 76.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BloodPressure > 84.00",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "76.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 3,
+        "feature_value": 36.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "SkinThickness > 36.50",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.46153846153846156,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.038461538461538436,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "36.0"
+      },
+      {
+        "bin_index": null,
+        "feature": 5,
+        "feature_value": 31.6,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BMI < 29.65",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.46153846153846156,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.038461538461538436,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "31.6"
+      },
+      {
+        "bin_index": null,
+        "feature": 5,
+        "feature_value": 31.6,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "BMI > 40.30",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "31.6"
+      },
+      {
+        "bin_index": null,
+        "feature": 6,
+        "feature_value": 0.851,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "DiabetesPedigreeFunction < 0.52",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "0.85"
+      },
+      {
+        "bin_index": null,
+        "feature": 7,
+        "feature_value": 28.0,
+        "instance_prediction": null,
+        "is_conjunctive": false,
+        "rule": "Age > 28.50",
+        "rule_prediction": {
+          "high": 0.5384615384615384,
+          "low": 0.4615384615384615,
+          "predict": 0.5
+        },
+        "rule_weight": {
+          "high": 0.03846153846153849,
+          "low": -0.038461538461538436,
+          "predict": 0.0
+        },
+        "value_str": "28.0"
+      }
+    ],
+    "schema_version": "1.0.0",
+    "task": "classification"
+  }
+]

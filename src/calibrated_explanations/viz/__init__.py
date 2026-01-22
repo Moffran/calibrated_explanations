@@ -27,6 +27,7 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         build_regression_bars_spec,
         build_triangular_plotspec,
         is_valid_probability_values,
+        legacy_get_fill_color,
     )
     from .matplotlib_adapter import render
     from .narrative_plugin import NarrativePlotPlugin
@@ -79,6 +80,7 @@ __all__ = (
     "REGRESSION_BAR_COLOR",
     "REGRESSION_BASE_COLOR",
     "_legacy_get_fill_color",
+    "legacy_get_fill_color",
     "render",
     "matplotlib_adapter",
     "plotspec_to_dict",
@@ -115,6 +117,7 @@ _NAME_TO_MODULE = {
     "REGRESSION_BAR_COLOR": ("builders", "REGRESSION_BAR_COLOR"),
     "REGRESSION_BASE_COLOR": ("builders", "REGRESSION_BASE_COLOR"),
     "_legacy_get_fill_color": ("builders", "_legacy_get_fill_color"),
+    "legacy_get_fill_color": ("builders", "legacy_get_fill_color"),
     "render": ("matplotlib_adapter", "render"),
     "matplotlib_adapter": ("matplotlib_adapter", None),
     "plots": ("plots", None),

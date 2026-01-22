@@ -325,7 +325,8 @@ def explain_predict_step(
     bins: Any,
     features_to_ignore: Any,
     *,
-    features_to_ignore_per_instance: Any | None = None,
+    interval_summary: Any | None = None,
+    feature_filter_per_instance_ignore: Any | None = None,
 ) -> ExplainPredictStepResult:
     """Execute the baseline prediction and perturbation planning step.
 
@@ -371,46 +372,66 @@ def explain_predict_step(
     ignore_indices = as_int_array(features_to_ignore)
     if ignore_indices.size:
         ignore_mask[:, ignore_indices] = True
-    if isinstance(features_to_ignore_per_instance, Iterable) and not isinstance(
-        features_to_ignore_per_instance, (str, bytes)
+    if isinstance(feature_filter_per_instance_ignore, Iterable) and not isinstance(
+        feature_filter_per_instance_ignore, (str, bytes)
     ):
-        for idx, inst_mask in enumerate(features_to_ignore_per_instance):
+        for idx, inst_mask in enumerate(feature_filter_per_instance_ignore):
             if idx >= n_instances:
                 break
             inst_indices = as_int_array(inst_mask)
             if inst_indices.size:
                 ignore_mask[idx, inst_indices] = True
 
+    # print(f"DEBUG: explainer type: {type(explainer)}")
+    # print(f"DEBUG: explainer.is_multiclass type: {type(explainer.is_multiclass)}")
+
     x_cal = explainer.x_cal
+    # Use the explainer's default interval summary for the base point
+    # prediction used in explanations. Per-call `interval_summary` controls
+    # how full-probabilities/intervals are summarised but should not alter
+    # the canonical point prediction embedded in factual explanations.
     base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
-        x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+        x,
+        threshold=threshold,
+        low_high_percentiles=low_high_percentiles,
+        bins=bins,
+        _ce_skip_reject=True,
+        interval_summary=None,
     )
 
+    is_mc_property = (
+        explainer.is_multiclass() if callable(explainer.is_multiclass) else explainer.is_multiclass
+    )
     prediction = {
         "predict": base_predict,
         "low": base_low,
         "high": base_high,
-        "classes": (predicted_class if explainer.is_multiclass() else np.ones(base_predict.shape)),
+        "classes": (predicted_class if is_mc_property else np.ones(base_predict.shape)),
     }
     if explainer.mode == "classification":  # store full calibrated probability matrix
+        is_mc = (
+            explainer.is_multiclass()
+            if callable(explainer.is_multiclass)
+            else explainer.is_multiclass
+        )
         try:  # pragma: no cover - defensive
-            if explainer.is_multiclass():
+            if is_mc:
                 if explainer.is_fast():
                     full_probs = explainer.interval_learner[  # pylint: disable=protected-access
                         explainer.num_features
-                    ].predict_proba(x, bins=bins)
+                    ].predict_proba(x, bins=bins, interval_summary=interval_summary)
                 else:
                     full_probs = explainer.interval_learner.predict_proba(  # pylint: disable=protected-access
-                        x, bins=bins
+                        x, bins=bins, interval_summary=interval_summary
                     )
             else:  # binary
                 if explainer.is_fast():
                     full_probs = explainer.interval_learner[  # pylint: disable=protected-access
                         explainer.num_features
-                    ].predict_proba(x, bins=bins)
+                    ].predict_proba(x, bins=bins, interval_summary=interval_summary)
                 else:
                     full_probs = explainer.interval_learner.predict_proba(  # pylint: disable=protected-access
-                        x, bins=bins
+                        x, bins=bins, interval_summary=interval_summary
                     )
             prediction["__full_probabilities__"] = full_probs
         except (AttributeError, CalibratedError) as exc:
@@ -582,6 +603,7 @@ def explain_predict_step(
         low_high_percentiles=low_high_percentiles,
         classes=perturbed_class,
         bins=perturbed_bins,
+        _ce_skip_reject=True,
     )
     predict = np.array(predict)
     low = np.array(low)

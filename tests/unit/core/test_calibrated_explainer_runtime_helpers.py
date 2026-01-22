@@ -27,7 +27,7 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
     explainer.bins = None
     explainer.plot_style_override = None
     explainer.interval_plugin_override = None
-    explainer._fast_interval_plugin_override = None
+    explainer.fast_interval_plugin_override = None
     explainer.interval_plugin_hints = {}
     explainer.interval_plugin_fallbacks = {"default": (), "fast": ()}
     explainer.interval_preferred_identifier = {"default": None, "fast": None}
@@ -36,9 +36,9 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
     explainer.explanation_plugin_overrides = {
         key: None for key in ("factual", "alternative", "fast")
     }
-    explainer._pyproject_explanations = {}
-    explainer._pyproject_intervals = {}
-    explainer._pyproject_plots = {}
+    explainer.pyproject_explanations = {}
+    explainer.pyproject_intervals = {}
+    explainer.pyproject_plots = {}
     explainer.plot_style_override = None
     explainer.plugin_manager.explanation_plugin_fallbacks = {}
     return explainer
@@ -128,8 +128,8 @@ def test_instance_telemetry_payload_delegates(explainer_factory):
 
     assert explainer.build_instance_telemetry_payload("payload") == ("payload", sentinel)
 
-    assert explainer._pyproject_intervals is None
-    assert explainer._pyproject_plots is None
+    assert explainer.pyproject_intervals is None
+    assert explainer.pyproject_plots is None
 
 
 def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
@@ -219,7 +219,7 @@ def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_
 
     stub_manager = StubPredictionOrchestrator(registry)
     monkeypatch.setattr(explainer, "require_plugin_manager", lambda: stub_manager)
-    explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+    explainer.initialize_interval_learner_for_fast_explainer()
 
     assert registry.calls == [sentinel]
 
@@ -527,7 +527,7 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explain
 
 def test_resolve_interval_plugin_denied_override_raises(monkeypatch, explainer_factory):
     explainer = stub_explainer(explainer_factory, mode="regression")
-    explainer._interval_plugin_override = "denied.plugin"
+    explainer.interval_plugin_override = "denied.plugin"
     explainer.plugin_manager.interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
 
     monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
@@ -554,7 +554,7 @@ def test_build_interval_context_enriches_metadata(explainer_factory):
         "default": {"preexisting": {"value": 1}},
         "fast": {},
     }
-    explainer._CalibratedExplainer__noise_type = "gaussian"
+    explainer.noise_type = "gaussian"
     explainer.categorical_features = [1]
     explainer.learner = object()
 
@@ -608,7 +608,7 @@ class RaisingInterval:
 def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory):
     explainer = stub_explainer(explainer_factory, mode="regression")
     explainer.initialized = True
-    explainer._CalibratedExplainer__fast = False
+    explainer.fast = False
     explainer.interval_learner = RaisingInterval()
     explainer.suppress_crepes_errors = True
     explainer.x_cal = np.zeros((1, 1))

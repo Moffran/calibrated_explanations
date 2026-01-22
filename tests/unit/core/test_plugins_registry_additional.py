@@ -37,7 +37,7 @@ def test_normalise_trust_and_env_cache(monkeypatch):
     assert second == first
 
     meta = {"trust": False, "name": "alpha"}
-    assert registry.should_trust(meta)
+    assert registry.should_trust(meta, identifier="alpha", source="manual")
 
 
 def test_propagate_trust_metadata_variants():
@@ -626,12 +626,19 @@ def test_load_entrypoint_plugins_include_untrusted(monkeypatch):
 
 def test_load_entrypoint_plugins_trusted_flow(monkeypatch):
     class TrustedPlugin(SimpleExplanationPlugin):
-        plugin_meta = {**SimpleExplanationPlugin.plugin_meta, "trust": True, "trusted": True}
+        plugin_meta = {
+            **SimpleExplanationPlugin.plugin_meta,
+            "name": "entry.trusted",
+            "trust": True,
+            "trusted": True,
+        }
 
     plugin = TrustedPlugin()
     entries = [EntryPoint(plugin)]
 
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entries)
+    monkeypatch.setattr(registry, "_env_trusted_names", lambda: {"entry.trusted"})
+    monkeypatch.setattr(registry, "_pyproject_trusted_identifiers", lambda: set())
 
     loaded = registry.load_entrypoint_plugins()
     assert loaded == (plugin,)
@@ -764,6 +771,7 @@ def test_register_existing_plugin_updates_trust_list():
     plugin.plugin_meta["trust"] = True
     plugin.plugin_meta["trusted"] = True
     registry.register(plugin)
+    registry.trust_plugin(plugin)
     assert plugin in registry.list_plugins(include_untrusted=False)
 
 

@@ -14,7 +14,9 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 import copy
+import logging
 import sys
+import warnings
 import contextlib
 from time import time
 from typing import TYPE_CHECKING
@@ -35,12 +37,15 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         _tomllib = None  # type: ignore[assignment]
 
 # Core imports (no cross-sibling dependencies)
+from ..calibration.interval_wrappers import is_fast_interval_collection
 from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from ..utils.exceptions import (
     DataShapeError,
     ValidationError,
 )
+from .reject.policy import RejectPolicy
+from .prediction.interval_summary import IntervalSummary, coerce_interval_summary
 
 # Lazy imports deferred to avoid cross-sibling coupling
 # These are imported inside methods/properties where used
@@ -173,6 +178,9 @@ class CalibratedExplainer:
         self.sample_percentiles = kwargs.get("sample_percentiles", [25, 50, 75])
         self.verbose = kwargs.get("verbose", False)
         self.bins = bins
+        self.interval_summary = coerce_interval_summary(
+            kwargs.get("interval_summary", IntervalSummary.REGULARIZED_MEAN)
+        )
 
         self.__fast = kwargs.get("fast", False)
         self.__noise_type = kwargs.get("noise_type", "uniform")
@@ -246,6 +254,10 @@ class CalibratedExplainer:
         self._lime_helper = LimeHelper(self)
         self._shap_helper = ShapHelper(self)
         self.reject = kwargs.get("reject", False)
+        # Optional default reject policy for explainer-level defaults
+        from .reject.policy import RejectPolicy as _RejectPolicy
+
+        self.default_reject_policy = kwargs.get("default_reject_policy", _RejectPolicy.NONE)
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.set_mode(str.lower(mode), initialize=False)
@@ -368,6 +380,99 @@ class CalibratedExplainer:
                 },
             )
         return manager
+
+    def get_plugin_manager(self) -> PluginManager:
+        """Return the active plugin manager, applying any derived defaults.
+
+        Wrapper layers must not mutate plugin manager state directly. Any
+        runtime-derived plugin preferences (for example, feature filter
+        execution requirements) are enforced here so orchestration remains
+        centralized in the explainer/manager layers.
+        """
+        manager = self.require_plugin_manager()
+        self._enforce_feature_filter_plugin_preferences(manager)
+        return manager
+
+    def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
+        cfg = getattr(self, "_feature_filter_config", None)
+        enabled = getattr(cfg, "enabled", False)
+        if enabled is not True:
+            return
+
+        override_id = "core.explanation.factual.sequential"
+        logger = logging.getLogger(__name__)
+
+        try:
+            chain = manager.explanation_plugin_fallbacks.get("factual", ())
+        except Exception as exc:  # adr002_allow
+            logger.warning(
+                "Failed to read explanation plugin fallback chain; feature filter enforcement skipped: %s",
+                exc,
+                exc_info=True,
+            )
+            warnings.warn(
+                "Feature filter is enabled but plugin fallback chain could not be read; "
+                "continuing with the configured explanation plugin selection.",
+                UserWarning,
+                stacklevel=3,
+            )
+            return
+
+        if chain and chain[0] == override_id:
+            return
+
+        if not chain:
+            try:
+                manager.initialize_chains()
+                chain = manager.explanation_plugin_fallbacks.get("factual", ())
+            except Exception as exc:  # adr002_allow
+                logger.warning(
+                    "Failed to initialize plugin chains; feature filter enforcement skipped: %s",
+                    exc,
+                    exc_info=True,
+                )
+                warnings.warn(
+                    "Feature filter is enabled but plugin chains could not be initialized; "
+                    "continuing with the configured explanation plugin selection.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                return
+
+            if chain and chain[0] == override_id:
+                return
+
+        previous = chain[0] if chain else None
+        logger.warning(
+            "Feature filter enabled; forcing factual explanation plugin to '%s' (was '%s')",
+            override_id,
+            previous,
+            extra={"mode": "factual", "plugin_identifier": override_id},
+        )
+        warnings.warn(
+            f"Feature filter is enabled; overriding the factual explanation plugin from '{previous}' "
+            f"to '{override_id}'.",
+            UserWarning,
+            stacklevel=3,
+        )
+
+        try:
+            manager.explanation_plugin_overrides["factual"] = override_id
+            manager.clear_explanation_plugin_instances()
+            manager.clear_explanation_plugin_identifiers()
+            manager.initialize_chains()
+        except Exception as exc:  # adr002_allow
+            logger.warning(
+                "Failed to enforce factual explanation plugin for feature filter: %s",
+                exc,
+                exc_info=True,
+            )
+            warnings.warn(
+                "Feature filter is enabled but forcing the factual explanation plugin failed; "
+                "continuing with the configured explanation plugin selection.",
+                UserWarning,
+                stacklevel=3,
+            )
 
     def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
         """Resolve the parallel executor honoring overrides and environment config."""
@@ -567,16 +672,60 @@ class CalibratedExplainer:
         features_to_ignore: Any,
         *,
         extras: Mapping[str, Any] | None = None,
+        reject_policy: Any | None = None,
     ) -> Any:
         """Delegate to ExplanationOrchestrator."""
-        return self.explanation_orchestrator.invoke(
-            mode,
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            extras=extras,
+        # Reject integration (ADR-029):
+        # - default remains RejectPolicy.NONE (no reject)
+        # - per-call reject_policy overrides the explainer-level default_reject_policy
+        # Backward compatibility:
+        # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
+        from .reject.policy import RejectPolicy
+
+        candidate_policy = reject_policy
+        if candidate_policy is None:
+            candidate_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
+
+        try:
+            effective_policy = RejectPolicy(candidate_policy)
+        except Exception:  # adr002_allow
+            effective_policy = RejectPolicy.NONE
+
+        if effective_policy is RejectPolicy.NONE:
+            return self.explanation_orchestrator.invoke(
+                mode,
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                extras=extras,
+            )
+
+        # Policy enabled: ensure reject orchestration and delegate via RejectOrchestrator
+        def _explain_fn(x_subset, **kw):
+            return self.explanation_orchestrator.invoke(
+                mode,
+                x_subset,
+                threshold,
+                low_high_percentiles,
+                kw.get("bins", bins),
+                features_to_ignore,
+                extras=extras,
+                _ce_skip_reject=True,
+            )
+
+        # Implicitly enable reject orchestration
+        try:
+            # ensure plugin manager has set up orchestrators
+            _ = self.reject_orchestrator
+        except Exception:  # adr002_allow
+            # fallback: initialize via plugin manager if available
+            with contextlib.suppress(Exception):
+                self.plugin_manager.initialize_orchestrators()
+
+        return self.reject_orchestrator.apply_policy(
+            effective_policy, x, explain_fn=_explain_fn, bins=bins
         )
 
     def ensure_interval_runtime_state(self) -> None:
@@ -753,7 +902,7 @@ class CalibratedExplainer:
     @property
     def plugin_manager(self) -> PluginManager:
         """Public accessor for the active PluginManager."""
-        return self.require_plugin_manager()
+        return self.get_plugin_manager()
 
     @plugin_manager.setter
     def plugin_manager(self, value: Any) -> None:
@@ -1129,7 +1278,15 @@ class CalibratedExplainer:
         if not self.is_fast():
             try:
                 self._CalibratedExplainer__fast = True
-                self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+                # Prefer calling the public method name so unit tests that patch
+                # `initialize_interval_learner_for_fast_explainer` observe the
+                # raised exception. Fall back to the name-mangled implementation
+                # if the public alias is absent.
+                init_fn = getattr(self, "initialize_interval_learner_for_fast_explainer", None)
+                if callable(init_fn):
+                    init_fn()
+                else:
+                    self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
             except Exception:  # adr002_allow
                 self._CalibratedExplainer__fast = False
                 raise
@@ -1483,6 +1640,7 @@ class CalibratedExplainer:
         classes: Any = None,
         bins: Any = None,
         feature: int | None = None,
+        interval_summary: Any | None = None,
         **kwargs,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
         """Predict calibrated values and intervals."""
@@ -1493,6 +1651,7 @@ class CalibratedExplainer:
             classes=classes,
             bins=bins,
             feature=feature,
+            interval_summary=interval_summary,
             **kwargs,
         )
 
@@ -1538,9 +1697,84 @@ class CalibratedExplainer:
         classes=None,
         bins=None,
         feature=None,
+        interval_summary=None,
         **kwargs,
     ):
         """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
+        # Internal skip flag: when True, bypass reject orchestration. This is
+        # used by internal callers (e.g., RejectOrchestrator) to obtain a raw
+        # prediction without re-entering the reject flow.
+        if "_ce_skip_reject" in kwargs:
+            # consume internal-only flag and proceed without reject handling
+            kwargs.pop("_ce_skip_reject")
+            orchestrator = self.prediction_orchestrator
+            if hasattr(orchestrator, "predict_internal"):
+                return orchestrator.predict_internal(
+                    x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    classes=classes,
+                    bins=bins,
+                    feature=feature,
+                    interval_summary=interval_summary,
+                    **kwargs,
+                )
+            return orchestrator.predict(
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=classes,
+                bins=bins,
+                feature=feature,
+                interval_summary=interval_summary,
+                **kwargs,
+            )
+
+        # Support per-call reject policy selection. When a non-NONE policy is
+        # selected, delegate to the RejectOrchestrator and return a RejectResult
+        # envelope. Per-call policy overrides the explainer-level default.
+
+        # Pop per-call policy if provided so downstream orchestrators don't
+        # receive unexpected kwargs. Only an explicit per-call policy will
+        # trigger reject orchestration here. Explainer-level defaults are
+        # handled at the top-level explanation APIs (e.g., `explain_factual`).
+        per_call_policy = None
+        if "reject_policy" in kwargs:
+            per_call_policy = kwargs.pop("reject_policy")
+
+        if per_call_policy is None:
+            effective_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
+        else:
+            try:
+                effective_policy = RejectPolicy(per_call_policy)
+            except Exception:  # adr002_allow
+                effective_policy = RejectPolicy.NONE
+
+        if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
+            # Ensure reject orchestrator is available (implicit enable)
+            try:
+                _ = self.reject_orchestrator
+            except Exception:  # adr002_allow
+                with contextlib.suppress(Exception):
+                    self.plugin_manager.initialize_orchestrators()
+
+            orchestrator = self.prediction_orchestrator
+
+            def _predict_fn(x_subset, **kw):
+                # Call the lower-level orchestrator implementation to avoid
+                # recursing back into CalibratedExplainer.predict.
+                if hasattr(orchestrator, "predict_internal"):
+                    return orchestrator.predict_internal(x_subset, **kw)
+                return orchestrator.predict(x_subset, **kw)
+
+            return self.reject_orchestrator.apply_policy(
+                effective_policy,
+                x,
+                explain_fn=_predict_fn,
+                bins=bins,
+                interval_summary=interval_summary,
+                **kwargs,
+            )
         # Delegate directly to the orchestrator implementation method so
         # tests that inject a minimal/mock PluginManager (with a
         # `_prediction_orchestrator` stub) can set `_predict_impl.return_value`.
@@ -1555,6 +1789,7 @@ class CalibratedExplainer:
                 classes=classes,
                 bins=bins,
                 feature=feature,
+                interval_summary=interval_summary,
                 **kwargs,
             )
         return orchestrator.predict(
@@ -1564,6 +1799,7 @@ class CalibratedExplainer:
             classes=classes,
             bins=bins,
             feature=feature,
+            interval_summary=interval_summary,
             **kwargs,
         )
 
@@ -1606,16 +1842,20 @@ class CalibratedExplainer:
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
-            return self.explanation_orchestrator.invoke_factual(
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                discretizer=discretizer,
-                _use_plugin=_use_plugin,
+            reject_policy = kwargs.pop("reject_policy", None)
+            invoke_kwargs = {
+                "x": x,
+                "threshold": threshold,
+                "low_high_percentiles": low_high_percentiles,
+                "bins": bins,
+                "features_to_ignore": features_to_ignore,
+                "discretizer": discretizer,
+                "_use_plugin": _use_plugin,
                 **kwargs,
-            )
+            }
+            if reject_policy is not None:
+                invoke_kwargs["reject_policy"] = reject_policy
+            return self.explanation_orchestrator.invoke_factual(**invoke_kwargs)
 
     def explore_alternatives(
         self,
@@ -1658,16 +1898,20 @@ class CalibratedExplainer:
         discretizer = "regressor" if "regression" in self.mode else "entropy"
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
-            return self.explanation_orchestrator.invoke_alternative(
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                discretizer=discretizer,
-                _use_plugin=_use_plugin,
+            reject_policy = kwargs.pop("reject_policy", None)
+            invoke_kwargs = {
+                "x": x,
+                "threshold": threshold,
+                "low_high_percentiles": low_high_percentiles,
+                "bins": bins,
+                "features_to_ignore": features_to_ignore,
+                "discretizer": discretizer,
+                "_use_plugin": _use_plugin,
                 **kwargs,
-            )  # type: ignore[return-value]
+            }
+            if reject_policy is not None:
+                invoke_kwargs["reject_policy"] = reject_policy
+            return self.explanation_orchestrator.invoke_alternative(**invoke_kwargs)  # type: ignore[return-value]
 
     def __call__(
         self,
@@ -1677,6 +1921,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        reject_policy: Any | None = None,
         _use_plugin: bool = True,
         _skip_instance_parallel: bool = False,
     ) -> CalibratedExplanations:
@@ -1684,31 +1929,23 @@ class CalibratedExplainer:
 
         Since v0.4.0, this method is equivalent to the `_explain` method.
         """
+        call_kwargs: dict[str, Any] = {
+            "_use_plugin": _use_plugin,
+            "_skip_instance_parallel": _skip_instance_parallel,
+        }
+        if reject_policy is not None:
+            call_kwargs["reject_policy"] = reject_policy
+
         return self._explain(
             x,
             threshold,
             low_high_percentiles,
             bins,
             features_to_ignore,
-            _use_plugin=_use_plugin,
-            _skip_instance_parallel=_skip_instance_parallel,
+            **call_kwargs,
         )
 
     def _explain(self, *args, **kwargs) -> CalibratedExplanations:
-        """Delegate to explain_internal for internal explanation orchestration."""
-        return self.explain_internal(*args, **kwargs)
-
-    def explain_internal(
-        self,
-        x,
-        threshold=None,
-        low_high_percentiles=(5, 95),
-        bins=None,
-        features_to_ignore=None,
-        *,
-        _use_plugin: bool = True,
-        _skip_instance_parallel: bool = False,
-    ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
         This is an internal orchestration primitive that delegates to the explanation orchestrator.
@@ -1730,11 +1967,31 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        # Delegate the args to the actual implementation
+        return self._explain_impl(*args, **kwargs)
+
+    def _explain_impl(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        bins=None,
+        features_to_ignore=None,
+        *,
+        reject_policy: Any | None = None,
+        _use_plugin: bool = True,
+        _skip_instance_parallel: bool = False,
+    ) -> CalibratedExplanations:
         if bins is None and self.is_mondrian():
             bins = self.bins
         # Thin delegator to orchestrator
         if _use_plugin:
             mode = self.infer_explanation_mode()
+            invoke_kwargs: dict[str, Any] = {
+                "extras": {"mode": mode, "_skip_instance_parallel": _skip_instance_parallel}
+            }
+            if reject_policy is not None:
+                invoke_kwargs["reject_policy"] = reject_policy
             return self.explanation_orchestrator.invoke(
                 mode,
                 x,
@@ -1742,7 +1999,7 @@ class CalibratedExplainer:
                 low_high_percentiles,
                 bins,
                 features_to_ignore,
-                extras={"mode": mode, "_skip_instance_parallel": _skip_instance_parallel},
+                **invoke_kwargs,
             )
 
         # Legacy path for backward compatibility and testing
@@ -1782,6 +2039,7 @@ class CalibratedExplainer:
         low_high_percentiles=(5, 95),
         bins=None,
         *,
+        reject_policy: Any | None = None,
         _use_plugin: bool = True,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data.
@@ -1821,6 +2079,7 @@ class CalibratedExplainer:
                 bins,
                 tuple(self.features_to_ignore),
                 extras={"mode": "fast"},
+                reject_policy=reject_policy,
             )
 
         # Delegate to external plugin pipeline for non-plugin path
@@ -2198,6 +2457,10 @@ class CalibratedExplainer:
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
+        if "interval_summary" not in kwargs or kwargs["interval_summary"] is None:
+            kwargs["interval_summary"] = self.interval_summary
+        else:
+            kwargs["interval_summary"] = coerce_interval_summary(kwargs["interval_summary"])
 
         if not calibrated:
             if self.mode == "regression":
@@ -2298,6 +2561,9 @@ class CalibratedExplainer:
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
 
+        # Inject default interval_summary if not provided
+        kwargs.setdefault("interval_summary", self.interval_summary)
+
         if not calibrated:
             if threshold is not None:
                 raise ValidationError(
@@ -2312,7 +2578,7 @@ class CalibratedExplainer:
 
         # Calibrated predictions
         if self.mode == "regression":
-            if isinstance(self.interval_learner, list):
+            if is_fast_interval_collection(self.interval_learner):
                 proba_1, low, high, _ = self.interval_learner[-1].predict_probability(
                     x, y_threshold=threshold, **kwargs
                 )
@@ -2325,7 +2591,7 @@ class CalibratedExplainer:
 
         # Classification - multiclass
         if self.is_multiclass():
-            if isinstance(self.interval_learner, list):
+            if is_fast_interval_collection(self.interval_learner):
                 proba, low, high, _ = self.interval_learner[-1].predict_proba(
                     x, output_interval=True, **kwargs
                 )
@@ -2336,7 +2602,7 @@ class CalibratedExplainer:
             return (proba, (low, high)) if uq_interval else proba
 
         # Classification - binary
-        if isinstance(self.interval_learner, list):
+        if is_fast_interval_collection(self.interval_learner):
             proba, low, high = self.interval_learner[-1].predict_proba(
                 x, output_interval=True, **kwargs
             )
@@ -2393,6 +2659,99 @@ class CalibratedExplainer:
             predict_function on the calibration data.
         """
         return self.predict_function(self.x_cal)
+
+    # Public alias for testing purposes (to avoid private member access in tests)
+    @property
+    def fast(self) -> bool:
+        """Whether to use fast mode.
+
+        Returns
+        -------
+        bool
+            True if fast mode is enabled.
+        """
+        return self.__fast
+
+    @fast.setter
+    def fast(self, value: bool) -> None:
+        self.__fast = value
+
+    @property
+    def _fast(self) -> bool:
+        return self.fast
+
+    @_fast.setter
+    def _fast(self, value: bool) -> None:
+        self.fast = value
+
+    @property
+    def noise_type(self) -> str:
+        """The type of noise to use.
+
+        Returns
+        -------
+        str
+            The noise type.
+        """
+        return self.__noise_type
+
+    @noise_type.setter
+    def noise_type(self, value: str) -> None:
+        self.__noise_type = value
+
+    @property
+    def _noise_type(self) -> str:
+        return self.noise_type
+
+    @_noise_type.setter
+    def _noise_type(self, value: str) -> None:
+        self.noise_type = value
+
+    @property
+    def scale_factor(self) -> float | None:
+        """The scale factor for perturbations.
+
+        Returns
+        -------
+        float | None
+            The scale factor.
+        """
+        return self.__scale_factor
+
+    @scale_factor.setter
+    def scale_factor(self, value: float | None) -> None:
+        self.__scale_factor = value
+
+    @property
+    def _scale_factor(self) -> float | None:
+        return self.scale_factor
+
+    @_scale_factor.setter
+    def _scale_factor(self, value: float | None) -> None:
+        self.scale_factor = value
+
+    @property
+    def severity(self) -> float | None:
+        """The severity of perturbations.
+
+        Returns
+        -------
+        float | None
+            The severity.
+        """
+        return self.__severity
+
+    @severity.setter
+    def severity(self, value: float | None) -> None:
+        self.__severity = value
+
+    @property
+    def _severity(self) -> float | None:
+        return self.severity
+
+    @_severity.setter
+    def _severity(self, value: float | None) -> None:
+        self.severity = value
 
 
 __all__ = ["CalibratedExplainer"]

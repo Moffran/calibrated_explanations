@@ -1,5 +1,6 @@
 import pytest
 import warnings
+from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
@@ -8,6 +9,11 @@ from calibrated_explanations.utils.exceptions import (
     DataShapeError,
     ConfigurationError,
     ValidationError,
+)
+from calibrated_explanations.plugins.intervals import (
+    IntervalCalibratorContext,
+    RegressionIntervalCalibrator,
+    ClassificationIntervalCalibrator,
 )
 from calibrated_explanations.utils import exceptions as core_exceptions
 
@@ -94,7 +100,7 @@ def test_validate_prediction_result_valid(orchestrator):
     result = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
-        orchestrator._validate_prediction_result(result)
+        orchestrator.validate_prediction_result(result)
         assert len(record) == 0
 
 
@@ -102,14 +108,14 @@ def test_validate_prediction_result_invalid_low_high(orchestrator):
     # low > high
     result = (np.array([0.5]), np.array([0.7]), np.array([0.6]), None)
     with pytest.warns(UserWarning, match="Prediction interval invariant violated"):
-        orchestrator._validate_prediction_result(result)
+        orchestrator.validate_prediction_result(result)
 
 
 def test_validate_prediction_result_invalid_predict(orchestrator):
     # predict > high
     result = (np.array([0.8]), np.array([0.4]), np.array([0.6]), None)
     with pytest.warns(UserWarning, match="Prediction invariant violated"):
-        orchestrator._validate_prediction_result(result)
+        orchestrator.validate_prediction_result(result)
 
 
 def testpredict_impl_not_fitted(orchestrator, mock_explainer):
@@ -636,6 +642,7 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
         patch.object(orchestrator, "capture_interval_calibrators") as mock_capture,
     ):
         mock_plugin = MagicMock()
+        mock_plugin.plugin_meta = {"trusted": False}  # Mark as untrusted to skip validation
         mock_plugin.create.return_value = "calibrator_instance"
         mock_resolve.return_value = (mock_plugin, "test_plugin")
 
@@ -684,9 +691,9 @@ def test_build_interval_context(orchestrator, mock_explainer):
     mock_explainer.plugin_manager.interval_context_metadata = {"default": {"stored": "meta"}}
 
     # Mock private attributes for noise config
-    mock_explainer._CalibratedExplainer__noise_type = "noise"
-    mock_explainer._CalibratedExplainer__scale_factor = 0.1
-    mock_explainer._CalibratedExplainer__severity = 0.5
+    mock_explainer.noise_type = "noise"
+    mock_explainer.scale_factor = 0.1
+    mock_explainer.severity = 0.5
     mock_explainer.seed = 42
     mock_explainer.rng = "rng"
 
@@ -773,16 +780,16 @@ def testpredict_impl_regression_probabilistic_crepes_error_reraise(orchestrator,
 
 def test_capture_interval_calibrators(orchestrator):
     context = MagicMock()
-    context.metadata = {}
+    context.plugin_state = {}
 
     # Fast mode
     orchestrator.capture_interval_calibrators(context=context, calibrator=["c1", "c2"], fast=True)
-    assert context.metadata["fast_calibrators"] == ("c1", "c2")
+    assert context.plugin_state["fast_calibrators"] == ("c1", "c2")
 
     # Default mode
-    context.metadata = {}
+    context.plugin_state = {}
     orchestrator.capture_interval_calibrators(context=context, calibrator="c1", fast=False)
-    assert context.metadata["calibrator"] == "c1"
+    assert context.plugin_state["calibrator"] == "c1"
 
 
 def testgather_interval_hints(orchestrator, mock_explainer):
@@ -815,12 +822,12 @@ def test_predict_no_cache(orchestrator, mock_explainer):
 def test_validate_prediction_result_none(orchestrator):
     result = (None, None, None, None)
     # Should not raise or warn
-    orchestrator._validate_prediction_result(result)
+    orchestrator.validate_prediction_result(result)
 
 
 def test_validate_prediction_result_empty(orchestrator):
     result = (np.array([]), np.array([]), np.array([]), None)
-    orchestrator._validate_prediction_result(result)
+    orchestrator.validate_prediction_result(result)
 
 
 def test_check_interval_runtime_metadata_requires_bins(orchestrator, mock_explainer):
@@ -1036,3 +1043,86 @@ def test_check_interval_runtime_metadata_fast_incompatible_duplicate(orchestrato
 
     error = orchestrator.check_interval_runtime_metadata(metadata, identifier="test", fast=True)
     assert "not marked fast_compatible" in error
+
+
+def test_validate_interval_calibrator_fast_mode_deep_validation_failure(
+    orchestrator, mock_explainer
+):
+    """Test that validate_interval_calibrator performs deep validation in FAST mode."""
+    from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
+
+    # Create a simple invalid calibrator class
+    class InvalidCalibrator:
+        pass
+
+    # Create a FastIntervalCalibrator with one invalid item
+    fast_calibrator = FastIntervalCalibrator([InvalidCalibrator()])
+
+    context = IntervalCalibratorContext(
+        learner=MagicMock(),
+        calibration_splits=(MagicMock(),),
+        bins={},
+        residuals={},
+        difficulty={},
+        metadata={"task": "classification"},
+        fast_flags={"fast": True},
+    )
+
+    with pytest.raises(
+        ConfigurationError, match="Interval calibrator at index 0.*is non-compliant"
+    ):
+        orchestrator.validate_interval_calibrator(
+            calibrator=fast_calibrator,
+            context=context,
+            identifier="test_plugin",
+            fast=True,
+        )
+
+
+def test_fast_interval_calibrator_protocol_compliance():
+    """Test that FastIntervalCalibrator implements the full protocol."""
+    from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
+
+    # Create a mock calibrator that implements the protocol
+    mock_calibrator = MagicMock()
+    mock_calibrator.predict_proba.return_value = None
+    mock_calibrator.predict_probability.return_value = None
+    mock_calibrator.predict_uncertainty.return_value = None
+    mock_calibrator.is_multiclass.return_value = False
+    mock_calibrator.is_mondrian.return_value = False
+    mock_calibrator.pre_fit_for_probabilistic.return_value = None
+    mock_calibrator.compute_proba_cal.return_value = None
+    mock_calibrator.insert_calibration.return_value = None
+
+    fast_calibrator = FastIntervalCalibrator([mock_calibrator])
+
+    # Check isinstance for both protocols
+    assert isinstance(fast_calibrator, ClassificationIntervalCalibrator)
+    assert isinstance(fast_calibrator, RegressionIntervalCalibrator)
+
+
+def test_build_interval_context_metadata_immutable(orchestrator, mock_explainer):
+    """Test that build_interval_context exposes immutable metadata and plugin_state."""
+    mock_explainer.mode = "classification"
+    mock_explainer.learner = MagicMock()
+    mock_explainer.x_cal = MagicMock()
+    mock_explainer.y_cal = MagicMock()
+    mock_explainer.bins = {}
+    mock_explainer.difficulty_estimator = MagicMock()
+    mock_explainer.plugin_manager.interval_context_metadata = {"default": {}}
+    mock_explainer.categorical_features = ()
+    mock_explainer.num_features = 5
+    mock_explainer.seed = None
+    mock_explainer.rng = None
+    mock_explainer.noise_type = None
+    mock_explainer.scale_factor = None
+    mock_explainer.severity = None
+    context = orchestrator.build_interval_context(fast=False, metadata={})
+
+    assert isinstance(context.metadata, MappingProxyType)
+
+    # Metadata should remain read-only; plugins should use plugin_state.
+    with pytest.raises(TypeError):
+        context.metadata["new_key"] = "value"  # type: ignore
+    context.plugin_state["new_key"] = "value"
+    assert context.plugin_state["new_key"] == "value"

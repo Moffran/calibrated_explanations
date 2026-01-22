@@ -88,6 +88,25 @@ def test_cli_untrust_command(monkeypatch, capsys):
     assert "Marked 'plugin.untrusted' as untrusted" in output
 
 
+def test_cli_report_command(monkeypatch, capsys):
+    # Mock the discovery report
+    report = types.SimpleNamespace(
+        skipped_denied=[],
+        skipped_untrusted=[],
+        checksum_failures=[],
+        accepted=[],
+    )
+
+    monkeypatch.setattr(cli_module, "load_entrypoint_plugins", lambda include_untrusted: None)
+    monkeypatch.setattr(cli_module, "get_discovery_report", lambda: report)
+
+    exit_code = cli_module.main(["report"])
+
+    _ = capsys.readouterr().out
+    assert exit_code == 0
+    # The _emit_discovery_report should be called, but since the report is empty, it should print nothing or minimal output
+
+
 def test_cli_trust_missing(monkeypatch, capsys):
     def mark(identifier):
         raise KeyError(f"Plugin '{identifier}' not found")

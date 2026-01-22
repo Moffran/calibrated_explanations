@@ -144,8 +144,8 @@ class TestInstanceParallelExecutor:
         executor = InstanceParallelExplainExecutor()
 
         # Sequential plugin should be created and stored
-        assert hasattr(executor, "_sequential_plugin")
-        assert executor._sequential_plugin is not None
+        assert hasattr(executor, "sequential_plugin")
+        assert executor.sequential_plugin is not None
 
 
 # class TestFeatureParallelExecutor:

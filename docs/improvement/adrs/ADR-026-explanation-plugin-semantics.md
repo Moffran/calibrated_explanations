@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-026 — Explanation Plugin Semantics and Legacy Contracts
 
@@ -74,6 +74,10 @@ clear contract without duplicating the in-tree implementation details.
   truncated output. `[low, high]` pairs that do not contain their `predict`
   component are nonsensical in this system, and silently accepting them
   reintroduces the very calibration drift these ADRs forbid.
+* `_PredictBridgeMonitor` is the enforcement mechanism: it tracks whether the
+  bridge was invoked, raises configuration errors when calls are missing, and
+  surfaces invariant violations as hard failures with plugin identifiers in the
+  error payload so authors can quickly diagnose broken plugin outputs.
 * The built-in adapters demonstrate the contract by invoking the bridge before
   delegating to the legacy `CalibratedExplainer` methods. New implementations may
   discard the return value but must perform a calibrated call so telemetry and

@@ -5,6 +5,74 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...main)
 
+### Changed
+
+- **requirements.txt cleanup:** Updated requirements.txt to include only core runtime dependencies, strictly matching [project.dependencies] in pyproject.toml. Removed dev, viz, eval, and notebook dependencies. Rationale: Ensures pip installs and CI are minimal and consistent with canonical dependency list (see ADR-010, .github/copilot-instructions.md).
+
+### Fixed
+
+- **Fast Feature Filtering Integration:** Fixed a critical issue where the FAST feature filtering logic (ADR-027) was implemented but not invoked during factual/alternative explanation requests. Feature filtering now correctly runs the lightweight FAST pass and filters features according to the configuration.
+- **Test additions:** Added deterministic unit tests to exercise `ExplanationRequest` freezing/validation and the FAST feature filter behaviour to improve CI coverage and ensure adherence to ADR-030 testing priorities.
+
+### Added
+
+- **ADR-029: Reject policy orchestration (v0.10.2):** Added the `RejectPolicy` enum, `RejectResult` envelope, and `RejectOrchestrator` registry, wiring per-call and explainer-level policies through prediction/explanation entry points while keeping `NONE` fully backward compatible. Documented usage in `docs/improvement/reject_policy_usage.md` and linked ADR-029 into the release notes.
+- **Plugin discovery & CLI diagnostics:** Added `PluginDiscoveryReport` to surface accepted/skipped plugins, `ce.plugins report`, and `ce.plugins list --include-skipped` for diagnostic output; included unit tests for the API and CLI formatting.
+
+- **Parity reference harness & canonical fixtures:** Added `tests/parity_reference/run_parity_reference.py`, canonical datasets, and golden fixtures for classification, regression, multiclass, and probabilistic regression. Added `parity_compare` helper tests and CI parity job to run the harness across datasets; this harness is the canonical OSS parity/regression gate.
+
+- **ADR-030: Private Member Usage Remediation and CI Anti-Pattern Audit:** Remediated private-member usage in tests and added a CI anti-pattern audit to fail on new anti-patterns.
+- **ADR-028 & Standard-005: Normalized Logging & Context Propagation:** Implemented structured logging domains and threaded context propagation across the core engine.
+  - Normalized logger namespaces (e.g., `calibrated_explanations.core.explain`, `calibrated_explanations.plugins.registry`) for consistent filtering.
+  - Introduced `logging_context` usage in `PredictionOrchestrator` and `ExplanationOrchestrator` to automatically tag logs with `explainer_id` and `plugin_identifier`.
+  - Updated `PluginRegistry` to propagate logging context during plugin lifecycle events.
+  - Added "Logging and Observability" guidelines to `CONTRIBUTING.md` and `optional_telemetry.md`, enforcing Standard-005 governance.
+
+- **ADR-013 gap closure (v0.10.2_plan):** Interval context metadata is now guarded by `MappingProxyType` and plugins receive a mutable `plugin_state` scratch pad, letting orchestrator resets keep metadata immutable while still exposing per-plugin storage. Tests and the plugin contract guide were updated to clarify the new behaviour.
+- **ADR-027 gap closure (v0.10.2_plan):** FAST feature filtering now emits governance-domain logs via `calibrated_explanations.governance.feature_filter` for skips, errors, and strict-observability warnings, with Standard-005-aligned structured examples documented in the performance tuning guide and logging standard plus mentions in the governance telemetry reference.
+- **Practitioner docs:** Added `docs/practitioner/advanced/reject-policy.md` (linked from `docs/practitioner/advanced/index.md`) so users can learn about default vs per-call `RejectPolicy` wiring, the `RejectResult` envelope, and how `WrapCalibratedExplainer` reuses the same knobs.
+
+- **Release Task 6 (v0.10.2_plan.md):** Completed enforcement of zero private member usage in tests for v0.10.2. Pruned private_member_allowlist.json to legacy-only entries expiring v0.11.0. Refactored core violations to public APIs, including public properties for pyproject settings (fast, noise_type, scale_factor, severity), public aliases for CLI functions, and public method aliases for internal logic. Dead code violations resolved via public aliases. CI now enforces zero unallowlisted private member access.
+
+- **ADR-021 & ADR-026: Extended Telemetry and Payload Hardening:** Enhanced runtime payloads with deeper telemetry and enforced invariant safety for v1.0.0-rc.
+  - Surfaced FAST probability cubes and interval dependency hints in runtime payloads for enhanced transparency.
+  - Implemented frozen bin metadata to ensure deterministic explanation reconstruction across serialization boundaries.
+  - Enforced calorie-aligned interval safety across all explanation bridges, strictly maintaining `low <= predict <= high` invariants.
+  - Hardened JSON serialization to support complex nested telemetry and metadata objects.
+
+- **ADR-010: Optional Dependency Split + Packaging Compliance:** Completed lean core installation with optional extras for visualization, notebooks, and evaluation. Core dependencies now exclude heavy packages like `ipython`, `lime`, and `matplotlib`, moved to appropriate extras (`viz`, `notebooks`, `eval`). Added pytest hook to auto-skip visualization tests when `matplotlib` is unavailable. Provided evaluation lockfiles (`evaluation/requirements.txt` and `evaluation/environment.yml`) aligned with `[eval]` extras. Updated documentation in README and CONTRIBUTING for extras usage.
+
+- **ADR-015: Explanation Plugin Integration Hardening:** Delivered protocol-validated explanation plugins with trust enforcement, canonical reconstruction, and immutable handles.
+  - Implemented `FastExplanationPlugin` as the canonical v1-compliant plugin for fast explanations, replacing legacy internal logic.
+  - Hardened `CalibratedExplanations.from_batch` to ensure full instance reconstruction from batch payloads, preventing bypass of canonical initialization even when a template is provided.
+  - Implemented security warnings for untrusted explanation plugins used via explicit overrides in `ExplanationOrchestrator`, ensuring user awareness of potential risks.
+  - Aligned plugin discovery with `CE_TRUST_PLUGIN` and `CE_DENY_PLUGIN` environment variables for consistent security posture.
+  - Enforced immutable `ExplainerHandle` and `ExplanationContext` for plugin interaction, preventing side-effects on core state.
+  - Added comprehensive hardening tests in `tests/unit/plugins/test_adr015_hardening.py` to verify ADR-015 compliance.
+  - Added trusted-only enforcement warnings for explicit explanation plugin overrides, smoke coverage for in-tree FAST plugin registration, and clarified ADR-015 environment variable documentation.
+
+- **ADR-013: Interval Plugin Protocol Compliance:** Delivered protocol-validated interval calibrators with frozen contexts and CLI diagnostics.
+  - Implemented `FastIntervalCalibrator` wrapper for per-feature calibrator lists with all required protocol methods.
+  - Added runtime protocol validation in `PredictionOrchestrator.validate_interval_calibrator()` for `ClassificationIntervalCalibrator` and `RegressionIntervalCalibrator` compliance.
+  - Implemented context freezing with `_freeze_context_value()` to prevent plugin mutations while keeping metadata mutable.
+  - Updated `LegacyIntervalCalibratorPlugin.create()` to reuse cached calibrators, eliminating redundant initialization.
+  - Added CLI diagnostics: `ce.plugins validate-interval --plugin <id>` and `ce.plugins explain-interval --plugin <id>` for plugin validation and configuration details.
+
+- **ADR-006: Plugin Trust Controls and Diagnostics:** Implemented opt-in trust model for third-party plugins with deny list enforcement, discovery diagnostics, and security documentation.
+  - Constrained trust-by-default to in-tree plugins; third-party plugins require explicit approval via `CE_TRUST_PLUGIN` or `pyproject.toml` configuration.
+  - Implemented `CE_DENY_PLUGIN` enforcement at discovery and registration gates.
+  - Added `PluginDiscoveryReport` to track accepted, skipped, and denied plugins; exposed via `ce.plugins list --verbose`.
+  - Documented "no sandbox" security warning in `docs/plugins.md` with guidance for operators and plugin authors.
+
+- **ADR-027: FAST-Based Feature Filtering Finalization:** Completed implementation with observability policy alignment, metadata documentation, and performance tuning examples.
+  - Aligned runtime logging to emit debug messages by default, with warnings only in strict observability mode (`CE_STRICT_OBSERVABILITY`).
+  - Added detailed debug logs for per-instance and global feature acceptance/rejection in FAST filtering to trace accepted/rejected features.
+  - Renamed `features_to_ignore_per_instance` to `feature_filter_per_instance_ignore` across the codebase to align with internal naming conventions.
+  - Documented `feature_filter_per_instance_ignore` metadata in API reference for transparency and debugging.
+  - Added performance tuning guide in `docs/practitioner/performance-tuning.md` with configuration examples and telemetry event descriptions.
+
+- **Interval Summary Selection (Release Task 10):** Added `IntervalSummary` enum logic to `CalibratedExplainer`, `PredictionOrchestrator`, and `ExplainOrchestrator` to support choosing between `regularized_mean` (default), `mean`, `lower`, and `upper` for probabilistic predictions and explanations. Updated `predict_proba`, `predict_calibrated`, `explain_factual`, and `explore_alternatives` (including legacy paths) to respect the selected summary strategy.
+
 ## [v0.10.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.1) - 2026-01-01
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...v0.10.1)
@@ -118,7 +186,7 @@
 
 ### Release Plan Alignment (v0.9.1)
 
-- **Governance & observability hardening (Standard-017/018/019, ADR-020).** Added a per-module coverage gate script with suffix-aware path matching so Standard-019 thresholds are enforced in CI, tightened the `test` workflow to keep the core-only matrix from uploading coverage while still running the full gate on the main job, and switched editable installs for local test runs to reduce dependency skew. An accompanying notebook API auditor tracks use of the documented legacy surface (ADR-020) to keep examples in lockstep with the contract.【F:scripts/check_coverage_gates.py†L1-L102】【F:.github/workflows/test.yml†L33-L99】【F:scripts/audit_notebook_api.py†L1-L144】
+- **Governance & observability hardening (Standard-001/018/019, ADR-020).** Added a per-module coverage gate script with suffix-aware path matching so Standard-003 thresholds are enforced in CI, tightened the `test` workflow to keep the core-only matrix from uploading coverage while still running the full gate on the main job, and switched editable installs for local test runs to reduce dependency skew. An accompanying notebook API auditor tracks use of the documented legacy surface (ADR-020) to keep examples in lockstep with the contract.【F:scripts/check_coverage_gates.py†L1-L102】【F:.github/workflows/test.yml†L33-L99】【F:scripts/audit_notebook_api.py†L1-L144】
 - **Runtime safety and regression coverage:** Added focused CalibratedExplainer regression tests that assert out-of-bag errors propagate, categorical features infer from label mappings, plugin override coercion handles callables/objects, and plugin manager requirements raise clear errors, strengthening the runtime guardrails promised for v0.9.1.【F:tests/unit/core/test_calibrated_explainer_runtime_helpers.py†L1-L220】
 - **Plugin fallback and serialization reliability:** Covered deprecated CalibratedExplainer surfaces with deletion-coupling notes and new tests for plugin fallback chains, interval regressors, and JSON round-trips so the v0.9.1 release ships with explicit removal guidance and resilient persistence paths.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1125-L1914】【F:tests/unit/core/test_calibrated_explainer_additional.py†L1-L200】【F:tests/unit/core/test_calibrated_explainer_plugin_fallbacks.py†L1-L200】【F:tests/unit/core/test_interval_regressor.py†L1-L260】【F:tests/unit/test_serialization.py†L1-L220】
 - **Documentation standardisation.** Expanded the practitioner hub with an explicit wrapper-vs-direct API comparison so parity requirements from the governance plan remain visible, and published a researcher "future work" ledger to keep calibration and interval-regression research directions discoverable alongside the quickstarts.【F:docs/practitioner/index.md†L1-L34】【F:docs/practitioner/task_api_comparison.md†L1-L92】【F:docs/researcher/future_work.md†L1-L109】
@@ -259,7 +327,7 @@
 - **Research-forward storytelling (Task 5):** Maintained research hub call-outs
   across README, overview, and concept guides so every onboarding path links to
   `docs/research/` and `citing.md`, reinforcing the calibration pedigree.【F:README.md†L22-L60】【F:docs/overview/index.md†L1-L62】【F:docs/citing.md†L1-L140】
-- **Standard-018/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
+- **Standard-002/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
   notebook lint to blocking status, retired transitional core/plot shims (removing
   `legacy/_interval_regressor.py`, `legacy/_venn_abers.py`, and `legacy/_plots*.py`),
   and tightened coverage thresholds to 88% alongside Codecov patch gates that focus
@@ -298,7 +366,7 @@
   (`docs/practitioner/advanced/use_plugins.md`), and surfaced the curated
   `external-plugins` install extra in installation docs. Cross-links to the
   external plugin index were added to ensure a coherent, optional plugin story
-  aligned with STD-027 and the plugin ADRs (ADR-006/014/026).【F:docs/plugins.md†L1-L80】【F:docs/practitioner/advanced/use_plugins.md†L1-L200】【F:docs/get-started/installation.md†L1-L120】【F:docs/appendices/external_plugins.md†L1-L160】
+  aligned with Standard-004 and the plugin ADRs (ADR-006/014/026).【F:docs/plugins.md†L1-L80】【F:docs/practitioner/advanced/use_plugins.md†L1-L200】【F:docs/get-started/installation.md†L1-L120】【F:docs/appendices/external_plugins.md†L1-L160】
 - Added runtime performance tuning, governance checklists, and optional telemetry
   guides so compliance and SRE flows stay audience scoped.【F:docs/how-to/tune_runtime_performance.md†L1-L140】【F:docs/governance/release_checklist.md†L40-L92】
 
@@ -308,7 +376,7 @@
   navigation smoke tests, and linkcheck remain blocking, and elevated docstring
   coverage thresholds to 94% via lint automation.【F:.github/workflows/docs.yml†L19-L40】【F:.github/workflows/lint.yml†L38-L86】
 - Raised global coverage minimums to 88% and tightened Codecov calibration
-  patch targets so Standard-019 enforcement captures runtime changes.【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
+  patch targets so Standard-003 enforcement captures runtime changes.【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
 
 ### Tests & Tooling
 
@@ -316,7 +384,7 @@
   legacy plotting regression tests, and introduced performance benchmarks and
   telemetry hooks to monitor the new runtime toggles.【F:tests/plugins/test_builtins_module.py†L1-L180】【F:tests/legacy/test_plotting.py†L1-L200】【F:evaluation/scripts/compare_explain_performance.py†L1-L200】
 - Refreshed reports documenting docstring coverage baselines and lint outputs to
-  back Standard-018's blocking rollout.【F:reports/docstring_coverage_20251025.txt†L1-L32】【F:reports/pydocstyle-baseline.txt†L1-L120】
+  back Standard-002's blocking rollout.【F:reports/docstring_coverage_20251025.txt†L1-L32】【F:reports/pydocstyle-baseline.txt†L1-L120】
 
 
 
@@ -337,7 +405,7 @@
 - Promoted PlotSpec rendering to the canonical pipeline by introducing the
   snake_case `calibrated_explanations.plotting` module, moving legacy
   Matplotlib helpers into `legacy/plotting.py`, and keeping `_plots*` only as
-  warning shims to satisfy Standard-017 phase-two renames. Runtime and tests now
+  warning shims to satisfy Standard-001 phase-two renames. Runtime and tests now
   import from the new modules, and telemetry records the PlotSpec defaults for
   auditability.
 - Raised pytest's coverage floor to 85% and enabled Codecov patch gating on calibration/runtime modules, keeping CI focused on uncertainty-critical paths.
@@ -381,16 +449,16 @@
 
 - ADR-013 and ADR-015 marked Accepted with implementation notes summarising the
   registry-backed runtime.
-- Standard-017/Standard-018 ratified with quick-reference style excerpts in
+- Standard-001/Standard-002 ratified with quick-reference style excerpts in
   `CONTRIBUTING.md` and contributor docs.
-- Harmonised `core.validation` docstrings with numpy-style lint guardrails (Standard-018).
+- Harmonised `core.validation` docstrings with numpy-style lint guardrails (Standard-002).
 
 ### CI
 
 - Shared `.coveragerc` published and the test workflow now enforces
-  `--cov-fail-under=80` to meet Standard-019 phase 1 requirements (with gradual increase for each new version).
+  `--cov-fail-under=80` to meet Standard-003 phase 1 requirements (with gradual increase for each new version).
 - Lint workflow surfaces Ruff naming warnings and docstring lint/coverage
-  reports, providing guardrails for Standard-017/Standard-018 adoption.
+  reports, providing guardrails for Standard-001/Standard-002 adoption.
 
 #### Public API updates in v0.7.0
 This document summarises the signature adjustments introduced while aligning the
@@ -430,7 +498,7 @@ and notebooks accordingly.【F:src/calibrated_explanations/explanations/explanat
 
 ### Fixed
 
-- Fixed test helper stubs and plugin descriptors to satisfy Ruff naming guardrails (Standard-017), keeping `ruff check --select N` green.
+- Fixed test helper stubs and plugin descriptors to satisfy Ruff naming guardrails (Standard-001), keeping `ruff check --select N` green.
 
 ## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 

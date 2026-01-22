@@ -8,7 +8,9 @@ import numpy as np
 from crepes import ConformalClassifier
 from crepes.extras import hinge
 
+from ...explanations.reject import RejectResult
 from ...utils.exceptions import ValidationError
+from .policy import RejectPolicy
 
 
 class RejectOrchestrator:
@@ -16,6 +18,13 @@ class RejectOrchestrator:
 
     def __init__(self, explainer: Any) -> None:
         self.explainer = explainer
+        # Lightweight registry for reject strategies. Keys are string identifiers
+        # (e.g., 'builtin.default') and values are callables with the same
+        # signature as `apply_policy` that return a `RejectResult`.
+        self._strategies: dict[str, Any] = {}
+        # Register the builtin default strategy preserving existing semantics
+        # under the well-known identifier `builtin.default`.
+        self.register_strategy("builtin.default", self._builtin_strategy)
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
         """Initialize the reject learner with a threshold value."""
@@ -87,3 +96,148 @@ class RejectOrchestrator:
 
         rejected = np.sum(prediction_set, axis=1) != 1
         return rejected, error_rate, reject_rate
+
+    def apply_policy(
+        self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
+    ):
+        """Apply a `RejectPolicy` to inputs and optionally produce predictions/explanations.
+
+        Parameters
+        ----------
+        policy : RejectPolicy
+            Selected by the caller.
+        x :
+            Input instances.
+        explain_fn : callable, optional
+            Callable `explain_fn(x_subset, **kwargs)` returning explanations.
+        bins :
+            Passed to reject prediction.
+        confidence : float, default 0.95
+            Passed to reject prediction.
+
+        Returns
+        -------
+        RejectResult
+            Envelope with `prediction`, `explanation`, `rejected`, `policy`, and `metadata`.
+        """
+        # Allow callers to select a strategy identifier via the `strategy` kwarg.
+        # By default, resolve to `builtin.default` which preserves legacy semantics.
+        strategy_name = kwargs.pop("strategy", None)
+        strategy = self.resolve_strategy(strategy_name)
+        return strategy(
+            policy, x, explain_fn=explain_fn, bins=bins, confidence=confidence, **kwargs
+        )
+
+    # --- Registry helpers -------------------------------------------------
+    def register_strategy(self, name: str, fn: Any) -> None:
+        """Register a reject strategy callable under *name*.
+
+        The callable must accept the same parameters as `apply_policy` and
+        return a `RejectResult`.
+        """
+        if not isinstance(name, str) or not name:
+            raise ValidationError("strategy name must be a non-empty string")
+        if not callable(fn):
+            raise ValidationError("strategy must be callable")
+        self._strategies[name] = fn
+
+    def resolve_strategy(self, identifier: str | None):
+        """Resolve a registered strategy by identifier.
+
+        If *identifier* is None, return the builtin default strategy.
+        Raises KeyError when an unknown identifier is requested.
+        """
+        if identifier is None:
+            # default fallback
+            try:
+                return self._strategies["builtin.default"]
+            except KeyError as exc:
+                raise KeyError("builtin.default strategy not registered") from exc
+        if identifier in self._strategies:
+            return self._strategies[identifier]
+        raise KeyError(f"Reject strategy '{identifier}' is not registered")
+
+    # --- Builtin strategy (preserve previous apply_policy impl) -----------
+    def _builtin_strategy(
+        self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
+    ):
+        """Builtin strategy that preserves the previous `apply_policy` semantics."""
+        try:
+            policy = RejectPolicy(policy)
+        except Exception:  # adr002_allow
+            policy = RejectPolicy.NONE
+
+        # If NONE, return a simple envelope indicating no action
+        if policy is RejectPolicy.NONE:
+            return RejectResult(
+                prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
+            )
+
+        # Ensure reject learner is initialized (implicit enable)
+        if getattr(self.explainer, "reject_learner", None) is None:
+            # Best-effort initialization using explainer calibration set
+            try:
+                self.initialize_reject_learner()
+            except Exception:  # adr002_allow
+                # If initialization fails, surface minimal metadata but continue
+                return RejectResult(
+                    prediction=None,
+                    explanation=None,
+                    rejected=None,
+                    policy=policy,
+                    metadata={"init_error": True},
+                )
+
+        rejected, error_rate, reject_rate = self.predict_reject(x, bins=bins, confidence=confidence)
+
+        prediction = None
+        explanation = None
+
+        # Obtain predictions when requested by policy
+        if policy in (
+            RejectPolicy.PREDICT_AND_FLAG,
+            RejectPolicy.EXPLAIN_ALL,
+            RejectPolicy.EXPLAIN_REJECTS,
+            RejectPolicy.EXPLAIN_NON_REJECTS,
+            RejectPolicy.SKIP_ON_REJECT,
+        ):
+            # Delegate to explainer's public predict method. To avoid
+            # re-entering the reject orchestration (which would cause
+            # recursion), signal the explainer to skip reject handling for
+            # this inner prediction by setting an internal-only flag.
+            try:
+                inner_kwargs = dict(kwargs) if kwargs is not None else {}
+                inner_kwargs["_ce_skip_reject"] = True
+                prediction = self.explainer.predict(x, **inner_kwargs)
+            except Exception:  # adr002_allow
+                prediction = None
+
+        # Obtain explanations via provided callable according to policy
+        if explain_fn is not None:
+            try:
+                if policy is RejectPolicy.EXPLAIN_ALL:
+                    explanation = explain_fn(x, **kwargs)
+                elif policy is RejectPolicy.EXPLAIN_REJECTS:
+                    # explain only rejected instances
+                    idx = [i for i, r in enumerate(rejected) if r]
+                    explanation = explain_fn([x[i] for i in idx], **kwargs) if idx else None
+                elif (
+                    policy is RejectPolicy.EXPLAIN_NON_REJECTS
+                    or policy is RejectPolicy.SKIP_ON_REJECT
+                ):
+                    idx = [i for i, r in enumerate(rejected) if not r]
+                    explanation = explain_fn([x[i] for i in idx], **kwargs) if idx else None
+                elif policy is RejectPolicy.PREDICT_AND_FLAG:
+                    # do not generate explanations, only flag
+                    explanation = None
+            except Exception:  # adr002_allow
+                explanation = None
+
+        metadata = {"error_rate": error_rate, "reject_rate": reject_rate}
+        return RejectResult(
+            prediction=prediction,
+            explanation=explanation,
+            rejected=rejected,
+            policy=policy,
+            metadata=metadata,
+        )

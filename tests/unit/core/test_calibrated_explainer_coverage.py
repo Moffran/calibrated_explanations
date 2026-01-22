@@ -157,7 +157,7 @@ def test_explain_factual_delegates(mock_learner, mock_plugin_manager):
     args, kwargs = (
         mock_plugin_manager.return_value.explanation_orchestrator.invoke_factual.call_args
     )
-    assert args[0] is x_test
+    assert kwargs["x"] is x_test
 
 
 def test_explore_alternatives_delegates(mock_learner, mock_plugin_manager):
@@ -172,7 +172,7 @@ def test_explore_alternatives_delegates(mock_learner, mock_plugin_manager):
     args, kwargs = (
         mock_plugin_manager.return_value.explanation_orchestrator.invoke_alternative.call_args
     )
-    assert args[0] is x_test
+    assert kwargs["x"] is x_test
 
 
 def test_explain_fast_delegates(mock_learner, mock_plugin_manager):
@@ -750,7 +750,7 @@ def test_enable_fast_mode_resets_on_error(mock_learner):
     with (
         patch.object(
             explainer,
-            "_CalibratedExplainer__initialize_interval_learner_for_fast_explainer",
+            "initialize_interval_learner_for_fast_explainer",
             side_effect=RuntimeError("boom"),
         ),
         pytest.raises(RuntimeError, match="boom"),
@@ -769,13 +769,13 @@ def test_explain_mondrian_bins_and_legacy_path(mock_learner, mock_plugin_manager
     x_test = np.array([[3, 4]])
     explainer.explanation_orchestrator.invoke_factual.return_value = "factual"
     explainer.explain_factual(x_test)
-    args, _ = explainer.explanation_orchestrator.invoke_factual.call_args
-    assert args[3] is explainer.bins
+    _, kwargs = explainer.explanation_orchestrator.invoke_factual.call_args
+    assert kwargs["bins"] is explainer.bins
 
     explainer.explanation_orchestrator.invoke_alternative.return_value = "alternative"
     explainer.explore_alternatives(x_test)
-    args, _ = explainer.explanation_orchestrator.invoke_alternative.call_args
-    assert args[3] is explainer.bins
+    _, kwargs = explainer.explanation_orchestrator.invoke_alternative.call_args
+    assert kwargs["bins"] is explainer.bins
 
     with patch("calibrated_explanations.core.explain.legacy_explain") as mock_legacy:
         mock_legacy.return_value = "legacy"
@@ -1178,49 +1178,44 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
         mock_invoke.assert_called_once()
 
     # __call__
-    with patch.object(explainer, "explain_internal") as mock_explain:
+    with patch.object(explainer, "_explain") as mock_explain:
         explainer(x_cal)
         mock_explain.assert_called_once()
 
-    # explain_internal with legacy path
-    with patch("calibrated_explanations.core.explain.legacy_explain") as mock_legacy:
-        explainer.explain_internal(x_cal, _use_plugin=False)
-        mock_legacy.assert_called_once()
+    # explain_fast with legacy path
+    import external_plugins.fast_explanations.pipeline as fast_pipeline_mod
 
-        # explain_fast with legacy path
-        import external_plugins.fast_explanations.pipeline as fast_pipeline_mod
+    with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_pipeline:
+        explainer.explain_fast(x_cal, _use_plugin=False)
+        mock_pipeline.assert_called()
 
-        with patch.object(fast_pipeline_mod, "FastExplanationPipeline") as mock_pipeline:
-            explainer.explain_fast(x_cal, _use_plugin=False)
-            mock_pipeline.assert_called()
+    # explain_lime
+    import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 
-        # explain_lime
-        import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
+    with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
+        explainer.explain_lime(x_cal)
+        mock_lime.assert_called()
 
-        with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
-            explainer.explain_lime(x_cal)
-            mock_lime.assert_called()
+    # explain_shap
+    import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
 
-        # explain_shap
-        import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
+    with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
+        explainer.explain_shap(x_cal)
+        mock_shap.assert_called()
 
-        with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
-            explainer.explain_shap(x_cal)
-            mock_shap.assert_called()
+    # is_lime_enabled / is_shap_enabled
+    explainer.is_lime_enabled(True)
+    explainer.is_lime_enabled(False)
+    explainer.is_lime_enabled()
+    explainer.is_shap_enabled(True)
+    explainer.is_shap_enabled(False)
+    explainer.is_shap_enabled()
 
-        # is_lime_enabled / is_shap_enabled
-        explainer.is_lime_enabled(True)
-        explainer.is_lime_enabled(False)
-        explainer.is_lime_enabled()
-        explainer.is_shap_enabled(True)
-        explainer.is_shap_enabled(False)
-        explainer.is_shap_enabled()
-
-        # is_multiclass
-        explainer.num_classes = 3
-        assert explainer.is_multiclass() is True
-        explainer.num_classes = 2
-        assert explainer.is_multiclass() is False
+    # is_multiclass
+    explainer.num_classes = 3
+    assert explainer.is_multiclass() is True
+    explainer.num_classes = 2
+    assert explainer.is_multiclass() is False
 
     # is_fast
     assert explainer.is_fast() is False

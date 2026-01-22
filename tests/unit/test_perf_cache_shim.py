@@ -16,4 +16,4 @@ def testperf_cache_shim_warns_and_forwards(monkeypatch):
     assert perf_cache.CacheConfig.__name__ == canonical.CacheConfig.__name__
     assert perf_cache.CalibratorCache.__name__ == canonical.CalibratorCache.__name__
     assert perf_cache.default_size_estimator.__name__ == canonical.default_size_estimator.__name__
-    assert perf_cache._hash_part.__name__ == canonical._hash_part.__name__
+    assert perf_cache.hash_part.__name__ == canonical.hash_part.__name__

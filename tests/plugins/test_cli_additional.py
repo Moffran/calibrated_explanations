@@ -54,7 +54,7 @@ def test_emit_explanation_descriptor_reports_fallbacks(monkeypatch, capsys):
         cli, "is_identifier_denied", lambda identifier: identifier == "demo.explainer"
     )
 
-    cli._emit_explanation_descriptor(descriptor)
+    cli.emit_explanation_descriptor(descriptor)
 
     out = capsys.readouterr().out
     assert "fallbacks=core" in out
@@ -69,7 +69,7 @@ def test_emit_interval_descriptor_marks_denied_plugins(monkeypatch, capsys):
     )
     monkeypatch.setattr(cli, "is_identifier_denied", lambda identifier: True)
 
-    cli._emit_interval_descriptor(descriptor)
+    cli.emit_interval_descriptor(descriptor)
 
     out = capsys.readouterr().out
     assert "denied via CE_DENY_PLUGIN" in out
@@ -88,7 +88,7 @@ def test_emit_plot_descriptor_includes_extras(capsys):
         },
     )
 
-    cli._emit_plot_descriptor(descriptor)
+    cli.emit_plot_descriptor(descriptor)
 
     out = capsys.readouterr().out
     assert "is_default=yes" in out
@@ -110,21 +110,21 @@ def test_emit_plot_builder_descriptor_reports_legacy(monkeypatch, capsys):
         },
     )
 
-    cli._emit_plot_builder_descriptor(descriptor)
+    cli.emit_plot_builder_descriptor(descriptor)
 
     out = capsys.readouterr().out
     assert "legacy_compatible=yes" in out
 
 
 def test_cmd_list_handles_empty_sections(monkeypatch, capsys):
-    args = SimpleNamespace(kind="all", trusted_only=False)
+    args = SimpleNamespace(kind="all", trusted_only=False, verbose=False)
     monkeypatch.setattr(cli, "list_explanation_descriptors", lambda trusted_only: [])
     monkeypatch.setattr(cli, "list_interval_descriptors", lambda trusted_only: [])
     monkeypatch.setattr(cli, "list_plot_builder_descriptors", lambda trusted_only: [])
     monkeypatch.setattr(cli, "list_plot_renderer_descriptors", lambda trusted_only: [])
     monkeypatch.setattr(cli, "list_plot_style_descriptors", lambda: [])
 
-    exit_code = cli._cmd_list(args)
+    exit_code = cli.cmd_list(args)
 
     assert exit_code == 0
     out = capsys.readouterr().out
@@ -136,7 +136,7 @@ def test_cmd_show_for_plot_styles(monkeypatch, capsys):
     monkeypatch.setattr(cli, "find_plot_style_descriptor", lambda identifier: descriptor)
 
     args = SimpleNamespace(identifier="demo.plot", kind="plots")
-    exit_code = cli._cmd_show(args)
+    exit_code = cli.cmd_show(args)
 
     assert exit_code == 0
     out = capsys.readouterr().out
@@ -154,7 +154,7 @@ def test_cmd_trust_uses_renderer_marker(monkeypatch, capsys):
     monkeypatch.setattr(cli, "mark_plot_renderer_trusted", mark)
     args = SimpleNamespace(identifier="demo.renderer", kind="plot-renderers", action="trust")
 
-    exit_code = cli._cmd_trust(args)
+    exit_code = cli.cmd_trust(args)
 
     assert exit_code == 0
     out = capsys.readouterr().out

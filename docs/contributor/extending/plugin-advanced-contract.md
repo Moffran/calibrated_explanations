@@ -37,6 +37,10 @@ export CE_PLOT_STYLE_FALLBACKS="fallback.plot,legacy"
 For **explanation plugins**, use:
 
 ```bash
+# Top-level defaults (applies across modes; fast has its own default)
+export CE_EXPLANATION_PLUGIN="external.hello.explanation"
+export CE_EXPLANATION_PLUGIN_FAST="external.hello.fast"
+
 # Set fallback chain for a specific mode
 export CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS="external.hello.explanation,core.explanation.factual"
 export CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS="external.hello.alternative"
@@ -92,7 +96,7 @@ behavior across development and distribution.
 ### Configuration structure
 
 ```toml
-[tool.calibrated-explanations.plots]
+[tool.calibrated_explanations.plots]
 # Primary plot style selector
 style = "my.custom.plot"
 
@@ -103,16 +107,18 @@ style_fallbacks = [
     "legacy",
 ]
 
-[tool.calibrated-explanations.intervals]
-# Primary interval calibrator plugin
-plugin = "external.hello.interval"
+# Primary interval calibrator plugin (default/fast mode)
+[tool.calibrated_explanations.intervals]
+default = "external.hello.interval"
+fast = "core.interval.fast"
 
 # Fallback chain
-fallbacks = [
+default_fallbacks = [
     "core.interval.legacy",
 ]
+fast_fallbacks = ["core.interval.fast", "core.interval.legacy"]
 
-[tool.calibrated-explanations.explanations]
+[tool.calibrated_explanations.explanations]
 # Per-mode plugin configuration
 factual = "external.hello.explanation"
 alternative = "core.explanation.alternative"
@@ -128,7 +134,7 @@ When your package includes a plot plugin, document project defaults in `pyprojec
 name = "my-calibrated-plots"
 dependencies = ["calibrated-explanations>=0.9.0"]
 
-[tool.calibrated-explanations.plots]
+[tool.calibrated_explanations.plots]
 style = "my.beautiful.plot"
 style_fallbacks = ["plot_spec.default", "legacy"]
 ```
@@ -142,7 +148,7 @@ When multiple configuration methods are active, this priority order applies:
 
 1. Explainer parameter: `CalibratedExplainer(..., plot_style="explicit")`
 2. Environment variable: `CE_PLOT_STYLE="from_env"`
-3. pyproject.toml: `[tool.calibrated-explanations.plots] style = "from_project"`
+3. pyproject.toml: `[tool.calibrated_explanations.plots] style = "from_project"`
 4. Explanation plugin metadata: `"plot_dependency": "from_plugin"`
 5. Default fallback: `"plot_spec.default"` → `"legacy"`
 
@@ -303,6 +309,8 @@ The registry honours both ``CE_TRUST_PLUGIN`` and ``CE_DENY_PLUGIN`` environment
 variables.
 
 - ``CE_TRUST_PLUGIN`` lists identifiers that should be trusted on discovery.
+- ``[tool.calibrated_explanations.plugins] trusted = ["id"]`` in ``pyproject.toml`` can
+  be used for a versioned allowlist of trusted identifiers.
 - ``CE_DENY_PLUGIN`` blocks specific identifiers while you iterate on them.
 
 Use the CLI to inspect the resulting state after registration:

@@ -33,6 +33,10 @@ def _schema_json() -> dict[str, Any]:  # pragma: no cover - tiny IO
         return json.load(f)
 
 
+# Public alias for testing
+schema_json = _schema_json
+
+
 def validate_payload(obj: Mapping[str, Any]) -> None:
     """Validate a JSON payload against schema v1 if validator is available.
 

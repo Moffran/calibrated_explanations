@@ -3,6 +3,18 @@
 Highlights for recent releases are summarised here. For the complete list of
 changes see the project changelog on GitHub.
 
+
+## v0.10.2 (reject integration)
+
+- Published ADR-029 and the companion implementation plan so the project has a definitive
+  invocation/strategy/output story for reject orchestration while keeping `reject=False`
+  behavior untouched.
+- Added the policy-driven `RejectPolicy` enum, `RejectResult` envelope, and `RejectOrchestrator`
+  registry, wiring them through the prediction/explanation entry points so per-call and
+  explainer-level defaults can opt into reject-aware outputs without breaking changes.
+- Documented the new usage patterns in `docs/improvement/reject_policy_usage.md` and linked the
+  accompanying release-note summary for downstream consumers.
+
 ## v0.9.0
 
 - Documentation CI now enforces notebook linting, docstring coverage (≥94%), and

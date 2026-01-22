@@ -4,12 +4,22 @@ This folder contains experimental scripts and notebooks used for research and ev
 
 ## Environment
 
-Create an isolated environment and install the optional dependencies:
+ Create an isolated environment and install the optional dependencies:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install "calibrated_explanations[eval]"
+
+# Alternatively, install from the provided requirements or conda environment:
+pip install -r evaluation/requirements.txt
+```
+
+Or with conda:
+
+```powershell
+conda env create -f evaluation/environment.yml
+conda activate ce-evaluation
 ```
 
 ## Notes

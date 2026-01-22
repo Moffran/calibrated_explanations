@@ -53,6 +53,15 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
         payload["schema_version"] = "1.0.0"
 
     _validate_invariants(payload)
+    try:
+        validate_payload(payload)
+    except Exception as exc:  # adr002_allow
+        from .utils.exceptions import ValidationError
+
+        raise ValidationError(
+            "Serialization failed schema validation",
+            details={"error": str(exc)},
+        ) from exc
     return payload
 
 

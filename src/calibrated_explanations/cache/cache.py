@@ -402,6 +402,16 @@ class LRUCache(Generic[K, V]):
         self._bytes = 0
         self.metrics = CacheMetrics()
 
+    @property
+    def telemetry_handler(self) -> TelemetryCallback | None:
+        """Return the telemetry callback configured for this cache."""
+        return self._telemetry
+
+    @telemetry_handler.setter
+    def telemetry_handler(self, value: TelemetryCallback | None) -> None:
+        """Update the telemetry callback for this cache."""
+        self._telemetry = value
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------

@@ -176,6 +176,9 @@ class ParallelExecutor:
 
     def __enter__(self) -> "ParallelExecutor":
         """Initialize the execution pool if parallelism is enabled."""
+        # Idempotent enter: if already entered, return self without reinitializing
+        if self.pool is not None:
+            return self
         if not self.config.enabled:
             return self
 
@@ -451,7 +454,7 @@ class ParallelExecutor:
         if strategy == "threads":
             return partial(self.thread_strategy)
         if strategy == "processes":
-            return partial(self._process_strategy)
+            return partial(self.process_strategy)
         if strategy == "joblib":
             return partial(self.joblib_strategy)
         return partial(self._serial_strategy)
@@ -502,6 +505,11 @@ class ParallelExecutor:
         return None
 
     @staticmethod
+    def get_cgroup_cpu_quota() -> float | None:
+        """Expose the cgroup quota helper as part of the public API."""
+        return ParallelExecutor._get_cgroup_cpu_quota()
+
+    @staticmethod
     def _is_ci_environment() -> bool:
         """Detect if running in a CI environment."""
         return (
@@ -540,7 +548,7 @@ class ParallelExecutor:
 
         # 2. Resource constraints
         cpu_count = os.cpu_count() or 1
-        cgroup_limit = self._get_cgroup_cpu_quota()
+        cgroup_limit = self.get_cgroup_cpu_quota()
         if cgroup_limit is not None:
             cpu_count = min(cpu_count, int(cgroup_limit))
 
@@ -661,6 +669,17 @@ class ParallelExecutor:
         with ProcessPoolExecutor(max_workers=max_workers, mp_context=None, **extra) as pool:
             return list(pool.map(fn, items, chunksize=chunksize))
 
+    def process_strategy(
+        self,
+        fn: Callable[[T], R],
+        items: Sequence[T],
+        *,
+        workers: int | None = None,
+        chunksize: int | None = None,
+    ) -> List[R]:
+        """Public alias for executing work items via processes."""
+        return self._process_strategy(fn, items, workers=workers, chunksize=chunksize)
+
     def joblib_strategy(
         self,
         fn: Callable[[T], R],
@@ -710,6 +729,17 @@ class ParallelExecutor:
             if not isinstance(exc, Exception):
                 raise
             logger.debug("Parallel telemetry callback failed for %s: %s", event, exc)
+
+    def serial_strategy(
+        self,
+        fn: Callable[[T], R],
+        items: Sequence[T],
+        *,
+        workers: int | None = None,
+        chunksize: int | None = None,
+    ) -> List[R]:
+        """Public alias for _serial_strategy for testing."""
+        return self._serial_strategy(fn, items, workers=workers, chunksize=chunksize)
 
     def emit(self, event: str, payload: Mapping[str, Any]) -> None:
         """Public wrapper for emitting telemetry events (tests expect `emit`).

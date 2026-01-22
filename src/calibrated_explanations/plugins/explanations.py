@@ -7,6 +7,7 @@ from collections.abc import Mapping as MappingABC
 from collections.abc import MutableMapping as MutableMappingABC
 from collections.abc import Sequence as SequenceABC
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,6 +20,8 @@ from typing import (
     Type,
     runtime_checkable,
 )
+
+import numpy as np
 
 if TYPE_CHECKING:
     from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
@@ -44,6 +47,167 @@ class ExplanationContext:
     interval_settings: Mapping[str, object]
     plot_settings: Mapping[str, object]
 
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
+
+
+class ExplainerHandle:
+    """Read-only wrapper exposing a constrained explainer API to plugins."""
+
+    __slots__ = ("__explainer", "__metadata")
+
+    def __init__(self, explainer: Any, metadata: Mapping[str, Any]) -> None:
+        self.__explainer = explainer
+        self.__metadata = MappingProxyType(dict(metadata))
+
+    @property
+    def num_features(self) -> int:
+        """Return the number of features."""
+        return self.__explainer.num_features
+
+    @property
+    def mode(self) -> str:
+        """Return the prediction mode."""
+        return self.__explainer.mode
+
+    @property
+    def is_multiclass(self) -> bool:
+        """Return True when in multiclass mode."""
+        return self.__explainer.is_multiclass()
+
+    @property
+    def class_labels(self) -> Any:
+        """Return class labels."""
+        return self.__explainer.class_labels
+
+    @property
+    def feature_names(self) -> Any:
+        """Return feature names."""
+        return self.__explainer.feature_names
+
+    @property
+    def features_to_ignore(self) -> Any:
+        """Return features to ignore."""
+        return self.__explainer.features_to_ignore
+
+    @property
+    def learner(self) -> Any:
+        """Return the underlying learner."""
+        return self.__explainer.learner
+
+    @property
+    def bins(self) -> Any:
+        """Return bins configuration."""
+        return self.__explainer.bins
+
+    @property
+    def preprocessor(self) -> Any:
+        """Return the preprocessor if available."""
+        return getattr(self.__explainer, "preprocessor", None)
+
+    @property
+    def feature_filter_config(self) -> Any:
+        """Return the feature filter configuration if available."""
+        return getattr(self.__explainer, "feature_filter_config", None)
+
+    @property
+    def discretizer(self) -> Any:
+        """Return the discretizer if available."""
+        return getattr(self.__explainer, "discretizer", None)
+
+    @property
+    def sample_percentiles(self) -> Any:
+        """Return sample percentiles if available."""
+        return getattr(self.__explainer, "sample_percentiles", None)
+
+    def get_calibration_summaries(self, *args: Any, **kwargs: Any) -> Any:
+        """Return calibration summaries from the underlying explainer."""
+        return self.__explainer.get_calibration_summaries(*args, **kwargs)
+
+    @property
+    def y_cal(self) -> Any:
+        """Return y_cal if available."""
+        return getattr(self.__explainer, "y_cal", None)
+
+    @property
+    def categorical_features(self) -> Any:
+        """Return categorical_features if available."""
+        return getattr(self.__explainer, "categorical_features", None)
+
+    @property
+    def x_cal(self) -> Any:
+        """Expose calibration features when plugins need direct access."""
+        return getattr(self.__explainer, "x_cal", None)
+
+    @property
+    def plugin_manager(self) -> Any:
+        """Return the plugin manager if available."""
+        return getattr(self.__explainer, "plugin_manager", None)
+
+    @property
+    def latest_explanation(self) -> Any:
+        """Expose the latest explanation attached to the underlying explainer."""
+        return getattr(self.__explainer, "latest_explanation", None)
+
+    @latest_explanation.setter
+    def latest_explanation(self, value: Any) -> None:
+        """Allow plugins to set the latest explanation on the underlying explainer."""
+        self.__explainer.latest_explanation = value
+
+    @property
+    def last_explanation_mode(self) -> Any:
+        """Expose the last explanation mode recorded on the underlying explainer."""
+        return getattr(self.__explainer, "last_explanation_mode", None)
+
+    @last_explanation_mode.setter
+    def last_explanation_mode(self, value: Any) -> None:
+        """Allow plugins to set the last explanation mode on the underlying explainer."""
+        self.__explainer.last_explanation_mode = value
+
+    def predict(self, *args: Any, **kwargs: Any) -> Any:
+        """Return calibrated predictions from the underlying explainer."""
+        return self.__explainer.predict(*args, **kwargs)
+
+    def predict_calibrated(self, *args: Any, **kwargs: Any) -> Any:
+        """Forward-compatible shim for plugins expecting calibrated prediction API."""
+        func = getattr(self.__explainer, "predict_calibrated", None)
+        if func is None:
+            raise AttributeError("underlying explainer does not expose 'predict_calibrated'")
+        return func(*args, **kwargs)
+
+    def explain_factual(self, *args: Any, **kwargs: Any) -> Any:
+        """Return factual explanations from the underlying explainer."""
+        return self.__explainer.explain_factual(*args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the underlying explainer."""
+        return getattr(self.__explainer, name)
+
+    def explain_fast(self, *args: Any, **kwargs: Any) -> Any:
+        """Return fast explanations from the underlying explainer."""
+        return self.__explainer.explain_fast(*args, **kwargs)
+
+    def get_metadata(self) -> Mapping[str, Any]:
+        """Return immutable metadata describing the explainer and dependencies."""
+        return self.__metadata
+
+    def get_preprocessor_state(self) -> Mapping[str, Any] | None:
+        """Return the preprocessor metadata snapshot when available."""
+        preprocessor_meta = getattr(self.__explainer, "preprocessor_metadata", None)
+        if preprocessor_meta is None:
+            return None
+        if isinstance(preprocessor_meta, MappingABC):
+            return MappingProxyType(dict(preprocessor_meta))
+        return {"value": preprocessor_meta}
+
 
 @dataclass(frozen=True)
 class ExplanationRequest:
@@ -53,8 +217,57 @@ class ExplanationRequest:
     low_high_percentiles: Optional[Tuple[float, float]]
     bins: Optional[object]
     features_to_ignore: Sequence[int] | Sequence[Sequence[int]]
+    interval_summary: Optional[object] = None
     extras: Mapping[str, object] = field(default_factory=dict)
-    features_to_ignore_per_instance: Sequence[Sequence[int]] | None = None
+    feature_filter_per_instance_ignore: Sequence[Sequence[int]] | None = None
+
+    def __post_init__(self) -> None:
+        """Freeze mutable fields such as `bins` and `extras` for safety.
+
+        This ensures plugins cannot mutate shared request state (Mondrian
+        bins in particular) by converting arrays/lists into tuples and
+        mapping payloads into read-only proxies.
+        """
+
+        def _freeze_value(val: object) -> object:
+            # numpy arrays -> nested tuples
+            if isinstance(val, np.ndarray):
+                try:
+                    return tuple(_freeze_value(x) for x in val.tolist())
+                except Exception:  # adr002_allow
+                    return tuple(val.tolist())
+            if isinstance(val, (list, tuple)):
+                return tuple(_freeze_value(x) for x in val)
+            # mappings -> MappingProxyType with frozen values
+            if isinstance(val, MappingABC):
+                return MappingProxyType({k: _freeze_value(v) for k, v in val.items()})
+            return val
+
+        # Freeze bins if present
+        frozen_bins = None if self.bins is None else _freeze_value(self.bins)
+        object.__setattr__(self, "bins", frozen_bins)
+
+        # Freeze extras into an immutable mapping
+        try:
+            frozen_extras = (
+                MappingProxyType({k: _freeze_value(v) for k, v in dict(self.extras).items()})
+                if self.extras is not None
+                else MappingProxyType({})
+            )
+        except Exception:  # adr002_allow
+            frozen_extras = MappingProxyType(dict(self.extras or {}))
+        object.__setattr__(self, "extras", frozen_extras)
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 @dataclass
@@ -88,6 +301,7 @@ __all__ = [
     "ExplanationContext",
     "ExplanationPlugin",
     "ExplanationRequest",
+    "ExplainerHandle",
     "PluginMeta",
     "validate_explanation_batch",
 ]

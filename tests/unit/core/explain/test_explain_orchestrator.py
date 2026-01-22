@@ -20,7 +20,7 @@ def mock_explainer():
     explainer.condition_source = "observed"
     explainer.discretizer = None
     explainer.plugin_manager = MagicMock()
-    explainer._bridge_monitors = {}
+    explainer.bridge_monitors = {}
     explainer.telemetry_interval_sources = {}
     explainer.interval_plugin_hints = {}
     explainer.plugin_manager.plot_plugin_fallbacks = {}
@@ -507,7 +507,7 @@ def test_derive_plot_chain(orchestrator, mock_explainer):
         "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
         return_value=mock_descriptor,
     ):
-        chain = orchestrator._derive_plot_chain("factual", "test_plugin")
+        chain = orchestrator.derive_plot_chain("factual", "test_plugin")
         assert chain == ("dep", "base")
 
 
@@ -519,3 +519,118 @@ def testbuild_instance_telemetry_payload(orchestrator):
 
     payload = orchestrator.build_instance_telemetry_payload(explanations)
     assert payload == {"key": "value"}
+
+
+def test_should_propagate_interval_dependencies_in_telemetry(orchestrator, mock_explainer):
+    """Interval hints should flow into metadata and telemetry payloads."""
+
+    mock_explainer.plugin_manager.interval_plugin_hints = {"factual": ("dep-a",)}
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_result = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_container.from_batch.return_value = mock_result
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
+        ),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+    ):
+        result = orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
+
+    assert mock_batch.collection_metadata["interval_dependencies"] == ("dep-a",)
+    assert result.telemetry["interval_dependencies"] == ("dep-a",)
+    assert mock_explainer.plugin_manager.last_telemetry["interval_dependencies"] == ("dep-a",)
+
+
+@pytest.mark.parametrize("invoker_name", ("invoke_factual", "invoke_alternative"))
+def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
+    """Bins should be frozen to tuples for every mode delegate."""
+
+    bins = np.array([[1, 2], [3, 4]])
+    captured_request: dict[str, object] = {}
+
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+
+    def capture_request_helper(_x, request):
+        captured_request["bins"] = request.bins
+        assert isinstance(request.bins, tuple)
+        assert request.bins == tuple(tuple(row) for row in bins.tolist())
+        with pytest.raises(TypeError):
+            request.bins[0] = "mutate"  # type: ignore[index]
+        return mock_batch
+
+    mock_plugin = MagicMock()
+    mock_plugin.explain_batch.side_effect = capture_request_helper
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_container.from_batch.return_value = MagicMock()
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
+        ),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+    ):
+        getattr(orchestrator, invoker_name)(
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=bins,
+            features_to_ignore=None,
+        )
+
+    assert captured_request["bins"] == tuple(tuple(row) for row in bins.tolist())
+
+
+def test_should_propagate_interval_dependencies_in_telemetry_for_fast(orchestrator, mock_explainer):
+    """Interval hints should flow into metadata and telemetry payloads for FAST mode."""
+
+    mock_explainer.plugin_manager.interval_plugin_hints = {"fast": ("dep-fast",)}
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_result = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_container.from_batch.return_value = mock_result
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch(
+            "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
+        ),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+    ):
+        result = orchestrator.invoke(
+            mode="fast",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
+
+    assert mock_batch.collection_metadata["interval_dependencies"] == ("dep-fast",)
+    assert result.telemetry["interval_dependencies"] == ("dep-fast",)
+    assert mock_explainer.plugin_manager.last_telemetry["interval_dependencies"] == ("dep-fast",)

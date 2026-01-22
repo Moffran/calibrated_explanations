@@ -13,7 +13,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     from calibrated_explanations import plotting
 
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+pytestmark = [pytest.mark.viz, pytest.mark.filterwarnings("ignore::DeprecationWarning")]
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
@@ -132,7 +132,7 @@ def testplot_alternative_multiclass(mock_require, mock_render):
     # Mock explainer for is_multiclass check
     explainer = MagicMock()
     explainer.is_multiclass.return_value = True
-    explanation._get_explainer.return_value = explainer
+    explanation.get_explainer.return_value = explainer
 
     # Fix inputs
     instance = [0.5]
@@ -626,6 +626,6 @@ def test_plot_proba_triangle_invokes_matplotlib(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(plotting, "plt", fake)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        fig = plotting._plot_proba_triangle()
+        fig = plotting.plot_proba_triangle()
     assert fig == "figure"
     assert fake.plots  # ensure plotting calls executed

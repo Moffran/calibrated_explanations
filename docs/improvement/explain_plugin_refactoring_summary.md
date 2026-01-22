@@ -8,7 +8,7 @@ Terminology follows hard guardrails without accidentally breaking published work
 
 **Status:** Core refactor merged; follow-on coverage and documentation uplift work remains.
 **Risks:**
-- Coverage gaps remain around plugin selection error paths and executor fallback branches; tie remediation to the Standard-019 phase that targets plugin modules (v0.10.0).
+- Coverage gaps remain around plugin selection error paths and executor fallback branches; tie remediation to the Standard-003 phase that targets plugin modules (v0.10.0).
 - Documentation references to explain execution live in the contributor hub; keep terminology aligned with the documentation overhaul and code doc uplift to avoid drift.
 **Release alignment:** Surface plugin-refactor readiness in the release plan’s uplift status table (v0.10.0) and gate releases on the coverage/doc tasks listed below.
 
@@ -176,7 +176,7 @@ From the original task specification, remaining opportunities:
 
 4. **Configuration object**: Replace scattered executor/granularity checks with a
    unified `ParallelConfig` object per ADR-004 specification.
-5. **Coverage/doc alignment**: Add plugin-level unit tests (selection failures, executor fallbacks) and contributor doc snippets that mirror the documentation overhaul structure; target completion in the Standard-019 Phase 3 window (v0.10.0) and keep status reflected in the release plan uplift table.
+5. **Coverage/doc alignment**: Add plugin-level unit tests (selection failures, executor fallbacks) and contributor doc snippets that mirror the documentation overhaul structure; target completion in the Standard-003 Phase 3 window (v0.10.0) and keep status reflected in the release plan uplift table.
 
 ## Conclusion
 

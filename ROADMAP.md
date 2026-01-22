@@ -22,17 +22,17 @@ vx.y.z specifics).
   metadata in telemetry, and bake CI rules to ban new private-member tests.
 - **v0.11.0 (domain model & preprocessing finalisation)** – Make the ADR-008
   domain model the canonical runtime story, finalise ADR-009 preprocessing and
-  Standard-017 cleanup, extend governance dashboards, and shift
+  Standard-001 cleanup, extend governance dashboards, and shift
   `condition_source` defaults to prediction with documented upgrade guidance.
 - **v1.0.0-rc (release candidate readiness)** – Freeze schema/PlotSpec contracts,
-  reconfirm wrap/exception contracts, close Standard-017/018 guardrails,
-  validate caching/parallel toggles (with telemetry), cement Standard-019
+  reconfirm wrap/exception contracts, close Standard-001/018 guardrails,
+  validate caching/parallel toggles (with telemetry), cement Standard-003
   coverage dashboards and release branch policies, promote ADRs, launch
   versioned docs previews, and publish an RC upgrade checklist plus ADR gap
   audit.
 - **v1.0.0 (stability declaration)** – Announce the stable contracts, tag the
   release, backport docs and upgrade guidance, validate telemetry/plugin/caching
-  behaviour in staging, keep Standard-017/018 guardrails enforced, and publish
+  behaviour in staging, keep Standard-001/018 guardrails enforced, and publish
   long-term documentation dashboards with scheduled maintenance sweeps.
 
 ## Staying aligned

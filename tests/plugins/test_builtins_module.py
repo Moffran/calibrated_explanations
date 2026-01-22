@@ -25,7 +25,7 @@ from calibrated_explanations.plugins.builtins import (
     PlotSpecDefaultBuilder,
     PlotSpecDefaultRenderer,
     collection_to_batch,
-    _register_builtins,
+    register_builtins,
 )
 from calibrated_explanations.plugins.explanations import (
     ExplanationBatch,
@@ -284,9 +284,11 @@ def test_interval_plugin_requires_handles_and_returns_calibrator(monkeypatch: py
     with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
 
-    context.metadata["explainer"] = SimpleNamespace()
-    calibrator = LegacyIntervalCalibratorPlugin().create(context)
-    assert created["args"] == (context.metadata["explainer"],)
+    context_with_explainer = make_interval_context(
+        "regression", metadata={"explainer": SimpleNamespace()}
+    )
+    calibrator = LegacyIntervalCalibratorPlugin().create(context_with_explainer)
+    assert created["args"] == (context_with_explainer.metadata["explainer"],)
     assert calibrator is not None
 
 
@@ -303,12 +305,15 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
         DummyCalibrator,
         raising=False,
     )
-    context = make_interval_context("classification")
-    context.metadata["explainer"] = SimpleNamespace(predict_function=lambda x: x)
+    context = make_interval_context(
+        "classification",
+        metadata={"explainer": SimpleNamespace(predict_function=lambda x: x)},
+    )
     calibrator = LegacyIntervalCalibratorPlugin().create(context)
+    assert calibrator is not None
 
     assert created["args"][0] is context.calibration_splits[0][0]
-    assert context.metadata["calibrator"] is calibrator
+    # Plugin does not cache the calibrator; orchestrator does that via capture_interval_calibrators
 
 
 def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPatch):
@@ -602,24 +607,30 @@ def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
     calls: list[tuple[str, Iterable[str]]] = []
 
     monkeypatch.setattr(
-        builtins_mod, "register_interval_plugin", lambda *args: calls.append(("interval", args))
+        builtins_mod,
+        "register_interval_plugin",
+        lambda *args, **kwargs: calls.append(("interval", args)),
     )
     monkeypatch.setattr(
         builtins_mod,
         "register_explanation_plugin",
-        lambda *args: calls.append(("explanation", args)),
+        lambda *args, **kwargs: calls.append(("explanation", args)),
     )
     monkeypatch.setattr(
-        builtins_mod, "register_plot_builder", lambda *args: calls.append(("builder", args))
+        builtins_mod,
+        "register_plot_builder",
+        lambda *args, **kwargs: calls.append(("builder", args)),
     )
     monkeypatch.setattr(
-        builtins_mod, "register_plot_renderer", lambda *args: calls.append(("renderer", args))
+        builtins_mod,
+        "register_plot_renderer",
+        lambda *args, **kwargs: calls.append(("renderer", args)),
     )
     monkeypatch.setattr(
         builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args))
     )
 
-    _register_builtins()
+    register_builtins()
 
     kinds = {kind for kind, _ in calls}
     assert {"interval", "explanation", "builder", "renderer", "style"}.issubset(kinds)
@@ -670,11 +681,11 @@ def test_register_builtins_imports_fast_plugins(monkeypatch: pytest.MonkeyPatch)
 
     fake_module.register = fake_register
     monkeypatch.setitem(sys.modules, "external_plugins.fast_explanations", fake_module)
-    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args: None)
-    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args: None)
+    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args, **kwargs: None)
     monkeypatch.setattr(builtins_mod, "register_plot_style", lambda *args, **kwargs: None)
 
-    _register_builtins()
+    register_builtins()
     assert calls == ["register"]

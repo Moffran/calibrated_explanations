@@ -191,6 +191,7 @@ def test_register_explanation_plugin_descriptor():
     registry.clear_explanation_plugins()
     plugin = ExampleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("core.explanation.example", plugin)
+    registry.mark_explanation_trusted("core.explanation.example")
 
     assert descriptor.identifier == "core.explanation.example"
     assert registry.find_explanation_plugin("core.explanation.example") is plugin
@@ -508,7 +509,9 @@ def test_register_plot_plugin_combines_builder_and_renderer():
                 registry.register_plot_plugin("example.plot.combined", plugin)
         else:
             with warns_or_raises():
-                descriptor = registry.register_plot_plugin("example.plot.combined", plugin)
+                descriptor = registry.register_plot_plugin(
+                    "example.plot.combined", plugin, source="builtin"
+                )
             assert descriptor.identifier == "example.plot.combined"
             assert registry.find_plot_builder("example.plot.combined") is plugin
             assert registry.find_plot_renderer("example.plot.combined") is plugin
@@ -673,6 +676,10 @@ def test_list_descriptors_and_trust_management(monkeypatch):
         descriptor = registry.register_explanation_plugin("core.explanation.example", explainer)
         alt_descriptor = registry.register_explanation_plugin("core.explanation.alt", alt_explainer)
 
+        # Trust the plugins that should be trusted
+        registry.mark_explanation_trusted("core.explanation.example")
+
+        descriptor = registry.find_explanation_descriptor("core.explanation.example")
         assert descriptor.trusted is True
         assert alt_descriptor.trusted is False
 
@@ -680,6 +687,8 @@ def test_list_descriptors_and_trust_management(monkeypatch):
             "core.interval.trusted",
             TrustedIntervalPlugin(),
         )
+        registry.mark_interval_trusted("core.interval.trusted")
+        interval_descriptor = registry.find_interval_descriptor("core.interval.trusted")
         untrusted_interval = registry.register_interval_plugin(
             "core.interval.example",
             ExampleIntervalPlugin(),
@@ -786,10 +795,14 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
         trusted_plugin = TrustedCombo()
         if deprecations_error_enabled():
             with pytest.raises(DeprecationWarning):
-                registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
+                registry.register_plot_plugin(
+                    "example.plot.trusted", trusted_plugin, source="builtin"
+                )
         else:
             with warns_or_raises():
-                registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
+                registry.register_plot_plugin(
+                    "example.plot.trusted", trusted_plugin, source="builtin"
+                )
 
         builder_desc = registry.register_plot_builder("example.plot.untrusted", UntrustedBuilder())
         renderer_desc = registry.register_plot_renderer(
@@ -853,7 +866,7 @@ def test_ensure_builtin_plugins_invokes_register(monkeypatch):
     called = []
 
     monkeypatch.setattr(
-        "calibrated_explanations.plugins.builtins._register_builtins",
+        "calibrated_explanations.plugins.builtins.register_builtins",
         lambda: called.append(True),
     )
 
@@ -882,7 +895,7 @@ def test_trust_normalisation_helpers(monkeypatch):
     assert registry.env_trusted_names() == {"auto_plugin"}
 
     meta_env = {"name": "auto_plugin", "trust": False}
-    assert registry.should_trust(meta_env) is True
+    assert registry.should_trust(meta_env, identifier="auto_plugin", source="manual") is True
 
     meta_untrusted = {"name": "manual", "provider": "tests"}
     with pytest.warns(UserWarning):
@@ -953,10 +966,12 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
     invalid = LoaderEntryPoint("invalid", loader=lambda: InvalidPlugin())
     untrusted = LoaderEntryPoint("untrusted", loader=lambda: UntrustedPlugin())
     trusted = LoaderEntryPoint("trusted", loader=lambda: TrustedPlugin())
-    attr_entry = LoaderEntryPoint("attr", module=attr_module_name, attr="attr_plugin")
+    attr_entry = LoaderEntryPoint("attr", loader=lambda: attr_plugin)
 
     entry_points = FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entry_points)
+    monkeypatch.setenv("CE_TRUST_PLUGIN", "trusted,attr")
+    registry.clear_env_trust_cache()
 
     try:
         with pytest.warns(UserWarning):

@@ -186,7 +186,7 @@ def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.Monk
         context=context, calibrator=calibrators, fast=True
     )
 
-    assert context.metadata["fast_calibrators"] == ("first", "second")
+    assert context.plugin_state["fast_calibrators"] == ("first", "second")
 
 
 def test_x_y_cal_setters_and_append(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -569,7 +569,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
         ce.explanations.append(stub)
         return ce
 
-    plugin._sequential_plugin.execute = fake_seq_execute
+    plugin.sequential_plugin.execute = fake_seq_execute
 
     # Single chunk will delegate to sequential plugin via InstanceParallelExplainExecutor
     # create a small explainer instance for the plugin to attach results to

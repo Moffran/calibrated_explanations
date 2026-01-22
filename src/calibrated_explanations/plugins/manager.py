@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import sys
+from types import MappingProxyType
 from typing import Any, Dict, List, Tuple
 
 from .predict_monitor import PredictBridgeMonitor
@@ -117,6 +118,11 @@ class PluginManager:
         }
         self._interval_preferred_identifier: Dict[str, str | None] = {
             "default": None,
+            "fast": None,
+        }
+        self._explanation_preferred_identifier: Dict[str, str | None] = {
+            "factual": None,
+            "alternative": None,
             "fast": None,
         }
         self._interval_context_metadata: Dict[str, Dict[str, Any]] = {
@@ -251,6 +257,22 @@ class PluginManager:
         """Delete the preferred interval identifiers."""
         if hasattr(self, "_interval_preferred_identifier"):
             del self._interval_preferred_identifier
+
+    @property
+    def explanation_preferred_identifier(self) -> Dict[str, str | None]:
+        """Access the preferred explanation identifiers."""
+        return getattr(self, "_explanation_preferred_identifier", {})
+
+    @explanation_preferred_identifier.setter
+    def explanation_preferred_identifier(self, value: Dict[str, str | None]) -> None:
+        """Update the preferred explanation identifiers."""
+        self._explanation_preferred_identifier = value
+
+    @explanation_preferred_identifier.deleter
+    def explanation_preferred_identifier(self) -> None:
+        """Delete the preferred explanation identifiers."""
+        if hasattr(self, "_explanation_preferred_identifier"):
+            del self._explanation_preferred_identifier
 
     @property
     def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
@@ -391,13 +413,54 @@ class PluginManager:
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
+            # Preserve MappingProxyType instances explicitly: deepcopy may
+            # route through copyreg reducers (registered for pickling) which
+            # would convert mappingproxy -> dict; to keep the proxy type, we
+            # recreate a MappingProxyType with the same contents.
+            if isinstance(v, MappingProxyType):
+                try:
+                    setattr(result, k, MappingProxyType(dict(v)))
+                    continue
+                except (TypeError, AttributeError) as exc:
+                    # Fall back to original reference when recreation fails;
+                    # log the reason at debug level and continue. Narrowing
+                    # the exception types avoids masking unrelated errors
+                    # per ADR-002.
+                    self._logger.debug(
+                        "__deepcopy__ preserve MappingProxyType failed for %s: %s",
+                        k,
+                        exc,
+                    )
+                    setattr(result, k, v)
+                    continue
+
             try:
+                # Special-case dicts to preserve MappingProxyType values
+                if isinstance(v, dict):
+                    try:
+                        new_dict: Dict[Any, Any] = {}
+                        for ik, iv in v.items():
+                            if isinstance(iv, MappingProxyType):
+                                # Recreate the mapping proxy to preserve immutability
+                                new_dict[ik] = MappingProxyType(dict(iv))
+                            else:
+                                new_dict[ik] = copy.deepcopy(iv, memo)
+                        setattr(result, k, new_dict)
+                        continue
+                    except (TypeError, AttributeError, RecursionError) as exc:
+                        # Fallback to shallow copy of the dict on specific
+                        # conversion errors; log at debug level to keep
+                        # failures visible while avoiding broad catches.
+                        self._logger.debug("__deepcopy__ dict-preserve failed for %s: %s", k, exc)
+                        setattr(result, k, v.copy())
+                        continue
+
                 setattr(result, k, copy.deepcopy(v, memo))
             except BaseException:
                 exc_type = sys.exc_info()[0]
                 if exc_type is not TypeError:
                     raise
-                # Fallback for unpicklable objects (e.g., mappingproxy in contexts)
+                # Fallback for unpicklable objects (e.g., other mappingproxy-like)
                 # We shallow copy containers to avoid sharing the container itself,
                 # while sharing the unpicklable items (which are likely immutable).
                 if isinstance(v, dict):
@@ -510,6 +573,7 @@ class PluginManager:
         )
 
         entries: List[str] = []
+        preferred_identifier: str | None = None
 
         # 1. User override
         override = self._explanation_plugin_overrides.get(mode)
@@ -517,10 +581,20 @@ class PluginManager:
             entries.append(override)
 
         # 2. Environment variables
+        default_env_key = (
+            "CE_EXPLANATION_PLUGIN_FAST" if mode == "fast" else "CE_EXPLANATION_PLUGIN"
+        )
+        default_env_value = os.environ.get(default_env_key)
+        if default_env_value:
+            entries.append(default_env_value.strip())
+            preferred_identifier = preferred_identifier or default_env_value.strip()
+
         env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
-        env_value = os.environ.get(env_key)
-        if env_value:
-            entries.append(env_value.strip())
+        if env_key != default_env_key:
+            env_value = os.environ.get(env_key)
+            if env_value:
+                entries.append(env_value.strip())
+                preferred_identifier = preferred_identifier or env_value.strip()
         entries.extend(split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
 
         # 3. pyproject.toml settings
@@ -528,6 +602,7 @@ class PluginManager:
         py_value = py_settings.get(mode)
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
+            preferred_identifier = preferred_identifier or py_value
         entries.extend(coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
 
         # 4. Expand with descriptor fallbacks and deduplicate
@@ -545,7 +620,26 @@ class PluginManager:
                         expanded.append(fallback)
                         seen.add(fallback)
 
-        # 5. Add default and mode-specific fallbacks
+        # 5. Filter out any FAST-mode identifiers when building chains for
+        # non-fast modes. FAST is opt-in and must never be implicitly added
+        # to the default fallback chain for `factual`/`alternative` modes.
+        if mode != "fast":
+
+            def _is_fast_id(idt: str) -> bool:
+                # Treat identifiers that explicitly reference 'fast' as FAST-mode
+                # identifiers. This covers patterns like 'core.explanation.fast',
+                # 'core.explanation.fast.sequential', and mode-suffixed forms.
+                parts = idt.replace(":", ".").split(".")
+                return "fast" in parts
+
+            filtered: List[str] = []
+            for ident in expanded:
+                if _is_fast_id(ident):
+                    continue
+                filtered.append(ident)
+            expanded = filtered
+
+        # 6. Add default and mode-specific fallbacks
         if default_identifier and default_identifier not in seen:
             expanded.append(default_identifier)
             seen.add(default_identifier)
@@ -557,6 +651,7 @@ class PluginManager:
                 expanded.append(ext_fast)
                 seen.add(ext_fast)
 
+        self._explanation_preferred_identifier[mode] = preferred_identifier
         return tuple(expanded)
 
     def build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
@@ -864,3 +959,40 @@ class PluginManager:
 
         # Initialize interval learner
         initialize_interval_learner(self.explainer)
+
+
+# Public aliases for testing purposes (to avoid private member access in tests)
+@property
+def pyproject_explanations(self) -> Dict[str, Any] | None:
+    """Access pyproject.toml explanations configuration."""
+    return self._pyproject_explanations
+
+
+@pyproject_explanations.setter
+def pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
+    """Update pyproject.toml explanations configuration."""
+    self._pyproject_explanations = value
+
+
+@property
+def pyproject_intervals(self) -> Dict[str, Any] | None:
+    """Access pyproject.toml intervals configuration."""
+    return self._pyproject_intervals
+
+
+@pyproject_intervals.setter
+def pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
+    """Update pyproject.toml intervals configuration."""
+    self._pyproject_intervals = value
+
+
+@property
+def pyproject_plots(self) -> Dict[str, Any] | None:
+    """Access pyproject.toml plots configuration."""
+    return self._pyproject_plots
+
+
+@pyproject_plots.setter
+def pyproject_plots(self, value: Dict[str, Any] | None) -> None:
+    """Update pyproject.toml plots configuration."""
+    self._pyproject_plots = value

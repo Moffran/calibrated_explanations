@@ -102,7 +102,7 @@ def make_stub_explainer(explainer_factory):
     def return_false(self):
         return False
 
-    explainer._predict = types.MethodType(predict_stub, explainer)
+    explainer.predict = types.MethodType(predict_stub, explainer)
     explainer.is_multiclass = types.MethodType(return_false, explainer)
     explainer.is_fast = types.MethodType(return_false, explainer)
 

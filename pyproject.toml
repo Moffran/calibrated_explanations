@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=61.0,<81", "wheel"]
+requires = [
+    "setuptools>=61.0,<81",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,24 +11,19 @@ version = "0.10.2-dev"
 description = "Extract calibrated explanations from machine learning models."
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "BSD-3-Clause"}
 authors = [
-  { name = "Helena Löfström", email = "helena.lofstrom@ju.se" },
-  { name = "Tuwe Löfström", email = "tuwe.lofstrom@ju.se" },
+    { name = "Helena Löfström", email = "helena.lofstrom@ju.se" },
+    { name = "Tuwe Löfström", email = "tuwe.lofstrom@ju.se" },
 ]
-
 dependencies = [
-  'cachetools',
-  'pympler',
-  'crepes',
-  'venn-abers',
-  'ipython',
-  'lime',
-  'matplotlib',
-  'numpy',
-  'pandas',
-  'scikit-learn',
-  'pyyaml',
+    "cachetools",
+    "pympler",
+    "crepes",
+    "venn-abers",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "pyyaml",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -34,43 +32,66 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.license]
+text = "BSD-3-Clause"
+
 [project.urls]
-"Documentation" = "https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest"
-"Changelog" = "https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md"
+Documentation = "https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest"
+Changelog = "https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
-"Repository" = "https://github.com/Moffran/calibrated_explanations"
+Repository = "https://github.com/Moffran/calibrated_explanations"
 
 [project.optional-dependencies]
-# Phase 2S: Optional extras (kept additive; core deps unchanged for compatibility)
 viz = [
-  "matplotlib",
-]
-lime = [
-  "lime",
+    "matplotlib",
 ]
 notebooks = [
-  "ipython",
-  "jupyter",
-  "nbconvert",
-  "matplotlib",
+    "ipython",
+    "jupyter",
+    "nbconvert",
+    "matplotlib",
 ]
 dev = [
-  "pytest",
-  "pytest-cov",
-  "ruff",
-  "mypy",
-  "jsonschema",
-  "pydocstyle",
-  "nbqa",
+    "matplotlib",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "pydocstyle",
+    "nbqa",
+    "sphinx",
+    "myst-parser",
+    "nbsphinx",
+    "numpydoc",
+    "pydata-sphinx-theme",
+    "furo",
+    "sphinx-rtd-theme",
+    "sphinxcontrib-mermaid",
+    "docutils",
+    "roman",
+    "linkify-it-py",
+    "jsonschema",
+    "tomli-w",
+    "tomli; python_version < '3.11'",
+    "prometheus-client",
+    "pyarrow",
+    "joblib",
+    "ucimlrepo",
 ]
 eval = [
-  "shap",
-  "seaborn",
+    "lime",
+    "shap",
+    "seaborn",
+    "xgboost",
+    "scipy",
+    "joblib",
+    "ucimlrepo",
+    "matplotlib",
 ]
-"external-plugins" = [
-  "numpy>=1.24",
-  "pandas>=2.0",
-  "scikit-learn>=1.3",
+external-plugins = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
 ]
 
 [project.scripts]
@@ -78,9 +99,13 @@ eval = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-pythonpath = ["src"]
-addopts = "-q --ignore=tests/unit/viz/test_matplotlib_adapter_additional.py --ignore=tests/unit/viz/test_matplotlib_adapter_regression_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_render.py --ignore=tests/unit/viz/test_plot_parity_adapter.py --ignore=tests/unit/viz/test_plotspec_mvp.py --ignore=tests/unit/viz/test_plotspec_render_behavior.py --ignore=tests/unit/viz/test_probabilistic_builder_and_adapter_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_primitives.py --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml --cov-fail-under=90"
-testpaths = ["tests"]
+pythonpath = [
+    "src",
+]
+addopts = "-q --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml --cov-fail-under=90"
+testpaths = [
+    "tests",
+]
 markers = [
     "slow: marks tests as slow (can be skipped in FAST_TESTS)",
     "integration: marks integration tests",
@@ -92,15 +117,10 @@ filterwarnings = [
     "error::DeprecationWarning",
     "error::PendingDeprecationWarning",
     "error::FutureWarning",
-    # Enforce fallback chain policy: treat UserWarnings containing "fall...back" as errors
-    # Tests that explicitly validate fallback behavior must use the enable_fallbacks fixture
-    # Matches variations like "falling back", "fall back", and "fallback"
     "error:.*fall.*back.*:UserWarning",
-    # Ignore deprecation warnings from third-party libraries that are outside our control
     "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
     "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
     "ignore:Auto-close.*backend switching.*:matplotlib._api.deprecation.MatplotlibDeprecationWarning",
-    # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
     "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",
@@ -114,12 +134,11 @@ filterwarnings = [
     "ignore:The py23 module has been deprecated:DeprecationWarning:fontTools.misc.py23",
 ]
 
-# ----------------------------
-# Coverage Configuration (Phase 0)
-# ----------------------------
 [tool.coverage.run]
 branch = true
-source = ["src/calibrated_explanations"]
+source = [
+    "src/calibrated_explanations",
+]
 omit = [
     "tests/*",
     "docs/*",
@@ -158,43 +177,79 @@ exclude_lines = [
 directory = "coverage_html"
 
 [tool.setuptools]
-license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+license-files = [
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+]
 
 [tool.setuptools.packages.find]
-where = ["src", "external_plugins"]
+where = [
+    "src",
+    "external_plugins",
+]
 
 [tool.setuptools.package-data]
-calibrated_explanations = ["py.typed", "schemas/*.json", "templates/*.yaml"]
+calibrated_explanations = [
+    "py.typed",
+    "schemas/*.json",
+    "templates/*.yaml",
+]
 
-# ----------------------------
-# Tooling / Quality Gates (Phase 0)
-# ----------------------------
+[tool.calibrated_explanations.plugins]
+trusted = [
+    "demo.renderer",
+    "plugin.trusted",
+    "renderer",
+    "target",
+]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-extend-exclude = ["build", "dist", "benchmarks", "docs/_build", "scripts", "evaluation"]
+extend-exclude = [
+    "build",
+    "dist",
+    "benchmarks",
+    "docs/_build",
+    "scripts",
+    "evaluation",
+]
 
 [tool.ruff.lint]
 select = [
-  "E",  # pycodestyle errors
-  "F",  # pyflakes
-  "I",  # isort
-  "B",  # bugbear
-  "C4", # comprehensions
-  "SIM",# simplify
-  "NPY",# NumPy
-  "S",  # security (bandit-like)
-  "N",  # pep8-naming
+    "E",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "SIM",
+    "NPY",
+    "S",
+    "N",
 ]
 ignore = [
-  "E501",    # line length (managed by formatter)
-  "S101",    # use of assert (allowed in tests)
+    "E501",
+    "S101",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S", "B", "I001"]
-"src/calibrated_explanations/core/calibrated_explainer.py" = ["I001", "UP006"]
-"src/calibrated_explanations/core/prediction_helpers.py" = ["I001", "UP006"]
+"tests/*" = [
+    "S",
+    "B",
+    "I001",
+    "N806",
+]
+"src/calibrated_explanations/core/calibrated_explainer.py" = [
+    "I001",
+    "UP006",
+]
+"src/calibrated_explanations/core/prediction_helpers.py" = [
+    "I001",
+    "UP006",
+]
+"src/calibrated_explanations/core/wrap_explainer.py" = [
+    "N803",
+]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -204,7 +259,7 @@ skip-magic-trailing-comma = false
 [tool.pydocstyle]
 convention = "numpy"
 add-ignore = [
-  "D104",  # public package docstrings handled by module summaries
+    "D104",
 ]
 match-dir = "(?!tests|docs|benchmarks|notebooks|scripts|evaluation).*"
 match = "(?!test_).*\\.py"
@@ -217,18 +272,23 @@ warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
 show_error_codes = true
-exclude = ["build", "benchmarks", "docs", "notebooks", "scripts", "evaluation"]
-# Keep mypy focused on explicitly provided files in CI and avoid following imports.
+exclude = [
+    "build",
+    "benchmarks",
+    "docs",
+    "notebooks",
+    "scripts",
+    "evaluation",
+]
 follow_imports = "skip"
 check_untyped_defs = false
 
-# Phase 1B typing: keep permissive defaults; enable stricter checks per-module below.
 [[tool.mypy.overrides]]
 module = [
-  "calibrated_explanations.core.exceptions",
-  "calibrated_explanations.core.validation",
-  "calibrated_explanations.api.params",
-  "calibrated_explanations.core.prediction_helpers",
+    "calibrated_explanations.core.exceptions",
+    "calibrated_explanations.core.validation",
+    "calibrated_explanations.api.params",
+    "calibrated_explanations.core.prediction_helpers",
 ]
 disallow_untyped_defs = true
 warn_return_any = true
@@ -237,8 +297,19 @@ strict_equality = true
 check_untyped_defs = true
 
 [tool.bandit]
-skips = ["B101"]
-exclude = ["tests", "build", "benchmarks", "notebooks", "scripts", "docs", "dist", "evaluation"]
+skips = [
+    "B101",
+]
+exclude = [
+    "tests",
+    "build",
+    "benchmarks",
+    "notebooks",
+    "scripts",
+    "docs",
+    "dist",
+    "evaluation",
+]
 
 [tool.codespell]
 skip = "docs/_build,docs_old/_build,build,dist,tests/benchmarks,evaluation,notebooks,docs/improvement/anti_pattern_gap_analysis.ipynb"

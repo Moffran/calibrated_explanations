@@ -211,7 +211,7 @@ def finalize_explanation(
     per_instance_ignore = getattr(explainer, "feature_filter_per_instance_ignore", None)
     if per_instance_ignore is not None:
         with contextlib.suppress(Exception):
-            explanation.features_to_ignore_per_instance = per_instance_ignore
+            explanation.feature_filter_per_instance_ignore = per_instance_ignore
     # Clear transient state to avoid accidental reuse across subsequent runs.
     with contextlib.suppress(AttributeError):
         del explainer.feature_filter_per_instance_ignore
@@ -251,9 +251,13 @@ class ExplainRequest:
 
     features_to_ignore: np.ndarray
     """Array of feature indices to skip during perturbation."""
+
+    interval_summary: Optional[Any] = None
+    """Interval summary strategy (REGULARIZED_MEAN, MEAN, etc.)."""
+
     extras: Any | None = None
     """Opaque extras forwarded from the explanation request (unused by executors)."""
-    features_to_ignore_per_instance: Any | None = None
+    feature_filter_per_instance_ignore: Any | None = None
     """Optional per-instance feature ignore masks."""
 
     # Control flags
@@ -266,6 +270,17 @@ class ExplainRequest:
     # Slice context for instance parallelism
     instance_slice: Optional[Tuple[int, int]] = None
     """(start, stop) indices when processing instance chunk."""
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 @dataclass

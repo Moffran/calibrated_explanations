@@ -80,15 +80,15 @@ class BaseStubExplainer:
 
     def __init__(self, *, mode: str):
         self.mode = mode
-        self._initialized = False  # match real attribute name
+        self.initialized_state = False  # internal storage for the `initialized` property
 
     @property
     def initialized(self):
-        return self._initialized
+        return self.initialized_state
 
     @initialized.setter
     def initialized(self, value):
-        self._initialized = value
+        self.initialized_state = value
 
     def is_fast(self) -> bool:  # pragma: no cover - concrete subclasses override
         raise NotImplementedError

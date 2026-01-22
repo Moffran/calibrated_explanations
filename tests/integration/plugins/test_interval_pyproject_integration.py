@@ -11,7 +11,21 @@ from calibrated_explanations.plugins import (
     clear_interval_plugins,
     ensure_builtin_plugins,
     register_interval_plugin,
+    mark_interval_trusted,
 )
+
+
+class MockIntervalCalibrator:
+    """Mock calibrator implementing ClassificationIntervalCalibrator protocol."""
+
+    def predict_proba(self, x, *, output_interval=False, classes=None, bins=None):
+        return [[0.5, 0.5]]
+
+    def is_multiclass(self) -> bool:
+        return False
+
+    def is_mondrian(self) -> bool:
+        return False
 
 
 class PyprojectRecordingIntervalPlugin(IntervalCalibratorPlugin):
@@ -34,7 +48,7 @@ class PyprojectRecordingIntervalPlugin(IntervalCalibratorPlugin):
 
     def create(self, context, *, fast: bool = False):
         type(self).invocations.append((fast, context))
-        return object()
+        return MockIntervalCalibrator()
 
 
 def make_simple_classifier_helper():
@@ -57,6 +71,7 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
     PyprojectRecordingIntervalPlugin.invocations = []
     plugin = PyprojectRecordingIntervalPlugin()
     descriptor = register_interval_plugin(plugin.plugin_meta["name"], plugin)
+    mark_interval_trusted(descriptor.identifier)
 
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(

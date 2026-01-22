@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-013: Interval Calibrator Plugin Strategy
 
@@ -71,6 +71,14 @@ We therefore need a plugin model that lets external contributors add new interva
    - All calibrator methods must proxy to the underlying VennAbers and IntervalRegressor contracts. Runtime validation checks shapes, dtypes, and monotonicity of probability outputs against expectations from the in-tree classes. Fast-mode calibrators reuse the same validation but may skip expensive recomputation steps when metadata marks them fast_compatible.
    - Incremental calibration hooks (insert_calibration, CPS updates) remain the responsibility of IntervalRegressor; plugin authors extending those flows must invoke the superclass logic and only layer extra behaviour afterwards.
    - Provide a `LegacyIntervalContext` adaptor that wraps the existing `CalibratedExplainer` state without mutating it. Plugins receive a frozen view (read-only mappings, tuples) so they cannot accidentally leak mutations back into the explainer. The default plugin simply stores the objects it receives and returns them during `create()`.
+   - The FAST path must return a protocol-compliant wrapper (located in
+     `src/calibrated_explanations/plugins/interval_wrappers.py`) that presents
+     the full calibrator interface while preserving per-feature indexing
+     semantics and exposing `.calibrators` for introspection.
+   - Immutability follows a hybrid approach: freeze critical structures such as
+     `bins`, `residuals`, `difficulty`, and `metadata` (using read-only views
+     and defensive copies) while avoiding deep copies of every field to keep
+     overhead bounded.
 
 5. **Documentation and tooling.**
    - Developer docs gain a dedicated section that explains the layered protocol, the context object, and examples that subclass and compose IntervalRegressor / VennAbers.

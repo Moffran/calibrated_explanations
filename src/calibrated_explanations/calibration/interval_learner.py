@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from ..utils.exceptions import ConfigurationError
 from ..utils.helper import assign_threshold as normalize_threshold
+from .interval_wrappers import is_fast_interval_collection
 
 if TYPE_CHECKING:
     from calibrated_explanations.core import CalibratedExplainer
@@ -84,7 +85,7 @@ def update_interval_learner(  # pylint: disable=invalid-name
         )
         explainer.interval_learner = interval
     elif "regression" in explainer.mode:
-        if isinstance(explainer.interval_learner, list):
+        if is_fast_interval_collection(explainer.interval_learner):
             raise ConfigurationError("Fast explanations are not supported in this update path.")
         # update the IntervalRegressor
         explainer.interval_learner.insert_calibration(xs, ys, bins=bins)
@@ -136,7 +137,7 @@ def initialize_interval_learner_for_fast_explainer(explainer: CalibratedExplaine
     """Initialize the interval learner in fast explanation mode.
 
     This is a mechanical extraction of
-    ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``
+    ``CalibratedExplainer.initialize_interval_learner_for_fast_explainer``
     that maintains the original behavior while enabling independent testing.
 
     Parameters

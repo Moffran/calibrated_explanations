@@ -136,6 +136,11 @@ def _read_plot_pyproject() -> Dict[str, Any]:
     return {}
 
 
+def read_plot_pyproject() -> Dict[str, Any]:
+    """Public accessor for reading the plots pyproject section."""
+    return _read_plot_pyproject()
+
+
 def split_csv(value: Any) -> Sequence[str]:
     """Normalize comma-separated labels into a tuple."""
     if not value:
@@ -160,6 +165,11 @@ def _format_save_path(base_path: Any, filename: str) -> str:
             return f"{base_path}{filename}"
         return str(Path(base_path) / filename)
     return str(Path(str(base_path)) / filename)
+
+
+def format_save_path(base_path: Any, filename: str) -> str:
+    """Public accessor for path formatting heuristics."""
+    return _format_save_path(base_path, filename)
 
 
 def _resolve_explainer_from_explanation(explanation: Any) -> Any:
@@ -310,11 +320,20 @@ def update_plot_config(new_config):
         for key, value in values.items():
             config[section][key] = str(value)
 
-    # Write updated config to file
+    # Write updated config to file, normalising trailing newlines so
+    # repeated writes don't accumulate blank lines.
+    from io import StringIO
+
     config_path = _plot_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    with config_path.open("w", encoding="utf-8") as f:
-        config.write(f)
+
+    buf = StringIO()
+    config.write(buf)
+    text = buf.getvalue()
+    # Normalise line endings and ensure exactly one trailing newline
+    text = text.replace("\r\n", "\n").rstrip("\n") + "\n"
+    with config_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
 
 
 def __setup_plot_style(style_override=None):
@@ -1603,6 +1622,11 @@ def _plot_proba_triangle():
     x = np.arange(0, 0.5, 0.005)
     plt.plot((x + 0.5 - x) / (1 + x), x, color="black")
     return fig
+
+
+def plot_proba_triangle():
+    """Public accessor so tests can exercise the probability triangle helper."""
+    return _plot_proba_triangle()
 
 
 # pylint: disable=invalid-name

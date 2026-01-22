@@ -7,6 +7,7 @@ fallback strategy and reference implementation for behavioralequivalence tests.
 
 from __future__ import annotations
 
+import contextlib
 from time import time
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -92,7 +93,9 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
-        features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
+        feature_filter_per_instance_ignore = getattr(
+            request, "feature_filter_per_instance_ignore", None
+        )
 
         # Track total explanation time
         total_start_time = time()
@@ -110,6 +113,18 @@ class SequentialExplainExecutor(BaseExplainExecutor):
         instance_start_time = time()
 
         # Step 1: Get predictions for original test instances
+        import inspect  # local import to avoid top-level dependency
+
+        predict_fn = explain_predict_step
+        call_kwargs: dict = {
+            "feature_filter_per_instance_ignore": feature_filter_per_instance_ignore
+        }
+        # Only include interval_summary if the target function supports it
+        with contextlib.suppress(Exception):  # adr002_allow  # pragma: no cover - defensive
+            sig = inspect.signature(predict_fn)
+            if "interval_summary" in sig.parameters:
+                call_kwargs["interval_summary"] = request.interval_summary
+
         (
             predict,
             low,
@@ -125,14 +140,14 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             perturbed_bins,
             perturbed_x,
             perturbed_class,
-        ) = explain_predict_step(
+        ) = predict_fn(
             explainer,
             x_input,
             request.threshold,
             request.low_high_percentiles,
             request.bins,
             features_to_ignore_array,
-            features_to_ignore_per_instance=features_to_ignore_per_instance,
+            **call_kwargs,
         )
 
         # Step 2: Initialize data structures to store feature-level results

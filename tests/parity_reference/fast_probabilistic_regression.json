@@ -1,0 +1,162 @@
+[
+  {
+    "explanation_type": "fast",
+    "feature_predict": {
+      "high": [
+        2.9
+      ],
+      "low": [
+        -1.9
+      ],
+      "predict": [
+        0.1
+      ]
+    },
+    "feature_weights": {
+      "high": [
+        1.9
+      ],
+      "low": [
+        -2.9
+      ],
+      "predict": [
+        -0.09999999999999999
+      ]
+    },
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 1.3877787807814457e-17
+    },
+    "rules": {
+      "base_predict": [
+        1.3877787807814457e-17
+      ],
+      "base_predict_high": [
+        Infinity
+      ],
+      "base_predict_low": [
+        -Infinity
+      ],
+      "classes": 1.0,
+      "feature": [
+        0
+      ],
+      "feature_value": [
+        null
+      ],
+      "is_conjunctive": [
+        false
+      ],
+      "predict": [
+        0.1
+      ],
+      "predict_high": [
+        2.9
+      ],
+      "predict_low": [
+        -1.9
+      ],
+      "rule": [
+        "x0"
+      ],
+      "sampled_values": [
+        null
+      ],
+      "value": [
+        "0.5"
+      ],
+      "weight": [
+        -0.09999999999999999
+      ],
+      "weight_high": [
+        1.9
+      ],
+      "weight_low": [
+        -2.9
+      ]
+    },
+    "task": "regression"
+  },
+  {
+    "explanation_type": "fast",
+    "feature_predict": {
+      "high": [
+        4.9
+      ],
+      "low": [
+        0.10000000000000009
+      ],
+      "predict": [
+        2.1
+      ]
+    },
+    "feature_weights": {
+      "high": [
+        1.9
+      ],
+      "low": [
+        -2.9000000000000004
+      ],
+      "predict": [
+        -0.10000000000000009
+      ]
+    },
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 2.0
+    },
+    "rules": {
+      "base_predict": [
+        2.0
+      ],
+      "base_predict_high": [
+        Infinity
+      ],
+      "base_predict_low": [
+        -Infinity
+      ],
+      "classes": 1.0,
+      "feature": [
+        0
+      ],
+      "feature_value": [
+        null
+      ],
+      "is_conjunctive": [
+        false
+      ],
+      "predict": [
+        2.1
+      ],
+      "predict_high": [
+        4.9
+      ],
+      "predict_low": [
+        0.10000000000000009
+      ],
+      "rule": [
+        "x0"
+      ],
+      "sampled_values": [
+        null
+      ],
+      "value": [
+        "2.5"
+      ],
+      "weight": [
+        -0.10000000000000009
+      ],
+      "weight_high": [
+        1.9
+      ],
+      "weight_low": [
+        -2.9000000000000004
+      ]
+    },
+    "task": "regression"
+  }
+]

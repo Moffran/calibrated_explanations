@@ -1,7 +1,7 @@
 import numpy as np
 
 from calibrated_explanations.core.explain.parallel_instance import (
-    _instance_parallel_task,
+    instance_parallel_task,
     InstanceParallelExplainExecutor,
 )
 from calibrated_explanations.core.explain.parallel_runtime import worker_init_from_explainer_spec
@@ -26,7 +26,7 @@ def make_request(x, low_high_percentiles=(5, 95)):
         low_high_percentiles=low_high_percentiles,
         bins=None,
         features_to_ignore=np.array([]),
-        features_to_ignore_per_instance=None,
+        feature_filter_per_instance_ignore=None,
         use_plugin=False,
         skip_instance_parallel=False,
     )
@@ -51,15 +51,7 @@ def test_tasks_omit_explainer_when_worker_initializer_present(monkeypatch):
         last_explanation_mode = None
 
         def __init__(self):
-            self._plugin_manager = PluginManager(self)
-
-        @property
-        def plugin_manager(self):
-            return self._plugin_manager
-
-        @plugin_manager.setter
-        def plugin_manager(self, value):
-            self._plugin_manager = value
+            self.plugin_manager = PluginManager(self)
 
         def infer_explanation_mode(self):
             return "factual"
@@ -138,7 +130,7 @@ def test_worker_harness_used_when_present():
     # Create a compact task payload (no explainer)
     state = {"config_state": {}}
     start, stop = 0, 5
-    res = _instance_parallel_task((start, stop, state))
+    res = instance_parallel_task((start, stop, state))
 
     assert res[0] == start
     # Harness returns a dict with 'spec' key as implemented
@@ -175,11 +167,11 @@ def test_fallback_runs_with_explainer_when_no_harness(monkeypatch):
         "bins_slice": None,
         "low_high_percentiles": (5, 95),
         "features_to_ignore_array": np.array([]),
-        "features_to_ignore_per_instance": None,
+        "feature_filter_per_instance_ignore": None,
         "explainer": fake_expl,
         "config_state": {},
     }
 
-    res = _instance_parallel_task((0, 2, state))
+    res = instance_parallel_task((0, 2, state))
     assert res[0] == 0
     assert isinstance(res[1], dict) and res[1].get("from") == "sequential"

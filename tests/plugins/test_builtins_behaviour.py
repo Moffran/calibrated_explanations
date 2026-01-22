@@ -133,8 +133,8 @@ def test_supports_calibrated_explainer_uses_safe_isinstance(monkeypatch):
 
     module.CalibratedExplainer = DummyExplainer
     monkeypatch.setitem(sys.modules, module.__name__, module)
-    assert builtins._supports_calibrated_explainer(DummyExplainer()) is True
-    assert builtins._supports_calibrated_explainer(object()) is False
+    assert builtins.supports_calibrated_explainer(DummyExplainer()) is True
+    assert builtins.supports_calibrated_explainer(object()) is False
 
 
 def test_collection_to_batch_preserves_metadata():
@@ -174,7 +174,7 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
     plugin = builtins.LegacyIntervalCalibratorPlugin()
     calibrator = plugin.create(context)
     assert isinstance(calibrator, DummyIntervalRegressor)
-    assert context.metadata["calibrator"] is calibrator
+    # Plugin does not cache the calibrator; orchestrator does that via capture_interval_calibrators
     assert created_with["explainer"] is context.metadata["explainer"]
 
 
@@ -643,31 +643,35 @@ def test_register_builtins_uses_registry(monkeypatch):
     recorded = {"interval": [], "explanation": [], "builder": [], "renderer": [], "style": []}
 
     monkeypatch.setattr(
-        builtins, "register_interval_plugin", lambda *a: recorded["interval"].append(a)
+        builtins, "register_interval_plugin", lambda *a, **k: recorded["interval"].append((a, k))
     )
     monkeypatch.setattr(
-        builtins, "register_explanation_plugin", lambda *a: recorded["explanation"].append(a)
+        builtins,
+        "register_explanation_plugin",
+        lambda *args, **kwargs: recorded["explanation"].append(args),
     )
-    monkeypatch.setattr(builtins, "register_plot_builder", lambda *a: recorded["builder"].append(a))
     monkeypatch.setattr(
-        builtins, "register_plot_renderer", lambda *a: recorded["renderer"].append(a)
+        builtins, "register_plot_builder", lambda *a, **k: recorded["builder"].append(a)
+    )
+    monkeypatch.setattr(
+        builtins, "register_plot_renderer", lambda *a, **k: recorded["renderer"].append(a)
     )
     monkeypatch.setattr(
         builtins, "register_plot_style", lambda *a, **k: recorded["style"].append((a, k))
     )
 
-    builtins._register_builtins()  # noqa: SLF001
+    builtins.register_builtins()  # noqa: SLF001
     assert recorded["interval"]
     assert len(recorded["explanation"]) >= 2
     assert any(item[0] == "core.plot.plot_spec.default" for item in recorded["builder"])
 
 
 def test_register_builtins_handles_missing_fast_plugins(monkeypatch):
-    monkeypatch.setattr(builtins, "register_interval_plugin", lambda *a: None)
-    monkeypatch.setattr(builtins, "register_explanation_plugin", lambda *a: None)
-    monkeypatch.setattr(builtins, "register_plot_builder", lambda *a: None)
-    monkeypatch.setattr(builtins, "register_plot_renderer", lambda *a: None)
+    monkeypatch.setattr(builtins, "register_interval_plugin", lambda *a, **k: None)
+    monkeypatch.setattr(builtins, "register_explanation_plugin", lambda *args, **kwargs: None)
+    monkeypatch.setattr(builtins, "register_plot_builder", lambda *a, **k: None)
+    monkeypatch.setattr(builtins, "register_plot_renderer", lambda *a, **k: None)
     monkeypatch.setattr(builtins, "register_plot_style", lambda *a, **k: None)
     # Ensure import fails even if module existed previously
     sys.modules.pop("external_plugins.fast_explanations", None)
-    builtins._register_builtins()  # noqa: SLF001
+    builtins.register_builtins()  # noqa: SLF001

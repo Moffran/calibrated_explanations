@@ -28,6 +28,17 @@ before acting.
    ```bash
    python -m pip install calibrated-explanations scikit-learn
    ```
+
+   **Optional extras:**
+   | Extra | Purpose | Key Packages |
+   | :--- | :--- | :--- |
+   | `[viz]` | Plotting and visualizations | `matplotlib` |
+   | `[notebooks]` | Jupyter notebook support | `ipython`, `jupyter` |
+   | `[eval]` | Reproducing benchmarks | `lime`, `shap`, `xgboost`, `scipy` |
+   | `[external-plugins]` | High-performance plugins | `numpy>=1.24`, `pandas>=2.0` |
+
+   Install with: `pip install "calibrated-explanations[viz,notebooks]"`
+
 2. **Run the quickstart** – this mirrors the smoke-tested docs example.
    ```python
    from sklearn.datasets import load_breast_cancer
@@ -167,6 +178,9 @@ underlying estimator and read the returned intervals.
   [release notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/release_notes.html)
   and the project
   [CHANGELOG](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md).
+- **Plugin CLI** – inspect registered plugins and trust state with
+  `ce.plugins list all` (see the
+  [CLI reference](https://calibrated-explanations.readthedocs.io/en/latest/api/cli.html)).
 - **Project governance** – review
   [GOVERNANCE.md](https://github.com/Moffran/calibrated_explanations/blob/main/GOVERNANCE.md),
   [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md),

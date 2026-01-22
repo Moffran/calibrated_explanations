@@ -173,6 +173,35 @@ class GlobalPlotSpec:
     data_slice_id: str | None = None
     rendering_seed: int | None = None
 
+    # Backwards-compatibility helpers: present tests and some legacy callers
+    # expect dict-like access (e.g., `spec.setdefault("plot_spec", {})`).
+    # Provide a minimal mapping-like surface that returns the serialized
+    # envelope for the `plot_spec` key while preserving attribute access.
+    def setdefault(self, key: str, default: Any = None) -> Any:
+        if key == "plot_spec":
+            from .serializers import global_plotspec_to_dict
+
+            env = global_plotspec_to_dict(self)
+            return env.setdefault("plot_spec", default)
+        # fallback: return attribute if present
+        if hasattr(self, key):
+            return getattr(self, key)
+        return default
+
+    def __getitem__(self, key: str) -> Any:
+        if key == "plot_spec":
+            from .serializers import global_plotspec_to_dict
+
+            env = global_plotspec_to_dict(self)
+            return env.get("plot_spec")
+        raise KeyError(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            return default
+
 
 @dataclass(frozen=True)
 class IntervalSegment:

@@ -71,14 +71,14 @@ class TestParallelLifecycle:
         # We can mock _resolve_strategy or just rely on the fact that if we pass invalid strategy it might fail?
         # But ParallelConfig validates strategy enum? No, it's a string.
 
-        # Let's mock _resolve_strategy
-        original_resolve = executor._resolve_strategy
+        # Let's mock resolve_strategy
+        original_resolve = executor.resolve_strategy
 
         def failing_resolve(*args, **kwargs):
             print("Failing resolve called")
             raise RuntimeError("Simulated failure")
 
-        executor._resolve_strategy = failing_resolve
+        executor.resolve_strategy = failing_resolve
 
         print("Calling map")
         results = executor.map(square, range(5))
@@ -88,7 +88,7 @@ class TestParallelLifecycle:
         assert results == [x * x for x in range(5)]
         assert executor.metrics.fallbacks == 1
 
-        executor._resolve_strategy = original_resolve
+        executor.resolve_strategy = original_resolve
 
     def test_nested_parallelism_threads(self):
         # Threads inside threads should work

@@ -291,7 +291,7 @@ class CalibratedExplanation(ABC):
         """Return the set of feature indices ignored for this instance.
 
         Combines collection-level ``features_to_ignore`` with any
-        per-instance mask exposed via ``features_to_ignore_per_instance``.
+        per-instance mask exposed via ``feature_filter_per_instance_ignore``.
         """
         ignored: set[int] = set()
         global_ignore = getattr(self.calibrated_explanations, "features_to_ignore", None)
@@ -300,7 +300,7 @@ class CalibratedExplanation(ABC):
         ignored.update(collect_ints(global_ignore))
 
         per_instance = getattr(
-            self.calibrated_explanations, "features_to_ignore_per_instance", None
+            self.calibrated_explanations, "feature_filter_per_instance_ignore", None
         )
         instance_mask = None
         if isinstance(per_instance, Sequence) and 0 <= self.index < len(per_instance):
@@ -605,6 +605,10 @@ class CalibratedExplanation(ABC):
         high = self.normalize_percentile_value(percentiles[1])
         return (low, high)
 
+    def get_percentiles(self) -> Optional[Tuple[Optional[float], Optional[float]]]:
+        """Return the decoded percentile configuration."""
+        return self._get_percentiles()
+
     @staticmethod
     def compute_confidence_level(
         percentiles: Optional[Tuple[Optional[float], Optional[float]]],
@@ -671,6 +675,9 @@ class CalibratedExplanation(ABC):
                 payload["confidence_level"] = confidence
         return payload
 
+    # Public alias for testing
+    build_uncertainty_payload = _build_uncertainty_payload
+
     @staticmethod
     def _build_interval(low: Any, high: Any) -> Dict[str, Any]:
         """Return a minimal uncertainty interval with Python-native bounds."""
@@ -678,6 +685,11 @@ class CalibratedExplanation(ABC):
             "lower": CalibratedExplanation.to_python_number(low),
             "upper": CalibratedExplanation.to_python_number(high),
         }
+
+    @staticmethod
+    def build_interval(low: Any, high: Any) -> Dict[str, Any]:
+        """Public helper exposing interval construction."""
+        return CalibratedExplanation._build_interval(low, high)
 
     def _build_instance_uncertainty(self) -> Dict[str, Any]:
         """Build uncertainty payload for the current instance prediction."""
@@ -708,6 +720,10 @@ class CalibratedExplanation(ABC):
             include_percentiles=True,
         )
 
+    def build_instance_uncertainty(self) -> Dict[str, Any]:
+        """Expose the instance uncertainty payload builder."""
+        return self._build_instance_uncertainty()
+
     def _safe_feature_name(self, feature_index: Any) -> str:
         """Return a readable feature name for telemetry."""
         feature_names = getattr(self.get_explainer(), "feature_names", None)
@@ -721,6 +737,10 @@ class CalibratedExplanation(ABC):
         if feature_names and 0 <= idx < len(feature_names):
             return str(feature_names[idx])
         return str(idx)
+
+    def safe_feature_name(self, feature_index: Any) -> str:
+        """Return the human-readable name for a feature index."""
+        return self._safe_feature_name(feature_index)
 
     @staticmethod
     def convert_condition_value(raw_value: Optional[str], fallback: Any) -> Any:
@@ -754,6 +774,10 @@ class CalibratedExplanation(ABC):
             return operator.lower(), value_text
         return "raw", text
 
+    def parse_condition(self, feature_name: str, rule_text: str) -> Tuple[str, Optional[str]]:
+        """Return the parsed operator/value pair for a rule."""
+        return self._parse_condition(feature_name, rule_text)
+
     def _build_condition_payload(
         self,
         feature_index: Any,
@@ -774,6 +798,16 @@ class CalibratedExplanation(ABC):
             "value": value,
             "text": rule_text,
         }
+
+    def build_condition_payload(
+        self,
+        feature_index: Any,
+        rule_text: str,
+        feature_value: Any,
+        display_value: Any,
+    ) -> Dict[str, Any]:
+        """Expose condition payload building for external use."""
+        return self._build_condition_payload(feature_index, rule_text, feature_value, display_value)
 
     def to_telemetry(self) -> Dict[str, Any]:
         """Return telemetry payload for this explanation instance."""
@@ -1023,6 +1057,27 @@ class CalibratedExplanation(ABC):
             rule_low /= rule_count
             rule_high /= rule_count
         return rule_predict, rule_low, rule_high
+
+    def predict_conjunctive(
+        self,
+        rule_value_set,
+        original_features,
+        perturbed,
+        threshold,
+        predicted_class,
+        bins=None,
+        use_batched=False,
+    ):
+        """Public wrapper around the conjunctive prediction helper."""
+        return self._predict_conjunctive(
+            rule_value_set,
+            original_features,
+            perturbed,
+            threshold,
+            predicted_class,
+            bins=bins,
+            use_batched=use_batched,
+        )
 
     @abstractmethod
     def _is_lesser(self, rule_boundary, instance_value):

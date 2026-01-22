@@ -1,6 +1,6 @@
 > **Status note (2025-12-23):** Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) reached **89.5%** line coverage with `fail_under=88` satisfied.
 
-# Coverage Uplift Plan (Standard-019)
+# Coverage Uplift Plan (Standard-003)
 
 This plan outlines the coverage standardization roadmap with module-level gap analysis, baselines, and remediation tactics.
 

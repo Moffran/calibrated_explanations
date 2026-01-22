@@ -14,6 +14,7 @@ import warnings
 import numpy as np
 import venn_abers as va
 
+from ..core.prediction.interval_summary import IntervalSummary, coerce_interval_summary
 from ..utils import convert_targets_to_numeric
 from ..utils.exceptions import ConfigurationError
 
@@ -181,7 +182,9 @@ class VennAbers:
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
-    def predict_proba(self, x, output_interval=False, classes=None, bins=None):
+    def predict_proba(
+        self, x, output_interval=False, classes=None, bins=None, interval_summary=None
+    ):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
         Parameters
@@ -190,6 +193,8 @@ class VennAbers:
             output_interval (bool, optional): If true, the VennAbers intervals are outputted. Defaults to False.
             classes (array-like, optional): A list of predicted classes. Defaults to None.
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
+            interval_summary (IntervalSummary or str, optional): Strategy for selecting the
+                point estimate from the interval bounds. Defaults to regularized mean.
 
         Returns
         -------
@@ -202,6 +207,7 @@ class VennAbers:
         tprobs = self.__predict_proba_with_difficulty(x, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
+        interval_summary = coerce_interval_summary(interval_summary)
 
         if self.is_multiclass():
             low, high = np.zeros(tprobs.shape), np.zeros(tprobs.shape)
@@ -220,8 +226,9 @@ class VennAbers:
                 else:
                     p0p1 = va_class.predict_proba(tmp_probs)[1]
                 low[:, c], high[:, c] = p0p1[:, 0], p0p1[:, 1]
-                tmp = high[:, c] / (1 - low[:, c] + high[:, c])
-                va_proba[:, c] = tmp
+                va_proba[:, c] = self._select_interval_summary(
+                    low[:, c], high[:, c], interval_summary
+                )
             # FIXME: Probability normalization is unexpectedly required here; see issue #123 for investigation.
             row_sums = va_proba.sum(axis=1, keepdims=True)
             # Guard against divide-by-zero for degenerate rows.
@@ -256,7 +263,7 @@ class VennAbers:
         else:
             _, p0p1 = self.va.predict_proba(tprobs)
         low, high = p0p1[:, 0], p0p1[:, 1]
-        tmp = high / (1 - low + high)
+        tmp = self._select_interval_summary(low, high, interval_summary)
         va_proba[:, 0] = 1 - tmp
         va_proba[:, 1] = tmp
         # binary
@@ -264,6 +271,17 @@ class VennAbers:
         if output_interval:
             return np.asarray(va_proba), low, high
         return np.asarray(va_proba)
+
+    @staticmethod
+    def _select_interval_summary(low, high, summary: IntervalSummary):
+        """Select a point estimate from Venn-Abers interval bounds."""
+        if summary is IntervalSummary.MEAN:
+            return (low + high) / 2
+        if summary is IntervalSummary.LOWER:
+            return low
+        if summary is IntervalSummary.UPPER:
+            return high
+        return high / (1 - low + high)
 
     def is_multiclass(self) -> bool:
         """Return true if the problem is multiclass.

@@ -171,7 +171,7 @@ def test_invoke_per_instance_ignore(orchestrator, mock_explainer):
 
     args, _ = mock_plugin.explain_batch.call_args
     request = args[1]
-    assert request.features_to_ignore_per_instance == ((0,), (1,))
+    assert request.feature_filter_per_instance_ignore == ((0,), (1,))
     # flat_ignore should be unique union: (0, 1)
     assert set(request.features_to_ignore) == {0, 1}
 
@@ -468,7 +468,7 @@ def test_derive_plot_chain(orchestrator, mock_explainer):
         mock_desc.metadata = {"plot_dependency": ("dep1",)}
         mock_find.return_value = mock_desc
 
-        chain = orchestrator._derive_plot_chain("factual", "plugin1")
+        chain = orchestrator.derive_plot_chain("factual", "plugin1")
         assert chain == ("dep1", "base")
 
 

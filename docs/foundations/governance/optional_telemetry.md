@@ -72,6 +72,20 @@ renderer. If a fallback occurs (for example, the legacy Matplotlib
 renderer), the fallback list records the full chain so dashboards can
 differentiate first-choice and recovery paths.
 
+## Logging and observability
+
+Telemetry integrates with the project's structured logging system
+(ADR-028, Standard-005). Logs under ``calibrated_explanations.telemetry.*``
+domains carry telemetry payloads as structured fields, enabling
+machine-readable evidence for governance and compliance.
+
+The shared logging context helper propagates identifiers such as
+``explainer_id``, ``plugin_identifier``, and ``mode`` into all log
+records, supporting correlation across distributed deployments.
+
+Feature filtering emits governance events under ``calibrated_explanations.governance.feature_filter`` (see :doc:`../standards/STD-005-logging-and-observability-standard`)
+when strict observability notices or skips/errors occur so operators can route those records to a separate audit sink if required.
+
 ## Persisting telemetry
 
 Telemetry payloads are JSON serialisable and can be stored alongside
@@ -118,7 +132,7 @@ factual = "core.explanation.factual"
 
 ```bash
 export CE_INTERVAL_PLUGIN=core.interval.fast
-export CE_EXPLANATION_PLUGIN_FACTUAL=core.explanation.factual
+export CE_EXPLANATION_PLUGIN=core.explanation.factual
 ```
 
 Use ``python -m calibrated_explanations.plugins.cli show <identifier>``

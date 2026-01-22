@@ -128,6 +128,9 @@ def test_explore_alternatives_and_conjunctive_rules():
 
 
 def test_fast_explanation_roundtrip_classification(binary_dataset):
+    from calibrated_explanations.plugins import ensure_builtin_plugins
+
+    ensure_builtin_plugins()
     (
         x_prop_train,
         y_prop_train,
@@ -245,6 +248,9 @@ def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
 
 
 def test_plugin_runtime_matches_legacy_fast(binary_dataset):
+    from calibrated_explanations.plugins import ensure_builtin_plugins
+
+    ensure_builtin_plugins()
     (
         x_prop_train,
         y_prop_train,

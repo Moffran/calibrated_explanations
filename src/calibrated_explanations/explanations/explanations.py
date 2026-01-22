@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import sys
@@ -32,6 +33,17 @@ class ExportedExplanationCollection:
 
     metadata: Mapping[str, Any]
     explanations: Sequence[DomainExplanation]
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        # Convert mappingproxy to dict for pickling
+        return dict(self.__dict__)
 
 
 def _jsonify(value: Any) -> Any:
@@ -108,7 +120,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         # Optional per-instance feature ignore masks produced by the internal
         # FAST-based feature filter. When present, each entry corresponds to
         # the indices ignored for that instance on top of any global ignore.
-        self.features_to_ignore_per_instance: Optional[Sequence[Sequence[int]]] = None
+        self.feature_filter_per_instance_ignore: Optional[Sequence[Sequence[int]]] = None
+        # Optional telemetry from the internal FAST-based feature filter.
+        self.filter_telemetry: Optional[Dict[str, Any]] = None
         # Derived caches (set during finalize of individual explanations)
         self._feature_names_cache: Optional[Sequence[str]] = None  # populated lazily
         self._predictions_cache: Optional[np.ndarray] = None
@@ -181,12 +195,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
             # Preserve per-instance feature ignore masks when present by slicing
             # them in the same way as bins/x_test/y_threshold.
-            masks_value = getattr(self, "features_to_ignore_per_instance", None)
+            masks_value = getattr(self, "feature_filter_per_instance_ignore", None)
             if isinstance(masks_value, ABCSequence):
                 try:
-                    new_.features_to_ignore_per_instance = [masks_value[e.index] for e in new_]
+                    new_.feature_filter_per_instance_ignore = [masks_value[e.index] for e in new_]
                 except IndexError:
-                    new_.features_to_ignore_per_instance = None
+                    new_.feature_filter_per_instance_ignore = None
             # Reset cached aggregates to avoid referencing stale state from the source
             new_._feature_names_cache = None
             new_._predictions_cache = None
@@ -223,21 +237,171 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
         from ..utils.exceptions import SerializationError, ValidationError
 
-        container = batch.collection_metadata.get("container")
-        if container is None:
+        # Check for required batch attributes (duck-typing for flexibility)
+        if not hasattr(batch, "collection_metadata"):
             raise SerializationError(
-                "ExplanationBatch is missing container metadata",
-                details={"artifact": "ExplanationBatch", "field": "container"},
+                "ExplanationBatch payload has unexpected type",
+                details={
+                    "param": "batch",
+                    "expected_type": "ExplanationBatch",
+                    "actual_type": type(batch).__name__,
+                },
             )
-        if not isinstance(container, cls):
+
+        # Get container_cls if available (may be None for duck-typed batches with template)
+        container_cls = getattr(batch, "container_cls", None)
+
+        metadata = dict(batch.collection_metadata)
+        template = metadata.pop("container", None)
+
+        if container_cls is None and template is not None:
+            container_cls = type(template)
+
+        # If neither container_cls nor template is present, raise error
+        if container_cls is None:
+            raise SerializationError(
+                "ExplanationBatch payload missing container_cls and template",
+                details={
+                    "param": "batch",
+                    "required": "container_cls or collection_metadata['container']",
+                },
+            )
+
+        # Validate container_cls if present
+        if not issubclass(container_cls, cls):
+            raise ValidationError(
+                "ExplanationBatch container metadata has unexpected type",
+                details={
+                    "param": "container_cls",
+                    "expected_type": cls.__name__,
+                    "actual_type": container_cls.__name__,
+                },
+            )
+
+        # If template is a valid CalibratedExplanations instance, use it for metadata
+        # but still reconstruct a new container from batch.instances to ensure
+        # canonical reconstruction (ADR-015).
+        if template is not None and not isinstance(template, cls):
             raise ValidationError(
                 "ExplanationBatch container metadata has unexpected type",
                 details={
                     "param": "container",
                     "expected_type": cls.__name__,
-                    "actual_type": type(container).__name__,
+                    "actual_type": type(template).__name__,
                 },
             )
+
+        calibrated_explainer = metadata.get("calibrated_explainer")
+        if calibrated_explainer is None:
+            calibrated_explainer = metadata.get("explainer")
+        if calibrated_explainer is None and template is not None:
+            calibrated_explainer = template.calibrated_explainer
+
+        x_test = metadata.get("x_test")
+        if x_test is None:
+            x_test = metadata.get("x")
+        if x_test is None and template is not None:
+            x_test = template.x_test
+
+        y_threshold = metadata.get("y_threshold")
+        if y_threshold is None and template is not None:
+            y_threshold = template.y_threshold
+
+        bins = metadata.get("bins")
+        if bins is None and template is not None:
+            bins = template.bins
+
+        features_to_ignore = metadata.get("features_to_ignore")
+        if features_to_ignore is None and template is not None:
+            features_to_ignore = template.features_to_ignore
+
+        condition_source = metadata.get("condition_source")
+        if condition_source is None:
+            if template is not None:
+                condition_source = getattr(template, "condition_source", "observed")
+            else:
+                condition_source = "observed"
+
+        if calibrated_explainer is None or x_test is None:
+            raise SerializationError(
+                "ExplanationBatch metadata missing explainer context",
+                details={
+                    "artifact": "ExplanationBatch",
+                    "field": "calibrated_explainer",
+                    "available_keys": tuple(sorted(metadata.keys())),
+                },
+            )
+
+        container = container_cls(
+            calibrated_explainer,
+            x_test,
+            y_threshold,
+            bins,
+            features_to_ignore,
+            condition_source=condition_source,
+        )
+        container.low_high_percentiles = metadata.get(
+            "low_high_percentiles", getattr(template, "low_high_percentiles", None)
+        )
+        container.total_explain_time = metadata.get(
+            "total_explain_time", getattr(template, "total_explain_time", None)
+        )
+        container.feature_filter_per_instance_ignore = metadata.get(
+            "feature_filter_per_instance_ignore",
+            getattr(template, "feature_filter_per_instance_ignore", None),
+        )
+        container.batch_metadata = dict(metadata)
+
+        # Propagate any full probability cube from instances into batch metadata
+        # (keeps collection metadata aligned with telemetry exports). Also
+        # populate a minimal `telemetry` attribute on the materialised
+        # container so callers using `from_batch` directly receive the
+        # same dependency hints and probability summaries as the orchestrator.
+        container.telemetry = {"interval_dependencies": metadata.get("interval_dependencies")}
+        full_probs = None
+        for inst in getattr(batch, "instances", ()):
+            pred = inst.get("prediction") if isinstance(inst, dict) else None
+            if isinstance(pred, dict) and "__full_probabilities__" in pred:
+                full_probs = pred.get("__full_probabilities__")
+                break
+        if full_probs is not None:
+            container.batch_metadata.setdefault("__full_probabilities__", full_probs)
+            with contextlib.suppress(Exception):  # adr002_allow
+                arr = np.asarray(full_probs)
+                container.telemetry = {
+                    "full_probabilities_shape": tuple(arr.shape),
+                    "full_probabilities_summary": {
+                        "mean": float(np.mean(arr)),
+                        "min": float(np.min(arr)),
+                        "max": float(np.max(arr)),
+                    },
+                    "interval_dependencies": metadata.get("interval_dependencies"),
+                }
+
+        for index, instance in enumerate(batch.instances):
+            explanation = instance.get("explanation")
+            if explanation is None:
+                raise SerializationError(
+                    "ExplanationBatch instance missing explanation payload",
+                    details={
+                        "artifact": "ExplanationBatch",
+                        "field": "explanation",
+                        "instance_index": index,
+                    },
+                )
+            if not isinstance(explanation, batch.explanation_cls):
+                raise ValidationError(
+                    "ExplanationBatch instance has unexpected explanation type",
+                    details={
+                        "param": "explanation",
+                        "expected_type": batch.explanation_cls.__name__,
+                        "actual_type": type(explanation).__name__,
+                    },
+                )
+            explanation_copy = copy(explanation)
+            explanation_copy.calibrated_explanations = container
+            container.explanations.append(explanation_copy)
+
         return container
 
     # ------------------------------------------------------------------
@@ -276,6 +440,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         }
         if include_version:
             payload.setdefault("schema_version", "1.0.0")
+
         return payload
 
     def to_json_stream(self, *, chunk_size: int = 256, format: str = "jsonl"):
@@ -422,6 +587,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                         raise
                     rules_blob = {}
 
+        explanation_type = "factual"
+        if isinstance(exp, AlternativeExplanation):
+            explanation_type = "alternative"
+        elif isinstance(exp, FastExplanation):
+            explanation_type = "fast"
+
         payload: dict[str, Any] = {
             "task": getattr(
                 exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
@@ -430,6 +601,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             "feature_weights": _jsonify(getattr(exp, "feature_weights", {})),
             "feature_predict": _jsonify(getattr(exp, "feature_predict", {})),
             "prediction": _jsonify(getattr(exp, "prediction", {})),
+            "explanation_type": explanation_type,
         }
         return payload
 
@@ -1225,8 +1397,8 @@ class AlternativeExplanations(CalibratedExplanations):
         inst.bins = getattr(collection, "bins", None)
         inst.total_explain_time = getattr(collection, "total_explain_time", None)
         inst.features_to_ignore = list(getattr(collection, "features_to_ignore", []))
-        inst.features_to_ignore_per_instance = getattr(
-            collection, "features_to_ignore_per_instance", None
+        inst.feature_filter_per_instance_ignore = getattr(
+            collection, "feature_filter_per_instance_ignore", None
         )
         # Preserve caches if present
         inst._feature_names_cache = getattr(collection, "_feature_names_cache", None)
@@ -1323,7 +1495,27 @@ class FrozenCalibratedExplainer:
         explainer : CalibratedExplainer
             The explainer to be wrapped.
         """
-        self._explainer = deepcopy(explainer)
+        try:
+            self._explainer = deepcopy(explainer)
+        except (
+            Exception
+        ):  # adr002_allow  # pragma: no cover - defensive fallback for unpickleable state
+            # Deepcopy of complex explainer objects can fail; log at DEBUG
+            # instead of emitting a RuntimeWarning to avoid noisy test output.
+            try:
+                import logging
+
+                logging.getLogger(__name__).debug(
+                    "Deepcopy of explainer failed; using original instance for frozen wrapper"
+                )
+            except Exception:  # adr002_allow
+                # If logging fails, fall back to warnings to preserve behavior
+                warnings.warn(
+                    "Deepcopy of explainer failed; using original instance for frozen wrapper",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            self._explainer = explainer
 
     @property
     def explainer(self):

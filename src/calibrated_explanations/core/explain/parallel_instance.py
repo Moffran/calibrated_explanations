@@ -56,7 +56,7 @@ def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, Calibrate
     bins_slice = serialized_state.get("bins_slice")
     low_high_percentiles = serialized_state.get("low_high_percentiles")
     features_to_ignore_array = serialized_state.get("features_to_ignore_array")
-    features_to_ignore_per_instance = serialized_state.get("features_to_ignore_per_instance")
+    feature_filter_per_instance_ignore = serialized_state.get("feature_filter_per_instance_ignore")
     explainer = serialized_state.get("explainer")
     config_state = serialized_state.get("config_state")
 
@@ -69,7 +69,7 @@ def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, Calibrate
         low_high_percentiles=low_high_percentiles,
         bins=bins_slice,
         features_to_ignore=features_to_ignore_array,
-        features_to_ignore_per_instance=features_to_ignore_per_instance,
+        feature_filter_per_instance_ignore=feature_filter_per_instance_ignore,
         use_plugin=False,
         skip_instance_parallel=True,
     )
@@ -77,6 +77,10 @@ def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, Calibrate
     plugin = SequentialExplainExecutor()
     result = plugin.execute(chunk_request, config, explainer)
     return start_idx, result
+
+
+# Public alias for testing
+instance_parallel_task = _instance_parallel_task
 
 
 class InstanceParallelExplainExecutor(BaseExplainExecutor):
@@ -90,6 +94,17 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
     def __init__(self):
         """Initialize the plugin with a sequential plugin for chunk processing."""
         self._sequential_plugin = SequentialExplainExecutor()
+
+    @property
+    def sequential_plugin(self):
+        """The sequential plugin for fallback.
+
+        Returns
+        -------
+        SequentialExplainExecutor
+            The sequential plugin.
+        """
+        return self._sequential_plugin
 
     @property
     def name(self) -> str:
@@ -140,7 +155,9 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
         executor = config.executor
-        features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
+        feature_filter_per_instance_ignore = getattr(
+            request, "feature_filter_per_instance_ignore", None
+        )
 
         n_instances = x_input.shape[0]
         if n_instances == 0:
@@ -187,15 +204,15 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
             start, stop, threshold_slice, bins_slice = ranges[0]
             subset = np.asarray(x_input[start:stop])
             per_instance_chunk = None
-            if features_to_ignore_per_instance is not None:
-                per_instance_chunk = features_to_ignore_per_instance[start:stop]
+            if feature_filter_per_instance_ignore is not None:
+                per_instance_chunk = feature_filter_per_instance_ignore[start:stop]
             chunk_request = ExplainRequest(
                 x=subset,
                 threshold=threshold_slice,
                 low_high_percentiles=request.low_high_percentiles,
                 bins=bins_slice,
                 features_to_ignore=features_to_ignore_array,
-                features_to_ignore_per_instance=per_instance_chunk,
+                feature_filter_per_instance_ignore=per_instance_chunk,
                 use_plugin=False,
                 skip_instance_parallel=True,  # Prevent recursive parallelism
             )
@@ -212,8 +229,8 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
         for start, stop, threshold_slice, bins_slice in ranges:
             subset = np.asarray(x_input[start:stop])
             per_instance_chunk = (
-                features_to_ignore_per_instance[start:stop]
-                if features_to_ignore_per_instance is not None
+                feature_filter_per_instance_ignore[start:stop]
+                if feature_filter_per_instance_ignore is not None
                 else None
             )
 
@@ -231,7 +248,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                     "bins_slice": bins_slice,
                     "low_high_percentiles": request.low_high_percentiles,
                     "features_to_ignore_array": features_to_ignore_array,
-                    "features_to_ignore_per_instance": per_instance_chunk,
+                    "feature_filter_per_instance_ignore": per_instance_chunk,
                     "config_state": config_state,
                 }
             else:
@@ -243,7 +260,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                     "bins_slice": bins_slice,
                     "low_high_percentiles": request.low_high_percentiles,
                     "features_to_ignore_array": features_to_ignore_array,
-                    "features_to_ignore_per_instance": per_instance_chunk,
+                    "feature_filter_per_instance_ignore": per_instance_chunk,
                     "explainer": explainer,
                     "config_state": config_state,
                 }

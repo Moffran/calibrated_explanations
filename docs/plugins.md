@@ -3,8 +3,9 @@
 Calibrated Explanations supports an optional, extensible plugin system. By default,
 you don’t need plugins to run calibrated factual and alternative explanations.
 When you want speed-ups (e.g., FAST) or custom visualizations, install a curated
-external bundle and wire it in. If you’re extending the framework, follow the
-plugin contract to preserve calibration semantics.
+external bundle and wire it in. For built-in Matplotlib-based plotting, install
+the `viz` extra: `pip install "calibrated-explanations[viz]"`. If you’re extending
+the framework, follow the plugin contract to preserve calibration semantics.
 
 Choose your path:
 
@@ -15,11 +16,119 @@ Community listings and the curated install extra live here: {doc}`appendices/ext
 
 Notes
 
-- Plugins are optional and externally distributed. Core workflows work without them (STD-027).
+- Plugins are optional and externally distributed. Core workflows work without them (Standard-004).
 - Wiring methods (priority order):
   1) Explainer parameters; 2) Environment variables; 3) pyproject.toml; 4) Plugin-declared dependencies.
+- ⚠️ **Security warning:** Plugins execute in-process without sandboxing or isolation.
+  This is non-sandboxed execution with full application permissions, so only install and trust
+  plugins from sources you control or have reviewed.
 - Trust/deny controls and discovery are available via the registry and CLI; see contributor docs for details.
 - For detailed wiring (env vars, pyproject, dependency seeding), see {doc}`contributor/extending/plugin-advanced-contract`.
+- ADR references: {doc}`improvement/adrs/ADR-006-plugin-registry-trust-model`,
+  {doc}`improvement/adrs/ADR-013-interval-calibrator-plugin-strategy`,
+  {doc}`improvement/adrs/ADR-015-explanation-plugin`,
+  {doc}`improvement/adrs/ADR-026-explanation-plugin-semantics`.
+
+Trust model (who, why, when)
+----------------------------
+
+**Why it exists:** Plugins run in-process with the same permissions as your application.
+That means third-party code can access data, file systems, and network resources without
+any sandbox boundary.
+The trust model forces explicit operator approval to reduce supply-chain risk and
+avoid accidental execution of unreviewed code.
+
+**How it works (summary):**
+
+- **Built-ins are trusted by default.** Only in-tree plugins ship as auto-trusted.
+- **Third-party plugins require explicit trust.** Set `CE_TRUST_PLUGIN` or add an
+  allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]`.
+- **Denied identifiers are blocked.** `CE_DENY_PLUGIN` skips loading and registration
+  even if a plugin is otherwise discoverable.
+- **Diagnostics are available.** Use the CLI to see trusted vs. untrusted plugins,
+  and include skipped entry points when needed.
+
+**Who should care:**
+
+- **Operators / platform teams:** Govern what plugin code is allowed in production.
+- **Security reviewers:** Audit trust/deny lists and verify plugin provenance.
+- **Plugin authors:** Understand that `trusted` metadata is informational only until
+  an operator explicitly trusts the identifier.
+
+**When to use it:**
+
+- **Development:** Use `CE_TRUST_PLUGIN` for quick, local opt-in.
+- **CI/CD or production:** Prefer the `pyproject.toml` allowlist for auditable,
+  versioned trust decisions.
+- **Incident response or testing:** Use `CE_DENY_PLUGIN` to block a plugin without
+  changing code.
+
+CLI examples:
+
+```bash
+python -m calibrated_explanations.plugins.cli list all --trusted-only
+python -m calibrated_explanations.plugins.cli list all --include-skipped
+python -m calibrated_explanations.plugins.cli report
+python -m calibrated_explanations.plugins.cli validate-interval external.interval.fast
+```
+
+**Env-var and explicit-trust workflow**
+
+- **Wiring precedence (highest → lowest):**
+  1. Explainer parameters / explicit overrides (constructor kwargs or `PluginManager` overrides).
+  2. Environment variables: `CE_EXPLANATION_PLUGIN` (global) then the ADR-015 mode keys
+     (`CE_EXPLANATION_PLUGIN_FACTUAL`, `CE_EXPLANATION_PLUGIN_ALTERNATIVE`,
+     `CE_EXPLANATION_PLUGIN_FAST`); fallbacks may be specified via `<ENV>_FALLBACKS`.
+  3. `pyproject.toml` under `[tool.calibrated_explanations.explanations]`.
+  4. Plugin-declared fallbacks and built-in defaults.
+
+- **Trust semantics (summary):**
+  - Only explicit overrides provided directly to the explainer (step 1) are treated as "explicit" for the trust model. An explicit string override will allow an untrusted plugin to be used but will emit a `UserWarning` prompting you to confirm the plugin source.
+  - Environment variables and `pyproject.toml` entries are *not* considered explicit overrides for bypassing trust; they participate in normal resolution and will not bypass trust checks.
+  - If a *preferred* identifier (selected by env/pyproject/chain logic) is untrusted, resolution fails with a `ConfigurationError` unless the operator explicitly trusts the identifier (see below).
+
+- **Operator controls:**
+  - Use `CE_TRUST_PLUGIN` (comma-separated identifiers) to mark identifiers trusted at runtime.
+  - Add an allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]` for auditable, versioned trust decisions.
+  - Use `CE_DENY_PLUGIN` to block identifiers immediately (useful for incident response or temporary mitigation).
+
+- **Common env keys:** `CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_FACTUAL`,
+  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`,
+  `CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`.
+
+**pyproject trust allowlist example**
+
+```toml
+[tool.calibrated_explanations.plugins]
+trusted = ["external.explanations.fast", "external.interval.fast"]
+```
+
+The allowlist is evaluated for ADR-006 trust decisions across explanation and
+interval plugin registries, so keep identifiers aligned with the plugin
+metadata you install.
+
+**Discovery diagnostics**
+
+Use the discovery report to see which plugins were accepted or skipped (denied,
+untrusted, checksum failures), along with the resolver context that triggered
+the scan:
+
+```bash
+python -m calibrated_explanations.plugins.cli report
+```
+
+The report is particularly helpful when validating ADR-015 explanation plugin
+resolution and ADR-013 interval plugin discovery before enabling plugins in
+production.
+
+**Interval validation**
+
+Validate interval plugins against ADR-013 requirements without running
+explanations:
+
+```bash
+python -m calibrated_explanations.plugins.cli validate-interval external.interval.fast
+```
 
 Writing plot plugins
 --------------------

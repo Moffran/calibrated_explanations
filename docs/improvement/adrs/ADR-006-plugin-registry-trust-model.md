@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-006: Plugin Registry Trust Model
 
@@ -20,9 +20,19 @@ Implement a conservative, opt-in plugin registry with explicit trust policy hook
 - Discovery via entry points group `calibrated_explanations.plugins` (setuptools) or explicit `register_plugin()` call.
 - Registry stores metadata: name, version, provider, capabilities, checksum or signature metadata (optional), `trusted` status.
 - By default, only built-in plugins auto-load. Third-party plugins require explicit trust action: environment variable `CE_TRUST_PLUGIN=<name>` or programmatic `trust_plugin(name)`.
+- Explicit trust allowlists may be stored in `pyproject.toml` under
+  `[tool.calibrated_explanations.plugins].trusted = ["plugin.id", ...]` and are
+  treated as canonical, auditable configuration.
 - Support allowlist/denylist policy controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and a `PluginTrustPolicy` interface that can be overridden by integrators.
+- Trust precedence: explicit API overrides > environment variables >
+  pyproject allowlist > defaults. Third-party metadata flags are never
+  sufficient to override operator trust decisions.
 - On detection of untrusted or denied plugins, emit a warning with guidance and skip load.
 - Provide `list_plugins(include_untrusted=True)` API for diagnostics.
+- Plugin descriptors include a `source`/`origin` attribute (`builtin` vs
+  `entry_point`) to make trust decisions testable and auditable.
+- Registry maintains a `PluginDiscoveryReport` (accepted, skipped_untrusted,
+  skipped_denied, checksum_failures) and exposes it via diagnostics/CLI.
 - Integrity checks: allow authors to supply SHA256 or a signed metadata blob. If present, the registry verifies against the supplied hash/signature and records the result (best-effort, non-blocking unless policy requires it).
 - Activation logging: every plugin load or rejection emits a structured audit event via the existing logging/telemetry hook (name, version, provider, decision, reason).
 - Isolation: no sandboxing initially (document risk); future ADR may explore subprocess / WASM.

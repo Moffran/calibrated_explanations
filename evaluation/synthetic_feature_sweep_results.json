@@ -1,0 +1,2357 @@
+{
+  "meta": {
+    "tasks": [
+      "classification",
+      "regression"
+    ],
+    "feature_counts": [
+      20,
+      50,
+      100,
+      200,
+      500
+    ],
+    "n_samples": 2000,
+    "n_informative": 10,
+    "n_redundant": 0,
+    "n_repeated": 0,
+    "n_classes": 2,
+    "noise": 0.1,
+    "models": [
+      "RF",
+      "HGB"
+    ],
+    "test_size": 0.25,
+    "calibration_size": 0.2,
+    "max_explain": 250,
+    "top_k_values": [
+      4,
+      8,
+      16
+    ],
+    "random_state": 42,
+    "timestamp": 1768556097.700372
+  },
+  "experiments": [
+    {
+      "task": "classification",
+      "n_features": 20,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 3.3309382000006735
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 4.745310900034383,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.2,
+                "median": 0.2,
+                "std": 0.0,
+                "min": 0.2,
+                "max": 0.2
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 4.674798199906945,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.4,
+                "median": 0.4,
+                "std": 0.0,
+                "min": 0.4,
+                "max": 0.4
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 4.527851300081238,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.8,
+                "median": 0.8,
+                "std": 0.0,
+                "min": 0.8,
+                "max": 0.8
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 20,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 3.2132674001622945
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 4.701927099842578,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.2,
+                "median": 0.2,
+                "std": 0.0,
+                "min": 0.2,
+                "max": 0.2
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 6.9039700999855995,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.4,
+                "median": 0.4,
+                "std": 0.0,
+                "min": 0.4,
+                "max": 0.4
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 9.742002399871126,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.8,
+                "median": 0.8,
+                "std": 0.0,
+                "min": 0.8,
+                "max": 0.8
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 50,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 8.1386906998232
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 12.44228529999964,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 12.232421400025487,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 12.270053199958056,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.32,
+                "median": 0.32,
+                "std": 0.0,
+                "min": 0.32,
+                "max": 0.32
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 50,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 8.321071399841458
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 14.466706600040197,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 33.58256120001897,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 32.95711340010166,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.32,
+                "median": 0.32,
+                "std": 0.0,
+                "min": 0.32,
+                "max": 0.32
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 100,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 16.062416899949312
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 25.038995899958536,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 25.923564000055194,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 25.64951190003194,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 100,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 15.09570850012824
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 28.287385999923572,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 21.08756130002439,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 58.26781029999256,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 200,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 38.1927768997848
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 58.74691960006021,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.02,
+                "median": 0.02,
+                "std": 0.0,
+                "min": 0.02,
+                "max": 0.02
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 55.949051700066775,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 56.209999499842525,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 200,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 30.634955199901015
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 95.87543689995073,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.02,
+                "median": 0.02,
+                "std": 0.0,
+                "min": 0.02,
+                "max": 0.02
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 83.12341780005954,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 52.440219999989495,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 500,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 114.32747599994764
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 176.32612069998868,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.008000000000000002,
+                "median": 0.008,
+                "std": 1.734723475976807e-18,
+                "min": 0.008,
+                "max": 0.008
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 165.86103070015088,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.016000000000000004,
+                "median": 0.016,
+                "std": 3.469446951953614e-18,
+                "min": 0.016,
+                "max": 0.016
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 176.99806179990992,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.03200000000000001,
+                "median": 0.032,
+                "std": 6.938893903907228e-18,
+                "min": 0.032,
+                "max": 0.032
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "classification",
+      "n_features": 500,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 75.75350450002588
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 125.76380480010994,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.008000000000000002,
+                "median": 0.008,
+                "std": 1.734723475976807e-18,
+                "min": 0.008,
+                "max": 0.008
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 162.73241290007718,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.016000000000000004,
+                "median": 0.016,
+                "std": 3.469446951953614e-18,
+                "min": 0.016,
+                "max": 0.016
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 139.17442459985614,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.03200000000000001,
+                "median": 0.032,
+                "std": 6.938893903907228e-18,
+                "min": 0.032,
+                "max": 0.032
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 20,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 3.8003125998657197
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 8.97426429996267,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.2,
+                "median": 0.2,
+                "std": 0.0,
+                "min": 0.2,
+                "max": 0.2
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 5.839175900211558,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.4,
+                "median": 0.4,
+                "std": 0.0,
+                "min": 0.4,
+                "max": 0.4
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 7.877534700091928,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.8,
+                "median": 0.8,
+                "std": 0.0,
+                "min": 0.8,
+                "max": 0.8
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 20,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 3.516026600031182
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 5.478419599821791,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.2,
+                "median": 0.2,
+                "std": 0.0,
+                "min": 0.2,
+                "max": 0.2
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 4.965355499880388,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.4,
+                "median": 0.4,
+                "std": 0.0,
+                "min": 0.4,
+                "max": 0.4
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 4.2135892999358475,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.8,
+                "median": 0.8,
+                "std": 0.0,
+                "min": 0.8,
+                "max": 0.8
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 20.0,
+                "median": 20.0,
+                "std": 0.0,
+                "min": 20.0,
+                "max": 20.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 50,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 9.172114399960265
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 13.89269100013189,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 14.180666600121185,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 14.1145072998479,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.32,
+                "median": 0.32,
+                "std": 0.0,
+                "min": 0.32,
+                "max": 0.32
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 50,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 7.691483899950981
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 14.157616800162941,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 11.749384199967608,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 16.920058300020173,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.32,
+                "median": 0.32,
+                "std": 0.0,
+                "min": 0.32,
+                "max": 0.32
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 50.0,
+                "median": 50.0,
+                "std": 0.0,
+                "min": 50.0,
+                "max": 50.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 100,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 16.165774900000542
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 25.424500100081787,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 26.735212199855596,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 26.547734500141814,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 100,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 13.71137830009684
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 21.630355700151995,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 21.354510799981654,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 18.641025700140744,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.16,
+                "median": 0.16,
+                "std": 0.0,
+                "min": 0.16,
+                "max": 0.16
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 100.0,
+                "median": 100.0,
+                "std": 0.0,
+                "min": 100.0,
+                "max": 100.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 200,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 39.95683509996161
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 58.7800904000178,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.02,
+                "median": 0.02,
+                "std": 0.0,
+                "min": 0.02,
+                "max": 0.02
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 61.04800570011139,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 61.19198119989596,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 200,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 31.816283999942243
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 47.06910700001754,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.02,
+                "median": 0.02,
+                "std": 0.0,
+                "min": 0.02,
+                "max": 0.02
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 58.414117499953136,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.04,
+                "median": 0.04,
+                "std": 0.0,
+                "min": 0.04,
+                "max": 0.04
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 75.83657789998688,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.08,
+                "median": 0.08,
+                "std": 0.0,
+                "min": 0.08,
+                "max": 0.08
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 200.0,
+                "median": 200.0,
+                "std": 0.0,
+                "min": 200.0,
+                "max": 200.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 500,
+      "n_informative": 10,
+      "model": "RF",
+      "baseline": {
+        "explain_factual": 117.36122720013373
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 179.008721599821,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.008000000000000002,
+                "median": 0.008,
+                "std": 1.734723475976807e-18,
+                "min": 0.008,
+                "max": 0.008
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 190.87204190017655,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.016000000000000004,
+                "median": 0.016,
+                "std": 3.469446951953614e-18,
+                "min": 0.016,
+                "max": 0.016
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 203.47605259995908,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.03200000000000001,
+                "median": 0.032,
+                "std": 6.938893903907228e-18,
+                "min": 0.032,
+                "max": 0.032
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task": "regression",
+      "n_features": 500,
+      "n_informative": 10,
+      "model": "HGB",
+      "baseline": {
+        "explain_factual": 86.70721729984507
+      },
+      "top_k": {
+        "4": {
+          "explain_factual": {
+            "time": 188.1247323001735,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.008000000000000002,
+                "median": 0.008,
+                "std": 1.734723475976807e-18,
+                "min": 0.008,
+                "max": 0.008
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "8": {
+          "explain_factual": {
+            "time": 121.75367240002379,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.016000000000000004,
+                "median": 0.016,
+                "std": 3.469446951953614e-18,
+                "min": 0.016,
+                "max": 0.016
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        },
+        "16": {
+          "explain_factual": {
+            "time": 118.56638650014065,
+            "overlap": {
+              "jaccard_topk": {
+                "mean": 0.03200000000000001,
+                "median": 0.032,
+                "std": 6.938893903907228e-18,
+                "min": 0.032,
+                "max": 0.032
+              },
+              "topk_inclusion": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              },
+              "kept_feature_count": {
+                "mean": 500.0,
+                "median": 500.0,
+                "std": 0.0,
+                "min": 500.0,
+                "max": 500.0
+              },
+              "spearman_rank": {
+                "mean": 1.0,
+                "median": 1.0,
+                "std": 0.0,
+                "min": 1.0,
+                "max": 1.0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

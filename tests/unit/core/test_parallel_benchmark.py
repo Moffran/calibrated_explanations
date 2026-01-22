@@ -29,16 +29,16 @@ def test_parallel_benchmark_collects_results(monkeypatch: pytest.MonkeyPatch):
 
     class DummyExplainer:
         def __init__(self):
-            self._parallel_executor = None
+            self.parallel_executor_state = None
             self.executions = 0
 
         @property
         def parallel_executor(self):
-            return self._parallel_executor
+            return self.parallel_executor_state
 
         @parallel_executor.setter
         def parallel_executor(self, value):
-            self._parallel_executor = value
+            self.parallel_executor_state = value
 
         def explain(self, data):
             self.executions += 1

@@ -105,4 +105,32 @@ def deprecate_alias(alias: str, canonical: str, *, stacklevel: int = 3) -> None:
     )
 
 
-__all__ = ["deprecate", "deprecate_alias"]
+def emitted_keys() -> set[str]:
+    """Return a shallow copy of session-emitted deprecation keys."""
+    return set(_EMITTED)
+
+
+def emitted_per_test() -> dict[str, set[str]]:
+    """Return a shallow copy of the per-test emitted map."""
+    return {k: set(v) for k, v in _EMITTED_PER_TEST.items()}
+
+
+def clear_emitted() -> None:
+    """Clear the session-wide emitted deprecation keys."""
+    _EMITTED.clear()
+
+
+def clear_emitted_per_test() -> None:
+    """Clear the per-test emitted deprecation map."""
+    _EMITTED_PER_TEST.clear()
+
+
+__all__ = [
+    "deprecate",
+    "deprecate_alias",
+    "should_raise",
+    "emitted_keys",
+    "emitted_per_test",
+    "clear_emitted",
+    "clear_emitted_per_test",
+]

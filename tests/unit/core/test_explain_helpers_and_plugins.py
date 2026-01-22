@@ -108,7 +108,7 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
         bins,
         features_to_ignore,
         *,
-        features_to_ignore_per_instance=None,
+        feature_filter_per_instance_ignore=None,
     ):
         n = x.shape[0]
         # predict, low, high arrays sized for the n instances (no perturbed entries)
@@ -733,5 +733,5 @@ def test_finalize_explanation_attaches_per_instance_ignore():
         explainer=explainer,
     )
 
-    assert hasattr(out, "features_to_ignore_per_instance")
-    assert out.features_to_ignore_per_instance == per_instance_ignore
+    assert hasattr(out, "feature_filter_per_instance_ignore")
+    assert out.feature_filter_per_instance_ignore == per_instance_ignore

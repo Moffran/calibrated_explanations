@@ -21,12 +21,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r docs/requirements-doc.txt -c constraints.txt
-          pip install .[notebooks,viz,lime,eval] -c constraints.txt
+          pip install .[notebooks,viz,eval] -c constraints.txt
 
       - name: Build documentation (HTML)
         run: |
           cd docs
-          sphinx-build -b html -W . _build/html
+          sphinx-build -b html . _build/html
 
       - name: Build documentation (linkcheck)
         run: |

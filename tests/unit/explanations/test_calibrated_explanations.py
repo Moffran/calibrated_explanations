@@ -297,7 +297,7 @@ def test_from_batch_validation_errors(collection: CalibratedExplanations) -> Non
     batch_missing = SimpleNamespace(collection_metadata={})
     with pytest.raises(SerializationError):
         CalibratedExplanations.from_batch(batch_missing)
-    batch_wrong = SimpleNamespace(collection_metadata={"container": object()})
+    batch_wrong = SimpleNamespace(container_cls=object, collection_metadata={"container": object()})
     with pytest.raises(ValidationError):
         CalibratedExplanations.from_batch(batch_wrong)
 

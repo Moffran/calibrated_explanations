@@ -181,18 +181,20 @@ def build_explain_execution_plan(
     """Prepare explain execution request and config using explain-local rules."""
     prepared_x = validate_and_prepare_input(explainer, x)
     features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
-    features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
-    if isinstance(features_to_ignore_per_instance, Iterable) and not isinstance(
-        features_to_ignore_per_instance, (str, bytes)
+    feature_filter_per_instance_ignore = getattr(
+        request, "feature_filter_per_instance_ignore", None
+    )
+    if isinstance(feature_filter_per_instance_ignore, Iterable) and not isinstance(
+        feature_filter_per_instance_ignore, (str, bytes)
     ):
         merged_per_instance: list[np.ndarray] = []
-        for i, inst_mask in enumerate(features_to_ignore_per_instance):
+        for i, inst_mask in enumerate(feature_filter_per_instance_ignore):
             if i >= len(prepared_x):
                 break
             inst_arr = as_int_array(inst_mask)
             merged = np.union1d(features_to_ignore_array, inst_arr)
             merged_per_instance.append(merged)
-        features_to_ignore_per_instance = merged_per_instance
+        feature_filter_per_instance_ignore = merged_per_instance
     low_high_percentiles = tuple(request.low_high_percentiles or _DEFAULT_PERCENTILES)
 
     explain_request = ExplainRequest(
@@ -201,7 +203,8 @@ def build_explain_execution_plan(
         low_high_percentiles=low_high_percentiles,
         bins=request.bins,
         features_to_ignore=features_to_ignore_array,
-        features_to_ignore_per_instance=features_to_ignore_per_instance,
+        feature_filter_per_instance_ignore=feature_filter_per_instance_ignore,
+        interval_summary=getattr(request, "interval_summary", None),
         use_plugin=False,
         skip_instance_parallel=False,
     )
@@ -304,7 +307,7 @@ def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
                 features_to_ignore=state.get("features_to_ignore_array")
                 if isinstance(state, dict)
                 else None,
-                features_to_ignore_per_instance=state.get("features_to_ignore_per_instance")
+                feature_filter_per_instance_ignore=state.get("feature_filter_per_instance_ignore")
                 if isinstance(state, dict)
                 else None,
                 use_plugin=False,
@@ -318,3 +321,4 @@ def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
 
     globals()["explain_slice"] = explain_slice
     globals()["_worker_harness"] = types.SimpleNamespace(explain_slice=explain_slice)
+    globals()["worker_harness"] = globals()["_worker_harness"]

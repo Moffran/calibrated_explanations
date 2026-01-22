@@ -1,30 +1,27 @@
-import importlib
-import sys
+from __future__ import annotations
+
+from calibrated_explanations.plugins.plots import CombinedPlotPlugin
 
 
-def test_plots_typealias_fallback(monkeypatch):
-    module_name = "calibrated_explanations.plugins.plots"
-    original_module = sys.modules.get(module_name)
-    if original_module is not None:
-        sys.modules.pop(module_name)
+class DummyPlotBuilder:
+    plugin_meta = {"builder": True}
 
-    original_import = importlib.import_module
+    def build(self, *args, **kwargs):
+        return "artifact"
 
-    def fake_import(name, package=None):
-        if name == "typing":
-            raise ImportError("TypeAlias unavailable")
-        return original_import(name, package)
 
-    monkeypatch.setattr(importlib, "import_module", fake_import)
+class DummyPlotRenderer:
+    plugin_meta = {"renderer": True}
 
-    try:
-        module = importlib.import_module(module_name)
-        assert module.TypeAlias is object
-    finally:
-        monkeypatch.setattr(importlib, "import_module", original_import)
-        sys.modules.pop(module_name, None)
-        if original_module is not None:
-            sys.modules[module_name] = original_module
-            importlib.reload(original_module)
-        else:
-            importlib.import_module(module_name)
+    def render(self, artifact, *, context=None):
+        return f"rendered {artifact} {context}"
+
+
+def test_combined_plot_plugin_delegates():
+    builder = DummyPlotBuilder()
+    renderer = DummyPlotRenderer()
+    plugin = CombinedPlotPlugin(builder, renderer)
+
+    assert plugin.plugin_meta == builder.plugin_meta
+    assert plugin.build("context") == "artifact"
+    assert plugin.render("artifact", context="ctx") == "rendered artifact ctx"

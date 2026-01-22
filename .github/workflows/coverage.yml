@@ -1,0 +1,41 @@
+name: coverage-check
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -c constraints.txt
+          pip install -e .[dev,eval,viz] -c constraints.txt
+          pip install pytest pytest-cov codecov -c constraints.txt
+
+      - name: Run full test suite with coverage and fail-under
+        run: |
+          pytest -q --cov=src --cov-report=xml:coverage.xml --cov-fail-under=90
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5.5.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+
+      - name: Run per-module coverage gates
+        run: python scripts/check_coverage_gates.py coverage.xml

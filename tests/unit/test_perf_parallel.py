@@ -138,6 +138,7 @@ class TestParallelExecutor:
             # Should resolve to thread strategy partial
             assert strategy.func == executor.thread_strategy
 
+    @pytest.mark.skipif(os.name == "nt", reason="PosixPath not supported on Windows")
     def test_strategy_auto_selection_low_cpu(self):
         """Test auto strategy selects threads on low CPU count."""
         cfg = ParallelConfig(enabled=True, strategy="auto")
@@ -150,6 +151,7 @@ class TestParallelExecutor:
             strategy = executor.resolve_strategy()
             assert strategy.func == executor.thread_strategy
 
+    @pytest.mark.skipif(os.name == "nt", reason="PosixPath not supported on Windows")
     def test_strategy_auto_selection_joblib(self):
         """Test auto strategy prefers joblib when available and CPUs > 2."""
         cfg = ParallelConfig(enabled=True, strategy="auto")
@@ -271,7 +273,7 @@ class TestParallelExecutor:
             return x * 2
 
         items = [1, 2, 3]
-        results = executor._serial_strategy(tracking_fn, items)
+        results = executor.serial_strategy(tracking_fn, items)
 
         assert results == [2, 4, 6]
         assert call_order == [1, 2, 3]

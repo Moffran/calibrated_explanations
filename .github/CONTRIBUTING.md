@@ -16,7 +16,7 @@ Since we are now open to contributions, we welcome your feedback, suggestions, a
 - Release Plan: see `docs/improvement/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
 - Milestone Plan: see `vx.y.z_plan.md` (e.g., `v0.10.1_plan.md`) for detailed checklists that map to each release plan milestone.
 - ADRs: see `docs/improvement/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
-- Documentation: Follow [STD-027](docs/standards/STD-027-documentation-audience-standard.md) for all documentation structure and audience guidelines.
+- Documentation: Follow [Standard-004](docs/standards/STD-004-documentation-audience-standard.md) for all documentation structure and audience guidelines.
 
 Current highlights coming from reported issues and the release plan:
 

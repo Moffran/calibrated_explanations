@@ -53,19 +53,11 @@ class DummyCalibratedExplainer:
         self.sample_percentiles = [5.0, 95.0]
         self.is_multiclass = False
         self.discretizer = object()
-        self._predict = lambda data: np.ones(len(data))
+        self.predict_func = lambda data: np.ones(len(data))
         self.rule_boundaries = []
         self.learner = "dummy"
         self.difficulty_estimator = "difficulty"
-        self._plugin_manager = PluginManager(self)
-
-    @property
-    def plugin_manager(self):
-        return self._plugin_manager
-
-    @plugin_manager.setter
-    def plugin_manager(self, value):
-        self._plugin_manager = value
+        self.plugin_manager = PluginManager(self)
 
     def discretize(self, values):
         # Mock discretization for testing
@@ -78,7 +70,7 @@ class DummyCalibratedExplainer:
         return None, DummyShapExplanation(self.num_features)
 
     def predict_calibrated(self, data):
-        return self._predict(data)
+        return self.predict_func(data)
 
     def infer_explanation_mode(self):
         return "factual"
@@ -421,9 +413,23 @@ def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
     class DummyBatch:
         def __init__(self, container):
             self.collection_metadata = {"container": container}
+            if hasattr(container, "explanations"):
+                self.instances = [{"explanation": exp} for exp in container.explanations]
+                self.container_cls = type(container)
+                self.explanation_cls = type(container.explanations[0])
+            else:
+                self.instances = []
+                self.container_cls = None
+                self.explanation_cls = object
 
     restored = CalibratedExplanations.from_batch(DummyBatch(calibrated_collection))
-    assert restored is calibrated_collection
+    # ADR-015: from_batch must reconstruct a new instance even if template is provided
+    assert restored is not calibrated_collection
+    assert (
+        restored.calibrated_explainer.num_features
+        == calibrated_collection.calibrated_explainer.num_features
+    )
+    assert len(restored.explanations) == len(calibrated_collection.explanations)
 
     with pytest.raises(SerializationError):
         CalibratedExplanations.from_batch(DummyBatch(None))

@@ -1,0 +1,126 @@
+[
+  {
+    "explanation_type": "fast",
+    "feature_predict": {
+      "high": [
+        Infinity,
+        Infinity
+      ],
+      "low": [
+        -Infinity,
+        -Infinity
+      ],
+      "predict": [
+        0.5,
+        0.5
+      ]
+    },
+    "feature_weights": {
+      "high": [
+        Infinity,
+        Infinity
+      ],
+      "low": [
+        -Infinity,
+        -Infinity
+      ],
+      "predict": [
+        0.0,
+        0.0
+      ]
+    },
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 0.5
+    },
+    "rules": {
+      "base_predict": [
+        0.5
+      ],
+      "base_predict_high": [
+        Infinity
+      ],
+      "base_predict_low": [
+        -Infinity
+      ],
+      "classes": 1.0,
+      "feature": [],
+      "feature_value": [],
+      "is_conjunctive": [],
+      "predict": [],
+      "predict_high": [],
+      "predict_low": [],
+      "rule": [],
+      "sampled_values": [],
+      "value": [],
+      "weight": [],
+      "weight_high": [],
+      "weight_low": []
+    },
+    "task": "regression"
+  },
+  {
+    "explanation_type": "fast",
+    "feature_predict": {
+      "high": [
+        Infinity,
+        Infinity
+      ],
+      "low": [
+        -Infinity,
+        -Infinity
+      ],
+      "predict": [
+        1.5,
+        1.5
+      ]
+    },
+    "feature_weights": {
+      "high": [
+        Infinity,
+        Infinity
+      ],
+      "low": [
+        -Infinity,
+        -Infinity
+      ],
+      "predict": [
+        0.0,
+        0.0
+      ]
+    },
+    "prediction": {
+      "classes": 1.0,
+      "high": Infinity,
+      "low": -Infinity,
+      "predict": 1.5
+    },
+    "rules": {
+      "base_predict": [
+        1.5
+      ],
+      "base_predict_high": [
+        Infinity
+      ],
+      "base_predict_low": [
+        -Infinity
+      ],
+      "classes": 1.0,
+      "feature": [],
+      "feature_value": [],
+      "is_conjunctive": [],
+      "predict": [],
+      "predict_high": [],
+      "predict_low": [],
+      "rule": [],
+      "sampled_values": [],
+      "value": [],
+      "weight": [],
+      "weight_high": [],
+      "weight_low": []
+    },
+    "task": "regression"
+  }
+]

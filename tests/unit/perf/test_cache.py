@@ -593,7 +593,7 @@ def test_calibrator_cache_telemetry_events_coverage() -> None:
     def big_estimator(event: str, payload: Dict[str, object]) -> None:
         events[event] = events.get(event, 0) + 1
 
-    big_cache.cache._telemetry = big_estimator
+    big_cache.cache.telemetry_handler = big_estimator
     big_cache.set(stage="oversized", parts=["x"], value=[1, 2, 3, 4, 5])
     assert events.get("cache_skip", 0) >= 1
 

@@ -16,28 +16,40 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import logging
+import warnings
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
+from ...logging import (
+    ensure_logging_context_filter,
+    logging_context,
+    telemetry_diagnostic_mode,
+)
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
+    ExplainerHandle,
     ExplanationContext,
     ExplanationRequest,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
+    find_explanation_plugin_trusted,
     is_identifier_denied,
     validate_explanation_batch,
 )
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
-from ...utils.exceptions import ConfigurationError
+from ...utils.exceptions import CalibratedError, ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
+_TELEMETRY_LOGGER = logging.getLogger("calibrated_explanations.telemetry.explanation")
+ensure_logging_context_filter()
 
 
 class ExplanationOrchestrator:
@@ -141,7 +153,11 @@ class ExplanationOrchestrator:
         condition_labels = None
         if selected_condition_source == "prediction":
             predictions = self.explainer.predict(
-                x_cal, calibrated=True, uq_interval=False, bins=self.explainer.bins
+                x_cal,
+                calibrated=True,
+                uq_interval=False,
+                bins=self.explainer.bins,
+                _ce_skip_reject=True,
             )
             if isinstance(predictions, tuple):
                 predictions = predictions[0]
@@ -226,6 +242,8 @@ class ExplanationOrchestrator:
         bins: Any,
         features_to_ignore: Any,
         extras: Mapping[str, Any] | None = None,
+        reject_policy: Any | None = None,
+        _ce_skip_reject: bool = False,
     ) -> Any:
         """Execute the full explanation pipeline for the given mode.
 
@@ -256,7 +274,53 @@ class ExplanationOrchestrator:
         ConfigurationError
             If plugin resolution, initialization, or invocation fails.
         """
+        # Reject orchestration:
+        # - default behavior remains "no reject" (ADR-029)
+        # - if reject_policy is not provided (None), fall back to the explainer's
+        #   default_reject_policy
+        # - per-call policy overrides the explainer-level default
+        from ...core.reject.policy import RejectPolicy
+
+        if not _ce_skip_reject:
+            candidate_policy = reject_policy
+            if candidate_policy is None:
+                candidate_policy = getattr(
+                    self.explainer, "default_reject_policy", RejectPolicy.NONE
+                )
+
+            try:
+                effective_policy = RejectPolicy(candidate_policy)
+            except Exception:  # adr002_allow
+                effective_policy = RejectPolicy.NONE
+
+            if effective_policy is not RejectPolicy.NONE:
+                # Ensure reject orchestrator is available (implicit enable)
+                try:
+                    _ = self.explainer.reject_orchestrator
+                except Exception:  # adr002_allow
+                    with contextlib.suppress(Exception):
+                        self.explainer.plugin_manager.initialize_orchestrators()
+
+                def _explain_fn(x_subset, **inner_kw):
+                    return self.invoke(
+                        mode,
+                        x_subset,
+                        threshold,
+                        low_high_percentiles,
+                        inner_kw.get("bins", bins),
+                        features_to_ignore,
+                        extras=extras,
+                        _ce_skip_reject=True,
+                    )
+
+                return self.explainer.reject_orchestrator.apply_policy(
+                    effective_policy, x, explain_fn=_explain_fn, bins=bins
+                )
+
         plugin, _identifier = self.ensure_plugin(mode)
+        explainer_identifier = getattr(self.explainer, "explainer_id", None) or str(
+            id(self.explainer)
+        )
         per_instance_ignore = None
         features_arg = features_to_ignore or []
         if (
@@ -273,39 +337,86 @@ class ExplanationOrchestrator:
         else:
             features_to_ignore_flat = tuple(features_arg)
 
-        request = ExplanationRequest(
-            threshold=threshold,
-            low_high_percentiles=(
-                tuple(low_high_percentiles) if low_high_percentiles is not None else None
-            ),
-            bins=tuple(bins) if bins is not None else None,
-            features_to_ignore=features_to_ignore_flat,
-            extras=dict(extras or {}),
-            features_to_ignore_per_instance=per_instance_ignore,
-        )
-        monitor = self.explainer.plugin_manager.get_bridge_monitor(_identifier or mode)
-        if monitor is not None:
-            monitor.reset_usage()
-        try:
-            batch = plugin.explain_batch(x, request)
-        except (
-            Exception
-        ) as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
-            raise ConfigurationError(
-                f"Explanation plugin execution failed for mode '{mode}': {exc}"
-            ) from exc
-        try:
-            validate_explanation_batch(
-                batch,
-                expected_mode=mode,
-                expected_task=self.explainer.mode,
+        # Attempt FAST-based feature filtering if enabled and not already overridden by user
+        feature_filter_config = getattr(self.explainer, "feature_filter_config", None)
+        if (
+            mode in {"factual", "alternative"}
+            and per_instance_ignore is None
+            and feature_filter_config is not None
+            and getattr(feature_filter_config, "enabled", False) is True
+        ):
+            try:
+                from ._feature_filter import compute_filtered_features_to_ignore
+
+                # Run a lightweight FAST explanation on the same batch
+                fast_results = self.invoke(
+                    mode="fast",
+                    x=x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    bins=bins,
+                    # Pass the baseline ignore set so FAST respects it
+                    features_to_ignore=features_to_ignore_flat,
+                    extras=extras,
+                    _ce_skip_reject=True,
+                )
+
+                filter_res = compute_filtered_features_to_ignore(
+                    fast_results,
+                    num_features=getattr(self.explainer, "num_features", None),
+                    base_ignore=np.array(features_to_ignore_flat, dtype=int),
+                    config=feature_filter_config,
+                )
+
+                # Update ignore sets with the filtered results
+                features_to_ignore_flat = tuple(int(f) for f in filter_res.global_ignore)
+                per_instance_ignore = tuple(
+                    tuple(int(f) for f in row) for row in filter_res.per_instance_ignore
+                )
+            except Exception as exc:  # adr002_allow
+                logging.getLogger(__name__).warning(
+                    "FAST feature filtering failed; proceeding with baseline ignores: %s", exc
+                )
+
+        with logging_context(
+            mode=mode,
+            plugin_identifier=_identifier or mode,
+            explainer_id=explainer_identifier,
+        ):
+            request = ExplanationRequest(
+                threshold=threshold,
+                low_high_percentiles=(
+                    tuple(low_high_percentiles) if low_high_percentiles is not None else None
+                ),
+                bins=tuple(bins) if bins is not None else None,
+                features_to_ignore=features_to_ignore_flat,
+                interval_summary=(extras or {}).get(
+                    "interval_summary", self.explainer.interval_summary
+                ),
+                extras=dict(extras or {}),
+                feature_filter_per_instance_ignore=per_instance_ignore,
             )
-        except (
-            Exception
-        ) as exc:  # ADR002_ALLOW: rewrap validation errors with context.  # pragma: no cover
-            raise ConfigurationError(
-                f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
-            ) from exc
+            monitor = self.explainer.plugin_manager.get_bridge_monitor(_identifier or mode)
+            if monitor is not None:
+                monitor.reset_usage()
+            try:
+                batch = plugin.explain_batch(x, request)
+            except Exception as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
+                raise ConfigurationError(
+                    f"Explanation plugin execution failed for mode '{mode}': {exc}"
+                ) from exc
+            try:
+                validate_explanation_batch(
+                    batch,
+                    expected_mode=mode,
+                    expected_task=self.explainer.mode,
+                )
+            except (
+                Exception
+            ) as exc:  # ADR002_ALLOW: rewrap validation errors with context.  # pragma: no cover
+                raise ConfigurationError(
+                    f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
+                ) from exc
 
         metadata = batch.collection_metadata
         metadata.setdefault("task", self.explainer.mode)
@@ -360,6 +471,30 @@ class ExplanationOrchestrator:
             if instance_payload:
                 telemetry_payload.update(instance_payload)
                 self.explainer.plugin_manager.last_telemetry.update(instance_payload)
+            telemetry_snapshot_keys = (
+                "interval_dependencies",
+                "full_probabilities_shape",
+                "full_probabilities_summary",
+                "plot_source",
+                "plot_fallbacks",
+                "interval_source",
+                "proba_source",
+                "mode",
+                "task",
+            )
+            telemetry_snapshot = {
+                key: telemetry_payload.get(key)
+                for key in telemetry_snapshot_keys
+                if telemetry_payload.get(key) is not None
+            }
+            log_extra = {
+                "mode": mode,
+                "plugin_identifier": _identifier or mode,
+                "explainer_id": explainer_identifier,
+                "telemetry_snapshot": telemetry_snapshot,
+                "telemetry_fields": tuple(sorted(telemetry_payload.keys())),
+            }
+            _TELEMETRY_LOGGER.info("explanation telemetry payload constructed", extra=log_extra)
             with contextlib.suppress(Exception):
                 result.telemetry = dict(telemetry_payload)
             # parity instrumentation removed
@@ -378,6 +513,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        reject_policy: Any | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute factual explanation with automatic discretizer setting.
@@ -425,6 +561,7 @@ class ExplanationOrchestrator:
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
+                interval_summary=kwargs.get("interval_summary", self.explainer.interval_summary),
             )
 
         return self.invoke(
@@ -435,6 +572,7 @@ class ExplanationOrchestrator:
             bins=bins,
             features_to_ignore=features_to_ignore,
             extras=kwargs,
+            **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
     def invoke_alternative(  # pylint: disable=invalid-name
@@ -446,6 +584,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        reject_policy: Any | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute alternative explanation with automatic discretizer setting.
@@ -493,6 +632,7 @@ class ExplanationOrchestrator:
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
+                interval_summary=kwargs.get("interval_summary", self.explainer.interval_summary),
             )
 
         return self.invoke(
@@ -503,6 +643,7 @@ class ExplanationOrchestrator:
             bins=bins,
             features_to_ignore=features_to_ignore,
             extras=kwargs,
+            **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
     def ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
@@ -518,49 +659,56 @@ class ExplanationOrchestrator:
         tuple
             A tuple of (plugin_instance, plugin_identifier).
         """
-        if mode in self.explainer.plugin_manager.explanation_plugin_instances:
-            return (
-                self.explainer.plugin_manager.explanation_plugin_instances[mode],
-                self.explainer.plugin_manager.explanation_plugin_identifiers.get(mode),
-            )
-
-        plugin, identifier = self.resolve_plugin(mode)
-        metadata: Mapping[str, Any] | None = None
-        if identifier:
-            descriptor = find_explanation_descriptor(identifier)
-            if descriptor:
-                metadata = descriptor.metadata
-                interval_dependency = metadata.get("interval_dependency")
-                hints = coerce_string_tuple(interval_dependency)
-                if hints:
-                    self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
-            else:
-                metadata = getattr(plugin, "plugin_meta", None)
-        else:
-            metadata = getattr(plugin, "plugin_meta", None)
-
-        error = self.check_metadata(
-            metadata,
-            identifier=identifier,
+        # Set logging context for plugin resolution
+        with logging_context(
+            explainer_id=getattr(self.explainer, "id", None),
             mode=mode,
-        )
-        if error:
-            raise ConfigurationError(error)
+        ):
+            if mode in self.explainer.plugin_manager.explanation_plugin_instances:
+                return (
+                    self.explainer.plugin_manager.explanation_plugin_instances[mode],
+                    self.explainer.plugin_manager.explanation_plugin_identifiers.get(mode),
+                )
 
-        if metadata is not None and not identifier:
-            hints = coerce_string_tuple(metadata.get("interval_dependency"))
-            if hints:
-                self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
+            plugin, identifier = self.resolve_plugin(mode)
+            # Update context with resolved plugin identifier
+            with logging_context(plugin_identifier=identifier):
+                metadata: Mapping[str, Any] | None = None
+                if identifier:
+                    descriptor = find_explanation_descriptor(identifier)
+                    if descriptor:
+                        metadata = descriptor.metadata
+                        interval_dependency = metadata.get("interval_dependency")
+                        hints = coerce_string_tuple(interval_dependency)
+                        if hints:
+                            self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
+                    else:
+                        metadata = getattr(plugin, "plugin_meta", None)
+                else:
+                    metadata = getattr(plugin, "plugin_meta", None)
 
-        context = self.build_context(mode, plugin, identifier)
-        try:
-            plugin.initialize(context)
-        except (
-            Exception
-        ) as exc:  # ADR002_ALLOW: wrap plugin initialization failure.  # pragma: no cover
-            raise ConfigurationError(
-                f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
-            ) from exc
+                error = self.check_metadata(
+                    metadata,
+                    identifier=identifier,
+                    mode=mode,
+                )
+                if error:
+                    raise ConfigurationError(error)
+
+                if metadata is not None and not identifier:
+                    hints = coerce_string_tuple(metadata.get("interval_dependency"))
+                    if hints:
+                        self.explainer.plugin_manager.interval_plugin_hints[mode] = hints
+
+                context = self.build_context(mode, plugin, identifier)
+                try:
+                    plugin.initialize(context)
+                except (
+                    Exception
+                ) as exc:  # ADR002_ALLOW: wrap plugin initialization failure.  # pragma: no cover
+                    raise ConfigurationError(
+                        f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
+                    ) from exc
 
         self.explainer.plugin_manager.explanation_plugin_instances[mode] = plugin
         if identifier:
@@ -587,15 +735,42 @@ class ExplanationOrchestrator:
             If no suitable plugin can be resolved.
         """
         ensure_builtin_plugins()
+        # Ensure plugin fallback chains are initialized for this explainer so
+        # explicit overrides, env vars, and pyproject settings are respected
+        # during resolution. Only initialize when the chain for *mode* is
+        # missing to avoid overwriting test-injected or precomputed chains.
+        pm = getattr(self.explainer, "plugin_manager", None)
+        if pm is not None:
+            existing = None
+            with contextlib.suppress(CalibratedError):
+                existing = pm.explanation_plugin_fallbacks.get(mode)
+            if not existing:
+                with contextlib.suppress(CalibratedError):
+                    pm.initialize_chains()
 
         raw_override = self.explainer.plugin_manager.explanation_plugin_overrides.get(mode)
         override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
         if override is not None and not isinstance(override, str):
             plugin = override
             identifier = getattr(plugin, "plugin_meta", {}).get("name")
+            meta = getattr(plugin, "plugin_meta", {})
+            if isinstance(meta, Mapping):
+                trusted = meta.get("trusted", meta.get("trust", True))
+                if not bool(trusted):
+                    warnings.warn(
+                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                        "Ensure you trust the source of this plugin.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
             return plugin, identifier
 
-        preferred_identifier = raw_override if isinstance(raw_override, str) else None
+        explicit_override_identifier = raw_override if isinstance(raw_override, str) else None
+        preferred_identifier = (
+            explicit_override_identifier
+            or self.explainer.plugin_manager.explanation_preferred_identifier.get(mode)
+        )
+        allow_untrusted = explicit_override_identifier is not None
         chain = self.explainer.plugin_manager.explanation_plugin_fallbacks.get(mode, ())
         if not chain and mode == "fast":
             msg = (
@@ -610,12 +785,19 @@ class ExplanationOrchestrator:
         errors: List[str] = []
         for identifier in chain:
             is_preferred = preferred_identifier is not None and identifier == preferred_identifier
+            is_explicit_override = (
+                explicit_override_identifier is not None
+                and identifier == explicit_override_identifier
+            )
             if is_identifier_denied(identifier):
                 message = f"{identifier}: denied via CE_DENY_PLUGIN"
                 if is_preferred:
-                    raise ConfigurationError(
-                        "Explanation plugin override failed: " + message
-                    ) from None
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + message) from None
                 errors.append(message)
                 continue
 
@@ -626,14 +808,34 @@ class ExplanationOrchestrator:
                 metadata = descriptor.metadata
                 if descriptor.trusted:
                     plugin = descriptor.plugin
+                elif is_preferred and not allow_untrusted:
+                    raise ConfigurationError(
+                        "Explanation plugin configuration failed: "
+                        + identifier
+                        + " is untrusted; explicitly trust the plugin or pass an explicit override"
+                    ) from None
+                elif is_explicit_override:
+                    warnings.warn(
+                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                        "Ensure you trust the source of this plugin.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    plugin = descriptor.plugin
             if plugin is None:
-                plugin = find_explanation_plugin(identifier)
+                if is_explicit_override:
+                    plugin = find_explanation_plugin(identifier)
+                else:
+                    plugin = find_explanation_plugin_trusted(identifier)
             if plugin is None:
                 message = f"{identifier}: not registered"
                 if is_preferred:
-                    raise ConfigurationError(
-                        "Explanation plugin override failed: " + message
-                    ) from None
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + message) from None
                 errors.append(message)
                 continue
 
@@ -645,7 +847,12 @@ class ExplanationOrchestrator:
             )
             if error:
                 if is_preferred:
-                    raise ConfigurationError(error) from None
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + error) from None
                 errors.append(error)
                 continue
 
@@ -814,13 +1021,21 @@ class ExplanationOrchestrator:
         ExplanationContext
             The constructed context.
         """
-        helper_handles = {"explainer": self.explainer}
+        plot_chain = self._derive_plot_chain(mode, identifier)
+        self.explainer.plugin_manager.plot_plugin_fallbacks[mode] = plot_chain
         interval_settings = {
             "dependencies": self.explainer.plugin_manager.interval_plugin_hints.get(mode, ()),
         }
-        plot_chain = self._derive_plot_chain(mode, identifier)
-        self.explainer.plugin_manager.plot_plugin_fallbacks[mode] = plot_chain
         plot_settings = {"fallbacks": plot_chain}
+        metadata = {
+            "task": self.explainer.mode,
+            "mode": mode,
+            "interval_dependencies": tuple(interval_settings["dependencies"]),
+            "plot_fallbacks": tuple(plot_chain),
+            "plot_source": plot_chain[0] if plot_chain else None,
+        }
+        explainer_handle = ExplainerHandle(self.explainer, metadata)
+        helper_handles = MappingProxyType({"explainer": explainer_handle})
 
         # Use the bridge monitor for this plugin to track usage.
         # We use the identifier if available, otherwise fall back to mode.
@@ -880,6 +1095,9 @@ class ExplanationOrchestrator:
                 seen.add(item)
         return tuple(ordered)
 
+    # Public alias for testing
+    derive_plot_chain = _derive_plot_chain
+
     @staticmethod
     def build_instance_telemetry_payload(explanations: Any) -> Dict[str, Any]:
         """Extract telemetry details from the first explanation instance.
@@ -901,9 +1119,49 @@ class ExplanationOrchestrator:
         ):  # ADR002_ALLOW: telemetry is optional and best-effort.  # pragma: no cover
             # pragma: no cover - defensive: empty or non-indexable containers
             return {}
+
+        # If explanation exposes `to_telemetry` and it returns a dict, preserve
+        # that dict exactly (backwards-compatible behavior).
         builder = getattr(first_explanation, "to_telemetry", None)
+        payload: Dict[str, Any] = {}
+        builder_payload = None
         if callable(builder):
-            payload = builder()
-            if isinstance(payload, dict):
-                return payload
-        return {}
+            with contextlib.suppress(Exception):
+                builder_payload = builder()
+                if isinstance(builder_payload, dict):
+                    payload.update(builder_payload)
+
+        # Fallback: build compact telemetry from available prediction payloads
+        with contextlib.suppress(Exception):
+            full_probs = None
+            if hasattr(first_explanation, "prediction"):
+                full_probs = first_explanation.prediction.get("__full_probabilities__")
+            diag_mode = telemetry_diagnostic_mode()
+            if full_probs is not None:
+                arr = np.asarray(full_probs)
+                # Only expose telemetry for bona-fide arrays/collections
+                if getattr(arr, "size", 0) > 0:
+                    payload.setdefault("full_probabilities_shape", tuple(arr.shape))
+                    with contextlib.suppress(Exception):
+                        payload.setdefault(
+                            "full_probabilities_summary",
+                            {
+                                "mean": float(np.mean(arr)),
+                                "min": float(np.min(arr)),
+                                "max": float(np.max(arr)),
+                            },
+                        )
+                    if diag_mode:
+                        payload.setdefault("full_probabilities", full_probs)
+            # Also propagate interval dependency hints if present on the instance
+            deps = getattr(first_explanation, "metadata", None) or {}
+            if not deps and isinstance(builder_payload, dict):
+                deps = builder_payload
+            if isinstance(deps, dict):
+                interval_deps = deps.get("interval_dependencies") or deps.get("metadata", {}).get(
+                    "interval_dependencies"
+                )
+                if interval_deps:
+                    payload.setdefault("interval_dependencies", interval_deps)
+
+        return payload

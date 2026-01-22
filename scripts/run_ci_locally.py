@@ -41,6 +41,8 @@ import subprocess
 import sys
 import tempfile
 import json
+import socket
+import importlib.util
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -202,6 +204,62 @@ def resolve_bash_executable() -> Tuple[str, str]:
     return "bash", "posix"
 
 
+def detect_offline(timeout: float = 2.0) -> bool:
+    """Return True when outbound network access appears unavailable."""
+    try:
+        with socket.create_connection(("pypi.org", 443), timeout=timeout):
+            return False
+    except OSError:
+        return True
+
+
+def should_skip_for_offline(script: str) -> bool:
+    """Return True when a step should be skipped in offline mode."""
+    lower = script.lower()
+    return "pip install" in lower or "pip-audit" in lower
+
+
+def missing_offline_dependency(script: str) -> Optional[str]:
+    """Return a missing tool/module name when offline and unavailable."""
+    lower = script.lower()
+    if "pip-audit" in lower and not shutil.which("pip-audit"):
+        return "pip-audit"
+    if "ruff" in lower and not shutil.which("ruff"):
+        return "ruff"
+    if "pydocstyle" in lower and not shutil.which("pydocstyle"):
+        return "pydocstyle"
+    if "mypy" in lower and not shutil.which("mypy"):
+        return "mypy"
+    if "sphinx-build" in lower and not shutil.which("sphinx-build"):
+        return "sphinx-build"
+    if "pytest" in lower:
+        if not shutil.which("pytest"):
+            return "pytest"
+        if importlib.util.find_spec("pytest_cov") is None:
+            return "pytest-cov"
+    if "make test-core" in lower:
+        if not shutil.which("pytest"):
+            return "pytest"
+        if importlib.util.find_spec("pytest_cov") is None:
+            return "pytest-cov"
+    if "nbqa" in lower and importlib.util.find_spec("nbqa") is None:
+        return "nbqa"
+    if "python src/calibrated_explanations/utils/helper.py" in lower:
+        if importlib.util.find_spec("calibrated_explanations") is None:
+            return "calibrated_explanations"
+    if "tests/parity_reference/run_parity_reference.py" in lower:
+        if importlib.util.find_spec("calibrated_explanations") is None:
+            return "calibrated_explanations"
+    if "scripts/micro_bench_perf.py" in lower:
+        if importlib.util.find_spec("calibrated_explanations") is None:
+            return "calibrated_explanations"
+    if "check_coverage_gates.py" in lower and not Path("coverage.xml").exists():
+        return "coverage.xml"
+    if "check_perf_micro.py" in lower and not Path("tests/benchmarks/micro_current.json").exists():
+        return "micro_current.json"
+    return None
+
+
 def convert_path_for_bash(path: str, flavor: str) -> str:
     """Convert a Windows path to the format expected by the bash flavor."""
     if os.name != "nt":
@@ -316,6 +374,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("No runnable steps found in the selected workflows.")
         return 0
 
+    offline = detect_offline()
+    if offline:
+        print("Warning: outbound network access appears unavailable; running in offline mode.")
+
     print("Discovered the following runnable steps:")
     for wf_name, steps in collected.items():
         print(f"\nWorkflow: {wf_name}")
@@ -348,6 +410,36 @@ def main(argv: Optional[List[str]] = None) -> int:
             # Finally, if neither is defined, default to the user-selected shell.
             step_shell = s.get("shell") or s.get("job_shell") or args.shell
             script = render_step_expressions(s['run'], step_outputs)
+            if offline and should_skip_for_offline(script):
+                print("-> Skipping step due to offline mode (network-required command).")
+                results.append({
+                    "workflow": wf_name,
+                    "job": s["job"],
+                    "step": s["name"],
+                    "rc": 0,
+                    "run": script,
+                    "setup_python": s.get("setup_python", False),
+                    "shell": step_shell,
+                    "skipped": True,
+                    "skip_reason": "network-required command",
+                })
+                continue
+            if offline:
+                missing_tool = missing_offline_dependency(script)
+                if missing_tool:
+                    print(f"-> Skipping step due to offline mode (missing tool: {missing_tool}).")
+                    results.append({
+                        "workflow": wf_name,
+                        "job": s["job"],
+                        "step": s["name"],
+                        "rc": 0,
+                        "run": script,
+                        "setup_python": s.get("setup_python", False),
+                        "shell": step_shell,
+                        "skipped": True,
+                        "skip_reason": f"missing tool: {missing_tool}",
+                    })
+                    continue
             capture = bool(s.get("id"))
             rc, outputs = run_script_block(script, env_vars, step_shell, cwd=args.cwd, capture_outputs=capture)
             step_id = s.get("id")
@@ -361,6 +453,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                 "run": script,
                 "setup_python": s.get("setup_python", False),
                 "shell": step_shell,
+                "skipped": False,
+                "skip_reason": None,
             })
             if rc != 0:
                 print(f"Step failed with exit code {rc}: {s['name']}")
@@ -376,12 +470,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     total = len(results)
     failed = [r for r in results if r["rc"] != 0]
     succeeded = [r for r in results if r["rc"] == 0]
+    skipped = [r for r in results if r.get("skipped")]
 
     print("\n\nCI Local Run Summary")
     print("--------------------")
     print(f"Total steps run: {total}")
     print(f"Succeeded: {len(succeeded)}")
     print(f"Failed: {len(failed)}")
+    if skipped:
+        print(f"Skipped (offline): {len(skipped)}")
 
     if failed:
         print("\nFailing steps:")
@@ -432,6 +529,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "total_steps": total,
             "succeeded": len(succeeded),
             "failed": len(failed),
+            "skipped": len(skipped),
             "failed_steps": [
                 {
                     "workflow": r["workflow"],

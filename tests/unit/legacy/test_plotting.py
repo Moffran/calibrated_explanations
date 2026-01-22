@@ -139,6 +139,7 @@ def test_probabilistic_plot_creates_expected_image(tmp_path):
 def test_plotting_reload_handles_missing_matplotlib(monkeypatch):
     import builtins
     import importlib
+    from calibrated_explanations.utils.exceptions import ConfigurationError
 
     real_import = builtins.__import__
 
@@ -151,7 +152,11 @@ def test_plotting_reload_handles_missing_matplotlib(monkeypatch):
         ctx.setattr(builtins, "__import__", fake_import)
         importlib.reload(plotting)
         assert plotting.plt is None
-        assert plotting._MATPLOTLIB_IMPORT_ERROR is not None
+        # Verify public behavior: attempting to use plotting raises ConfigurationError
+        # with the original import error message
+        with pytest.raises(ConfigurationError) as exc_info:
+            plotting.__require_matplotlib()
+        assert "matplotlib missing" in str(exc_info.value)
 
     importlib.reload(plotting)
 
@@ -916,7 +921,7 @@ def testplot_global_requires_scalar_threshold_for_predict_only(disable_show):
 
 
 def test_plot_proba_triangle_helper():
-    plotting._plot_proba_triangle()
+    plotting.plot_proba_triangle()
 
 
 def test_probabilistic_saves_before_show(monkeypatch, tmp_path):

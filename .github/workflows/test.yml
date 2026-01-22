@@ -30,27 +30,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Install dependencies (core + dev, no viz extras)
         run: |
           pip install -r requirements.txt -c constraints.txt
-          pip install -e .[dev,eval,viz] -c constraints.txt
+          pip install -e .[dev,eval] -c constraints.txt
           pip install pytest pytest-cov xgboost lime shap setuptools psutil -c constraints.txt
 
-      - name: Run tests with coverage
+      - name: Run core tests with coverage (exclude viz)
         id: run_tests
-        run: make test-cov
+        run: make test-core
 
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-
-      - name: Check per-module coverage gates
-        run: python scripts/check_coverage_gates.py coverage.xml
+      - name: (coverage steps removed) Skip uploading coverage and gates here
+        run: echo "Coverage upload and gate checks moved to dedicated coverage workflow"
 
   core-only:
     runs-on: ubuntu-latest
@@ -76,6 +70,32 @@ jobs:
 
       - name: Run core test subset (skip viz)
         run: pytest -q -k "not viz" --no-cov
+
+  parity-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies (core only)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install . -c constraints.txt
+          pip install jsonschema -c constraints.txt
+
+      - name: Run parity reference harness for all datasets
+        run: |
+          python tests/parity_reference/run_parity_reference.py --dataset classification
+          python tests/parity_reference/run_parity_reference.py --dataset regression
+          python tests/parity_reference/run_parity_reference.py --dataset multiclass
+          python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression
 
   viz-only:
     runs-on: ubuntu-latest
@@ -129,7 +149,6 @@ jobs:
     name: Anti-pattern Audit
     needs: test
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -142,6 +161,12 @@ jobs:
       - name: Run anti-pattern detector
         run: |
           python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
+          # Fail if any violations found
+          if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
+            echo "Anti-pattern violations detected:"
+            cat reports/test_anti_pattern_report.csv
+            exit 1
+          fi
 
       - name: Upload anti-pattern report
         uses: actions/upload-artifact@v6

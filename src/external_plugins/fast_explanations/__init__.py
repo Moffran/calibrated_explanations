@@ -14,6 +14,7 @@ from typing import Any
 import numpy as np
 
 from calibrated_explanations import __version__ as package_version
+from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
 from calibrated_explanations.explanations.explanation import FastExplanation
 from calibrated_explanations.plugins.builtins import _LegacyExplanationBase
 from calibrated_explanations.plugins.intervals import (
@@ -142,9 +143,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
 
             calibrators.append(IntervalRegressor(explainer))
 
-        if isinstance(metadata, dict):
-            metadata.setdefault("fast_calibrators", tuple(calibrators))
-        return calibrators
+        return FastIntervalCalibrator(calibrators)
 
 
 @dataclass
@@ -177,8 +176,8 @@ class FastExplanationPlugin(_LegacyExplanationBase):
 
 def register() -> None:
     """Register the FAST interval and explanation plugins with the core registry."""
-    register_interval_plugin("core.interval.fast", FastIntervalCalibratorPlugin())
-    register_explanation_plugin("core.explanation.fast", FastExplanationPlugin())
+    register_interval_plugin("core.interval.fast", FastIntervalCalibratorPlugin(), source="builtin")
+    register_explanation_plugin("core.explanation.fast", FastExplanationPlugin(), source="builtin")
 
 
 __all__ = [

@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-015 — Explanation Plugin Architecture
 
@@ -149,6 +149,13 @@ ADR-013. Plugins must treat the context as read-only.
   is intentionally compatible with a future streaming or generator-based
   `instances` provider so that extremely large datasets can opt into lazy
   production without redesigning the protocol.
+- `CalibratedExplanations.from_batch` must reconstruct canonical collection
+  metadata and derived attributes (feature names, prediction intervals,
+  cached predictions) using the same initialization path as legacy containers,
+  rather than returning pre-built containers verbatim.
+- `ExplanationContext.helper_handles` are read-only wrappers; plugin authors
+  must treat them as immutable accessors and should not expect mutation to
+  persist.
 
 #### 2a. Factual Explanation Requirements
 
@@ -311,11 +318,13 @@ export CE_EXPLANATION_PLUGIN_FACTUAL="core.explanation.factual.feature_parallel"
   `"task:regression"`, `"rules:conjunctions"`) so downstream tooling can reason
   about plugin features without inspecting code. Metadata validation is
   implemented alongside existing registry checks.
-- `CalibratedExplainer` accepts keyword overrides per mode
+  `CalibratedExplainer` accepts keyword overrides per mode
   (`factual_plugin`, `alternative_plugin`, `fast_plugin`) and honours
   environment variables (`CE_EXPLANATION_PLUGIN_FACTUAL`,
-  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`). Project
-  configuration mirrors these keys under
+  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`). Prefer
+  enabling FAST-mode by passing `fast=True` to `CalibratedExplainer`; use
+  `fast_plugin` only when you need to target a specific FAST implementation.
+  Project configuration mirrors these keys under
   `[tool.calibrated_explanations.explanations]` and may supply mode-specific
   fallback arrays. CLI helpers mirror the interval/plot commands for listing,
   validating, and setting explanation plugins.

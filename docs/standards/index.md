@@ -7,8 +7,9 @@ separately so ADRs focus on architectural or contract decisions.
 ```{toctree}
 :maxdepth: 1
 
-STD-017-nomenclature-standardization
-STD-018-code-documentation-standard
-STD-019-test-coverage-standard
-STD-027-documentation-audience-standard
+STD-001-nomenclature-standardization
+STD-002-code-documentation-standard
+STD-003-test-coverage-standard
+STD-004-documentation-audience-standard
+STD-005-logging-and-observability-standard
 ```

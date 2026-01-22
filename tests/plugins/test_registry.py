@@ -104,6 +104,12 @@ def test_list_descriptors_respects_trust_state() -> None:
         mark_explanation_trusted("core.explanation.factual")
 
 
+def test_builtin_fast_explanation_plugin_registered() -> None:
+    ensure_builtin_plugins()
+    descriptors = list_explanation_descriptors()
+    assert any(d.identifier == "core.explanation.fast" for d in descriptors)
+
+
 def test_validate_explanation_metadata_invalid_modes():
     from calibrated_explanations.utils.exceptions import ValidationError
 

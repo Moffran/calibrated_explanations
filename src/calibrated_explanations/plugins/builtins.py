@@ -28,15 +28,16 @@ from ..utils.exceptions import CalibratedError, ConfigurationError, NotFittedErr
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
     pass
+from ..calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
 from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
     FeatureFilterConfig,
     FeatureFilterResult,
     compute_filtered_features_to_ignore,
+    emit_feature_filter_governance_event,
 )
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
-    FastExplanation,
 )
 from ..explanations.explanation import (
     CalibratedExplanation as _AbstractExplanation,
@@ -53,7 +54,6 @@ from .intervals import IntervalCalibratorContext, IntervalCalibratorPlugin
 from .plots import PlotBuilder, PlotRenderContext, PlotRenderer, PlotRenderResult
 from .predict import PredictBridge
 from .registry import (
-    find_explanation_descriptor,
     find_interval_descriptor,
     register_explanation_plugin,
     register_interval_plugin,
@@ -171,9 +171,21 @@ def collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
     else:
         explanation_cls = FactualExplanation
     instances = tuple({"explanation": exp} for exp in collection.explanations)
+    # Include explicit, commonly-used collection fields so consumers do not
+    # need to rely solely on the template container when reconstructing.
     metadata = {
         "container": collection,
         "mode": getattr(collection, "mode", None),
+        "calibrated_explainer": getattr(collection, "calibrated_explainer", None),
+        "x_test": getattr(collection, "x_test", None),
+        "y_threshold": getattr(collection, "y_threshold", None),
+        "bins": getattr(collection, "bins", None),
+        "features_to_ignore": getattr(collection, "features_to_ignore", None),
+        "low_high_percentiles": getattr(collection, "low_high_percentiles", None),
+        "feature_filter_per_instance_ignore": getattr(
+            collection, "feature_filter_per_instance_ignore", None
+        ),
+        "filter_telemetry": getattr(collection, "filter_telemetry", None),
     }
     return ExplanationBatch(
         container_cls=type(collection),
@@ -205,6 +217,29 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
         """Instantiate the legacy interval calibrator for the supplied context."""
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
+        cached = context.metadata.get("calibrator")
+        if cached is not None:
+            return cached
+        explainer = context.metadata.get("explainer")
+
+        # Try to reuse existing calibrator if it's protocol-compliant and not a FAST collection
+        if explainer is not None:
+            existing = getattr(explainer, "interval_learner", None)
+            if existing is not None and not is_fast_interval_collection(existing):
+                # Import protocol definitions to check compliance
+                from .intervals import (
+                    ClassificationIntervalCalibrator,
+                    RegressionIntervalCalibrator,
+                )
+
+                expected_protocol = (
+                    RegressionIntervalCalibrator
+                    if "regression" in task
+                    else ClassificationIntervalCalibrator
+                )
+                # Only return if it's protocol-compliant (has required methods)
+                if isinstance(existing, expected_protocol):
+                    return existing
         learner = context.learner
         bins = context.bins.get("calibration")
         difficulty = context.difficulty.get("estimator")
@@ -212,7 +247,6 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         if "regression" in task:
             from ..calibration.interval_regressor import IntervalRegressor
 
-            explainer = context.metadata.get("explainer")
             if explainer is None:
                 raise NotFittedError(
                     "Legacy interval context missing 'explainer' handle",
@@ -242,8 +276,6 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                 difficulty_estimator=difficulty,
                 predict_function=predict_function,
             )
-        if isinstance(context.metadata, dict):
-            context.metadata.setdefault("calibrator", calibrator)
         return calibrator
 
 
@@ -254,6 +286,16 @@ class _LegacyExplanationBase(ExplanationPlugin):
     _mode: str
     _explanation_attr: str
     _expected_cls: type[_AbstractExplanation]
+
+    @property
+    def mode(self) -> str:
+        """Expose the explanation mode for the plugin."""
+        return self._mode
+
+    @property
+    def explanation_attr(self) -> str:
+        """Expose the explanation attribute name used for delegated calls."""
+        return self._explanation_attr
 
     plugin_meta: Mapping[str, Any]
     _context: ExplanationContext | None = None
@@ -432,9 +474,11 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             # never mutates CalibratedExplainer behaviour beyond narrowing the
             # feature set for this batch.
             filtered_request = request
+            filter_telemetry: dict[str, Any] = {}
             try:
                 # Determine base configuration from explainer and environment.
-                base_cfg = self.explainer.feature_filter_config
+                # Use getattr to tolerate minimal dummy explainer handles in tests.
+                base_cfg = getattr(self.explainer, "feature_filter_config", None)
                 cfg = FeatureFilterConfig.from_base_and_env(base_cfg)
                 use_filter = (
                     cfg.enabled
@@ -442,6 +486,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     and self._mode in ("factual", "alternative")
                 )
                 if use_filter:
+                    filter_telemetry["filter_enabled"] = True
                     explainer = self.explainer
                     # Baseline ignore set: explainer defaults + request-specific.
                     base_explainer_ignore = np.asarray(
@@ -487,16 +532,38 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                                 filter_result.per_instance_ignore
                             )
                         except AttributeError:
-                            logging.getLogger(__name__).debug(
-                                "Unable to attach per-instance feature filter state to explainer",
-                                exc_info=True,
-                            )
+                            msg = "Unable to attach per-instance feature filter state to explainer"
+                            if cfg.strict_observability:
+                                logging.getLogger(__name__).warning(msg, extra={"mode": self._mode})
+                            else:
+                                logging.getLogger(__name__).debug(
+                                    msg,
+                                    extra={"mode": self._mode},
+                                    exc_info=True,
+                                )
 
                         # Debug: log filtered request details for troubleshooting propagation
                         logging.getLogger(__name__).debug(
-                            "Feature filter produced global_ignore(len=%s) extra_ignore(len=%s)",
-                            len(filter_result.global_ignore),
-                            0,
+                            "Feature filter produced global_ignore",
+                            extra={
+                                "global_ignore_len": len(filter_result.global_ignore),
+                                "extra_ignore_len": 0,
+                                "mode": self._mode,
+                            },
+                        )
+                        # Log exact ignore arrays for troubleshooting
+                        logging.getLogger(__name__).debug(
+                            "Feature filter arrays",
+                            extra={
+                                "global_ignore": getattr(filter_result, "global_ignore", None),
+                                "base_explainer_ignore": getattr(
+                                    base_explainer_ignore, "tolist", lambda: base_explainer_ignore
+                                )(),
+                                "request_ignore": getattr(
+                                    request_ignore, "tolist", lambda: request_ignore
+                                )(),
+                                "mode": self._mode,
+                            },
                         )
                         # Only propagate the additional ignore indices beyond the explainer defaults.
                         extra_ignore = np.setdiff1d(
@@ -505,8 +572,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             assume_unique=False,
                         )
                         logging.getLogger(__name__).debug(
-                            "Extra ignore computed: len=%s",
-                            len(extra_ignore),
+                            "Extra ignore computed",
+                            extra={"extra_ignore_len": len(extra_ignore), "mode": self._mode},
                         )
                         new_request_ignore = np.union1d(request_ignore, extra_ignore)
                         filtered_request = ExplanationRequest(
@@ -514,14 +581,24 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             low_high_percentiles=request.low_high_percentiles,
                             bins=request.bins,
                             features_to_ignore=tuple(int(f) for f in new_request_ignore.tolist()),
-                            features_to_ignore_per_instance=filter_result.per_instance_ignore,
+                            feature_filter_per_instance_ignore=filter_result.per_instance_ignore,
                             extras=request.extras,
                         )
                     except (AttributeError, CalibratedError, ConfigurationError) as exc_inner:
-                        logging.getLogger(__name__).warning(
-                            "FAST-based feature filter disabled for mode '%s': %s",
-                            self._mode,
-                            exc_inner,
+                        filter_telemetry["filter_skipped"] = str(exc_inner)
+                        msg = "FAST-based feature filter disabled"
+                        extra = {"mode": self._mode, "reason": str(exc_inner)}
+                        if cfg.strict_observability:
+                            logging.getLogger(__name__).warning(msg, extra=extra)
+                        else:
+                            logging.getLogger(__name__).debug(msg, extra=extra)
+                        level = logging.WARNING if cfg.strict_observability else logging.INFO
+                        emit_feature_filter_governance_event(
+                            decision="filter_skipped",
+                            level=level,
+                            reason=str(exc_inner),
+                            strict=cfg.strict_observability,
+                            mode=self._mode,
                         )
                         # Ensure no stale per-instance state is kept on the explainer.
                         with contextlib.suppress(AttributeError):
@@ -531,39 +608,72 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             low_high_percentiles=request.low_high_percentiles,
                             bins=request.bins,
                             features_to_ignore=request.features_to_ignore,
-                            features_to_ignore_per_instance=getattr(
-                                request, "features_to_ignore_per_instance", None
+                            feature_filter_per_instance_ignore=getattr(
+                                request, "feature_filter_per_instance_ignore", None
                             ),
                             extras=request.extras,
                         )
-            except Exception as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
-                logging.getLogger(__name__).debug(
-                    "FAST feature filter configuration failed for mode '%s': %s",
-                    self._mode,
-                    exc_cfg,
+            except CalibratedError as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
+                filter_telemetry["filter_error"] = str(exc_cfg)
+                # Re-derive config if it failed before we could use it
+                try:
+                    cfg = FeatureFilterConfig.from_base_and_env(
+                        self.explainer.feature_filter_config
+                    )
+                except CalibratedError:
+                    cfg = FeatureFilterConfig()
+
+                msg = "FAST feature filter configuration failed"
+                extra = {"mode": self._mode, "error": str(exc_cfg)}
+                if cfg.strict_observability:
+                    logging.getLogger(__name__).warning(msg, extra=extra)
+                else:
+                    logging.getLogger(__name__).debug(msg, extra=extra)
+                level = logging.WARNING if cfg.strict_observability else logging.INFO
+                emit_feature_filter_governance_event(
+                    decision="filter_error",
+                    level=level,
+                    reason=str(exc_cfg),
+                    strict=cfg.strict_observability,
+                    mode=self._mode,
                 )
-                with contextlib.suppress(AttributeError):
-                    del self.explainer.feature_filter_per_instance_ignore
-                filtered_request = ExplanationRequest(
-                    threshold=request.threshold,
-                    low_high_percentiles=request.low_high_percentiles,
-                    bins=request.bins,
-                    features_to_ignore=request.features_to_ignore,
-                    features_to_ignore_per_instance=getattr(
-                        request, "features_to_ignore_per_instance", None
-                    ),
-                    extras=request.extras,
-                )
+            # Preserve any per-instance state on the explainer, but avoid
+            # unconditionally clobbering `filtered_request` which would discard
+            # FAST-produced ignore indices. Keep existing `filtered_request` if
+            # the filter successfully populated it; otherwise the inner
+            # exception handlers above already set a safe fallback.
+            with contextlib.suppress(AttributeError):
+                del self.explainer.feature_filter_per_instance_ignore
 
             explain_request, explain_config, runtime = build_explain_execution_plan(
                 self.explainer, x, filtered_request
             )
 
+            # Ensure executor is entered before invoking the runtime so that
+            # ThreadPool/ProcessPool creation happens deterministically and
+            # tests that rely on a single pool creation observe consistent
+            # behavior even when runtime objects use side-effects to enter the
+            # executor.
+            exec_obj = getattr(explain_config, "executor", None)
+            if exec_obj is not None:
+                with contextlib.suppress(Exception):  # adr002_allow
+                    exec_obj.__enter__()
+
             # Debug: log explain_request ignore fields (helps diagnose propagation)
             logging.getLogger(__name__).debug(
-                "Explain request features_to_ignore: %s; per_instance: %s",
-                getattr(explain_request, "features_to_ignore", None),
-                getattr(explain_request, "features_to_ignore_per_instance", None) is not None,
+                "Explain request features_to_ignore",
+                extra={
+                    "features_to_ignore": getattr(explain_request, "features_to_ignore", None),
+                    "has_per_instance": getattr(
+                        explain_request, "feature_filter_per_instance_ignore", None
+                    )
+                    is not None,
+                    "mode": self._mode,
+                },
+            )
+            # Also emit a simple debug message with the values (easier to capture)
+            logging.getLogger(__name__).debug(
+                f"ExplainRequest.features_to_ignore={getattr(explain_request, 'features_to_ignore', None)} mode={self._mode}"
             )
 
             # Respect the execution plugin's own capability check when present.
@@ -575,8 +685,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 try:
                     if not supports(explain_request, explain_config):
                         logging.getLogger(__name__).info(
-                            "Execution plugin unsupported; falling back to legacy sequential execution (mode=%s)",
-                            self._mode,
+                            "Execution plugin unsupported; falling back to legacy sequential execution",
+                            extra={"mode": self._mode},
                         )
                         warnings.warn(
                             f"Execution plugin does not support request/config for mode '{self._mode}'; falling back to legacy sequential execution.",
@@ -597,17 +707,19 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         collection = explanation_callable(x, **kwargs)
                         # Attach per-instance feature ignore masks from filtered request
                         per_instance_ignore_from_request = getattr(
-                            filtered_request, "features_to_ignore_per_instance", None
+                            filtered_request, "feature_filter_per_instance_ignore", None
                         )
                         if per_instance_ignore_from_request is not None:
                             with contextlib.suppress(Exception):
-                                collection.features_to_ignore_per_instance = (
+                                collection.feature_filter_per_instance_ignore = (
                                     per_instance_ignore_from_request
                                 )
                                 # Reset rules cache on all explanations so they recompute with the new masks
                                 for exp in getattr(collection, "explanations", []):
                                     with contextlib.suppress(Exception):
                                         exp.reset()
+                        if filter_telemetry:
+                            collection.filter_telemetry = filter_telemetry
                         return collection_to_batch(collection)
                 except Exception as exc_supports:  # ADR002_ALLOW: degrade gracefully on plugin errors.  # pragma: no cover
                     logging.getLogger(__name__).warning(
@@ -637,6 +749,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             explanations = []
 
                         collection = _FallbackCollection()
+                        if filter_telemetry:
+                            collection.filter_telemetry = filter_telemetry
                         return collection_to_batch(collection)
                     kwargs = {
                         "threshold": request.threshold,
@@ -651,17 +765,19 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     collection = explanation_callable(x, **kwargs)
                     # Attach per-instance feature ignore masks from filtered request
                     per_instance_ignore_from_request = getattr(
-                        filtered_request, "features_to_ignore_per_instance", None
+                        filtered_request, "feature_filter_per_instance_ignore", None
                     )
                     if per_instance_ignore_from_request is not None:
                         with contextlib.suppress(Exception):
-                            collection.features_to_ignore_per_instance = (
+                            collection.feature_filter_per_instance_ignore = (
                                 per_instance_ignore_from_request
                             )
                             # Reset rules cache on all explanations so they recompute with the new masks
                             for exp in getattr(collection, "explanations", []):
                                 with contextlib.suppress(Exception):
                                     exp.reset()
+                    if filter_telemetry:
+                        collection.filter_telemetry = filter_telemetry
                     return collection_to_batch(collection)
 
             # Manage executor lifetime across explain runs using the runtime context.
@@ -698,6 +814,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     explanations = []
 
                 collection = _FallbackCollection()
+                if filter_telemetry:
+                    collection.filter_telemetry = filter_telemetry
                 return collection_to_batch(collection)
 
             kwargs = {
@@ -716,11 +834,11 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
         # This ensures that when rules are accessed via get_rules(), they will respect
         # the per-instance masks computed by FAST-based feature filtering.
         per_instance_ignore_from_request = getattr(
-            filtered_request, "features_to_ignore_per_instance", None
+            filtered_request, "feature_filter_per_instance_ignore", None
         )
         if per_instance_ignore_from_request is not None:
             with contextlib.suppress(Exception):
-                collection.features_to_ignore_per_instance = per_instance_ignore_from_request
+                collection.feature_filter_per_instance_ignore = per_instance_ignore_from_request
                 # Reset rules cache on all explanations so they recompute with the new masks
                 for exp in getattr(collection, "explanations", []):
                     with contextlib.suppress(Exception):
@@ -733,6 +851,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     len(getattr(collection, "explanations", [])),
                 )
 
+        if filter_telemetry:
+            collection.filter_telemetry = filter_telemetry
         return collection_to_batch(collection)
 
 
@@ -1343,6 +1463,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 "threshold_label": threshold_label,
             }
 
+            header_labels_explicit = bool(payload.get("neg_label") or payload.get("pos_label"))
             if "regression" in variant_hint:
                 thresholded = builder_kwargs.pop("is_thresholded")
                 threshold_label_text = builder_kwargs.pop("threshold_label")
@@ -1357,8 +1478,8 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     classification_kwargs["pos_label"] = pos_label
                     classification_kwargs["xlabel"] = threshold_label_text or "Probability"
                     classification_kwargs["xlim"] = (0.0, 1.0)
-                    classification_kwargs["xticks"] = [float(x) for x in np.linspace(0.0, 1.0, 11)]
                     classification_kwargs["y_minmax"] = None
+                    classification_kwargs["explicit_header_labels"] = header_labels_explicit
                     return build_alternative_probabilistic_spec(**classification_kwargs)
                 else:
                     builder_kwargs.pop("threshold_value", None)
@@ -1368,6 +1489,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 {
                     "neg_label": payload.get("neg_label"),
                     "pos_label": payload.get("pos_label"),
+                    "explicit_header_labels": header_labels_explicit,
                 }
             )
             builder_kwargs.pop("threshold_value", None)
@@ -1552,79 +1674,73 @@ def _register_builtin_fast_plugins() -> None:
 
                     calibrators.append(IntervalRegressor(explainer))
 
-                if isinstance(metadata, dict):
-                    metadata.setdefault("fast_calibrators", tuple(calibrators))
-                return calibrators
+                wrapper = FastIntervalCalibrator(calibrators)
+                return wrapper
 
-        register_interval_plugin("core.interval.fast", BuiltinFastIntervalCalibratorPlugin())
+        register_interval_plugin(
+            "core.interval.fast",
+            BuiltinFastIntervalCalibratorPlugin(),
+            source="builtin",
+        )
 
-    if find_explanation_descriptor("core.explanation.fast") is None:
+    from .explanations_fast import (  # pylint: disable=import-outside-toplevel
+        register_fast_explanation_plugin,
+    )
 
-        class BuiltinFastExplanationPlugin(_LegacyExplanationBase):
-            """Legacy wrapper delegating fast explanations to the explainer."""
-
-            plugin_meta = {
-                "name": "core.explanation.fast",
-                "schema_version": 1,
-                "version": package_version,
-                "provider": "calibrated_explanations",
-                "capabilities": [
-                    "explain",
-                    "explanation:fast",
-                    "task:classification",
-                    "task:regression",
-                ],
-                "modes": ("fast",),
-                "tasks": ("classification", "regression"),
-                "dependencies": ("core.interval.fast", "legacy"),
-                "interval_dependency": "core.interval.fast",
-                "plot_dependency": "legacy",
-                "trusted": True,
-                "trust": {"trusted": True},
-            }
-
-            def __init__(self) -> None:
-                super().__init__(
-                    _mode="fast",
-                    _explanation_attr="explain_fast",
-                    _expected_cls=FastExplanation,
-                    plugin_meta=self.plugin_meta,
-                )
-
-        register_explanation_plugin("core.explanation.fast", BuiltinFastExplanationPlugin())
+    register_fast_explanation_plugin()
 
 
 def _register_builtins() -> None:
     """Register in-tree plugins with the shared registry."""
-    register_interval_plugin("core.interval.legacy", LegacyIntervalCalibratorPlugin())
+    register_interval_plugin(
+        "core.interval.legacy",
+        LegacyIntervalCalibratorPlugin(),
+        source="builtin",
+    )
 
     # Register execution strategy wrappers first (with higher priority in fallback chain)
     register_explanation_plugin(
-        "core.explanation.factual.sequential", SequentialExplanationPlugin()
+        "core.explanation.factual.sequential",
+        SequentialExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
-        "core.explanation.factual.feature_parallel", FeatureParallelExplanationPlugin()
+        "core.explanation.factual.feature_parallel",
+        FeatureParallelExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
-        "core.explanation.factual.instance_parallel", InstanceParallelExplanationPlugin()
+        "core.explanation.factual.instance_parallel",
+        InstanceParallelExplanationPlugin(),
+        source="builtin",
     )
 
     register_explanation_plugin(
-        "core.explanation.alternative.sequential", SequentialAlternativeExplanationPlugin()
+        "core.explanation.alternative.sequential",
+        SequentialAlternativeExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
         "core.explanation.alternative.feature_parallel",
         FeatureParallelAlternativeExplanationPlugin(),
+        source="builtin",
     )
     register_explanation_plugin(
         "core.explanation.alternative.instance_parallel",
         InstanceParallelAlternativeExplanationPlugin(),
+        source="builtin",
     )
 
     # Register legacy plugins as fallback defaults
-    register_explanation_plugin("core.explanation.factual", LegacyFactualExplanationPlugin())
     register_explanation_plugin(
-        "core.explanation.alternative", LegacyAlternativeExplanationPlugin()
+        "core.explanation.factual",
+        LegacyFactualExplanationPlugin(),
+        source="builtin",
+    )
+    register_explanation_plugin(
+        "core.explanation.alternative",
+        LegacyAlternativeExplanationPlugin(),
+        source="builtin",
     )
 
     try:
@@ -1647,8 +1763,8 @@ def _register_builtins() -> None:
 
     legacy_builder = LegacyPlotBuilder()
     legacy_renderer = LegacyPlotRenderer()
-    register_plot_builder("core.plot.legacy", legacy_builder)
-    register_plot_renderer("core.plot.legacy", legacy_renderer)
+    register_plot_builder("core.plot.legacy", legacy_builder, source="builtin")
+    register_plot_renderer("core.plot.legacy", legacy_renderer, source="builtin")
     register_plot_style(
         "legacy",
         metadata={
@@ -1664,8 +1780,16 @@ def _register_builtins() -> None:
 
     plotspec_builder = PlotSpecDefaultBuilder()
     plotspec_renderer = PlotSpecDefaultRenderer()
-    register_plot_builder("core.plot.plot_spec.default", plotspec_builder)
-    register_plot_renderer("core.plot.plot_spec.default", plotspec_renderer)
+    register_plot_builder(
+        "core.plot.plot_spec.default",
+        plotspec_builder,
+        source="builtin",
+    )
+    register_plot_renderer(
+        "core.plot.plot_spec.default",
+        plotspec_renderer,
+        source="builtin",
+    )
     register_plot_style(
         "plot_spec.default",
         metadata={
@@ -1698,3 +1822,8 @@ __all__ = [
     "PlotSpecDefaultRenderer",
     "LegacyPredictBridge",
 ]
+
+
+# Public alias for testing purposes (to avoid private member access in tests)
+register_builtins = _register_builtins
+supports_calibrated_explainer = _supports_calibrated_explainer

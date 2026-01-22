@@ -14,6 +14,7 @@ from calibrated_explanations.plugins.manager import DEFAULT_EXPLANATION_IDENTIFI
 from calibrated_explanations.plugins import (
     ensure_builtin_plugins,
     register_explanation_plugin,
+    mark_explanation_trusted,
 )
 
 from tests.helpers.model_utils import (
@@ -141,6 +142,7 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
     ensure_builtin_plugins()
     plugin = DependencyReportingFactualPlugin()
     register_explanation_plugin("tests.dependency_reporting.factual", plugin)
+    mark_explanation_trusted("tests.dependency_reporting.factual")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.dependency_reporting.factual")
 
     try:

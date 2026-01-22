@@ -47,6 +47,8 @@ def test_list_explanation_descriptors_trusted_only_filters():
     registry.register_explanation_plugin("trusted", trusted_plugin)
     registry.register_explanation_plugin("untrusted", untrusted_plugin)
 
+    registry.mark_explanation_trusted("trusted")
+
     all_descriptors = registry.list_explanation_descriptors()
     assert {d.identifier for d in all_descriptors} == {"trusted", "untrusted"}
 
@@ -81,11 +83,12 @@ def test_verify_plugin_checksum_raises_on_mismatch(tmp_path, monkeypatch):
 
 def test_mark_plot_renderer_trusted_untrusted():
     # Register a dummy renderer
-    descriptor = types.SimpleNamespace(
+    descriptor = registry.PlotRendererDescriptor(
         identifier="test.renderer",
         metadata={"name": "Test Renderer", "trust": {"trusted": False}},
         trusted=False,
         renderer=lambda: None,  # Add dummy renderer
+        source="manual",
     )
 
     # Mock the internal registry lists

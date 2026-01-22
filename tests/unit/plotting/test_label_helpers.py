@@ -63,7 +63,7 @@ def testderive_threshold_labels(threshold: Any, expected: Tuple[str, str], caplo
 )
 def test_format_save_path(base_path: Any, filename: str, expected_rule: str):
     """Should format save path correctly for various inputs."""
-    result = plotting._format_save_path(base_path, filename)
+    result = plotting.format_save_path(base_path, filename)
 
     if expected_rule == "path_join":
         assert result == str(Path(base_path) / filename)

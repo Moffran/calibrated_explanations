@@ -7,6 +7,7 @@ the public explain module API rather than implementation details.
 
 import numpy as np
 import pytest
+from typing import Any
 
 from calibrated_explanations.core.explain import helpers as helpers
 
@@ -156,3 +157,31 @@ class TestComputeWeightDelta:
         """Large values should work correctly."""
         result = helpers.compute_weight_delta(1e6, np.array([1e6 + 1e5, 1e6 - 1e5]))
         np.testing.assert_array_almost_equal(result, np.array([-1e5, 1e5]))
+
+
+@pytest.mark.parametrize(
+    "func_name,args,kwargs",
+    [
+        ("merge_feature_result", ("a", "b"), {"context": "ctx"}),
+        ("compute_feature_effects", ("payload",), {}),
+        ("merge_ignore_features", ({"a"}, {"b"}), {}),
+        ("initialize_explanation", ("init",), {"mode": "factual"}),
+        ("explain_predict_step", ("state",), {"step": 2}),
+        ("feature_effect_for_index", ("state",), {"index": 1}),
+        ("validate_and_prepare_input", ("x",), {"y": "z"}),
+    ],
+)
+def test_should_delegate_to_internal_helpers_when_called(func_name, args, kwargs, monkeypatch):
+    """Each public helper should forward to the internal implementation."""
+    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def stub(*stub_args: Any, **stub_kwargs: Any) -> str:
+        calls.append((stub_args, stub_kwargs))
+        return "sentinel"
+
+    monkeypatch.setattr(helpers.impl, func_name, stub)
+
+    result = getattr(helpers, func_name)(*args, **kwargs)
+
+    assert result == "sentinel"
+    assert calls == [(args, kwargs)]

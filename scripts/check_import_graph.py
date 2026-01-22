@@ -87,6 +87,9 @@ class BoundaryConfig:
         ('core', 'integrations'): [],
         ('core', 'api'): [],
 
+        # Calibration uses core domain models
+        ('calibration', 'core'): [],
+
         # --- Pattern 7: Cache/Parallel shared services ---
         ('calibration', 'cache'): [],
         ('parallel', 'cache'): [],
@@ -120,7 +123,6 @@ class BoundaryConfig:
     # Packages that cannot import from each other
     forbidden_cycles: Set[Tuple[str, str]] = field(default_factory=lambda: {
         ('core', 'calibration'),
-        ('calibration', 'core'),
         ('explanations', 'core'),
         ('core', 'explanations'),
         ('perf', 'core'),

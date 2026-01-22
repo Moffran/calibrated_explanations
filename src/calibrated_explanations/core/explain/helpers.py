@@ -17,7 +17,12 @@ __all__ = [
     "slice_bins",
     "slice_threshold",
     "validate_and_prepare_input",
+    "impl",
 ]
+
+
+# Public alias to the underlying implementation module for testing hooks.
+impl = _impl
 
 
 def slice_threshold(threshold: Any, start: int, stop: int, total_len: int) -> Any:

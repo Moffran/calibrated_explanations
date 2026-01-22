@@ -99,11 +99,11 @@ def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):
         trusted=False,
     )
 
-    cli._emit_explanation_descriptor(explanation)
-    cli._emit_interval_descriptor(interval)
-    cli._emit_plot_descriptor(plot_style)
-    cli._emit_plot_builder_descriptor(plot_builder)
-    cli._emit_plot_renderer_descriptor(plot_renderer)
+    cli.emit_explanation_descriptor(explanation)
+    cli.emit_interval_descriptor(interval)
+    cli.emit_plot_descriptor(plot_style)
+    cli.emit_plot_builder_descriptor(plot_builder)
+    cli.emit_plot_renderer_descriptor(plot_renderer)
 
     output = capsys.readouterr().out
     assert "denied via CE_DENY_PLUGIN" in output
@@ -142,8 +142,8 @@ def test_cmd_list_all_branches(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_plot_style_descriptors", stub_plot_styles)
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="all", trusted_only=True)
-    exit_code = cli._cmd_list(args)
+    args = argparse.Namespace(kind="all", trusted_only=True, verbose=False)
+    exit_code = cli.cmd_list(args)
 
     assert exit_code == 0
     assert calls == {
@@ -165,8 +165,8 @@ def test_cmd_list_explanations_descriptor(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_explanation_descriptors", lambda **kwargs: [descriptor])
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="explanations", trusted_only=False)
-    exit_code = cli._cmd_list(args)
+    args = argparse.Namespace(kind="explanations", trusted_only=False, verbose=False)
+    exit_code = cli.cmd_list(args)
 
     assert exit_code == 0
     output = capsys.readouterr().out
@@ -177,8 +177,8 @@ def test_cmd_list_intervals_empty(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_interval_descriptors", lambda **kwargs: [])
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="intervals", trusted_only=False)
-    exit_code = cli._cmd_list(args)
+    args = argparse.Namespace(kind="intervals", trusted_only=False, verbose=False)
+    exit_code = cli.cmd_list(args)
 
     assert exit_code == 0
     assert "<none>" in capsys.readouterr().out
@@ -194,8 +194,8 @@ def test_cmd_list_plot_renderers_descriptor(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_plot_renderer_descriptors", stub)
     monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
 
-    args = argparse.Namespace(kind="plot-renderers", trusted_only=True)
-    exit_code = cli._cmd_list(args)
+    args = argparse.Namespace(kind="plot-renderers", trusted_only=True, verbose=False)
+    exit_code = cli.cmd_list(args)
 
     assert exit_code == 0
     output = capsys.readouterr().out
@@ -205,8 +205,8 @@ def test_cmd_list_plot_renderers_descriptor(monkeypatch, capsys):
 def test_cmd_list_plot_styles_none(monkeypatch, capsys):
     monkeypatch.setattr(cli, "list_plot_style_descriptors", lambda: [])
 
-    args = argparse.Namespace(kind="plots", trusted_only=False)
-    exit_code = cli._cmd_list(args)
+    args = argparse.Namespace(kind="plots", trusted_only=False, verbose=False)
+    exit_code = cli.cmd_list(args)
 
     assert exit_code == 0
     assert "<none>" in capsys.readouterr().out
@@ -215,7 +215,7 @@ def test_cmd_list_plot_styles_none(monkeypatch, capsys):
 def test_cmd_show_not_registered(monkeypatch, capsys):
     monkeypatch.setattr(cli, "find_plot_style_descriptor", lambda identifier: None)
     args = argparse.Namespace(identifier="missing", kind="plots")
-    exit_code = cli._cmd_show(args)
+    exit_code = cli.cmd_show(args)
     assert exit_code == 1
     assert "Plot style 'missing' is not registered" in capsys.readouterr().out
 
@@ -224,7 +224,7 @@ def test_cmd_show_registered_with_trust_flag(monkeypatch, capsys):
     descriptor = DummyDescriptor(identifier="plugin", metadata={"foo": "bar"}, trusted=False)
     monkeypatch.setattr(cli, "find_explanation_descriptor", lambda identifier: descriptor)
     args = argparse.Namespace(identifier="plugin", kind="explanations")
-    exit_code = cli._cmd_show(args)
+    exit_code = cli.cmd_show(args)
     assert exit_code == 0
     output = capsys.readouterr().out
     assert "Identifier : plugin" in output
@@ -244,7 +244,7 @@ def test_cmd_show_other_kinds(monkeypatch, capsys, kind, finder_name):
     monkeypatch.setattr(cli, finder_name, lambda identifier: descriptor)
     args = argparse.Namespace(identifier="plugin", kind=kind)
 
-    exit_code = cli._cmd_show(args)
+    exit_code = cli.cmd_show(args)
     assert exit_code == 0
     output = capsys.readouterr().out
     assert "Identifier : plugin" in output
@@ -261,7 +261,7 @@ def test_cmd_trust_plot_renderer(monkeypatch, capsys):
     monkeypatch.setattr(cli, "mark_plot_renderer_untrusted", stub)
 
     args = argparse.Namespace(identifier="renderer", kind="plot-renderers", action="trust")
-    exit_code = cli._cmd_trust(args)
+    exit_code = cli.cmd_trust(args)
     assert exit_code == 0
     assert captured["identifier"] == "renderer"
     assert "Marked 'renderer' as trusted" in capsys.readouterr().out
@@ -285,7 +285,7 @@ def test_cmd_trust_other_kinds(monkeypatch, capsys, kind, marker_name):
     monkeypatch.setattr(cli, marker_name, stub)
 
     args = argparse.Namespace(identifier="target", kind=kind, action="trust")
-    exit_code = cli._cmd_trust(args)
+    exit_code = cli.cmd_trust(args)
     assert exit_code == 0
     assert captured[kind] == "target"
     assert "Marked 'target' as trusted" in capsys.readouterr().out
@@ -299,7 +299,7 @@ def test_cmd_trust_keyerror(monkeypatch, capsys):
     monkeypatch.setattr(cli, "mark_explanation_untrusted", stub)
 
     args = argparse.Namespace(identifier="missing", kind="explanations", action="trust")
-    exit_code = cli._cmd_trust(args)
+    exit_code = cli.cmd_trust(args)
     assert exit_code == 1
     assert "missing" in capsys.readouterr().out
 

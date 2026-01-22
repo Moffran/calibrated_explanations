@@ -20,12 +20,18 @@ import logging
 import os
 import sys
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
+from collections.abc import Mapping, MutableMapping, Sequence
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
+from ...calibration.interval_wrappers import FastIntervalCalibrator, is_fast_interval_collection
+from ...logging import logging_context
 from ...plugins import (
+    ClassificationIntervalCalibrator,
     IntervalCalibratorContext,
+    RegressionIntervalCalibrator,
     ensure_builtin_plugins,
     find_interval_descriptor,
     find_interval_plugin,
@@ -33,11 +39,35 @@ from ...plugins import (
     is_identifier_denied,
 )
 from ...utils import assert_threshold
-from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
+from ...utils.exceptions import (
+    CalibratedError,
+    ConfigurationError,
+    DataShapeError,
+    NotFittedError,
+    ValidationError,
+)
+from .interval_summary import coerce_interval_summary
 from .validation import check_interval_runtime_metadata
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
+
+
+def _freeze_context_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({k: _freeze_context_value(v) for k, v in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_context_value(item) for item in value)
+    if hasattr(value, "copy") and callable(value.copy):
+        try:
+            return value.copy()
+        except CalibratedError:  # pragma: no cover - defensive
+            return value
+    return value
+
+
+def _freeze_context_mapping(mapping: Mapping[str, Any]) -> Mapping[str, Any]:
+    return MappingProxyType({key: _freeze_context_value(value) for key, value in mapping.items()})
 
 
 class PredictionOrchestrator:
@@ -103,6 +133,7 @@ class PredictionOrchestrator:
         classes=None,
         bins=None,
         feature=None,
+        reject_policy: Any | None = None,
         **kwargs,
     ):
         """Execute a prediction with optional uncertainty quantification.
@@ -136,6 +167,7 @@ class PredictionOrchestrator:
             classes=classes,
             bins=bins,
             feature=feature,
+            reject_policy=reject_policy,
             **kwargs,
         )
 
@@ -147,6 +179,7 @@ class PredictionOrchestrator:
         classes=None,
         bins=None,
         feature=None,
+        reject_policy: Any | None = None,
         **kwargs,
     ):
         """Cache-aware wrapper around _predict_impl.
@@ -156,6 +189,40 @@ class PredictionOrchestrator:
         """
         cache = getattr(self.explainer, "perf_cache", None)
         cache_enabled = getattr(cache, "enabled", False)
+        # Reject policy handling: delegate to RejectOrchestrator when enabled
+        from calibrated_explanations.core.reject.policy import RejectPolicy
+
+        effective_policy = None
+        if reject_policy is not None:
+            try:
+                effective_policy = RejectPolicy(reject_policy)
+            except Exception:  # adr002_allow
+                effective_policy = RejectPolicy.NONE
+        else:
+            effective_policy = RejectPolicy.NONE
+
+        if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
+            # Ensure reject orchestrator is available (implicit enable)
+            try:
+                _ = self.explainer.reject_orchestrator
+            except Exception:  # adr002_allow
+                with contextlib.suppress(Exception):
+                    self.explainer.plugin_manager.initialize_orchestrators()
+
+            def _predict_fn(x_subset, **kw):
+                return self._predict_impl(
+                    x_subset,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    classes=classes,
+                    bins=kw.get("bins", bins),
+                    feature=feature,
+                    **kw,
+                )
+
+            return self.explainer.reject_orchestrator.apply_policy(
+                effective_policy, x, explain_fn=_predict_fn, bins=bins
+            )
         key_parts = None
         if cache_enabled:
             x_arr = np.asarray(x)
@@ -233,6 +300,9 @@ class PredictionOrchestrator:
                     stacklevel=2,
                 )
 
+    # Public alias for testing
+    validate_prediction_result = _validate_prediction_result
+
     def predict_internal(self, *args, **kwargs) -> Any:
         """Public alias for internal predict implementation."""
         return self._predict_impl(*args, **kwargs)
@@ -266,6 +336,7 @@ class PredictionOrchestrator:
         classes=None,
         bins=None,
         feature=None,
+        interval_summary=None,
         **kwargs,
     ):
         """Execute the internal prediction method for classification and regression cases.
@@ -297,9 +368,9 @@ class PredictionOrchestrator:
         Returns
         -------
         predict : ndarray of shape (n_samples,)
-            The prediction for the test data. For classification, this is the regularized probability
-            of the positive class, derived using the intervals from VennAbers. For regression, this is the
-            median prediction from the ConformalPredictiveSystem.
+            The prediction for the test data. For classification, this is the selected summary of the
+            Venn-Abers interval (regularized mean by default) for the positive class. For regression,
+            this is the median prediction from the ConformalPredictiveSystem.
         low : ndarray of shape (n_samples,)
             The lower bound of the prediction interval. For classification, this is derived using
             VennAbers. For regression, this is the lower percentile given as parameter, derived from the
@@ -320,6 +391,9 @@ class PredictionOrchestrator:
             bins = np.asarray(bins)
         if not self.explainer.initialized:
             raise NotFittedError("The learner must be initialized before calling predict.")
+        interval_summary = coerce_interval_summary(
+            interval_summary if interval_summary is not None else self.explainer.interval_summary
+        )
         if feature is None and self.explainer.is_fast():
             feature = self.explainer.num_features  # Use the calibrator defined using X_cal
         if self.explainer.mode == "classification":
@@ -327,10 +401,20 @@ class PredictionOrchestrator:
                 if self.explainer.is_fast():
                     predict, low, high, new_classes = self.explainer.interval_learner[
                         feature
-                    ].predict_proba(x, output_interval=True, classes=classes, bins=bins)
+                    ].predict_proba(
+                        x,
+                        output_interval=True,
+                        classes=classes,
+                        bins=bins,
+                        interval_summary=interval_summary,
+                    )
                 else:
                     predict, low, high, new_classes = self.explainer.interval_learner.predict_proba(
-                        x, output_interval=True, classes=classes, bins=bins
+                        x,
+                        output_interval=True,
+                        classes=classes,
+                        bins=bins,
+                        interval_summary=interval_summary,
                     )
                 if classes is None:
                     return (
@@ -345,11 +429,11 @@ class PredictionOrchestrator:
 
             if self.explainer.is_fast():
                 predict, low, high = self.explainer.interval_learner[feature].predict_proba(
-                    x, output_interval=True, bins=bins
+                    x, output_interval=True, bins=bins, interval_summary=interval_summary
                 )
             else:
                 predict, low, high = self.explainer.interval_learner.predict_proba(
-                    x, output_interval=True, bins=bins
+                    x, output_interval=True, bins=bins, interval_summary=interval_summary
                 )
             return predict[:, 1], low, high, None
         if "regression" in self.explainer.mode:
@@ -429,10 +513,12 @@ class PredictionOrchestrator:
             try:
                 if self.explainer.is_fast():
                     return self.explainer.interval_learner[feature].predict_probability(
-                        x, threshold, bins=bins
+                        x, threshold, bins=bins, interval_summary=interval_summary
                     )
                 # pylint: disable=unexpected-keyword-arg
-                return self.explainer.interval_learner.predict_probability(x, threshold, bins=bins)
+                return self.explainer.interval_learner.predict_probability(
+                    x, threshold, bins=bins, interval_summary=interval_summary
+                )
             except:  # noqa: E722 - ADR-002: Use bare except + sys.exc_info to avoid catching 'Exception' explicitly
                 exc = sys.exc_info()[1]
                 if not isinstance(exc, Exception):
@@ -613,7 +699,7 @@ class PredictionOrchestrator:
         fast: bool,
         metadata: Mapping[str, Any],
     ) -> IntervalCalibratorContext:
-        """Construct the frozen interval calibrator context."""
+        """Construct the interval calibrator context with immutable metadata (plugins get scratch state via ``plugin_state``)."""
         calibration_splits: Tuple[Any, ...] = ((self.explainer.x_cal, self.explainer.y_cal),)
         bins = {"calibration": self.explainer.bins}
         difficulty = {"estimator": self.explainer.difficulty_estimator}
@@ -637,9 +723,9 @@ class PredictionOrchestrator:
         enriched_metadata.setdefault(
             "noise_config",
             {
-                "noise_type": getattr(self.explainer, "_CalibratedExplainer__noise_type", None),
-                "scale_factor": getattr(self.explainer, "_CalibratedExplainer__scale_factor", None),
-                "severity": getattr(self.explainer, "_CalibratedExplainer__severity", None),
+                "noise_type": getattr(self.explainer, "noise_type", None),
+                "scale_factor": getattr(self.explainer, "scale_factor", None),
+                "severity": getattr(self.explainer, "severity", None),
                 "seed": getattr(self.explainer, "seed", None),
                 "rng": getattr(self.explainer, "rng", None),
             },
@@ -652,18 +738,24 @@ class PredictionOrchestrator:
                 )
                 if stored_fast:
                     existing_fast = stored_fast
-            if not existing_fast and isinstance(self.explainer.interval_learner, list):
+            if not existing_fast and is_fast_interval_collection(self.explainer.interval_learner):
                 existing_fast = tuple(self.explainer.interval_learner)
             if existing_fast:
                 enriched_metadata["existing_fast_calibrators"] = tuple(existing_fast)
+        # Freeze nested metadata values for safety and keep the top-level
+        # metadata as an immutable mapping; plugins that need transient state
+        # should use ``plugin_state`` instead.
+        metadata_for_plugins = {
+            key: _freeze_context_value(value) for key, value in enriched_metadata.items()
+        }
         return IntervalCalibratorContext(
             learner=self.explainer.learner,
             calibration_splits=calibration_splits,
-            bins=bins,
-            residuals=residuals,
-            difficulty=difficulty,
-            metadata=enriched_metadata,
-            fast_flags=fast_flags,
+            bins=_freeze_context_mapping(bins),
+            residuals=_freeze_context_mapping(residuals),
+            difficulty=_freeze_context_mapping(difficulty),
+            metadata=metadata_for_plugins,
+            fast_flags=_freeze_context_mapping(fast_flags),
         )
 
     def obtain_interval_calibrator(
@@ -675,17 +767,28 @@ class PredictionOrchestrator:
         """Resolve and instantiate the interval calibrator for the active mode."""
         self.ensure_interval_runtime_state()
         hints = self.gather_interval_hints(fast=fast)
-        plugin, identifier = self.resolve_interval_plugin(fast=fast, hints=hints)
-        context = self.build_interval_context(fast=fast, metadata=metadata)
-        try:
-            calibrator = plugin.create(context, fast=fast)
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            exc = sys.exc_info()[1]
-            raise ConfigurationError(
-                f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
-            ) from exc
+        with logging_context(
+            explainer_id=getattr(self.explainer, "id", None),
+        ):
+            plugin, identifier = self.resolve_interval_plugin(fast=fast, hints=hints)
+            with logging_context(plugin_identifier=identifier):
+                context = self.build_interval_context(fast=fast, metadata=metadata)
+                try:
+                    calibrator = plugin.create(context, fast=fast)
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    exc = sys.exc_info()[1]
+                    raise ConfigurationError(
+                        f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
+                    ) from exc
+                self.validate_interval_calibrator(
+                    calibrator=calibrator,
+                    context=context,
+                    identifier=identifier,
+                    fast=fast,
+                    plugin=plugin,
+                )
         self.capture_interval_calibrators(
             context=context,
             calibrator=calibrator,
@@ -694,13 +797,11 @@ class PredictionOrchestrator:
         key = "fast" if fast else "default"
         self.explainer.plugin_manager.interval_plugin_identifiers[key] = identifier
         self.explainer.plugin_manager.telemetry_interval_sources[key] = identifier
-        metadata_dict: Dict[str, Any]
-        if isinstance(context.metadata, dict):
-            metadata_dict = context.metadata
-        else:
-            metadata_dict = dict(context.metadata)
+        metadata_dict = dict(context.metadata)
         if fast:
-            if isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes)):
+            if isinstance(calibrator, FastIntervalCalibrator):
+                calibrators_tuple = calibrator.calibrators
+            elif isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes)):
                 calibrators_tuple = tuple(calibrator)
             else:
                 calibrators_tuple = (calibrator,)
@@ -710,8 +811,6 @@ class PredictionOrchestrator:
             metadata_dict["calibrator"] = calibrator
         # persist captured metadata for future invocations without sharing references
         self.explainer.plugin_manager.interval_context_metadata[key] = dict(metadata_dict)
-        if metadata_dict is not context.metadata and isinstance(context.metadata, dict):
-            context.metadata.update(metadata_dict)
         return calibrator, identifier
 
     def capture_interval_calibrators(
@@ -722,16 +821,98 @@ class PredictionOrchestrator:
         fast: bool,
     ) -> None:
         """Record the returned calibrator inside the interval context metadata."""
-        metadata = context.metadata
-        if not isinstance(metadata, dict):
+        plugin_state = getattr(context, "plugin_state", None)
+        if not isinstance(plugin_state, MutableMapping):  # pragma: no cover - defensive
             return
 
         if fast:
             if isinstance(calibrator, Sequence) and not isinstance(
                 calibrator, (str, bytes, bytearray)
             ):
-                metadata.setdefault("fast_calibrators", tuple(calibrator))
+                plugin_state.setdefault("fast_calibrators", tuple(calibrator))
             elif calibrator is not None:
-                metadata.setdefault("fast_calibrators", (calibrator,))
+                plugin_state.setdefault("fast_calibrators", (calibrator,))
         else:
-            metadata.setdefault("calibrator", calibrator)
+            plugin_state.setdefault("calibrator", calibrator)
+
+    def validate_interval_calibrator(
+        self,
+        *,
+        calibrator: Any,
+        context: IntervalCalibratorContext,
+        identifier: str | None,
+        fast: bool,
+        plugin: Any = None,
+    ) -> None:
+        """Validate interval calibrator protocol conformance.
+
+        Skips validation for untrusted plugins (they can return anything).
+        Enforces protocol compliance for trusted plugins and builtins.
+        """
+        # Check if plugin is untrusted - if so, skip protocol validation
+        if plugin is not None:
+            plugin_meta = getattr(plugin, "plugin_meta", {})
+            is_trusted = plugin_meta.get("trusted", True)
+            if not is_trusted:
+                # Untrusted plugins can return anything
+                return
+
+        task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
+        expected = (
+            RegressionIntervalCalibrator
+            if "regression" in task
+            else ClassificationIntervalCalibrator
+        )
+
+        # For FAST mode: allow Sequence, FastIntervalCalibrator, or protocol-compliant single objects
+        if fast:
+            if calibrator is None:
+                mode = "fast"
+                label = (
+                    identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                )
+                raise ConfigurationError(
+                    f"Interval plugin '{label}' returned None for {mode} mode."
+                )
+
+            # Accept FastIntervalCalibrator or Sequence (validate items now)
+            if isinstance(calibrator, (FastIntervalCalibrator, list, tuple)):
+                # Deep validation: check each item in the sequence
+                for idx, item in enumerate(calibrator):
+                    if not isinstance(item, expected):
+                        mode = "fast"
+                        label = f"{identifier or '<unknown>'}[{idx}]"
+                        expected_name = expected.__name__
+                        actual = type(item).__name__
+                        raise ConfigurationError(
+                            f"Interval calibrator at index {idx} in '{label}' is non-compliant for {mode} mode "
+                            f"(expected {expected_name}, got {actual})."
+                        )
+                return
+
+            # Also accept protocol-compliant single objects
+            if isinstance(calibrator, expected):
+                return
+
+            # Otherwise it's invalid
+            mode = "fast"
+            label = identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+            expected_name = f"FastIntervalCalibrator | Sequence[{expected.__name__}]"
+            actual = type(calibrator).__name__
+            raise ConfigurationError(
+                f"Interval plugin '{label}' returned a non-compliant calibrator for {mode} mode "
+                f"(expected {expected_name}, got {actual})."
+            )
+        else:
+            # For non-FAST mode: single protocol-compliant calibrator
+            if calibrator is None or not isinstance(calibrator, expected):
+                label = (
+                    identifier or getattr(calibrator, "plugin_meta", {}).get("name") or "<unknown>"
+                )
+                mode = "default"
+                expected_name = expected.__name__
+                actual = type(calibrator).__name__ if calibrator is not None else "None"
+                raise ConfigurationError(
+                    f"Interval plugin '{label}' returned a non-compliant calibrator for {mode} mode "
+                    f"(expected {expected_name}, got {actual})."
+                )

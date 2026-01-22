@@ -2,11 +2,21 @@
 
 # Run the full unit test suite with the default coverage configuration.
 test:
-	pytest
+	pytest -q
 
-# Mirror the CI coverage invocation (coverage options are centralised in pytest.ini).
+# Local test target (no coverage) kept for quick runs.
 test-cov:
-	pytest
+	pytest -q --cov=src --cov-report=xml:coverage.xml --cov-fail-under=90
+
+# Fast test target for core modules (excludes viz-marked tests).
+.PHONY: test-core
+test-core:
+	export HOME="$USERPROFILE" && pytest -m "not viz" --no-cov
+
+# Run only viz-marked tests (useful when the `[viz]` extras are installed).
+.PHONY: test-viz
+test-viz:
+	pytest -m viz --no-cov
 
 # Run a local CI dry-run that lists CI steps discovered by the helper script.
 .PHONY: ci-local-dry-run

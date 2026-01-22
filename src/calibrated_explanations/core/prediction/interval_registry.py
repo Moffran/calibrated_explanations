@@ -18,6 +18,7 @@ from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
+from ...calibration.interval_wrappers import is_fast_interval_collection
 from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
@@ -133,7 +134,7 @@ class IntervalRegistry:
                 predict_function=self.explainer.predict_function,
             )
         elif "regression" in self.explainer.mode:
-            if isinstance(self.interval_learner, list):
+            if is_fast_interval_collection(self.interval_learner):
                 raise ConfigurationError("Fast explanations are not supported in this update path.")
             # update the IntervalRegressor
             self.interval_learner.insert_calibration(xs, ys, bins=bins)

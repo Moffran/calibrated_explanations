@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, Sequence, Tuple
 
+from calibrated_explanations.core.exceptions import CalibratedError
+
 try:
     import tomllib as _tomllib
 except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
@@ -17,6 +19,35 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         import tomli as _tomllib  # type: ignore[assignment]
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _tomllib = None  # type: ignore[assignment]
+
+try:
+    import tomli_w as _tomli_w
+except ModuleNotFoundError:  # pragma: no cover - optional for writing
+    _tomli_w = None  # type: ignore[assignment]
+
+
+# Sentinel to distinguish explicit `None` from omitted arguments
+_UNSET = object()
+
+
+def get_toml_modules_for_testing() -> tuple[Any, Any]:
+    """Return the current TOML reader/writer modules (testing helper)."""
+    return _tomllib, _tomli_w
+
+
+def set_toml_modules_for_testing(
+    *, tomllib: Any | None = _UNSET, tomli_w: Any | None = _UNSET
+) -> None:
+    """Override TOML reader/writer modules for tests without private access.
+
+    Use a sentinel default so callers can explicitly set a module to ``None``
+    (for example to simulate an unavailable writer) without being ignored.
+    """
+    global _tomllib, _tomli_w  # noqa: PLW0603 - test override helper
+    if tomllib is not _UNSET:
+        _tomllib = tomllib
+    if tomli_w is not _UNSET:
+        _tomli_w = tomli_w
 
 
 def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
@@ -64,6 +95,61 @@ def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     if isinstance(cursor, dict):
         return dict(cursor)
     return {}
+
+
+def write_pyproject_section(path: Sequence[str], value: Dict[str, Any]) -> bool:
+    """Update a section in pyproject.toml with the given value.
+
+    Parameters
+    ----------
+    path : Sequence[str]
+        Nested keys to traverse in the pyproject.toml structure.
+    value : Dict[str, Any]
+        The value to set at the specified path.
+
+    Returns
+    -------
+    bool
+        True if the file was updated, False otherwise.
+
+    Notes
+    -----
+    This function requires tomli_w to be installed for writing TOML.
+    If not available, it will return False without modifying the file.
+    """
+    if _tomllib is None or _tomli_w is None:
+        return False
+
+    candidate = Path.cwd() / "pyproject.toml"
+    if not candidate.exists():
+        return False
+
+    try:
+        with open(candidate, "rb") as f:
+            data = _tomllib.load(f)
+    except CalibratedError:
+        return False
+
+    # Navigate to the parent of the target section
+    cursor = data
+    for key in path[:-1]:
+        if not isinstance(cursor, dict):
+            return False
+        if key not in cursor:
+            cursor[key] = {}
+        cursor = cursor[key]
+
+    if not isinstance(cursor, dict):
+        return False
+
+    cursor[path[-1]] = value
+
+    try:
+        with open(candidate, "wb") as f:
+            _tomli_w.dump(data, f)
+        return True
+    except CalibratedError:
+        return False
 
 
 def split_csv(value: str | None) -> Tuple[str, ...]:

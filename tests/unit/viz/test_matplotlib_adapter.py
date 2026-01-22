@@ -132,8 +132,8 @@ def patch_matplotlib(monkeypatch):
 
     fake_matplotlib = types.ModuleType("matplotlib")
     fake_matplotlib.pyplot = fake_pyplot
-    sys.modules["matplotlib"] = fake_matplotlib
-    sys.modules["matplotlib.pyplot"] = fake_pyplot
+    monkeypatch.setitem(sys.modules, "matplotlib", fake_matplotlib)
+    monkeypatch.setitem(sys.modules, "matplotlib.pyplot", fake_pyplot)
 
     monkeypatch.setattr(ma, "_require_mpl", lambda: None)
     style = {
@@ -148,9 +148,6 @@ def patch_matplotlib(monkeypatch):
     monkeypatch.setattr(ma, "_setup_style", lambda _: style)
 
     yield
-
-    sys.modules.pop("matplotlib", None)
-    sys.modules.pop("matplotlib.pyplot", None)
 
 
 def test_render_noop_when_no_output_requested():
