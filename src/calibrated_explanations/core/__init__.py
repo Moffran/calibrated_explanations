@@ -68,16 +68,34 @@ def __getattr__(name: str) -> Any:
         globals()[name] = assign_threshold
         return assign_threshold
 
-    # Compatibility: allow attribute-style access to the explain subpackage.
+    # Compatibility: allow attribute-style access to internal submodules.
     # Some tests and downstream code monkeypatch using dotted strings like
-    # `calibrated_explanations.core.explain.<...>` which requires `core.explain`
-    # to be resolvable via getattr on this package.
-    if name == "explain":
+    # `calibrated_explanations.core.calibrated_explainer.<...>` which requires
+    # `core.calibrated_explainer` to be resolvable via getattr on this package.
+    if name in {
+        "calibrated_explainer",
+        "wrap_explainer",
+        "explain",
+        "calibration",
+        "prediction",
+        "reject",
+        "calibration_helpers",
+        "prediction_helpers",
+        "difficulty_estimator_helpers",
+        "calibration_metrics",
+        "config_helpers",
+        "discretizer_config",
+        "exceptions",
+        "narrative_generator",
+        "quick",
+        "test",
+        "validation",
+    }:
         import importlib
 
-        explain_module = importlib.import_module(f"{__name__}.explain")
-        globals()["explain"] = explain_module
-        return explain_module
+        module = importlib.import_module(f"{__name__}.{name}")
+        globals()[name] = module
+        return module
 
     if name in {
         "CalibratedError",
