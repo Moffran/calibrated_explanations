@@ -10,5 +10,5 @@
 
 numpy==1.26.4; python_version < '3.13'
 numpy==2.1.2; python_version >= '3.13'
-scikit-learn==1.4.2; python_version < '3.13'
+scikit-learn==1.6.1; python_version < '3.13'
 scikit-learn==1.5.2; python_version >= '3.13'
