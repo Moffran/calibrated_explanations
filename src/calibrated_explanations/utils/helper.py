@@ -13,7 +13,9 @@ from inspect import isclass
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from pandas import CategoricalDtype
+from pandas.api.types import is_string_dtype, is_object_dtype
 
 try:  # pragma: no cover - script-mode fallback
     from .exceptions import NotFittedError, ValidationError
@@ -314,11 +316,13 @@ def transform_to_numeric(df, target, mappings=None):
             df[col] = df[col].fillna("nan")
             df[col] = df[col].astype(str)
             df[col] = df[col].map(mappings[col])
-        elif isinstance(df[col], CategoricalDtype) or df[col].dtype in (object, str):
+        elif isinstance(df[col].dtype, CategoricalDtype) or is_string_dtype(df[col].dtype) or is_object_dtype(
+            df[col].dtype
+        ):
             df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', "")
-            if isinstance(df[col], CategoricalDtype) and "nan" not in df[col].cat.categories:
+            if isinstance(df[col].dtype, CategoricalDtype) and "nan" not in df[col].cat.categories:
                 df[col] = df[col].cat.add_categories(["nan"])
             df[col] = df[col].fillna("nan")
             df[col] = df[col].astype("category")
@@ -346,6 +350,11 @@ def transform_to_numeric(df, target, mappings=None):
                     mapping[key] = idx
             mappings[col] = mapping
             df[col] = df[col].map(mapping)
+            # Ensure mapped categorical columns become integer dtype (nullable Int64)
+            try:
+                df[col] = df[col].astype("Int64")
+            except Exception:
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
     if categorical_features:
         return df, categorical_features, categorical_labels, target_labels, mappings
     return df, None, None, target_labels, mappings
