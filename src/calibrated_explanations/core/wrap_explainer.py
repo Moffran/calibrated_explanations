@@ -1177,11 +1177,15 @@ class WrapCalibratedExplainer:
         for k, v in list(state.items()):
             try:
                 state[k] = _convert(v)
-            except Exception as exc:
-                # Defensive: if conversion fails, leave original value and
-                # hope it's picklable; avoid failing during state build.
-                with suppress(Exception):
-                    self._logger.debug("__getstate__ conversion skipped for %s: %s", k, exc)
+            except (TypeError, AttributeError, RecursionError) as exc:
+                # Defensive: if conversion fails due to type/attribute/recursion
+                # issues, leave original value and hope it's picklable; avoid
+                # failing during state build. Suppress the same specific
+                # exceptions when logging to satisfy ADR-002.
+                with suppress((TypeError, AttributeError, RecursionError)):
+                    self._logger.debug(
+                        "__getstate__ conversion skipped for %s: %s", k, exc
+                    )
                 continue
         return state
 

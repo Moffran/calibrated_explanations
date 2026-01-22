@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import sys
 from typing import Any, Dict, List, Tuple
+from types import MappingProxyType
 
 from .predict_monitor import PredictBridgeMonitor
 from .registry import (
@@ -412,13 +413,56 @@ class PluginManager:
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
+            # Preserve MappingProxyType instances explicitly: deepcopy may
+            # route through copyreg reducers (registered for pickling) which
+            # would convert mappingproxy -> dict; to keep the proxy type, we
+            # recreate a MappingProxyType with the same contents.
+            if isinstance(v, MappingProxyType):
+                try:
+                    setattr(result, k, MappingProxyType(dict(v)))
+                    continue
+                except (TypeError, AttributeError) as exc:
+                    # Fall back to original reference when recreation fails;
+                    # log the reason at debug level and continue. Narrowing
+                    # the exception types avoids masking unrelated errors
+                    # per ADR-002.
+                    self._logger.debug(
+                        "__deepcopy__ preserve MappingProxyType failed for %s: %s",
+                        k,
+                        exc,
+                    )
+                    setattr(result, k, v)
+                    continue
+
             try:
+                # Special-case dicts to preserve MappingProxyType values
+                if isinstance(v, dict):
+                    try:
+                        new_dict: Dict[Any, Any] = {}
+                        for ik, iv in v.items():
+                            if isinstance(iv, MappingProxyType):
+                                # Recreate the mapping proxy to preserve immutability
+                                new_dict[ik] = MappingProxyType(dict(iv))
+                            else:
+                                new_dict[ik] = copy.deepcopy(iv, memo)
+                        setattr(result, k, new_dict)
+                        continue
+                    except (TypeError, AttributeError, RecursionError) as exc:
+                        # Fallback to shallow copy of the dict on specific
+                        # conversion errors; log at debug level to keep
+                        # failures visible while avoiding broad catches.
+                        self._logger.debug(
+                            "__deepcopy__ dict-preserve failed for %s: %s", k, exc
+                        )
+                        setattr(result, k, v.copy())
+                        continue
+
                 setattr(result, k, copy.deepcopy(v, memo))
             except BaseException:
                 exc_type = sys.exc_info()[0]
                 if exc_type is not TypeError:
                     raise
-                # Fallback for unpicklable objects (e.g., mappingproxy in contexts)
+                # Fallback for unpicklable objects (e.g., other mappingproxy-like)
                 # We shallow copy containers to avoid sharing the container itself,
                 # while sharing the unpicklable items (which are likely immutable).
                 if isinstance(v, dict):

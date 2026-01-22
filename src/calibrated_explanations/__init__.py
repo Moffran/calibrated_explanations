@@ -23,8 +23,13 @@ try:  # pragma: no cover - defensive
         return dict, (dict(mp),)
 
     copyreg.pickle(MappingProxyType, _reduce_mappingproxy)
-except Exception as exc:
-    _logging.getLogger(__name__).debug("MappingProxyType reducer registration skipped: %s", exc)
+except (TypeError, AttributeError) as exc:
+    # ADR-002: avoid catching broad Exception; handle the specific
+    # expected failures when registering reducers (type errors or
+    # attribute errors in constrained packaging environments).
+    _logging.getLogger(__name__).debug(
+        "MappingProxyType reducer registration skipped: %s", exc
+    )
 
 # Expose viz namespace lazily via __getattr__ (avoid importing heavy backends eagerly)
 # Note: avoid eager imports of explanation, viz and discretizer modules here.
