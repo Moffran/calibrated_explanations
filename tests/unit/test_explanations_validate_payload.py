@@ -20,10 +20,10 @@ def test_should_raise_validationerror_when_payload_invalid(monkeypatch):
     exp.provenance = None
     exp.metadata = None
 
-    def _bad(payload):
+    def bad_validator(payload):
         raise Exception("schema failure")
 
-    monkeypatch.setattr(serialization, "validate_payload", _bad)
+    monkeypatch.setattr(serialization, "validate_payload", bad_validator)
 
     with pytest.raises(ValidationError):
         serialization.to_json(exp)

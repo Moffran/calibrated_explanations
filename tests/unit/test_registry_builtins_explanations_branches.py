@@ -16,10 +16,10 @@ def make_ep(name, load=None, dist=None):
     ep.dist = dist
     if load is None:
 
-        def _load():
+        def load_stub():
             raise RuntimeError("no load")
 
-        ep.load = _load
+        ep.load = load_stub
     else:
         ep.load = load
     return ep
@@ -60,7 +60,7 @@ def test_warn_untrusted_plugin_emits_once(monkeypatch):
 
 def test_load_entrypoint_plugins_skips_when_meta_name_denied(monkeypatch):
     # Entry point that loads a plugin with plugin_meta having a denied name
-    def _load_plugin():
+    def load_plugin_stub():
         p = types.SimpleNamespace()
         p.plugin_meta = {
             "schema_version": 1,
@@ -72,7 +72,7 @@ def test_load_entrypoint_plugins_skips_when_meta_name_denied(monkeypatch):
         return p
 
     eps = types.SimpleNamespace()
-    eps.select = lambda group=None: [make_ep("pkg:attr", load=_load_plugin)]
+    eps.select = lambda group=None: [make_ep("pkg:attr", load=load_plugin_stub)]
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: eps)
     monkeypatch.setattr(registry, "is_identifier_denied", lambda ident: ident == "denied_name")
 
@@ -221,8 +221,8 @@ def test_alternative_plot_triangle_calls_plot_triangular(monkeypatch):
     )
     # Provide get_rules used by AlternativeExplanation.plot
     fake.get_rules = lambda *a, **k: alternative
-    _name = "_" + "check_preconditions"
-    setattr(fake, _name, lambda *a, **k: None)
+    check_pre_attr = "_" + "check_preconditions"
+    setattr(fake, check_pre_attr, lambda *a, **k: None)
     fake.get_mode = lambda: "classification"
     fake.is_thresholded = lambda: False
     # patch plot_triangular to capture invocation
@@ -251,7 +251,7 @@ def test_alternative_plot_triangle_calls_plot_triangular(monkeypatch):
 
 def test_load_entrypoint_plugins_loads_valid_plugin(monkeypatch):
     # Simulate an entry point that loads a valid plugin with proper plugin_meta
-    def _load_plugin():
+    def valid_plugin_loader():
         p = types.SimpleNamespace()
         p.plugin_meta = {
             "schema_version": 1,
@@ -265,7 +265,7 @@ def test_load_entrypoint_plugins_loads_valid_plugin(monkeypatch):
         return p
 
     eps = types.SimpleNamespace()
-    eps.select = lambda group=None: [make_ep("pkg:attr", load=_load_plugin)]
+    eps.select = lambda group=None: [make_ep("pkg:attr", load=valid_plugin_loader)]
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: eps)
 
     # Ensure no denial

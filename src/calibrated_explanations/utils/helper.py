@@ -15,7 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from pandas import CategoricalDtype
-from pandas.api.types import is_string_dtype, is_object_dtype
+from pandas.api.types import is_object_dtype, is_string_dtype
 
 try:  # pragma: no cover - script-mode fallback
     from .exceptions import NotFittedError, ValidationError
@@ -316,8 +316,10 @@ def transform_to_numeric(df, target, mappings=None):
             df[col] = df[col].fillna("nan")
             df[col] = df[col].astype(str)
             df[col] = df[col].map(mappings[col])
-        elif isinstance(df[col].dtype, CategoricalDtype) or is_string_dtype(df[col].dtype) or is_object_dtype(
-            df[col].dtype
+        elif (
+            isinstance(df[col].dtype, CategoricalDtype)
+            or is_string_dtype(df[col].dtype)
+            or is_object_dtype(df[col].dtype)
         ):
             df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")

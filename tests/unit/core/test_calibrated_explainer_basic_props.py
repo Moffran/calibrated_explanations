@@ -1,4 +1,3 @@
-import types
 import numpy as np
 import pytest
 
@@ -30,9 +29,7 @@ def make_stub_explainer():
 
 def test_require_plugin_manager_raises_not_fitted():
     expl = make_stub_explainer()
-    # Ensure no plugin manager present
-    if hasattr(expl, "_plugin_manager"):
-        delattr(expl, "_plugin_manager")
+    # The stub does not have a plugin manager initialized
     with pytest.raises(NotFittedError):
         expl.require_plugin_manager()
 
@@ -93,6 +90,7 @@ def test_repr_verbose_and_non_verbose_runs():
     assert isinstance(r, str)
     # verbose path
     expl.verbose = True
+
     class DummyExplanation:
         total_explain_time = 0.123
 

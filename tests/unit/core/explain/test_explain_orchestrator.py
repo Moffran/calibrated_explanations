@@ -566,7 +566,7 @@ def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
 
     mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
 
-    def _capture_request(_x, request):
+    def capture_request_helper(_x, request):
         captured_request["bins"] = request.bins
         assert isinstance(request.bins, tuple)
         assert request.bins == tuple(tuple(row) for row in bins.tolist())
@@ -575,7 +575,7 @@ def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
         return mock_batch
 
     mock_plugin = MagicMock()
-    mock_plugin.explain_batch.side_effect = _capture_request
+    mock_plugin.explain_batch.side_effect = capture_request_helper
     mock_batch = MagicMock()
     mock_batch.collection_metadata = {}
     mock_container = MagicMock()

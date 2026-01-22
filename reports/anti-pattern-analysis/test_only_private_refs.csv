@@ -1,5 +1,1 @@
 name,count,samples,in_src
-_cmd_validate_plot,3,tests\unit\plugins\test_cli_coverage.py:96;tests\unit\plugins\test_cli_coverage.py:103;tests\unit\plugins\test_cli_coverage.py:112,True
-_format_common_metadata,3,tests\unit\plugins\test_cli_coverage.py:36;tests\unit\plugins\test_cli_coverage.py:37;tests\unit\plugins\test_cli_coverage.py:40,True
-_cmd_list,2,tests\unit\plugins\test_cli_coverage.py:65;tests\unit\plugins\test_cli_coverage.py:83,True
-_emit_header,1,tests\unit\plugins\test_cli_coverage.py:28,True

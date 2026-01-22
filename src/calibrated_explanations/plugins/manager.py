@@ -19,8 +19,8 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Any, Dict, List, Tuple
 from types import MappingProxyType
+from typing import Any, Dict, List, Tuple
 
 from .predict_monitor import PredictBridgeMonitor
 from .registry import (
@@ -451,9 +451,7 @@ class PluginManager:
                         # Fallback to shallow copy of the dict on specific
                         # conversion errors; log at debug level to keep
                         # failures visible while avoiding broad catches.
-                        self._logger.debug(
-                            "__deepcopy__ dict-preserve failed for %s: %s", k, exc
-                        )
+                        self._logger.debug("__deepcopy__ dict-preserve failed for %s: %s", k, exc)
                         setattr(result, k, v.copy())
                         continue
 

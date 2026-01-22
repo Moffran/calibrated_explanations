@@ -1183,9 +1183,7 @@ class WrapCalibratedExplainer:
                 # failing during state build. Suppress the same specific
                 # exceptions when logging to satisfy ADR-002.
                 with suppress((TypeError, AttributeError, RecursionError)):
-                    self._logger.debug(
-                        "__getstate__ conversion skipped for %s: %s", k, exc
-                    )
+                    self._logger.debug("__getstate__ conversion skipped for %s: %s", k, exc)
                 continue
         return state
 

@@ -75,7 +75,7 @@ def test_to_narrative_handles_output_formats(monkeypatch):
             self.calibrated_explanations = types.SimpleNamespace(calibrated_explainer=None)
             self.y_threshold = None
 
-        def _get_explainer(self):
+        def get_explainer_helper(self):
             return types.SimpleNamespace()
 
         def _check_preconditions(self):

@@ -29,11 +29,13 @@ def test_should_disable_diagnostic_mode_when_env_false(monkeypatch):
 
 
 def test_should_fall_back_to_pyproject_when_env_missing(monkeypatch):
-    def _fake_pyproject(_path):
+    def fake_pyproject_helper(_path):
         return {"diagnostic_mode": True}
 
     monkeypatch.delenv("CE_TELEMETRY_DIAGNOSTIC_MODE", raising=False)
-    monkeypatch.setattr("calibrated_explanations.logging.read_pyproject_section", _fake_pyproject)
+    monkeypatch.setattr(
+        "calibrated_explanations.logging.read_pyproject_section", fake_pyproject_helper
+    )
 
     assert telemetry_diagnostic_mode() is True
 
