@@ -353,7 +353,8 @@ def transform_to_numeric(df, target, mappings=None):
             # Ensure mapped categorical columns become integer dtype (nullable Int64)
             try:
                 df[col] = df[col].astype("Int64")
-            except Exception:
+            except (TypeError, ValueError):
+                # Coerce to numeric then cast to pandas nullable integer type.
                 df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
     if categorical_features:
         return df, categorical_features, categorical_labels, target_labels, mappings
