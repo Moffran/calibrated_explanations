@@ -26,16 +26,16 @@ before acting.
 
 1. **Install the essentials**
    ```bash
-   python -m pip install calibrated-explanations scikit-learn
+   python -m pip install calibrated-explanations
    ```
 
    **Optional extras:**
    | Extra | Purpose | Key Packages |
    | :--- | :--- | :--- |
    | `[viz]` | Plotting and visualizations | `matplotlib` |
-   | `[notebooks]` | Jupyter notebook support | `ipython`, `jupyter` |
+   | `[notebooks]` | Jupyter notebook support | `ipython`, `jupyter`, `nbconvert` |
    | `[eval]` | Reproducing benchmarks | `lime`, `shap`, `xgboost`, `scipy` |
-   | `[external-plugins]` | High-performance plugins | `numpy>=1.24`, `pandas>=2.0` |
+   | `[external-plugins]` | High-performance plugins | `numpy>=1.24`, `pandas>=2.0`, `scikit-learn>=1.3` |
 
    Install with: `pip install "calibrated-explanations[viz,notebooks]"`
 
@@ -100,13 +100,12 @@ before acting.
 1. **Fit** your preferred estimator.
 2. **Calibrate** with held-out data to align predicted and observed outcomes.
 3. **Explain** with `explain_factual` for calibrated rules and
-   `explore_alternatives` for triangular-plot-ready counterfactuals.
+   `explore_alternatives` for semi-, super-, and counterfactuals.
 4. **Interpret** using the how-to guides so decisions account for both aleatoric
    and epistemic uncertainty.
 
-This workflow is identical across binary, multiclass, probabilistic, and
-interval regression tasks—the difference lies in how you configure the
-underlying estimator and read the returned intervals.
+This workflow is identical across binary, multiclass classification, as well as probabilistic, and
+interval regression tasks, the difference lies in how you configure the underlying estimator and read the returned intervals.
 
 ---
 
