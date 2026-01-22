@@ -650,6 +650,14 @@ class CalibratedExplainer:
         """
         return self.plugin_manager.build_plot_chain()
 
+    @property
+    def plot_style_chain(self) -> Tuple[str, ...]:
+        """Return the plot style chain.
+
+        This property provides access to the current plot style chain used by the explainer.
+        """
+        return self.build_plot_style_chain()
+
     def instantiate_plugin(self, prototype: Any) -> Any:
         """Delegate to ExplanationOrchestrator."""
         return self.plugin_manager.explanation_orchestrator.instantiate_plugin(prototype)
