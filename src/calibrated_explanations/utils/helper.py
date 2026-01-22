@@ -272,16 +272,16 @@ def transform_to_numeric(df, target, mappings=None):
     >>> import pandas as pd
     >>> df = pd.DataFrame({'target': ['a','b']})
     >>> transform_to_numeric(df,'target')
-    (  target
-    0      0
-    1      1, None, None, {0: 'a', 1: 'b'}, {'target': {'a': 0, 'b': 1}})
+    (   target
+    0       0
+    1       1, None, None, {0: 'a', 1: 'b'}, {'target': {'a': 0, 'b': 1}})
 
     >>> df = pd.DataFrame({'numerical': [2,3], 'nominal': ['c','d'], 'target': ['a','b']})
     >>> ndf, categorical_features, categorical_labels, target_labels, mappings = transform_to_numeric(df,'target')
     >>> ndf
-       numerical nominal target
-    0          2       0      0
-    1          3       1      1
+       numerical  nominal  target
+    0          2        0       0
+    1          3        1       1
     >>> categorical_features
     [1]
     >>> categorical_labels
