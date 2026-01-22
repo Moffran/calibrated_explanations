@@ -68,9 +68,9 @@ before acting.
 
    factual = explainer.explain_factual(x_test[:1])
    alternatives = explainer.explore_alternatives(x_test[:1])
-   proba_matrix, probability_interval = explainer.predict_proba(x_test[:1], uq_interval=True)
+   probabilities, probability_interval = explainer.predict_proba(x_test[:1], uq_interval=True)
    low, high = probability_interval
-   print(f"Calibrated probability: {proba_matrix[0, 1]:.3f}")
+   print(f"Calibrated probability: {probabilities[0, 1]:.3f}")
    print(factual[0])
    ```
 3. **Check the output** – the first factual explanation prints a calibrated rule
@@ -88,9 +88,9 @@ before acting.
    - Each subsequent line is a factual rule: the observed value, the matching
      feature, and its signed contribution with uncertainty bounds.
 4. **Interpret what you see** – follow the
-   [Interpret Calibrated Explanations guide](https://calibrated-explanations.readthedocs.io/en/latest/how-to/interpret_explanations.html)
+   [Interpret Calibrated Explanations guide](https://calibrated-explanations.readthedocs.io/en/latest/foundations/how-to/interpret_explanations.html)
    to learn how calibrated intervals, rule weights, and the triangular plot work
-   together. The [triangular alternatives tutorial](https://calibrated-explanations.readthedocs.io/en/latest/concepts/alternatives.html)
+   together. The [triangular alternatives tutorial](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/alternatives.html)
    then shows how to narrate trade-offs across alternative rules.
 
 ---
@@ -117,7 +117,7 @@ underlying estimator and read the returned intervals.
   [classification quickstart](https://calibrated-explanations.readthedocs.io/en/latest/get-started/quickstart_classification.html)
   for a notebook-friendly walk-through with the breast cancer dataset.
 - Compare factual vs. alternative explanations using the
-  [triangular plot tutorial](https://calibrated-explanations.readthedocs.io/en/latest/concepts/alternatives.html).
+  [triangular plot tutorial](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/alternatives.html).
 
 ### Practitioners (day-to-day usage)
 - Follow the
@@ -146,7 +146,7 @@ underlying estimator and read the returned intervals.
   [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
   for development environment setup, plugin guardrails, and quality gates.
 - Review the
-  [contributing workflow](https://calibrated-explanations.readthedocs.io/en/latest/contributing.html)
+  [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
   before submitting pull requests.
 
 ### Maintainers
@@ -257,7 +257,7 @@ stays lightweight.
    (typically `42` or `0`) and record any deviations alongside the active ADRs
    noted in [`docs/improvement/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs).
 5. **Cite the sources** – the
-   [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/research/theory_and_literature.html)
+   [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/researcher/advanced/theory_and_literature.html)
    lists DOIs, arXiv IDs, and funding acknowledgements to include in your work.
 
 ---
@@ -283,7 +283,7 @@ stays lightweight.
    make -C docs html
    ```
 4. **Open a pull request** referencing the active milestone and relevant ADRs.
-   The [PR guide](https://calibrated-explanations.readthedocs.io/en/latest/pr_guide.html)
+   The [PR guide](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/pr_guide.html)
    lists the checklist used during reviews.
 5. **Review community health docs** – contributions are expected to follow the
    [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md),

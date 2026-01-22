@@ -50,20 +50,114 @@ export CE_EXPLANATION_PLUGIN_FAST_FALLBACKS="external.hello.fast"
 export CE_INTERVAL_PLUGIN_FALLBACKS="external.hello.interval,core.interval.legacy"
 ```
 
+### Example: Explanation plugin fallbacks
+
+```python
+import os
+from dataclasses import dataclass
+from calibrated_explanations.plugins import (
+    register_explanation_plugin,
+    _EXPLANATION_PLUGINS,
+)
+from calibrated_explanations.plugins.explanations import ExplanationPlugin
+
+
+@dataclass
+class TestExplanationPlugin(ExplanationPlugin):
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "test.explanation.fallback",
+        "version": "0.1.0",
+        "provider": "test",
+        "capabilities": ["explain"],
+        "modes": ("factual",),
+        "tasks": ("classification",),
+        "dependencies": (),
+        "trusted": False,
+    }
+
+    def supports(self, model):
+        return hasattr(model, "predict_proba")
+
+    def initialize(self, context):
+        pass
+
+    def explain_batch(self, x, request):
+        return None
+
+
+os.environ["CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS"] = (
+    "core.explanation.factual,test.explanation.fallback"
+)
+
+plugin = TestExplanationPlugin()
+register_explanation_plugin("test.explanation.fallback", plugin)
+_EXPLANATION_PLUGINS.pop("test.explanation.fallback", None)
+```
+
 ### Example: Testing with alternative plot plugin
 
 ```python
 import os
-os.environ["CE_PLOT_STYLE"] = "legacy"
-
+from calibrated_explanations.plotting import resolve_plot_style_chain
+from tests.helpers.model_utils import get_classification_model
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from calibrated_explanations import CalibratedExplainer
 
-# The explainer automatically uses the environment-configured plot style
-explainer = CalibratedExplainer(model, x_cal, y_cal)
-explanations = explainer.explain_factual(x_test)
+# Prepare data and explainer
+data = load_breast_cancer()
+x = data.data
+y = data.target
+x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+x_train, x_cal, y_train, y_cal = train_test_split(
+    x_temp, y_temp, test_size=0.4, random_state=42
+)
 
-# Plot style is driven by CE_PLOT_STYLE
-explanations.plot()
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_cal = scaler.transform(x_cal)
+x_test = scaler.transform(x_test)
+
+model, _ = get_classification_model("RF", x_train, y_train)
+explainer = CalibratedExplainer(model, x_cal, y_cal)
+
+os.environ["CE_PLOT_STYLE"] = "legacy"
+chain = resolve_plot_style_chain(explainer, explicit_style=None)
+assert "legacy" in chain
+```
+
+### Example: Configure plot fallbacks via environment variables
+
+```python
+import os
+from calibrated_explanations.plotting import resolve_plot_style_chain
+from tests.helpers.model_utils import get_classification_model
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from calibrated_explanations import CalibratedExplainer
+
+data = load_breast_cancer()
+x = data.data
+y = data.target
+x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+x_train, x_cal, y_train, y_cal = train_test_split(
+    x_temp, y_temp, test_size=0.4, random_state=42
+)
+
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_cal = scaler.transform(x_cal)
+x_test = scaler.transform(x_test)
+
+model, _ = get_classification_model("RF", x_train, y_train)
+explainer = CalibratedExplainer(model, x_cal, y_cal)
+
+os.environ["CE_PLOT_STYLE_FALLBACKS"] = "plot_spec.default,legacy"
+chain = resolve_plot_style_chain(explainer, explicit_style=None)
+assert len(chain) > 0
 ```
 
 ### Example: CI/CD workflow with plugin validation
@@ -96,7 +190,7 @@ behavior across development and distribution.
 ### Configuration structure
 
 ```toml
-[tool.calibrated_explanations.plots]
+[tool.calibrated-explanations.plots]
 # Primary plot style selector
 style = "my.custom.plot"
 
@@ -108,7 +202,7 @@ style_fallbacks = [
 ]
 
 # Primary interval calibrator plugin (default/fast mode)
-[tool.calibrated_explanations.intervals]
+[tool.calibrated-explanations.intervals]
 default = "external.hello.interval"
 fast = "core.interval.fast"
 
@@ -118,7 +212,7 @@ default_fallbacks = [
 ]
 fast_fallbacks = ["core.interval.fast", "core.interval.legacy"]
 
-[tool.calibrated_explanations.explanations]
+[tool.calibrated-explanations.explanations]
 # Per-mode plugin configuration
 factual = "external.hello.explanation"
 alternative = "core.explanation.alternative"
@@ -134,7 +228,7 @@ When your package includes a plot plugin, document project defaults in `pyprojec
 name = "my-calibrated-plots"
 dependencies = ["calibrated-explanations>=0.9.0"]
 
-[tool.calibrated_explanations.plots]
+[tool.calibrated-explanations.plots]
 style = "my.beautiful.plot"
 style_fallbacks = ["plot_spec.default", "legacy"]
 ```
@@ -148,27 +242,47 @@ When multiple configuration methods are active, this priority order applies:
 
 1. Explainer parameter: `CalibratedExplainer(..., plot_style="explicit")`
 2. Environment variable: `CE_PLOT_STYLE="from_env"`
-3. pyproject.toml: `[tool.calibrated_explanations.plots] style = "from_project"`
+3. pyproject.toml: `[tool.calibrated-explanations.plots] style = "from_project"`
 4. Explanation plugin metadata: `"plot_dependency": "from_plugin"`
-5. Default fallback: `"plot_spec.default"` → `"legacy"`
+5. Default fallback: `"plot_spec.default"` -> `"legacy"`
 
 ### Example: Priority demonstration
 
 ```python
 import os
+from calibrated_explanations.plotting import resolve_plot_style_chain
+from tests.helpers.model_utils import get_classification_model
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from calibrated_explanations import CalibratedExplainer
 
-# Set environment variable
-os.environ["CE_PLOT_STYLE"] = "env.plot"
-
-# Create explainer with explicit parameter (highest priority)
-explainer = CalibratedExplainer(
-    model, x_cal, y_cal,
-    plot_style="explicit.plot"  # ← This takes precedence
+data = load_breast_cancer()
+x = data.data
+y = data.target
+x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+x_train, x_cal, y_train, y_cal = train_test_split(
+    x_temp, y_temp, test_size=0.4, random_state=42
 )
 
-explanations = explainer.explain_factual(x_test)
-# Plot style used: "explicit.plot" (from parameter, not env var)
-explanations.plot()
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_cal = scaler.transform(x_cal)
+x_test = scaler.transform(x_test)
+
+model, _ = get_classification_model("RF", x_train, y_train)
+
+os.environ["CE_PLOT_STYLE"] = "env.plot"
+
+explainer = CalibratedExplainer(
+    model,
+    x_cal,
+    y_cal,
+    plot_style="plot_spec.default",
+)
+
+chain = resolve_plot_style_chain(explainer, explicit_style="plot_spec.default")
+assert chain[0] == "plot_spec.default"
 ```
 
 ---
@@ -183,21 +297,36 @@ This enables automatic plugin chain seeding without explicit user configuration.
 In your explanation plugin metadata, specify the preferred plot plugin:
 
 ```python
-class MyExplanationPlugin(ExplanationPlugin):
+from dataclasses import dataclass
+from calibrated_explanations.plugins.explanations import ExplanationPlugin
+
+
+@dataclass
+class HelloFactualPlugin(ExplanationPlugin):
+    """Example explanation plugin with declared dependencies."""
+
     plugin_meta = {
         "schema_version": 1,
-        "name": "my.explanation",
+        "name": "hello.explanation.factual",
         "version": "0.1.0",
-        "provider": "my-team",
+        "provider": "example-team",
+        "capabilities": ["explain", "explanation:factual", "task:classification"],
         "modes": ("factual",),
         "tasks": ("classification",),
-        "capabilities": ["explain", "explanation:factual", "task:classification"],
         "dependencies": (),
-        # ↓ Declare preferred plot plugin
-        "plot_dependency": "my.plot.style",
-        "interval_dependency": "my.interval.calibrator",
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
         "trusted": False,
     }
+
+    def supports(self, model):
+        return hasattr(model, "predict_proba")
+
+    def initialize(self, context):
+        pass
+
+    def explain_batch(self, x, request):
+        return None
 ```
 
 ### How dependencies are propagated
@@ -206,20 +335,20 @@ When an explanation plugin is registered with dependencies, the calibrated expla
 automatically seeds these dependencies into the fallback chain:
 
 ```python
-from calibrated_explanations.plugins.registry import register_explanation_plugin
+from calibrated_explanations.plugins import register_explanation_plugin
 
-plugin = MyExplanationPlugin()
-register_explanation_plugin("my.explanation", plugin)
+plugin = HelloFactualPlugin()
+register_explanation_plugin("hello.explanation.factual", plugin)
 
-# Later, when using the plugin:
 explainer = CalibratedExplainer(
-    model, x_cal, y_cal,
-    factual_plugin="my.explanation",
-    # plot_style not specified; uses dependency from plugin metadata
+    model,
+    x_cal,
+    y_cal,
+    factual_plugin="hello.explanation.factual",
 )
 
 # The explainer internally creates fallback chain:
-# ["my.plot.style", "plot_spec.default", "legacy"]
+# ["plot_spec.default", "legacy"]
 ```
 
 ### Example: Self-contained plugin package
@@ -233,8 +362,8 @@ from calibrated_explanations.plugins.explanations import ExplanationPlugin
 class MyExplanationPlugin(ExplanationPlugin):
     plugin_meta = {
         "name": "my.explanation.advanced",
-        "plot_dependency": "my.plot.advanced",  # ← Use our custom plot plugin
-        "interval_dependency": "my.interval.advanced",  # ← Use our calibrator
+        "plot_dependency": "my.plot.advanced",  # Use our custom plot plugin
+        "interval_dependency": "my.interval.advanced",  # Use our calibrator
         # ... other metadata ...
     }
 
@@ -248,7 +377,7 @@ class MyPlotRenderer(PlotRenderer):
     plugin_meta = {"name": "my.plot.renderer"}
 
 # my_plugin/__init__.py
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     register_explanation_plugin,
     register_plot_builder,
     register_plot_renderer,
@@ -309,7 +438,7 @@ The registry honours both ``CE_TRUST_PLUGIN`` and ``CE_DENY_PLUGIN`` environment
 variables.
 
 - ``CE_TRUST_PLUGIN`` lists identifiers that should be trusted on discovery.
-- ``[tool.calibrated_explanations.plugins] trusted = ["id"]`` in ``pyproject.toml`` can
+- ``[tool.calibrated-explanations.plugins] trusted = ["id"]`` in ``pyproject.toml`` can
   be used for a versioned allowlist of trusted identifiers.
 - ``CE_DENY_PLUGIN`` blocks specific identifiers while you iterate on them.
 

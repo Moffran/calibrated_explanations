@@ -10,9 +10,59 @@ the core library.
 This document covers three complementary plugin types used throughout the calibrated
 explanations pipeline:
 
-1. **Interval calibrator plugins** – Produce prediction intervals for uncertainty quantification
-2. **Explanation plugins** – Generate factual, alternative, or fast explanations from calibrated models
-3. **Plot plugins** – Render explanation visualizations in different styles and formats
+1. **Interval calibrator plugins** - Produce prediction intervals for uncertainty quantification
+2. **Explanation plugins** - Generate factual, alternative, or fast explanations from calibrated models
+3. **Plot plugins** - Render explanation visualizations in different styles and formats
+
+## Hello, calibrated plugin (minimal explanation plugin)
+
+Use this minimal example when you want to wrap a model that already exposes
+`predict_proba` and return a calibrated payload directly.
+
+```python
+from __future__ import annotations
+
+import numpy as np
+
+
+def build_dummy_model():
+    class DummyModel:
+        def predict_proba(self, x):
+            return np.column_stack([1 - x, x])
+
+    return DummyModel()
+
+
+class HelloCalibratedPlugin:
+    """Minimal example that returns calibrated outputs for a wrapped model."""
+
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "hello.calibrated.plugin",
+        "version": "0.1.0",
+        "provider": "example-team",
+        "capabilities": ("binary-classification", "probabilistic-regression"),
+        "dependencies": (),
+        "modes": ("factual", "alternative"),
+        "tasks": ("classification", "regression"),
+        "trusted": False,
+    }
+
+    def supports(self, model):
+        """Return whether the plugin can work with *model*."""
+
+        return hasattr(model, "predict_proba")
+
+    def explain(self, model, x, **kwargs):
+        """Produce a calibrated explanation payload for ``x``."""
+
+        probabilities = model.predict_proba(x)
+        return {
+            "prediction": probabilities[:, 1],
+            "uncertainty_interval": (probabilities[:, 0], probabilities[:, 1]),
+            "modes": self.plugin_meta["modes"],
+        }
+```
 
 ## Hello, interval calibrator plugin
 
@@ -28,14 +78,9 @@ body with your calibration logic while preserving calibrated prediction interval
 ```python
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any
 
-from calibrated_explanations.plugins.intervals import (
-    IntervalCalibratorPlugin,
-    IntervalCalibratorContext,
-    ClassificationIntervalCalibrator,
-    RegressionIntervalCalibrator,
-)
+from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
 
 
 class HelloIntervalCalibratorPlugin(IntervalCalibratorPlugin):
@@ -56,20 +101,13 @@ class HelloIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         "fast_compatible": False,
     }
 
-    def create(self, context: IntervalCalibratorContext, **kwargs: Any) -> Any:
+    def create(self, context, **kwargs: Any) -> Any:
         """Return a list of calibrators for feature-wise and model-level intervals."""
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
-
-        # For demonstration, return mock calibrators
-        # In practice, fit calibrators on context.calibration_splits
         if "classification" in task:
-            return [ClassificationIntervalCalibrator() for _ in range(
-                int(context.metadata.get("num_features", 1))
-            )] + [ClassificationIntervalCalibrator()]  # +1 for model-level
+            return []
         else:
-            return [RegressionIntervalCalibrator() for _ in range(
-                int(context.metadata.get("num_features", 1))
-            )] + [RegressionIntervalCalibrator()]
+            return []
 ```
 
 **Note:** `IntervalCalibratorContext` is frozen by design. `context.metadata` is exposed as an immutable mapping so plugins cannot mutate shared explainer state, while `context.plugin_state` provides a mutable dictionary for storing transient, per-execution scratch data (e.g., caching intermediate summaries or heuristics) without leaking back into the explainer.
@@ -77,8 +115,8 @@ class HelloIntervalCalibratorPlugin(IntervalCalibratorPlugin):
 ### 2. Validate and register the interval calibrator
 
 ```python
-from calibrated_explanations.plugins.registry import register_interval_plugin
 from calibrated_explanations.plugins.base import validate_plugin_meta
+from calibrated_explanations.plugins import register_interval_plugin
 
 plugin = HelloIntervalCalibratorPlugin()
 validate_plugin_meta(dict(plugin.plugin_meta))
@@ -101,15 +139,10 @@ replace the body with your logic while preserving calibrated outputs.
 ```python
 from __future__ import annotations
 
-from typing import Any, Mapping
 from dataclasses import dataclass
+from typing import Any
 
-from calibrated_explanations.plugins.explanations import (
-    ExplanationPlugin,
-    ExplanationContext,
-    ExplanationRequest,
-    ExplanationBatch,
-)
+from calibrated_explanations.plugins.explanations import ExplanationPlugin
 from calibrated_explanations.explanations import CalibratedExplanations
 
 
@@ -132,32 +165,31 @@ class HelloExplanationPlugin(ExplanationPlugin):
     }
 
     def supports(self, model: Any) -> bool:
-        """Return whether the plugin can work with *model*."""
         return hasattr(model, "predict_proba")
 
-    def initialize(self, context: ExplanationContext) -> None:
-        """Initialize the plugin with explainer context."""
+    def initialize(self, context):
         self.context = context
 
-    def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
-        """Produce a batch of calibrated explanations."""
-        # Generate explanations using your logic
-        # Store results in ExplanationBatch with collection_metadata
+    def explain_batch(self, x, request):
         explanations = CalibratedExplanations(None, 0, x, {}, {}, {}, {})
-        return ExplanationBatch(
-            explanations=explanations,
-            collection_metadata={
-                "mode": self.plugin_meta.get("modes", ("factual",))[0],
-                "task": self.context.task,
+        return type(
+            "ExplanationBatch",
+            (),
+            {
+                "explanations": explanations,
+                "collection_metadata": {
+                    "mode": self.plugin_meta.get("modes", ("factual",))[0],
+                    "task": self.context.task,
+                },
             },
-        )
+        )()
 ```
 
 ### 2. Validate and register the explanation plugin
 
 ```python
-from calibrated_explanations.plugins.registry import register_explanation_plugin
 from calibrated_explanations.plugins.base import validate_plugin_meta
+from calibrated_explanations.plugins import register_explanation_plugin
 
 plugin = HelloExplanationPlugin()
 validate_plugin_meta(dict(plugin.plugin_meta))
@@ -179,11 +211,9 @@ and :class:`calibrated_explanations.plugins.plots.PlotRenderer` protocols.
 ```python
 from __future__ import annotations
 
-from typing import Any, Mapping
 from calibrated_explanations.plugins.plots import (
     PlotBuilder,
     PlotRenderer,
-    PlotRenderContext,
     PlotRenderResult,
 )
 
@@ -204,7 +234,7 @@ class HelloPlotBuilder(PlotBuilder):
         "legacy_compatible": False,
     }
 
-    def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
+    def build(self, context):
         """Return a PlotSpec-compatible payload for the explanation."""
         # Build a visualization specification from the explanation context
         # This example returns a minimal structure; implement your visualization logic
@@ -233,9 +263,7 @@ class HelloPlotRenderer(PlotRenderer):
         "legacy_compatible": False,
     }
 
-    def render(
-        self, artifact: Mapping[str, Any], *, context: PlotRenderContext
-    ) -> PlotRenderResult:
+    def render(self, artifact, *, context):
         """Render the PlotSpec artifact and return visualization result."""
         # Materialize the plot using matplotlib, plotly, or other rendering backend
         # This example returns a minimal result; implement your rendering logic
@@ -250,12 +278,59 @@ class HelloPlotRenderer(PlotRenderer):
 ### 2. Register the plot builder, renderer, and style
 
 ```python
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins.base import validate_plugin_meta
+from calibrated_explanations.plugins.plots import (
+    PlotBuilder,
+    PlotRenderer,
+    PlotRenderResult,
+)
+from calibrated_explanations.plugins import (
     register_plot_builder,
     register_plot_renderer,
     register_plot_style,
 )
-from calibrated_explanations.plugins.base import validate_plugin_meta
+
+
+class HelloPlotBuilder(PlotBuilder):
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "hello.plot.builder.test",
+        "version": "0.1.0",
+        "provider": "example-team",
+        "style": "hello.test",
+        "output_formats": ("png", "svg"),
+        "capabilities": ["plot:builder"],
+        "dependencies": (),
+        "trusted": False,
+        "legacy_compatible": False,
+    }
+
+    def build(self, context):
+        return {"plot_spec": {"title": "Test", "primitives": []}}
+
+
+class HelloPlotRenderer(PlotRenderer):
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "hello.plot.renderer.test",
+        "version": "0.1.0",
+        "provider": "example-team",
+        "output_formats": ("png", "svg"),
+        "capabilities": ["plot:renderer"],
+        "supports_interactive": False,
+        "dependencies": (),
+        "trusted": False,
+        "legacy_compatible": False,
+    }
+
+    def render(self, artifact, *, context):
+        return PlotRenderResult(
+            artifact=artifact,
+            figure=None,
+            saved_paths=(),
+            extras={},
+        )
+
 
 builder = HelloPlotBuilder()
 renderer = HelloPlotRenderer()
@@ -263,17 +338,20 @@ renderer = HelloPlotRenderer()
 validate_plugin_meta(dict(builder.plugin_meta))
 validate_plugin_meta(dict(renderer.plugin_meta))
 
-register_plot_builder("hello.plot.builder", builder)
-register_plot_renderer("hello.plot.renderer", renderer)
+builder_id = "hello.plot.builder.test"
+renderer_id = "hello.plot.renderer.test"
+style_id = "hello.test"
 
-# Map the style identifier to builder and renderer
+register_plot_builder(builder_id, builder)
+register_plot_renderer(renderer_id, renderer)
+
 register_plot_style(
-    "hello",
+    style_id,
     metadata={
-        "style": "hello",
-        "builder_id": "hello.plot.builder",
-        "renderer_id": "hello.plot.renderer",
-        "fallbacks": ("plot_spec.default", "legacy"),  # Fallback chain
+        "style": style_id,
+        "builder_id": builder_id,
+        "renderer_id": renderer_id,
+        "fallbacks": ("plot_spec.default", "legacy"),
         "is_default": False,
     },
 )
@@ -290,15 +368,38 @@ Once a plugin is registered, you can wire it into your workflow using two primar
 Pass the desired plugin identifier (or style for plot plugins) to the explainer at construction time:
 
 ```python
+from tests.helpers.model_utils import get_classification_model
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from calibrated_explanations import CalibratedExplainer
 
-# Wire interval and explanation plugins
-explainer = CalibratedExplainer(
-    model, x_cal, y_cal,
-    factual_plugin="external.hello.explanation",  # Explanation plugin
-    default_interval_plugin="external.hello.interval",  # Interval plugin
-    plot_style="hello",  # Plot style (builder + renderer pair)
+# Prepare data
+data = load_breast_cancer()
+x = data.data
+y = data.target
+x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+x_train, x_cal, y_train, y_cal = train_test_split(
+    x_temp, y_temp, test_size=0.4, random_state=42
 )
+
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_cal = scaler.transform(x_cal)
+x_test = scaler.transform(x_test)
+
+model, _ = get_classification_model("RF", x_train, y_train)
+
+# Parameter wiring
+explainer = CalibratedExplainer(
+    model,
+    x_cal,
+    y_cal,
+    plot_style="plot_spec.default",
+)
+
+chain = explainer.plugin_manager.plot_style_chain
+assert chain[0] == "plot_spec.default"
 ```
 
 This approach ensures consistent plugin selection across all explanations generated by the explainer.
@@ -309,13 +410,38 @@ The explainer stores the plugin identifiers and uses them during explanation gen
 Pass the plot style override when calling `.plot()` on explanation batches:
 
 ```python
-explanations = explainer.explain_factual(x_test)
+from tests.helpers.model_utils import get_classification_model
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from calibrated_explanations import CalibratedExplainer
 
-# Use the registered plot style
-explanations.plot(style_override="hello")
+# Prepare data
+data = load_breast_cancer()
+x = data.data
+y = data.target
+x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+x_train, x_cal, y_train, y_cal = train_test_split(
+    x_temp, y_temp, test_size=0.4, random_state=42
+)
 
-# Or fall back to defaults (plot_spec.default -> legacy)
-explanations.plot()
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_cal = scaler.transform(x_cal)
+x_test = scaler.transform(x_test)
+
+model, _ = get_classification_model("RF", x_train, y_train)
+
+explainer = CalibratedExplainer(
+    model,
+    x_cal,
+    y_cal,
+)
+
+explanations = explainer.explain_factual(x_test[:3])
+
+assert hasattr(explanations, "plot")
+assert "style_override" in explanations.plot.__code__.co_varnames
 ```
 
 This method allows dynamic plot style selection after explanations are generated, enabling
@@ -356,7 +482,7 @@ Users can then register your plugins by importing your module:
 import your_package.plugins  # Triggers registration via entry points
 # or register manually:
 from your_package.plugins import HelloExplanationPlugin
-from calibrated_explanations.plugins.registry import register_explanation_plugin
+from calibrated_explanations.plugins import register_explanation_plugin
 register_explanation_plugin("external.hello.explanation", HelloExplanationPlugin())
 ```
 

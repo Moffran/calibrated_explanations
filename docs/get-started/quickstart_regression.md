@@ -25,14 +25,14 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
 dataset = load_diabetes()
-X = dataset.data
+x = dataset.data
 y = dataset.target
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=0
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y, test_size=0.2, random_state=0
 )
-X_proper, X_cal, y_proper, y_cal = train_test_split(
-    X_train, y_train, test_size=0.25, random_state=0
+x_proper, x_cal, y_proper, y_cal = train_test_split(
+    x_train, y_train, test_size=0.25, random_state=0
 )
 ```
 
@@ -43,9 +43,9 @@ from sklearn.ensemble import RandomForestRegressor
 from calibrated_explanations import WrapCalibratedExplainer
 
 explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=0))
-explainer.fit(X_proper, y_proper)
+explainer.fit(x_proper, y_proper)
 explainer.calibrate(
-    X_cal,
+    x_cal,
     y_cal,
     feature_names=dataset.feature_names,
 )
@@ -54,13 +54,11 @@ explainer.calibrate(
 ## 3. Retrieve calibrated intervals and probabilities
 
 ```python
-factual = explainer.explain_factual(X_test[:3])
-print(f"Prediction interval: {factual.prediction_interval[0]}")
+factual = explainer.explain_factual(x_test[:3])
 
 probabilities, probability_interval = explainer.predict_proba(
-    X_test[:1], threshold=150, uq_interval=True
+    x_test[:1], threshold=150, uq_interval=True
 )
-print("Calibrated probability:", probabilities[0, 1])
 ```
 
 > 🎯 **Interval regression insight:** The prediction interval remains the
@@ -71,7 +69,7 @@ print("Calibrated probability:", probabilities[0, 1])
 
 ```python
 alternatives = explainer.explore_alternatives(
-    X_test[:2], threshold=150
+    x_test[:2], threshold=150
 )
 ```
 

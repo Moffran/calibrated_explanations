@@ -123,6 +123,12 @@ PlotSpec plots visualise the same rule rankings and uncertainty intervals:
 
 ```python
 fig = factual.plot(uncertainty=True, filter_top=6)
+try:
+    from matplotlib import pyplot as plt
+
+    plt.close(fig)
+except Exception:
+    pass
 ```
 
 Interpret the chart as follows:

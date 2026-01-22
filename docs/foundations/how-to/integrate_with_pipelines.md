@@ -7,14 +7,30 @@ inference use the same transformations.
 
 ```python
 from sklearn.compose import ColumnTransformer
+from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-
-from sklearn.ensemble import RandomForestClassifier
-
 from calibrated_explanations.api.config import ExplainerConfig
 from calibrated_explanations import WrapCalibratedExplainer
+
+dataset = load_breast_cancer()
+x_train, x_test, y_train, y_test = train_test_split(
+    dataset.data,
+    dataset.target,
+    test_size=0.2,
+    stratify=dataset.target,
+    random_state=0,
+)
+x_proper, x_cal, y_proper, y_cal = train_test_split(
+    x_train,
+    y_train,
+    test_size=0.25,
+    stratify=y_train,
+    random_state=0,
+)
 
 numeric = [0, 1, 2]
 preprocessor = ColumnTransformer(
@@ -33,17 +49,20 @@ preprocessor = ColumnTransformer(
     remainder="drop",
 )
 
-config = ExplainerConfig(model=RandomForestClassifier(random_state=0), preprocessor=preprocessor)
-explainer = WrapCalibratedExplainer._from_config(config)  # `_from_config` is private in 0.9.0
+config = ExplainerConfig(
+    model=RandomForestClassifier(random_state=0),
+    preprocessor=preprocessor,
+)
+explainer = WrapCalibratedExplainer.from_config(config)
 ```
 
 When you call `fit` and `calibrate`, the wrapper fits both the underlying model
 and the preprocessing pipeline.
 
 ```python
-explainer.fit(X_train, y_train)
-explainer.calibrate(X_cal, y_cal)
-factual = explainer.explain_factual(X_test)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal)
+factual = explainer.explain_factual(x_test)
 ```
 
 ## Inspect telemetry snapshots

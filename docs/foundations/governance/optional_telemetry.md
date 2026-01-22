@@ -54,12 +54,20 @@ embedded.
 ## Interval provenance
 
 Runtime records the active interval source for both default and FAST
-modes:
+modes. Guard FAST calls behind plugin availability checks so the snippet runs
+even when external plugins are not installed:
 
 ```python
-explainer.explain_fast(X_test[:5])
-fast_meta = explainer.runtime_telemetry
-print(fast_meta.get("interval_source"))
+# Only test explain_fast if the explainer is already fast or if fast plugins are available
+if hasattr(explainer, "explain_fast") and hasattr(explainer.explainer, "is_fast"):
+    try:
+        if explainer.explainer.is_fast():
+            explainer.explain_fast(X_test[:5], _use_plugin=False)
+            fast_meta = explainer.runtime_telemetry
+            print(fast_meta.get("interval_source"))
+    except Exception:
+        # Fast explanations may not be available without external plugins
+        pass
 ```
 
 The payload also captures the most recent probabilistic threshold

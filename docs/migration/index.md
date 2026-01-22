@@ -5,10 +5,10 @@ Guides for upgrading between major releases and understanding breaking changes o
 ```{toctree}
 :maxdepth: 2
 
-v0.9-to-v0.10-terminology
+../foundations/concepts/terminology
 deprecations
 ```
 
 ## Quick navigation
 
-* [v0.8 → v0.9: Terminology Standardization](v0.9-to-v0.10-terminology.md) - Understand the shift from "thresholded regression" to "probabilistic regression" as the canonical term, backward-compatibility guarantees, and upgrade path.
+* [Terminology Standardization](../foundations/concepts/terminology.md) - Understand the shift from "thresholded regression" to "probabilistic regression" as the canonical term, backward-compatibility guarantees, and upgrade path.

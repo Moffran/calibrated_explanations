@@ -44,7 +44,7 @@ calibration context alongside downstream analytics or dashboards.
 ## Persist rule tables
 
 ```python
-import pandas as pd
+import pandas
 
 rows = []
 for idx, exp in enumerate(batch):
@@ -57,7 +57,7 @@ for idx, exp in enumerate(batch):
         }
     )
 
-df = pd.DataFrame(rows)
+df = pandas.DataFrame(rows)
 df.to_parquet("factual_rules.parquet")
 ```
 

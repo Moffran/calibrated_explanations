@@ -17,7 +17,11 @@ pip install "calibrated_explanations[viz]"
 ## Render a regression explanation
 
 ```python
-from calibrated_explanations.viz import build_regression_bars_spec, matplotlib_adapter
+from pathlib import Path
+from calibrated_explanations.viz import (
+    build_regression_bars_spec,
+    matplotlib_adapter,
+)
 
 predict = {"predict": 3.2, "low": 2.7, "high": 3.8}
 feature_weights = {
@@ -42,7 +46,8 @@ spec = build_regression_bars_spec(
     ascending=False,
 )
 
-matplotlib_adapter.render(spec, show=False, save_path="plotspec_example.png")
+output = Path("plotspec_example.png")
+matplotlib_adapter.render(spec, show=False, save_path=str(output))
 ```
 
 `sort_by` accepts `none`, `value`, `abs`, `width`, or `label`. When intervals

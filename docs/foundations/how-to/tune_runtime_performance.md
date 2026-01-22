@@ -30,7 +30,10 @@ builder so the cached artefacts align with your deployed estimator:
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.api.config import ExplainerBuilder
 
-model = existing_explainer.learner  # reuse the fitted estimator
+from tests.helpers.doc_utils import run_quickstart_classification
+
+context = run_quickstart_classification()
+model = context.explainer.learner
 builder = ExplainerBuilder(model)
 config = (
     builder.perf_cache(
@@ -43,7 +46,7 @@ config = (
     )
     .build_config()
 )
-explainer = WrapCalibratedExplainer._from_config(config)  # Private in v0.9.0
+explainer = WrapCalibratedExplainer.from_config(config)
 ```
 
 - ``max_items`` caps the number of cached entries (defaults to 512).
@@ -71,12 +74,12 @@ The parallel backend runs perturbation-heavy steps across worker processes. Like
 the cache, it remains off until you enable it on the configuration object.
 
 ```python
-config = (
+config_parallel = (
     builder.perf_parallel(True, backend="threads", workers=4, min_batch=8)
     .perf_cache(True)
     .build_config()
 )
-explainer = WrapCalibratedExplainer._from_config(config)
+explainer_parallel = WrapCalibratedExplainer.from_config(config_parallel)
 ```
 
 - ``backend`` accepts ``"threads"``, ``"processes"``, ``"joblib"``, or

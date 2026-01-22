@@ -26,14 +26,14 @@ from sklearn.model_selection import train_test_split
 
 # Binary classification dataset (malignant vs benign tumours)
 dataset = load_breast_cancer()
-X = dataset.data
+x = dataset.data
 y = dataset.target
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=0
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y, test_size=0.2, stratify=y, random_state=0
 )
-X_proper, X_cal, y_proper, y_cal = train_test_split(
-    X_train, y_train, test_size=0.25, stratify=y_train, random_state=0
+x_proper, x_cal, y_proper, y_cal = train_test_split(
+    x_train, y_train, test_size=0.25, stratify=y_train, random_state=0
 )
 ```
 
@@ -48,15 +48,14 @@ from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import WrapCalibratedExplainer
 
 explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-explainer.fit(X_proper, y_proper)
-explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 ```
 
 ## 3. Generate calibrated factual explanations
 
 ```python
-factual = explainer.explain_factual(X_test[:5])
-print(factual[0])  # first explanation with rule details
+factual = explainer.explain_factual(x_test[:5])
 ```
 
 ```{admonition} Sample output (truncated)
@@ -80,7 +79,7 @@ how calibrated predictions, intervals, and rule tables translate into actions.
 ## 4. Explore calibrated alternatives
 
 ```python
-alternatives = explainer.explore_alternatives(X_test[:2])
+alternatives = explainer.explore_alternatives(x_test[:2])
 ```
 
 See the [Alternatives concept guide](../foundations/concepts/alternatives.md) for visual and

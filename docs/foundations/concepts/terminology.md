@@ -1,4 +1,4 @@
-# v0.9 → v0.10: Terminology Standardization
+# Terminology Standardization
 
 **Release:** v0.9.1+
 **Date:** November 2025
@@ -102,18 +102,13 @@ Follow ADR-021 terminology guidance:
 
 - Use **"probabilistic regression"** in public-facing docstrings and error messages
 - Use **"thresholded regression"** in implementation comments where you discuss the threshold mechanism or CPS/Venn-Abers details
-- See the [ADR-021 Terminology section](../improvement/adrs/ADR-021-calibrated-interval-semantics.md) for details
+- See the [ADR-021 Terminology section](../../improvement/adrs/ADR-021-calibrated-interval-semantics.md) for details
 
 ### If You Maintain Tests
 
 Update test docstrings and comments:
 
 ```python
-# Old:
-def test_thresholded_regression():
-    """Test thresholded regression behavior."""
-
-# New:
 def test_probabilistic_regression():
     """Test probabilistic regression behavior.
 
@@ -122,14 +117,6 @@ def test_probabilistic_regression():
     probabilities P(y <= threshold).
     """
 ```
-
----
-
-## Timeline for Full Deprecation
-
-- **v0.9.1:** Terminology standardized; `_is_thresholded()` renamed
-- **v0.10.0:** Full cleanup; internal naming conventions finalized
-- **v1.0.0:** Public API stabilized; `is_thresholded()` remains for backward compatibility
 
 ---
 
@@ -145,11 +132,11 @@ def test_probabilistic_regression():
 
 ## Further Reading
 
-- [Concept Guide: Probabilistic Regression](../foundations/concepts/probabilistic_regression.md)
-- [ADR-021: Calibrated Interval Semantics](../improvement/adrs/ADR-021-calibrated-interval-semantics.md)
+- [Concept Guide: Probabilistic Regression](probabilistic_regression.md)
+- [ADR-021: Calibrated Interval Semantics](../../improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 
 ---
 
 ## Questions?
 
-See the [concept guide](../foundations/concepts/probabilistic_regression.md) or file an issue on GitHub.
+See the [concept guide](probabilistic_regression.md) or file an issue on GitHub.
