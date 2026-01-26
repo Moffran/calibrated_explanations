@@ -1,6 +1,6 @@
 # Optional evaluation dependencies for pip users
 lime==0.2.0.1
-shap==0.44.0
+shap==0.49.1
 seaborn
 xgboost
 scipy
