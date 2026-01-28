@@ -116,7 +116,7 @@ def initialize_explanation(
         threshold,
         bins,
         features_to_ignore,
-        condition_source=getattr(explainer, "condition_source", "observed"),
+        condition_source=getattr(explainer, "condition_source", "prediction"),
     )
     if threshold is not None:
         if "regression" not in explainer.mode:

@@ -133,7 +133,7 @@ class FastExplanationPipeline:
             x_test,
             threshold,
             bins,
-            condition_source=getattr(self.explainer, "condition_source", "observed"),
+            condition_source=getattr(self.explainer, "condition_source", "prediction"),
         )
 
         # Validate and set threshold if provided

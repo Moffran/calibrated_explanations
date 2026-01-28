@@ -76,7 +76,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         bins,
         features_to_ignore=None,
         *,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ) -> None:
         """Initialize the explanation collection for a calibrated explainer.
 
@@ -318,9 +318,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         condition_source = metadata.get("condition_source")
         if condition_source is None:
             if template is not None:
-                condition_source = getattr(template, "condition_source", "observed")
+                condition_source = getattr(template, "condition_source", "prediction")
             else:
-                condition_source = "observed"
+                condition_source = "prediction"
 
         if calibrated_explainer is None or x_test is None:
             raise SerializationError(

@@ -117,7 +117,7 @@ class CalibratedExplanation(ABC):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ):
         """Abstract base class for storing and visualizing calibrated explanations.
 
@@ -1300,7 +1300,7 @@ class FactualExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ):
         """Class for storing and visualizing factual explanations.
 
@@ -1931,7 +1931,7 @@ class AlternativeExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ):
         """Class representing an alternative explanation for a given instance.
 
@@ -2847,7 +2847,7 @@ class FastExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source="observed",
+        condition_source="prediction",
     ):
         """Class representing fast explanations.
 
@@ -2873,7 +2873,7 @@ class FastExplanation(CalibratedExplanation):
             The threshold for binary classification or regression explanations.
         instance_bin : int, optional
             The bin index of the instance.
-        condition_source : str, default="observed"
+        condition_source : str, default="prediction"
             The source of the conditions for the explanation.
         """
         super().__init__(

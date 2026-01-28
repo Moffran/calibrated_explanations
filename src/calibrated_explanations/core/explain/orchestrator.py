@@ -169,8 +169,22 @@ class ExplanationOrchestrator:
                 and np.isnan(condition_labels).any()
             ):
                 mask = ~np.isnan(condition_labels)
-                x_cal = x_cal[mask]
-                condition_labels = condition_labels[mask]
+                # If all prediction-derived condition labels are NaN, avoid
+                # producing an empty calibration set — fall back to observed
+                # labels so discretization can proceed.
+                if mask.sum() == 0:
+                    _TELEMETRY_LOGGER.info(
+                        "All prediction-derived condition labels are NaN; falling back to observed y_cal"
+                    )
+                    warnings.warn(
+                        "All prediction-derived condition labels are NaN; falling back to observed y_cal.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    condition_labels = None
+                else:
+                    x_cal = x_cal[mask]
+                    condition_labels = condition_labels[mask]
 
         # Validate and potentially default the discretizer choice
         discretizer = validate_discretizer_choice(discretizer, self.explainer.mode)

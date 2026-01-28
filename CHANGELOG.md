@@ -5,6 +5,9 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.2...main)
 
+### Changed
+
+- **Default condition_source to "prediction":** The default value for `condition_source` in `CalibratedExplainer` has been changed from `"observed"` to `"prediction"` to enhance consistency in calibrated explanations by basing condition labels on model predictions rather than observed labels. Users relying on the previous default behavior should explicitly set `condition_source="observed"`. A warning is issued when the parameter is not provided, guiding users to the new default.
 
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
