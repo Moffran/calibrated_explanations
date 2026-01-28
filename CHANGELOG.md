@@ -15,6 +15,8 @@
 
 - **Core-only matplotlib import clarity:** Ensured that core-only installs do not require matplotlib at import time by implementing lazy loading in package __init__.py and added verification test (ADR-010).
 
+- **Plugin authoring & override guidance (Standard-004):** Added comprehensive docs, headless examples, and tests for explanation, interval, and plot plugins (see `tests/docs/contributor/test_plugin_contract_examples.py`).
+
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...v0.10.2)
