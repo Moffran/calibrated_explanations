@@ -13,6 +13,8 @@
 
 - **Explanation domain model hardening:** Completed domain-model hardening with comprehensive adapter tests and round-trip compatibility between domain and legacy formats. Added unit tests for `domain_to_legacy` and `legacy_to_domain` adapters, ensuring data integrity in conversions (see ADR-008 addendum).
 
+- **Core-only matplotlib import clarity:** Ensured that core-only installs do not require matplotlib at import time by implementing lazy loading in package __init__.py and added verification test (ADR-010).
+
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...v0.10.2)

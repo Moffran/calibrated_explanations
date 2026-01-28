@@ -1,8 +1,8 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-28):** Last edited 2026-01-28 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
 
 # ADR-010: Core vs Evaluation Split & Distribution Strategy
 
-Status: Accepted (initial scope)
+Status: Accepted (completed in v0.11.0)
 Date: 2025-09-02
 Deciders: Core maintainers
 Reviewers: TBD
@@ -82,6 +82,23 @@ Pending:
 
 1. Split into multiple pip distributions immediately (core, viz, eval). Deferred to reduce maintenance overhead; extras provide a simpler first step.
 2. Status quo. Retains heavier default deps and less clear boundaries.
+
+## Addendum (2026-01-28): Core-only Import Verification for v0.11.0
+
+### Decision
+Implement verification that core-only installs do not require matplotlib at import time, as targeted for v0.11.0.
+
+### Rationale
+The ADR specified that core-only installs should not require matplotlib at import time. Lazy imports in `__init__.py` prevent eager loading of heavy dependencies like matplotlib, ensuring core functionality remains lightweight.
+
+### Implementation
+- **Lazy Imports:** Confirmed that `calibrated_explanations.__init__.py` uses lazy loading for optional dependencies, preventing matplotlib from being imported on core package import.
+- **Test Verification:** Added `test_import_package_does_not_eagerly_import_matplotlib()` in `tests/test_core_import_no_matplotlib.py` to assert that `matplotlib` is not in `sys.modules` after importing `calibrated_explanations`.
+- **CI Enforcement:** The test ensures ongoing compliance in CI pipelines.
+
+### Testing
+- Unit test passes when matplotlib is not installed or not eagerly imported.
+- Test simulates clean import environment by clearing `sys.modules` of matplotlib-related entries.
 
 ## Open Questions
 

@@ -258,7 +258,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 6. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
 7. Add ADR-020 legacy API stability gates (release checklist + notebook/API audit workflow).
 8. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.
-9. Resolve ADR-004 naming drift and ADR-010 core-only dependency clarity (matplotlib import-time requirement).
+9. **Completed 2026-01-28:** Resolve ADR-010 core-only dependency clarity (matplotlib import-time requirement).
 10. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
 11. Track Standard-004 follow-through for plot plugin authoring/override guidance.
 12. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, reporting lint telemetry, and confining transitional shims to `legacy/` (see ADR status appendix in this document).
