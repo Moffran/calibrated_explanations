@@ -9,6 +9,10 @@
 
 - **Default condition_source to "prediction":** The default value for `condition_source` in `CalibratedExplainer` has been changed from `"observed"` to `"prediction"` to enhance consistency in calibrated explanations by basing condition labels on model predictions rather than observed labels. Users relying on the previous default behavior should explicitly set `condition_source="observed"`. A warning is issued when the parameter is not provided, guiding users to the new default.
 
+- **Explanation JSON Schema v1 strict validation:** Implemented strict JSON Schema validation for explanation payloads with test fixtures. The `validate_payload()` function now enforces schema compliance when `jsonschema` is available, and interval invariants are validated during serialization. Added golden fixture validation test (see ADR-005 addendum).
+
+- **Explanation domain model hardening:** Completed domain-model hardening with comprehensive adapter tests and round-trip compatibility between domain and legacy formats. Added unit tests for `domain_to_legacy` and `legacy_to_domain` adapters, ensuring data integrity in conversions (see ADR-008 addendum).
+
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...v0.10.2)

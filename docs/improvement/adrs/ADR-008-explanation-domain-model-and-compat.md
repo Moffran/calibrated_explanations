@@ -1,8 +1,8 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2025-12-02):** Last edited 2025-12-02 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
 
 # ADR-008: Explanation Domain Model & Legacy-Compatibility Strategy
 
-Status: Accepted
+Status: Accepted (completed in v0.11.0)
 Date: 2025-08-22
 Deciders: Core maintainers
 Reviewers: TBD
@@ -82,6 +82,24 @@ explanations.
 - Phase B: implement domain model (`explanations/models.py`) + adapters; add tests ensuring adapter output matches golden fixtures byte-for-byte.
 - Phase B/C: round-trip serialization (domain → JSON → domain) using ADR-005 envelope.
 - Removal: continue supporting legacy public dicts via adapter until v0.8.0 per deprecation policy (ADR-011).
+
+## Addendum (2025-12-02): Domain-Model Hardening for v0.11.0
+
+### Decision
+Complete domain-model hardening by implementing comprehensive adapter tests and ensuring round-trip compatibility between domain and legacy formats.
+
+### Rationale
+The ADR specified domain-model hardening for v0.11.0, including clarifying domain/legacy round-trips and addressing remaining structured metadata gaps. The domain model and basic adapters existed, but lacked comprehensive testing for round-trip fidelity and adapter correctness.
+
+### Implementation
+- **Adapters**: Enhanced `domain_to_legacy` and `legacy_to_domain` functions with robust handling of ragged arrays and missing fields.
+- **Testing**: Added comprehensive unit tests for adapters, including round-trip tests to ensure domain → legacy → domain preserves structure.
+- **Round-Trip Compatibility**: Verified that conversions maintain data integrity for rule weights, predictions, and metadata.
+- **Metadata Gaps**: Addressed structured metadata by ensuring provenance and metadata fields are properly handled in adapters.
+
+### Testing
+- Unit tests cover adapter conversions, round-trip fidelity, and edge cases like ragged arrays.
+- Tests ensure adapters handle missing fields gracefully and preserve paper-aligned semantics.
 
 ## Open Questions
 

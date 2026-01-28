@@ -1,8 +1,8 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-01-28):** Last edited 2026-01-28 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
 
 # ADR-005: Explanation JSON Schema Versioning
 
-Status: Accepted (revised for v0.10.1 scope)
+Status: Accepted (completed in v0.11.0)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -143,6 +143,27 @@ Negative / Risks:
 - Legacy flat dicts should be mapped into this payload structure via adapters.
 - If an envelope is introduced later, it must not invalidate the v1 payload contract
   and must preserve round-trip serialization for existing fixtures.
+
+## Addendum (2026-01-28): Implementation of Strict Validator and Fixtures
+
+### Decision
+Implement strict JSON Schema validation and test fixtures for the v1 explanation payload schema as targeted for v0.11.0.
+
+### Rationale
+The ADR specified "strict validator + fixtures" as remaining work for v0.11.0. The validator was already implemented using JSON Schema with optional `jsonschema` dependency, and interval invariants were enforced during serialization. However, test fixtures validating against the schema were missing.
+
+### Implementation
+- **Validator**: The `validate_payload()` function in `calibrated_explanations.schema.validation` provides strict JSON Schema validation when `jsonschema` is available, falling back gracefully when not installed.
+- **Fixtures**: Added `golden_explanation_v1.json` as a test fixture and implemented `test_should_validate_golden_explanation_fixture()` to ensure the fixture validates against the schema.
+- **Interval Invariants**: Enforced during serialization in `serialization._validate_invariants()` for both global predictions and rule-level predictions.
+
+### Public API
+- `calibrated_explanations.schema.validate_payload(obj)`: Validates a payload dict against schema v1.
+- `calibrated_explanations.serialization.validate_payload(obj)`: Deprecated alias for backward compatibility.
+
+### Testing
+- Unit tests cover schema validation, interval invariant enforcement, and golden fixture validation.
+- Tests pass with and without `jsonschema` installed.
 
 ## Open Questions
 

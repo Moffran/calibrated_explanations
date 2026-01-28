@@ -8,7 +8,9 @@ Tests cover:
 
 from __future__ import annotations
 
+import json
 import types
+from pathlib import Path
 
 import pytest
 
@@ -292,3 +294,14 @@ def test_should_invoke_schema_loader_when_validating(
         "instance": payload,
         "schema": {"type": "object"},
     }
+
+
+def test_should_validate_golden_explanation_fixture() -> None:
+    """Verify the golden explanation fixture validates against schema v1."""
+    # Arrange: Load the golden fixture
+    golden_path = Path(__file__).parent.parent / "golden_explanation_v1.json"
+    with open(golden_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    # Act & Assert: Should not raise
+    serialization.validate_payload(payload)
