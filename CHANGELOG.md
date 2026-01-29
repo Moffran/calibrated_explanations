@@ -17,6 +17,8 @@
 
 - **Plugin authoring & override guidance (Standard-004):** Added comprehensive docs, headless examples, and tests for explanation, interval, and plot plugins (see `tests/docs/contributor/test_plugin_contract_examples.py`).
 
+- **Legacy API stability gates (checklist + audit):** Added PR checklist items and an audit workflow to enforce legacy API stability per ADR-020.
+
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...v0.10.2)

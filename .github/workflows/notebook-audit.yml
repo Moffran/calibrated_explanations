@@ -1,0 +1,39 @@
+name: notebook-audit
+
+on:
+  push:
+    branches: [ main, 'release/*' ]
+  pull_request:
+    branches: [ main, 'release/*' ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run notebook audit
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          ARGS="notebooks --json artifacts/notebook_audit.json"
+          
+          # Enforce strict mode on release branches
+          if [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "Enforcing strict mode for release branch."
+            ARGS="$ARGS --check"
+          fi
+          
+          python scripts/audit_notebook_api.py $ARGS
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-audit-report
+          path: artifacts/notebook_audit.json

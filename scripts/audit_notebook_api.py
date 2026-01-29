@@ -4,42 +4,77 @@ This script parses notebooks and checks that they only use documented API method
 from WrapCalibratedExplainer and CalibratedExplainer.
 
 Usage:
-    python scripts/audit_notebook_api.py [notebook_path_or_dir]
+    python scripts/audit_notebook_api.py [path] [--check] [--json REPORT_PATH]
 """
 import argparse
 import ast
 import json
 import sys
 from pathlib import Path
-from typing import List, Set, Dict
+from typing import Dict, List, Set, Union
 
-# Documented legacy API methods from docs/improvement/legacy_user_api_contract.md
-LEGACY_API_WRAPPER = {
-    "fit", "calibrate", "predict", "predict_proba",
-    "explain_factual", "explore_alternatives", "set_difficulty_estimator"
+# Documented legacy API methods/properties from docs/improvement/legacy_user_api_contract.md
+ALLOWED_API = {
+    # Methods
+    "fit",
+    "calibrate",
+    "predict",
+    "predict_proba",
+    "explain_factual",
+    "explore_alternatives",
+    "set_difficulty_estimator",
+    "plot",
+    "add_conjunctions",
+    "remove_conjunctions",
+    "load_collection",
+    "save_collection",
+    "load_state",
+    "save_state",
+    "default_reject_policy",
+    "initialize_reject_learner",
+    "predict_reject",
+    "show_in_notebook",
+    # Properties
+    "learner",
+    "explainer",
+    "fitted",
+    "calibrated",
+    "num_features",
+    "parallel_executor", # Exposed in wrapper
+    "auto_encode", # Config exposed in wrapper
+    "preprocessor", 
+    "perf_cache",
+    "perf_parallel",
+    # Legacy
+    "get_explanation",    
 }
 
-LEGACY_API_EXPLAINER = {
-    "explain_factual", "explore_alternatives", "set_difficulty_estimator"
-}
-
-LEGACY_API_COLLECTION = {
-    "plot", "add_conjunctions", "remove_conjunctions", "get_explanation"
-}
+# Heuristic: Variables that are likely to be explainer objects
+LIKELY_EXPLAINER_VARS = {"explainer", "wce", "wrapper", "ce", "cal_explainer"}
 
 
 class NotebookAPIVisitor(ast.NodeVisitor):
-    """AST visitor to extract API method calls from notebook code."""
+    """AST visitor to check API usage on explainer objects."""
 
     def __init__(self):
-        self.api_calls: Set[str] = set()
-        self.unknown_calls: List[str] = set()
+        self.api_usage: Set[str] = set()
+        self.violations: Set[str] = set()
 
-    def visit_Attribute(self, node):
+    def visit_Attribute(self, node: ast.Attribute):
         """Track attribute access (e.g., explainer.explain_factual)."""
-        if isinstance(node.attr, str):
-            # Record the method name
-            self.api_calls.add(node.attr)
+        # precise tracking on known variable names
+        if isinstance(node.value, ast.Name):
+            var_name = node.value.id
+            if var_name in LIKELY_EXPLAINER_VARS:
+                if node.attr not in ALLOWED_API:
+                    self.violations.add(f"{var_name}.{node.attr}")
+                else:
+                    self.api_usage.add(node.attr)
+        
+        # Also track methods in ALLOWED_API regardless of variable name (for usage stats)
+        if node.attr in ALLOWED_API:
+             self.api_usage.add(node.attr)
+
         self.generic_visit(node)
 
 
@@ -68,7 +103,9 @@ def audit_notebook(notebook_path: Path) -> Dict:
         return {
             "path": str(notebook_path),
             "error": f"Failed to parse notebook: {e}",
-            "compliant": True  # Don't fail on parse errors
+            "compliant": True, # Parse error is not per se an API violation
+            "violations": [],
+            "usage": []
         }
 
     visitor = NotebookAPIVisitor()
@@ -78,17 +115,16 @@ def audit_notebook(notebook_path: Path) -> Dict:
             tree = ast.parse(code)
             visitor.visit(tree)
         except SyntaxError:
-            # Skip cells with syntax errors (e.g., shell commands, incomplete code)
             continue
 
-    # Check if documented methods are present (for informational purposes)
-    all_documented = LEGACY_API_WRAPPER | LEGACY_API_EXPLAINER | LEGACY_API_COLLECTION
-    used_methods = visitor.api_calls & all_documented
+    violations = sorted(list(visitor.violations))
+    usage = sorted(list(visitor.api_usage))
 
     return {
         "path": str(notebook_path).replace("\\", "/"),
-        "used_legacy_api": sorted(used_methods),
-        "compliant": True  # All notebooks pass for now, just track usage
+        "compliant": len(violations) == 0,
+        "violations": violations,
+        "usage": usage
     }
 
 
@@ -97,48 +133,64 @@ def main():
     parser = argparse.ArgumentParser(description="Audit notebooks for API compliance")
     parser.add_argument("path", nargs="?", default="notebooks",
                         help="Notebook file or directory to audit")
-    parser.add_argument("--json", action="store_true",
-                        help="Output results as JSON")
+    parser.add_argument("--check", action="store_true",
+                        help="Fail (exit non-zero) if violations are detected")
+    parser.add_argument("--json", dest="json_report",
+                        help="Path to write JSON report")
+    
     args = parser.parse_args()
-
-    target = Path(args.path)
-
-    if target.is_file():
-        notebooks = [target]
-    elif target.is_dir():
-        notebooks = list(target.glob("**/*.ipynb"))
+    
+    root_path = Path(args.path)
+    if root_path.is_file():
+        notebooks = [root_path]
     else:
-        print(f"Error: {target} not found")
-        sys.exit(1)
+        if not root_path.exists():
+             print(f"Path not found: {root_path}")
+             sys.exit(1)
+        # Recursively find .ipynb files, excluding checkpoints
+        notebooks = [p for p in root_path.rglob("*.ipynb") 
+                     if ".ipynb_checkpoints" not in str(p)]
 
     results = []
-    failed = 0
+    any_violation = False
 
-    for notebook in sorted(notebooks):
-        # Skip checkpoint directories
-        if ".ipynb_checkpoints" in str(notebook):
-            continue
+    print(f"Auditing {len(notebooks)} notebooks in {root_path}...")
 
-        result = audit_notebook(notebook)
-        results.append(result)
+    for nb_path in notebooks:
+        res = audit_notebook(nb_path)
+        if not res["compliant"]:
+            any_violation = True
+            print(f"FAIL: {res['path']}")
+            for v in res["violations"]:
+                print(f"  - {v}")
+        else:
+             if args.check and args.json_report is None:
+                 pass 
+             elif not args.check:
+                 print(f"OK: {res['path']}")
 
-        if "error" in result:
-            if not args.json:
-                print(f"WARN: {result['path']} - {result['error']}")
-        elif not args.json:
-            api_count = len(result.get("used_legacy_api", []))
-            print(f"OK: {result['path']} (uses {api_count} legacy API methods)")
+        results.append(res)
+    
+    report = {
+        "summary": {
+            "total": len(notebooks),
+            "compliant": len([r for r in results if r["compliant"]]),
+            "failed": len([r for r in results if not r["compliant"]])
+        },
+        "notebooks": results
+    }
 
-    if args.json:
-        print(json.dumps(results, indent=2))
-    else:
-        total_methods = sum(len(r.get("used_legacy_api", [])) for r in results)
-        print(f"\nAudited {len(results)} notebooks")
-        print(f"Total legacy API method calls tracked: {total_methods}")
+    if args.json_report:
+        with open(args.json_report, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2)
+        print(f"Report written to {args.json_report}")
 
-    # Always exit with 0 for now since this is informational
-    sys.exit(0)
-
+    if args.check and any_violation:
+        print("Audit failed: Violations detected.")
+        sys.exit(1)
+    
+    if args.check:
+         print("Audit passed.")
 
 if __name__ == "__main__":
     main()
