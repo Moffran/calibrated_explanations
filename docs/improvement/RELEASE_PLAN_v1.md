@@ -259,9 +259,8 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   5. Change default behavior for condition_source to "prediction" in CalibratedExplainer and related components.
   6. Reinforce ADR-020 legacy-API commitments with release checklist gates, regression tests, and a scripted notebook audit workflow.
   7. Add Agent facing helper functions for easier integration with LLMs and AI agents.
-  8. Add MCP (Model Context Protocol) support to let agents call a single, well-typed service/API to get explanations.
-  9. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
-  10. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
+  8. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
+  9. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
 
   Release gate: ADR-005/008/010/020 gaps closed, condition_source default updated, and plugin authoring docs shipped.
 ### v0.11.0 (domain model & preprocessing finalisation)

@@ -129,6 +129,11 @@ interval regression tasks, the difference lies in how you configure the underlyi
   `pip install "calibrated-explanations[external-plugins]"`—they remain
   optional extensions.
 
+### Agents (CE-first by default)
+- Read `AGENTS.md` for the minimal entrypoint.
+- Follow the CE-first guide in `docs/get-started/ce_first_agent_guide.md`.
+- Use the helper module in `src/calibrated_explanations/ce_agent_utils.py`.
+
 ### Researchers
 - Reproduce published studies through the
   [researcher hub](https://calibrated-explanations.readthedocs.io/en/latest/researcher/index.html),

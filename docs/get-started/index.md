@@ -18,6 +18,9 @@ alternative, probabilistic, and interval outputs, and visit the
 {doc}`../foundations/concepts/alternatives` explainer for the full alternatives
 walkthrough.
 
+Need CE-first guidance for agents and humans? See the
+{doc}`ce_first_agent_guide` for a runnable, OSS-only workflow.
+
 ## Interpretation & research links
 
 - {doc}`../foundations/how-to/interpret_explanations` – Deep dive on factual,
@@ -34,5 +37,6 @@ walkthrough.
 installation
 quickstart_classification
 quickstart_regression
+ce_first_agent_guide
 troubleshooting
 ```

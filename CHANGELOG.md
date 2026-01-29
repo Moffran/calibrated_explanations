@@ -19,6 +19,8 @@
 
 - **Legacy API stability gates (checklist + audit):** Added PR checklist items and an audit workflow to enforce legacy API stability per ADR-020.
 
+- **CE-first agent helper coverage:** Added a `calibrated_explanations.ce_agent_utils` with helper functions for AI agents and summaries to surface explanations, conjunctions, uncertainty quantification, and probabilistic regression (thresholded regression) semantics, among other things. Also added a `ce_first_agent_guide.md` to document usage patterns.
+
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.1...v0.10.2)
