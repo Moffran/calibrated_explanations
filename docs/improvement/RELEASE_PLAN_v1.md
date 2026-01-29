@@ -261,13 +261,14 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   7. Add Agent facing helper functions for easier integration with LLMs and AI agents.
   8. Add MCP (Model Context Protocol) support to let agents call a single, well-typed service/API to get explanations.
   9. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
+  10. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
 
   Release gate: ADR-005/008/010/020 gaps closed, condition_source default updated, and plugin authoring docs shipped.
 ### v0.11.0 (domain model & preprocessing finalisation)
 
-  1. Complete ADR-009 preprocessing automation with uto_encode='auto', unseen-category enforcement, mapping export/import helpers, and aligned telemetry.
+  1. Complete ADR-009 preprocessing automation with auto_encode='auto', unseen-category enforcement, mapping export/import helpers, and aligned telemetry.
   2. Deliver ADR-030 test quality tooling upgrades (assertion + determinism checks) and wire them into CI.
-  3. Add ADR-031 calibrator persistence: versioned 	o_primitive/rom_primitive contracts plus Explainer.save_state()/load_state().
+  3. Add ADR-031 calibrator persistence: versioned to_primitive/from_primitive contracts plus Explainer.save_state()/load_state().
   4. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
   5. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.
   6. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
