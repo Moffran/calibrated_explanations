@@ -104,7 +104,7 @@ class ShapHelper:
             return None, None
 
         def _predict(x):
-            return self.explainer.predict_calibrated(x)[0]
+            return self.explainer.prediction_orchestrator.predict_internal(x)[0]
 
         self._explainer_instance = shap_module.Explainer(
             _predict,

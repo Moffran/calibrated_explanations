@@ -1717,35 +1717,13 @@ class FrozenCalibratedExplainer:
         return self._explainer.difficulty_estimator
 
     @property
-    def predict_calibrated(self):
-        """
-        Retrieves the predict function from the underlying explainer.
+    def prediction_orchestrator(self):
+        """Expose the underlying prediction orchestrator (read-only)."""
+        return self._explainer.prediction_orchestrator
 
-        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
-
-        Returns
-        -------
-            function: The predict function used by the explainer.
-        """
-        return self._explainer.predict_calibrated
-
-    @property
-    def _predict(self):
-        """
-        Retrieves the predict function from the underlying explainer.
-
-        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
-
-        Returns
-        -------
-            function: The predict function used by the explainer.
-        """
-        return self._explainer.predict_calibrated
-
-    @property
-    def predict(self):
-        """Public accessor for the predict function (testing helper)."""
-        return self._explainer.predict_calibrated
+    def predict(self, *args, **kwargs):
+        """Forward the public prediction API to the underlying explainer."""
+        return self._explainer.predict(*args, **kwargs)
 
     @property
     def _preload_lime(self):

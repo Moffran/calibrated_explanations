@@ -130,7 +130,10 @@ def test_merge_feature_result_updates_buffers():
 
 def test_feature_effect_for_index_uses_explainer_prediction():
     class DummyExpl:
-        def predict_calibrated(self, x, **kwargs):
+        def __init__(self) -> None:
+            self.prediction_orchestrator = self
+
+        def predict_internal(self, x, **kwargs):
             # return predict, low, high, _
             return np.array([0.5]), np.array([0.4]), np.array([0.6]), None
 

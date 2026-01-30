@@ -201,14 +201,11 @@ class RejectOrchestrator:
             RejectPolicy.EXPLAIN_NON_REJECTS,
             RejectPolicy.SKIP_ON_REJECT,
         ):
-            # Delegate to explainer's public predict method. To avoid
-            # re-entering the reject orchestration (which would cause
-            # recursion), signal the explainer to skip reject handling for
-            # this inner prediction by setting an internal-only flag.
             try:
-                inner_kwargs = dict(kwargs) if kwargs is not None else {}
-                inner_kwargs["_ce_skip_reject"] = True
-                prediction = self.explainer.predict(x, **inner_kwargs)
+                # Use the prediction orchestrator directly. The explainer's
+                # public predict method is a thin facade over the same
+                # orchestrator and does not own reject orchestration.
+                prediction = self.explainer.prediction_orchestrator.predict(x, **kwargs)
             except Exception:  # adr002_allow
                 prediction = None
 

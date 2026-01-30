@@ -194,8 +194,10 @@ class TestExplainParallelRuntime:
             # Ensure condition_source is a string, not a Mock
             mock_ce_instance.condition_source = "observed"
 
-            # Setup return value of predict_calibrated to avoid unpack error
-            mock_ce_instance.predict_calibrated.return_value = (
+            mock_ce_instance.prediction_orchestrator = MagicMock()
+
+            # Setup return value of predict_internal to avoid unpack error
+            mock_ce_instance.prediction_orchestrator.predict_internal.return_value = (
                 np.array([0.5]),
                 np.array([0.4]),
                 np.array([0.6]),

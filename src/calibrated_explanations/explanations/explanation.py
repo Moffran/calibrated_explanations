@@ -876,7 +876,7 @@ class CalibratedExplanation(ABC):
         bins=None,
     ):
         """Calculate the prediction for a conjunctive rule using batched inference."""
-        predict_fn = self.get_explainer().predict_calibrated
+        predict_fn = self.get_explainer().prediction_orchestrator.predict_internal
         perturbed = np.array(perturbed, copy=True)
 
         # Prepare value arrays
@@ -989,7 +989,7 @@ class CalibratedExplanation(ABC):
                 bins,
             )
 
-        predict_fn = self.get_explainer().predict_calibrated  # pylint: disable=protected-access
+        predict_fn = self.get_explainer().prediction_orchestrator.predict_internal
         # Ensure perturbed is a writable copy to avoid "read-only" errors
         perturbed = np.array(perturbed, copy=True)
 
@@ -1203,7 +1203,7 @@ class CalibratedExplanation(ABC):
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
-        predict, low, high, _ = self.get_explainer().predict(
+        predict, low, high, _ = self.get_explainer().prediction_orchestrator.predict_internal(
             perturbed_x,
             threshold=perturbed_threshold,
             low_high_percentiles=self.calibrated_explanations.low_high_percentiles,

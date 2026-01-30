@@ -200,3 +200,4 @@ evaluation/experimental/
 .pytest_matplotlib_debug.json
 .github/private_member_allowlist.json.backup
 CLAUDE.md
+.claude/settings.local.json

@@ -41,14 +41,18 @@ class DummyOriginalExplainer:
 
         self.plugin_manager = PluginManager(self)
 
+        class _PredOrch:
+            def predict_internal(self, _x, **_kw):
+                return (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1))
+
+        self.prediction_orchestrator = _PredOrch()
+
     def predict(self, data):  # pragma: no cover - not used directly
         return np.asarray(data)
 
     def discretize(self, x):
         return x
 
-    def predict_calibrated(self, *args, **kwargs):
-        return (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1))
 
     def preload_lime(self):
         """Return a minimal structure compatible with :meth:`CalibratedExplanations.as_lime`."""

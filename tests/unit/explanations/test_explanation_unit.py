@@ -73,12 +73,17 @@ class TestExplanationUnit:
         self.explainer.x_cal = np.array([[10.0, 20.0], [15.0, 25.0], [12.0, 22.0], [5.0, 20.0]])
         self.explainer.sample_percentiles = [25, 75]
 
-        # Mock predict to return (predict, low, high, classes)
+        # Prediction is now sourced via the explainer's prediction orchestrator.
+        self.explainer.prediction_orchestrator = Mock()
+
+        # Mock internal prediction to return (predict, low, high, classes)
         def predict_side_effect(x, **kwargs):
             n = len(x)
             return (np.zeros(n) + 0.5, np.zeros(n) + 0.4, np.zeros(n) + 0.6, None)
 
-        self.explainer.predict = Mock(side_effect=predict_side_effect)
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_side_effect
+        )
 
         self.container.get_explainer = Mock(return_value=self.explainer)
         self.container.low_high_percentiles = (0.05, 0.95)
@@ -175,7 +180,9 @@ class TestExplanationUnit:
             # Default low=0.4, high=0.6. We return 0.3, 0.7.
             return (np.zeros(n) + 0.5, np.zeros(n) + 0.3, np.zeros(n) + 0.7, None)
 
-        self.explainer.predict = Mock(side_effect=predict_diff_effect)
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
 
         # f0 is continuous. x[0]=10.0. Boundary 12.0 -> is_lesser=True.
         # x_cal for f0: [10, 15, 12, 5]. Values < 12: [10, 5].
@@ -195,7 +202,9 @@ class TestExplanationUnit:
             n = len(x)
             return (np.zeros(n) + 0.5, np.zeros(n) + 0.3, np.zeros(n) + 0.7, None)
 
-        self.explainer.predict = Mock(side_effect=predict_diff_effect)
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
 
         # f0 continuous. x[0]=10.0. Boundary 8.0 -> is_lesser=False
 
@@ -213,7 +222,9 @@ class TestExplanationUnit:
             n = len(x)
             return (np.zeros(n) + 0.5, np.zeros(n) + 0.4, np.zeros(n) + 0.6, None)
 
-        self.explainer.predict = Mock(side_effect=predict_same_effect)
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_same_effect
+        )
 
         with pytest.warns(
             UserWarning,

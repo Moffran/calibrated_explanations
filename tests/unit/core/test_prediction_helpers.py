@@ -76,7 +76,27 @@ class StubExplainer:
             else self.interval_learner
         )
         self.predict_calls: list = []
+        self.prediction_orchestrator = self.build_prediction_orchestrator()
         self.discretizer = None  # Required by explain_predict_step
+
+    def build_prediction_orchestrator(self):
+        outer = self
+
+        class PredOrch:
+            def predict_internal(self, x, **kwargs):
+                outer.predict_calls.append((np.asarray(x), kwargs))
+                size = np.asarray(x).shape[0]
+                classes = (
+                    np.arange(size) if outer.multiclass_flag else np.zeros(size, dtype=int)
+                )
+                return (
+                    np.full((size,), 0.1),
+                    np.full((size,), -0.1),
+                    np.full((size,), 0.2),
+                    classes,
+                )
+
+        return PredOrch()
 
     def build_interval_learner(self):
         class Learner:
@@ -116,22 +136,8 @@ class StubExplainer:
         return self.fast_flag
 
     def predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
-        self.predict_calls.append((np.asarray(x), kwargs))
-        size = np.asarray(x).shape[0]
-        classes = np.arange(size) if self.multiclass_flag else np.zeros(size, dtype=int)
-        return (
-            np.full((size,), 0.1),
-            np.full((size,), -0.1),
-            np.full((size,), 0.2),
-            classes,
-        )
-
-    def predict_calibrated(self, x, **kwargs):
-        return self.predict(x, **kwargs)
-
-    def _predict(self, *args, **kwargs):
-        """Internal alias for predict."""
-        return self.predict(*args, **kwargs)
+        # Public-facing predict is not used by these helper tests.
+        return self.prediction_orchestrator.predict_internal(x, **kwargs)
 
     def discretize(self, x):  # noqa: D401 - protocol implementation
         return np.asarray(x) + 1

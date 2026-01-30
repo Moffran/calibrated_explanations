@@ -118,17 +118,21 @@ def collect_legacy_summary(
         plt.switch_backend("Agg")
         records: list[tuple[str, tuple, dict]] = []
 
-        def record(method: str) -> Callable:
-            orig = getattr(Axes, method)
+        # Capture legacy plotting calls robustly by patching the concrete Axes
+        # implementation used by Matplotlib, regardless of how the Figure/Axes
+        # objects were created.
+        #
+        # In full-suite runs, relying on patching a specific Figure method (e.g.
+        # add_subplot) can miss axes created via alternative constructors.
+        import matplotlib.axes._axes as mpl_axes
 
-            def wrapper(self, *args, **kwargs):
-                records.append((method, args, kwargs))
-                return orig(self, *args, **kwargs)
+        original_fill_betweenx = mpl_axes.Axes.fill_betweenx
 
-            mp.setattr(Axes, method, wrapper)
-            return wrapper
+        def fill_betweenx_wrapper(self, *fb_args, **fb_kwargs):
+            records.append(("fill_betweenx", fb_args, fb_kwargs))
+            return original_fill_betweenx(self, *fb_args, **fb_kwargs)
 
-        record("fill_betweenx")
+        mp.setattr(mpl_axes.Axes, "fill_betweenx", fill_betweenx_wrapper)
         mp.setattr(Figure, "show", lambda self, *args, **kwargs: None)
 
         legacy_plotting.plot_alternative(
