@@ -74,6 +74,13 @@ Next, interpret the outputs with the
 
 ```{toctree}
 :maxdepth: 1
+:caption: Comparisons
+
+compare
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Get started
 
 get-started/index
@@ -94,6 +101,13 @@ contributor/index
 
 foundations/index
 plugins
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Tasks
+
+tasks/index
 ```
 
 ```{toctree}

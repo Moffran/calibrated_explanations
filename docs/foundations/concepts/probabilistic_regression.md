@@ -35,6 +35,19 @@ print(f"Calibrated probability: {probabilities[0, 1]:.3f}")
 print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
 ```
 
+You can also ask for the probability that the true value lies inside a **user-defined interval** by passing a tuple threshold:
+
+```python
+probabilities, probability_interval = explainer.predict_proba(
+   X_test[:1],
+   threshold=(120, 180),
+   uq_interval=True,
+)
+low, high = probability_interval
+print(f"P(120 <= y <= 180): {probabilities[0]:.3f}")
+print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
+```
+
 > 🧭 **Interpretation shortcut:** Revisit the
 > {doc}`../how-to/interpret_explanations` guide for screenshots that map
 > calibrated values, threshold metadata, and interval semantics back to the

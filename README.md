@@ -7,6 +7,75 @@
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
 
+## Quick Reference
+
+**Purpose**: Uncertainty-aware feature-importance explanations for scikit-learn compatible models.
+
+**Install**:
+```bash
+pip install calibrated-explanations
+```
+
+**Primary Use Cases**: binary-classification, multiclass-classification, regression, probabilistic regression
+
+**Key Class (public API)**: `WrapCalibratedExplainer`
+
+**Required calibration**: `true` (calibration set is mandatory).
+
+**All examples in this repo use `WrapCalibratedExplainer`.**
+
+**Typical Workflow (3 lines)**:
+
+```python
+from calibrated_explanations import WrapCalibratedExplainer
+explainer = WrapCalibratedExplainer(model)           # wrap your sklearn-like model
+explainer.fit(X_proper, y_proper); explainer.calibrate(X_cal, y_cal)
+explanation = explainer.explain_factual(X_test)      # returns calibrated rules + uncertainty
+```
+
+**Core Methods**:
+
+* `fit(X_proper, y_proper)` — train/prepare internal state (model fitting or wrapper).
+* `calibrate(X_cal, y_cal, feature_names=None)` — required: align uncertainty estimates.
+* `explain_factual(X)` — factual rules + feature importance with [low, high] bounds.
+* `explore_alternatives(X)` — counterfactual / alternative rules.
+* `predict_proba(X, uq_interval=True)` — calibrated probability with uncertainty interval.
+* `predict(X)` — point prediction.
+
+**Outputs**: calibrated prediction intervals, per-feature importance with aleatoric & epistemic bounds, factual/alternative rule tables.
+
+### Task map (critical: regression meanings differ)
+
+**Classification (binary/multiclass)**:
+- `predict_proba(x[, ...])` or `predict_proba(x, uq_interval=True[, ...])`
+
+**Conformal interval regression (CPS)  ← CE "regression"**:
+Regression in this library is **conformal interval regression** via **Conformal Predictive Systems (CPS)**:
+point regression + calibrated uncertainty intervals = (conformal) interval regression.
+- `predict(x, uq_interval=True, low_high_percentiles=(a, b)[, ...])`
+- You can also request CPS-controlled intervals from explanations:
+
+- `explain_factual(x, low_high_percentiles=(a, b)[, ...])`
+
+**Probabilistic regression (thresholded probability queries for y)**:
+Probabilistic regression requires assigning a `threshold`:
+- `predict_proba(x, threshold=t[, ...])` (exceedance probability for real-valued target)
+- `predict_proba(x, threshold=(low, high)[, ...])` gives **P(true value ∈ [low, high])**
+- Add uncertainty bounds with `uq_interval=True`
+
+**All tasks also support (core capability)**:
+- `predict(x[, ...])` and `predict(x, uq_interval=True[, ...])`
+- `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
+
+**Common optional parameters (`[, ...]`)**:
+- `bins=...` for conditional calibration
+- `low_high_percentiles=(a, b)` for CPS conformal interval regression intervals
+- `threshold=t` or `threshold=(low, high)` for probabilistic regression
+
+**Local dev**: run `pip install -e .` before running examples/tests locally.
+
+**When not to use**: raw deep nets without an sklearn wrapper; real-time streaming without a calibration set; extremely high-dimensional (>10k) feature vectors.
+
 Calibrated Explanations turns any scikit-learn-compatible estimator into a
 calibrated explainer that returns:
 

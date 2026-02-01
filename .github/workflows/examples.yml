@@ -1,0 +1,57 @@
+name: Examples QA
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Install validation tools
+        run: python -m pip install jsonschema pyyaml
+      - name: Validate metadata and tool description
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          import yaml
+
+          metadata = json.loads(Path("METADATA.json").read_text())
+          assert metadata.get("name") == "calibrated-explanations"
+          assert "WrapCalibratedExplainer" in metadata.get("public_api", [])
+          assert metadata.get("required_calibration", False) is True
+
+          examples_index = json.loads(Path("EXAMPLES_INDEX.json").read_text())
+          assert isinstance(examples_index, list)
+          tool = yaml.safe_load(Path(".ai/tool_description.yaml").read_text())
+          assert tool.get("tool_name") == "calibrated_explanations"
+          assert tool.get("required_calibration") is True
+          print("Metadata/tool description OK")
+          PY
+      - name: Install package and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install scikit-learn
+      - name: Run example tests
+        run: |
+          python -m pytest tests/test_examples.py::test_minimal_quickstart \
+            tests/test_examples.py::test_metadata_json_schema \
+            tests/test_examples.py::test_examples_index_entries \
+            tests/test_examples.py::test_tool_description_yaml \
+            tests/test_examples.py::test_quick_api_mentions_wrap

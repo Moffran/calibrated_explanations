@@ -10,6 +10,8 @@ The core of the library is the `CalibratedExplainer`, which handles the calibrat
 
 The `CalibratedExplainer` is the core class of the library. It takes a machine learning model (classifier or regressor) and a calibration dataset. It fits Venn-Abers calibrators (for classification) or Conformal Predictive Systems (for regression) to the model's predictions. This process ensures that the explanations generated are calibrated, meaning the predicted probabilities or intervals reflect the true underlying uncertainty.
 
+For a task-oriented view of the same capabilities (classification, conformal interval regression via CPS, and probabilistic/thresholded regression), see {doc}`../tasks/index`.
+
 **Example Usage:**
 
 ```python
