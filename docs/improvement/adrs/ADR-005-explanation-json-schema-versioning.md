@@ -147,10 +147,10 @@ Negative / Risks:
 ## Addendum (2026-01-28): Implementation of Strict Validator and Fixtures
 
 ### Decision
-Implement strict JSON Schema validation and test fixtures for the v1 explanation payload schema as targeted for v0.11.0.
+Implement strict JSON Schema validation and test fixtures for the v1 explanation payload schema as targeted for v0.10.3.
 
 ### Rationale
-The ADR specified "strict validator + fixtures" as remaining work for v0.11.0. The validator was already implemented using JSON Schema with optional `jsonschema` dependency, and interval invariants were enforced during serialization. However, test fixtures validating against the schema were missing.
+The ADR specified "strict validator + fixtures" as remaining work for v0.10.3. The validator was already implemented using JSON Schema with optional `jsonschema` dependency, and interval invariants were enforced during serialization. However, test fixtures validating against the schema were missing.
 
 ### Implementation
 - **Validator**: The `validate_payload()` function in `calibrated_explanations.schema.validation` provides strict JSON Schema validation when `jsonschema` is available, falling back gracefully when not installed.
@@ -174,5 +174,5 @@ The ADR specified "strict validator + fixtures" as remaining work for v0.11.0. T
 
 ## Decision Notes
 
-Revisit after the first external consumer feedback cycle and after v0.10.1 ships with
+Revisit after the first external consumer feedback cycle and after v0.10.3 ships with
 payload-level validation and fixtures aligned to the v1 schema.

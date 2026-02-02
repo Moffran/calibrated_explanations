@@ -259,8 +259,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   5. Change default behavior for condition_source to "prediction" in CalibratedExplainer and related components.
   6. Reinforce ADR-020 legacy-API commitments with release checklist gates, regression tests, and a scripted notebook audit workflow.
   7. Add Agent facing helper functions for easier integration with LLMs and AI agents.
-  8. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
-  9. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
+  8. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
 
   Release gate: ADR-005/008/010/020 gaps closed, condition_source default updated, and plugin authoring docs shipped.
 ### v0.11.0 (domain model & preprocessing finalisation)
@@ -275,6 +274,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   8. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry.
   9. Empty the private member allow-list (.github/private_member_allowlist.json) as part of the final Pattern 1 remediation hardening.
   10. Perform a final ADR, standards, and improvement docs gap closure sweep.
+  11. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
 
   Release gate: ADR-009/012/026/030/031 gaps are closed or explicitly deferred, observability enforcement is in place (ADR-027/028), and core-only install expectations are verified ahead of v1.0.0-rc.
 ### v1.0.0-rc (release candidate readiness)
