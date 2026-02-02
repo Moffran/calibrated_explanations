@@ -2,12 +2,12 @@ from calibrated_explanations.core.reject.policy import RejectPolicy, is_policy_e
 
 
 def test_is_policy_enabled_with_enum():
-    assert is_policy_enabled(RejectPolicy.PREDICT_AND_FLAG)
+    assert is_policy_enabled(RejectPolicy.FLAG)
     assert not is_policy_enabled(RejectPolicy.NONE)
 
 
 def test_is_policy_enabled_with_strings():
-    assert is_policy_enabled("predict_and_flag")
+    assert is_policy_enabled("flag")
     assert not is_policy_enabled("none")
 
 

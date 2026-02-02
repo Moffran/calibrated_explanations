@@ -40,7 +40,7 @@ class DummyRejectOrch:
             prediction=None,
             explanation=None,
             rejected=None,
-            policy=RejectPolicy.PREDICT_AND_FLAG,
+            policy=RejectPolicy.FLAG,
             metadata={},
         )
 

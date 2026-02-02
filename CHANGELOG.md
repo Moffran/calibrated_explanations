@@ -7,6 +7,12 @@
 
 ### Changed
 
+- **Simplified RejectPolicy from 6 to 4 policies:** Refactored the `RejectPolicy` enum to use cleaner, operation-agnostic policy names that work consistently for both `predict()` and `explain()` operations:
+  - `FLAG` (replaces `PREDICT_AND_FLAG` and `EXPLAIN_ALL`) - Process all instances, include rejection status in results
+  - `ONLY_REJECTED` (replaces `EXPLAIN_REJECTS`) - Process only rejected (uncertain) instances
+  - `ONLY_ACCEPTED` (replaces `EXPLAIN_NON_REJECTS` and `SKIP_ON_REJECT`) - Process only accepted (confident) instances
+  - `NONE` - Unchanged, legacy behavior with no reject orchestration
+
 - **Default condition_source to "prediction":** The default value for `condition_source` in `CalibratedExplainer` has been changed from `"observed"` to `"prediction"` to enhance consistency in calibrated explanations by basing condition labels on model predictions rather than observed labels. Users relying on the previous default behavior should explicitly set `condition_source="observed"`. A warning is issued when the parameter is not provided, guiding users to the new default.
 
 - **Explanation JSON Schema v1 strict validation:** Implemented strict JSON Schema validation for explanation payloads with test fixtures. The `validate_payload()` function now enforces schema compliance when `jsonschema` is available, and interval invariants are validated during serialization. Added golden fixture validation test (see ADR-005 addendum).
@@ -20,6 +26,21 @@
 - **Legacy API stability gates (checklist + audit):** Added PR checklist items and an audit workflow to enforce legacy API stability per ADR-020.
 
 - **CE-first agent helper coverage:** Added a `calibrated_explanations.ce_agent_utils` with helper functions for AI agents and summaries to surface explanations, conjunctions, uncertainty quantification, and probabilistic regression (thresholded regression) semantics, among other things. Also added a `ce_first_agent_guide.md` to document usage patterns.
+
+### Fixed
+
+- **Reject ambiguity/uncertainty breakdown:** Added a breakdown helper and metadata so callers can distinguish ambiguity (multi-label) vs uncertainty (empty-set) rejects; ambiguity is non-decreasing with confidence while uncertainty is non-increasing.
+
+- **Reject envelope contract:** When a `RejectPolicy` other than `NONE` is active, prediction APIs return a `RejectResult` envelope whose `prediction` field mirrors the invoked method's legacy payload (including regression UQ tuples such as `(proba, (low, high))`). The envelope `metadata` includes user-facing per-instance keys: `ambiguity_mask`, `uncertainty_mask`, `prediction_set_size`, and `epsilon` alongside aggregate rates. The `explanation` field contains the explanation object or `None` if no explanation was produced.
+
+### Deprecated
+
+- **Old RejectPolicy names:** The following policy names are deprecated and will be removed in v1.0.0. Using them will emit a `DeprecationWarning`:
+  - `PREDICT_AND_FLAG` → use `FLAG`
+  - `EXPLAIN_ALL` → use `FLAG`
+  - `EXPLAIN_REJECTS` → use `ONLY_REJECTED`
+  - `EXPLAIN_NON_REJECTS` → use `ONLY_ACCEPTED`
+  - `SKIP_ON_REJECT` → use `ONLY_ACCEPTED`
 
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 

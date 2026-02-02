@@ -71,3 +71,26 @@ assert envelope.policy == RejectPolicy.EXPLAIN_ALL
 - Added the `RejectPolicy` enum and `RejectResult` envelope so callers can opt into reject-aware outputs without changing existing defaults.
 - Explanation and prediction entry points now accept `reject_policy`, with non-`NONE` selections implicitly enabling reject orchestration and returning a structured envelope.
 - Explainer defaults (`default_reject_policy`) and wrapper calibration now offer reusable policy configuration, while per-call overrides continue to take precedence.
+
+## Per-instance breakdowns
+
+When a non-`NONE` policy is active the `RejectResult.metadata` dictionary contains per-instance keys that let you inspect the rejection breakdown without invoking the orchestrator directly. These keys are:
+
+- `ambiguity_mask`: `numpy.ndarray[bool]` — True for instances whose prediction set contains more than one label (ambiguous).
+- `novelty_mask`: `numpy.ndarray[bool]` — True for instances whose prediction set is empty (novelty).
+- `prediction_set_size`: `numpy.ndarray[int]` — Integer size of the prediction set per instance.
+- `epsilon`: `numpy.ndarray[float]` — Per-instance epsilon used when constructing the prediction set.
+
+Short example:
+
+```python
+res = explainer.predict(X_test, reject_policy=RejectPolicy.PREDICT_AND_FLAG)
+meta = res.metadata or {}
+ambig = meta.get("ambiguity_mask")
+nov = meta.get("novelty_mask")
+sizes = meta.get("prediction_set_size")
+
+print("Ambiguous count:", int(np.sum(ambig)) if ambig is not None else 0)
+print("Uncertain count:", int(np.sum(unc)) if unc is not None else 0)
+print("Prediction set sizes sample:", sizes[:10] if sizes is not None else None)
+```

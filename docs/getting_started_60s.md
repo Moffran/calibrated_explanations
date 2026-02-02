@@ -33,6 +33,8 @@ Probabilistic regression answers probability queries for a real-valued target by
 - Exceedance probability + UQ: `predict_proba(x, uq_interval=True, threshold=t[, ...])`
 - Interval event probability: `predict_proba(x, threshold=(low, high)[, ...])` → P(true value ∈ [low, high])
 
+Reject policy note: You can opt into reject-aware behavior per-call via the `reject_policy` parameter (e.g., `explain_factual(X, reject_policy=RejectPolicy.PREDICT_AND_FLAG)`). When a non-`NONE` policy is active the API returns a `RejectResult` envelope whose `prediction` field mirrors the legacy return shape (including regression UQ tuples like `(proba, (low, high))`). Per-instance breakdowns are available in `RejectResult.metadata` under `ambiguity_mask`, `novelty_mask`, `prediction_set_size`, and `epsilon`. The `explanation` field contains the explanation object or `None` if no explanation was produced.
+
 ## 4) Run the minimal CE-first flow
 
 ```python

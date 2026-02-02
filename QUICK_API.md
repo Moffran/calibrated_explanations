@@ -10,6 +10,8 @@ factual = explainer.explain_factual(X_query)              # factual explanations
 alts = explainer.explore_alternatives(X_query)            # alternative explanations (what would change it?)
 ```
 
+Reject integration (policy-first): When a `RejectPolicy` other than `NONE` is passed to prediction/explanation APIs (e.g., `explain_factual(..., reject_policy=...)`), the call returns a `RejectResult` envelope. The envelope's `prediction` field mirrors the invoked method's legacy payload (including regression UQ tuples `(proba, (low, high))`), and `metadata` exposes per-instance breakdown keys: `ambiguity_mask`, `uncertainty_mask`, `prediction_set_size`, and `epsilon`. The envelope's `explanation` field contains the explanation object or `None` if no explanation was produced.
+
 Optional parameters (`[, ...]`) across methods:
 - `bins=...` for conditional calibration
 - `low_high_percentiles=(a, b)` for **CPS conformal interval regression**

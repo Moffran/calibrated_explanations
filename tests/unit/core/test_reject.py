@@ -128,39 +128,24 @@ class TestPolicyBehavior:
         assert result.policy is RejectPolicy.NONE
         assert result.metadata is None
 
-    def test_policy_predict_and_flag_has_prediction_no_explanation(self, mock_orchestrator):
-        """PREDICT_AND_FLAG should attach rejected flag, no explanations generated."""
-        explain_fn = make_explain_fn()
-        result = mock_orchestrator.apply_policy(
-            RejectPolicy.PREDICT_AND_FLAG, x=[[1, 2], [3, 4]], explain_fn=explain_fn
-        )
-
-        assert isinstance(result, RejectResult)
-        # Note: prediction may be None in mock if predict fails, but contract says no explanation
-        assert result.explanation is None  # No explanation for PREDICT_AND_FLAG
-        assert result.rejected is not None
-        assert result.policy is RejectPolicy.PREDICT_AND_FLAG
-        assert result.metadata is not None
-        assert len(explain_fn.calls) == 0  # explain_fn should not be called
-
-    def test_policy_explain_all_has_both_prediction_and_explanation(self, mock_orchestrator):
-        """EXPLAIN_ALL should explain all instances and tag rejection status."""
+    def test_policy_flag_has_both_prediction_and_explanation(self, mock_orchestrator):
+        """FLAG should explain all instances and tag rejection status."""
         explain_fn = make_explain_fn()
         x_input = [[1, 2], [3, 4]]
         result = mock_orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_ALL, x=x_input, explain_fn=explain_fn
+            RejectPolicy.FLAG, x=x_input, explain_fn=explain_fn
         )
 
         assert isinstance(result, RejectResult)
         # Note: prediction may be None in mock, but explanation should be present
         assert result.explanation is not None
         assert result.rejected is not None
-        assert result.policy is RejectPolicy.EXPLAIN_ALL
+        assert result.policy is RejectPolicy.FLAG
         assert result.metadata is not None
         assert len(explain_fn.calls) == 1  # explain_fn called once with all instances
 
-    def test_policy_explain_rejects_only_explains_rejected_instances(self):
-        """EXPLAIN_REJECTS should explain only rejected instances."""
+    def test_policy_only_rejected_only_explains_rejected_instances(self):
+        """ONLY_REJECTED should explain only rejected instances."""
         # Create explainer with specific rejection pattern: [False, True, False, True]
         explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
         orchestrator = MockRejectOrchestrator(explainer)
@@ -168,17 +153,17 @@ class TestPolicyBehavior:
 
         x_input = [[1, 2], [3, 4], [5, 6], [7, 8]]
         result = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_REJECTS, x=x_input, explain_fn=explain_fn
+            RejectPolicy.ONLY_REJECTED, x=x_input, explain_fn=explain_fn
         )
 
-        assert result.policy is RejectPolicy.EXPLAIN_REJECTS
+        assert result.policy is RejectPolicy.ONLY_REJECTED
         assert len(explain_fn.calls) == 1
         # Should only explain indices 1 and 3 (rejected)
         explained_x = explain_fn.calls[0][0]
         assert len(explained_x) == 2
 
-    def test_policy_explain_non_rejects_only_explains_non_rejected_instances(self):
-        """EXPLAIN_NON_REJECTS should explain only non-rejected instances."""
+    def test_policy_only_accepted_only_explains_non_rejected_instances(self):
+        """ONLY_ACCEPTED should explain only non-rejected instances."""
         # Create explainer with specific rejection pattern: [False, True, False, True]
         explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
         orchestrator = MockRejectOrchestrator(explainer)
@@ -186,29 +171,12 @@ class TestPolicyBehavior:
 
         x_input = [[1, 2], [3, 4], [5, 6], [7, 8]]
         result = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_NON_REJECTS, x=x_input, explain_fn=explain_fn
+            RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=explain_fn
         )
 
-        assert result.policy is RejectPolicy.EXPLAIN_NON_REJECTS
+        assert result.policy is RejectPolicy.ONLY_ACCEPTED
         assert len(explain_fn.calls) == 1
         # Should only explain indices 0 and 2 (non-rejected)
-        explained_x = explain_fn.calls[0][0]
-        assert len(explained_x) == 2
-
-    def test_policy_skip_on_reject_explains_only_non_rejected(self):
-        """SKIP_ON_REJECT should skip rejected instances entirely."""
-        explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
-        orchestrator = MockRejectOrchestrator(explainer)
-        explain_fn = make_explain_fn()
-
-        x_input = [[1, 2], [3, 4], [5, 6], [7, 8]]
-        result = orchestrator.apply_policy(
-            RejectPolicy.SKIP_ON_REJECT, x=x_input, explain_fn=explain_fn
-        )
-
-        assert result.policy is RejectPolicy.SKIP_ON_REJECT
-        assert len(explain_fn.calls) == 1
-        # Should only explain non-rejected instances
         explained_x = explain_fn.calls[0][0]
         assert len(explained_x) == 2
 
@@ -223,11 +191,9 @@ class TestIsPolicyEnabled:
     @pytest.mark.parametrize(
         "policy",
         [
-            RejectPolicy.PREDICT_AND_FLAG,
-            RejectPolicy.EXPLAIN_ALL,
-            RejectPolicy.EXPLAIN_REJECTS,
-            RejectPolicy.EXPLAIN_NON_REJECTS,
-            RejectPolicy.SKIP_ON_REJECT,
+            RejectPolicy.FLAG,
+            RejectPolicy.ONLY_REJECTED,
+            RejectPolicy.ONLY_ACCEPTED,
         ],
     )
     def test_non_none_policies_are_enabled(self, policy):
@@ -253,7 +219,7 @@ class TestEdgeCases:
         """Empty input should be handled gracefully."""
         explain_fn = make_explain_fn()
         result = mock_orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_ALL, x=[], explain_fn=explain_fn
+            RejectPolicy.FLAG, x=[], explain_fn=explain_fn
         )
 
         assert isinstance(result, RejectResult)
@@ -266,7 +232,7 @@ class TestEdgeCases:
         explain_fn = make_explain_fn()
 
         result = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_ALL, x=[[1, 2]], explain_fn=explain_fn
+            RejectPolicy.FLAG, x=[[1, 2]], explain_fn=explain_fn
         )
 
         assert isinstance(result, RejectResult)
@@ -279,10 +245,10 @@ class TestEdgeCases:
         explain_fn = make_explain_fn()
 
         result = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_NON_REJECTS, x=[[1, 2], [3, 4], [5, 6]], explain_fn=explain_fn
+            RejectPolicy.ONLY_ACCEPTED, x=[[1, 2], [3, 4], [5, 6]], explain_fn=explain_fn
         )
 
-        assert result.policy is RejectPolicy.EXPLAIN_NON_REJECTS
+        assert result.policy is RejectPolicy.ONLY_ACCEPTED
         assert result.explanation is None  # No non-rejected instances to explain
         assert len(explain_fn.calls) == 0  # explain_fn not called
 
@@ -293,10 +259,10 @@ class TestEdgeCases:
         explain_fn = make_explain_fn()
 
         result = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_REJECTS, x=[[1, 2], [3, 4], [5, 6]], explain_fn=explain_fn
+            RejectPolicy.ONLY_REJECTED, x=[[1, 2], [3, 4], [5, 6]], explain_fn=explain_fn
         )
 
-        assert result.policy is RejectPolicy.EXPLAIN_REJECTS
+        assert result.policy is RejectPolicy.ONLY_REJECTED
         assert result.explanation is None  # No rejected instances to explain
         assert len(explain_fn.calls) == 0  # explain_fn not called
 
@@ -310,14 +276,14 @@ class TestEdgeCases:
         explain_fn_rejects = make_explain_fn()
         x_input = [[i, i] for i in range(5)]
         result_rejects = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_REJECTS, x=x_input, explain_fn=explain_fn_rejects
+            RejectPolicy.ONLY_REJECTED, x=x_input, explain_fn=explain_fn_rejects
         )
         assert len(explain_fn_rejects.calls[0][0]) == 3  # 3 rejected
 
         # Test EXPLAIN_NON_REJECTS
         explain_fn_non = make_explain_fn()
         result_non = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_NON_REJECTS, x=x_input, explain_fn=explain_fn_non
+            RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=explain_fn_non
         )
         assert len(explain_fn_non.calls[0][0]) == 2  # 2 non-rejected
 
@@ -342,11 +308,11 @@ class TestPolicyInteractions:
                 prediction=None,
                 explanation=None,
                 rejected=None,
-                policy=RejectPolicy.EXPLAIN_ALL,
+                policy=RejectPolicy.FLAG,
                 metadata={},
             )
         )
-        mock_self.default_reject_policy = RejectPolicy.PREDICT_AND_FLAG
+        mock_self.default_reject_policy = RejectPolicy.FLAG
         mock_self.plugin_manager = SimpleNamespace(initialize_orchestrators=lambda: None)
         mock_self.explanation_orchestrator = MagicMock()
 
@@ -380,7 +346,7 @@ class TestPolicyInteractions:
 
         orchestrator.initialize_reject_learner = failing_init
 
-        result = orchestrator.apply_policy(RejectPolicy.EXPLAIN_ALL, x=[[1, 2]])
+        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2]])
 
         assert result.metadata is not None
         assert result.metadata.get("init_error") is True
@@ -401,7 +367,7 @@ class TestPolicyInteractions:
 
         mock_orchestrator.register_strategy("test.custom", custom_strategy)
         result = mock_orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_ALL, x=[[1, 2]], strategy="test.custom"
+            RejectPolicy.FLAG, x=[[1, 2]], strategy="test.custom"
         )
 
         assert len(custom_called) == 1
@@ -422,7 +388,7 @@ class TestMetadataValidation:
         explainer = MockExplainer(error_rate=0.03, reject_rate=0.15)
         orchestrator = MockRejectOrchestrator(explainer)
 
-        result = orchestrator.apply_policy(RejectPolicy.PREDICT_AND_FLAG, x=[[1, 2], [3, 4]])
+        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2], [3, 4]])
 
         assert result.metadata is not None
         assert "error_rate" in result.metadata
@@ -435,7 +401,7 @@ class TestMetadataValidation:
         for er in [0.0, 0.05, 0.1, 0.5, 1.0]:
             explainer = MockExplainer(error_rate=er, reject_rate=0.1)
             orchestrator = MockRejectOrchestrator(explainer)
-            result = orchestrator.apply_policy(RejectPolicy.EXPLAIN_ALL, x=[[1, 2]])
+            result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2]])
 
             assert 0.0 <= result.metadata["error_rate"] <= 1.0
 
@@ -448,7 +414,7 @@ class TestMetadataValidation:
         orchestrator = MockRejectOrchestrator(explainer)
 
         result = orchestrator.apply_policy(
-            RejectPolicy.EXPLAIN_ALL, x=[[1, 2], [3, 4], [5, 6], [7, 8]]
+            RejectPolicy.FLAG, x=[[1, 2], [3, 4], [5, 6], [7, 8]]
         )
 
         assert result.metadata["reject_rate"] == 0.5
@@ -485,14 +451,14 @@ class TestRejectResult:
             prediction=[0.5, 0.6],
             explanation={"type": "factual"},
             rejected=np.array([False, True]),
-            policy=RejectPolicy.EXPLAIN_ALL,
+            policy=RejectPolicy.FLAG,
             metadata={"error_rate": 0.05, "reject_rate": 0.5},
         )
 
         assert result.prediction == [0.5, 0.6]
         assert result.explanation == {"type": "factual"}
         np.testing.assert_array_equal(result.rejected, np.array([False, True]))
-        assert result.policy is RejectPolicy.EXPLAIN_ALL
+        assert result.policy is RejectPolicy.FLAG
         assert result.metadata["error_rate"] == 0.05
 
     def test_equality(self):
@@ -521,17 +487,30 @@ class TestRejectPolicyEnum:
         assert len(values) == len(set(values))
 
     def test_policy_count(self):
-        """There should be exactly 6 policies."""
-        assert len(list(RejectPolicy)) == 6
+        """There should be exactly 4 policies."""
+        assert len(list(RejectPolicy)) == 4
 
     def test_policy_from_string(self):
         """Policies should be constructable from their string values."""
         assert RejectPolicy("none") is RejectPolicy.NONE
-        assert RejectPolicy("predict_and_flag") is RejectPolicy.PREDICT_AND_FLAG
-        assert RejectPolicy("explain_all") is RejectPolicy.EXPLAIN_ALL
-        assert RejectPolicy("explain_rejects") is RejectPolicy.EXPLAIN_REJECTS
-        assert RejectPolicy("explain_non_rejects") is RejectPolicy.EXPLAIN_NON_REJECTS
-        assert RejectPolicy("skip_on_reject") is RejectPolicy.SKIP_ON_REJECT
+        assert RejectPolicy("flag") is RejectPolicy.FLAG
+        assert RejectPolicy("only_rejected") is RejectPolicy.ONLY_REJECTED
+        assert RejectPolicy("only_accepted") is RejectPolicy.ONLY_ACCEPTED
+
+    def test_deprecated_policy_strings_map_to_new_policies(self):
+        """Deprecated policy string values should map to new policies with warning."""
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            assert RejectPolicy("predict_and_flag") is RejectPolicy.FLAG
+            assert RejectPolicy("explain_all") is RejectPolicy.FLAG
+            assert RejectPolicy("explain_rejects") is RejectPolicy.ONLY_REJECTED
+            assert RejectPolicy("explain_non_rejects") is RejectPolicy.ONLY_ACCEPTED
+            assert RejectPolicy("skip_on_reject") is RejectPolicy.ONLY_ACCEPTED
+            # Should have emitted 5 deprecation warnings
+            dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+            assert len(dep_warnings) == 5
 
     def test_invalid_string_raises_value_error(self):
         """Invalid string should raise ValueError."""

@@ -2353,25 +2353,86 @@ class CalibratedExplainer:
                 self.learner, x, threshold=kwargs.get("threshold"), uq_interval=uq_interval
             )
 
-        # Calibrated predictions
-        if self.mode == "regression":
-            predict, low, high, _ = self.prediction_orchestrator.predict(x, **kwargs)
-            return format_regression_prediction(
-                predict, low, high, threshold=kwargs.get("threshold"), uq_interval=uq_interval
+        # Resolve reject policy (per-call overrides explainer default)
+        from .reject.policy import RejectPolicy as _RejectPolicy
+
+        # Internal callers may skip reject orchestration by setting this flag
+        if kwargs.pop("_ce_skip_reject", False):
+            reject_policy_kw = None
+            skip_reject_for_internal = True
+        else:
+            reject_policy_kw = kwargs.pop("reject_policy", None)
+            skip_reject_for_internal = False
+        try:
+            policy = _RejectPolicy(reject_policy_kw) if reject_policy_kw is not None else self.default_reject_policy
+        except Exception:
+            policy = _RejectPolicy.NONE
+
+        implicit_default_used = (reject_policy_kw is None and policy is not _RejectPolicy.NONE) and not skip_reject_for_internal
+
+        # If no reject orchestration requested, proceed with legacy behavior
+        if policy is _RejectPolicy.NONE or skip_reject_for_internal:
+            # Calibrated predictions
+            if self.mode == "regression":
+                predict, low, high, _ = self.prediction_orchestrator.predict(x, **kwargs)
+                return format_regression_prediction(
+                    predict, low, high, threshold=kwargs.get("threshold"), uq_interval=uq_interval
+                )
+
+            # Classification
+            predict, low, high, new_classes = self.prediction_orchestrator.predict(x, **kwargs)
+            return format_classification_prediction(
+                predict,
+                low,
+                high,
+                new_classes,
+                self.is_multiclass(),
+                label_map=self.label_map,
+                class_labels=self.class_labels,
+                uq_interval=uq_interval,
             )
 
-        # Classification
-        predict, low, high, new_classes = self.prediction_orchestrator.predict(x, **kwargs)
-        return format_classification_prediction(
-            predict,
-            low,
-            high,
-            new_classes,
-            self.is_multiclass(),
-            label_map=self.label_map,
-            class_labels=self.class_labels,
-            uq_interval=uq_interval,
+        # Reject policy active: use orchestrator to apply policy and return RejectResult envelope
+        bins_arg = kwargs.pop("bins", None)
+        confidence_arg = kwargs.pop("confidence", 0.95)
+        rr = self.reject_orchestrator.apply_policy(
+            policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
         )
+
+        # Format the legacy payload into rr.prediction for consumer ergonomics
+        try:
+            if rr.prediction is not None:
+                if self.mode == "regression":
+                    # prediction is expected as (predict, low, high, _)
+                    predict, low, high, _ = rr.prediction
+                    rr.prediction = format_regression_prediction(
+                        predict, low, high, threshold=kwargs.get("threshold"), uq_interval=uq_interval
+                    )
+                else:
+                    predict, low, high, new_classes = rr.prediction
+                    rr.prediction = format_classification_prediction(
+                        predict,
+                        low,
+                        high,
+                        new_classes,
+                        self.is_multiclass(),
+                        label_map=self.label_map,
+                        class_labels=self.class_labels,
+                        uq_interval=uq_interval,
+                    )
+        except Exception as exc:  # adr002_allow
+            # If formatting fails, leave rr.prediction as-is but warn
+            logging.getLogger(__name__).info("Failed to format RejectResult.prediction; leaving raw.", exc_info=True)
+            warnings.warn(f"Failed to format RejectResult.prediction: {exc!s}", UserWarning)
+
+        # Log once-per-call when an implicit default caused an envelope return
+        if implicit_default_used:
+            logging.getLogger(__name__).info(
+                "Default reject policy %s applied implicitly; returning RejectResult envelope for this call.",
+                str(policy),
+            )
+
+        return rr
 
     def predict_proba(self, x, uq_interval=False, calibrated=True, threshold=None, **kwargs):
         """Generate probability predictions for the test data.
@@ -2446,6 +2507,27 @@ class CalibratedExplainer:
         # Inject default interval_summary if not provided
         kwargs.setdefault("interval_summary", self.interval_summary)
 
+        # Resolve reject policy (per-call override else explainer default)
+        from .reject.policy import RejectPolicy as _RejectPolicy
+
+        # Internal callers may skip reject orchestration by setting this flag
+        if kwargs.pop("_ce_skip_reject", False):
+            reject_policy_kw = None
+            skip_reject_for_internal = True
+        else:
+            reject_policy_kw = kwargs.pop("reject_policy", None)
+            skip_reject_for_internal = False
+
+        try:
+            policy = _RejectPolicy(reject_policy_kw) if reject_policy_kw is not None else self.default_reject_policy
+        except Exception:
+            policy = _RejectPolicy.NONE
+
+        implicit_default_used = (reject_policy_kw is None and policy is not _RejectPolicy.NONE) and not skip_reject_for_internal
+
+        # Helper: compute legacy proba payload for this call
+        proba_payload = None
+
         if not calibrated:
             if threshold is not None:
                 raise ValidationError(
@@ -2454,45 +2536,69 @@ class CalibratedExplainer:
             if uq_interval:
                 proba = self.learner.predict_proba(x)
                 if proba.shape[1] > 2:
-                    return proba, (proba, proba)
-                return proba, (proba[:, 1], proba[:, 1])
-            return self.learner.predict_proba(x)
-
-        # Calibrated predictions
-        if self.mode == "regression":
-            if is_fast_interval_collection(self.interval_learner):
-                proba_1, low, high, _ = self.interval_learner[-1].predict_probability(
-                    x, y_threshold=threshold, **kwargs
-                )
+                    proba_payload = (proba, (proba, proba))
+                else:
+                    proba_payload = (proba, (proba[:, 1], proba[:, 1]))
             else:
-                proba_1, low, high, _ = self.interval_learner.predict_probability(
-                    x, y_threshold=threshold, **kwargs
-                )
-            proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
-            return (proba, (low, high)) if uq_interval else proba
-
-        # Classification - multiclass
-        if self.is_multiclass():
-            if is_fast_interval_collection(self.interval_learner):
-                proba, low, high, _ = self.interval_learner[-1].predict_proba(
-                    x, output_interval=True, **kwargs
-                )
-            else:
-                proba, low, high, _ = self.interval_learner.predict_proba(
-                    x, output_interval=True, **kwargs
-                )
-            return (proba, (low, high)) if uq_interval else proba
-
-        # Classification - binary
-        if is_fast_interval_collection(self.interval_learner):
-            proba, low, high = self.interval_learner[-1].predict_proba(
-                x, output_interval=True, **kwargs
-            )
+                proba_payload = self.learner.predict_proba(x)
         else:
-            proba, low, high = self.interval_learner.predict_proba(
-                x, output_interval=True, **kwargs
+            # Calibrated predictions
+            if self.mode == "regression":
+                if is_fast_interval_collection(self.interval_learner):
+                    proba_1, low, high, _ = self.interval_learner[-1].predict_probability(
+                        x, y_threshold=threshold, **kwargs
+                    )
+                else:
+                    proba_1, low, high, _ = self.interval_learner.predict_probability(
+                        x, y_threshold=threshold, **kwargs
+                    )
+                proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
+                proba_payload = (proba, (low, high)) if uq_interval else proba
+
+            # Classification - multiclass
+            elif self.is_multiclass():
+                if is_fast_interval_collection(self.interval_learner):
+                    proba, low, high, _ = self.interval_learner[-1].predict_proba(
+                        x, output_interval=True, **kwargs
+                    )
+                else:
+                    proba, low, high, _ = self.interval_learner.predict_proba(
+                        x, output_interval=True, **kwargs
+                    )
+                proba_payload = (proba, (low, high)) if uq_interval else proba
+
+            # Classification - binary
+            else:
+                if is_fast_interval_collection(self.interval_learner):
+                    proba, low, high = self.interval_learner[-1].predict_proba(
+                        x, output_interval=True, **kwargs
+                    )
+                else:
+                    proba, low, high = self.interval_learner.predict_proba(
+                        x, output_interval=True, **kwargs
+                    )
+                proba_payload = (proba, (low, high)) if uq_interval else proba
+
+        # If no reject orchestration requested, return legacy payload
+        if policy is _RejectPolicy.NONE or skip_reject_for_internal:
+            return proba_payload
+
+        # Reject policy active: compute envelope via orchestrator and attach legacy payload
+        bins_arg = kwargs.pop("bins", None)
+        confidence_arg = kwargs.pop("confidence", 0.95)
+        rr = self.reject_orchestrator.apply_policy(
+            policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
+        )
+        rr.prediction = proba_payload
+
+        # Log once-per-call when an implicit default caused an envelope return
+        if implicit_default_used:
+            logging.getLogger(__name__).info(
+                "Default reject policy %s applied implicitly; returning RejectResult envelope for this call.",
+                str(policy),
             )
-        return (proba, (low, high)) if uq_interval else proba
+
+        return rr
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x, y=None, threshold=None, **kwargs):

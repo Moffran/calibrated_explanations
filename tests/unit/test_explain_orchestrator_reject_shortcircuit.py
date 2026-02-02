@@ -26,15 +26,15 @@ def test_invoke_short_circuits_to_reject_orchestrator():
         low_high_percentiles=None,
         bins=None,
         features_to_ignore=None,
-        reject_policy=RejectPolicy.PREDICT_AND_FLAG,
+        reject_policy=RejectPolicy.FLAG,
     )
     assert out["value"] == 123
-    assert out["policy"] == RejectPolicy.PREDICT_AND_FLAG
+    assert out["policy"] == RejectPolicy.FLAG
 
 
 def test_invoke_applies_default_policy_when_not_supplied():
     fe = FakeExplainer(value="default")
-    fe.default_reject_policy = RejectPolicy.EXPLAIN_ALL
+    fe.default_reject_policy = RejectPolicy.FLAG
     eo = ExplanationOrchestrator(fe)
     out = eo.invoke(
         mode="factual",
@@ -46,4 +46,4 @@ def test_invoke_applies_default_policy_when_not_supplied():
         reject_policy=None,
     )
     assert out["value"] == "default"
-    assert out["policy"] == RejectPolicy.EXPLAIN_ALL
+    assert out["policy"] == RejectPolicy.FLAG
