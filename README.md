@@ -196,7 +196,11 @@ interval regression tasks, the difference lies in how you configure the underlyi
   when you need calibrated thresholds.
 - Opt into plugins only when needed via
   `pip install "calibrated-explanations[external-plugins]"`—they remain
-  optional extensions.
+  optional extensions. Note: `fast` explanations are experimental and
+  provided via opt-in plugins; they are allowed in the schema for
+  interoperability but are not promoted for primary practitioner
+  workflows. Treat `fast` as an experimental, opt-in feature and prefer
+  `factual`/`alternative` workflows for production use.
 
 ### Agents (CE-first by default)
 - Read `AGENTS.md` for the minimal entrypoint.
@@ -283,8 +287,8 @@ sign off your commits.
 - **Probabilistic and interval regression** that mirrors the classification API.
 - **Alternative explanations with triangular plots** for visualising trade-offs.
 - **Conjunctional and conditional rules** for interaction and fairness analysis.
-- **Optional plugin lane** for fast explanations and telemetry—disabled by
-  default, opt-in when you need it.
+- **Experimental plugin lane** for `fast` explanations (opt-in only, not
+  promoted for production—see practitioner notes above).
 
 ---
 

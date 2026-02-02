@@ -1,8 +1,8 @@
-> **Status note (2026-01-28):** Last edited 2026-01-28 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
+> **Status note (2026-02-02):** Last edited 2026-02-02 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.10.3 (validation enforcement)
 
 # ADR-005: Explanation JSON Schema Versioning
 
-Status: Accepted (completed in v0.11.0)
+Status: Accepted (enforcement in v0.10.3)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -65,7 +65,10 @@ Rules:
   keys).
 - Major increments indicate breaking structural changes.
 - `explanation_type` is required and must be `"factual"` or `"alternative"` as defined
-  in ADR-008; this is the only explanation-type discriminator in v1.
+  in ADR-008. The schema v1.0.0 is broadened to also accept `"fast"` as an additive,
+  experimental value for internal/opt-in use; `fast` is intentionally treated as
+  experimental and is not promoted in practitioner-facing docs. Consumers should
+  continue to rely primarily on `factual`/`alternative` for public workflows.
 - `prediction` and rule-level `rule_weight` / `rule_prediction` carry calibrated
   predictions with uncertainty intervals as required by the CE papers.
 - `provenance` and `metadata` are optional extension points for library/caller context
@@ -107,10 +110,14 @@ must come with:
 
 ## Validation
 
-- Provide `validate_payload(obj)` that checks required fields via JSON Schema when
-  `jsonschema` is installed.
+## Validation
+
+- Provide `validate_payload(obj)` that always performs a minimal, structural validation
+  of required fields and types even when `jsonschema` is not installed. When
+  `jsonschema` is available, the full JSON Schema-based validation is used.
 - Enforce interval invariants (`low <= predict <= high`) during serialization for
-  top-level predictions and rule-level predictions.
+  top-level predictions and rule-level predictions; this enforcement applies
+  elementwise for vector predictions as well as scalars.
 - Envelope validation is **out of scope** for v1.0.0.
 
 ## Alternatives Considered

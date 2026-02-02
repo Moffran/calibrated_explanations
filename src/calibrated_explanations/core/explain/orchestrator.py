@@ -359,6 +359,14 @@ class ExplanationOrchestrator:
             and feature_filter_config is not None
             and getattr(feature_filter_config, "enabled", False) is True
         ):
+            # Guardrail: warn when fast mode is auto-selected without explicit user intent
+            warnings.warn(
+                "Auto-selecting experimental 'fast' explanation mode for feature "
+                "filtering. The 'fast' pathway is experimental and opt-in only. "
+                "Set CE_FEATURE_FILTER=off or disable feature_filter_config to suppress.",
+                UserWarning,
+                stacklevel=2,
+            )
             try:
                 from ._feature_filter import compute_filtered_features_to_ignore
 

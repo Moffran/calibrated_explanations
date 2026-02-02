@@ -96,6 +96,12 @@ alternatives = explainer.explore_alternatives(X_test[:3])
 Notes: Keep examples deterministic by setting `random_state` where possible. All quickstarts use
 `WrapCalibratedExplainer` and assume `fit(...)` followed by `calibrate(...)`. Examples in
 `examples/use_cases/` emit JSON summaries validated by CI.
+
+**Experimental note:** The project supports an opt-in `fast` explanations pathway
+via external plugins (for high-throughput scenarios). `fast` is experimental and
+opt-in only — practitioner-facing docs and examples focus on `factual` and
+`alternative` workflows. If you rely on production behavior, prefer the
+`factual`/`alternative` APIs unless you explicitly opt into and test `fast` plugins.
 # Calibrated Explanations — Minimal Working Examples (use `WrapCalibratedExplainer`)
 
 ## Classification (3–6 lines)
