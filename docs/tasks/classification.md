@@ -1,6 +1,6 @@
 # Classification (Binary & Multiclass)
 
-Calibrated Explanations wraps standard scikit-learn classifiers to produce uncertainty-aware predictions and explanations. 
+Calibrated Explanations wraps standard scikit-learn classifiers to produce uncertainty-aware predictions and explanations.
 
 ## Supported signatures
 

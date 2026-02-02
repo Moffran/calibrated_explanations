@@ -215,7 +215,6 @@ class ExplainerStub:
         return predict, low, high, np.zeros(rows)
 
 
-
 class ContainerStub:
     def __init__(self, *, mode="regression", y_cal=None):
         self.low_high_percentiles = (5, 95)

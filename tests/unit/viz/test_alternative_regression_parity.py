@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterable, Mapping
+from typing import Dict, Iterable, Mapping
 
 import numpy as np
 import pytest
 from matplotlib import colors as mcolors
 from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from pytest import MonkeyPatch
 import warnings

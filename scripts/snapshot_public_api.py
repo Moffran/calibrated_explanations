@@ -58,7 +58,7 @@ def main():
     # The public API is defined solely by the root package exports.
     # Submodules like .core, .api, .calibration are internal implementation details
     # unless explicitly re-exported by the root __init__.py.
-    
+
     out_file = OUT_DIR / f"api_public_{ts}.txt"
     out_file.write_text("\n".join(lines), encoding="utf-8")
     print(f"Wrote API snapshot to {out_file}")

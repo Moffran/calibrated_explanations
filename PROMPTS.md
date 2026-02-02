@@ -6,13 +6,13 @@
 3. Return point estimates + intervals and the factual rule table.
 
 ## Mapping natural language → API call
-"Explain this prediction with uncertainty bounds"  
+"Explain this prediction with uncertainty bounds"
 → `WrapCalibratedExplainer.explain_factual()`
 
-"Show alternatives that would change this prediction"  
+"Show alternatives that would change this prediction"
 → `WrapCalibratedExplainer.explore_alternatives()`
 
-"I need feature importance with confidence intervals"  
+"I need feature importance with confidence intervals"
 → `WrapCalibratedExplainer.explain_factual()` and extract uncertainty from returned table
 
 ## Minimal agent template

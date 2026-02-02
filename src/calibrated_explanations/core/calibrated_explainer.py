@@ -703,7 +703,6 @@ class CalibratedExplainer:
         # - per-call reject_policy overrides the explainer-level default_reject_policy
         # Backward compatibility:
         # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
-        from .reject.policy import RejectPolicy
 
         candidate_policy = reject_policy
         if candidate_policy is None:
@@ -2364,11 +2363,17 @@ class CalibratedExplainer:
             reject_policy_kw = kwargs.pop("reject_policy", None)
             skip_reject_for_internal = False
         try:
-            policy = _RejectPolicy(reject_policy_kw) if reject_policy_kw is not None else self.default_reject_policy
+            policy = (
+                _RejectPolicy(reject_policy_kw)
+                if reject_policy_kw is not None
+                else self.default_reject_policy
+            )
         except Exception:
             policy = _RejectPolicy.NONE
 
-        implicit_default_used = (reject_policy_kw is None and policy is not _RejectPolicy.NONE) and not skip_reject_for_internal
+        implicit_default_used = (
+            reject_policy_kw is None and policy is not _RejectPolicy.NONE
+        ) and not skip_reject_for_internal
 
         # If no reject orchestration requested, proceed with legacy behavior
         if policy is _RejectPolicy.NONE or skip_reject_for_internal:
@@ -2406,7 +2411,11 @@ class CalibratedExplainer:
                     # prediction is expected as (predict, low, high, _)
                     predict, low, high, _ = rr.prediction
                     rr.prediction = format_regression_prediction(
-                        predict, low, high, threshold=kwargs.get("threshold"), uq_interval=uq_interval
+                        predict,
+                        low,
+                        high,
+                        threshold=kwargs.get("threshold"),
+                        uq_interval=uq_interval,
                     )
                 else:
                     predict, low, high, new_classes = rr.prediction
@@ -2422,7 +2431,9 @@ class CalibratedExplainer:
                     )
         except Exception as exc:  # adr002_allow
             # If formatting fails, leave rr.prediction as-is but warn
-            logging.getLogger(__name__).info("Failed to format RejectResult.prediction; leaving raw.", exc_info=True)
+            logging.getLogger(__name__).info(
+                "Failed to format RejectResult.prediction; leaving raw.", exc_info=True
+            )
             warnings.warn(f"Failed to format RejectResult.prediction: {exc!s}", UserWarning)
 
         # Log once-per-call when an implicit default caused an envelope return
@@ -2519,11 +2530,17 @@ class CalibratedExplainer:
             skip_reject_for_internal = False
 
         try:
-            policy = _RejectPolicy(reject_policy_kw) if reject_policy_kw is not None else self.default_reject_policy
+            policy = (
+                _RejectPolicy(reject_policy_kw)
+                if reject_policy_kw is not None
+                else self.default_reject_policy
+            )
         except Exception:
             policy = _RejectPolicy.NONE
 
-        implicit_default_used = (reject_policy_kw is None and policy is not _RejectPolicy.NONE) and not skip_reject_for_internal
+        implicit_default_used = (
+            reject_policy_kw is None and policy is not _RejectPolicy.NONE
+        ) and not skip_reject_for_internal
 
         # Helper: compute legacy proba payload for this call
         proba_payload = None

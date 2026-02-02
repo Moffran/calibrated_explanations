@@ -178,11 +178,13 @@ class FastExplanationPipeline:
         feature_time = time()
 
         # Get predictions for the instances
-        predict, low, high, predicted_class = self.explainer.prediction_orchestrator.predict_internal(
-            x_test,
-            threshold=threshold,
-            low_high_percentiles=low_high_percentiles,
-            bins=bins,
+        predict, low, high, predicted_class = (
+            self.explainer.prediction_orchestrator.predict_internal(
+                x_test,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins,
+            )
         )
         prediction: Dict[str, Any] = {
             "predict": predict,

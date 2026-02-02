@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import inspect
 import logging
 import threading
 import warnings
+from typing import Any
 
 import numpy as np
 from crepes import ConformalClassifier
@@ -92,7 +91,9 @@ class RejectOrchestrator:
         self.explainer.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=bins_cal)
         return self.explainer.reject_learner
 
-    def _compute_prediction_set(self, x, bins=None, confidence: float = 0.95) -> tuple[np.ndarray, float]:
+    def _compute_prediction_set(
+        self, x, bins=None, confidence: float = 0.95
+    ) -> tuple[np.ndarray, float]:
         if bins is not None:
             bins = np.asarray(bins)
 
@@ -220,7 +221,9 @@ class RejectOrchestrator:
                         "smoothing": False,
                         "seed": seed,
                     }
-                    kwargs_i = self._filter_kwargs(self.explainer.reject_learner.predict_p, kwargs_i)
+                    kwargs_i = self._filter_kwargs(
+                        self.explainer.reject_learner.predict_p, kwargs_i
+                    )
                     per_p = self.explainer.reject_learner.predict_p(
                         alphas_test[i : i + 1],
                         **kwargs_i,
@@ -270,7 +273,13 @@ class RejectOrchestrator:
                 if isinstance(legacy_res, tuple) and len(legacy_res) >= 1:
                     rejected = np.asarray(legacy_res[0], dtype=bool)
                     error_rate = legacy_res[1] if len(legacy_res) > 1 else None
-                    reject_rate = legacy_res[2] if len(legacy_res) > 2 else float(np.mean(rejected)) if len(rejected) > 0 else 0.0
+                    reject_rate = (
+                        legacy_res[2]
+                        if len(legacy_res) > 2
+                        else float(np.mean(rejected))
+                        if len(rejected) > 0
+                        else 0.0
+                    )
                 else:
                     # Fallback to full computation when legacy result is unexpected
                     raise RuntimeError("legacy predict_reject returned unexpected shape")
@@ -492,9 +501,7 @@ class RejectOrchestrator:
                     idx = [i for i, r in enumerate(rejected) if r]
                     if idx:
                         subset = (
-                            np.asarray(x)[idx]
-                            if isinstance(x, np.ndarray)
-                            else [x[i] for i in idx]
+                            np.asarray(x)[idx] if isinstance(x, np.ndarray) else [x[i] for i in idx]
                         )
                         explanation = explain_fn(subset, **kwargs)
                     else:
@@ -504,9 +511,7 @@ class RejectOrchestrator:
                     idx = [i for i, r in enumerate(rejected) if not r]
                     if idx:
                         subset = (
-                            np.asarray(x)[idx]
-                            if isinstance(x, np.ndarray)
-                            else [x[i] for i in idx]
+                            np.asarray(x)[idx] if isinstance(x, np.ndarray) else [x[i] for i in idx]
                         )
                         explanation = explain_fn(subset, **kwargs)
                     else:

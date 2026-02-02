@@ -1,6 +1,6 @@
 # Conformal Interval Regression (CPS)
 
-Regression in Calibrated Explanations is **conformal interval regression** implemented via **Conformal Predictive Systems (CPS)**. 
+Regression in Calibrated Explanations is **conformal interval regression** implemented via **Conformal Predictive Systems (CPS)**.
 
 - **Canonical semantics:** Point regression + calibrated uncertainty intervals = conformal regression.
 - **Interval control:** The specific interval width is controlled by `low_high_percentiles`.
@@ -28,8 +28,8 @@ The `low_high_percentiles` parameter (tuple `(low, high)`) governs the CPS inter
 ```python
 # Returns median, low (5th percentile), and high (95th percentile)
 prediction, (low, high) = explainer.predict(
-    X_test, 
-    uq_interval=True, 
+    X_test,
+    uq_interval=True,
     low_high_percentiles=(5, 95)
 )
 print(f"Prediction: {prediction[0]} Interval: {low[0]} – {high[0]}")
@@ -42,7 +42,7 @@ You can request explanations with arbitrary confidence levels by strictly passin
 ```python
 # Explain with a 50% central interval (25th - 75th percentiles)
 explanation = explainer.explain_factual(
-    X_test, 
+    X_test,
     low_high_percentiles=(25, 75)
 )
 ```

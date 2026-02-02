@@ -44,9 +44,7 @@ def test_register_custom_strategy_and_apply():
         )
 
     ro.register_strategy("custom.foo", custom_strategy)
-    res = ro.apply_policy(
-        RejectPolicy.FLAG, x=[1], explain_fn=None, strategy="custom.foo"
-    )
+    res = ro.apply_policy(RejectPolicy.FLAG, x=[1], explain_fn=None, strategy="custom.foo")
     assert isinstance(res, RejectResult)
     assert res.metadata is not None and res.metadata.get("custom") is True
 

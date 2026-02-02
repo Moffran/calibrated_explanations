@@ -81,7 +81,6 @@ class DummyCalibratedExplainer:
     def predict(self, x, **kwargs):
         return self.prediction_orchestrator.predict_internal(x, **kwargs)
 
-
     def infer_explanation_mode(self):
         return "factual"
 

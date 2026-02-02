@@ -42,11 +42,11 @@ ALLOWED_API = {
     "num_features",
     "parallel_executor", # Exposed in wrapper
     "auto_encode", # Config exposed in wrapper
-    "preprocessor", 
+    "preprocessor",
     "perf_cache",
     "perf_parallel",
     # Legacy
-    "get_explanation",    
+    "get_explanation",
 }
 
 # Heuristic: Variables that are likely to be explainer objects
@@ -70,7 +70,7 @@ class NotebookAPIVisitor(ast.NodeVisitor):
                     self.violations.add(f"{var_name}.{node.attr}")
                 else:
                     self.api_usage.add(node.attr)
-        
+
         # Also track methods in ALLOWED_API regardless of variable name (for usage stats)
         if node.attr in ALLOWED_API:
              self.api_usage.add(node.attr)
@@ -137,9 +137,9 @@ def main():
                         help="Fail (exit non-zero) if violations are detected")
     parser.add_argument("--json", dest="json_report",
                         help="Path to write JSON report")
-    
+
     args = parser.parse_args()
-    
+
     root_path = Path(args.path)
     if root_path.is_file():
         notebooks = [root_path]
@@ -148,7 +148,7 @@ def main():
              print(f"Path not found: {root_path}")
              sys.exit(1)
         # Recursively find .ipynb files, excluding checkpoints
-        notebooks = [p for p in root_path.rglob("*.ipynb") 
+        notebooks = [p for p in root_path.rglob("*.ipynb")
                      if ".ipynb_checkpoints" not in str(p)]
 
     results = []
@@ -165,12 +165,12 @@ def main():
                 print(f"  - {v}")
         else:
              if args.check and args.json_report is None:
-                 pass 
+                 pass
              elif not args.check:
                  print(f"OK: {res['path']}")
 
         results.append(res)
-    
+
     report = {
         "summary": {
             "total": len(notebooks),
@@ -188,7 +188,7 @@ def main():
     if args.check and any_violation:
         print("Audit failed: Violations detected.")
         sys.exit(1)
-    
+
     if args.check:
          print("Audit passed.")
 

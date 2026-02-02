@@ -231,5 +231,11 @@ class TestAdapters:
         assert round_trip_legacy["prediction"] == original_legacy["prediction"]
         assert round_trip_legacy["rules"]["rule"] == original_legacy["rules"]["rule"]
         assert round_trip_legacy["rules"]["feature"] == original_legacy["rules"]["feature"]
-        assert round_trip_legacy["feature_weights"]["predict"] == original_legacy["feature_weights"]["predict"]
-        assert round_trip_legacy["feature_predict"]["predict"] == original_legacy["feature_predict"]["predict"]
+        assert (
+            round_trip_legacy["feature_weights"]["predict"]
+            == original_legacy["feature_weights"]["predict"]
+        )
+        assert (
+            round_trip_legacy["feature_predict"]["predict"]
+            == original_legacy["feature_predict"]["predict"]
+        )

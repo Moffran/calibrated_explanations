@@ -22,8 +22,8 @@ This is technically implemented as **Thresholded Regression**: you supply a `thr
 ```python
 # Probability that y exceeds 150
 probs, (low_p, high_p) = explainer.predict_proba(
-    X_test, 
-    threshold=150, 
+    X_test,
+    threshold=150,
     uq_interval=True
 )
 print(f"P(y > 150): {probs[0]}  Confidence: [{low_p[0]}, {high_p[0]}]")
@@ -36,7 +36,7 @@ Calculate the probability that the true value lies **inside** a specific user-de
 ```python
 # Probability that y is between 100 and 200
 probs, (low_p, high_p) = explainer.predict_proba(
-    X_test, 
+    X_test,
     threshold=(100, 200),
     uq_interval=True
 )
@@ -50,14 +50,14 @@ You can generate feature rules explaining exactly why the probability is high or
 ```python
 # Why is P(y > 150) so high?
 explanation = explainer.explain_factual(
-    X_test, 
+    X_test,
     threshold=150,
 )
 ```
 
 ## Key parameters
 
-- **`threshold`**: 
+- **`threshold`**:
   - Scalar `t`: treated as a binary classification boundary.
   - Tuple `(low, high)`: treated as an interval containment query.
 - **`uq_interval`**: Returns the uncertainty bound on the **probability estimate** itself (aleatoric + epistemic uncertainty on the score).

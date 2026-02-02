@@ -86,9 +86,7 @@ class StubExplainer:
             def predict_internal(self, x, **kwargs):
                 outer.predict_calls.append((np.asarray(x), kwargs))
                 size = np.asarray(x).shape[0]
-                classes = (
-                    np.arange(size) if outer.multiclass_flag else np.zeros(size, dtype=int)
-                )
+                classes = np.arange(size) if outer.multiclass_flag else np.zeros(size, dtype=int)
                 return (
                     np.full((size,), 0.1),
                     np.full((size,), -0.1),

@@ -148,11 +148,13 @@ def test_probe_optional_features_warning():
 
     report = probe_optional_features(import_module=fake_import)
     assert "warnings" in report
-    assert any("difficulty" in warning or "conditional" in warning for warning in report["warnings"])
+    assert any(
+        "difficulty" in warning or "conditional" in warning for warning in report["warnings"]
+    )
 
 
 def test_policy_serialization_helpers():
     policy_dict = policy_as_dict()
     serialized = serialize_policy()
     assert isinstance(policy_dict, dict)
-    assert "\"required_class\"" in serialized
+    assert '"required_class"' in serialized

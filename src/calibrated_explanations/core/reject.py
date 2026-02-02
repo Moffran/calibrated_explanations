@@ -15,6 +15,7 @@ _emitted_warning = False
 try:
     # Preferred: package-relative import when used as installed package
     from .reject.policy import RejectPolicy, is_policy_enabled  # type: ignore
+
     _emitted_warning = True
 except Exception:
     # Fallback when executing the file directly (no package context), e.g.

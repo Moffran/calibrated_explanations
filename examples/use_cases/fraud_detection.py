@@ -7,6 +7,7 @@ Outputs: JSON with factual table and calibrated probability interval.
 from __future__ import annotations
 
 import json
+
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split

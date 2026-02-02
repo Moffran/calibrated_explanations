@@ -7,18 +7,23 @@ checks .fitted / .calibrated states, and defaults to calibrated outputs.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import functools
 import importlib
 import inspect
 import json
 import logging
 import warnings
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
-from .core.exceptions import ConfigurationError, ModelNotSupportedError, NotFittedError, ValidationError
+from .core.exceptions import (
+    ConfigurationError,
+    ModelNotSupportedError,
+    NotFittedError,
+    ValidationError,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -104,7 +109,9 @@ def _emit(event_name: str, **payload: Any) -> None:
         LOGGER.debug("Telemetry hook failed: %s", exc)
 
 
-def optional_cache(enabled: bool = True, maxsize: int = 128) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def optional_cache(
+    enabled: bool = True, maxsize: int = 128
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Optional caching decorator for helper functions.
 
     This uses functools.lru_cache when enabled; otherwise, returns a no-op wrapper.
@@ -129,7 +136,7 @@ def _require_ce() -> type:
             details={"requirement": "install calibrated-explanations"},
         ) from exc
     try:
-        wrap_cls = getattr(module, "WrapCalibratedExplainer")
+        wrap_cls = module.WrapCalibratedExplainer
     except AttributeError as exc:
         raise ConfigurationError(
             CE_FIRST_POLICY["failure_messages"]["missing_library"],
@@ -198,7 +205,9 @@ def _ensure_required_attrs(wrapper: Any, required: Iterable[str]) -> None:
         )
 
 
-def _validate_wrapper_state(wrapper: Any, *, require_fitted: bool = True, require_calibrated: bool = True) -> None:
+def _validate_wrapper_state(
+    wrapper: Any, *, require_fitted: bool = True, require_calibrated: bool = True
+) -> None:
     if require_fitted and not getattr(wrapper, "fitted", False):
         raise NotFittedError(
             CE_FIRST_POLICY["failure_messages"]["not_fitted"],
@@ -298,7 +307,9 @@ def _extract_top_features(explanation: Any, top_k: int = 3) -> List[str]:
         weights = rules.get("weight", [])
         if rule_texts and weights:
             ranked = sorted(
-                zip(rule_texts, weights), key=lambda item: abs(float(item[1])), reverse=True
+                zip(rule_texts, weights, strict=False),
+                key=lambda item: abs(float(item[1])),
+                reverse=True,
             )
             return [text for text, _ in ranked[:top_k]]
     if hasattr(explanation, "rules") and isinstance(explanation.rules, Mapping):
@@ -407,7 +418,9 @@ def summarize_explanations(explanations: Any, *, top_k: int = 5) -> Mapping[str,
 def _action_suggestion(weights: List[float], rules: List[str]) -> str:
     if not weights or not rules:
         return "Review the most influential features for potential adjustments."
-    paired = sorted(zip(weights, rules), key=lambda item: abs(float(item[0])), reverse=True)
+    paired = sorted(
+        zip(weights, rules, strict=False), key=lambda item: abs(float(item[0])), reverse=True
+    )
     weight, rule = paired[0]
     direction = "increase" if weight < 0 else "decrease"
     return f"Consider how to {direction} influence from: {rule}."
@@ -449,7 +462,11 @@ def _explain_and_narrate_impl(
     mode_normalized = mode.lower().strip()
     if mode_normalized not in {"factual", "alternatives"}:
         raise ValueError("mode must be 'factual' or 'alternatives'")
-    explain_func = explainer.explain_factual if mode_normalized == "factual" else explainer.explore_alternatives
+    explain_func = (
+        explainer.explain_factual
+        if mode_normalized == "factual"
+        else explainer.explore_alternatives
+    )
     # NOTE: Explanation kwargs and prediction kwargs are intentionally separated.
     # Agents may request alternative-only knobs (e.g. ensure_coverage) that should
     # not be forwarded to predict/predict_proba.
@@ -483,7 +500,11 @@ def _explain_and_narrate_impl(
             explanation_narrative = str(explanation)
     top_features = _extract_top_features(explanation, top_k=3)
     weights = []
-    if explanation is not None and hasattr(explanation, "rules") and isinstance(explanation.rules, Mapping):
+    if (
+        explanation is not None
+        and hasattr(explanation, "rules")
+        and isinstance(explanation.rules, Mapping)
+    ):
         weights = [float(w) for w in explanation.rules.get("weight", []) if w is not None]
     action = _action_suggestion(weights, top_features)
     template = NARRATIVE_TEMPLATES.get(narrative_format, NARRATIVE_TEMPLATES["short"])
@@ -558,7 +579,9 @@ def explain_and_summarize(
         calibrated=True,
         uq_interval=uq_interval,
         threshold=threshold,
-        low_high_percentiles=tuple(low_high_percentiles) if low_high_percentiles is not None else None,
+        low_high_percentiles=tuple(low_high_percentiles)
+        if low_high_percentiles is not None
+        else None,
     )
 
     return {
@@ -665,7 +688,9 @@ def wrap_and_explain(
     }
 
 
-def enforce_ce_first_and_execute(action_callable: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+def enforce_ce_first_and_execute(
+    action_callable: Callable[..., Any], *args: Any, **kwargs: Any
+) -> Any:
     """Validate CE-first requirements before executing an action."""
 
     wrap_cls = _require_ce()

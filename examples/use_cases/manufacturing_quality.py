@@ -7,6 +7,7 @@ Outputs: JSON with factual table and prediction interval.
 from __future__ import annotations
 
 import json
+
 from sklearn.datasets import make_regression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split

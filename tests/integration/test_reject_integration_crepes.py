@@ -45,9 +45,7 @@ def test_integration_reject_breakdown_is_monotonic_in_expected_directions():
         n_redundant=0,
         random_state=0,
     )
-    X_fit, X_tmp, y_fit, y_tmp = train_test_split(
-        X, y, test_size=0.4, random_state=0, stratify=y
-    )
+    X_fit, X_tmp, y_fit, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0, stratify=y)
     X_cal, X_test, y_cal, _ = train_test_split(
         X_tmp, y_tmp, test_size=0.5, random_state=0, stratify=y_tmp
     )

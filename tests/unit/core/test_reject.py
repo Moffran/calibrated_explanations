@@ -132,9 +132,7 @@ class TestPolicyBehavior:
         """FLAG should explain all instances and tag rejection status."""
         explain_fn = make_explain_fn()
         x_input = [[1, 2], [3, 4]]
-        result = mock_orchestrator.apply_policy(
-            RejectPolicy.FLAG, x=x_input, explain_fn=explain_fn
-        )
+        result = mock_orchestrator.apply_policy(RejectPolicy.FLAG, x=x_input, explain_fn=explain_fn)
 
         assert isinstance(result, RejectResult)
         # Note: prediction may be None in mock, but explanation should be present
@@ -218,9 +216,7 @@ class TestEdgeCases:
     def test_empty_input_array(self, mock_orchestrator):
         """Empty input should be handled gracefully."""
         explain_fn = make_explain_fn()
-        result = mock_orchestrator.apply_policy(
-            RejectPolicy.FLAG, x=[], explain_fn=explain_fn
-        )
+        result = mock_orchestrator.apply_policy(RejectPolicy.FLAG, x=[], explain_fn=explain_fn)
 
         assert isinstance(result, RejectResult)
         # Empty input should still produce a result envelope
@@ -231,9 +227,7 @@ class TestEdgeCases:
         orchestrator = MockRejectOrchestrator(explainer)
         explain_fn = make_explain_fn()
 
-        result = orchestrator.apply_policy(
-            RejectPolicy.FLAG, x=[[1, 2]], explain_fn=explain_fn
-        )
+        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2]], explain_fn=explain_fn)
 
         assert isinstance(result, RejectResult)
         assert result.explanation is not None
@@ -298,7 +292,6 @@ class TestPolicyInteractions:
 
     def test_per_call_overrides_explainer_default(self):
         """Per-call reject_policy should override explainer-level default."""
-        from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
         # Create a minimal mock to test the override logic
         mock_self = SimpleNamespace()
@@ -413,9 +406,7 @@ class TestMetadataValidation:
         )
         orchestrator = MockRejectOrchestrator(explainer)
 
-        result = orchestrator.apply_policy(
-            RejectPolicy.FLAG, x=[[1, 2], [3, 4], [5, 6], [7, 8]]
-        )
+        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2], [3, 4], [5, 6], [7, 8]])
 
         assert result.metadata["reject_rate"] == 0.5
         # Verify rejected array matches expected pattern

@@ -53,7 +53,6 @@ class DummyOriginalExplainer:
     def discretize(self, x):
         return x
 
-
     def preload_lime(self):
         """Return a minimal structure compatible with :meth:`CalibratedExplanations.as_lime`."""
 

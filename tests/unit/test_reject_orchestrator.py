@@ -17,7 +17,9 @@ class DummyRejectLearner:
     def __init__(self):
         self.seeds = []
 
-    def predict_p(self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None):
+    def predict_p(
+        self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None
+    ):
         self.seeds.append(seed)
         n_rows = len(alphas)
         n_cols = alphas.shape[1] if getattr(alphas, "ndim", 1) == 2 else 2
@@ -60,7 +62,9 @@ def test_should_raise_validation_error_when_calibration_set_is_invalid():
 
 
 class DummyRejectLearnerMonotonic:
-    def predict_p(self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None):
+    def predict_p(
+        self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None
+    ):
         n = len(alphas)
         num_classes = 3
         # p-values chosen so that as epsilon decreases (confidence increases),
@@ -94,7 +98,9 @@ def test_should_have_monotonic_ambiguity_and_uncertainty_rates_when_confidence_c
 
 
 class DummyRejectLearnerAlwaysEmpty:
-    def predict_p(self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None):
+    def predict_p(
+        self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None
+    ):
         n_rows = len(alphas)
         n_cols = alphas.shape[1] if getattr(alphas, "ndim", 1) == 2 else 2
         return np.zeros((n_rows, n_cols), dtype=float)
