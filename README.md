@@ -39,36 +39,41 @@ explanation = explainer.explain_factual(x_test)      # returns calibrated rules 
 * `calibrate(x_cal, y_cal, feature_names=None)` — required: align uncertainty estimates.
 * `explain_factual(X)` — factual rules + feature importance with [low, high] bounds.
 * `explore_alternatives(X)` — counterfactual / alternative rules.
-* `predict_proba(X, uq_interval=True)` — calibrated probability with uncertainty interval.
-* `predict(X)` — point prediction.
+* `predict_proba(X[, uq_interval=True])` — calibrated probability (with uncertainty interval).
+* `predict(X[, uq_interval=True])` — point prediction (with uncertainty interval).
 
-**Outputs**: calibrated prediction intervals, per-feature importance with aleatoric & epistemic bounds, factual/alternative rule tables.
+**Outputs**: calibrated prediction intervals, per-feature importance with uncertainty bounds, factual/alternative rule tables.
 
 ### Task map (critical: regression meanings differ)
 
 **Classification (binary/multiclass)**:
-- `predict_proba(x[, ...])` or `predict_proba(x, uq_interval=True[, ...])`
+Classification in this library is calibrated using Venn-Abers predictors.
+- Calibrated probability: `predict_proba(x[, ...])`
+- Calibrated probability with uncertainty bounds using Venn-Abers: `predict_proba(x, uq_interval=True[, ...])`
+- Calibrated prediction: `predict(x[, ...])`
+- Explanations: `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
 
 **Conformal interval regression (CPS)  ← CE "regression"**:
 Regression in this library is **conformal interval regression** via **Conformal Predictive Systems (CPS)**:
-point regression + calibrated uncertainty intervals = (conformal) interval regression.
-- `predict(x, uq_interval=True, low_high_percentiles=(a, b)[, ...])`
-- You can also request CPS-controlled intervals from explanations:
-
-- `explain_factual(x, low_high_percentiles=(a, b)[, ...])`
+- CPS calibrated point regression: `predict(x[, ...])`
+- Point regression + calibrated uncertainty intervals = (conformal) interval regression: `predict(x, uq_interval=True, low_high_percentiles=(a, b)[, ...])`. Note that one-sided intervals can be obtained by setting `a=-np.Inf` or `b=np.Inf`.
+- You can also request CPS-controlled intervals from explanations: `explain_factual(x, low_high_percentiles=(a, b)[, ...])` and `explore_alternatives(x, low_high_percentiles=(a, b)[, ...])`
+- Default: `low_high_percentiles` = (5, 95) for 90% intervals.
 
 **Probabilistic regression (thresholded probability queries for y)**:
 Probabilistic regression requires assigning a `threshold`:
-- `predict_proba(x, threshold=t[, ...])` (exceedance probability for real-valued target)
-- `predict_proba(x, threshold=(low, high)[, ...])` gives **P(true value ∈ [low, high])**
+- Exceedance probability for real-valued target: `predict_proba(x, threshold=t[, ...])` gives **P(true value ≥ t)**
+- Within-spec probability for real-valued target: `predict_proba(x, threshold=(low, high)[, ...])` gives **P(true value ∈ [low, high])**
 - Add uncertainty bounds with `uq_interval=True`
+- Exceedance explanations: `explain_factual(x, threshold=t[, ...])` and `explore_alternatives(x, threshold=t[, ...])`
+- Within-spec explanations: `explain_factual(x, threshold=(low, high)[, ...])` and `explore_alternatives(x, threshold=(low, high)[, ...])`
 
 **All tasks also support (core capability)**:
 - `predict(x[, ...])` and `predict(x, uq_interval=True[, ...])`
 - `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
 
 **Common optional parameters (`[, ...]`)**:
-- `bins=...` for conditional calibration
+- `bins=...` for conditional calibration. Can also set a Mondrian Calibrator (see [crepes.extras.MondrianCategorizer](https://crepes.readthedocs.io/en/latest/crepes.extras.html#crepes.extras.MondrianCategorizer))
 - `low_high_percentiles=(a, b)` for CPS conformal interval regression intervals
 - `threshold=t` or `threshold=(low, high)` for probabilistic regression
 
