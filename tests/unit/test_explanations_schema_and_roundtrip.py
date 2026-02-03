@@ -1,5 +1,5 @@
-"""Tests for schema acceptance, validator fallback, conjunctive round-trip, and vector invariants.
-"""
+"""Tests for schema acceptance, validator fallback, conjunctive round-trip, and vector invariants."""
+
 from __future__ import annotations
 
 import types
@@ -25,7 +25,7 @@ def test_minimal_validator_rejects_missing_predict_when_jsonschema_absent(monkey
         "rules": [],
     }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         serialization.validate_payload(payload)
 
 

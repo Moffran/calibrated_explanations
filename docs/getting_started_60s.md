@@ -8,7 +8,7 @@ Use this quick path to get calibrated explanations running fast.
 
 ## 2) Do you have a calibration split?
 - **Yes** → continue.
-- **No** → split your training data: `X_proper, X_cal, y_proper, y_cal = train_test_split(...)`.
+- **No** → split your training data: `x_proper, x_cal, y_proper, y_cal = train_test_split(...)`.
 
 ## 3) Pick your task (and the control knob)
 
@@ -41,8 +41,8 @@ Reject policy note: You can opt into reject-aware behavior per-call via the `rej
 from calibrated_explanations import WrapCalibratedExplainer
 
 explainer = WrapCalibratedExplainer(model)
-explainer.fit(X_proper, y_proper)
-explainer.calibrate(X_cal, y_cal, feature_names=feature_names)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
 explanations = explainer.explain_factual(X_query)
 ```
 

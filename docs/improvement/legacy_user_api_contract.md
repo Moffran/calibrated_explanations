@@ -16,7 +16,7 @@ hard guardrails without accidentally breaking published workflows. Terminology f
   state after `fit` and `calibrate` are called.【F:docs/getting_started.md†L5-L47】
 - `.fit(X_proper_training, y_proper_training)` mirrors the scikit-learn fit
   contract before calibration.【F:docs/getting_started.md†L14-L31】
-- `.calibrate(X_calibration, y_calibration, ...)` wires calibration metadata,
+- `.calibrate(x_calibration, y_calibration, ...)` wires calibration metadata,
   and is invoked with feature names, categorical labels, and optional difficulty
   estimators across the tutorials.【F:docs/getting_started.md†L18-L31】【F:docs/getting_started.md†L294-L311】【F:notebooks/quickstart_wrap.ipynb†L685-L717】
 - Users routinely re-wrap existing learners or calibrated explainers to resume

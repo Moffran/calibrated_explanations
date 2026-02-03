@@ -134,7 +134,7 @@ def instantiate_discretizer(
             labels = y_cal
         else:
             labels = labels_arr
-    except Exception:
+    except Exception:  # adr002_allow - graceful fallback for condition labels
         labels = y_cal
 
     if discretizer_name == "binaryEntropy":

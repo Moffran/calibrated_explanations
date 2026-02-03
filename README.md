@@ -29,14 +29,14 @@ pip install calibrated-explanations
 ```python
 from calibrated_explanations import WrapCalibratedExplainer
 explainer = WrapCalibratedExplainer(model)           # wrap your sklearn-like model
-explainer.fit(X_proper, y_proper); explainer.calibrate(X_cal, y_cal)
-explanation = explainer.explain_factual(X_test)      # returns calibrated rules + uncertainty
+explainer.fit(x_proper, y_proper); explainer.calibrate(x_cal, y_cal)
+explanation = explainer.explain_factual(x_test)      # returns calibrated rules + uncertainty
 ```
 
 **Core Methods**:
 
-* `fit(X_proper, y_proper)` — train/prepare internal state (model fitting or wrapper).
-* `calibrate(X_cal, y_cal, feature_names=None)` — required: align uncertainty estimates.
+* `fit(x_proper, y_proper)` — train/prepare internal state (model fitting or wrapper).
+* `calibrate(x_cal, y_cal, feature_names=None)` — required: align uncertainty estimates.
 * `explain_factual(X)` — factual rules + feature importance with [low, high] bounds.
 * `explore_alternatives(X)` — counterfactual / alternative rules.
 * `predict_proba(X, uq_interval=True)` — calibrated probability with uncertainty interval.

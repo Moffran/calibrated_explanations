@@ -163,7 +163,7 @@ class CalibratedExplainer:
                 y_oob = self.learner.oob_prediction_
             if len(x_cal) != len(y_oob):
                 raise DataShapeError(
-                    "The length of the out-of-bag predictions does not match the length of X_cal."
+                    "The length of the out-of-bag predictions does not match the length of x_cal."
                 )
             y_cal = y_oob
         self.x_cal = x_cal
@@ -2248,7 +2248,7 @@ class CalibratedExplainer:
         ----------
         discretizer : str or discretizer object
             The discretizer to be used.
-        X_cal : array-like, optional
+        x_cal : array-like, optional
             The calibration data for the discretizer.
         y_cal : array-like, optional
             The calibration target data for the discretizer.
@@ -2368,7 +2368,7 @@ class CalibratedExplainer:
                 if reject_policy_kw is not None
                 else self.default_reject_policy
             )
-        except Exception:
+        except Exception:  # adr002_allow - graceful fallback for invalid reject policy
             policy = _RejectPolicy.NONE
 
         implicit_default_used = (
@@ -2434,7 +2434,9 @@ class CalibratedExplainer:
             logging.getLogger(__name__).info(
                 "Failed to format RejectResult.prediction; leaving raw.", exc_info=True
             )
-            warnings.warn(f"Failed to format RejectResult.prediction: {exc!s}", UserWarning)
+            warnings.warn(
+                f"Failed to format RejectResult.prediction: {exc!s}", UserWarning, stacklevel=2
+            )
 
         # Log once-per-call when an implicit default caused an envelope return
         if implicit_default_used:
@@ -2535,7 +2537,7 @@ class CalibratedExplainer:
                 if reject_policy_kw is not None
                 else self.default_reject_policy
             )
-        except Exception:
+        except Exception:  # adr002_allow - graceful fallback for invalid reject policy
             policy = _RejectPolicy.NONE
 
         implicit_default_used = (

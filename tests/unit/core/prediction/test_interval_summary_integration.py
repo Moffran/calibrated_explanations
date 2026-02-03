@@ -10,25 +10,25 @@ from calibrated_explanations.core.prediction.interval_summary import IntervalSum
 def test_interval_summary_selection_behavior():
     """Verify that different interval_summary options produce expected output differences."""
     X, y = make_classification(n_samples=50, n_features=5, random_state=42)
-    X_cal, y_cal = X[:30], y[:30]
-    X_test = X[30:35]
+    x_cal, y_cal = X[:30], y[:30]
+    x_test = X[30:35]
 
     model = LogisticRegression(random_state=42)
-    model.fit(X_cal, y_cal)
+    model.fit(x_cal, y_cal)
 
-    explainer = CalibratedExplainer(model, X_cal, y_cal, mode="classification")
+    explainer = CalibratedExplainer(model, x_cal, y_cal, mode="classification")
 
     # Check default (REGULARIZED_MEAN)
-    p_reg = explainer.predict_proba(X_test, interval_summary=IntervalSummary.REGULARIZED_MEAN)
+    p_reg = explainer.predict_proba(x_test, interval_summary=IntervalSummary.REGULARIZED_MEAN)
 
     # Check MEAN
-    p_mean = explainer.predict_proba(X_test, interval_summary=IntervalSummary.MEAN)
+    p_mean = explainer.predict_proba(x_test, interval_summary=IntervalSummary.MEAN)
 
     # Check LOWER
-    p_lower = explainer.predict_proba(X_test, interval_summary=IntervalSummary.LOWER)
+    p_lower = explainer.predict_proba(x_test, interval_summary=IntervalSummary.LOWER)
 
     # Check UPPER
-    p_upper = explainer.predict_proba(X_test, interval_summary=IntervalSummary.UPPER)
+    p_upper = explainer.predict_proba(x_test, interval_summary=IntervalSummary.UPPER)
 
     # Assert values are different where interval is non-zero
     # For binary classification, p returns probability of class 1.
@@ -58,20 +58,20 @@ def test_interval_summary_selection_behavior():
 def test_interval_summary_propagation_to_explanations():
     """Verify that interval_summary affects explanations."""
     X, y = make_classification(n_samples=50, n_features=5, random_state=42)
-    X_cal, y_cal = X[:30], y[:30]
-    X_test = X[30:31]  # Single instance
+    x_cal, y_cal = X[:30], y[:30]
+    x_test = X[30:31]  # Single instance
 
     model = LogisticRegression(random_state=42)
-    model.fit(X_cal, y_cal)
+    model.fit(x_cal, y_cal)
 
-    explainer = CalibratedExplainer(model, X_cal, y_cal, mode="classification")
+    explainer = CalibratedExplainer(model, x_cal, y_cal, mode="classification")
 
     # Explain with default
-    exp_reg = explainer.explain_factual(X_test, interval_summary=IntervalSummary.REGULARIZED_MEAN)
+    exp_reg = explainer.explain_factual(x_test, interval_summary=IntervalSummary.REGULARIZED_MEAN)
     pred_reg = exp_reg[0].prediction["predict"]
 
     # Explain with UPPER
-    exp_upper = explainer.explain_factual(X_test, interval_summary=IntervalSummary.UPPER)
+    exp_upper = explainer.explain_factual(x_test, interval_summary=IntervalSummary.UPPER)
     pred_upper = exp_upper[0].prediction["predict"]
 
     low_upper = exp_upper[0].prediction["low"]
@@ -83,7 +83,7 @@ def test_interval_summary_propagation_to_explanations():
     assert np.allclose(pred_upper, pred_reg)
 
     # Explain with LOWER
-    exp_lower = explainer.explain_factual(X_test, interval_summary=IntervalSummary.LOWER)
+    exp_lower = explainer.explain_factual(x_test, interval_summary=IntervalSummary.LOWER)
     pred_lower = exp_lower[0].prediction["predict"]
     low_lower = exp_lower[0].prediction["low"]
     high_lower = exp_lower[0].prediction["high"]

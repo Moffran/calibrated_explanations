@@ -132,8 +132,8 @@ config = (
     .build_config()
 )
 wrapper = WrapCalibratedExplainer._from_config(config)
-wrapper.calibrate(X_cal, y_cal)
-explanations = wrapper.explain_factual(X_test)
+wrapper.calibrate(x_cal, y_cal)
+explanations = wrapper.explain_factual(x_test)
 ```
 
 At runtime you can override or disable the filter via ``CE_FEATURE_FILTER``:

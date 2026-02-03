@@ -26,7 +26,7 @@ notebooks to keep probabilistic and interval narratives aligned.
 
 ```python
 probabilities, probability_interval = explainer.predict_proba(
-    X_test[:1],
+    x_test[:1],
     threshold=150,
     uq_interval=True,
 )
@@ -39,7 +39,7 @@ You can also ask for the probability that the true value lies inside a **user-de
 
 ```python
 probabilities, probability_interval = explainer.predict_proba(
-   X_test[:1],
+   x_test[:1],
    threshold=(120, 180),
    uq_interval=True,
 )
@@ -60,7 +60,7 @@ classification quickstarts.
 
 ```python
 alternatives = explainer.explore_alternatives(
-    X_test[:2],
+    x_test[:2],
     threshold=150,
 )
 ```

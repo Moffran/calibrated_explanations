@@ -13,11 +13,11 @@ def _train_classification(n_classes=2, seed=0):
     X, y = make_classification(
         n_samples=200, n_features=6, n_informative=4, n_classes=n_classes, random_state=seed
     )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
+    x_proper, x_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
     model = RandomForestClassifier(n_estimators=12, random_state=seed)
     w = WrapCalibratedExplainer(model)
-    w.fit(X_proper, y_proper)
-    w.calibrate(X_cal, y_cal, seed=seed)
+    w.fit(x_proper, y_proper)
+    w.calibrate(x_cal, y_cal, seed=seed)
     w.explainer.seed = seed
     return w, X[:6]
 
@@ -26,11 +26,11 @@ def _train_regression(seed=0):
     X, y = make_regression(
         n_samples=200, n_features=6, n_informative=4, noise=5.0, random_state=seed
     )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
+    x_proper, x_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
     model = BayesianRidge()
     w = WrapCalibratedExplainer(model)
-    w.fit(X_proper, y_proper)
-    w.calibrate(X_cal, y_cal, mode="regression", seed=seed)
+    w.fit(x_proper, y_proper)
+    w.calibrate(x_cal, y_cal, mode="regression", seed=seed)
     w.explainer.seed = seed
     # initialize reject learner for regression threshold tests
     w.initialize_reject_learner(threshold=np.median(y_cal))

@@ -112,24 +112,32 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
                 if not (len(predict) == len(low) == len(high)):
                     raise ValidationError(
                         f"{context}: vector prediction/interval length mismatch",
-                        details={"len_predict": len(predict), "len_low": len(low), "len_high": len(high)},
+                        details={
+                            "len_predict": len(predict),
+                            "len_low": len(low),
+                            "len_high": len(high),
+                        },
                     )
-                for j, (p, l, h) in enumerate(zip(predict, low, high)):
-                    if not (isinstance(p, (int, float)) and isinstance(l, (int, float)) and isinstance(h, (int, float))):
+                for j, (p, low_v, high_v) in enumerate(zip(predict, low, high, strict=False)):
+                    if not (
+                        isinstance(p, (int, float))
+                        and isinstance(low_v, (int, float))
+                        and isinstance(high_v, (int, float))
+                    ):
                         raise ValidationError(
                             f"{context}[{j}]: entries must be numeric",
-                            details={"p": p, "l": l, "h": h},
+                            details={"p": p, "low": low_v, "high": high_v},
                         )
-                    if not l <= h:
+                    if not low_v <= high_v:
                         raise ValidationError(
                             f"{context}[{j}]: interval invariant violated (low > high)",
-                            details={"low": l, "high": h, "index": j},
+                            details={"low": low_v, "high": high_v, "index": j},
                         )
                     epsilon = 1e-9
-                    if not (l - epsilon <= p <= h + epsilon):
+                    if not (low_v - epsilon <= p <= high_v + epsilon):
                         raise ValidationError(
                             f"{context}[{j}]: prediction invariant violated (predict not in [low, high])",
-                            details={"predict": p, "low": l, "high": h, "index": j},
+                            details={"predict": p, "low": low_v, "high": high_v, "index": j},
                         )
 
     check(payload.get("prediction"), "Global prediction")
@@ -143,7 +151,9 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
     rules = [
         FeatureRule(
             feature=(
-                [int(x) for x in r.get("feature")] if isinstance(r.get("feature"), (list, tuple)) else int(r.get("feature", i))
+                [int(x) for x in r.get("feature")]
+                if isinstance(r.get("feature"), (list, tuple))
+                else int(r.get("feature", i))
             ),
             rule=str(r.get("rule", "")),
             rule_weight=dict(r.get("rule_weight", {})),

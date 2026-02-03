@@ -49,13 +49,13 @@ from calibrated_explanations.core.reject.policy import RejectPolicy
 
 explainer = CalibratedExplainer(
     model,
-    X_cal,
+    x_cal,
     y_cal,
     default_reject_policy=RejectPolicy.FLAG,
 )
 
 envelope = explainer.explain_factual(
-    X_test,
+    x_test,
     reject_policy=RejectPolicy.FLAG,
 )
 
@@ -97,7 +97,7 @@ from calibrated_explanations.core.reject.policy import RejectPolicy
 
 wrapper = WrapCalibratedExplainer(model)
 wrapper.calibrate(
-    X_cal,
+    x_cal,
     y_cal,
     default_reject_policy=RejectPolicy.ONLY_ACCEPTED,
 )
@@ -199,8 +199,8 @@ import logging
 
 # Setup
 wrapper = WrapCalibratedExplainer(model)
-wrapper.fit(X_train, y_train)
-wrapper.calibrate(X_cal, y_cal, default_reject_policy=RejectPolicy.FLAG)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal, default_reject_policy=RejectPolicy.FLAG)
 
 # Production inference
 result = wrapper.predict(X_new)
@@ -227,8 +227,8 @@ from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
 wrapper = WrapCalibratedExplainer(model)
-wrapper.fit(X_train, y_train)
-wrapper.calibrate(X_cal, y_cal)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal)
 
 # Only explain confident predictions
 result = wrapper.explain_factual(X_new, reject_policy=RejectPolicy.ONLY_ACCEPTED)
@@ -252,8 +252,8 @@ from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
 wrapper = WrapCalibratedExplainer(model)
-wrapper.fit(X_train, y_train)
-wrapper.calibrate(X_cal, y_cal)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal)
 
 # Generate explanations only for rejected (uncertain) instances
 result = wrapper.explain_factual(X_new, reject_policy=RejectPolicy.ONLY_REJECTED)

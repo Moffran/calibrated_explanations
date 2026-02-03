@@ -11,7 +11,7 @@ explanations and calibration metadata.
 ```python
 import json
 
-batch = explainer.explain_factual(X_test[:10])
+batch = explainer.explain_factual(x_test[:10])
 payload = batch.to_json()
 
 with open("factual.json", "w", encoding="utf-8") as fh:

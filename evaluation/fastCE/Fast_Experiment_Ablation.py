@@ -123,11 +123,11 @@ for dataset in klara:
         debug_print(dataSet + " " + alg)
         results[dataSet][alg] = {}
 
-        X_train, X_test, y_train, y_test = train_test_split(
+        x_train, x_test, y_train, y_test = train_test_split(
             X.values, y.values, test_size=test_size, random_state=42
         )
-        X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-            X_train, y_train, test_size=1 / 3, random_state=42
+        X_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+            x_train, y_train, test_size=1 / 3, random_state=42
         )
 
         c2.fit(X_prop_train, y_prop_train)
@@ -145,17 +145,17 @@ for dataset in klara:
 
         tic = time.time()
         ce = CalibratedExplainer(
-            c2, X_cal, y_cal, feature_names=df.columns, categorical_features=categorical_features
+            c2, x_cal, y_cal, feature_names=df.columns, categorical_features=categorical_features
         )
         ct = time.time() - tic
-        abl_timer["ce_init"].append(ct / len(X_cal))
+        abl_timer["ce_init"].append(ct / len(x_cal))
 
         tic = time.time()
-        factual_explanations = ce.explain_factual(X_test)
+        factual_explanations = ce.explain_factual(x_test)
         ct = time.time() - tic
-        abl_timer["ce_explain"].append(ct / len(X_test))
+        abl_timer["ce_explain"].append(ct / len(x_test))
         ablation["ce"].append([f.feature_weights for f in factual_explanations])
-        ablation["proba"].append(c2.predict_proba(X_test)[:, 1])
+        ablation["proba"].append(c2.predict_proba(x_test)[:, 1])
 
         for factor in scale_factors:
             ablation["pce"][factor] = {}
@@ -173,7 +173,7 @@ for dataset in klara:
                     tic = time.time()
                     ce = CalibratedExplainer(
                         c2,
-                        X_cal,
+                        x_cal,
                         y_cal,
                         fast=True,
                         feature_names=df.columns,
@@ -183,14 +183,14 @@ for dataset in klara:
                         scale_factor=factor,
                     )
                     ct = time.time() - tic
-                    abl_timer["pce_init"][factor][severity][noise].append(ct / len(X_cal))
+                    abl_timer["pce_init"][factor][severity][noise].append(ct / len(x_cal))
 
                     # try:
                     # print(f'{i}:',end='\t')
                     tic = time.time()
-                    fast_explanations = ce.explain_fast(X_test)
+                    fast_explanations = ce.explain_fast(x_test)
                     ct = time.time() - tic
-                    abl_timer["pce_explain"][factor][severity][noise].append(ct / len(X_test))
+                    abl_timer["pce_explain"][factor][severity][noise].append(ct / len(x_test))
                     # print(f'{ct:.1f}',end='\t')
                     ablation["pce"][factor][severity][noise].append(
                         [f.feature_weights for f in fast_explanations]

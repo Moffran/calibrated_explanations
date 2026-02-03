@@ -28,13 +28,13 @@ def build_classification_context() -> SimpleNamespace:
         y_train,
         feature_names=breast_cancer.feature_names,
     )
-    return SimpleNamespace(explainer=explainer, X_test=x_test)
+    return SimpleNamespace(explainer=explainer, x_test=x_test)
 
 
 def test_optional_telemetry_snippets(enable_fallbacks, tmp_path):
     context = build_classification_context()
     explainer = context.explainer
-    x_test = context.X_test
+    x_test = context.x_test
 
     payload = explainer.runtime_telemetry
     pre = payload.get("preprocessor", {})

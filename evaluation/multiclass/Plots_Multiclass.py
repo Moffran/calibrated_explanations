@@ -51,10 +51,10 @@ for dataSet in [
     test_index = np.array(test_idx).flatten()
 
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
-    X_train, X_test = X[train_index, :], X[test_index, :]
+    x_train, x_test = X[train_index, :], X[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train, y_train, test_size=0.33, random_state=42, stratify=y_train
+    X_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+        x_train, y_train, test_size=0.33, random_state=42, stratify=y_train
     )
 
     print(dataSet, end=" - ", flush=True)
@@ -63,8 +63,8 @@ for dataSet in [
 
     print("Model trained", end=" - ", flush=True)
 
-    ce = CalibratedExplainer(model, X_cal, y_cal, feature_names=df.columns)
-    factual_explanations = ce.explain_factual(X_test)
+    ce = CalibratedExplainer(model, x_cal, y_cal, feature_names=df.columns)
+    factual_explanations = ce.explain_factual(x_test)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction["classes"]
         factual_explanations.plot(
@@ -81,7 +81,7 @@ for dataSet in [
 
     print("Factual Explanations done", end=" - ", flush=True)
 
-    alternative_explanations = ce.explore_alternatives(X_test)
+    alternative_explanations = ce.explore_alternatives(x_test)
     for i in range(num_to_test):
         predicted = alternative_explanations.get_explanation(i).prediction["classes"]
         alternative_explanations.plot(
@@ -92,11 +92,11 @@ for dataSet in [
 
     print("Alternative Explanations done", end=" - ", flush=True)
 
-    cal_p = model.predict(X_cal)
-    test_p = model.predict(X_test)
+    cal_p = model.predict(x_cal)
+    test_p = model.predict(x_test)
 
-    ce = CalibratedExplainer(model, X_cal, y_cal, feature_names=df.columns, bins=cal_p)
-    factual_explanations = ce.explain_factual(X_test, bins=test_p)
+    ce = CalibratedExplainer(model, x_cal, y_cal, feature_names=df.columns, bins=cal_p)
+    factual_explanations = ce.explain_factual(x_test, bins=test_p)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction["classes"]
         factual_explanations.plot(
@@ -113,7 +113,7 @@ for dataSet in [
 
     print("Mondrian Factual Explanations done", end=" - ", flush=True)
 
-    alternative_explanations = ce.explore_alternatives(X_test, bins=test_p)
+    alternative_explanations = ce.explore_alternatives(x_test, bins=test_p)
     for i in range(num_to_test):
         predicted = alternative_explanations.get_explanation(i).prediction["classes"]
         alternative_explanations.plot(

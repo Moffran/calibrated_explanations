@@ -66,7 +66,7 @@ class RejectOrchestrator:
         elif isinstance(calibration_set, (tuple, list)) and len(calibration_set) == 2:
             x_cal, y_cal = calibration_set
         else:
-            raise ValidationError("calibration_set must be a (X_cal, y_cal) pair or None")
+            raise ValidationError("calibration_set must be a (x_cal, y_cal) pair or None")
         self.explainer.reject_threshold = None
         if self.explainer.mode == "regression":
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
@@ -147,6 +147,7 @@ class RejectOrchestrator:
                         f"({exc!s}); using predict_set."
                     ),
                     UserWarning,
+                    stacklevel=2,
                 )
 
         # Fallback: use predict_set directly but force smoothing=False for determinism.
@@ -159,7 +160,7 @@ class RejectOrchestrator:
             try:
                 if hasattr(proba, "ndim") and proba.ndim == 2:
                     classes_array = np.arange(proba.shape[1])
-            except Exception:
+            except Exception:  # adr002_allow - defensive fallback for classes derivation
                 classes_array = None
 
             predict_set_kwargs = {
@@ -188,6 +189,7 @@ class RejectOrchestrator:
                         f"({exc!s}); using per-instance calls."
                     ),
                     UserWarning,
+                    stacklevel=2,
                 )
                 prediction_set = None
 
@@ -208,6 +210,7 @@ class RejectOrchestrator:
                         "shape; using per-instance calls."
                     ),
                     UserWarning,
+                    stacklevel=2,
                 )
             collected: list[np.ndarray] = []
             for i in range(expected_rows):
@@ -282,7 +285,10 @@ class RejectOrchestrator:
                     )
                 else:
                     # Fallback to full computation when legacy result is unexpected
-                    raise RuntimeError("legacy predict_reject returned unexpected shape")
+                    raise ValidationError(
+                        "legacy predict_reject returned unexpected shape",
+                        details={"legacy_result_length": len(legacy_res)},
+                    )
 
                 # Build minimal breakdown from the boolean rejected mask.
                 # We cannot infer true ambiguity/novelty without full prediction
@@ -317,9 +323,11 @@ class RejectOrchestrator:
                     "error_rate": error_rate,
                     "epsilon": 1.0 - float(confidence),
                 }
-            except Exception:
+            except Exception as exc:  # adr002_allow - graceful fallback for legacy override
                 # If the legacy override misbehaves, fall through to full computation
-                pass
+                self._logger.debug(
+                    "Legacy predict_reject override misbehaved: %s", exc, exc_info=True
+                )
 
         prediction_set, epsilon = self._compute_prediction_set(x, bins=bins, confidence=confidence)
         set_sizes = np.sum(prediction_set, axis=1)
@@ -450,6 +458,7 @@ class RejectOrchestrator:
                 warnings.warn(
                     f"Reject initialization failed; reject policy will not run ({exc!s}).",
                     UserWarning,
+                    stacklevel=2,
                 )
                 # If initialization fails, surface minimal metadata but continue
                 return RejectResult(
@@ -487,6 +496,7 @@ class RejectOrchestrator:
                 warnings.warn(
                     f"Reject policy prediction failed; returning prediction=None ({exc!s}).",
                     UserWarning,
+                    stacklevel=2,
                 )
                 prediction = None
 
@@ -524,6 +534,7 @@ class RejectOrchestrator:
                 warnings.warn(
                     f"Reject policy explanation failed; returning explanation=None ({exc!s}).",
                     UserWarning,
+                    stacklevel=2,
                 )
                 explanation = None
 

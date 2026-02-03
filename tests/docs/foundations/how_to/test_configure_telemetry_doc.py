@@ -7,7 +7,7 @@ from tests.helpers.doc_utils import run_quickstart_classification
 
 def test_configure_telemetry_snippets(enable_fallbacks, tmp_path):
     context = run_quickstart_classification()
-    factual = context.explainer.explain_factual(context.X_test[:1])
+    factual = context.explainer.explain_factual(context.x_test[:1])
     telemetry = getattr(factual, "telemetry", {})
     print(telemetry["interval_source"], telemetry["plot_source"])
     print(telemetry["uncertainty"]["calibrated_value"])

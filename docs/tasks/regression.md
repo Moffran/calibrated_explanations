@@ -28,7 +28,7 @@ The `low_high_percentiles` parameter (tuple `(low, high)`) governs the CPS inter
 ```python
 # Returns median, low (5th percentile), and high (95th percentile)
 prediction, (low, high) = explainer.predict(
-    X_test,
+    x_test,
     uq_interval=True,
     low_high_percentiles=(5, 95)
 )
@@ -42,7 +42,7 @@ You can request explanations with arbitrary confidence levels by strictly passin
 ```python
 # Explain with a 50% central interval (25th - 75th percentiles)
 explanation = explainer.explain_factual(
-    X_test,
+    x_test,
     low_high_percentiles=(25, 75)
 )
 ```

@@ -40,7 +40,7 @@
 **User-level API signature:**
 ```python
 probabilities, probability_interval = explainer.predict_proba(
-    X_test[:1],
+    x_test[:1],
     threshold=150,      # The "probabilistic" aspect: threshold probability
     uq_interval=True,   # Return interval bounds for uncertainty quantification
 )

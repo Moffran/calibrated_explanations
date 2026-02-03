@@ -49,28 +49,28 @@ from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import WrapCalibratedExplainer
 
 X, y = load_breast_cancer(return_X_y=True)
-X_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
-X_cal, X_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
+x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
+x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
 
 model = RandomForestClassifier(random_state=0)
 explainer = WrapCalibratedExplainer(model)
 
 # Fit + calibrate
-explainer.fit(X_train, y_train)
+explainer.fit(x_train, y_train)
 assert explainer.fitted
-explainer.calibrate(X_cal, y_cal)
+explainer.calibrate(x_cal, y_cal)
 assert explainer.calibrated
 
 # Predictions (calibrated)
-proba = explainer.predict_proba(X_test[:1], uq_interval=True)
+proba = explainer.predict_proba(x_test[:1], uq_interval=True)
 
 # Factual explanations + narratives + plots
-explanations = explainer.explain_factual(X_test[:2])
+explanations = explainer.explain_factual(x_test[:2])
 print(explanations[0].to_narrative(format="short"))
 explanations[0].plot()
 
 # Alternative explanations (counterfactual-style)
-alternatives = explainer.explore_alternatives(X_test[:2])
+alternatives = explainer.explore_alternatives(x_test[:2])
 print(alternatives[0].to_narrative(format="short"))
 ```
 
@@ -85,28 +85,28 @@ from sklearn.ensemble import RandomForestRegressor
 from calibrated_explanations import WrapCalibratedExplainer
 
 X, y = load_diabetes(return_X_y=True)
-X_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
-X_cal, X_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
+x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
+x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
 
 model = RandomForestRegressor(random_state=0)
 explainer = WrapCalibratedExplainer(model)
-explainer.fit(X_train, y_train)
-explainer.calibrate(X_cal, y_cal)
+explainer.fit(x_train, y_train)
+explainer.calibrate(x_cal, y_cal)
 
 # Conformal prediction intervals (default low/high percentiles)
-explanations = explainer.explain_factual(X_test[:1], low_high_percentiles=(5, 95))
+explanations = explainer.explain_factual(x_test[:1], low_high_percentiles=(5, 95))
 print(explanations[0].to_narrative(format="short"))
 
 # Probabilistic regression: threshold as scalar or interval
-prob_scalar = explainer.explain_factual(X_test[:1], threshold=150)
-prob_interval = explainer.explain_factual(X_test[:1], threshold=(100, 200))
+prob_scalar = explainer.explain_factual(x_test[:1], threshold=150)
+prob_interval = explainer.explain_factual(x_test[:1], threshold=(100, 200))
 ```
 
 ### 3.3 Conjunctions + single/batch usage
 
 ```python
 # Batch explain
-explanations = explainer.explain_factual(X_test[:5])
+explanations = explainer.explain_factual(x_test[:5])
 
 # Add conjunctions at collection level
 explanations.add_conjunctions(n_top_features=3, max_rule_size=2)
@@ -119,7 +119,7 @@ explanations[0].add_conjunctions(n_top_features=3, max_rule_size=3)
 
 ```python
 # Model-centric diagnostic plot on a batch
-explainer.plot(X_test[:50])
+explainer.plot(x_test[:50])
 ```
 
 ---
@@ -144,23 +144,23 @@ from calibrated_explanations.ce_agent_utils import (
 )
 
 X, y = load_breast_cancer(return_X_y=True)
-X_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
-X_cal, X_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
+x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
+x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
 
 model = RandomForestClassifier(random_state=0)
 wrapper = ensure_ce_first_wrapper(model)
-fit_and_calibrate(wrapper, X_train, y_train, X_cal, y_cal)
-explanations, narrative = explain_and_narrate(wrapper, X_test[:1], mode="factual")
+fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
+explanations, narrative = explain_and_narrate(wrapper, x_test[:1], mode="factual")
 print(narrative)
 
 # One-line CE-first flow
-payload = wrap_and_explain(model, X_train, y_train, X_cal, y_cal, X_test[:1])
+payload = wrap_and_explain(model, x_train, y_train, x_cal, y_cal, x_test[:1])
 print(payload["narrative"])
 
 # USP-focused flow (conjunctions + UQ + probabilistic regression metadata)
 usp = explain_and_summarize(
     wrapper,
-    X_test[:2],
+    x_test[:2],
     add_conjunctions_params={"n_top_features": 3, "max_rule_size": 2},
 )
 print(usp["summary"])
@@ -179,8 +179,8 @@ The helper includes short/long/bullet templates and exposes them via `NARRATIVE_
 ```python
 from calibrated_explanations.ce_agent_utils import explain_and_narrate
 
-explanations, short_text = explain_and_narrate(wrapper, X_test[:1], narrative_format="short")
-explanations, long_text = explain_and_narrate(wrapper, X_test[:1], narrative_format="long")
+explanations, short_text = explain_and_narrate(wrapper, x_test[:1], narrative_format="short")
+explanations, long_text = explain_and_narrate(wrapper, x_test[:1], narrative_format="long")
 ```
 
 You can also use CE-native narratives:
@@ -195,7 +195,7 @@ print(explanations[0].to_narrative(format="markdown"))
 ## 6. Plotting, conjunctions and post-processing
 
 ```python
-explanations = explainer.explain_factual(X_test[:3])
+explanations = explainer.explain_factual(x_test[:3])
 
 # Plot each explanation
 explanations[0].plot()
@@ -208,7 +208,7 @@ explanations.add_conjunctions(n_top_features=3, max_rule_size=2)
 explanations[0].add_conjunctions(n_top_features=2, max_rule_size=3)
 
 # Alternative explanations ranking (ensured / ensured-ranking)
-alt = explainer.explore_alternatives(X_test[:3], ensure_coverage=True, ensure_order=True)
+alt = explainer.explore_alternatives(x_test[:3], ensure_coverage=True, ensure_order=True)
 ```
 
 ---
@@ -224,7 +224,7 @@ from calibrated_explanations.ce_agent_utils import enforce_ce_first_and_execute
 explanations, narrative = enforce_ce_first_and_execute(
     lambda w, x: w.explain_factual(x),
     wrapper,
-    X_test[:1],
+    x_test[:1],
 )
 ```
 
@@ -292,9 +292,9 @@ Notebook patterns to reference in the OSS repo:
 ```python
 from crepes.extras import MondrianCategorizer
 
-mc = MondrianCategorizer(X_train, [0, 1])
-explainer.calibrate(X_cal, y_cal, mc=mc, bins=mc)
-explanations = explainer.explain_factual(X_test[:3], bins=mc)
+mc = MondrianCategorizer(x_train, [0, 1])
+explainer.calibrate(x_cal, y_cal, mc=mc, bins=mc)
+explanations = explainer.explain_factual(x_test[:3], bins=mc)
 ```
 
 ### Difficulty estimation for regression
@@ -303,16 +303,16 @@ explanations = explainer.explain_factual(X_test[:3], bins=mc)
 from crepes.extras import DifficultyEstimator
 
 difficulty = DifficultyEstimator()
-explainer.calibrate(X_cal, y_cal, difficulty_estimator=difficulty)
+explainer.calibrate(x_cal, y_cal, difficulty_estimator=difficulty)
 # Remove / disable by calibrating without it
-explainer.calibrate(X_cal, y_cal)
+explainer.calibrate(x_cal, y_cal)
 ```
 
 ### Reject / defer handling (demo_reject.ipynb pattern)
 
 ```python
 # Example: provide a default reject policy at calibration time
-explainer.calibrate(X_cal, y_cal, default_reject_policy={"type": "threshold", "value": 0.6})
+explainer.calibrate(x_cal, y_cal, default_reject_policy={"type": "threshold", "value": 0.6})
 ```
 
 ### Plugins (intervals, explanations, plots)

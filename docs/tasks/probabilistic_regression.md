@@ -22,7 +22,7 @@ This is technically implemented as **Thresholded Regression**: you supply a `thr
 ```python
 # Probability that y exceeds 150
 probs, (low_p, high_p) = explainer.predict_proba(
-    X_test,
+    x_test,
     threshold=150,
     uq_interval=True
 )
@@ -36,7 +36,7 @@ Calculate the probability that the true value lies **inside** a specific user-de
 ```python
 # Probability that y is between 100 and 200
 probs, (low_p, high_p) = explainer.predict_proba(
-    X_test,
+    x_test,
     threshold=(100, 200),
     uq_interval=True
 )
@@ -50,7 +50,7 @@ You can generate feature rules explaining exactly why the probability is high or
 ```python
 # Why is P(y > 150) so high?
 explanation = explainer.explain_factual(
-    X_test,
+    x_test,
     threshold=150,
 )
 ```

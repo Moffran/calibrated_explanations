@@ -20,13 +20,13 @@ Each explanation or prediction entry point supports the `reject_policy` keyword 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
-explainer = CalibratedExplainer(learner, X_cal, y_cal)
+explainer = CalibratedExplainer(learner, x_cal, y_cal)
 
 # Legacy behavior (returns CalibratedExplanations / prediction tuple)
-result = explainer.explain_factual(X_test)
+result = explainer.explain_factual(x_test)
 
 # Non-NONE policy returns a RejectResult envelope
-envelope = explainer.explain_factual(X_test, reject_policy=RejectPolicy.EXPLAIN_NON_REJECTS)
+envelope = explainer.explain_factual(x_test, reject_policy=RejectPolicy.EXPLAIN_NON_REJECTS)
 assert envelope.policy == RejectPolicy.EXPLAIN_NON_REJECTS
 ```
 
@@ -43,13 +43,13 @@ from calibrated_explanations.core.reject.policy import RejectPolicy
 
 explainer = CalibratedExplainer(
     learner,
-    X_cal,
+    x_cal,
     y_cal,
     default_reject_policy=RejectPolicy.PREDICT_AND_FLAG,
 )
 
 # Subsequent calls inherit the policy
-envelope = explainer.predict(X_test)
+envelope = explainer.predict(x_test)
 assert envelope.policy == RejectPolicy.PREDICT_AND_FLAG
 ```
 
@@ -60,9 +60,9 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 
 wrapper = WrapCalibratedExplainer(learner)
 wrapper.fit(X_fit, y_fit)
-wrapper.calibrate(X_cal, y_cal, default_reject_policy=RejectPolicy.EXPLAIN_ALL)
+wrapper.calibrate(x_cal, y_cal, default_reject_policy=RejectPolicy.EXPLAIN_ALL)
 
-envelope = wrapper.explain_factual(X_test)
+envelope = wrapper.explain_factual(x_test)
 assert envelope.policy == RejectPolicy.EXPLAIN_ALL
 ```
 
@@ -84,7 +84,7 @@ When a non-`NONE` policy is active the `RejectResult.metadata` dictionary contai
 Short example:
 
 ```python
-res = explainer.predict(X_test, reject_policy=RejectPolicy.PREDICT_AND_FLAG)
+res = explainer.predict(x_test, reject_policy=RejectPolicy.PREDICT_AND_FLAG)
 meta = res.metadata or {}
 ambig = meta.get("ambiguity_mask")
 nov = meta.get("novelty_mask")

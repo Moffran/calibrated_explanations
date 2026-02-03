@@ -22,18 +22,18 @@ from sklearn.model_selection import train_test_split
 
 # Load data
 X, y = load_iris(return_X_y=True)
-X_train, X_cal, y_train, y_cal = train_test_split(X, y, test_size=0.2)
+x_train, x_cal, y_train, y_cal = train_test_split(X, y, test_size=0.2)
 
 # Train model
 model = RandomForestClassifier()
-model.fit(X_train, y_train)
+model.fit(x_train, y_train)
 
 # Initialize explainer
-explainer = CalibratedExplainer(model, X_cal, y_cal, mode='classification')
+explainer = CalibratedExplainer(model, x_cal, y_cal, mode='classification')
 
 # Explain a test instance
-X_test = X_cal[:1]
-explanations = explainer.explain(X_test)
+x_test = x_cal[:1]
+explanations = explainer.explain(x_test)
 ```
 
 `{eval-rst}
@@ -66,8 +66,8 @@ wrapper = WrapCalibratedExplainer(model)
 wrapper.fit(X, y)
 
 # Explain
-X_test = X[:1]
-explanations = wrapper.explain(X_test)
+x_test = X[:1]
+explanations = wrapper.explain(x_test)
 ```
 
 `{eval-rst}

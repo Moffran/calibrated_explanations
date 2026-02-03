@@ -9,11 +9,11 @@ from calibrated_explanations.explanations.reject import RejectResult
 
 def _build_wrapper_classifier(seed: int = 0):
     X, y = load_breast_cancer(return_X_y=True)
-    X_proper, X_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
+    x_proper, x_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
     model = RandomForestClassifier(n_estimators=8, random_state=seed)
     w = WrapCalibratedExplainer(model)
-    w.fit(X_proper, y_proper)
-    w.calibrate(X_cal, y_cal, seed=seed)
+    w.fit(x_proper, y_proper)
+    w.calibrate(x_cal, y_cal, seed=seed)
     # deterministic reject behaviour
     w.explainer.seed = seed
     return w, X[:5]

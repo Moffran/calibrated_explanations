@@ -20,7 +20,7 @@ Calibrated Explanations wraps standard scikit-learn classifiers to produce uncer
 
 ```python
 # Predict probabilities for the positive class (binary) or all classes (multiclass)
-probs, (low, high) = explainer.predict_proba(X_test, uq_interval=True)
+probs, (low, high) = explainer.predict_proba(x_test, uq_interval=True)
 
 print(f"Probability: {probs[0, 1]:.3f} (Interval: {low[0, 1]:.3f} – {high[0, 1]:.3f})")
 ```
@@ -30,7 +30,7 @@ print(f"Probability: {probs[0, 1]:.3f} (Interval: {low[0, 1]:.3f} – {high[0, 1
 Returns the rules explaining *why* the model made this prediction, with epistemic and aleatoric uncertainty bounds on the feature weights.
 
 ```python
-explanation = explainer.explain_factual(X_test)
+explanation = explainer.explain_factual(x_test)
 ```
 
 ### 3. Explore alternatives
@@ -38,7 +38,7 @@ explanation = explainer.explain_factual(X_test)
 Finds what feature changes would be necessary to flip the prediction or increase confidence.
 
 ```python
-alternatives = explainer.explore_alternatives(X_test)
+alternatives = explainer.explore_alternatives(x_test)
 ```
 
 ## Key parameters

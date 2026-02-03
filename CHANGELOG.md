@@ -508,7 +508,7 @@ when communicating breaking or user-visible updates.
 
 ##### Function parameter renames
 The following parameters have been renamed across multiple functions and methods:
-- X_test → x
+- x_test → x
 - y_test → y
 
 ##### Wrapper keyword normalisation
@@ -644,7 +644,7 @@ Also added explicit credit files:
         - The concept of potential (uncertain) explanations is introduced. When the uncertainty interval spans across probability 0.5, an explanation is considered a potential. It will normally only be counter-potential and semi-potential, but can in some cases also be super-potential. Potential alternatives can be included or excluded from the above methods using the boolean parameter `include_potentials`.
         - `ensured_explanations` removes all alternatives except those with lower uncertainty (i.e. smaller uncertainty interval) than the original prediction.
     - Added a new form of plot for probabilistic predictions is added, clearly visualizing both the aleatoric and the epistemic uncertainty.
-      - A global plot is added, plotting all test instances with probability and uncertainty as the x- and y-axes. The area corresponding to potential (uncertain) predictions is marked. The plot can be invoked using the `plot(X_test)` or `plot(X_test, y_test)` call.
+      - A global plot is added, plotting all test instances with probability and uncertainty as the x- and y-axes. The area corresponding to potential (uncertain) predictions is marked. The plot can be invoked using the `plot(x_test)` or `plot(x_test, y_test)` call.
       - A local plot for alternative explanations, with probability and uncertainty as the x- and y-axes, is added, which can be invoked from an `AlternativeExplanation` or a `AlternativeExplanations` using `plot(style='triangular')`. The optimal use is when combined with the `filter_top` parameter (see below), to include all alternatives, as follows: `plot(style='triangular', filter_top=None)`.
     - Added prerpint and bibtex to the paper introducing _ensured_ explanations:
       - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.

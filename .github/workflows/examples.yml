@@ -50,7 +50,7 @@ jobs:
           python -m pip install scikit-learn
       - name: Run example tests
         run: |
-          python -m pytest tests/test_examples.py::test_minimal_quickstart \
+          python -m pytest --no-cov tests/test_examples.py::test_minimal_quickstart \
             tests/test_examples.py::test_metadata_json_schema \
             tests/test_examples.py::test_examples_index_entries \
             tests/test_examples.py::test_tool_description_yaml \

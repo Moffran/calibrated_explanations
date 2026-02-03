@@ -18,8 +18,8 @@ basic_workflow:
   - "1. Split data into train, calibration, test (or use cross-validation)"
   - "2. Train model on training/proper set"
   - "3. Initialize: WrapCalibratedExplainer(model)"
-  - "4. Fit wrapper/internal model: explainer.fit(X_proper, y_proper)"
-  - "5. Calibrate: explainer.calibrate(X_cal, y_cal, feature_names=...)"
+  - "4. Fit wrapper/internal model: explainer.fit(x_proper, y_proper)"
+  - "5. Calibrate: explainer.calibrate(x_cal, y_cal, feature_names=...)"
   - "6. Explain: explainer.explain_factual(X_test) or explainer.explore_alternatives(X_test)"
   - "7. Extract uncertainty: explainer.predict_proba(X, uq_interval=True) or explanation.tables"
 common_parameters:

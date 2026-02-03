@@ -80,13 +80,13 @@ If your code previously relied on the default behavior (condition labels derived
 
 ```python
 # Before (implicitly used "observed")
-explainer = CalibratedExplainer(model, X_cal, y_cal)
+explainer = CalibratedExplainer(model, x_cal, y_cal)
 
 # After (explicitly retain old behavior)
-explainer = CalibratedExplainer(model, X_cal, y_cal, condition_source="observed")
+explainer = CalibratedExplainer(model, x_cal, y_cal, condition_source="observed")
 
 # New default behavior (recommended)
-explainer = CalibratedExplainer(model, X_cal, y_cal)  # Uses "prediction"
+explainer = CalibratedExplainer(model, x_cal, y_cal)  # Uses "prediction"
 ```
 
 A warning is issued when `condition_source` is not provided, guiding users to the new default. This change does not affect existing code that explicitly sets `condition_source="observed"`. For more details, see the [API documentation](../api/calibrated_explainer.md).

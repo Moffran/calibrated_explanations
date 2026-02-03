@@ -16,9 +16,9 @@
 → `WrapCalibratedExplainer.explain_factual()` and extract uncertainty from returned table
 
 ## Minimal agent template
-1. Verify `X_cal` & `y_cal` (calibration set) exist.
+1. Verify `x_cal` & `y_cal` (calibration set) exist.
 2. Instantiate wrapper: `explainer = WrapCalibratedExplainer(model)`
-3. `explainer.fit(X_proper, y_proper)` then `explainer.calibrate(X_cal, y_cal, feature_names=...)`
+3. `explainer.fit(x_proper, y_proper)` then `explainer.calibrate(x_cal, y_cal, feature_names=...)`
 4. Select method:
    - factual → `explain_factual(X_query)`
    - alternatives → `explore_alternatives(X_query)`

@@ -471,8 +471,8 @@ class CalibratedExplanation(ABC):
         Examples
         --------
         >>> from calibrated_explanations import CalibratedExplainer
-        >>> explainer = CalibratedExplainer(model, X_train, y_train)
-        >>> explanations = explainer.explain_factual(X_test)
+        >>> explainer = CalibratedExplainer(model, x_train, y_train)
+        >>> explanations = explainer.explain_factual(x_test)
         >>> single_explanation = explanations[0]
         >>> narrative = single_explanation.to_narrative(
         ...     template_path="exp.yaml",

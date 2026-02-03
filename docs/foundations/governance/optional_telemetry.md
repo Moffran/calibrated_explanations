@@ -62,7 +62,7 @@ even when external plugins are not installed:
 if hasattr(explainer, "explain_fast") and hasattr(explainer.explainer, "is_fast"):
     try:
         if explainer.explainer.is_fast():
-            explainer.explain_fast(X_test[:5], _use_plugin=False)
+            explainer.explain_fast(x_test[:5], _use_plugin=False)
             fast_meta = explainer.runtime_telemetry
             print(fast_meta.get("interval_source"))
     except Exception:
@@ -119,7 +119,7 @@ from prometheus_client import Gauge
 logger = logging.getLogger("calibrated_explanations.telemetry")
 interval_source = Gauge("ce_interval_source", "Active interval calibrator", ["identifier"])
 
-batch = explainer.explain_factual(X_test[:10])
+batch = explainer.explain_factual(x_test[:10])
 payload = getattr(batch, "telemetry", {})
 
 logger.info("explain_factual", extra={"telemetry": payload})

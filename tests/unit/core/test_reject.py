@@ -269,16 +269,14 @@ class TestEdgeCases:
         # Test EXPLAIN_REJECTS
         explain_fn_rejects = make_explain_fn()
         x_input = [[i, i] for i in range(5)]
-        result_rejects = orchestrator.apply_policy(
+        orchestrator.apply_policy(
             RejectPolicy.ONLY_REJECTED, x=x_input, explain_fn=explain_fn_rejects
         )
         assert len(explain_fn_rejects.calls[0][0]) == 3  # 3 rejected
 
         # Test EXPLAIN_NON_REJECTS
         explain_fn_non = make_explain_fn()
-        result_non = orchestrator.apply_policy(
-            RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=explain_fn_non
-        )
+        orchestrator.apply_policy(RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=explain_fn_non)
         assert len(explain_fn_non.calls[0][0]) == 2  # 2 non-rejected
 
 

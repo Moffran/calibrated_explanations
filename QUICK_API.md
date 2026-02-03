@@ -24,9 +24,9 @@ Optional parameters (`[, ...]`) across methods:
 from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import WrapCalibratedExplainer
 explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-explainer.fit(X_proper, y_proper)
-explainer.calibrate(X_cal, y_cal, feature_names=feature_names)
-factual = explainer.explain_factual(X_test[:1])
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
+factual = explainer.explain_factual(x_test[:1])
 print(factual[0])
 ```
 
@@ -49,8 +49,8 @@ controlled using `low_high_percentiles`.
 from sklearn.linear_model import BayesianRidge
 from calibrated_explanations import WrapCalibratedExplainer
 explainer = WrapCalibratedExplainer(BayesianRidge())
-explainer.fit(X_proper, y_proper)
-explainer.calibrate(X_cal, y_cal, mode='regression', feature_names=feature_names)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, mode='regression', feature_names=feature_names)
 
 # point + CPS interval (arbitrary intervals via percentiles)
 pred, (low, high) = explainer.predict(
@@ -90,7 +90,7 @@ print("P(100 <= y <= 140) =", p_in[0], "interval =", ilo[0], ihi[0])
 
 ```python
 # returns alternative rule table(s) showing what would change the decision
-alternatives = explainer.explore_alternatives(X_test[:3])
+alternatives = explainer.explore_alternatives(x_test[:3])
 ```
 
 Notes: Keep examples deterministic by setting `random_state` where possible. All quickstarts use
@@ -109,9 +109,9 @@ opt-in only — practitioner-facing docs and examples focus on `factual` and
 from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import WrapCalibratedExplainer
 explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-explainer.fit(X_proper, y_proper)
-explainer.calibrate(X_cal, y_cal, feature_names=feature_names)
-factual = explainer.explain_factual(X_test[:1])
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
+factual = explainer.explain_factual(x_test[:1])
 print(factual[0])
 ```
 
@@ -121,16 +121,16 @@ print(factual[0])
 from sklearn.linear_model import BayesianRidge
 from calibrated_explanations import WrapCalibratedExplainer
 explainer = WrapCalibratedExplainer(BayesianRidge())
-explainer.fit(X_proper, y_proper)
-explainer.calibrate(X_cal, y_cal, mode='regression', feature_names=feature_names)
-explanation = explainer.explain_factual(X_test)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, mode='regression', feature_names=feature_names)
+explanation = explainer.explain_factual(x_test)
 ```
 
 ## Alternative explanations
 
 ```python
 # returns alternative rule table(s) showing what would change the decision
-alternatives = explainer.explore_alternatives(X_test[:3])
+alternatives = explainer.explore_alternatives(x_test[:3])
 ```
 
 ## Get calibrated probability + interval

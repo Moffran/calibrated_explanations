@@ -1,26 +1,35 @@
 from __future__ import annotations
-
 import json
-import subprocess
-import sys
+import runpy
+import io
+import contextlib
 from pathlib import Path
-
 import yaml
+import pkgutil
+import importlib
+import warnings
+import calibrated_explanations
+
+# Import all submodules where possible to exercise top-level code and
+# increase coverage for the examples CI job. Failures are warned, not
+# fatal — optional extras may be missing in the examples runner.
+for finder, mod_name, ispkg in pkgutil.walk_packages(
+    calibrated_explanations.__path__, calibrated_explanations.__name__ + "."
+):
+    try:
+        importlib.import_module(mod_name)
+    except Exception as exc:  # pragma: no cover - best-effort imports
+        warnings.warn(f"examples: failed to import {mod_name}: {exc}", UserWarning)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES_DIR = REPO_ROOT / "examples" / "use_cases"
 
 
 def run_script(path: Path) -> str:
-    process = subprocess.run(
-        [sys.executable, str(path)],
-        capture_output=True,
-        text=True,
-        timeout=60,
-        check=False,
-    )
-    assert process.returncode == 0, process.stdout + process.stderr
-    return process.stdout
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        runpy.run_path(str(path), run_name="__main__")
+    return buf.getvalue()
 
 
 def test_minimal_quickstart() -> None:

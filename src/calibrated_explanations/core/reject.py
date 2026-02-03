@@ -17,7 +17,7 @@ try:
     from .reject.policy import RejectPolicy, is_policy_enabled  # type: ignore
 
     _emitted_warning = True
-except Exception:
+except Exception:  # adr002_allow - import fallback for different package contexts
     # Fallback when executing the file directly (no package context), e.g.
     # tests that import the module from its file path. Try absolute import.
     try:
@@ -25,7 +25,7 @@ except Exception:
             RejectPolicy,
             is_policy_enabled,
         )
-    except Exception:
+    except Exception:  # adr002_allow - re-raises; passthrough
         # Let import errors propagate for unexpected situations
         raise
 

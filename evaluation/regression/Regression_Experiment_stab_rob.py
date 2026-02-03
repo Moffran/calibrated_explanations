@@ -108,33 +108,33 @@ try:
         debug_print(dataSet + " " + alg)
         results[dataSet][alg] = {}
 
-        X_trainCal, X_test, y_trainCal, y_test = train_test_split(
+        X_trainCal, x_test, y_trainCal, y_test = train_test_split(
             X.values, y_normalized, test_size=test_size, random_state=42
         )
-        X_train, X_cal, y_train, y_cal = train_test_split(
+        x_train, x_cal, y_train, y_cal = train_test_split(
             X_trainCal, y_trainCal, test_size=500, random_state=42
         )
-        # X_train = X_train[:1000]
+        # x_train = x_train[:1000]
         # y_train = y_train[:1000]
 
-        model.fit(X_train, y_train)
+        model.fit(x_train, y_train)
 
-        p_test = model.predict(X_test)
-        p_cal = model.predict(X_cal)
+        p_test = model.predict(x_test)
+        p_cal = model.predict(x_cal)
         r_test = y_test - p_test
         r_cal = y_cal - p_cal
 
-        de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
-        de_std = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
+        de_dist = DifficultyEstimator().fit(X=x_train[:500], scaler=True)
+        de_std = DifficultyEstimator().fit(X=x_train[:500], y=y_train[:500], scaler=True)
         de_abs = DifficultyEstimator().fit(
-            X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True
+            X=x_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True
         )
-        de_var = DifficultyEstimator().fit(X=X_train[:500], learner=model, scaler=True)
+        de_var = DifficultyEstimator().fit(X=x_train[:500], learner=model, scaler=True)
 
-        s_cal_dist = de_dist.apply(X_cal)
-        s_cal_std = de_std.apply(X_cal)
-        s_cal_abs = de_abs.apply(X_cal)
-        s_cal_var = de_var.apply(X_cal)
+        s_cal_dist = de_dist.apply(x_cal)
+        s_cal_std = de_std.apply(x_cal)
+        s_cal_abs = de_abs.apply(x_cal)
+        s_cal_var = de_var.apply(x_cal)
 
         cps_none = ConformalPredictiveSystem().fit(residuals=r_cal)
         cps_dist = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_dist)
@@ -204,21 +204,21 @@ try:
         i = 0
         while i < num_rep:
             print(f"{i+1}:", end="\n", flush=True)
-            ce = CalibratedExplainer(model, X_cal, y_cal, mode="regression", random_state=i)
+            ce = CalibratedExplainer(model, x_cal, y_cal, mode="regression", random_state=i)
             # print(f'no normalization:{}',end=' ')
-            se = shap.Explainer(lambda x: model.predict(x), X_cal, seed=i)  # pylint: disable=unnecessary-lambda
-            explain_shap(se, X_test[:1])  # initialization call, to avoid overhead in first call
-            le = LimeTabularExplainer(X_cal, mode="regression", random_state=i)
+            se = shap.Explainer(lambda x: model.predict(x), x_cal, seed=i)  # pylint: disable=unnecessary-lambda
+            explain_shap(se, x_test[:1])  # initialization call, to avoid overhead in first call
+            le = LimeTabularExplainer(x_cal, mode="regression", random_state=i)
 
             tic = time.time()
-            explanations = explain_shap(se, X_test)
+            explanations = explain_shap(se, x_test)
             ct = time.time() - tic
             stab_timer["shap_base"].append(ct)
             print(f"bs{ct:.1f}", end=" ", flush=True)
             stability["shap_base"].append(explanations)
 
             tic = time.time()
-            explanations = explain_lime(le, lambda x: model.predict(x), X_test)  # pylint: disable=unnecessary-lambda
+            explanations = explain_lime(le, lambda x: model.predict(x), x_test)  # pylint: disable=unnecessary-lambda
             ct = time.time() - tic
             stab_timer["lime_base"].append(ct)
             print(f"bl{ct:.1f}", end="\n", flush=True)
@@ -244,46 +244,46 @@ try:
                 else:
                     letter = " "
                     predictor = predictor_none
-                se = shap.Explainer(predictor, X_cal, seed=i)
-                explain_shap(se, X_test[:1])  # initialization call, to avoid overhead in first call
+                se = shap.Explainer(predictor, x_cal, seed=i)
+                explain_shap(se, x_test[:1])  # initialization call, to avoid overhead in first call
 
                 tic = time.time()
-                explanations = explain_shap(se, X_test)
+                explanations = explain_shap(se, x_test)
                 ct = time.time() - tic
                 stab_timer["shap" + norm].append(ct)
                 print(f"{letter}s{ct:.1f}", end=" ", flush=True)
                 stability["shap" + norm].append(explanations)
 
                 tic = time.time()
-                explanations = explain_lime(le, predictor, X_test)  # pylint: disable=unnecessary-lambda
+                explanations = explain_lime(le, predictor, x_test)  # pylint: disable=unnecessary-lambda
                 ct = time.time() - tic
                 stab_timer["lime" + norm].append(ct)
                 print(f"{letter}l{ct:.1f}", end=" ", flush=True)
                 stability["lime" + norm].append(explanations)
 
                 tic = time.time()
-                explanations = ce.explain_factual(X_test)
+                explanations = ce.explain_factual(x_test)
                 ct = time.time() - tic
                 stab_timer["ce" + norm].append(ct)
                 print(f"{letter}f{ct:.1f}", end=" ", flush=True)
                 stability["ce" + norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explore_alternatives(X_test)
+                explanations = ce.explore_alternatives(x_test)
                 ct = time.time() - tic
                 stab_timer["cce" + norm].append(ct)
                 print(f"{letter}c{ct:.1f}", end=" ", flush=True)
                 stability["cce" + norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explain_factual(X_test, threshold=0.5)
+                explanations = ce.explain_factual(x_test, threshold=0.5)
                 ct = time.time() - tic
                 stab_timer["pce" + norm].append(ct)
                 print(f"{letter}pf{ct:.1f}", end=" ", flush=True)
                 stability["pce" + norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explore_alternatives(X_test, threshold=0.5)
+                explanations = ce.explore_alternatives(x_test, threshold=0.5)
                 ct = time.time() - tic
                 stab_timer["pcce" + norm].append(ct)
                 print(f"{letter}pc{ct:.1f}", end="\n", flush=True)
@@ -303,24 +303,24 @@ try:
             print(f"{i+1}:", end="\n", flush=True)
             np.random.seed(i)
             model = RandomForestRegressor(n_estimators=100, oob_score=True, random_state=i)
-            X_train, X_cal, y_train, y_cal = train_test_split(
+            x_train, x_cal, y_train, y_cal = train_test_split(
                 X_trainCal, y_trainCal, test_size=500, random_state=i
             )
-            # X_train = X_train[:1000]
+            # x_train = x_train[:1000]
             # y_train = y_train[:1000]
 
-            model.fit(X_train, y_train)
-            de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
-            de_std = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
+            model.fit(x_train, y_train)
+            de_dist = DifficultyEstimator().fit(X=x_train[:500], scaler=True)
+            de_std = DifficultyEstimator().fit(X=x_train[:500], y=y_train[:500], scaler=True)
             de_abs = DifficultyEstimator().fit(
-                X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True
+                X=x_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True
             )
-            de_var = DifficultyEstimator().fit(X=X_train[:500], learner=model, scaler=True)
+            de_var = DifficultyEstimator().fit(X=x_train[:500], learner=model, scaler=True)
 
-            s_cal_dist = de_dist.apply(X_cal)
-            s_cal_std = de_std.apply(X_cal)
-            s_cal_abs = de_abs.apply(X_cal)
-            s_cal_var = de_var.apply(X_cal)
+            s_cal_dist = de_dist.apply(x_cal)
+            s_cal_std = de_std.apply(x_cal)
+            s_cal_abs = de_abs.apply(x_cal)
+            s_cal_var = de_var.apply(x_cal)
 
             cps_none = ConformalPredictiveSystem().fit(residuals=r_cal)
             cps_dist = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_dist)
@@ -370,22 +370,22 @@ try:
                 axis=1,
             )
 
-            ce = CalibratedExplainer(model, X_cal, y_cal, mode="regression", random_state=i)
-            robustness["predict"].append(model.predict(X_test))
+            ce = CalibratedExplainer(model, x_cal, y_cal, mode="regression", random_state=i)
+            robustness["predict"].append(model.predict(x_test))
 
-            se = shap.Explainer(lambda x: model.predict(x), X_cal, seed=i)  # pylint: disable=unnecessary-lambda
-            explain_shap(se, X_test[:1])  # initialization call, to avoid overhead in first call
-            le = LimeTabularExplainer(X_cal, mode="regression", random_state=i)
+            se = shap.Explainer(lambda x: model.predict(x), x_cal, seed=i)  # pylint: disable=unnecessary-lambda
+            explain_shap(se, x_test[:1])  # initialization call, to avoid overhead in first call
+            le = LimeTabularExplainer(x_cal, mode="regression", random_state=i)
 
             tic = time.time()
-            explanations = explain_shap(se, X_test)
+            explanations = explain_shap(se, x_test)
             ct = time.time() - tic
             rob_timer["shap_base"].append(ct)
             print(f"bs{ct:.1f}", end=" ", flush=True)
             robustness["shap_base"].append(explanations)
 
             tic = time.time()
-            explanations = explain_lime(le, lambda x: model.predict(x), X_test)  # pylint: disable=unnecessary-lambda
+            explanations = explain_lime(le, lambda x: model.predict(x), x_test)  # pylint: disable=unnecessary-lambda
             ct = time.time() - tic
             rob_timer["lime_base"].append(ct)
             print(f"bl{ct:.1f}", end="\n", flush=True)
@@ -413,46 +413,46 @@ try:
                 else:
                     letter = " "
                     predictor = predictor_none
-                se = shap.Explainer(predictor, X_cal, seed=i)
-                explain_shap(se, X_test[:1])  # initialization call, to avoid overhead in first call
+                se = shap.Explainer(predictor, x_cal, seed=i)
+                explain_shap(se, x_test[:1])  # initialization call, to avoid overhead in first call
 
                 tic = time.time()
-                explanations = explain_shap(se, X_test)
+                explanations = explain_shap(se, x_test)
                 ct = time.time() - tic
                 rob_timer["shap" + norm].append(ct)
                 print(f"{letter}s{ct:.1f}", end=" ", flush=True)
                 robustness["shap" + norm].append(explanations)
 
                 tic = time.time()
-                explanations = explain_lime(le, predictor, X_test)  # pylint: disable=unnecessary-lambda
+                explanations = explain_lime(le, predictor, x_test)  # pylint: disable=unnecessary-lambda
                 ct = time.time() - tic
                 rob_timer["lime" + norm].append(ct)
                 print(f"{letter}l{ct:.1f}", end=" ", flush=True)
                 robustness["lime" + norm].append(explanations)
 
                 tic = time.time()
-                explanations = ce.explain_factual(X_test)
+                explanations = ce.explain_factual(x_test)
                 ct = time.time() - tic
                 rob_timer["ce" + norm].append(ct)
                 print(f"{letter}f{ct:.1f}", end=" ", flush=True)
                 robustness["ce" + norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explore_alternatives(X_test)
+                explanations = ce.explore_alternatives(x_test)
                 ct = time.time() - tic
                 rob_timer["cce" + norm].append(ct)
                 print(f"{letter}c{ct:.1f}", end=" ", flush=True)
                 robustness["cce" + norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explain_factual(X_test, threshold=0.5)
+                explanations = ce.explain_factual(x_test, threshold=0.5)
                 ct = time.time() - tic
                 rob_timer["pce" + norm].append(ct)
                 print(f"{letter}pf{ct:.1f}", end=" ", flush=True)
                 robustness["pce" + norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explore_alternatives(X_test, threshold=0.5)
+                explanations = ce.explore_alternatives(x_test, threshold=0.5)
                 ct = time.time() - tic
                 rob_timer["pcce" + norm].append(ct)
                 print(f"{letter}pc{ct:.1f}", end="\n", flush=True)

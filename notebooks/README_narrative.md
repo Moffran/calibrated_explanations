@@ -24,7 +24,7 @@ from calibrated_explanations import CalibratedExplainer
 
 # Generate narratives
 explanations_df = ce.explain_with_narrative(
-    X_test[:5],
+    x_test[:5],
     expertise_level=("beginner", "intermediate", "advanced")
 )
 ```
@@ -35,7 +35,7 @@ This method is called on a `CalibratedExplanations` object (returned by `explain
 
 ```python
 # Generate factual explanations first
-factual_explanations = ce.explain_factual(X_test)
+factual_explanations = ce.explain_factual(x_test)
 
 # Convert to narrative
 narratives = factual_explanations.to_narrative(

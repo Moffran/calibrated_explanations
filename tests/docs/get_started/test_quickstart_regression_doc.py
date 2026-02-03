@@ -14,7 +14,7 @@ def test_quickstart_regression_snippet_output(enable_fallbacks, capsys):
 
 def test_quickstart_regression_metadata(enable_fallbacks):
     context = run_quickstart_regression()
-    batch = context.explainer.explore_alternatives(context.X_test[:3], threshold=150)
+    batch = context.explainer.explore_alternatives(context.x_test[:3], threshold=150)
     telemetry = getattr(batch, "telemetry", {})
     assert telemetry.get("task") == "regression"
     uncertainty = telemetry.get("uncertainty", {})
