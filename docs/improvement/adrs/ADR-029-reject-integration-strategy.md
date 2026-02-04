@@ -182,7 +182,7 @@ These members cover common integration patterns; additional policies may be adde
 
 ## Implementation plan (recommended)
 
-1. Publish the clarified ADR (this document) and cross-link it from `RELEASE_PLAN_v1.md` and v0.10.2 release documentation.
+1. Publish the clarified ADR (this document) and cross-link it from `RELEASE_PLAN_v1.md` and v0.10.3 release documentation.
 2. Define `RejectPolicy` enum in `src/calibrated_explanations/core/reject.py` (or a closely related module) with the initial members listed above and docstrings explaining semantics.
 3. Define a `RejectResult` envelope dataclass in `src/calibrated_explanations/explanations/reject.py` that contains at minimum: `prediction` (optional), `explanation` (optional), `rejected: bool`, `policy: RejectPolicy`, and `metadata`.
 4. Add a `RejectOrchestrator` component (new `core/prediction/reject_orchestrator.py`) that:

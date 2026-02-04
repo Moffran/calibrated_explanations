@@ -5,7 +5,7 @@ description: How to drive per-call and explainer-level reject policies.
 
 # Reject Policy Usage
 
-This document captures the v0.10.2 guidance for opting into ADR-029’s reject integration via the new `RejectPolicy` enum. The goal is to preserve the legacy `reject=False` behavior (policy `NONE`) while allowing either per-call overrides or explainer-level defaults that implicitly enable reject orchestration when a non-`NONE` policy is selected.
+This document captures the v0.10.3 guidance for opting into ADR-029’s reject integration via the new `RejectPolicy` enum. The goal is to preserve the legacy `reject=False` behavior (policy `NONE`) while allowing either per-call overrides or explainer-level defaults that implicitly enable reject orchestration when a non-`NONE` policy is selected.
 
 ## Overview
 
