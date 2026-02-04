@@ -201,3 +201,4 @@ evaluation/experimental/
 .github/private_member_allowlist.json.backup
 CLAUDE.md
 .claude/settings.local.json
+file.diff

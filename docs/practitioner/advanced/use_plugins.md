@@ -13,6 +13,53 @@ FAST implementations in the default fallback chains for `factual` or
 `alternative` explanations — you must explicitly request FAST via the
 `fast_plugin` argument or `CE_EXPLANATION_PLUGIN_FAST` / `CE_INTERVAL_PLUGIN_FAST`.
 
+## FAST Explanations
+
+```{admonition} Status: Experimental
+:class: warning
+
+FAST explanations are an **experimental** feature. Use them only after validating
+your standard factual/alternative workflows. They are not recommended for production
+without thorough testing.
+```
+
+FAST explanations provide accelerated rule generation through sampling strategies,
+trading some detail for significantly improved speed.
+
+### When to Use FAST
+
+- **Large batch processing**: When explaining thousands of instances
+- **Real-time applications**: When latency constraints are tight
+- **Exploratory analysis**: When approximate explanations suffice
+
+### Trade-offs
+
+| Aspect | Standard Explanations | FAST Explanations |
+| :--- | :--- | :--- |
+| Speed | Baseline | 2-10x faster |
+| Detail | Full perturbation analysis | Sampled perturbations |
+| Calibration | Full conformal guarantees | Approximate coverage |
+| Stability | Deterministic | May vary between runs |
+
+### Quick Start
+
+```python
+# Method 1: Use fast=True kwarg (preferred)
+explanation = explainer.explain_factual(x_test, fast=True)
+
+# Method 2: Use explain_fast directly
+fast_explanation = explainer.explain_fast(x_test)
+```
+
+### Research Background
+
+FAST explanations are documented in:
+
+> Löfström, H., et al. (2024). Fast Calibrated Explanations: Efficient and
+> Uncertainty-Aware Explanations for Machine Learning Models.
+> In: xAI 2024. Lecture Notes in Computer Science.
+> [DOI: 10.1007/978-3-031-44064-9_18](https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16)
+
 ## Install and register
 
 Install the curated bundle and register the FAST plugins when needed:

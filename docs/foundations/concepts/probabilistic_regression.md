@@ -12,6 +12,32 @@ notebooks to keep probabilistic and interval narratives aligned.
 > and threshold-based decision boundaries. See the [ADR-021 Terminology section](../../improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 > for terminology guidance.
 
+## Two Regression Modes
+
+Calibrated Explanations supports **two distinct regression modes** that answer different questions:
+
+| Mode | API Signal | Returns | Question Answered |
+|------|-----------|---------|-------------------|
+| **Conformal Interval Regression** | `predict(x, uq_interval=True, low_high_percentiles=...)` | Point estimate + CPS interval | "Where will y fall?" |
+| **Probabilistic Regression** | `predict_proba(x, threshold=...)` | Probability P(y ≤ t) or P(low < y ≤ high) | "What's the probability y meets my threshold?" |
+
+### Key Semantic Difference
+
+* **Interval regression** answers: "Give me a range where y is likely to be" (conformal percentiles)
+* **Probabilistic regression** answers: "What's the probability y satisfies my condition?" (calibrated probability via CPS + Venn-Abers)
+
+Both modes can be used on the same explainer; the `threshold` parameter activates probabilistic mode.
+
+```{admonition} Common Confusion
+:class: warning
+
+These are **not** the same thing:
+* Interval regression returns a **numeric range** (e.g., [120, 180])
+* Probabilistic regression returns a **probability** (e.g., P(y ≤ 150) = 0.73)
+
+The interval tells you *where* the value will be; the probability tells you *how likely* a condition is met.
+```
+
 ## Calibrated probabilities and intervals
 
 1. Start with the {doc}`../../get-started/quickstart_regression` flow or the

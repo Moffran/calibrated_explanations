@@ -45,8 +45,67 @@ Adopt an audience-led documentation structure anchored on three journeys—pract
 4. Consolidate research content under `docs/researcher/` and update cross-links across the repository.
 5. Maintain parity in future changes by requiring PR reviewers to verify classification/regression coverage and interpretation-first framing.
 
+## Capability Coverage Rule
+
+Every documented capability MUST have:
+
+1. An entry in the **Capability Manifest** ({doc}`../tasks/capabilities`)
+2. An **audience tag** (Practitioner, Researcher, or Advanced)
+3. A **link to the primary entry point** documentation
+4. At least one **code example** in a quickstart or playbook
+
+### Capability Audit Checklist
+
+When adding a new capability:
+
+- [ ] Add row to Capability Manifest with description and audience tag
+- [ ] Create or update entry point documentation
+- [ ] Add cross-references from relevant audience hubs
+- [ ] Ensure at least one runnable code example exists
+
+### Coverage Verification
+
+PR reviewers should verify:
+
+- New capabilities appear in the Capability Manifest
+- Existing capabilities remain linked and documented
+- Audience tags are accurate and consistent
+
+## Terminology Governance
+
+### Canonical Terms
+
+Use these terms consistently in user-facing documentation:
+
+| Canonical Term | Avoid | Rationale |
+|----------------|-------|-----------|
+| uncertainty interval | credible interval | Frequentist construct, not Bayesian |
+| probabilistic regression | thresholded regression (user-facing) | User clarity; internal code may use either |
+| calibrated probability | raw probability | Emphasizes the calibration step |
+| prediction interval | confidence interval (for predictions) | Avoids confusion with parameter CIs |
+
+### Enforcement
+
+- README, PyPI description, and quickstarts use canonical terms only
+- ADRs and technical architecture docs may use implementation terms with clarifying notes
+- PR reviews should flag terminology drift in user-facing content
+- The terminology guide ({doc}`../foundations/concepts/terminology`) is the authoritative reference
+
+### Guarantees & Assumptions
+
+Every entry point (README, quickstarts, task pages) should include a "Guarantees & Assumptions" box that clarifies:
+
+- What calibration requirements apply
+- What the intervals guarantee (coverage, bounds)
+- What assumptions must hold (exchangeability, distribution match)
+- Links to formal semantics (ADR-021)
+
 ## References
+
 - Documentation Overhaul Blueprint (docs/improvement/documentation_overhaul.md)
 - ADR-012: Documentation & Gallery Build Policy
 - Standard-002: Code Documentation Standard
 - ADR-026: Explanation Plugin Semantics
+- ADR-021: Calibrated Interval Semantics
+- Capability Manifest: {doc}`../tasks/capabilities`
+- Terminology Guide: {doc}`../foundations/concepts/terminology`

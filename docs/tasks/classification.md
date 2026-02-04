@@ -41,7 +41,26 @@ Finds what feature changes would be necessary to flip the prediction or increase
 alternatives = explainer.explore_alternatives(x_test)
 ```
 
+## Multiclass Semantics: What is Explained
+
+For multiclass classification, explanations are generated for the **predicted class** by default:
+
+* **Factual explanations**: Show why the model predicted the specific class it chose
+* **Alternative explanations**: Show what would change the prediction to a different class
+* **Probability intervals**: Returned per-class via `predict_proba(x, uq_interval=True)`
+
+```python
+# Get probabilities for all classes with uncertainty
+probs, (low, high) = explainer.predict_proba(x_test, uq_interval=True)
+# probs.shape = (n_samples, n_classes)
+
+# Explanation focuses on the argmax class by default
+factual = explainer.explain_factual(x_test)
+```
+
+> ℹ️ **Note:** The rule table shows contributions toward the predicted class. Negative weights reduce confidence in the prediction; positive weights increase it.
+
 ## Key parameters
 
-- **`bins`**: Supply Mondrian categories/bins for conditional calibration.
-- **`uq_interval`**: Set to `True` to receive uncertainty intervals (tuples of lower/upper bounds).
+* **`bins`**: Supply Mondrian categories/bins for conditional calibration.
+* **`uq_interval`**: Set to `True` to receive uncertainty intervals (tuples of lower/upper bounds).

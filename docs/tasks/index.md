@@ -15,6 +15,7 @@ All tasks support the core explanation methods:
 ```{toctree}
 :maxdepth: 1
 
+capabilities
 classification
 regression
 probabilistic_regression

@@ -94,6 +94,15 @@ Every quickstart, notebook, and benchmark follows the same recipe: fit your
 estimator, calibrate on held-out data, then interpret the returned rule table
 before acting.
 
+> **Guarantees & Assumptions**
+>
+> * **Calibration set required**: A held-out calibration set (typically 20-25% of training data) is mandatory for all workflows.
+> * **Interval invariant**: All intervals satisfy `low <= predict <= high`; violations trigger errors.
+> * **Uncertainty decomposition**: Intervals capture both aleatoric (data) and epistemic (model) uncertainty.
+> * **Calibration validity**: Guarantees hold when calibration and test distributions match (exchangeability assumption).
+>
+> See [ADR-021](docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md) for formal semantics.
+
 ---
 
 ## Your first calibrated explanation (≈5 minutes)
@@ -157,7 +166,7 @@ before acting.
    0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
    0.34  : worst concavity > 0.22                   -0.090 [-0.123,  0.077]
    ```
-   - The header row shows the calibrated prediction and its low/high credible
+   - The header row shows the calibrated prediction and its low/high uncertainty
      interval.
    - Each subsequent line is a factual rule: the observed value, the matching
      feature, and its signed contribution with uncertainty bounds.
