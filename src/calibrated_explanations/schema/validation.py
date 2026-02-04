@@ -78,18 +78,27 @@ def validate_payload(obj: Mapping[str, Any]) -> None:
             details={"field": "explanation_type"},
         )
 
-    # prediction must be an object with at least predict/low/high keys
+    # prediction must be an object. If the domain model includes a numeric
+    # `predict` key then the schema requires `low` and `high` interval keys as
+    # well. For label-only predictions (e.g., classification with `label`),
+    # skip the numeric interval requirement to remain permissive for legacy
+    # payload shapes.
     pred = obj.get("prediction")
     if not isinstance(pred, Mapping):
         raise ValidationError(
             "Field 'prediction' must be an object", details={"field": "prediction"}
         )
-    for sub in ("predict", "low", "high"):
-        if sub not in pred:
-            raise ValidationError(
-                f"prediction missing required key: {sub}",
-                details={"field": "prediction", "missing_key": sub},
-            )
+
+    # If any of the numeric interval keys are present, require the full trio
+    # (`predict`, `low`, `high`) to avoid ambiguous partial interval payloads.
+    interval_keys = {k for k in ("predict", "low", "high") if k in pred}
+    if interval_keys:
+        for sub in ("predict", "low", "high"):
+            if sub not in pred:
+                raise ValidationError(
+                    f"prediction missing required key: {sub}",
+                    details={"field": "prediction", "missing_key": sub},
+                )
 
     # rules must be a list of objects with required fields
     rules = obj.get("rules")
