@@ -355,6 +355,7 @@ class RejectOrchestrator:
             "ambiguity": ambiguity,
             "novelty": novelty,
             "prediction_set_size": set_sizes,
+            "prediction_set": prediction_set,
             "reject_rate": reject_rate,
             "ambiguity_rate": ambiguity_rate,
             "novelty_rate": novelty_rate,
@@ -546,7 +547,8 @@ class RejectOrchestrator:
             # Per-instance breakdown so callers can inspect ambiguity vs novelty
             "ambiguity_mask": breakdown.get("ambiguity"),
             "novelty_mask": breakdown.get("novelty"),
-            "prediction_set_size": None,
+            "prediction_set_size": breakdown.get("prediction_set_size"),
+            "prediction_set": breakdown.get("prediction_set"),
             "epsilon": breakdown.get("epsilon"),
         }
         return RejectResult(

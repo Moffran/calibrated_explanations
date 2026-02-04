@@ -6,7 +6,10 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
-from calibrated_explanations.explanations.reject import RejectResult
+from calibrated_explanations.explanations.reject import (
+    RejectCalibratedExplanations,
+    RejectResult,
+)
 
 
 def _train_classification(n_classes=2, seed=0):
@@ -45,7 +48,8 @@ def test_classification_predict_and_explain_envelope_binary():
     assert "ambiguity_mask" in (res.metadata or {})
     # explain
     res2 = w.explain_factual(Xq, reject_policy=RejectPolicy.FLAG)
-    assert isinstance(res2, RejectResult)
+    assert isinstance(res2, RejectCalibratedExplanations)
+    assert res2.ambiguity_mask is not None
 
 
 def test_multiclass_predict_proba_envelope():

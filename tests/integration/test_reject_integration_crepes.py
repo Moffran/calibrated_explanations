@@ -2,7 +2,9 @@ import pytest
 
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from calibrated_explanations.explanations.reject import RejectResult
+from calibrated_explanations.explanations.reject import (
+    RejectCalibratedExplanations,
+)
 
 # Skip this integration test if heavy deps are not installed
 pytest.importorskip("crepes")
@@ -28,7 +30,7 @@ def test_integration_reject_policy_predict_and_flag_runs_and_returns_envelope():
 
     res = w.explain_factual(x_test[:4])
 
-    assert isinstance(res, RejectResult)
+    assert isinstance(res, RejectCalibratedExplanations)
     assert hasattr(res, "policy")
     assert res.policy is not None
 

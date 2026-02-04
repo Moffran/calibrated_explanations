@@ -13,6 +13,10 @@
   - `ONLY_ACCEPTED` (replaces `EXPLAIN_NON_REJECTS` and `SKIP_ON_REJECT`) - Process only accepted (confident) instances
   - `NONE` - Unchanged, legacy behavior with no reject orchestration
 
+- **Transparent Rejection Integration (Solution 1):** `explain_factual` now returns a specialized `RejectCalibratedExplanations` collection when a rejection policy is active. This subclass behaves exactly like the standard collection (supporting `plot()`, slicing, and `add_conjunctions()`) while transparently carrying rejection metadata (ambiguity masks, etc.). This restores existing workflow compatibility while surfacing rejection signals.
+
+- **Linting and Security Compliance:** Replaced bare `except: pass` blocks with logged exceptions to satisfy Bandit security checks (B110) and ensure robust error visibility.
+
 - **Default condition_source to "prediction":** The default value for `condition_source` in `CalibratedExplainer` has been changed from `"observed"` to `"prediction"` to enhance consistency in calibrated explanations by basing condition labels on model predictions rather than observed labels. Users relying on the previous default behavior should explicitly set `condition_source="observed"`. A warning is issued when the parameter is not provided, guiding users to the new default.
 
 - **Explanation JSON Schema v1 strict validation:** Implemented strict JSON Schema validation for explanation payloads with test fixtures. The `validate_payload()` function now enforces schema compliance when `jsonschema` is available, and interval invariants are validated during serialization. Added golden fixture validation test (see ADR-005 addendum).

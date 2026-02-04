@@ -196,6 +196,10 @@ class CalibratedExplanation(ABC):
             self.y_minmax = [0, 0]
         self.focus_columns = None
 
+        # Optional reject context attached when explanations are produced under
+        # a reject policy (FLAG / ONLY_REJECTED). Populated by orchestrator.
+        self.reject_context = None
+
         self._validate_prediction_invariant()
 
     def _validate_prediction_invariant(self) -> None:

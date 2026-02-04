@@ -238,6 +238,43 @@ class NarrativeGenerator:
                 width = float(bh) - float(bl)
                 context["interval_width"] = fmt_float(width)
 
+        # Prepare optional reject insertion based on explanation.reject_context
+        reject_insert = ""
+        try:
+            rc = getattr(explanation, "reject_context", None)
+            if rc is not None and getattr(rc, "rejected", False):
+                # Look up templates for reject indicators if available
+                indicators = self.templates.get("reject_indicators", {})
+                rtype = getattr(rc, "reject_type", None) or "ambiguity"
+                type_templates = indicators.get(rtype, {})
+                raw = type_templates.get(expertise_level)
+                if raw:
+                    # Format placeholders if present
+                    try:
+                        raw = raw.format(
+                            prediction_set=getattr(rc, "prediction_set", None),
+                            set_size=getattr(rc, "prediction_set_size", None),
+                            confidence=(
+                                fmt_float(getattr(rc, "confidence", None), nd=2)
+                                if getattr(rc, "confidence", None) is not None
+                                else ""
+                            ),
+                        )
+                    except Exception as exc:  # adr002_allow - best-effort formatting
+                        import logging as _log
+
+                        _log.getLogger(__name__).debug(
+                            "failed to format reject indicator template: %s", exc, exc_info=True
+                        )
+                    reject_insert = raw + "\n\n"
+        except Exception as exc:  # adr002_allow - non-fatal
+            import logging as _log
+
+            _log.getLogger(__name__).debug(
+                "failed while preparing reject insert: %s", exc, exc_info=True
+            )
+            reject_insert = ""
+
         # Get template
         try:
             template = self.templates["narrative_templates"][problem_type][explanation_type][
@@ -245,6 +282,10 @@ class NarrativeGenerator:
             ]
         except KeyError:
             return f"Template not found for {problem_type}/{explanation_type}/{expertise_level}"
+
+        # Prepend reject info when present
+        if reject_insert:
+            template = reject_insert + template
 
         # Get feature rules with proper feature names
         rules = self.serialize_rules(rules_dict, feature_names)
