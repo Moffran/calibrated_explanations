@@ -127,6 +127,24 @@ narrative_templates:
         Alternatives to decrease the calibrated probability for class {label}:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
 
+reject_indicators:
+  ambiguity:
+    beginner: "(low confidence - treat with caution)"
+    intermediate: "Rejected (ambiguous prediction, {set_size} possible classes)"
+    advanced: |
+      REJECTED (ambiguous)
+      Prediction Set: {prediction_set} (size: {set_size})
+      Confidence: {confidence}
+      Interpretation: The model cannot confidently distinguish between the listed classes at the given confidence level.
+  novelty:
+    beginner: "(unknown pattern - predictions unreliable)"
+    intermediate: "Rejected (novel instance, outside training distribution)"
+    advanced: |
+      REJECTED (novel)
+      Prediction Set: {} (empty)
+      Confidence: {confidence}
+      Interpretation: The instance lies outside the training distribution; no class exceeds the p-value threshold.
+
   regression:
     factual:
       beginner: |
@@ -193,7 +211,7 @@ narrative_templates:
   probabilistic_regression:
     factual:
       beginner: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Factors increasing Calibrated Probability:
         * {feature_name} ({feature_actual_value}) {condition},
@@ -202,7 +220,7 @@ narrative_templates:
         * {feature_name} ({feature_actual_value}) {condition},
 
       intermediate: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Factors increasing Calibrated Probability:
         * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
@@ -211,7 +229,7 @@ narrative_templates:
         * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
 
       advanced: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred}
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred}
         Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
 
         Factors increasing Calibrated Probability:
@@ -222,7 +240,7 @@ narrative_templates:
 
     alternative:
       beginner: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Alternatives to increase the Calibrated Probability:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
@@ -231,7 +249,7 @@ narrative_templates:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
 
       intermediate: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Alternatives to increase the Calibrated Probability:
         - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
@@ -240,7 +258,7 @@ narrative_templates:
         - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
 
       advanced: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Alternatives to increase the Calibrated Probability:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]

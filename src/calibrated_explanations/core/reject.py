@@ -1,33 +1,40 @@
-"""Reject policy enum and helpers."""
+"""Legacy compatibility shim for the reject package.
+
+This module historically defined `RejectPolicy` inline. The implementation was
+migrated to the package submodule `core.reject.policy` to support new
+canonical names. To maintain backwards compatibility for imports of
+``calibrated_explanations.core.reject``, re-export the public symbols from the
+new module and emit a DeprecationWarning.
+"""
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any
+import warnings
 
+_emitted_warning = False
+try:
+    # Preferred: package-relative import when used as installed package
+    from .reject.policy import RejectPolicy, is_policy_enabled  # type: ignore
 
-class RejectPolicy(Enum):
-    """Describe how rejection should affect prediction/explanation invocation.
-
-    - NONE: preserve legacy behaviour (no reject orchestration).
-    - PREDICT_AND_FLAG: always predict and attach a rejected flag in the envelope.
-    - EXPLAIN_ALL: predict and explain all inputs, tagging rejected status.
-    - EXPLAIN_REJECTS: predict all, explain only rejected instances.
-    - EXPLAIN_NON_REJECTS: predict all, explain only non-rejected instances.
-    - SKIP_ON_REJECT: short-circuit prediction/explanation when rejected.
-    """
-
-    NONE = "none"
-    PREDICT_AND_FLAG = "predict_and_flag"
-    EXPLAIN_ALL = "explain_all"
-    EXPLAIN_REJECTS = "explain_rejects"
-    EXPLAIN_NON_REJECTS = "explain_non_rejects"
-    SKIP_ON_REJECT = "skip_on_reject"
-
-
-def is_policy_enabled(policy: Any) -> bool:
-    """Return True if the provided policy requires reject orchestration."""
+    _emitted_warning = True
+except Exception:  # adr002_allow - import fallback for different package contexts
+    # Fallback when executing the file directly (no package context), e.g.
+    # tests that import the module from its file path. Try absolute import.
     try:
-        return RejectPolicy(policy) is not RejectPolicy.NONE
-    except Exception:  # adr002_allow
-        return False
+        from calibrated_explanations.core.reject.policy import (
+            RejectPolicy,
+            is_policy_enabled,
+        )
+    except Exception:  # adr002_allow - re-raises; passthrough
+        # Let import errors propagate for unexpected situations
+        raise
+
+if _emitted_warning:
+    warnings.warn(
+        "calibrated_explanations.core.reject module is deprecated; import from "
+        "calibrated_explanations.core.reject.policy instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+__all__ = ["RejectPolicy", "is_policy_enabled"]

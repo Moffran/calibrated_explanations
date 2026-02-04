@@ -12,7 +12,7 @@
     },
     "task": {"type": "string"},
     "index": {"type": "integer", "minimum": 0},
-    "explanation_type": {"type": "string", "enum": ["factual", "alternative"]},
+    "explanation_type": {"type": "string", "enum": ["factual", "alternative", "fast"]},
     "prediction": {"type": "object"},
     "rules": {
       "type": "array",
@@ -20,7 +20,7 @@
         "type": "object",
         "required": ["feature", "rule", "rule_weight", "rule_prediction"],
         "properties": {
-          "feature": {"type": "integer"},
+          "feature": {"anyOf": [{"type": "integer"}, {"type": "array", "items": {"type": "integer"}, "minItems": 1}]},
           "rule": {"type": "string"},
           "rule_weight": {"type": "object"},
           "rule_prediction": {"type": "object"},

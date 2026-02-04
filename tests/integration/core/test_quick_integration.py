@@ -18,11 +18,11 @@ def test_quick_explain_binary_classification():
     y = (X[:, 0] + X[:, 1] > 0).astype(int)
 
     # Split into train, cal, test
-    X_train = X[:60]
+    x_train = X[:60]
     y_train = y[:60]
-    X_cal = X[60:80]
+    x_cal = X[60:80]
     y_cal = y[60:80]
-    X_test = X[80:]
+    x_test = X[80:]
 
     # Use RandomForest
     model = RandomForestClassifier(n_estimators=10, random_state=42)
@@ -30,11 +30,11 @@ def test_quick_explain_binary_classification():
     # Call quick_explain
     result = quick_explain(
         model=model,
-        x_train=X_train,
+        x_train=x_train,
         y_train=y_train,
-        x_cal=X_cal,
+        x_cal=x_cal,
         y_cal=y_cal,
-        x=X_test,
+        x=x_test,
         task="classification",
     )
 
@@ -54,11 +54,11 @@ def test_quick_explain_regression():
     y = X[:, 0] + X[:, 1] + rng.standard_normal(n_samples) * 0.1
 
     # Split into train, cal, test
-    X_train = X[:60]
+    x_train = X[:60]
     y_train = y[:60]
-    X_cal = X[60:80]
+    x_cal = X[60:80]
     y_cal = y[60:80]
-    X_test = X[80:]
+    x_test = X[80:]
 
     # Use RandomForest
     from sklearn.ensemble import RandomForestRegressor
@@ -68,11 +68,11 @@ def test_quick_explain_regression():
     # Call quick_explain
     result = quick_explain(
         model=model,
-        x_train=X_train,
+        x_train=x_train,
         y_train=y_train,
-        x_cal=X_cal,
+        x_cal=x_cal,
         y_cal=y_cal,
-        x=X_test,
+        x=x_test,
         task="regression",
     )
 
@@ -92,11 +92,11 @@ def test_explainer_builder_integration():
     y = (X[:, 0] + X[:, 1] > 0).astype(int)
 
     # Split into train, cal, test
-    X_train = X[:60]
+    x_train = X[:60]
     y_train = y[:60]
-    X_cal = X[60:80]
+    x_cal = X[60:80]
     y_cal = y[60:80]
-    X_test = X[80:]
+    x_test = X[80:]
 
     # Use RandomForest
     model = RandomForestClassifier(n_estimators=10, random_state=42)
@@ -110,11 +110,11 @@ def test_explainer_builder_integration():
 
     # Create WrapCalibratedExplainer from config
     w = WrapCalibratedExplainer.from_config(cfg)
-    w.fit(X_train, y_train)
-    w.calibrate(X_cal, y_cal)
+    w.fit(x_train, y_train)
+    w.calibrate(x_cal, y_cal)
 
     # Explain
-    result = w.explain_factual(X_test)
+    result = w.explain_factual(x_test)
 
     # Check
     assert result is not None
@@ -131,11 +131,11 @@ def test_explainer_builder_regression():
     y = X[:, 0] + X[:, 1] + rng.standard_normal(n_samples) * 0.1
 
     # Split into train, cal, test
-    X_train = X[:60]
+    x_train = X[:60]
     y_train = y[:60]
-    X_cal = X[60:80]
+    x_cal = X[60:80]
     y_cal = y[60:80]
-    X_test = X[80:]
+    x_test = X[80:]
 
     # Use RandomForest
     from sklearn.ensemble import RandomForestRegressor
@@ -150,11 +150,11 @@ def test_explainer_builder_regression():
 
     # Create WrapCalibratedExplainer from config
     w = WrapCalibratedExplainer.from_config(cfg)
-    w.fit(X_train, y_train)
-    w.calibrate(X_cal, y_cal)
+    w.fit(x_train, y_train)
+    w.calibrate(x_cal, y_cal)
 
     # Explain
-    result = w.explain_factual(X_test)
+    result = w.explain_factual(x_test)
 
     # Check
     assert result is not None

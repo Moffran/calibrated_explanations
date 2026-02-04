@@ -72,7 +72,8 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 | v0.10.0 | Doc gate holds prior bar; no new IA work planned. | Phase 2 blocking check for touched files; waivers time-bounded. | `fail_under=90` enforced; plugin/plotting module thresholds scheduled. | Release mapping added; refactors aligned with legacy API tests. | Risk: refactors (explain plugins, boundary split) may churn coverage; branch cut requires rerunning gates. |
 | v0.10.1 | Doc hubs refreshed with telemetry/performance opt-in notes. | Package-wide ≥90% expected; notebook/example lint extended. | Module thresholds hardened; waiver expiry versions mandatory. | Phase metrics reviewed; % renamed modules tracked. | Rollback: if module gates fail, defer release or lower threshold with explicit expiry in checklist. |
 | v0.10.2 | No changes planned. | No changes planned. | No changes planned. | No changes planned. | Test quality remediation: fix private-member violations in tests per ADR-030. |
-| v0.11.0 | Notebook execution + runtime ceilings (ADR-012); observability enforcement docs (ADR-027/028). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure milestone: ADR-004/005/008/009/010/012/020/026/027/028/030/031 + Standard-004 follow-through. |
+| v0.10.3 | Domain model (ADR-008), Schema (ADR-005), Defaults, Plugin docs (Standard-004), Legacy stability (ADR-020). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure part 1: ADR-005/008/010/020 + Standard-004. |
+| v0.11.0 | Notebook execution + runtime ceilings (ADR-012); observability enforcement docs (ADR-027/028). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure milestone: ADR-004/009/012/026/027/028/030/031. |
 | v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals completed; legacy API guard tests green. | Test quality ratification: zero-tolerance enforcement for new quality rules per ADR-030; risks surface inline in milestone gates; rollback paths documented per gate. |
 
 ### v0.6.x (stabilisation patches)
@@ -248,28 +249,34 @@ Release gate: Payload round-trips verified, PlotSpec/visualization plugin regist
 
 Release gate: Plugin registries enforce trust and protocol policies, extras install cleanly with documentation parity, runtime telemetry captures interval metadata, FAST/CLI flows succeed end-to-end, and logging/governance observability align with ADR-028 and Standard-005 for all v0.10.2 changes (see ADR status appendix in this document).
 
+
+### v0.10.3 (ADR gap closure part 1)
+
+  1. Close ADR-008 domain model authority: run runtime flows on domain objects, fix legacy round-trips, add calibration/model metadata, publish golden fixtures, and harden _safe_pick.
+  2. Address ADR-005 semantic payload validation gaps with a strict validator (schema + invariants) and fixture coverage.
+  3. Resolve ADR-010 core-only dependency clarity (matplotlib import-time requirement).
+  4. Track Standard-004 follow-through for plot plugin authoring/override guidance.
+  5. Change default behavior for condition_source to "prediction" in CalibratedExplainer and related components.
+  6. Reinforce ADR-020 legacy-API commitments with release checklist gates, regression tests, and a scripted notebook audit workflow.
+  7. Add Agent facing helper functions for easier integration with LLMs and AI agents.
+  8. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
+
+  Release gate: ADR-005/008/010/020 gaps closed, condition_source default updated, and plugin authoring docs shipped.
 ### v0.11.0 (domain model & preprocessing finalisation)
 
-1. Close ADR-008 domain model authority—run runtime flows on domain objects, fix legacy round-trips, add calibration/model metadata, publish golden fixtures, and harden `_safe_pick` (see ADR status appendix in this document).
-2. Complete ADR-009 preprocessing automation with `auto_encode='auto'`, unseen-category enforcement, mapping export/import helpers, dtype diagnostics, and aligned telemetry/docs (see ADR status appendix in this document).
-3. Deliver ADR-030 test quality tooling upgrades (assertion + determinism checks) and wire them into CI for v1.0.0 readiness.
-4. Add ADR-031 calibrator persistence: versioned `to_primitive`/`from_primitive` contracts plus `Explainer.save_state()`/`load_state()` (gate: round-trip tests and schema version policy).
-5. Address ADR-005 semantic payload validation gaps with a strict validator (schema + invariants) and fixture coverage.
-6. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
-7. Add ADR-020 legacy API stability gates (release checklist + notebook/API audit workflow).
-8. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.
-9. Resolve ADR-004 naming drift and ADR-010 core-only dependency clarity (matplotlib import-time requirement).
-10. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
-11. Track Standard-004 follow-through for plot plugin authoring/override guidance.
-12. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, reporting lint telemetry, and confining transitional shims to `legacy/` (see ADR status appendix in this document).
-13. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry, ensuring ongoing monitoring after v1.0.0 (see ADR status appendix in this document).
-14. Change default behavior for `condition_source` to `"prediction"` in `CalibratedExplainer` and related components. Update all relevant documentation, including the upgrade checklist, to inform users of this change and provide guidance on how to adjust their implementations if they previously relied on the default `"observed"` setting. This change aims to enhance the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels. Plan for this change to be communicated clearly in the v1.0.0 release notes and upgrade guides (see ADR status appendix in this document).
-15. Empty the private member allow-list (`.github/private_member_allowlist.json`) as part of the final Pattern 1 remediation hardening. All remaining private member usages in tests must be refactored to public APIs or justified as permanent exceptions in the remediation plan.
-16. Perform a final ADR, standards, and improvement docs gap closure sweep and update the appendix for any remaining gaps.
+  1. Complete ADR-009 preprocessing automation with auto_encode='auto', unseen-category enforcement, mapping export/import helpers, and aligned telemetry.
+  2. Deliver ADR-030 test quality tooling upgrades (assertion + determinism checks) and wire them into CI.
+  3. Add ADR-031 calibrator persistence: versioned to_primitive/from_primitive contracts plus Explainer.save_state()/load_state().
+  4. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
+  5. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.
+  6. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
+  7. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
+  8. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry.
+  9. Empty the private member allow-list (.github/private_member_allowlist.json) as part of the final Pattern 1 remediation hardening.
+  10. Perform a final ADR, standards, and improvement docs gap closure sweep.
+  11. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
 
-Release gate: ADR-005/008/009/012/020/026/030/031 gaps are closed or explicitly deferred, observability enforcement is in place (ADR-027/028), and core-only install expectations are verified ahead of v1.0.0-rc (see ADR status appendix in this document)
-
-
+  Release gate: ADR-009/012/026/030/031 gaps are closed or explicitly deferred, observability enforcement is in place (ADR-027/028), and core-only install expectations are verified ahead of v1.0.0-rc.
 ### v1.0.0-rc (release candidate readiness)
 
 1. Freeze Explanation Schema v1, publish draft compatibility statement, and

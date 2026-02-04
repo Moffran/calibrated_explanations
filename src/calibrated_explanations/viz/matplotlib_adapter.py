@@ -315,6 +315,35 @@ def render(
     if spec.title:
         fig.suptitle(spec.title, y=0.98)
 
+    # Render reject badge (simple corner annotation) when provided on PlotSpec.
+    try:
+        badge = getattr(spec, "reject_badge", None)
+        reason = getattr(spec, "reject_reason", None)
+        if badge is not None:
+            # choose color: ambiguity -> orange, novelty -> red, default -> orange
+            if reason == "novelty" or (isinstance(badge, str) and "novel" in badge.lower()):
+                color = "#c0392b"  # red
+            else:
+                color = "#e67e22"  # orange
+            try:
+                plt.figtext(
+                    0.985,
+                    0.96,
+                    str(badge),
+                    ha="right",
+                    va="top",
+                    fontsize=9,
+                    color="white",
+                    bbox={"facecolor": color, "alpha": 0.9, "boxstyle": "round,pad=0.3"},
+                )
+            except Exception as exc:  # adr002_allow - optional decoration must not break plots
+                # Avoid breaking plotting when figtext fails
+                logging.getLogger(__name__).debug(
+                    "failed to render reject badge: %s", exc, exc_info=True
+                )
+    except Exception as exc:  # adr002_allow - optional decoration must not break plots
+        logging.getLogger(__name__).debug("reject badge rendering skipped: %s", exc, exc_info=True)
+
     def _regression_sign_colors(colors_cfg):
         """Return colors for positive/negative regression contributions.
 

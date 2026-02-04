@@ -1,0 +1,33 @@
+{
+  "name": "calibrated-explanations",
+  "version": "0.11.0-dev",
+  "category": "explainable-ai",
+  "subcategories": ["feature-importance", "uncertainty-quantification", "xai"],
+  "public_api": ["WrapCalibratedExplainer"],
+  "compatible_with": ["scikit-learn", "xgboost", "lightgbm", "random-forest"],
+  "task_types": [
+    "binary-classification",
+    "multiclass-classification",
+    "regression",
+    "probabilistic-regression"
+  ],
+  "installation": {
+    "pip": "pip install calibrated-explanations",
+    "conda": "conda install -c conda-forge calibrated-explanations"
+  },
+  "minimal_example": "QUICK_API.md",
+  "documentation": "https://calibrated-explanations.readthedocs.io/",
+  "use_cases": [
+    "medical-diagnosis-support",
+    "financial-decision-making",
+    "high-stakes-ml-applications"
+  ],
+  "key_features": [
+    "calibrated-predictions",
+    "uncertainty-quantification",
+    "factual-explanations",
+    "counterfactual-explanations",
+    "model-agnostic"
+  ],
+  "required_calibration": true
+}

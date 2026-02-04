@@ -62,7 +62,7 @@ def instantiate_discretizer(
     current_discretizer: Optional[Any] = None,
     *,
     condition_labels: Optional[np.ndarray] = None,
-    condition_source: str = "observed",
+    condition_source: str = "prediction",
 ) -> Any:
     """Instantiate or return cached discretizer if already correct type.
 
@@ -94,7 +94,48 @@ def instantiate_discretizer(
             details={"param": "condition_source", "value": condition_source},
         )
 
-    labels = condition_labels if condition_source == "prediction" else y_cal
+    # If prediction-based labels requested but none supplied, fall back to y_cal
+    if condition_source == "prediction":
+        if condition_labels is None:
+            import logging
+            import warnings
+
+            logging.getLogger(__name__).info(
+                "condition_source='prediction' requested but no condition_labels provided; falling back to observed y_cal"
+            )
+            warnings.warn(
+                "condition_source='prediction' requested but no condition_labels provided; falling back to observed y_cal. "
+                "Pass condition_labels=... to use prediction-derived condition labels.",
+                UserWarning,
+                stacklevel=2,
+            )
+            labels = y_cal
+        else:
+            labels = condition_labels
+    else:
+        labels = y_cal
+
+    # Defensive: if labels exist but are empty (e.g. predictions filtered all NaNs),
+    # fall back to observed y_cal to avoid downstream estimator errors.
+    try:
+        import logging
+        import warnings
+
+        labels_arr = None if labels is None else np.asarray(labels)
+        if labels_arr is None or labels_arr.size == 0:
+            logging.getLogger(__name__).info(
+                "No usable condition labels available; falling back to observed y_cal"
+            )
+            warnings.warn(
+                "No usable condition labels available; falling back to observed y_cal.",
+                UserWarning,
+                stacklevel=2,
+            )
+            labels = y_cal
+        else:
+            labels = labels_arr
+    except Exception:  # adr002_allow - graceful fallback for condition labels
+        labels = y_cal
 
     if discretizer_name == "binaryEntropy":
         if isinstance(current_discretizer, BinaryEntropyDiscretizer):

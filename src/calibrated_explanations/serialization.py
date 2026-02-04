@@ -32,7 +32,9 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
         "prediction": dict(exp.prediction),
         "rules": [
             {
-                "feature": int(r.feature),
+                "feature": [int(x) for x in r.feature]
+                if isinstance(r.feature, (list, tuple))
+                else int(r.feature),
                 "rule": r.rule,
                 "rule_weight": dict(r.rule_weight),
                 "rule_prediction": dict(r.rule_prediction),
@@ -51,6 +53,19 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
     }
     if include_version:
         payload["schema_version"] = "1.0.0"
+
+    # Ensure schema-required keys are present on exported prediction objects.
+    # The schema requires `predict`, `low`, and `high` keys; when the domain
+    # model provides only `predict` (common for classification), mirror the
+    # `predict` value to both `low` and `high` so the payload satisfies the
+    # structural validator and the invariant checker.
+    pred = payload.get("prediction")
+    if isinstance(pred, dict) and "predict" in pred:
+        p = pred.get("predict")
+        if "low" not in pred:
+            pred["low"] = list(p) if isinstance(p, (list, tuple)) else p
+        if "high" not in pred:
+            pred["high"] = list(p) if isinstance(p, (list, tuple)) else p
 
     _validate_invariants(payload)
     try:
@@ -78,7 +93,7 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
             return
 
         with contextlib.suppress(TypeError, ValueError):
-            # Handle scalar values (common case)
+            # Handle scalar numeric values
             if (
                 isinstance(predict, (int, float))
                 and isinstance(low, (int, float))
@@ -99,6 +114,45 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
                             details={"predict": predict, "low": low, "high": high},
                         )
 
+            # Handle vector-valued predictions (lists/tuples)
+            if isinstance(predict, (list, tuple)):
+                # Expect low and high to be lists/tuples of same length
+                if not isinstance(low, (list, tuple)) or not isinstance(high, (list, tuple)):
+                    raise ValidationError(
+                        f"{context}: vector prediction requires vector low/high arrays",
+                        details={"predict": predict, "low": low, "high": high},
+                    )
+                if not (len(predict) == len(low) == len(high)):
+                    raise ValidationError(
+                        f"{context}: vector prediction/interval length mismatch",
+                        details={
+                            "len_predict": len(predict),
+                            "len_low": len(low),
+                            "len_high": len(high),
+                        },
+                    )
+                for j, (p, low_v, high_v) in enumerate(zip(predict, low, high, strict=False)):
+                    if not (
+                        isinstance(p, (int, float))
+                        and isinstance(low_v, (int, float))
+                        and isinstance(high_v, (int, float))
+                    ):
+                        raise ValidationError(
+                            f"{context}[{j}]: entries must be numeric",
+                            details={"p": p, "low": low_v, "high": high_v},
+                        )
+                    if not low_v <= high_v:
+                        raise ValidationError(
+                            f"{context}[{j}]: interval invariant violated (low > high)",
+                            details={"low": low_v, "high": high_v, "index": j},
+                        )
+                    epsilon = 1e-9
+                    if not (low_v - epsilon <= p <= high_v + epsilon):
+                        raise ValidationError(
+                            f"{context}[{j}]: prediction invariant violated (predict not in [low, high])",
+                            details={"predict": p, "low": low_v, "high": high_v, "index": j},
+                        )
+
     check(payload.get("prediction"), "Global prediction")
     for i, rule in enumerate(payload.get("rules", []) or []):
         check(rule.get("rule_prediction"), f"Rule {i} prediction")
@@ -109,7 +163,11 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
     """Deserialize JSON payload (dict) to domain model Explanation."""
     rules = [
         FeatureRule(
-            feature=int(r.get("feature", i)),
+            feature=(
+                [int(x) for x in r.get("feature")]
+                if isinstance(r.get("feature"), (list, tuple))
+                else int(r.get("feature", i))
+            ),
             rule=str(r.get("rule", "")),
             rule_weight=dict(r.get("rule_weight", {})),
             rule_prediction=dict(r.get("rule_prediction", {})),

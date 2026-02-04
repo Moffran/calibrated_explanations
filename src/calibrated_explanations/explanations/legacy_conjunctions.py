@@ -58,7 +58,7 @@ def _predict_conjunctive_legacy(
             },
         )
 
-    predict_fn = self.get_explainer()._predict  # pylint: disable=protected-access
+    predict_fn = self.get_explainer().prediction_orchestrator.predict_internal
     # Ensure perturbed is a writable copy to avoid "read-only" errors
     perturbed = np.array(perturbed, copy=True)
 

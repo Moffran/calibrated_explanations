@@ -6,7 +6,7 @@ from tests.helpers.doc_utils import run_quickstart_classification
 def test_interpret_explanations_snippets(enable_fallbacks):
     context = run_quickstart_classification()
     explainer = context.explainer
-    x_test = context.X_test
+    x_test = context.x_test
 
     factual_batch = explainer.explain_factual(x_test[:1])
     factual = factual_batch[0]

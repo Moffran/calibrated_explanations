@@ -6,6 +6,7 @@
 
 ## Checklist
 
+- [ ] Completed the [Release Checklist](docs/improvement/release_checklist.md) (ADR-020)
 - [ ] Aligned with current phase in `docs/improvement/RELEASE_PLAN_v1.md` (link section)
 - [ ] Referenced relevant ADR(s) in `docs/improvement/adrs/` (IDs)
 - [ ] Added/updated tests for new or changed behavior

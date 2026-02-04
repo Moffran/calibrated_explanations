@@ -7,6 +7,80 @@
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
 
+## Quick Reference
+
+**Purpose**: Uncertainty-aware feature-importance explanations for scikit-learn compatible models.
+
+**Install**:
+```bash
+pip install calibrated-explanations
+```
+
+**Primary Use Cases**: binary-classification, multiclass-classification, regression, probabilistic regression
+
+**Key Class (public API)**: `WrapCalibratedExplainer`
+
+**Required calibration**: `true` (calibration set is mandatory).
+
+**All examples in this repo use `WrapCalibratedExplainer`.**
+
+**Typical Workflow (3 lines)**:
+
+```python
+from calibrated_explanations import WrapCalibratedExplainer
+explainer = WrapCalibratedExplainer(model)           # wrap your sklearn-like model
+explainer.fit(x_proper, y_proper); explainer.calibrate(x_cal, y_cal)
+explanation = explainer.explain_factual(x_test)      # returns calibrated rules + uncertainty
+```
+
+**Core Methods**:
+
+* `fit(x_proper, y_proper)` — train/prepare internal state (model fitting or wrapper).
+* `calibrate(x_cal, y_cal, feature_names=None)` — required: align uncertainty estimates.
+* `explain_factual(X)` — factual rules + feature importance with [low, high] bounds.
+* `explore_alternatives(X)` — counterfactual / alternative rules.
+* `predict_proba(X[, uq_interval=True])` — calibrated probability (with uncertainty interval).
+* `predict(X[, uq_interval=True])` — point prediction (with uncertainty interval).
+
+**Outputs**: calibrated prediction intervals, per-feature importance with uncertainty bounds, factual/alternative rule tables.
+
+### Task map (critical: regression meanings differ)
+
+**Classification (binary/multiclass)**:
+Classification in this library is calibrated using Venn-Abers predictors.
+- Calibrated probability: `predict_proba(x[, ...])`
+- Calibrated probability with uncertainty bounds using Venn-Abers: `predict_proba(x, uq_interval=True[, ...])`
+- Calibrated prediction: `predict(x[, ...])`
+- Explanations: `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
+
+**Conformal interval regression (CPS)  ← CE "regression"**:
+Regression in this library is **conformal interval regression** via **Conformal Predictive Systems (CPS)**:
+- CPS calibrated point regression: `predict(x[, ...])`
+- Point regression + calibrated uncertainty intervals = (conformal) interval regression: `predict(x, uq_interval=True, low_high_percentiles=(a, b)[, ...])`. Note that one-sided intervals can be obtained by setting `a=-np.Inf` or `b=np.Inf`.
+- You can also request CPS-controlled intervals from explanations: `explain_factual(x, low_high_percentiles=(a, b)[, ...])` and `explore_alternatives(x, low_high_percentiles=(a, b)[, ...])`
+- Default: `low_high_percentiles` = (5, 95) for 90% intervals.
+
+**Probabilistic regression (thresholded probability queries for y)**:
+Probabilistic regression requires assigning a `threshold`:
+- Threshold probability for real-valued target: `predict_proba(x, threshold=t[, ...])` gives **P(y <= t)**
+- Within-spec probability for real-valued target: `predict_proba(x, threshold=(low, high)[, ...])` gives **P(low < y <= high)**
+- Add uncertainty bounds with `uq_interval=True`
+- Exceedance explanations: `explain_factual(x, threshold=t[, ...])` and `explore_alternatives(x, threshold=t[, ...])`
+- Within-spec explanations: `explain_factual(x, threshold=(low, high)[, ...])` and `explore_alternatives(x, threshold=(low, high)[, ...])`
+
+**All tasks also support (core capability)**:
+- `predict(x[, ...])` and `predict(x, uq_interval=True[, ...])`
+- `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
+
+**Common optional parameters (`[, ...]`)**:
+- `bins=...` for conditional calibration. Can also set a Mondrian Calibrator (see [crepes.extras.MondrianCategorizer](https://crepes.readthedocs.io/en/latest/crepes.extras.html#crepes.extras.MondrianCategorizer))
+- `low_high_percentiles=(a, b)` for CPS conformal interval regression intervals
+- `threshold=t` or `threshold=(low, high)` for probabilistic regression
+
+**Local dev**: run `pip install -e .` before running examples/tests locally.
+
+**When not to use**: raw deep nets without an sklearn wrapper; real-time streaming without a calibration set; extremely high-dimensional (>10k) feature vectors.
+
 Calibrated Explanations turns any scikit-learn-compatible estimator into a
 calibrated explainer that returns:
 
@@ -19,6 +93,15 @@ calibrated explainer that returns:
 Every quickstart, notebook, and benchmark follows the same recipe: fit your
 estimator, calibrate on held-out data, then interpret the returned rule table
 before acting.
+
+> **Guarantees & Assumptions**
+>
+> * **Calibration set required**: A held-out calibration set (typically 20-25% of training data) is mandatory for all workflows.
+> * **Interval invariant**: All intervals satisfy `low <= predict <= high`; violations trigger errors.
+> * **Uncertainty decomposition**: Intervals capture both aleatoric (data) and epistemic (model) uncertainty.
+> * **Calibration validity**: Guarantees hold when calibration and test distributions match (exchangeability assumption).
+>
+> See [ADR-021](docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md) for formal semantics.
 
 ---
 
@@ -83,7 +166,7 @@ before acting.
    0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
    0.34  : worst concavity > 0.22                   -0.090 [-0.123,  0.077]
    ```
-   - The header row shows the calibrated prediction and its low/high credible
+   - The header row shows the calibrated prediction and its low/high uncertainty
      interval.
    - Each subsequent line is a factual rule: the observed value, the matching
      feature, and its signed contribution with uncertainty bounds.
@@ -127,7 +210,16 @@ interval regression tasks, the difference lies in how you configure the underlyi
   when you need calibrated thresholds.
 - Opt into plugins only when needed via
   `pip install "calibrated-explanations[external-plugins]"`—they remain
-  optional extensions.
+  optional extensions. Note: `fast` explanations are experimental and
+  provided via opt-in plugins; they are allowed in the schema for
+  interoperability but are not promoted for primary practitioner
+  workflows. Treat `fast` as an experimental, opt-in feature and prefer
+  `factual`/`alternative` workflows for production use.
+
+### Agents (CE-first by default)
+- Read `AGENTS.md` for the minimal entrypoint.
+- Follow the CE-first guide in `docs/get-started/ce_first_agent_guide.md`.
+- Use the helper module in `src/calibrated_explanations/ce_agent_utils.py`.
 
 ### Researchers
 - Reproduce published studies through the
@@ -209,8 +301,8 @@ sign off your commits.
 - **Probabilistic and interval regression** that mirrors the classification API.
 - **Alternative explanations with triangular plots** for visualising trade-offs.
 - **Conjunctional and conditional rules** for interaction and fairness analysis.
-- **Optional plugin lane** for fast explanations and telemetry—disabled by
-  default, opt-in when you need it.
+- **Experimental plugin lane** for `fast` explanations (opt-in only, not
+  promoted for production—see practitioner notes above).
 
 ---
 

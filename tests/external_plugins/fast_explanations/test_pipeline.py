@@ -29,6 +29,8 @@ def explainer():
     explainer.categorical_features = []
     explainer.categorical_labels = None
 
+    explainer.prediction_orchestrator = MagicMock()
+
     # Prevent deepcopy to allow FrozenCalibratedExplainer to work with this mock
     explainer.__deepcopy__ = MagicMock(side_effect=RuntimeError("Do not copy me"))
 
@@ -108,7 +110,12 @@ def test_explain_happy_path_classification(pipeline, explainer):
     high = np.array([0.9])
     predicted_class = np.array([1])
 
-    explainer.predict_calibrated.return_value = (predict, low, high, predicted_class)
+    explainer.prediction_orchestrator.predict_internal.return_value = (
+        predict,
+        low,
+        high,
+        predicted_class,
+    )
 
     # Mock interval learner for full probs
     mock_learner = MagicMock()
@@ -137,7 +144,7 @@ def test_explain_happy_path_classification(pipeline, explainer):
         explanation = pipeline.explain(x_test)
 
         assert isinstance(explanation, CalibratedExplanations)
-        assert explainer.predict_calibrated.called
+        assert explainer.prediction_orchestrator.predict_internal.called
         assert mock_compute.called
 
 
@@ -150,7 +157,12 @@ def test_explain_happy_path_regression(pipeline, explainer):
     high = np.array([0.6])
     predicted_class = np.ones(1)  # For regression class is ignored usually
 
-    explainer.predict_calibrated.return_value = (predict, low, high, predicted_class)
+    explainer.prediction_orchestrator.predict_internal.return_value = (
+        predict,
+        low,
+        high,
+        predicted_class,
+    )
 
     with (
         patch(
@@ -197,7 +209,12 @@ def test_explain_1d_input(pipeline, explainer):
     low = np.array([0.7])
     high = np.array([0.9])
     predicted_class = np.array([1])
-    explainer.predict_calibrated.return_value = (predict, low, high, predicted_class)
+    explainer.prediction_orchestrator.predict_internal.return_value = (
+        predict,
+        low,
+        high,
+        predicted_class,
+    )
 
     explanation = pipeline.explain(x_test)
     assert explanation is not None
@@ -220,7 +237,12 @@ def test_explain_regression_no_threshold(pipeline, explainer):
     low = np.array([0.4])
     high = np.array([0.6])
     predicted_class = np.array([1])
-    explainer.predict_calibrated.return_value = (predict, low, high, predicted_class)
+    explainer.prediction_orchestrator.predict_internal.return_value = (
+        predict,
+        low,
+        high,
+        predicted_class,
+    )
 
     # Should work without threshold
     explanation = pipeline.explain(x_test, threshold=None)

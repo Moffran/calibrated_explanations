@@ -98,7 +98,7 @@ Governance logs follow Standard-005’s domain differentiation, so they can be f
 Filtered explanations include best-effort metadata for transparency:
 
 ```python
-explanations = explainer.explain(X_test)
+explanations = explainer.explain(x_test)
 if hasattr(explanations, 'feature_filter_per_instance_ignore'):
     for i, ignored in enumerate(explanations.feature_filter_per_instance_ignore):
         print(f"Instance {i} ignored features: {ignored}")

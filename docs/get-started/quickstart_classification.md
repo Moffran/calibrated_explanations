@@ -18,6 +18,15 @@ The docs smoke suite executes this quickstart via
 CPython 3.8–3.11 for Linux runners.
 ```
 
+```{admonition} Guarantees & Assumptions
+:class: important
+
+* Calibrated probabilities require a held-out calibration set (the `x_cal`, `y_cal` split below)
+* Venn-Abers calibration provides valid probability intervals under exchangeability
+* Feature weights include uncertainty bounds reflecting calibration quality
+* See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for formal semantics
+```
+
 ## 1. Load data and split sets
 
 ```python

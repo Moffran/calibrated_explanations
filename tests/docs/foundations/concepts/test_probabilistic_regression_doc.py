@@ -8,7 +8,7 @@ from tests.helpers.doc_utils import (
 def test_probabilistic_regression_snippets(enable_fallbacks):
     context = run_quickstart_regression()
     probabilities, probability_interval = context.explainer.predict_proba(
-        context.X_test[:1],
+        context.x_test[:1],
         threshold=150,
         uq_interval=True,
     )
@@ -17,7 +17,7 @@ def test_probabilistic_regression_snippets(enable_fallbacks):
     print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
 
     alternatives = context.explainer.explore_alternatives(
-        context.X_test[:2],
+        context.x_test[:2],
         threshold=150,
     )
     assert alternatives

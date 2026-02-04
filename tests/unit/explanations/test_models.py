@@ -7,6 +7,10 @@ from calibrated_explanations.explanations.models import (
     Explanation,
     from_legacy_dict,
 )
+from calibrated_explanations.explanations.adapters import (
+    domain_to_legacy,
+    legacy_to_domain,
+)
 
 
 class TestModels:
@@ -151,3 +155,87 @@ def test_from_legacy_dict_legacy_feature_predict_heuristic():
     legacy.pop("feature_predict", None)
     expl = from_legacy_dict(0, legacy)
     assert expl.explanation_type == "factual"
+
+
+class TestAdapters:
+    def test_domain_to_legacy_empty(self):
+        """Test domain_to_legacy with minimal Explanation."""
+        expl = Explanation(
+            task="classification",
+            index=0,
+            explanation_type="factual",
+            prediction={"predict": 0.5},
+            rules=[],
+        )
+        legacy = domain_to_legacy(expl)
+        expected = {
+            "task": "classification",
+            "prediction": {"predict": 0.5},
+            "rules": {"rule": [], "feature": []},
+            "feature_weights": {},
+            "feature_predict": {},
+        }
+        assert legacy == expected
+
+    def test_domain_to_legacy_with_rules(self):
+        """Test domain_to_legacy with populated rules."""
+        rules = [
+            FeatureRule(
+                feature=0,
+                rule="f0 <= 0.5",
+                rule_weight={"predict": 0.1, "low": 0.05},
+                rule_prediction={"predict": 0.6, "high": 0.7},
+            ),
+            FeatureRule(
+                feature=1,
+                rule="f1 > 1.0",
+                rule_weight={"predict": 0.2},
+                rule_prediction={"predict": 0.8},
+            ),
+        ]
+        expl = Explanation(
+            task="classification",
+            index=0,
+            explanation_type="factual",
+            prediction={"predict": 0.5},
+            rules=rules,
+        )
+        legacy = domain_to_legacy(expl)
+        expected = {
+            "task": "classification",
+            "prediction": {"predict": 0.5},
+            "rules": {"rule": ["f0 <= 0.5", "f1 > 1.0"], "feature": [0, 1]},
+            "feature_weights": {"predict": [0.1, 0.2], "low": [0.05]},
+            "feature_predict": {"predict": [0.6, 0.8], "high": [0.7]},
+        }
+        assert legacy == expected
+
+    def test_round_trip_legacy_domain_legacy(self):
+        """Test round-trip: legacy -> domain -> legacy preserves structure."""
+        original_legacy = {
+            "task": "classification",
+            "prediction": {"predict": 0.5},
+            "rules": {
+                "rule": ["f0 <= 0.5", "f1 > 1.0"],
+                "feature": [0, 1],
+            },
+            "feature_weights": {"predict": [0.1, 0.2]},
+            "feature_predict": {"predict": [0.6, 0.8]},
+        }
+        # Convert to domain
+        domain = legacy_to_domain(0, original_legacy)
+        # Convert back to legacy
+        round_trip_legacy = domain_to_legacy(domain)
+        # Should match original (allowing for None fillings)
+        assert round_trip_legacy["task"] == original_legacy["task"]
+        assert round_trip_legacy["prediction"] == original_legacy["prediction"]
+        assert round_trip_legacy["rules"]["rule"] == original_legacy["rules"]["rule"]
+        assert round_trip_legacy["rules"]["feature"] == original_legacy["rules"]["feature"]
+        assert (
+            round_trip_legacy["feature_weights"]["predict"]
+            == original_legacy["feature_weights"]["predict"]
+        )
+        assert (
+            round_trip_legacy["feature_predict"]["predict"]
+            == original_legacy["feature_predict"]["predict"]
+        )

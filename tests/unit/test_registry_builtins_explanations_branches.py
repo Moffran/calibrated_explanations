@@ -294,8 +294,12 @@ def test_register_fast_plugin_idempotent():
 def test_add_conjunctions_factual_legacy_simple():
     # Minimal fake object exercising add_conjunctions_factual_legacy via public API
     class FakeExplainer:
-        def _predict(self, x, threshold, low_high_percentiles, classes, bins):
-            return [0.9], [0.8], [1.0], 1
+        def __init__(self):
+            class PredOrchestrator:
+                def predict_internal(self, x, **_kwargs):
+                    return [0.9], [0.8], [1.0], 1
+
+            self.prediction_orchestrator = PredOrchestrator()
 
     class S:
         def __init__(self):
@@ -343,8 +347,12 @@ def test_add_conjunctions_factual_legacy_simple():
 def test_add_conjunctions_alternative_legacy_simple():
     # Minimal fake object exercising add_conjunctions_alternative_legacy via public API
     class FakeExplainer:
-        def _predict(self, x, threshold, low_high_percentiles, classes, bins):
-            return [0.3], [0.2], [0.4], 1
+        def __init__(self):
+            class PredOrchestrator:
+                def predict_internal(self, x, **_kwargs):
+                    return [0.3], [0.2], [0.4], 1
+
+            self.prediction_orchestrator = PredOrchestrator()
 
     class S:
         def __init__(self):

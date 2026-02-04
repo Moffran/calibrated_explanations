@@ -30,13 +30,13 @@ def debug_print(message, debug=True):
 def wine():
     ds = fetch_openml(name="wine", version=7, as_frame=True, parser="pandas")
 
-    X_ = ds.data.values.astype(float)
+    x_ = ds.data.values.astype(float)
     y_ = (ds.target.values == "True").astype(int)
 
     feature_names_ = ds.feature_names
 
     # Create a DataFrame from X
-    df = pd.DataFrame(X_, columns=feature_names_)
+    df = pd.DataFrame(x_, columns=feature_names_)
 
     # Add the target column to the DataFrame
     target = "target"
@@ -45,10 +45,10 @@ def wine():
     df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(
         df, target=target
     )
-    X_ = df.drop(columns=[target]).values
+    x_ = df.drop(columns=[target]).values
     y_ = df[target].values
     return (
-        X_,
+        x_,
         y_,
         feature_names_,
         categorical_features_,
@@ -63,13 +63,13 @@ def wine():
 def iris():
     ds = fetch_openml(name="iris", version=1, as_frame=True, parser="auto")
 
-    X_ = ds.data.values.astype(float)
+    x_ = ds.data.values.astype(float)
     y_ = ds.target.values
 
     feature_names_ = ds.feature_names
 
     # Create a DataFrame from X
-    df = pd.DataFrame(X_, columns=feature_names_)
+    df = pd.DataFrame(x_, columns=feature_names_)
 
     # Add the target column to the DataFrame
     target = "target"
@@ -78,10 +78,10 @@ def iris():
     df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(
         df, target=target
     )
-    X_ = df.drop(columns=[target]).values
+    x_ = df.drop(columns=[target]).values
     y_ = df[target].values
     return (
-        X_,
+        x_,
         y_,
         feature_names_,
         categorical_features_,
@@ -96,13 +96,13 @@ def iris():
 def housing():
     ds = fetch_openml(name="house_sales", version=3)
 
-    X_ = ds.data.values.astype(float)
+    x_ = ds.data.values.astype(float)
     y_ = ds.target.values / 1000
 
     feature_names_ = ds.feature_names
 
     # Create a DataFrame from X
-    df = pd.DataFrame(X_, columns=feature_names_)
+    df = pd.DataFrame(x_, columns=feature_names_)
 
     # Add the target column to the DataFrame
     target = "target"
@@ -111,10 +111,10 @@ def housing():
     df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(
         df, target=target
     )
-    X_ = df.drop(columns=[target]).values
+    x_ = df.drop(columns=[target]).values
     y_ = df[target].values
     return (
-        X_,
+        x_,
         y_,
         feature_names_,
         categorical_features_,
@@ -139,11 +139,11 @@ def glass():
     df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(
         df, target=target
     )
-    X_ = df.drop(columns=[target]).values
+    x_ = df.drop(columns=[target]).values
     y_ = df[target].values
     feature_names_ = df.drop(columns=[target]).columns
     return (
-        X_,
+        x_,
         y_,
         feature_names_,
         categorical_features_,
@@ -192,9 +192,9 @@ for loader in datasets:
     results[dataset] = {}
     model = WrapCalibratedExplainer(rfc if classification else rfr)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train, y_train, test_size=max(calibration_sizes), random_state=42
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    X_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+        x_train, y_train, test_size=max(calibration_sizes), random_state=42
     )
 
     model.fit(X_prop_train, y_prop_train)
@@ -217,7 +217,7 @@ for loader in datasets:
         abl_timer[cal_size] = {"explore": [], "conjugate": []}
 
         cal_prop = int(max(calibration_sizes) / cal_size)
-        X_cal_sample = X_cal[0::cal_prop, :]
+        X_cal_sample = x_cal[0::cal_prop, :]
         y_cal_sample = y_cal[0::cal_prop]
         mode = "classification" if classification else "regression"
         model.calibrate(
@@ -229,7 +229,7 @@ for loader in datasets:
         )
 
         tic = time.time()
-        explanations = model.explore_alternatives(X_test, threshold=threshold)
+        explanations = model.explore_alternatives(x_test, threshold=threshold)
         ct = time.time() - tic
         # print(f'{ct:.1f}',end='\t')
         for explanation in explanations:

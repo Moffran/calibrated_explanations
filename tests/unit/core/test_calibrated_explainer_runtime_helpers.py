@@ -854,7 +854,7 @@ def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
     )
 
     def instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs):
-        assert kwargs.get("condition_source") == "observed"
+        assert kwargs.get("condition_source") == "prediction"
         return f"disc:{choice}:{tuple(not_to_discretize)}:{old}"
 
     def setup(self, discretizer, x_cal, num_features):

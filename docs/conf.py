@@ -171,3 +171,7 @@ autosummary_imported_members = True
 
 # The todo extension settings
 todo_include_todos = True
+
+# nbsphinx configuration (ADR-012)
+nbsphinx_execute = "always"
+nbsphinx_timeout = 60  # seconds per cell (enforce time ceilings)

@@ -76,7 +76,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         bins,
         features_to_ignore=None,
         *,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ) -> None:
         """Initialize the explanation collection for a calibrated explainer.
 
@@ -318,9 +318,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         condition_source = metadata.get("condition_source")
         if condition_source is None:
             if template is not None:
-                condition_source = getattr(template, "condition_source", "observed")
+                condition_source = getattr(template, "condition_source", "prediction")
             else:
-                condition_source = "observed"
+                condition_source = "prediction"
 
         if calibrated_explainer is None or x_test is None:
             raise SerializationError(
@@ -1248,8 +1248,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         Examples
         --------
         >>> from calibrated_explanations import CalibratedExplainer
-        >>> explainer = CalibratedExplainer(model, X_train, y_train)
-        >>> explanations = explainer.explain_factual(X_test)
+        >>> explainer = CalibratedExplainer(model, x_train, y_train)
+        >>> explanations = explainer.explain_factual(x_test)
         >>> narratives = explanations.to_narrative(
         ...     template_path="exp.yaml",
         ...     expertise_level=("beginner", "advanced"),
@@ -1717,35 +1717,13 @@ class FrozenCalibratedExplainer:
         return self._explainer.difficulty_estimator
 
     @property
-    def predict_calibrated(self):
-        """
-        Retrieves the predict function from the underlying explainer.
+    def prediction_orchestrator(self):
+        """Expose the underlying prediction orchestrator (read-only)."""
+        return self._explainer.prediction_orchestrator
 
-        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
-
-        Returns
-        -------
-            function: The predict function used by the explainer.
-        """
-        return self._explainer.predict_calibrated
-
-    @property
-    def _predict(self):
-        """
-        Retrieves the predict function from the underlying explainer.
-
-        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
-
-        Returns
-        -------
-            function: The predict function used by the explainer.
-        """
-        return self._explainer.predict_calibrated
-
-    @property
-    def predict(self):
-        """Public accessor for the predict function (testing helper)."""
-        return self._explainer.predict_calibrated
+    def predict(self, *args, **kwargs):
+        """Forward the public prediction API to the underlying explainer."""
+        return self._explainer.predict(*args, **kwargs)
 
     @property
     def _preload_lime(self):

@@ -111,6 +111,10 @@ class PlotSpec:
     data_slice_id: str | None = None
     rendering_seed: int | None = None
 
+    # Optional reject badge info (added for reject-aware visual cues)
+    reject_badge: str | None = None  # e.g. "REJECTED (ambiguous)", "REJECTED (novel)"
+    reject_reason: str | None = None  # e.g. "ambiguity", "novelty"
+
 
 @dataclass
 class TriangularSpec:

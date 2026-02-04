@@ -196,10 +196,8 @@ def test_predict_delegates(mock_learner, mock_plugin_manager):
 
     x_test = np.array([[5, 6]])
 
-    # Mock return value to allow unpacking in CalibratedExplainer.predict
-    # We need to mock the orchestrator's predict_internal
     orchestrator = explainer.prediction_orchestrator
-    orchestrator.predict_internal.return_value = (
+    orchestrator.predict.return_value = (
         np.array([0]),
         np.array([0]),
         np.array([0]),
@@ -208,8 +206,7 @@ def test_predict_delegates(mock_learner, mock_plugin_manager):
 
     explainer.predict(x_test)
 
-    # Check that it delegated to the implementation method
-    orchestrator.predict_internal.assert_called_once()
+    orchestrator.predict.assert_called_once()
 
 
 def test_properties_delegation(mock_learner, mock_plugin_manager):
@@ -477,16 +474,23 @@ def test_predict_fallback(mock_learner, mock_plugin_manager):
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
-    # Mock orchestrator without _predict_impl
+    # Mock orchestrator predict output
     class Orchestrator:
         def __init__(self):
-            self.predict = MagicMock(return_value="pred")
+            self.predict = MagicMock(
+                return_value=(
+                    np.array([0.8]),
+                    np.array([0.7]),
+                    np.array([0.9]),
+                    np.array([1]),
+                )
+            )
 
     orchestrator = Orchestrator()
     explainer.plugin_manager.prediction_orchestrator = orchestrator
 
-    result = explainer.predict_calibrated(x_cal)
-    assert result == "pred"
+    result = explainer.predict(x_cal)
+    assert result is not None
     orchestrator.predict.assert_called_once()
 
 
@@ -1269,8 +1273,8 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     # predict calibrated regression
     explainer.mode = "regression"
     with patch.object(
-        explainer,
-        "predict_internal",
+        explainer.prediction_orchestrator,
+        "predict",
         return_value=(np.array([0.5]), np.array([0.4]), np.array([0.6]), None),
     ):
         explainer.predict(x_cal)
@@ -1278,8 +1282,8 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     # predict calibrated classification
     explainer.mode = "classification"
     with patch.object(
-        explainer,
-        "predict_internal",
+        explainer.prediction_orchestrator,
+        "predict",
         return_value=(np.array([0]), np.array([0]), np.array([0]), np.array([0, 1])),
     ):
         explainer.predict(x_cal)

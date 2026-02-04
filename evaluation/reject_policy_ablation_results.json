@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "timestamp": 1769763001.5048456,
+    "platform": "nt",
+    "confidence_levels": [
+      0.95
+    ]
+  },
+  "binary_classification": [
+    {
+      "dataset": "breast_cancer",
+      "task": "binary_classification",
+      "confidence": 0.95,
+      "n_total": 171,
+      "n_accepted": 170,
+      "n_rejected": 1,
+      "coverage": 0.9941520467836257,
+      "reject_rate": 0.005847953216374324,
+      "error_rate": 0.0444117647058824,
+      "baseline": {
+        "accuracy": 0.935672514619883,
+        "ece": 0.05380116959064339
+      },
+      "with_rejection": {
+        "accuracy": 0.9352941176470588,
+        "ece": 0.05211764705882365
+      },
+      "improvement": {
+        "accuracy": -0.00037839697282415763,
+        "ece": 0.0016835225318197408
+      }
+    }
+  ],
+  "multiclass_classification": [
+    {
+      "dataset": "iris",
+      "task": "multiclass_classification",
+      "confidence": 0.95,
+      "n_total": 45,
+      "n_accepted": 9,
+      "n_rejected": 36,
+      "coverage": 0.2,
+      "reject_rate": 0.8,
+      "error_rate": 0.2500000000000002,
+      "baseline": {
+        "accuracy": 0.8888888888888888
+      },
+      "with_rejection": {
+        "accuracy": 0.7777777777777778
+      },
+      "improvement": {
+        "accuracy": -0.11111111111111105
+      }
+    }
+  ],
+  "regression_with_threshold": [
+    {
+      "dataset": "diabetes",
+      "task": "regression_with_threshold",
+      "confidence": 0.95,
+      "threshold": 0.32087227414330216,
+      "n_total": 133,
+      "n_accepted": 63,
+      "n_rejected": 70,
+      "coverage": 0.47368421052631576,
+      "reject_rate": 0.5263157894736843,
+      "error_rate": 0.10555555555555565,
+      "baseline": {
+        "accuracy": 0.7142857142857143,
+        "mse": 0.028607145954676193
+      },
+      "with_rejection": {
+        "accuracy": 0.873015873015873,
+        "mse": 0.01566499283764838
+      },
+      "improvement": {
+        "accuracy": 0.15873015873015872,
+        "mse": 0.012942153117027812
+      }
+    }
+  ]
+}

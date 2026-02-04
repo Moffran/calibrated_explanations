@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 # Reproduce notebook setup
 X, y = make_classification(n_samples=2000, n_features=200, n_informative=5, n_redundant=5, random_state=42)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
-X_train_proper, X_cal, y_train_proper, y_cal = train_test_split(X_train, y_train, test_size=200, random_state=42)
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
+X_train_proper, x_cal, y_train_proper, y_cal = train_test_split(x_train, y_train, test_size=200, random_state=42)
 
 learner = RandomForestClassifier(n_estimators=50, random_state=42)
 learner.fit(X_train_proper, y_train_proper)
@@ -28,11 +28,11 @@ config = (
 )
 
 wrapper = WrapCalibratedExplainer.from_config(config)
-wrapper.calibrate(X_cal, y_cal)
+wrapper.calibrate(x_cal, y_cal)
 explainer = wrapper.explainer
 
 print("Calling explain_factual with debug logging...")
-explanations = wrapper.explain_factual(X_test)
+explanations = wrapper.explain_factual(x_test)
 
 print("explanations.features_to_ignore:", getattr(explanations, "features_to_ignore", None))
 print("explanations.features_to_ignore_per_instance present:", getattr(explanations, "features_to_ignore_per_instance", None) is not None)

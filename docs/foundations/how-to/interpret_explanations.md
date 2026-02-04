@@ -6,6 +6,8 @@ sidebarclass: how-to
 
 Understanding the explanation objects is the core reason to use this library. This guide shows how to read factual and alternative explanations, relate them to the calibrated predictions and uncertainty intervals they produce, and tie everything back to the plots and telemetry that document provenance.
 
+For regression, the `prediction_interval` is a **conformal interval** produced by **Conformal Predictive Systems (CPS)**, and the interval percentiles are controlled by `low_high_percentiles`.
+
 ```{admonition} Terminology
 :class: tip
 
@@ -29,9 +31,9 @@ Understanding the explanation objects is the core reason to use this library. Th
 Calibrated explanations return collections (`CalibratedExplanations`, `AlternativeExplanations`) that behave like sequences. The first step is to look at the summary for each item:
 
 ```python
-factual_batch = explainer.explain_factual(X_test[:1])
+factual_batch = explainer.explain_factual(x_test[:1])
 factual = factual_batch[0]
-alternative_batch = explainer.explore_alternatives(X_test[:1])
+alternative_batch = explainer.explore_alternatives(x_test[:1])
 alternative = alternative_batch[0]
 
 print(f"Mode: {factual.get_mode()}  Calibrated prediction: {factual.predict:.3f}")

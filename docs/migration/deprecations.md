@@ -68,6 +68,29 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 | `register_plot_plugin` | `register_plot_builder` + `register_plot_renderer` | v0.9.0 | v0.11.0 | Converted to call `deprecate()`; update plugin registration code.
 | Parameter aliases (`alpha`, `alphas`) | `low_high_percentiles` | v0.9.0 | v0.11.0 | Use `canonicalize_kwargs` or pass canonical key; library will warn on aliases.
 
+## Breaking changes
+
+### Default `condition_source` changed to `"prediction"` (v0.11.0)
+
+Starting in v0.11.0, the default value for the `condition_source` parameter in `CalibratedExplainer` has changed from `"observed"` to `"prediction"`. This change enhances the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels.
+
+**Migration:**
+
+If your code previously relied on the default behavior (condition labels derived from observed labels), you must now explicitly set `condition_source="observed"` when initializing the explainer:
+
+```python
+# Before (implicitly used "observed")
+explainer = CalibratedExplainer(model, x_cal, y_cal)
+
+# After (explicitly retain old behavior)
+explainer = CalibratedExplainer(model, x_cal, y_cal, condition_source="observed")
+
+# New default behavior (recommended)
+explainer = CalibratedExplainer(model, x_cal, y_cal)  # Uses "prediction"
+```
+
+A warning is issued when `condition_source` is not provided, guiding users to the new default. This change does not affect existing code that explicitly sets `condition_source="observed"`. For more details, see the [API documentation](../api/calibrated_explainer.md).
+
 ## For maintainers
 
 - When introducing a deprecation, use `deprecate(message, key="unique:key", stacklevel=3)` and prefer a stable `key` value.

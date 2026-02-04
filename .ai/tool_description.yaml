@@ -1,0 +1,51 @@
+tool_name: calibrated_explanations
+purpose: Generate uncertainty-aware explanations for ML model predictions
+capabilities:
+  - Calibrated prediction confidence intervals
+  - Feature importance with epistemic/aleatoric uncertainty
+  - Factual explanations (why this prediction?)
+  - Alternative explanations (what would change it?)
+  - Support for classification and regression
+public_api:
+  - WrapCalibratedExplainer
+required_calibration: true
+task_types:
+  - binary-classification
+  - multiclass-classification
+  - regression
+  - probabilistic-regression
+basic_workflow:
+  - "1. Split data into train, calibration, test (or use cross-validation)"
+  - "2. Train model on training/proper set"
+  - "3. Initialize: WrapCalibratedExplainer(model)"
+  - "4. Fit wrapper/internal model: explainer.fit(x_proper, y_proper)"
+  - "5. Calibrate: explainer.calibrate(x_cal, y_cal, feature_names=...)"
+  - "6. Explain: explainer.explain_factual(X_test) or explainer.explore_alternatives(X_test)"
+  - "7. Extract uncertainty: explainer.predict_proba(X, uq_interval=True) or explanation.tables"
+common_parameters:
+  mode: "['classification', 'regression']"
+  uq_level: "float (e.g. 0.95)"
+prerequisites:
+  - "Trained scikit-learn compatible model (or plugin)"
+  - "Held-out calibration dataset"
+  - "Python 3.8+"
+output_format:
+  probability: "float (classification; positive-class probability)"
+  probability_interval: "object { low: float, high: float } (classification)"
+  prediction: "float (regression point estimate)"
+  prediction_interval: "object { low: float, high: float } (regression)"
+  feature_importance: "list/dict: importance scores with epistemic/aleatoric bounds"
+  rules: "factual/alternative rule table (rows: value, feature, weight, [low,high])"
+example_output:
+  classification:
+    scenario: "binary-classification"
+    probability: 0.72
+    probability_interval:
+      low: 0.65
+      high: 0.80
+  regression:
+    scenario: "regression"
+    prediction: 112.4
+    prediction_interval:
+      low: 98.1
+      high: 126.7

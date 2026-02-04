@@ -12,11 +12,20 @@ links directly to the companion notebook.
 > calibrated interval outputs complement probabilistic thresholds, with links to
 > the interval regression walkthrough for deeper coverage.
 
+Regression in Calibrated Explanations is **conformal interval regression** implemented via
+**Conformal Predictive Systems (CPS)**. Use `low_high_percentiles=(a, b)` to choose the CPS
+percentiles for the returned interval; use `threshold=...` to switch to probabilistic (thresholded)
+regression. See {doc}`../tasks/regression` and {doc}`../tasks/probabilistic_regression`.
+
 After you finish a quickstart, read the
 {doc}`../foundations/how-to/interpret_explanations` guide to interpret factual,
 alternative, probabilistic, and interval outputs, and visit the
 {doc}`../foundations/concepts/alternatives` explainer for the full alternatives
 walkthrough.
+
+Need CE-first guidance for agents and humans? See the
+{doc}`ce_first_agent_guide` for a runnable, OSS-only workflow.
+Need a faster start? Use the {doc}`../getting_started_60s` decision tree.
 
 ## Interpretation & research links
 
@@ -34,5 +43,7 @@ walkthrough.
 installation
 quickstart_classification
 quickstart_regression
+../getting_started_60s
+ce_first_agent_guide
 troubleshooting
 ```

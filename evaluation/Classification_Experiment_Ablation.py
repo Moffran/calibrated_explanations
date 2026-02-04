@@ -126,11 +126,11 @@ for dataset in klara:
         debug_print(dataSet + " " + alg)
         results[dataSet][alg] = {}
 
-        X_train, X_test, y_train, y_test = train_test_split(
+        x_train, x_test, y_train, y_test = train_test_split(
             X.values, y.values, test_size=test_size, random_state=42
         )
-        X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-            X_train, y_train, test_size=np.max(calibration_sizes), random_state=42
+        X_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+            x_train, y_train, test_size=np.max(calibration_sizes), random_state=42
         )
 
         c2.fit(X_prop_train, y_prop_train)
@@ -162,7 +162,7 @@ for dataset in klara:
                 abl_timer["cce"][cal_size][str(sample_percentile)] = []
 
                 cal_prop = int(np.max(calibration_sizes) / cal_size)
-                X_cal_sample = X_cal[0::cal_prop, :]
+                X_cal_sample = x_cal[0::cal_prop, :]
                 y_cal_sample = y_cal[0::cal_prop]
                 ce = CalibratedExplainer(
                     c2,
@@ -173,13 +173,13 @@ for dataset in klara:
                     sample_percentiles=sample_percentile,
                 )
                 ablation["proba"][cal_size][str(sample_percentile)].append(
-                    c2.predict_proba(X_test)[:, 1]
+                    c2.predict_proba(x_test)[:, 1]
                 )
 
                 # try:
                 # print(f'{i}:',end='\t')
                 tic = time.time()
-                factual_explanations = ce.explain_factual(X_test)
+                factual_explanations = ce.explain_factual(x_test)
                 ct = time.time() - tic
                 abl_timer["ce"][cal_size][str(sample_percentile)].append(ct)
                 # print(f'{ct:.1f}',end='\t')
@@ -188,7 +188,7 @@ for dataset in klara:
                 )
 
                 tic = time.time()
-                factual_explanation = ce.explore_alternatives(X_test)
+                factual_explanation = ce.explore_alternatives(x_test)
                 ct = time.time() - tic
                 abl_timer["cce"][cal_size][str(sample_percentile)].append(ct)
                 # print(f'{ct:.1f}',end='\t')

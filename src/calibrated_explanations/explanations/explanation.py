@@ -117,7 +117,7 @@ class CalibratedExplanation(ABC):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ):
         """Abstract base class for storing and visualizing calibrated explanations.
 
@@ -195,6 +195,10 @@ class CalibratedExplanation(ABC):
         else:
             self.y_minmax = [0, 0]
         self.focus_columns = None
+
+        # Optional reject context attached when explanations are produced under
+        # a reject policy (FLAG / ONLY_REJECTED). Populated by orchestrator.
+        self.reject_context = None
 
         self._validate_prediction_invariant()
 
@@ -471,8 +475,8 @@ class CalibratedExplanation(ABC):
         Examples
         --------
         >>> from calibrated_explanations import CalibratedExplainer
-        >>> explainer = CalibratedExplainer(model, X_train, y_train)
-        >>> explanations = explainer.explain_factual(X_test)
+        >>> explainer = CalibratedExplainer(model, x_train, y_train)
+        >>> explanations = explainer.explain_factual(x_test)
         >>> single_explanation = explanations[0]
         >>> narrative = single_explanation.to_narrative(
         ...     template_path="exp.yaml",
@@ -876,7 +880,7 @@ class CalibratedExplanation(ABC):
         bins=None,
     ):
         """Calculate the prediction for a conjunctive rule using batched inference."""
-        predict_fn = self.get_explainer().predict_calibrated
+        predict_fn = self.get_explainer().prediction_orchestrator.predict_internal
         perturbed = np.array(perturbed, copy=True)
 
         # Prepare value arrays
@@ -989,7 +993,7 @@ class CalibratedExplanation(ABC):
                 bins,
             )
 
-        predict_fn = self.get_explainer().predict_calibrated  # pylint: disable=protected-access
+        predict_fn = self.get_explainer().prediction_orchestrator.predict_internal
         # Ensure perturbed is a writable copy to avoid "read-only" errors
         perturbed = np.array(perturbed, copy=True)
 
@@ -1203,7 +1207,7 @@ class CalibratedExplanation(ABC):
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
-        predict, low, high, _ = self.get_explainer().predict(
+        predict, low, high, _ = self.get_explainer().prediction_orchestrator.predict_internal(
             perturbed_x,
             threshold=perturbed_threshold,
             low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
@@ -1300,7 +1304,7 @@ class FactualExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ):
         """Class for storing and visualizing factual explanations.
 
@@ -1931,7 +1935,7 @@ class AlternativeExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source: str = "observed",
+        condition_source: str = "prediction",
     ):
         """Class representing an alternative explanation for a given instance.
 
@@ -2847,7 +2851,7 @@ class FastExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
-        condition_source="observed",
+        condition_source="prediction",
     ):
         """Class representing fast explanations.
 
@@ -2873,7 +2877,7 @@ class FastExplanation(CalibratedExplanation):
             The threshold for binary classification or regression explanations.
         instance_bin : int, optional
             The bin index of the instance.
-        condition_source : str, default="observed"
+        condition_source : str, default="prediction"
             The source of the conditions for the explanation.
         """
         super().__init__(

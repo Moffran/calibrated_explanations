@@ -38,6 +38,8 @@ def explainer():
     # Mock rule_boundaries to return 3 rules (one per feature)
     explainer.rule_boundaries.return_value = [["-inf", "inf"]] * 3
 
+    explainer.prediction_orchestrator = MagicMock()
+
     # Prevent deepcopy to ensure FrozenCalibratedExplainer uses this original instance
     # instead of creating a fresh Mock that loses our configured attributes
     explainer.__deepcopy__ = MagicMock(side_effect=RuntimeError("Do not copy me"))
@@ -87,7 +89,7 @@ def test_explain_validates_input_shape(pipeline_fixture):
 def test_explain_happy_path_classification(pipeline_fixture, explainer):
     pipeline, mock_helper = pipeline_fixture
     x_test = np.array([[1.0, 2.0, 3.0]])
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -107,7 +109,7 @@ def test_explain_validates_pandas(pipeline_fixture, explainer):
     import pandas as pd
 
     x_test = pd.DataFrame([[1.0, 2.0, 3.0]], columns=["f1", "f2", "f3"])
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -120,7 +122,7 @@ def test_explain_mondrian_valid(pipeline_fixture, explainer):
     pipeline, _ = pipeline_fixture
     explainer.is_mondrian.return_value = True
     x_test = np.array([[1.0, 2.0, 3.0]])
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -133,7 +135,7 @@ def test_explain_regression_threshold(pipeline_fixture, explainer):
     pipeline, _ = pipeline_fixture
     explainer.mode = "regression"
     x_test = np.array([[1.0, 2.0, 3.0]])
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -147,7 +149,7 @@ def test_explain_raises_configuration_error_if_lime_missing(pipeline_fixture, ex
     mock_helper.preload.return_value = (None, None)
 
     x_test = np.array([[1.0, 2.0, 3.0]])
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -162,7 +164,7 @@ def test_explain_multiclass(pipeline_fixture, explainer):
     pipeline, _ = pipeline_fixture
     explainer.is_multiclass.return_value = True
     x_test = np.array([[1.0, 2.0, 3.0]])
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -175,7 +177,7 @@ def test_explain_1d_input(pipeline_fixture, explainer):
     pipeline, mock_helper = pipeline_fixture
     x_test = np.array([1.0, 2.0, 3.0])  # 1D array
 
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),
@@ -195,7 +197,7 @@ def test_explain_regression_no_threshold(pipeline_fixture, explainer):
     explainer.mode = "regression"
     x_test = np.array([[1.0, 2.0, 3.0]])
 
-    explainer.predict_calibrated.return_value = (
+    explainer.prediction_orchestrator.predict_internal.return_value = (
         np.array([0.5]),
         np.array([0.4]),
         np.array([0.6]),

@@ -40,7 +40,7 @@ class DummyRejectOrch:
             prediction=None,
             explanation=None,
             rejected=None,
-            policy=RejectPolicy.PREDICT_AND_FLAG,
+            policy=RejectPolicy.FLAG,
             metadata={},
         )
 
@@ -100,17 +100,8 @@ def test_invoke_supports_all_policies():
 
 
 def test_predict_supports_all_policies():
-    for policy in list(RejectPolicy):
-        s = make_dummy_predict_self()
-        res = CalibratedExplainer.predict_internal(
-            s,
-            x=[1, 2],
-            reject_policy=policy,
-        )
-
-        if policy is RejectPolicy.NONE:
-            assert isinstance(res, tuple)
-        else:
-            assert s.reject_orchestrator.called is True
-            assert isinstance(res, RejectResult)
-            assert s.reject_orchestrator.last_policy == policy
+    # Prediction-level reject routing used to live on CalibratedExplainer via
+    # `predict_internal`. That API was intentionally removed (hard break).
+    assert not hasattr(CalibratedExplainer, "predict_internal")
+    assert not hasattr(CalibratedExplainer, "predict_calibrated")
+    assert not hasattr(CalibratedExplainer, "_predict")

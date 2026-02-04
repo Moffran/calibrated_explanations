@@ -17,7 +17,7 @@ gaussian_perturbation(column, severity)
 uniform_perturbation(column, severity)
     Apply uniform noise as numerical perturbation to a column in a DataFrame.
 
-perturb_dataset(X_cal, y_cal, categorical_features=None, noise_type='uniform', scale_factor=5, severity=0.5)
+perturb_dataset(x_cal, y_cal, categorical_features=None, noise_type='uniform', scale_factor=5, severity=0.5)
     Perturb the dataset for the calibration process.
 """
 
@@ -176,7 +176,7 @@ def perturb_dataset(
 
     Parameters
     ----------
-    X_cal : numpy.ndarray
+    x_cal : numpy.ndarray
         Input feature matrix.
     y_cal : numpy.ndarray
         Input target vector.

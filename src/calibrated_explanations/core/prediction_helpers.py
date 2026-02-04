@@ -41,6 +41,11 @@ class _ExplainerProtocol(Protocol):
     x_cal: np.ndarray
     interval_learner: Any
 
+    @property
+    def prediction_orchestrator(self) -> Any:
+        """Return the prediction orchestrator."""
+        ...
+
     def is_mondrian(self) -> bool:
         """Return True when a Mondrian (per-bin) calibration is active."""
         ...
@@ -51,19 +56,6 @@ class _ExplainerProtocol(Protocol):
 
     def is_fast(self) -> bool:
         """Return True when the specialized fast explainer path is available."""
-        ...
-
-    def _predict(
-        self,
-        x: np.ndarray,
-        *,
-        threshold: Optional[ThresholdLike] = ...,  # noqa: D401
-        low_high_percentiles: Tuple[int, int] = ...,
-        classes: Optional[Sequence[int]] = ...,
-        bins: Optional[np.ndarray] = ...,
-        feature: Optional[int] = ...,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Compute calibrated predictions and interval bounds."""
         ...
 
     def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any:
@@ -116,7 +108,7 @@ def initialize_explanation(
         threshold,
         bins,
         features_to_ignore,
-        condition_source=getattr(explainer, "condition_source", "observed"),
+        condition_source=getattr(explainer, "condition_source", "prediction"),
     )
     if threshold is not None:
         if "regression" not in explainer.mode:
@@ -144,8 +136,8 @@ def predict_internal(
     feature: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Run the internal prediction logic (mechanically moved)."""
-    # (Body kept inside calibrated_explainer for now to limit patch size) -- placeholder stub if future isolation needed
-    return explainer.predict_calibrated(
+    orchestrator = explainer.prediction_orchestrator
+    return orchestrator.predict_internal(
         x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,

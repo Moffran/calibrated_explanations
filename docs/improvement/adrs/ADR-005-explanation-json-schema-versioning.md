@@ -1,8 +1,8 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-02-02):** Last edited 2026-02-02 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.10.3 (validation enforcement)
 
 # ADR-005: Explanation JSON Schema Versioning
 
-Status: Accepted (revised for v0.10.1 scope)
+Status: Accepted (enforcement in v0.10.3)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -65,7 +65,10 @@ Rules:
   keys).
 - Major increments indicate breaking structural changes.
 - `explanation_type` is required and must be `"factual"` or `"alternative"` as defined
-  in ADR-008; this is the only explanation-type discriminator in v1.
+  in ADR-008. The schema v1.0.0 is broadened to also accept `"fast"` as an additive,
+  experimental value for internal/opt-in use; `fast` is intentionally treated as
+  experimental and is not promoted in practitioner-facing docs. Consumers should
+  continue to rely primarily on `factual`/`alternative` for public workflows.
 - `prediction` and rule-level `rule_weight` / `rule_prediction` carry calibrated
   predictions with uncertainty intervals as required by the CE papers.
 - `provenance` and `metadata` are optional extension points for library/caller context
@@ -107,10 +110,14 @@ must come with:
 
 ## Validation
 
-- Provide `validate_payload(obj)` that checks required fields via JSON Schema when
-  `jsonschema` is installed.
+## Validation
+
+- Provide `validate_payload(obj)` that always performs a minimal, structural validation
+  of required fields and types even when `jsonschema` is not installed. When
+  `jsonschema` is available, the full JSON Schema-based validation is used.
 - Enforce interval invariants (`low <= predict <= high`) during serialization for
-  top-level predictions and rule-level predictions.
+  top-level predictions and rule-level predictions; this enforcement applies
+  elementwise for vector predictions as well as scalars.
 - Envelope validation is **out of scope** for v1.0.0.
 
 ## Alternatives Considered
@@ -144,6 +151,27 @@ Negative / Risks:
 - If an envelope is introduced later, it must not invalidate the v1 payload contract
   and must preserve round-trip serialization for existing fixtures.
 
+## Addendum (2026-01-28): Implementation of Strict Validator and Fixtures
+
+### Decision
+Implement strict JSON Schema validation and test fixtures for the v1 explanation payload schema as targeted for v0.10.3.
+
+### Rationale
+The ADR specified "strict validator + fixtures" as remaining work for v0.10.3. The validator was already implemented using JSON Schema with optional `jsonschema` dependency, and interval invariants were enforced during serialization. However, test fixtures validating against the schema were missing.
+
+### Implementation
+- **Validator**: The `validate_payload()` function in `calibrated_explanations.schema.validation` provides strict JSON Schema validation when `jsonschema` is available, falling back gracefully when not installed.
+- **Fixtures**: Added `golden_explanation_v1.json` as a test fixture and implemented `test_should_validate_golden_explanation_fixture()` to ensure the fixture validates against the schema.
+- **Interval Invariants**: Enforced during serialization in `serialization._validate_invariants()` for both global predictions and rule-level predictions.
+
+### Public API
+- `calibrated_explanations.schema.validate_payload(obj)`: Validates a payload dict against schema v1.
+- `calibrated_explanations.serialization.validate_payload(obj)`: Deprecated alias for backward compatibility.
+
+### Testing
+- Unit tests cover schema validation, interval invariant enforcement, and golden fixture validation.
+- Tests pass with and without `jsonschema` installed.
+
 ## Open Questions
 
 - When concrete non-feature-attribution payloads exist, should they be a new major
@@ -153,5 +181,5 @@ Negative / Risks:
 
 ## Decision Notes
 
-Revisit after the first external consumer feedback cycle and after v0.10.1 ships with
+Revisit after the first external consumer feedback cycle and after v0.10.3 ships with
 payload-level validation and fixtures aligned to the v1 schema.

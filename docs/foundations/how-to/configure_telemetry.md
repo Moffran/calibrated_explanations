@@ -13,7 +13,7 @@ Calibrated Explanations ships an optional structured telemetry payload that docu
 Once telemetry is enabled, use the helpers below to review payloads in code.
 
 ```python
-factual = explainer.explain_factual(X_test[:1])
+factual = explainer.explain_factual(x_test[:1])
 telemetry = getattr(factual, "telemetry", {})
 print(telemetry["interval_source"], telemetry["plot_source"])
 print(telemetry["uncertainty"]["calibrated_value"])

@@ -18,6 +18,15 @@ Continuous integration runs this guide through
 with CPython 3.8–3.11.
 ```
 
+```{admonition} Guarantees & Assumptions
+:class: important
+
+* Conformal intervals require a calibration set for CPS fitting (the `x_cal`, `y_cal` split below)
+* Probabilistic regression uses CPS + Venn-Abers for calibrated threshold probabilities
+* Interval width reflects the requested `low_high_percentiles` (default: 5th–95th for 90% coverage)
+* See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for formal semantics
+```
+
 ## 1. Prepare the dataset
 
 ```python

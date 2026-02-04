@@ -59,6 +59,15 @@ class DummyCalibratedExplainer:
         self.difficulty_estimator = "difficulty"
         self.plugin_manager = PluginManager(self)
 
+        class PredOrch:
+            def __init__(self, outer):
+                self.outer = outer
+
+            def predict_internal(self, data, **_kw):
+                return self.outer.predict_func(data)
+
+        self.prediction_orchestrator = PredOrch(self)
+
     def discretize(self, values):
         # Mock discretization for testing
         return values
@@ -69,8 +78,8 @@ class DummyCalibratedExplainer:
     def preload_shap(self, x_cal=None):
         return None, DummyShapExplanation(self.num_features)
 
-    def predict_calibrated(self, data):
-        return self.predict_func(data)
+    def predict(self, x, **kwargs):
+        return self.prediction_orchestrator.predict_internal(x, **kwargs)
 
     def infer_explanation_mode(self):
         return "factual"

@@ -20,13 +20,13 @@ Each explanation or prediction entry point supports the `reject_policy` keyword 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
-explainer = CalibratedExplainer(learner, X_cal, y_cal)
+explainer = CalibratedExplainer(learner, x_cal, y_cal)
 
 # Legacy behavior (returns CalibratedExplanations / prediction tuple)
-result = explainer.explain_factual(X_test)
+result = explainer.explain_factual(x_test)
 
 # Non-NONE policy returns a RejectResult envelope
-envelope = explainer.explain_factual(X_test, reject_policy=RejectPolicy.EXPLAIN_NON_REJECTS)
+envelope = explainer.explain_factual(x_test, reject_policy=RejectPolicy.EXPLAIN_NON_REJECTS)
 assert envelope.policy == RejectPolicy.EXPLAIN_NON_REJECTS
 ```
 
@@ -43,13 +43,13 @@ from calibrated_explanations.core.reject.policy import RejectPolicy
 
 explainer = CalibratedExplainer(
     learner,
-    X_cal,
+    x_cal,
     y_cal,
     default_reject_policy=RejectPolicy.PREDICT_AND_FLAG,
 )
 
 # Subsequent calls inherit the policy
-envelope = explainer.predict(X_test)
+envelope = explainer.predict(x_test)
 assert envelope.policy == RejectPolicy.PREDICT_AND_FLAG
 ```
 
@@ -60,9 +60,9 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 
 wrapper = WrapCalibratedExplainer(learner)
 wrapper.fit(X_fit, y_fit)
-wrapper.calibrate(X_cal, y_cal, default_reject_policy=RejectPolicy.EXPLAIN_ALL)
+wrapper.calibrate(x_cal, y_cal, default_reject_policy=RejectPolicy.EXPLAIN_ALL)
 
-envelope = wrapper.explain_factual(X_test)
+envelope = wrapper.explain_factual(x_test)
 assert envelope.policy == RejectPolicy.EXPLAIN_ALL
 ```
 
@@ -71,3 +71,26 @@ assert envelope.policy == RejectPolicy.EXPLAIN_ALL
 - Added the `RejectPolicy` enum and `RejectResult` envelope so callers can opt into reject-aware outputs without changing existing defaults.
 - Explanation and prediction entry points now accept `reject_policy`, with non-`NONE` selections implicitly enabling reject orchestration and returning a structured envelope.
 - Explainer defaults (`default_reject_policy`) and wrapper calibration now offer reusable policy configuration, while per-call overrides continue to take precedence.
+
+## Per-instance breakdowns
+
+When a non-`NONE` policy is active the `RejectResult.metadata` dictionary contains per-instance keys that let you inspect the rejection breakdown without invoking the orchestrator directly. These keys are:
+
+- `ambiguity_mask`: `numpy.ndarray[bool]` — True for instances whose prediction set contains more than one label (ambiguous).
+- `novelty_mask`: `numpy.ndarray[bool]` — True for instances whose prediction set is empty (novelty).
+- `prediction_set_size`: `numpy.ndarray[int]` — Integer size of the prediction set per instance.
+- `epsilon`: `numpy.ndarray[float]` — Per-instance epsilon used when constructing the prediction set.
+
+Short example:
+
+```python
+res = explainer.predict(x_test, reject_policy=RejectPolicy.PREDICT_AND_FLAG)
+meta = res.metadata or {}
+ambig = meta.get("ambiguity_mask")
+nov = meta.get("novelty_mask")
+sizes = meta.get("prediction_set_size")
+
+print("Ambiguous count:", int(np.sum(ambig)) if ambig is not None else 0)
+print("Uncertain count:", int(np.sum(unc)) if unc is not None else 0)
+print("Prediction set sizes sample:", sizes[:10] if sizes is not None else None)
+```

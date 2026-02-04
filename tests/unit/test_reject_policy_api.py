@@ -33,7 +33,7 @@ class DummyRejectOrch:
             prediction=None,
             explanation=None,
             rejected=None,
-            policy=RejectPolicy.PREDICT_AND_FLAG,
+            policy=RejectPolicy.FLAG,
             metadata={},
         )
 
@@ -82,7 +82,7 @@ def test_invoke_delegates_to_reject_orchestrator_on_per_call():
         bins=None,
         features_to_ignore=None,
         extras=None,
-        reject_policy=RejectPolicy.PREDICT_AND_FLAG,
+        reject_policy=RejectPolicy.FLAG,
     )
     # When policy non-NONE, the dummy reject orchestrator should be called and return its RejectResult
     assert s.reject_orchestrator.called is True
@@ -91,7 +91,7 @@ def test_invoke_delegates_to_reject_orchestrator_on_per_call():
 
 def test_explainer_default_policy_used_when_no_per_call():
     s = make_dummy_self()
-    s.default_reject_policy = RejectPolicy.EXPLAIN_ALL
+    s.default_reject_policy = RejectPolicy.FLAG
     res = CalibratedExplainer.invoke_explanation_plugin(
         s,
         mode="factual",
@@ -109,7 +109,7 @@ def test_explainer_default_policy_used_when_no_per_call():
 
 def test_per_call_none_overrides_default_policy():
     s = make_dummy_self()
-    s.default_reject_policy = RejectPolicy.EXPLAIN_ALL
+    s.default_reject_policy = RejectPolicy.FLAG
 
     res = CalibratedExplainer.invoke_explanation_plugin(
         s,

@@ -12,6 +12,32 @@ notebooks to keep probabilistic and interval narratives aligned.
 > and threshold-based decision boundaries. See the [ADR-021 Terminology section](../../improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 > for terminology guidance.
 
+## Two Regression Modes
+
+Calibrated Explanations supports **two distinct regression modes** that answer different questions:
+
+| Mode | API Signal | Returns | Question Answered |
+|------|-----------|---------|-------------------|
+| **Conformal Interval Regression** | `predict(x, uq_interval=True, low_high_percentiles=...)` | Point estimate + CPS interval | "Where will y fall?" |
+| **Probabilistic Regression** | `predict_proba(x, threshold=...)` | Probability P(y ≤ t) or P(low < y ≤ high) | "What's the probability y meets my threshold?" |
+
+### Key Semantic Difference
+
+* **Interval regression** answers: "Give me a range where y is likely to be" (conformal percentiles)
+* **Probabilistic regression** answers: "What's the probability y satisfies my condition?" (calibrated probability via CPS + Venn-Abers)
+
+Both modes can be used on the same explainer; the `threshold` parameter activates probabilistic mode.
+
+```{admonition} Common Confusion
+:class: warning
+
+These are **not** the same thing:
+* Interval regression returns a **numeric range** (e.g., [120, 180])
+* Probabilistic regression returns a **probability** (e.g., P(y ≤ 150) = 0.73)
+
+The interval tells you *where* the value will be; the probability tells you *how likely* a condition is met.
+```
+
 ## Calibrated probabilities and intervals
 
 1. Start with the {doc}`../../get-started/quickstart_regression` flow or the
@@ -21,17 +47,30 @@ notebooks to keep probabilistic and interval narratives aligned.
    ``threshold`` and ``uq_interval=True`` to obtain the calibrated probability
    and its `(low, high)` interval bounds.
 3. Treat the interval as the decision boundary for interval regression use
-   cases. The probability tells you how likely it is that the target lands above
-   (or within) the threshold.
+   cases. The probability tells you how likely it is that the target is at or below
+   the threshold (for scalar thresholds) or within the specified interval (for tuple thresholds).
 
 ```python
 probabilities, probability_interval = explainer.predict_proba(
-    X_test[:1],
+    x_test[:1],
     threshold=150,
     uq_interval=True,
 )
 low, high = probability_interval
 print(f"Calibrated probability: {probabilities[0, 1]:.3f}")
+print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
+```
+
+You can also ask for the probability that the true value lies inside a **user-defined interval** by passing a tuple threshold:
+
+```python
+probabilities, probability_interval = explainer.predict_proba(
+   x_test[:1],
+   threshold=(120, 180),
+   uq_interval=True,
+)
+low, high = probability_interval
+print(f"P(120 < y <= 180): {probabilities[0]:.3f}")
 print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
 ```
 
@@ -47,7 +86,7 @@ classification quickstarts.
 
 ```python
 alternatives = explainer.explore_alternatives(
-    X_test[:2],
+    x_test[:2],
     threshold=150,
 )
 ```

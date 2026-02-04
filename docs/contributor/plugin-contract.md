@@ -14,6 +14,17 @@ explanations pipeline:
 2. **Explanation plugins** - Generate factual, alternative, or fast explanations from calibrated models
 3. **Plot plugins** - Render explanation visualizations in different styles and formats
 
+## Plugin override precedence
+
+All plugin types follow a consistent override hierarchy for selection and configuration:
+
+1. **Explainer parameters** (highest priority): Direct kwargs to `CalibratedExplainer` (e.g., `factual_plugin`, `interval_plugin`, `plot_style`).
+2. **Environment variables**: Mode-specific variables (e.g., `CE_EXPLANATION_PLUGIN_FACTUAL`, `CE_INTERVAL_PLUGIN`, `CE_PLOT_STYLE`).
+3. **pyproject.toml**: Project-level defaults under `[tool.calibrated_explanations.plugins]` or mode sections.
+4. **Plugin-declared dependencies** (lowest): Automatic seeding from plugin metadata (e.g., `interval_dependency`, `plot_dependency`).
+
+For detailed wiring examples, see {doc}`./extending/plugin-advanced-contract`.
+
 ## Hello, calibrated plugin (minimal explanation plugin)
 
 Use this minimal example when you want to wrap a model that already exposes
@@ -123,6 +134,15 @@ validate_plugin_meta(dict(plugin.plugin_meta))
 register_interval_plugin("external.hello.interval", plugin)
 ```
 
+### Override precedence for interval calibrator plugins
+
+Interval plugins are selected globally or per-mode:
+
+- **Explainer parameters**: `interval_plugin`, `fast_interval_plugin`
+- **Environment variables**: `CE_INTERVAL_PLUGIN`, `CE_INTERVAL_PLUGIN_FAST`
+- **pyproject.toml**: Under `[tool.calibrated_explanations.intervals]` with keys `default`, `fast`
+- **Dependencies**: Seeded from explanation plugin metadata `interval_dependency`
+
 ---
 
 ## Hello, explanation plugin
@@ -195,6 +215,15 @@ plugin = HelloExplanationPlugin()
 validate_plugin_meta(dict(plugin.plugin_meta))
 register_explanation_plugin("external.hello.explanation", plugin)
 ```
+
+### Override precedence for explanation plugins
+
+Explanation plugins support mode-specific selection:
+
+- **Explainer parameters**: `factual_plugin`, `alternative_plugin`, `fast_plugin`
+- **Environment variables**: `CE_EXPLANATION_PLUGIN_FACTUAL`, `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`
+- **pyproject.toml**: Under `[tool.calibrated_explanations.explanations]` with keys `factual`, `alternative`, `fast`
+- **Dependencies**: Plugin metadata `interval_dependency` and `plot_dependency` seed related plugins automatically
 
 ---
 
@@ -357,6 +386,16 @@ register_plot_style(
 )
 ```
 
+### Override precedence for plot plugins
+
+Plot styles control visualization rendering:
+
+- **Explainer parameters**: `plot_style`
+- **Explanation.plot() parameters**: `style_override` for dynamic selection
+- **Environment variables**: `CE_PLOT_STYLE`, `CE_PLOT_STYLE_FALLBACKS`
+- **pyproject.toml**: Under `[tool.calibrated_explanations.plots]` with key `style`
+- **Dependencies**: Seeded from explanation plugin metadata `plot_dependency`
+
 ---
 
 ## Wiring plugins into your explainer and explanations
@@ -494,6 +533,10 @@ guides.
 
 Use these decision records when designing new plugins:
 
+- [ADR-013 - interval calibrator plugin strategy](../improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
+  defines the architecture for interval calibrator plugins and their integration with core calibrators.
+- [ADR-015 - explanation plugin architecture](../improvement/adrs/ADR-015-explanation-plugin.md)
+  specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
 - [ADR-024 - legacy plot input contracts](../improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   defines PlotSpec and legacy plot inputs that plugins must honour.
 - [ADR-025 - legacy plot rendering semantics](../improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)

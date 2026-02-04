@@ -395,7 +395,7 @@ class PredictionOrchestrator:
             interval_summary if interval_summary is not None else self.explainer.interval_summary
         )
         if feature is None and self.explainer.is_fast():
-            feature = self.explainer.num_features  # Use the calibrator defined using X_cal
+            feature = self.explainer.num_features  # Use the calibrator defined using x_cal
         if self.explainer.mode == "classification":
             if self.explainer.is_multiclass():
                 if self.explainer.is_fast():

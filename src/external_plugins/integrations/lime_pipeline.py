@@ -144,7 +144,7 @@ class LimePipeline:
             x_test,
             threshold,
             bins,
-            condition_source=getattr(self.explainer, "condition_source", "observed"),
+            condition_source=getattr(self.explainer, "condition_source", "prediction"),
         )
 
         # Validate and set threshold if provided
@@ -188,8 +188,13 @@ class LimePipeline:
         ]
 
         # Get predictions for the instances
-        predict, low, high, predicted_class = self.explainer.predict_calibrated(
-            x_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+        predict, low, high, predicted_class = (
+            self.explainer.prediction_orchestrator.predict_internal(
+                x_test,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins,
+            )
         )
         prediction["predict"] = predict
         prediction["low"] = low
@@ -207,7 +212,7 @@ class LimePipeline:
 
         # Define probability functions for LIME
         def low_proba(x_data):
-            _, low_vals, _, _ = self.explainer.predict_calibrated(
+            _, low_vals, _, _ = self.explainer.prediction_orchestrator.predict_internal(
                 x_data,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,
@@ -216,7 +221,7 @@ class LimePipeline:
             return np.asarray([[1 - l, l] for l in low_vals])  # noqa: E741
 
         def high_proba(x_data):
-            _, _, high_vals, _ = self.explainer.predict_calibrated(
+            _, _, high_vals, _ = self.explainer.prediction_orchestrator.predict_internal(
                 x_data,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,

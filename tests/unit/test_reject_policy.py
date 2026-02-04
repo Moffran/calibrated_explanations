@@ -7,7 +7,7 @@ from types import SimpleNamespace
 def test_policy_enum_and_helper():
     assert RejectPolicy.NONE.name == "NONE"
     assert is_policy_enabled(RejectPolicy.NONE) is False
-    assert is_policy_enabled(RejectPolicy.PREDICT_AND_FLAG) is True
+    assert is_policy_enabled(RejectPolicy.FLAG) is True
 
 
 def test_reject_result_dataclass():
@@ -15,10 +15,10 @@ def test_reject_result_dataclass():
         prediction=[1, 0],
         explanation=None,
         rejected=[False, True],
-        policy=RejectPolicy.PREDICT_AND_FLAG,
+        policy=RejectPolicy.FLAG,
         metadata={"x": 1},
     )
-    assert r.policy == RejectPolicy.PREDICT_AND_FLAG
+    assert r.policy == RejectPolicy.FLAG
     assert r.rejected[1] is True
 
 

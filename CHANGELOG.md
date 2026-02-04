@@ -5,6 +5,46 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.2...main)
 
+### Changed
+
+- **Simplified RejectPolicy from 6 to 4 policies:** Refactored the `RejectPolicy` enum to use cleaner, operation-agnostic policy names that work consistently for both `predict()` and `explain()` operations:
+  - `FLAG` (replaces `PREDICT_AND_FLAG` and `EXPLAIN_ALL`) - Process all instances, include rejection status in results
+  - `ONLY_REJECTED` (replaces `EXPLAIN_REJECTS`) - Process only rejected (uncertain) instances
+  - `ONLY_ACCEPTED` (replaces `EXPLAIN_NON_REJECTS` and `SKIP_ON_REJECT`) - Process only accepted (confident) instances
+  - `NONE` - Unchanged, legacy behavior with no reject orchestration
+
+- **Transparent Rejection Integration (Solution 1):** `explain_factual` now returns a specialized `RejectCalibratedExplanations` collection when a rejection policy is active. This subclass behaves exactly like the standard collection (supporting `plot()`, slicing, and `add_conjunctions()`) while transparently carrying rejection metadata (ambiguity masks, etc.). This restores existing workflow compatibility while surfacing rejection signals.
+
+- **Linting and Security Compliance:** Replaced bare `except: pass` blocks with logged exceptions to satisfy Bandit security checks (B110) and ensure robust error visibility.
+
+- **Default condition_source to "prediction":** The default value for `condition_source` in `CalibratedExplainer` has been changed from `"observed"` to `"prediction"` to enhance consistency in calibrated explanations by basing condition labels on model predictions rather than observed labels. Users relying on the previous default behavior should explicitly set `condition_source="observed"`. A warning is issued when the parameter is not provided, guiding users to the new default.
+
+- **Explanation JSON Schema v1 strict validation:** Implemented strict JSON Schema validation for explanation payloads with test fixtures. The `validate_payload()` function now enforces schema compliance when `jsonschema` is available, and interval invariants are validated during serialization. Added golden fixture validation test (see ADR-005 addendum).
+
+- **Explanation domain model hardening:** Completed domain-model hardening with comprehensive adapter tests and round-trip compatibility between domain and legacy formats. Added unit tests for `domain_to_legacy` and `legacy_to_domain` adapters, ensuring data integrity in conversions (see ADR-008 addendum).
+
+- **Core-only matplotlib import clarity:** Ensured that core-only installs do not require matplotlib at import time by implementing lazy loading in package __init__.py and added verification test (ADR-010).
+
+- **Plugin authoring & override guidance (Standard-004):** Added comprehensive docs, headless examples, and tests for explanation, interval, and plot plugins (see `tests/docs/contributor/test_plugin_contract_examples.py`).
+
+- **Legacy API stability gates (checklist + audit):** Added PR checklist items and an audit workflow to enforce legacy API stability per ADR-020.
+
+- **CE-first agent helper coverage:** Added a `calibrated_explanations.ce_agent_utils` with helper functions for AI agents and summaries to surface explanations, conjunctions, uncertainty quantification, and probabilistic regression (thresholded regression) semantics, among other things. Also added a `ce_first_agent_guide.md` to document usage patterns.
+
+### Fixed
+
+- **Reject ambiguity/uncertainty breakdown:** Added a breakdown helper and metadata so callers can distinguish ambiguity (multi-label) vs uncertainty (empty-set) rejects; ambiguity is non-decreasing with confidence while uncertainty is non-increasing.
+
+- **Reject envelope contract:** When a `RejectPolicy` other than `NONE` is active, prediction APIs return a `RejectResult` envelope whose `prediction` field mirrors the invoked method's legacy payload (including regression UQ tuples such as `(proba, (low, high))`). The envelope `metadata` includes user-facing per-instance keys: `ambiguity_mask`, `uncertainty_mask`, `prediction_set_size`, and `epsilon` alongside aggregate rates. The `explanation` field contains the explanation object or `None` if no explanation was produced.
+
+### Deprecated
+
+- **Old RejectPolicy names:** The following policy names are deprecated and will be removed in v1.0.0. Using them will emit a `DeprecationWarning`:
+  - `PREDICT_AND_FLAG` → use `FLAG`
+  - `EXPLAIN_ALL` → use `FLAG`
+  - `EXPLAIN_REJECTS` → use `ONLY_REJECTED`
+  - `EXPLAIN_NON_REJECTS` → use `ONLY_ACCEPTED`
+  - `SKIP_ON_REJECT` → use `ONLY_ACCEPTED`
 
 ## [v0.10.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.2) - 2026-01-22
 
@@ -472,7 +512,7 @@ when communicating breaking or user-visible updates.
 
 ##### Function parameter renames
 The following parameters have been renamed across multiple functions and methods:
-- X_test → x
+- x_test → x
 - y_test → y
 
 ##### Wrapper keyword normalisation
@@ -608,7 +648,7 @@ Also added explicit credit files:
         - The concept of potential (uncertain) explanations is introduced. When the uncertainty interval spans across probability 0.5, an explanation is considered a potential. It will normally only be counter-potential and semi-potential, but can in some cases also be super-potential. Potential alternatives can be included or excluded from the above methods using the boolean parameter `include_potentials`.
         - `ensured_explanations` removes all alternatives except those with lower uncertainty (i.e. smaller uncertainty interval) than the original prediction.
     - Added a new form of plot for probabilistic predictions is added, clearly visualizing both the aleatoric and the epistemic uncertainty.
-      - A global plot is added, plotting all test instances with probability and uncertainty as the x- and y-axes. The area corresponding to potential (uncertain) predictions is marked. The plot can be invoked using the `plot(X_test)` or `plot(X_test, y_test)` call.
+      - A global plot is added, plotting all test instances with probability and uncertainty as the x- and y-axes. The area corresponding to potential (uncertain) predictions is marked. The plot can be invoked using the `plot(x_test)` or `plot(x_test, y_test)` call.
       - A local plot for alternative explanations, with probability and uncertainty as the x- and y-axes, is added, which can be invoked from an `AlternativeExplanation` or a `AlternativeExplanations` using `plot(style='triangular')`. The optimal use is when combined with the `filter_top` parameter (see below), to include all alternatives, as follows: `plot(style='triangular', filter_top=None)`.
     - Added prerpint and bibtex to the paper introducing _ensured_ explanations:
       - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.

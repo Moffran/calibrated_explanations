@@ -799,6 +799,28 @@ def plot_regression(
         ascending=False,
     )
 
+    # Attach a minimal reject badge for plotting when explanation carries reject_context
+    try:
+        rc = getattr(explanation, "reject_context", None)
+        if rc is not None and getattr(rc, "rejected", False):
+            if getattr(rc, "reject_type", None) == "ambiguity":
+                badge = "REJECTED (ambiguous)"
+            elif getattr(rc, "reject_type", None) == "novelty":
+                badge = "REJECTED (novel)"
+            else:
+                badge = "REJECTED"
+            try:
+                spec.reject_badge = badge
+                spec.reject_reason = getattr(rc, "reject_type", None)
+            except Exception as exc:  # adr002_allow - best-effort
+                logging.getLogger(__name__).debug(
+                    "failed to attach reject badge to PlotSpec: %s", exc, exc_info=True
+                )
+    except Exception as exc:  # adr002_allow - non-fatal
+        logging.getLogger(__name__).debug(
+            "failed reading explanation.reject_context: %s", exc, exc_info=True
+        )
+
     try:
         # Render once and then save multiple extensions if requested
         render_plotspec(spec, show=show, save_path=None)

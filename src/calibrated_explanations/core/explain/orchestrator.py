@@ -169,8 +169,22 @@ class ExplanationOrchestrator:
                 and np.isnan(condition_labels).any()
             ):
                 mask = ~np.isnan(condition_labels)
-                x_cal = x_cal[mask]
-                condition_labels = condition_labels[mask]
+                # If all prediction-derived condition labels are NaN, avoid
+                # producing an empty calibration set — fall back to observed
+                # labels so discretization can proceed.
+                if mask.sum() == 0:
+                    _TELEMETRY_LOGGER.info(
+                        "All prediction-derived condition labels are NaN; falling back to observed y_cal"
+                    )
+                    warnings.warn(
+                        "All prediction-derived condition labels are NaN; falling back to observed y_cal.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    condition_labels = None
+                else:
+                    x_cal = x_cal[mask]
+                    condition_labels = condition_labels[mask]
 
         # Validate and potentially default the discretizer choice
         discretizer = validate_discretizer_choice(discretizer, self.explainer.mode)
@@ -313,9 +327,140 @@ class ExplanationOrchestrator:
                         _ce_skip_reject=True,
                     )
 
-                return self.explainer.reject_orchestrator.apply_policy(
+                # Apply reject policy via the reject orchestrator. If a RejectResult
+                # envelope with an `explanation` payload is returned, attach a
+                # per-explanation `RejectContext` so downstream narrative/plot
+                # code can render expertise-aware messages and badges.
+                from ...explanations.reject import (
+                    RejectCalibratedExplanations,
+                    RejectContext,
+                    RejectResult,
+                )
+
+                res = self.explainer.reject_orchestrator.apply_policy(
                     effective_policy, x, explain_fn=_explain_fn, bins=bins
                 )
+
+                # Attach RejectContext instances when possible. Be defensive
+                # about shapes: explainers may return only rejected subset
+                # explanations (ONLY_REJECTED) or full-length collections (FLAG).
+                try:
+                    if (
+                        isinstance(res, RejectResult)
+                        and getattr(res, "explanation", None) is not None
+                    ):
+                        explanation_obj = res.explanation
+                        metadata = res.metadata or {}
+                        rejected_mask = res.rejected
+                        ambiguity_mask = metadata.get("ambiguity_mask")
+                        novelty_mask = metadata.get("novelty_mask")
+                        sizes = metadata.get("prediction_set_size")
+                        pred_set_mask = metadata.get("prediction_set")
+                        epsilon = metadata.get("epsilon")
+
+                        # Normalize to list of target explanation objects
+                        if hasattr(explanation_obj, "explanations"):
+                            targets = explanation_obj.explanations
+                        elif isinstance(explanation_obj, (list, tuple)):
+                            targets = list(explanation_obj)
+                        else:
+                            targets = []
+
+                        # Determine mapping from returned explanations to original indices
+                        if rejected_mask is not None and len(targets) != len(rejected_mask):
+                            # ONLY_REJECTED path: map targets to indices where rejected is True
+                            map_indices = [i for i, r in enumerate(rejected_mask) if r]
+                        else:
+                            map_indices = list(range(len(targets)))
+
+                        for local_idx, global_idx in enumerate(map_indices):
+                            try:
+                                is_rej = (
+                                    bool(rejected_mask[global_idx])
+                                    if rejected_mask is not None
+                                    else False
+                                )
+                            except (IndexError, TypeError):
+                                is_rej = False
+                            rtype = None
+                            try:
+                                if ambiguity_mask is not None and bool(ambiguity_mask[global_idx]):
+                                    rtype = "ambiguity"
+                                elif novelty_mask is not None and bool(novelty_mask[global_idx]):
+                                    rtype = "novelty"
+                            except (IndexError, TypeError):
+                                rtype = None
+                            try:
+                                psize = int(sizes[global_idx]) if sizes is not None else 1
+                            except (IndexError, TypeError, ValueError):
+                                psize = 1
+                            try:
+                                confidence = None if epsilon is None else (1.0 - float(epsilon))
+                            except (TypeError, ValueError):
+                                confidence = None
+
+                            pset = None
+                            try:
+                                if pred_set_mask is not None:
+                                    # Get row mask for this instance
+                                    row_mask = pred_set_mask[global_idx]
+                                    if hasattr(row_mask, "flatten"):
+                                        row_mask = row_mask.flatten()
+                                    # Get indices where mask is True
+                                    indices = np.flatnonzero(row_mask)
+                                    # Map to labels
+                                    labels = getattr(self.explainer, "class_labels", None)
+                                    if labels:
+                                        # labels is typically dict[int, str]
+                                        pset = {labels[i] for i in indices}
+                                    else:
+                                        pset = set(indices.tolist())
+                            except (AttributeError, IndexError, TypeError, ValueError):
+                                pset = None
+
+                            rc = RejectContext(
+                                rejected=is_rej,
+                                reject_type=rtype,
+                                prediction_set_size=psize,
+                                confidence=confidence,
+                                prediction_set=pset,
+                            )
+                            # attach to the materialised explanation object when possible
+                            try:
+                                targets[local_idx].reject_context = rc
+                            except Exception as exc:  # adr002_allow - best-effort attachment
+                                logging.getLogger(__name__).debug(
+                                    "failed to attach RejectContext to explanation: %s",
+                                    exc,
+                                    exc_info=True,
+                                )
+                except Exception as exc:  # adr002_allow - do not fail caller on propagation errors
+                    logging.getLogger(__name__).debug(
+                        "reject context propagation failed: %s", exc, exc_info=True
+                    )
+
+                # Upgrade to RejectCalibratedExplanations if possible to support
+                # plotting and indexing directly on the result (Solution 1).
+                if (
+                    isinstance(res, RejectResult)
+                    and getattr(res, "explanation", None) is not None
+                    and hasattr(res.explanation, "explanations")
+                ):
+                    try:
+                        return RejectCalibratedExplanations.from_collection(
+                            res.explanation,
+                            res.metadata or {},
+                            res.policy,
+                            rejected=res.rejected,
+                        )
+                    except (AttributeError, CalibratedError, TypeError, ValueError) as exc:
+                        logging.getLogger(__name__).debug(
+                            "failed to upgrade to RejectCalibratedExplanations: %s",
+                            exc,
+                            exc_info=True,
+                        )
+
+                return res
 
         plugin, _identifier = self.ensure_plugin(mode)
         explainer_identifier = getattr(self.explainer, "explainer_id", None) or str(
@@ -345,6 +490,14 @@ class ExplanationOrchestrator:
             and feature_filter_config is not None
             and getattr(feature_filter_config, "enabled", False) is True
         ):
+            # Guardrail: warn when fast mode is auto-selected without explicit user intent
+            warnings.warn(
+                "Auto-selecting experimental 'fast' explanation mode for feature "
+                "filtering. The 'fast' pathway is experimental and opt-in only. "
+                "Set CE_FEATURE_FILTER=off or disable feature_filter_config to suppress.",
+                UserWarning,
+                stacklevel=2,
+            )
             try:
                 from ._feature_filter import compute_filtered_features_to_ignore
 

@@ -390,13 +390,14 @@ def explain_predict_step(
     # prediction used in explanations. Per-call `interval_summary` controls
     # how full-probabilities/intervals are summarised but should not alter
     # the canonical point prediction embedded in factual explanations.
-    base_predict, base_low, base_high, predicted_class = explainer.predict_calibrated(
-        x,
-        threshold=threshold,
-        low_high_percentiles=low_high_percentiles,
-        bins=bins,
-        _ce_skip_reject=True,
-        interval_summary=None,
+    base_predict, base_low, base_high, predicted_class = (
+        explainer.prediction_orchestrator.predict_internal(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            interval_summary=None,
+        )
     )
 
     is_mc_property = (
@@ -597,13 +598,12 @@ def explain_predict_step(
         and isinstance(threshold[0], tuple)
     ):
         perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
-    predict, low, high, _ = explainer.predict_calibrated(
+    predict, low, high, _ = explainer.prediction_orchestrator.predict_internal(
         perturbed_x,
         threshold=perturbed_threshold,
         low_high_percentiles=low_high_percentiles,
         classes=perturbed_class,
         bins=perturbed_bins,
-        _ce_skip_reject=True,
     )
     predict = np.array(predict)
     low = np.array(low)

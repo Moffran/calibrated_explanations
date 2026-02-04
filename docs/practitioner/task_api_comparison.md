@@ -22,12 +22,12 @@ from calibrated_explanations import WrapCalibratedExplainer
 wrapper = WrapCalibratedExplainer(model)
 
 # Fit and calibrate
-wrapper.fit(X_train, y_train)
-wrapper.calibrate(X_cal, y_cal)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal)
 
 # Generate explanations
-factual = wrapper.explain_factual(X_test)
-alternatives = wrapper.explore_alternatives(X_test)
+factual = wrapper.explain_factual(x_test)
+alternatives = wrapper.explore_alternatives(x_test)
 ```
 
 **Key features:**
@@ -44,12 +44,12 @@ The direct API offers full control:
 from calibrated_explanations import CalibratedExplainer
 
 # Fit model separately
-model.fit(X_train, y_train)
+model.fit(x_train, y_train)
 
 # Initialize explainer with explicit mode
 explainer = CalibratedExplainer(
     model,
-    X_cal,
+    x_cal,
     y_cal,
     mode="classification",  # or "regression"
     feature_names=feature_names,
@@ -57,8 +57,8 @@ explainer = CalibratedExplainer(
 )
 
 # Generate explanations
-factual = explainer.explain_factual(X_test)
-alternatives = explainer.explore_alternatives(X_test)
+factual = explainer.explain_factual(x_test)
+alternatives = explainer.explore_alternatives(x_test)
 ```
 
 **Key features:**

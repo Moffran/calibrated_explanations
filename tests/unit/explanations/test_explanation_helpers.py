@@ -192,6 +192,15 @@ class ExplainerStub:
         self.x_cal = np.array([[0.1, 0.3], [0.2, 0.4]])
         self.rule_boundaries = lambda _instance: []
 
+        class PredOrch:
+            def __init__(self, outer):
+                self.outer = outer
+
+            def predict_internal(self, x, **kwargs):
+                return self.outer.predict(x, **kwargs)
+
+        self.prediction_orchestrator = PredOrch(self)
+
     def discretize(self, x):
         return self.discretizer.discretize(x)
 
@@ -204,14 +213,6 @@ class ExplainerStub:
         low = np.full((rows, 1), 0.5)
         high = np.full((rows, 1), 1.5)
         return predict, low, high, np.zeros(rows)
-
-    def predict_calibrated(self, data, **kwargs):
-        """Internal prediction method used by conjunctive predictions."""
-        return self.predict(data, **kwargs)
-
-    def _predict(self, data, **kwargs):
-        """Internal prediction method used by conjunctive predictions."""
-        return self.predict(data, **kwargs)
 
 
 class ContainerStub:

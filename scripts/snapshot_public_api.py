@@ -54,18 +54,10 @@ def main():
     for name in list_module_public(root_pkg):
         lines.append(name)
 
-    # Optionally traverse immediate submodules (non-recursive) to capture their __all__
-    lines.append("\n# Selected submodule exports (__all__ if defined):")
-    for m in pkgutil.iter_modules(root_pkg.__path__):
-        full_name = f"{PACKAGE}.{m.name}"
-        try:
-            sub = importlib.import_module(full_name)
-        except ImportError:
-            continue
-        if hasattr(sub, "__all__") and sub.__all__:
-            lines.append(f"[{full_name}] -> __all__:")
-            for name in sorted(sub.__all__):
-                lines.append(f"  {name}")
+    # Note: We intentionally do NOT traverse submodules here.
+    # The public API is defined solely by the root package exports.
+    # Submodules like .core, .api, .calibration are internal implementation details
+    # unless explicitly re-exported by the root __init__.py.
 
     out_file = OUT_DIR / f"api_public_{ts}.txt"
     out_file.write_text("\n".join(lines), encoding="utf-8")
