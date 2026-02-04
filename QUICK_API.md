@@ -69,19 +69,19 @@ factual = explainer.explain_factual(X_sample, low_high_percentiles=(5, 95))
 ## Probabilistic regression (thresholded probabilities for y)
 
 Probabilistic regression requires a `threshold`:
-- `threshold=t` queries exceedance probability (e.g., P(y ≥ t) depending on formulation)
-- `threshold=(low, high)` queries interval event probability P(true y ∈ [low, high])
+- `threshold=t` queries threshold probability P(y <= t)
+- `threshold=(low, high)` queries interval event probability P(low < y <= high)
 
 ```python
-# exceedance probability (+ optional uncertainty bounds)
+# threshold probability P(y <= t) (+ optional uncertainty bounds)
 p = explainer.predict_proba(X_sample, threshold=120.0)
 p, (plo, phi) = explainer.predict_proba(X_sample, uq_interval=True, threshold=120.0)
-print("P(y exceeds 120) =", p[0], "interval =", plo[0], phi[0])
+print("P(y <= 120) =", p[0], "interval =", plo[0], phi[0])
 
 # probability that true value lies inside a user-defined interval
 p_in = explainer.predict_proba(X_sample, threshold=(100.0, 140.0))
 p_in, (ilo, ihi) = explainer.predict_proba(X_sample, uq_interval=True, threshold=(100.0, 140.0))
-print("P(100 <= y <= 140) =", p_in[0], "interval =", ilo[0], ihi[0])
+print("P(100 < y <= 140) =", p_in[0], "interval =", ilo[0], ihi[0])
 ```
 
 ---

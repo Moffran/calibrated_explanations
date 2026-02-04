@@ -4,8 +4,8 @@ Scenario: probabilistic-regression.
 Outputs: JSON with factual table and thresholded probabilities (with uncertainty bounds).
 
 Probabilistic regression in CE is a thresholded probability query for a real-valued target:
-- threshold=t queries exceedance probability (depending on formulation)
-- threshold=(low, high) queries P(true value ∈ [low, high])
+- threshold=t queries threshold probability P(y <= t)
+- threshold=(low, high) queries P(low < y <= high)
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def main() -> None:
     factual = explainer.explain_factual(x_test[:1])
 
     # Two probabilistic regression queries:
-    # 1) Exceedance probability for a scalar threshold
+    # 1) Threshold probability P(y <= t) for a scalar threshold
     exceed_threshold = float(np.quantile(y_cal, 0.75))
     p_exceed, (p_exceed_low, p_exceed_high) = explainer.predict_proba(
         x_test[:1],

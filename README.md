@@ -62,8 +62,8 @@ Regression in this library is **conformal interval regression** via **Conformal 
 
 **Probabilistic regression (thresholded probability queries for y)**:
 Probabilistic regression requires assigning a `threshold`:
-- Exceedance probability for real-valued target: `predict_proba(x, threshold=t[, ...])` gives **P(true value ≥ t)**
-- Within-spec probability for real-valued target: `predict_proba(x, threshold=(low, high)[, ...])` gives **P(true value ∈ [low, high])**
+- Threshold probability for real-valued target: `predict_proba(x, threshold=t[, ...])` gives **P(y <= t)**
+- Within-spec probability for real-valued target: `predict_proba(x, threshold=(low, high)[, ...])` gives **P(low < y <= high)**
 - Add uncertainty bounds with `uq_interval=True`
 - Exceedance explanations: `explain_factual(x, threshold=t[, ...])` and `explore_alternatives(x, threshold=t[, ...])`
 - Within-spec explanations: `explain_factual(x, threshold=(low, high)[, ...])` and `explore_alternatives(x, threshold=(low, high)[, ...])`

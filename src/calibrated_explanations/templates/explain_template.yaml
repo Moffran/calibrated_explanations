@@ -211,7 +211,7 @@ reject_indicators:
   probabilistic_regression:
     factual:
       beginner: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Factors increasing Calibrated Probability:
         * {feature_name} ({feature_actual_value}) {condition},
@@ -220,7 +220,7 @@ reject_indicators:
         * {feature_name} ({feature_actual_value}) {condition},
 
       intermediate: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Factors increasing Calibrated Probability:
         * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
@@ -229,7 +229,7 @@ reject_indicators:
         * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
 
       advanced: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred}
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred}
         Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
 
         Factors increasing Calibrated Probability:
@@ -240,7 +240,7 @@ reject_indicators:
 
     alternative:
       beginner: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Alternatives to increase the Calibrated Probability:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
@@ -249,7 +249,7 @@ reject_indicators:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
 
       intermediate: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Alternatives to increase the Calibrated Probability:
         - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
@@ -258,7 +258,7 @@ reject_indicators:
         - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
 
       advanced: |
-        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Calibrated Probability (prediction <= {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
 
         Alternatives to increase the Calibrated Probability:
         - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]

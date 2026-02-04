@@ -21,8 +21,8 @@ notebooks to keep probabilistic and interval narratives aligned.
    ``threshold`` and ``uq_interval=True`` to obtain the calibrated probability
    and its `(low, high)` interval bounds.
 3. Treat the interval as the decision boundary for interval regression use
-   cases. The probability tells you how likely it is that the target lands above
-   (or within) the threshold.
+   cases. The probability tells you how likely it is that the target is at or below
+   the threshold (for scalar thresholds) or within the specified interval (for tuple thresholds).
 
 ```python
 probabilities, probability_interval = explainer.predict_proba(
@@ -44,7 +44,7 @@ probabilities, probability_interval = explainer.predict_proba(
    uq_interval=True,
 )
 low, high = probability_interval
-print(f"P(120 <= y <= 180): {probabilities[0]:.3f}")
+print(f"P(120 < y <= 180): {probabilities[0]:.3f}")
 print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
 ```
 

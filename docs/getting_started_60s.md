@@ -29,9 +29,9 @@ point regression + calibrated uncertainty intervals = (conformal) interval regre
 
 ### Probabilistic regression (thresholded probabilities for y)
 Probabilistic regression answers probability queries for a real-valued target by assigning a `threshold`:
-- Exceedance probability: `predict_proba(x, threshold=t[, ...])`
-- Exceedance probability + UQ: `predict_proba(x, uq_interval=True, threshold=t[, ...])`
-- Interval event probability: `predict_proba(x, threshold=(low, high)[, ...])` → P(true value ∈ [low, high])
+- Threshold probability P(y <= t): `predict_proba(x, threshold=t[, ...])`
+- Threshold probability P(y <= t) + UQ: `predict_proba(x, uq_interval=True, threshold=t[, ...])`
+- Interval event probability: `predict_proba(x, threshold=(low, high)[, ...])` → P(low < y <= high)
 
 Reject policy note: You can opt into reject-aware behavior per-call via the `reject_policy` parameter (e.g., `explain_factual(X, reject_policy=RejectPolicy.PREDICT_AND_FLAG)`). When a non-`NONE` policy is active the API returns a `RejectResult` envelope whose `prediction` field mirrors the legacy return shape (including regression UQ tuples like `(proba, (low, high))`). Per-instance breakdowns are available in `RejectResult.metadata` under `ambiguity_mask`, `novelty_mask`, `prediction_set_size`, and `epsilon`. The `explanation` field contains the explanation object or `None` if no explanation was produced.
 
