@@ -336,12 +336,12 @@ def render(
                     color="white",
                     bbox={"facecolor": color, "alpha": 0.9, "boxstyle": "round,pad=0.3"},
                 )
-            except Exception as exc:
+            except Exception as exc:  # adr002_allow - optional decoration must not break plots
                 # Avoid breaking plotting when figtext fails
                 logging.getLogger(__name__).debug(
                     "failed to render reject badge: %s", exc, exc_info=True
                 )
-    except Exception as exc:
+    except Exception as exc:  # adr002_allow - optional decoration must not break plots
         logging.getLogger(__name__).debug("reject badge rendering skipped: %s", exc, exc_info=True)
 
     def _regression_sign_colors(colors_cfg):

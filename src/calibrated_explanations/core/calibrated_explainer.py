@@ -187,16 +187,16 @@ class CalibratedExplainer:
         self.__noise_type = kwargs.get("noise_type", "uniform")
         self.__scale_factor = kwargs.get("scale_factor", 5)
         self.__severity = kwargs.get("severity", 1)
-        # Prefer explicit caller value; otherwise default to 'prediction' as of v0.11.0
+        # Prefer explicit caller value; otherwise default to 'prediction' as of v0.10.3
         if "condition_source" in kwargs:
             self.condition_source = kwargs.get("condition_source")
         else:
             self.condition_source = "prediction"
             logging.getLogger(__name__).info(
-                "condition_source not provided; defaulting to 'prediction' (v0.11.0)"
+                "condition_source not provided; defaulting to 'prediction' (v0.10.3)"
             )
             warnings.warn(
-                "condition_source not provided; defaulting to 'prediction' in v0.11.0. "
+                "condition_source not provided; defaulting to 'prediction' in v0.10.3. "
                 "Pass condition_source='observed' to retain previous behaviour.",
                 UserWarning,
                 stacklevel=2,

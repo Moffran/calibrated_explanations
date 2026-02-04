@@ -380,7 +380,7 @@ class ExplanationOrchestrator:
                                     if rejected_mask is not None
                                     else False
                                 )
-                            except Exception:
+                            except (IndexError, TypeError):
                                 is_rej = False
                             rtype = None
                             try:
@@ -388,15 +388,15 @@ class ExplanationOrchestrator:
                                     rtype = "ambiguity"
                                 elif novelty_mask is not None and bool(novelty_mask[global_idx]):
                                     rtype = "novelty"
-                            except Exception:
+                            except (IndexError, TypeError):
                                 rtype = None
                             try:
                                 psize = int(sizes[global_idx]) if sizes is not None else 1
-                            except Exception:
+                            except (IndexError, TypeError, ValueError):
                                 psize = 1
                             try:
                                 confidence = None if epsilon is None else (1.0 - float(epsilon))
-                            except Exception:
+                            except (TypeError, ValueError):
                                 confidence = None
 
                             pset = None
@@ -415,7 +415,7 @@ class ExplanationOrchestrator:
                                         pset = {labels[i] for i in indices}
                                     else:
                                         pset = set(indices.tolist())
-                            except Exception:
+                            except (AttributeError, IndexError, TypeError, ValueError):
                                 pset = None
 
                             rc = RejectContext(
@@ -453,7 +453,7 @@ class ExplanationOrchestrator:
                             res.policy,
                             rejected=res.rejected,
                         )
-                    except Exception as exc:
+                    except (AttributeError, CalibratedError, TypeError, ValueError) as exc:
                         logging.getLogger(__name__).debug(
                             "failed to upgrade to RejectCalibratedExplanations: %s",
                             exc,

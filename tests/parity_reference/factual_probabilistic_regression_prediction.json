@@ -7,7 +7,7 @@
       "classes": 1.0,
       "high": Infinity,
       "low": -Infinity,
-      "predict": 0.5
+      "predict": 1.3877787807814457e-17
     },
     "provenance": null,
     "rules": [
@@ -21,12 +21,12 @@
         "rule_prediction": {
           "high": Infinity,
           "low": -Infinity,
-          "predict": 1.5
+          "predict": 1.6666666666666667
         },
         "rule_weight": {
           "high": Infinity,
           "low": -Infinity,
-          "predict": -1.0
+          "predict": -1.6666666666666667
         },
         "value_str": "0.5"
       }
@@ -42,28 +42,28 @@
       "classes": 1.0,
       "high": Infinity,
       "low": -Infinity,
-      "predict": 1.5
+      "predict": 2.0
     },
     "provenance": null,
     "rules": [
       {
         "bin_index": null,
         "feature": 0,
-        "feature_value": 1.5,
+        "feature_value": 2.5,
         "instance_prediction": null,
         "is_conjunctive": false,
         "rule": "x0 > 0.50",
         "rule_prediction": {
           "high": Infinity,
           "low": -Infinity,
-          "predict": 0.5
+          "predict": 1.3877787807814457e-17
         },
         "rule_weight": {
           "high": Infinity,
           "low": -Infinity,
-          "predict": 1.0
+          "predict": 2.0
         },
-        "value_str": "1.5"
+        "value_str": "2.5"
       }
     ],
     "schema_version": "1.0.0",

@@ -72,7 +72,12 @@ def explanation_type_from_instance(exp: Any) -> str:
     return "factual"
 
 
-def build_explainer(dataset: dict[str, Any], *, fast: bool = False) -> CalibratedExplainer:
+def build_explainer(
+    dataset: dict[str, Any],
+    *,
+    fast: bool = False,
+    condition_source: str = "observed",
+) -> CalibratedExplainer:
     """Build a CalibratedExplainer from dataset configuration."""
     mode = dataset.get("mode", "classification")
     x_train = np.array(dataset.get("x_train", []), dtype=float)
@@ -104,20 +109,23 @@ def build_explainer(dataset: dict[str, Any], *, fast: bool = False) -> Calibrate
         class_labels=dataset.get("class_labels"),
         seed=42,
         fast=fast,
+        condition_source=condition_source,
     )
 
 
-def compute_outputs(dataset: dict[str, Any]) -> dict[str, Any]:
+def compute_outputs(
+    dataset: dict[str, Any], condition_source: str = "observed"
+) -> dict[str, Any]:
     """Compute explanation outputs for a dataset."""
     x_test = np.array(dataset["x_test"], dtype=float)
-    explainer = build_explainer(dataset)
+    explainer = build_explainer(dataset, condition_source=condition_source)
 
     predictions = explainer.predict(x_test).tolist()
     factual = explainer.explain_factual(x_test)
     alternatives = explainer.explore_alternatives(x_test)
 
     ensure_builtin_plugins()
-    fast_explainer = build_explainer(dataset, fast=True)
+    fast_explainer = build_explainer(dataset, fast=True, condition_source=condition_source)
     fast = fast_explainer.explain_fast(x_test)
 
     def to_payload(exps: Any) -> list[dict[str, Any]]:
@@ -152,7 +160,11 @@ def compare_payload(name: str, expected: Any, actual: Any) -> list[dict[str, Any
     return diffs
 
 
-def run(dataset_name: str = "classification", update: bool = False) -> int:
+def run(
+    dataset_name: str = "classification",
+    update: bool = False,
+    condition_source: str = "observed",
+) -> int:
     """Run parity reference computation for a dataset."""
     dataset_path = (
         ROOT / f"canonical_dataset_{dataset_name}.json"
@@ -164,38 +176,42 @@ def run(dataset_name: str = "classification", update: bool = False) -> int:
         return 2
 
     dataset = load_json(dataset_path)
-    outputs = compute_outputs(dataset)
+    outputs = compute_outputs(dataset, condition_source=condition_source)
+
+    # Build fixture paths with suffix for condition_source="prediction"
+    cs_suffix = "_prediction" if condition_source == "prediction" else ""
+
+    def fixture_path(key: str) -> Path:
+        if dataset_name == "classification":
+            return ROOT / f"{key}{cs_suffix}.json"
+        return ROOT / f"{key}_{dataset_name}{cs_suffix}.json"
 
     fixtures = {
-        "predictions": ROOT / f"predictions_{dataset_name}.json"
-        if dataset_name != "classification"
-        else ROOT / "predictions.json",
-        "factual": ROOT / f"factual_{dataset_name}.json"
-        if dataset_name != "classification"
-        else ROOT / "factual.json",
-        "alternatives": ROOT / f"alternatives_{dataset_name}.json"
-        if dataset_name != "classification"
-        else ROOT / "alternatives.json",
-        "fast": ROOT / f"fast_{dataset_name}.json"
-        if dataset_name != "classification"
-        else ROOT / "fast.json",
+        "predictions": fixture_path("predictions"),
+        "factual": fixture_path("factual"),
+        "alternatives": fixture_path("alternatives"),
+        "fast": fixture_path("fast"),
     }
 
     if update:
         for key, path in fixtures.items():
             dump_json(path, outputs[key])
-        print("Parity fixtures updated.")
+        print(f"Parity fixtures updated (condition_source={condition_source}).")
         return 0
 
     diffs: list[dict[str, Any]] = []
     for key, path in fixtures.items():
+        if not path.exists():
+            print(f"Fixture not found: {path}")
+            print("Run with --update to generate fixtures.")
+            return 2
         expected = load_json(path)
         diffs.extend(compare_payload(key, expected, outputs[key]))
 
     if diffs:
         print(f"Detected {len(diffs)} parity diff(s).")
         return 1
-    print("Parity reference fixtures match.")
+    print(f"Parity reference fixtures match (condition_source={condition_source}).")
     return 0
 
 
@@ -213,8 +229,20 @@ def main() -> None:
         default="classification",
         help="Select canonical dataset to run.",
     )
+    parser.add_argument(
+        "--condition-source",
+        choices=["observed", "prediction"],
+        default="observed",
+        help="Condition source for calibration (default: observed for backward compatibility).",
+    )
     args = parser.parse_args()
-    raise SystemExit(run(dataset_name=args.dataset, update=args.update))
+    raise SystemExit(
+        run(
+            dataset_name=args.dataset,
+            update=args.update,
+            condition_source=args.condition_source,
+        )
+    )
 
 
 if __name__ == "__main__":

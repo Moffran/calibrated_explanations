@@ -15,7 +15,7 @@ from __future__ import annotations
 from importlib import resources
 from typing import Any, Mapping
 
-from ..core.exceptions import ValidationError
+from ..utils.exceptions import ValidationError
 
 try:  # optional validator
     import jsonschema  # type: ignore
