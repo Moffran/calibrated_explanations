@@ -41,11 +41,11 @@ class DummyOriginalExplainer:
 
         self.plugin_manager = PluginManager(self)
 
-        class _PredOrch:
+        class PredOrch:
             def predict_internal(self, _x, **_kw):
                 return (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1))
 
-        self.prediction_orchestrator = _PredOrch()
+        self.prediction_orchestrator = PredOrch()
 
     def predict(self, data):  # pragma: no cover - not used directly
         return np.asarray(data)

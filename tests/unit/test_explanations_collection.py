@@ -59,14 +59,14 @@ class DummyCalibratedExplainer:
         self.difficulty_estimator = "difficulty"
         self.plugin_manager = PluginManager(self)
 
-        class _PredOrch:
+        class PredOrch:
             def __init__(self, outer):
                 self.outer = outer
 
             def predict_internal(self, data, **_kw):
                 return self.outer.predict_func(data)
 
-        self.prediction_orchestrator = _PredOrch(self)
+        self.prediction_orchestrator = PredOrch(self)
 
     def discretize(self, values):
         # Mock discretization for testing

@@ -25,14 +25,14 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # no
 from sklearn.model_selection import train_test_split  # noqa: E402
 
 
-def _prep_classification():
+def prep_classification():
     X, y = load_breast_cancer(return_X_y=True)
     x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
     x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
     return x_train, y_train, x_cal, y_cal, x_test, y_test
 
 
-def _prep_regression():
+def prep_regression():
     X, y = make_regression(n_samples=200, n_features=6, noise=0.1, random_state=0)
     x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
     x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
@@ -52,7 +52,7 @@ def test_ensure_ce_first_wrapper_existing():
 
 
 def test_fit_and_calibrate_sets_state():
-    x_train, y_train, x_cal, y_cal, _, _ = _prep_classification()
+    x_train, y_train, x_cal, y_cal, _, _ = prep_classification()
     model = RandomForestClassifier(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     wrapper = fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
@@ -61,7 +61,7 @@ def test_fit_and_calibrate_sets_state():
 
 
 def test_explain_and_narrate_requires_calibration():
-    x_train, y_train, x_cal, y_cal, x_test, _ = _prep_classification()
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
     model = RandomForestClassifier(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     wrapper.fit(x_train, y_train)
@@ -74,7 +74,7 @@ def test_explain_and_narrate_requires_calibration():
 
 
 def test_explain_and_summarize_includes_conjunctions_and_uq():
-    x_train, y_train, x_cal, y_cal, x_test, _ = _prep_classification()
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
     model = RandomForestClassifier(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
@@ -92,7 +92,7 @@ def test_explain_and_summarize_includes_conjunctions_and_uq():
 
 
 def test_explain_and_summarize_supports_probabilistic_regression_threshold():
-    x_train, y_train, x_cal, y_cal, x_test, _ = _prep_regression()
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_regression()
     model = RandomForestRegressor(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
@@ -110,7 +110,7 @@ def test_explain_and_summarize_supports_probabilistic_regression_threshold():
 
 
 def test_probabilistic_threshold_behavior():
-    x_train, y_train, x_cal, y_cal, x_test, _ = _prep_regression()
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_regression()
     model = RandomForestRegressor(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
@@ -121,7 +121,7 @@ def test_probabilistic_threshold_behavior():
 
 
 def test_add_conjunctions_collection_and_single():
-    x_train, y_train, x_cal, y_cal, x_test, _ = _prep_classification()
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
     model = RandomForestClassifier(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
@@ -132,7 +132,7 @@ def test_add_conjunctions_collection_and_single():
 
 
 def test_enforce_ce_first_and_execute():
-    x_train, y_train, x_cal, y_cal, x_test, _ = _prep_classification()
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
     model = RandomForestClassifier(random_state=0)
     wrapper = ensure_ce_first_wrapper(model)
     fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)

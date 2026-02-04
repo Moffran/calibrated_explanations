@@ -7,7 +7,7 @@ from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectResult
 
 
-def _build_wrapper_classifier(seed: int = 0):
+def build_wrapper_classifier(seed: int = 0):
     X, y = load_breast_cancer(return_X_y=True)
     x_proper, x_cal, y_proper, y_cal = train_test_split(X, y, test_size=0.25, random_state=seed)
     model = RandomForestClassifier(n_estimators=8, random_state=seed)
@@ -20,7 +20,7 @@ def _build_wrapper_classifier(seed: int = 0):
 
 
 def test_predict_proba_envelope_and_metadata():
-    w, Xq = _build_wrapper_classifier(seed=7)
+    w, Xq = build_wrapper_classifier(seed=7)
     res = w.predict_proba(Xq, uq_interval=True, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res, RejectResult)
     # legacy-shaped prediction must be preserved inside envelope for uq_interval=True
@@ -36,7 +36,7 @@ def test_predict_proba_envelope_and_metadata():
 
 
 def test_predict_proba_legacy_without_reject():
-    w, Xq = _build_wrapper_classifier(seed=9)
+    w, Xq = build_wrapper_classifier(seed=9)
     legacy = w.predict_proba(Xq, uq_interval=True)
     # legacy returns (proba, (low, high)) tuple when uq_interval=True
     assert isinstance(legacy, tuple) and len(legacy) == 2

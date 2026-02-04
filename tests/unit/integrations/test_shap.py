@@ -17,7 +17,7 @@ class DummyExplainer:
         self.feature_names = ["f1", "f2"]
         self.predict_calls: list[np.ndarray] = []
 
-        class _PredOrch:
+        class PredOrch:
             def __init__(self, outer):
                 self.outer = outer
 
@@ -27,7 +27,7 @@ class DummyExplainer:
                 # ShapHelper expects tuple-like; index [0] is the prediction array.
                 return (array,)
 
-        self.prediction_orchestrator = _PredOrch(self)
+        self.prediction_orchestrator = PredOrch(self)
 
 
 class FakeExplanation:

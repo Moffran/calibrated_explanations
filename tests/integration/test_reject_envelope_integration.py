@@ -12,7 +12,7 @@ from calibrated_explanations.explanations.reject import (
 )
 
 
-def _train_classification(n_classes=2, seed=0):
+def train_classification(n_classes=2, seed=0):
     X, y = make_classification(
         n_samples=200, n_features=6, n_informative=4, n_classes=n_classes, random_state=seed
     )
@@ -25,7 +25,7 @@ def _train_classification(n_classes=2, seed=0):
     return w, X[:6]
 
 
-def _train_regression(seed=0):
+def train_regression(seed=0):
     X, y = make_regression(
         n_samples=200, n_features=6, n_informative=4, noise=5.0, random_state=seed
     )
@@ -41,7 +41,7 @@ def _train_regression(seed=0):
 
 
 def test_classification_predict_and_explain_envelope_binary():
-    w, Xq = _train_classification(n_classes=2, seed=3)
+    w, Xq = train_classification(n_classes=2, seed=3)
     # predict
     res = w.predict(Xq, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res, RejectResult)
@@ -53,7 +53,7 @@ def test_classification_predict_and_explain_envelope_binary():
 
 
 def test_multiclass_predict_proba_envelope():
-    w, Xq = _train_classification(n_classes=3, seed=4)
+    w, Xq = train_classification(n_classes=3, seed=4)
     res = w.predict_proba(Xq, uq_interval=False, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res, RejectResult)
     proba = res.prediction
@@ -61,7 +61,7 @@ def test_multiclass_predict_proba_envelope():
 
 
 def test_regression_predict_uq_envelope():
-    w, Xq = _train_regression(seed=5)
+    w, Xq = train_regression(seed=5)
     # regression probabilistic predictions require threshold for reject machinery; use predict with uq interval
     res = w.predict(Xq, uq_interval=True, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res, RejectResult)
