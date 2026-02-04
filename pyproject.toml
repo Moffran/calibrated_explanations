@@ -11,6 +11,8 @@ version = "0.10.3"
 description = "Extract calibrated explanations from machine learning models."
 readme = "README.md"
 requires-python = ">=3.8"
+license = "BSD-3-Clause"
+license-files = []
 authors = [
     { name = "Helena Löfström", email = "helena.lofstrom@ju.se" },
     { name = "Tuwe Löfström", email = "tuwe.lofstrom@ju.se" },
@@ -28,12 +30,8 @@ dependencies = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
-
-[project.license]
-text = "BSD-3-Clause"
 
 [project.urls]
 Documentation = "https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest"
@@ -175,9 +173,6 @@ exclude_lines = [
 
 [tool.coverage.html]
 directory = "coverage_html"
-
-[tool.setuptools]
-license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 
 [tool.setuptools.packages.find]
 where = [
