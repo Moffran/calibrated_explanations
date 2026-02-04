@@ -54,6 +54,19 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
     if include_version:
         payload["schema_version"] = "1.0.0"
 
+    # Ensure schema-required keys are present on exported prediction objects.
+    # The schema requires `predict`, `low`, and `high` keys; when the domain
+    # model provides only `predict` (common for classification), mirror the
+    # `predict` value to both `low` and `high` so the payload satisfies the
+    # structural validator and the invariant checker.
+    pred = payload.get("prediction")
+    if isinstance(pred, dict) and "predict" in pred:
+        p = pred.get("predict")
+        if "low" not in pred:
+            pred["low"] = list(p) if isinstance(p, (list, tuple)) else p
+        if "high" not in pred:
+            pred["high"] = list(p) if isinstance(p, (list, tuple)) else p
+
     _validate_invariants(payload)
     try:
         validate_payload(payload)
