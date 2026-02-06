@@ -1176,7 +1176,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            self[index].plot(
+            return self[index].plot(
                 filter_top=filter_top,
                 show=show,
                 filename=filename,
@@ -1185,12 +1185,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 rnk_metric=rnk_metric,
                 rnk_weight=rnk_weight,
                 style_override=style_override,
+                **kwargs,
             )
         else:
+            results = []
             for i, explanation in enumerate(self.explanations):
                 if len(filename) > 0:
                     filename = path + title + str(i) + ext
-                explanation.plot(
+                results.append(explanation.plot(
                     filter_top=filter_top,
                     show=show,
                     filename=filename,
@@ -1199,7 +1201,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     rnk_metric=rnk_metric,
                     rnk_weight=rnk_weight,
                     style_override=style_override,
-                )
+                    **kwargs,
+                ))
+            if kwargs.get("return_plot_spec"):
+                return results[0] if len(results) == 1 else results
 
     def to_narrative(
         self,

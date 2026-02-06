@@ -17,7 +17,7 @@
   - `ONLY_ACCEPTED` (replaces `EXPLAIN_NON_REJECTS` and `SKIP_ON_REJECT`) - Process only accepted (confident) instances
   - `NONE` - Unchanged, legacy behavior with no reject orchestration
 
-- **Transparent Rejection Integration (Solution 1):** `explain_factual` now returns a specialized `RejectCalibratedExplanations` collection when a rejection policy is active. This subclass behaves exactly like the standard collection (supporting `plot()`, slicing, and `add_conjunctions()`) while transparently carrying rejection metadata (ambiguity masks, etc.). This restores existing workflow compatibility while surfacing rejection signals.
+- **Transparent Rejection Integration:** `explain_factual` now returns a specialized `RejectCalibratedExplanations` collection when a rejection policy is active. This subclass behaves exactly like the standard collection (supporting `plot()`, slicing, and `add_conjunctions()`) while transparently carrying rejection metadata (ambiguity masks, etc.). This restores existing workflow compatibility while surfacing rejection signals.
 
 - **Linting and Security Compliance:** Replaced bare `except: pass` blocks with logged exceptions to satisfy Bandit security checks (B110) and ensure robust error visibility.
 

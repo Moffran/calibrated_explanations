@@ -1784,16 +1784,23 @@ class FactualExplanation(CalibratedExplanation):
               the ranking. Used with the 'ensured' ranking metric.
         """
         # Ensure style_override gets passed through
-        style_override = kwargs.get("style_override")
-        plot_use_legacy = kwargs.get("use_legacy")
+        style_override = kwargs.pop("style_override", None)
+        print(f"DEBUG: FactualExplanation.plot kwargs keys: {list(kwargs.keys())}")
+        plot_use_legacy = kwargs.pop("use_legacy", None)
+        # PlotSpec request forces new renderer
+        if kwargs.get("return_plot_spec"):
+            plot_use_legacy = False
+        # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
+        elif plot_use_legacy is None:
+            plot_use_legacy = True
 
-        filename = kwargs.get("filename", "")
-        show = kwargs.get("show", filename == "")
-        uncertainty = kwargs.get("uncertainty", False)
-        rnk_metric = kwargs.get("rnk_metric", "feature_weight")
+        filename = kwargs.pop("filename", "")
+        show = kwargs.pop("show", filename == "")
+        uncertainty = kwargs.pop("uncertainty", False)
+        rnk_metric = kwargs.pop("rnk_metric", "feature_weight")
         if rnk_metric is None:
             rnk_metric = "feature_weight"
-        rnk_weight = kwargs.get("rnk_weight", 0.5)
+        rnk_weight = kwargs.pop("rnk_weight", 0.5)
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0
             rnk_metric = "ensured"
@@ -1859,7 +1866,7 @@ class FactualExplanation(CalibratedExplanation):
         )
         try:
             if "classification" in self.get_explainer().mode or self.is_thresholded():
-                plot_probabilistic(
+                return plot_probabilistic(
                     self,
                     factual["value"],
                     predict,
@@ -1875,9 +1882,10 @@ class FactualExplanation(CalibratedExplanation):
                     save_ext=save_ext,
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
+                    **kwargs,
                 )
             else:
-                plot_regression(
+                return plot_regression(
                     self,
                     factual["value"],
                     predict,
@@ -1893,6 +1901,7 @@ class FactualExplanation(CalibratedExplanation):
                     save_ext=save_ext,
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
+                    **kwargs,
                 )
         except (
             Exception
@@ -2714,15 +2723,21 @@ class AlternativeExplanation(CalibratedExplanation):
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         # Ensure style_override gets passed through
-        style_override = kwargs.get("style_override")
-        plot_use_legacy = kwargs.get("use_legacy")
+        style_override = kwargs.pop("style_override", None)
+        plot_use_legacy = kwargs.pop("use_legacy", None)
+        # PlotSpec request forces new renderer
+        if kwargs.get("return_plot_spec"):
+            plot_use_legacy = False
+        # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
+        elif plot_use_legacy is None:
+            plot_use_legacy = True
 
-        filename = kwargs.get("filename", "")
-        show = kwargs.get("show", filename == "")
-        rnk_metric = kwargs.get("rnk_metric", "ensured")
+        filename = kwargs.pop("filename", "")
+        show = kwargs.pop("show", filename == "")
+        rnk_metric = kwargs.pop("rnk_metric", "ensured")
         if rnk_metric is None:
             rnk_metric = "ensured"
-        rnk_weight = kwargs.get("rnk_weight", 0.5)
+        rnk_weight = kwargs.pop("rnk_weight", 0.5)
         # Put the most uncertain rules at the top
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0

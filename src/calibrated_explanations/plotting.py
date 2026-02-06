@@ -395,6 +395,7 @@ def plot_probabilistic(
     save_ext=None,
     style_override=None,
     use_legacy=None,
+    **kwargs,
 ):
     """
     Plot regular and uncertainty explanations.
@@ -432,6 +433,10 @@ def plot_probabilistic(
     use_legacy : bool, optional
         Whether to use the legacy plotting system.
     """
+    return_plot_spec = kwargs.get("return_plot_spec", False)
+    if return_plot_spec:
+        use_legacy = False
+
     explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
         if explainer is not None:
@@ -469,10 +474,10 @@ def plot_probabilistic(
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    if not show and plt is None:  # lightweight path for tests/CI without viz extra
+    if not return_plot_spec and not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
-    if not show and (save_ext is None or len(save_ext) == 0):
+    if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
         return
     if interval is True:
         assert idx is not None
@@ -665,7 +670,7 @@ def plot_probabilistic(
             idx,
             save_ext,
         )
-    return
+    return spec if return_plot_spec else None
 
 
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
@@ -685,6 +690,7 @@ def plot_regression(
     save_ext=None,
     style_override=None,
     use_legacy=None,
+    **kwargs,
 ):
     """
     Plot regular and uncertainty explanations.
@@ -718,6 +724,10 @@ def plot_regression(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    return_plot_spec = kwargs.get("return_plot_spec", False)
+    if return_plot_spec:
+        use_legacy = False
+
     if interval and hasattr(explanation, "is_one_sided"):
         try:
             if explanation.is_one_sided():
@@ -762,10 +772,10 @@ def plot_regression(
         return
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if not show and plt is None:  # lightweight path for tests/CI without viz extra
+    if not return_plot_spec and not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
-    if not show and (save_ext is None or len(save_ext) == 0):
+    if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
         return
 
     # Build PlotSpec via builder and render via adapter
@@ -851,7 +861,7 @@ def plot_regression(
             idx,
             save_ext,
         )
-    return
+    return spec if return_plot_spec else None
 
 
 # pylint: disable=duplicate-code
@@ -1045,13 +1055,14 @@ def plot_alternative(
         return
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if not show and plt is None:  # lightweight path for tests/CI without viz extra
+    if not return_plot_spec and not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
-    if not show and (save_ext is None or len(save_ext) == 0):
+    if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
         return
 
-    __require_matplotlib()
+    if not return_plot_spec:
+        __require_matplotlib()
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -1441,6 +1452,7 @@ def plot_alternative(
                 show,
                 save_ext,
             )
+        return spec if return_plot_spec else None
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
