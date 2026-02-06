@@ -345,6 +345,23 @@ class CalibratedExplanation(ABC):
         num_features = len(feature_weights) if feature_weights is not None else len(width)
         if num_to_show is None or num_to_show > num_features:
             num_to_show = num_features
+
+        # Robust ranking: handle NaN/inf
+        if feature_weights is not None:
+            feature_weights = np.nan_to_num(
+                feature_weights,
+                nan=0.0,
+                posinf=np.finfo(float).max,
+                neginf=-np.finfo(float).max,
+            )
+        if width is not None:
+            width = np.nan_to_num(
+                width,
+                nan=0.0,
+                posinf=np.finfo(float).max,
+                neginf=-np.finfo(float).max,
+            )
+
         # handle case where there are same weight but different uncertainty
         if feature_weights is not None and width is not None:
             # get the indices by first sorting on the absolute value of the
@@ -1655,6 +1672,22 @@ class FactualExplanation(CalibratedExplanation):
                 return len(candidate)
             return 1
 
+        from collections import Counter
+
+        attempts = 0
+        created = 0
+        skipped = Counter()
+
+        def _summarize(arr):
+            if arr is None or arr.size == 0:
+                return {"size": 0}
+            return {
+                "size": int(arr.size),
+                "min": float(np.nanmin(arr)),
+                "max": float(np.nanmax(arr)),
+                "nan": int(np.isnan(arr).sum()),
+            }
+
         for current_size in range(2, max_rule_size + 1):
             num_rules = len(factual["rule"])
             if num_rules == 0:
@@ -1663,13 +1696,16 @@ class FactualExplanation(CalibratedExplanation):
             weights_array = state_helper.get_weights()
             width_array = state_helper.get_widths()
 
+            top_n = min(num_rules, n_top_features)
             top_conjunctives = list(
                 self.rank_features(
                     weights_array,
                     width=width_array,
-                    num_to_show=min(num_rules, n_top_features),
+                    num_to_show=max(2, top_n) if num_rules >= 2 else top_n,
                 )
             )
+            if not top_conjunctives and num_rules > 0:
+                top_conjunctives = list(range(num_rules))
 
             # Determine outer loop candidates
             # Legacy behavior: iterate all features
@@ -1679,9 +1715,11 @@ class FactualExplanation(CalibratedExplanation):
                     self.rank_features(
                         base_weight_array,
                         width=base_width_array if base_width_array.size else None,
-                        num_to_show=num_outer,
+                        num_to_show=max(2, num_outer) if num_rules >= 2 else num_outer,
                     )
                 )
+                if not outer_indices and num_rules > 0:
+                    outer_indices = list(range(num_rules))
             else:
                 outer_indices = range(len(factual["feature"]))
 
@@ -1695,20 +1733,24 @@ class FactualExplanation(CalibratedExplanation):
                 )
 
                 for cf2 in top_conjunctives:
+                    attempts += 1
                     rule_values = [rule_value1]
                     original_features = [of1]
                     of2 = state_helper.get_feature(cf2)
                     target_length = current_size - 1
                     if _feature_length(of2) != target_length:
+                        skipped["len_mismatch"] += 1
                         continue
 
                     if state_helper.is_conjunctive(cf2):
                         if of1 in of2:
+                            skipped["same_feature"] += 1
                             continue
                         original_features.extend(int(v) for v in of2)
                         rule_values.extend(list(state_helper.get_sampled_values(cf2)))
                     else:
                         if of1 == of2:
+                            skipped["same_feature"] += 1
                             continue
                         original_features.append(of2)
                         sampled_values2 = state_helper.get_sampled_values(cf2)
@@ -1720,18 +1762,23 @@ class FactualExplanation(CalibratedExplanation):
 
                     combo_key = _normalise_features(original_features)
                     if state_helper.has_combination_key(combo_key):
+                        skipped["duplicate_combo"] += 1
                         continue
                     state_helper.register_combination_key(combo_key)
 
-                    rule_predict, rule_low, rule_high = self._predict_conjunctive(
-                        rule_values,
-                        original_features,
-                        scratch,
-                        threshold,
-                        predicted_class,
-                        bins=self.bin,
-                        use_batched=use_batched,
-                    )
+                    try:
+                        rule_predict, rule_low, rule_high = self.predict_conjunctive(
+                            rule_values,
+                            original_features,
+                            scratch,
+                            threshold,
+                            predicted_class,
+                            bins=self.bin,
+                            use_batched=use_batched,
+                        )
+                    except Exception:  # pylint: disable=broad-except
+                        skipped["predict_error"] += 1
+                        continue
 
                     state_helper.add_rule(
                         predict=rule_predict,
@@ -1744,6 +1791,20 @@ class FactualExplanation(CalibratedExplanation):
                         feature_value=None,
                         rule_text=factual["rule"][f1] + " & \n" + state_helper.get_rule(cf2),
                     )
+                    created += 1
+
+        if created == 0 and attempts > 0:
+            warnings.warn(
+                f"add_conjunctions: created=0 attempts={attempts} skipped={dict(skipped)} "
+                f"weights={_summarize(weights_array)}",
+                stacklevel=2,
+            )
+            if kwargs.get("_fallback_to_legacy_on_zero", False):
+                from .legacy_conjunctions import add_conjunctions_factual_legacy
+
+                return add_conjunctions_factual_legacy(
+                    self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                )
 
         self.conjunctive_rules = state_helper.get_state()
         self.has_conjunctive_rules = True
@@ -1785,7 +1846,6 @@ class FactualExplanation(CalibratedExplanation):
         """
         # Ensure style_override gets passed through
         style_override = kwargs.pop("style_override", None)
-        print(f"DEBUG: FactualExplanation.plot kwargs keys: {list(kwargs.keys())}")
         plot_use_legacy = kwargs.pop("use_legacy", None)
         # PlotSpec request forces new renderer
         if kwargs.get("return_plot_spec"):
@@ -2583,6 +2643,22 @@ class AlternativeExplanation(CalibratedExplanation):
                 return len(candidate)
             return 1
 
+        from collections import Counter
+
+        attempts = 0
+        created = 0
+        skipped = Counter()
+
+        def _summarize(arr):
+            if arr is None or arr.size == 0:
+                return {"size": 0}
+            return {
+                "size": int(arr.size),
+                "min": float(np.nanmin(arr)),
+                "max": float(np.nanmax(arr)),
+                "nan": int(np.isnan(arr).sum()),
+            }
+
         for current_size in range(2, max_rule_size + 1):
             num_rules = len(alternative["rule"])
             if num_rules == 0:
@@ -2592,13 +2668,17 @@ class AlternativeExplanation(CalibratedExplanation):
             width_array = np.asarray(conjunctive_state["weight_high"], dtype=float) - np.asarray(
                 conjunctive_state["weight_low"], dtype=float
             )
+
+            top_n = min(num_rules, n_top_features)
             top_conjunctives = list(
                 self.rank_features(
                     weights_array,
                     width=width_array,
-                    num_to_show=min(num_rules, n_top_features),
+                    num_to_show=max(2, top_n) if num_rules >= 2 else top_n,
                 )
             )
+            if not top_conjunctives and num_rules > 0:
+                top_conjunctives = list(range(num_rules))
 
             # Determine outer loop candidates
             # Legacy behavior: iterate all features
@@ -2608,9 +2688,11 @@ class AlternativeExplanation(CalibratedExplanation):
                     self.rank_features(
                         base_weight_array,
                         width=base_width_array if base_width_array.size else None,
-                        num_to_show=num_outer,
+                        num_to_show=max(2, num_outer) if num_rules >= 2 else num_outer,
                     )
                 )
+                if not outer_indices and num_rules > 0:
+                    outer_indices = list(range(num_rules))
             else:
                 outer_indices = range(len(alternative["feature"]))
 
@@ -2624,21 +2706,25 @@ class AlternativeExplanation(CalibratedExplanation):
                 )
 
                 for cf2 in top_conjunctives:
+                    attempts += 1
                     rule_values = [rule_value1]
                     original_features = [of1]
                     original_feature_values = [alternative["feature_value"][f1]]
                     of2 = conjunctive_state["feature"][cf2]
                     target_length = current_size - 1
                     if _feature_length(of2) != target_length:
+                        skipped["len_mismatch"] += 1
                         continue
                     if conjunctive_state["is_conjunctive"][cf2]:
                         if of1 in of2:
+                            skipped["same_feature"] += 1
                             continue
                         original_features.extend(int(v) for v in of2)
                         rule_values.extend(list(conjunctive_state["sampled_values"][cf2]))
                         original_feature_values.extend(conjunctive_state["feature_value"][cf2])
                     else:
                         if of1 == of2:
+                            skipped["same_feature"] += 1
                             continue
                         original_features.append(of2)
                         original_feature_values.append(alternative["feature_value"][cf2])
@@ -2651,18 +2737,23 @@ class AlternativeExplanation(CalibratedExplanation):
 
                     combo_key = _normalise_features(original_features)
                     if combo_key in covered_combinations:
+                        skipped["duplicate_combo"] += 1
                         continue
                     covered_combinations.add(combo_key)
 
-                    rule_predict, rule_low, rule_high = self._predict_conjunctive(
-                        rule_values,
-                        original_features,
-                        scratch,
-                        threshold,
-                        predicted_class,
-                        bins=self.bin,
-                        use_batched=use_batched,
-                    )
+                    try:
+                        rule_predict, rule_low, rule_high = self.predict_conjunctive(
+                            rule_values,
+                            original_features,
+                            scratch,
+                            threshold,
+                            predicted_class,
+                            bins=self.bin,
+                            use_batched=use_batched,
+                        )
+                    except Exception:  # pylint: disable=broad-except
+                        skipped["predict_error"] += 1
+                        continue
 
                     conjunctive_state["predict"].append(rule_predict)
                     conjunctive_state["predict_low"].append(rule_low)
@@ -2684,6 +2775,20 @@ class AlternativeExplanation(CalibratedExplanation):
                         alternative["rule"][f1] + " & \n" + conjunctive_state["rule"][cf2]
                     )
                     conjunctive_state["is_conjunctive"].append(True)
+                    created += 1
+
+        if created == 0 and attempts > 0:
+            warnings.warn(
+                f"add_conjunctions: created=0 attempts={attempts} skipped={dict(skipped)} "
+                f"weights={_summarize(weights_array)}",
+                stacklevel=2,
+            )
+            if kwargs.get("_fallback_to_legacy_on_zero", False):
+                from .legacy_conjunctions import add_conjunctions_alternative_legacy
+
+                return add_conjunctions_alternative_legacy(
+                    self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                )
 
         self.conjunctive_rules = conjunctive_state
         self.has_conjunctive_rules = True

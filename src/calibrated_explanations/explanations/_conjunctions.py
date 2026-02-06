@@ -46,6 +46,39 @@ class ConjunctionState:
                 cloned[key] = list(value)
             else:
                 cloned[key] = value
+        # normalize lengths
+        L = len(cloned.get("rule", []))
+        # ensure fields exist with correct lengths
+        for field in [
+            "is_conjunctive",
+            "feature",
+            "sampled_values",
+            "feature_value",
+            "weight",
+            "weight_low",
+            "weight_high",
+        ]:
+            if field not in cloned:
+                if field == "is_conjunctive":
+                    cloned[field] = [False] * L
+                else:
+                    cloned[field] = [None] * L
+        # normalize features
+        normalized_features = []
+        for feat in cloned["feature"]:
+            if isinstance(feat, (list, tuple, np.ndarray)):
+                normalized_features.append(list(int(v) for v in np.asarray(feat).ravel()))
+            else:
+                normalized_features.append(int(feat))
+        cloned["feature"] = normalized_features
+        # normalize sampled_values -> list or np.ndarray
+        cloned["sampled_values"] = [
+            v if isinstance(v, (list, tuple, np.ndarray)) else ([v] if v is not None else [None])
+            for v in cloned["sampled_values"]
+        ]
+        # coerce weights to floats or np.nan
+        for key in ["weight", "weight_low", "weight_high"]:
+            cloned[key] = [float(x) if x is not None else float("nan") for x in cloned[key]]
         return cloned
 
     def set_base_prediction(self, predict, low, high):
