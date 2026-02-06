@@ -1,30 +1,24 @@
 name,def_file,def_line,src_usages,test_usages,pattern,scope
-_train_classification,integration\test_reject_envelope_integration.py,12,0,4,Pattern 2 (Shared Test Utility),test
-_train_regression,integration\test_reject_envelope_integration.py,25,0,2,Pattern 2 (Shared Test Utility),test
 _get_explainer,unit\explanations\test_explanation_more.py,42,0,0,Pattern 2 (Local Test Helper),test
-_prep_classification,unit\test_ce_agent_utils.py,28,0,10,Pattern 2 (Shared Test Utility),test
-_prep_regression,unit\test_ce_agent_utils.py,35,0,4,Pattern 2 (Shared Test Utility),test
-_check_preconditions,calibrated_explanations\explanations\explanation.py,2959,6,0,Consistent (Internal Only),library
-_is_lesser,calibrated_explanations\explanations\explanation.py,2942,1,0,Consistent (Internal Only),library
-_build_wrapper_classifier,unit\test_reject_envelope_unit.py,10,0,4,Pattern 2 (Shared Test Utility),test
-_make_exp,unit\core\test_serialization_invariants_extra.py,8,0,16,Pattern 2 (Shared Test Utility),test
-_get_rule_str,calibrated_explanations\explanations\explanation.py,1252,1,0,Consistent (Internal Only),library
+_check_preconditions,calibrated_explanations\explanations\explanation.py,2963,6,0,Consistent (Internal Only),library
+_is_lesser,calibrated_explanations\explanations\explanation.py,2946,1,0,Consistent (Internal Only),library
+_get_rule_str,calibrated_explanations\explanations\explanation.py,1256,1,0,Consistent (Internal Only),library
 _emit,calibrated_explanations\parallel\parallel.py,721,36,0,Consistent (Internal Only),library
-_require_ce,calibrated_explanations\ce_agent_utils.py,128,4,0,Consistent (Internal Only),library
-_is_wrapper,calibrated_explanations\ce_agent_utils.py,148,6,0,Consistent (Internal Only),library
-_supports_kwarg,calibrated_explanations\ce_agent_utils.py,164,2,0,Consistent (Internal Only),library
+_require_ce,calibrated_explanations\ce_agent_utils.py,126,4,0,Consistent (Internal Only),library
+_is_wrapper,calibrated_explanations\ce_agent_utils.py,145,6,0,Consistent (Internal Only),library
+_supports_kwarg,calibrated_explanations\ce_agent_utils.py,159,2,0,Consistent (Internal Only),library
 _filter_kwargs,calibrated_explanations\core\reject\orchestrator.py,54,6,0,Consistent (Internal Only),library
-_ensure_required_methods,calibrated_explanations\ce_agent_utils.py,190,6,0,Consistent (Internal Only),library
-_ensure_required_attrs,calibrated_explanations\ce_agent_utils.py,199,6,0,Consistent (Internal Only),library
-_validate_wrapper_state,calibrated_explanations\ce_agent_utils.py,208,6,0,Consistent (Internal Only),library
-_safe_call_with_kwargs,calibrated_explanations\ce_agent_utils.py,291,14,0,Consistent (Internal Only),library
-_extract_top_features,calibrated_explanations\ce_agent_utils.py,296,4,0,Consistent (Internal Only),library
-_format_probability,calibrated_explanations\ce_agent_utils.py,322,2,0,Consistent (Internal Only),library
-_format_interval,calibrated_explanations\ce_agent_utils.py,336,2,0,Consistent (Internal Only),library
-_extract_prediction_triplet,calibrated_explanations\ce_agent_utils.py,342,2,0,Consistent (Internal Only),library
-_action_suggestion,calibrated_explanations\ce_agent_utils.py,413,2,0,Consistent (Internal Only),library
-_explain_and_narrate_impl,calibrated_explanations\ce_agent_utils.py,448,1,0,Consistent (Internal Only),library
-_TELEMETRY_HOOK,calibrated_explanations\ce_agent_utils.py,98,5,0,Consistent (Internal Only),library
+_ensure_required_methods,calibrated_explanations\ce_agent_utils.py,185,6,0,Consistent (Internal Only),library
+_ensure_required_attrs,calibrated_explanations\ce_agent_utils.py,194,6,0,Consistent (Internal Only),library
+_validate_wrapper_state,calibrated_explanations\ce_agent_utils.py,203,6,0,Consistent (Internal Only),library
+_safe_call_with_kwargs,calibrated_explanations\ce_agent_utils.py,284,14,0,Consistent (Internal Only),library
+_extract_top_features,calibrated_explanations\ce_agent_utils.py,289,4,0,Consistent (Internal Only),library
+_format_probability,calibrated_explanations\ce_agent_utils.py,315,2,0,Consistent (Internal Only),library
+_format_interval,calibrated_explanations\ce_agent_utils.py,329,2,0,Consistent (Internal Only),library
+_extract_prediction_triplet,calibrated_explanations\ce_agent_utils.py,335,2,0,Consistent (Internal Only),library
+_action_suggestion,calibrated_explanations\ce_agent_utils.py,405,2,0,Consistent (Internal Only),library
+_explain_and_narrate_impl,calibrated_explanations\ce_agent_utils.py,439,1,0,Consistent (Internal Only),library
+_TELEMETRY_HOOK,calibrated_explanations\ce_agent_utils.py,97,5,0,Consistent (Internal Only),library
 _CONTEXT_KEYS,calibrated_explanations\logging.py,18,3,0,Consistent (Internal Only),library
 _context_vars,calibrated_explanations\logging.py,27,7,0,Consistent (Internal Only),library
 _coerce_bool,calibrated_explanations\logging.py,30,2,0,Consistent (Internal Only),library
@@ -147,7 +141,7 @@ _unseen_category_policy,calibrated_explanations\core\wrap_explainer.py,201,2,0,C
 _pre_fitted,calibrated_explanations\core\wrap_explainer.py,929,5,0,Consistent (Internal Only),library
 _run_single,calibrated_explanations\core\explain\benchmarks.py,57,2,0,Consistent (Internal Only),library
 _TELEMETRY_LOGGER,calibrated_explanations\core\explain\orchestrator.py,51,3,0,Consistent (Internal Only),library
-_derive_plot_chain,calibrated_explanations\core\explain\orchestrator.py,1084,2,0,Consistent (Internal Only),library
+_derive_plot_chain,calibrated_explanations\core\explain\orchestrator.py,1215,2,0,Consistent (Internal Only),library
 _instance_parallel_task,calibrated_explanations\core\explain\parallel_instance.py,32,2,0,Consistent (Internal Only),library
 _sequential_plugin,calibrated_explanations\core\explain\parallel_instance.py,96,3,0,Consistent (Internal Only),library
 _build_explainer_from_spec,calibrated_explanations\core\explain\parallel_runtime.py,251,2,0,Consistent (Internal Only),library
@@ -162,19 +156,18 @@ _validate_prediction_result,calibrated_explanations\core\prediction\orchestrator
 _predict_impl,calibrated_explanations\core\prediction\orchestrator.py,310,3,0,Consistent (Internal Only),library
 _predict_fn,calibrated_explanations\core\prediction\orchestrator.py,212,1,0,Consistent (Internal Only),library
 _compute_prediction_set,calibrated_explanations\core\reject\orchestrator.py,94,1,0,Consistent (Internal Only),library
-_builtin_strategy,calibrated_explanations\core\reject\orchestrator.py,430,1,0,Consistent (Internal Only),library
+_builtin_strategy,calibrated_explanations\core\reject\orchestrator.py,434,1,0,Consistent (Internal Only),library
 _strategies_lock,calibrated_explanations\core\reject\orchestrator.py,50,4,0,Consistent (Internal Only),library
-_DEPRECATED_ATTRS,calibrated_explanations\core\reject\policy.py,62,3,0,Consistent (Internal Only),library
-_missing_,calibrated_explanations\core\reject\policy.py,35,0,0,Pattern 3 (Completely Dead),library
+_DEPRECATED_ATTRS,calibrated_explanations\core\reject\policy.py,14,3,0,Consistent (Internal Only),library
 _validate_prediction_invariant,calibrated_explanations\plugins\explanations.py,417,3,0,Consistent (Internal Only),library
-_get_percentiles,calibrated_explanations\explanations\explanation.py,599,4,0,Consistent (Internal Only),library
-_build_uncertainty_payload,calibrated_explanations\explanations\explanation.py,644,8,0,Consistent (Internal Only),library
-_build_interval,calibrated_explanations\explanations\explanation.py,682,5,0,Consistent (Internal Only),library
-_build_instance_uncertainty,calibrated_explanations\explanations\explanation.py,694,4,0,Consistent (Internal Only),library
-_safe_feature_name,calibrated_explanations\explanations\explanation.py,727,4,0,Consistent (Internal Only),library
-_parse_condition,calibrated_explanations\explanations\explanation.py,762,2,0,Consistent (Internal Only),library
-_build_condition_payload,calibrated_explanations\explanations\explanation.py,781,3,0,Consistent (Internal Only),library
-_predict_conjunctive,calibrated_explanations\explanations\explanation.py,935,3,0,Consistent (Internal Only),library
+_get_percentiles,calibrated_explanations\explanations\explanation.py,603,4,0,Consistent (Internal Only),library
+_build_uncertainty_payload,calibrated_explanations\explanations\explanation.py,648,8,0,Consistent (Internal Only),library
+_build_interval,calibrated_explanations\explanations\explanation.py,686,5,0,Consistent (Internal Only),library
+_build_instance_uncertainty,calibrated_explanations\explanations\explanation.py,698,4,0,Consistent (Internal Only),library
+_safe_feature_name,calibrated_explanations\explanations\explanation.py,731,4,0,Consistent (Internal Only),library
+_parse_condition,calibrated_explanations\explanations\explanation.py,766,2,0,Consistent (Internal Only),library
+_build_condition_payload,calibrated_explanations\explanations\explanation.py,785,3,0,Consistent (Internal Only),library
+_predict_conjunctive,calibrated_explanations\explanations\explanation.py,939,3,0,Consistent (Internal Only),library
 _restore,calibrated_explanations\explanations\legacy_conjunctions.py,74,4,0,Consistent (Internal Only),library
 _normalise_features,calibrated_explanations\explanations\legacy_conjunctions.py,334,14,0,Consistent (Internal Only),library
 _feature_length,calibrated_explanations\explanations\legacy_conjunctions.py,339,8,0,Consistent (Internal Only),library
@@ -196,6 +189,9 @@ _predict_conjunctive_legacy,calibrated_explanations\explanations\legacy_conjunct
 _normalize_explanation_type,calibrated_explanations\explanations\models.py,140,2,0,Consistent (Internal Only),library
 _safe_pick,calibrated_explanations\explanations\models.py,79,4,0,Consistent (Internal Only),library
 _rb_pick,calibrated_explanations\explanations\models.py,96,6,0,Consistent (Internal Only),library
+_missing_,calibrated_explanations\explanations\reject.py,41,0,0,Pattern 3 (Completely Dead),library
+_slice_reject_fields,calibrated_explanations\explanations\reject.py,126,1,0,Consistent (Internal Only),library
+_metadata,calibrated_explanations\explanations\reject.py,182,6,0,Consistent (Internal Only),library
 _normalize_feature_entry,calibrated_explanations\explanations\_conjunctions.py,140,4,0,Consistent (Internal Only),library
 _combination_keys,calibrated_explanations\explanations\_conjunctions.py,36,5,0,Consistent (Internal Only),library
 _enabled,calibrated_explanations\integrations\shap.py,93,19,0,Consistent (Internal Only),library
@@ -295,7 +291,7 @@ _safe_supports,calibrated_explanations\plugins\registry.py,2095,6,0,Consistent (
 _ENV_TRUST_CACHE,calibrated_explanations\plugins\registry.py,245,5,0,Consistent (Internal Only),library
 _PYPROJECT_TRUST_CACHE,calibrated_explanations\plugins\registry.py,252,7,0,Consistent (Internal Only),library
 _LAST_DISCOVERY_REPORT,calibrated_explanations\plugins\registry.py,1724,8,0,Consistent (Internal Only),library
-_schema_json,calibrated_explanations\schema\validation.py,24,3,0,Consistent (Internal Only),library
+_schema_json,calibrated_explanations\schema\validation.py,26,3,0,Consistent (Internal Only),library
 _should_raise,calibrated_explanations\utils\deprecations.py,25,4,0,Consistent (Internal Only),library
 _class,calibrated_explanations\utils\helper.py,106,3,0,Consistent (Internal Only),library
 _normalize_digit_string,calibrated_explanations\utils\int_utils.py,12,2,0,Consistent (Internal Only),library
@@ -313,12 +309,12 @@ _build_probability_segments,calibrated_explanations\viz\builders.py,230,6,0,Cons
 _key,calibrated_explanations\viz\builders.py,987,4,0,Consistent (Internal Only),library
 _label_for,calibrated_explanations\viz\builders.py,737,8,0,Consistent (Internal Only),library
 _import_pyplot_with_retries,calibrated_explanations\viz\matplotlib_adapter.py,26,2,0,Consistent (Internal Only),library
-_regression_sign_colors,calibrated_explanations\viz\matplotlib_adapter.py,318,2,0,Consistent (Internal Only),library
-_header_caption,calibrated_explanations\viz\matplotlib_adapter.py,338,2,0,Consistent (Internal Only),library
-_render_dual_header_band,calibrated_explanations\viz\matplotlib_adapter.py,351,4,0,Consistent (Internal Only),library
-_render_single_header,calibrated_explanations\viz\matplotlib_adapter.py,448,2,0,Consistent (Internal Only),library
-_render_body,calibrated_explanations\viz\matplotlib_adapter.py,500,2,0,Consistent (Internal Only),library
-_safe_str,calibrated_explanations\viz\matplotlib_adapter.py,1147,2,0,Consistent (Internal Only),library
+_regression_sign_colors,calibrated_explanations\viz\matplotlib_adapter.py,347,2,0,Consistent (Internal Only),library
+_header_caption,calibrated_explanations\viz\matplotlib_adapter.py,367,2,0,Consistent (Internal Only),library
+_render_dual_header_band,calibrated_explanations\viz\matplotlib_adapter.py,380,4,0,Consistent (Internal Only),library
+_render_single_header,calibrated_explanations\viz\matplotlib_adapter.py,477,2,0,Consistent (Internal Only),library
+_render_body,calibrated_explanations\viz\matplotlib_adapter.py,529,2,0,Consistent (Internal Only),library
+_safe_str,calibrated_explanations\viz\matplotlib_adapter.py,1176,2,0,Consistent (Internal Only),library
 _get_default_template_path,calibrated_explanations\viz\narrative_plugin.py,72,1,0,Consistent (Internal Only),library
 _format_output,calibrated_explanations\viz\narrative_plugin.py,371,1,0,Consistent (Internal Only),library
 _format_as_text,calibrated_explanations\viz\narrative_plugin.py,412,1,0,Consistent (Internal Only),library
