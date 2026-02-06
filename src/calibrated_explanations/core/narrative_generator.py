@@ -167,6 +167,8 @@ class NarrativeGenerator:
         expertise_level: str = "advanced",
         threshold: Optional[float] = None,
         feature_names: Optional[List[str]] = None,
+        conjunction_separator: str = " AND ",
+        align_weights: bool = True,
     ) -> str:
         """Generate narrative for a single explanation."""
         from ..utils.exceptions import ValidationError
@@ -217,12 +219,44 @@ class NarrativeGenerator:
             else:
                 label = ""
 
+        # Determine positive_label for binary classification
+        positive_label = ""
+        if problem_type == "binary_classification":
+            if hasattr(explanation, "get_class_labels"):
+                class_labels = explanation.get_class_labels()
+                if class_labels is not None and isinstance(class_labels, dict):
+                    positive_label = str(class_labels.get(1, "1"))
+                else:
+                    positive_label = "1"
+            else:
+                positive_label = "positive class"
+
+        # Build threshold_condition for probabilistic regression
+        threshold_condition = ""
+        threshold_low = ""
+        threshold_high = ""
+        threshold_str = ""
+        if threshold is not None:
+            if isinstance(threshold, (tuple, list)) and len(threshold) == 2:
+                # Interval threshold: P(low < y <= high)
+                threshold_low = fmt_float(threshold[0])
+                threshold_high = fmt_float(threshold[1])
+                threshold_condition = f"{threshold_low} < target <= {threshold_high}"
+            else:
+                # Scalar threshold: P(y <= t)
+                threshold_str = fmt_float(threshold)
+                threshold_condition = f"target <= {threshold_str}"
+
         context = {
             "label": label,
+            "positive_label": positive_label,
             "calibrated_pred": fmt_float(bp),
             "pred_interval_lower": fmt_float(bl),
             "pred_interval_upper": fmt_float(bh),
-            "threshold": fmt_float(threshold) if threshold else "",
+            "threshold": threshold_str,
+            "threshold_low": threshold_low,
+            "threshold_high": threshold_high,
+            "threshold_condition": threshold_condition,
             "runner_up_class": "",
             "margin_value": "",
             "interval_width": "",
@@ -294,9 +328,23 @@ class NarrativeGenerator:
         pos_features = [r for r in rules if r.get("weight", 0) > 0]
         neg_features = [r for r in rules if r.get("weight", 0) < 0]
 
-        # Sort by absolute weight
-        pos_features.sort(key=lambda r: abs(r.get("weight", 0)), reverse=True)
-        neg_features.sort(key=lambda r: abs(r.get("weight", 0)), reverse=True)
+        # Sort using same logic as rank_features in __repr__:
+        # Primary: absolute weight (descending)
+        # Secondary: width = weight_high - weight_low (descending, larger uncertainty last)
+        def rank_key(r):
+            w = r.get("weight", 0)
+            wl = r.get("weight_low")
+            wh = r.get("weight_high")
+            width = 0.0
+            if wl is not None and wh is not None:
+                try:
+                    width = float(wh) - float(wl)
+                except (ValueError, TypeError):
+                    width = 0.0
+            return (abs(w), width)
+
+        pos_features.sort(key=rank_key, reverse=True)
+        neg_features.sort(key=rank_key, reverse=True)
 
         # Take top features (min 3)
         min_features = 3
@@ -320,7 +368,9 @@ class NarrativeGenerator:
                 uncertain_all,
                 context,
                 expertise_level,
-                problem_type,  # Pass problem_type
+                problem_type,
+                conjunction_separator,
+                align_weights,
             )
         else:
             narrative = self.expand_template(
@@ -330,7 +380,9 @@ class NarrativeGenerator:
                 [],
                 context,
                 expertise_level,
-                problem_type,  # Pass problem_type
+                problem_type,
+                conjunction_separator,
+                align_weights,
             )
 
         return narrative
@@ -378,6 +430,10 @@ class NarrativeGenerator:
                     rules_list[i] if i < len(rules_list) else ""
                 )
 
+            # Get is_conjunctive flag
+            is_conj_list = rules_dict.get("is_conjunctive", [])
+            is_conjunctive = is_conj_list[i] if i < len(is_conj_list) else False
+
             feature_dict = {
                 "rule": rules_list[i] if i < len(rules_list) else "",
                 "value": get_item("value", i),
@@ -389,6 +445,7 @@ class NarrativeGenerator:
                 "predict": get_item("predict", i),
                 "predict_low": get_item("predict_low", i),
                 "predict_high": get_item("predict_high", i),
+                "is_conjunctive": is_conjunctive,
             }
             result.append(feature_dict)
 
@@ -403,6 +460,8 @@ class NarrativeGenerator:
         context: Dict[str, str],
         level: str,
         problem_type: str = "regression",
+        conjunction_separator: str = " AND ",
+        align_weights: bool = True,
     ) -> str:
         """Expand template with features and context."""
         # Fill in global context placeholders
@@ -434,7 +493,7 @@ class NarrativeGenerator:
                         else:
                             caution_line = f"⚠️ Use caution: calibrated probability interval is wide ({width:.3f})."
 
-        # Build feature lines
+        # Build feature lines (without alignment - alignment applied globally later)
         def build_lines(line: str, feats: List[Dict]) -> List[str]:
             rendered = []
             for f in feats:
@@ -449,6 +508,11 @@ class NarrativeGenerator:
 
                 rule = f.get("rule", "")
                 cond = clean_condition(rule, feat_name)
+
+                # Format conjunctive rules with cleaner separator
+                if f.get("is_conjunctive"):
+                    cond = cond.replace(" & \n", conjunction_separator)
+                    cond = f"({cond})"  # Wrap in parens for clarity
 
                 # Per-feature uncertainty tags
                 tags = []
@@ -491,23 +555,81 @@ class NarrativeGenerator:
 
                 txt += uncertainty_tag
                 rendered.append(txt)
+
             return rendered
 
+        def align_lines_globally(all_line_groups: List[List[str]]) -> List[List[str]]:
+            """Apply vertical alignment across all feature groups using global max prefix."""
+            weight_marker = "— weight"
+
+            # Find global max prefix length across ALL groups
+            global_max_prefix = 0
+            for group in all_line_groups:
+                for txt in group:
+                    marker_pos = txt.find(weight_marker)
+                    if marker_pos > 0:
+                        global_max_prefix = max(global_max_prefix, marker_pos)
+
+            if global_max_prefix == 0:
+                return all_line_groups
+
+            # Apply alignment to all groups using global max
+            aligned_groups = []
+            for group in all_line_groups:
+                aligned = []
+                for txt in group:
+                    marker_pos = txt.find(weight_marker)
+                    if marker_pos > 0:
+                        prefix = txt[:marker_pos]
+                        suffix = txt[marker_pos:]
+                        padding = " " * (global_max_prefix - len(prefix))
+                        aligned.append(prefix + padding + suffix)
+                    else:
+                        aligned.append(txt)
+                aligned_groups.append(aligned)
+
+            return aligned_groups
+
         lines = template.splitlines()
-        out_lines = []
         placeholder = "{feature_name}"
+
+        # Collect template lines for each feature group (in order they appear)
+        feature_template_lines = [line for line in lines if placeholder in line]
+
+        # Assign template lines to feature groups based on order of appearance
+        n_templates = len(feature_template_lines)
+        pos_template = feature_template_lines[0] if n_templates > 0 else None
+        neg_template = feature_template_lines[1] if n_templates > 1 else pos_template
+        unc_template = feature_template_lines[2] if n_templates > 2 else pos_template
+
+        # Build all feature lines first (without alignment)
+        pos_lines = build_lines(pos_template, pos_features) if pos_template and pos_features else []
+        neg_lines = build_lines(neg_template, neg_features) if neg_template and neg_features else []
+        uncertain_lines = (
+            build_lines(unc_template, uncertain_features)
+            if unc_template and uncertain_features and level == "advanced"
+            else []
+        )
+
+        # Apply global alignment if requested
+        if align_weights and (pos_lines or neg_lines or uncertain_lines):
+            pos_lines, neg_lines, uncertain_lines = align_lines_globally(
+                [pos_lines, neg_lines, uncertain_lines]
+            )
+
+        out_lines = []
         pos_done = neg_done = uncertain_done = False
 
         for line in lines:
             if placeholder in line:
-                if not pos_done and pos_features:
-                    out_lines.extend(build_lines(line, pos_features))
+                if not pos_done and pos_lines:
+                    out_lines.extend(pos_lines)
                     pos_done = True
-                elif not neg_done and neg_features:
-                    out_lines.extend(build_lines(line, neg_features))
+                elif not neg_done and neg_lines:
+                    out_lines.extend(neg_lines)
                     neg_done = True
-                elif not uncertain_done and uncertain_features and level == "advanced":
-                    out_lines.extend(build_lines(line, uncertain_features))
+                elif not uncertain_done and uncertain_lines:
+                    out_lines.extend(uncertain_lines)
                     uncertain_done = True
             else:
                 out_lines.append(line)

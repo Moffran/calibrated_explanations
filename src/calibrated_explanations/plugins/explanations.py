@@ -62,139 +62,140 @@ class ExplanationContext:
 class ExplainerHandle:
     """Read-only wrapper exposing a constrained explainer API to plugins."""
 
-    __slots__ = ("__explainer", "__metadata")
+    # __slots__ = ("_explainer", "_metadata")
 
     def __init__(self, explainer: Any, metadata: Mapping[str, Any]) -> None:
-        self.__explainer = explainer
-        self.__metadata = MappingProxyType(dict(metadata))
+        # Use direct dict access to bypass potential autoreload/slot descriptor issues
+        self.__dict__["_explainer"] = explainer
+        self.__dict__["_metadata"] = MappingProxyType(dict(metadata))
 
     @property
     def num_features(self) -> int:
         """Return the number of features."""
-        return self.__explainer.num_features
+        return self._explainer.num_features
 
     @property
     def mode(self) -> str:
         """Return the prediction mode."""
-        return self.__explainer.mode
+        return self._explainer.mode
 
     @property
     def is_multiclass(self) -> bool:
         """Return True when in multiclass mode."""
-        return self.__explainer.is_multiclass()
+        return self._explainer.is_multiclass()
 
     @property
     def class_labels(self) -> Any:
         """Return class labels."""
-        return self.__explainer.class_labels
+        return self._explainer.class_labels
 
     @property
     def feature_names(self) -> Any:
         """Return feature names."""
-        return self.__explainer.feature_names
+        return self._explainer.feature_names
 
     @property
     def features_to_ignore(self) -> Any:
         """Return features to ignore."""
-        return self.__explainer.features_to_ignore
+        return self._explainer.features_to_ignore
 
     @property
     def learner(self) -> Any:
         """Return the underlying learner."""
-        return self.__explainer.learner
+        return self._explainer.learner
 
     @property
     def bins(self) -> Any:
         """Return bins configuration."""
-        return self.__explainer.bins
+        return self._explainer.bins
 
     @property
     def preprocessor(self) -> Any:
         """Return the preprocessor if available."""
-        return getattr(self.__explainer, "preprocessor", None)
+        return getattr(self._explainer, "preprocessor", None)
 
     @property
     def feature_filter_config(self) -> Any:
         """Return the feature filter configuration if available."""
-        return getattr(self.__explainer, "feature_filter_config", None)
+        return getattr(self._explainer, "feature_filter_config", None)
 
     @property
     def discretizer(self) -> Any:
         """Return the discretizer if available."""
-        return getattr(self.__explainer, "discretizer", None)
+        return getattr(self._explainer, "discretizer", None)
 
     @property
     def sample_percentiles(self) -> Any:
         """Return sample percentiles if available."""
-        return getattr(self.__explainer, "sample_percentiles", None)
+        return getattr(self._explainer, "sample_percentiles", None)
 
     def get_calibration_summaries(self, *args: Any, **kwargs: Any) -> Any:
         """Return calibration summaries from the underlying explainer."""
-        return self.__explainer.get_calibration_summaries(*args, **kwargs)
+        return self._explainer.get_calibration_summaries(*args, **kwargs)
 
     @property
     def y_cal(self) -> Any:
         """Return y_cal if available."""
-        return getattr(self.__explainer, "y_cal", None)
+        return getattr(self._explainer, "y_cal", None)
 
     @property
     def categorical_features(self) -> Any:
         """Return categorical_features if available."""
-        return getattr(self.__explainer, "categorical_features", None)
+        return getattr(self._explainer, "categorical_features", None)
 
     @property
     def x_cal(self) -> Any:
         """Expose calibration features when plugins need direct access."""
-        return getattr(self.__explainer, "x_cal", None)
+        return getattr(self._explainer, "x_cal", None)
 
     @property
     def plugin_manager(self) -> Any:
         """Return the plugin manager if available."""
-        return getattr(self.__explainer, "plugin_manager", None)
+        return getattr(self._explainer, "plugin_manager", None)
 
     @property
     def latest_explanation(self) -> Any:
         """Expose the latest explanation attached to the underlying explainer."""
-        return getattr(self.__explainer, "latest_explanation", None)
+        return getattr(self._explainer, "latest_explanation", None)
 
     @latest_explanation.setter
     def latest_explanation(self, value: Any) -> None:
         """Allow plugins to set the latest explanation on the underlying explainer."""
-        self.__explainer.latest_explanation = value
+        self._explainer.latest_explanation = value
 
     @property
     def last_explanation_mode(self) -> Any:
         """Expose the last explanation mode recorded on the underlying explainer."""
-        return getattr(self.__explainer, "last_explanation_mode", None)
+        return getattr(self._explainer, "last_explanation_mode", None)
 
     @last_explanation_mode.setter
     def last_explanation_mode(self, value: Any) -> None:
         """Allow plugins to set the last explanation mode on the underlying explainer."""
-        self.__explainer.last_explanation_mode = value
+        self._explainer.last_explanation_mode = value
 
     def predict(self, *args: Any, **kwargs: Any) -> Any:
         """Return calibrated predictions from the underlying explainer."""
-        return self.__explainer.predict(*args, **kwargs)
+        return self._explainer.predict(*args, **kwargs)
 
     def explain_factual(self, *args: Any, **kwargs: Any) -> Any:
         """Return factual explanations from the underlying explainer."""
-        return self.__explainer.explain_factual(*args, **kwargs)
+        return self._explainer.explain_factual(*args, **kwargs)
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying explainer."""
-        return getattr(self.__explainer, name)
+        return getattr(self._explainer, name)
 
     def explain_fast(self, *args: Any, **kwargs: Any) -> Any:
         """Return fast explanations from the underlying explainer."""
-        return self.__explainer.explain_fast(*args, **kwargs)
+        return self._explainer.explain_fast(*args, **kwargs)
 
     def get_metadata(self) -> Mapping[str, Any]:
         """Return immutable metadata describing the explainer and dependencies."""
-        return self.__metadata
+        return self._metadata
 
     def get_preprocessor_state(self) -> Mapping[str, Any] | None:
         """Return the preprocessor metadata snapshot when available."""
-        preprocessor_meta = getattr(self.__explainer, "preprocessor_metadata", None)
+        preprocessor_meta = getattr(self._explainer, "preprocessor_metadata", None)
         if preprocessor_meta is None:
             return None
         if isinstance(preprocessor_meta, MappingABC):
@@ -323,8 +324,6 @@ def validate_explanation_batch(
             if issubclass(cls, CalibratedExplanations):
                 return True
         for base in getattr(cls, "__mro__", ()):  # pragma: no cover - defensive
-            if base is cls:
-                continue
             if base.__name__ == "CalibratedExplanations":
                 return True
         return False
@@ -345,8 +344,6 @@ def validate_explanation_batch(
             if issubclass(cls, CalibratedExplanation):
                 return True
         for base in getattr(cls, "__mro__", ()):  # pragma: no cover - defensive
-            if base is cls:
-                continue
             if base.__name__ == "CalibratedExplanation":
                 return True
         return False

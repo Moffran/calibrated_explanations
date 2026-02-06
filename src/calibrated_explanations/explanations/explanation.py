@@ -433,6 +433,8 @@ class CalibratedExplanation(ABC):
         template_path="exp.yaml",
         expertise_level=("beginner", "advanced"),
         output_format="dataframe",
+        conjunction_separator=" AND ",
+        align_weights=True,
         **kwargs,
     ):
         """
@@ -450,7 +452,13 @@ class CalibratedExplanation(ABC):
             The expertise level(s) for narrative generation. Can be a single
             level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
         output_format : str, default="dataframe"
-            Output format. Valid values: "dataframe", "text", "html", "dict".
+            Output format. Valid values: "dataframe", "text", "html", "dict", "markdown".
+        conjunction_separator : str, default=" AND "
+            Separator to use for conjunctive rules. Conjunctive rules combine
+            multiple feature conditions (e.g., "Glucose > 120 AND BMI > 28").
+        align_weights : bool, default=True
+            If True, vertically align weight columns in the narrative output.
+            If False, no alignment is applied.
         **kwargs : dict
             Additional keyword arguments passed to the narrative plugin.
 
@@ -514,6 +522,8 @@ class CalibratedExplanation(ABC):
             template_path=template_path,
             expertise_level=expertise_level,
             output=output_format,
+            conjunction_separator=conjunction_separator,
+            align_weights=align_weights,
             **kwargs,
         )
 
