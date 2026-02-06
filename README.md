@@ -1,7 +1,7 @@
 # Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/))
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
-[![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
+<!-- [![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations) -->
 [![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Moffran/calibrated_explanations)](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md)
 [![Docstring coverage](https://img.shields.io/badge/docstring%20coverage-94%25-brightgreen)](https://github.com/Moffran/calibrated_explanations/blob/main/reports/docstring_coverage_20251025.txt)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE)
@@ -310,7 +310,7 @@ sign off your commits.
 
 ```bash
 python -m pip install calibrated-explanations           # PyPI
-conda install -c conda-forge calibrated-explanations    # conda-forge
+conda install -c conda-forge calibrated-explanations    # conda-forge, currently only v0.9.0
 python -m pip install "calibrated-explanations[dev]"    # local development tooling
 python -m pip install "calibrated-explanations[viz]"    # plotting extras
 ```
