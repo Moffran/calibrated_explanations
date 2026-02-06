@@ -26,10 +26,10 @@ See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for form
 | 5 | [Factual explanations](#factual-explanations) | All | Practitioner | {doc}`../foundations/how-to/interpret_explanations` |
 | 6 | [Alternative explanations](#alternative-explanations) | All | Practitioner | {doc}`../foundations/concepts/alternatives` |
 | 7 | [Ensured explanations](#ensured-explanations) | All | Researcher | {doc}`../practitioner/playbooks/ensured-explanations` |
-| 8 | [Mondrian/conditional calibration](#mondrianconditional-calibration) | All | Practitioner | {doc}`../practitioner/playbooks/mondrian-calibration` |
+| 8 | [Mondrian/conditional calibration](#mondrian-conditional-calibration) | All | Practitioner | {doc}`../practitioner/playbooks/mondrian-calibration` |
 | 9 | [Fast explanations](#fast-explanations) | All | Advanced | {doc}`../practitioner/advanced/use_plugins` |
-| 10 | [Normalization/difficulty estimation](#normalizationdifficulty-estimation) | Regression | Advanced | {doc}`../practitioner/advanced/normalization-guide` |
-| 11 | [Reject/defer decision support](#rejectdefer-decision-support) | All | Practitioner | {doc}`../practitioner/playbooks/decision-policies` |
+| 10 | [Normalization/difficulty estimation](#normalization-difficulty-estimation) | Regression | Advanced | {doc}`../practitioner/advanced/normalization-guide` |
+| 11 | [Reject/defer decision support](#reject-defer-decision-support) | All | Practitioner | {doc}`../practitioner/playbooks/decision-policies` |
 | 12 | [Prediction intervals with uncertainty](#prediction-intervals-with-uncertainty) | All | Practitioner | {doc}`../foundations/how-to/interpret_explanations` |
 | 13 | [Triangular plot visualization](#triangular-plot-visualization) | All | Practitioner | {doc}`../foundations/concepts/alternatives` |
 
@@ -111,6 +111,8 @@ See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for form
 
 ---
 
+<a id="mondrian-conditional-calibration"></a>
+
 ### Mondrian/Conditional Calibration
 
 **What it is**: Calibrate separately for different subgroups (e.g., by protected attribute or domain segment) to produce group-specific uncertainty estimates.
@@ -139,6 +141,8 @@ See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for form
 
 ---
 
+<a id="normalization-difficulty-estimation"></a>
+
 ### Normalization/Difficulty Estimation
 
 **What it is**: Adjust prediction intervals based on instance-specific difficulty, producing wider intervals for harder-to-predict instances.
@@ -150,6 +154,8 @@ See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for form
 **Learn more**: {doc}`../practitioner/advanced/normalization-guide`
 
 ---
+
+<a id="reject-defer-decision-support"></a>
 
 ### Reject/Defer Decision Support
 
