@@ -1026,6 +1026,10 @@ def plot_alternative(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    return_plot_spec = kwargs.get("return_plot_spec", False)
+    if return_plot_spec:
+        use_legacy = False
+
     explainer = _resolve_explainer_from_explanation(explanation)
     return_plot_spec = kwargs.get("return_plot_spec", False)
     if return_plot_spec:
