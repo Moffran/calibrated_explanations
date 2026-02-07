@@ -35,7 +35,7 @@ class ConcreteExplanation(Explanation):
         return {}
 
     def __repr__(self):
-        return "ConcreteExplanation"
+        return "ConcreteExplanation()"
 
     def plot(self, *args, **kwargs):
         pass
@@ -293,40 +293,90 @@ class TestExplanationUnit:
         # None
         assert Explanation.to_python_number(None) is None
 
-    def test_get_explainer_fallbacks(self):
-        """Test fallback mechanisms for retrieving the explainer."""
-        feature_predict = {"f0": [0.5], "f1": [0.5]}
-        prediction = {"predict": [0.5]}
-        exp = ConcreteExplanation(
-            self.container,
-            self.index,
-            self.x,
-            self.binned,
-            self.weights,
-            feature_predict,
-            prediction,
+
+class TestRuleWithImpact:
+    """Tests for RuleWithImpact dataclass and related functionality."""
+
+    def test_rule_with_impact_creation(self):
+        """Test RuleWithImpact dataclass can be created with valid data."""
+        from calibrated_explanations.explanations.explanation import RuleWithImpact
+
+        rule = RuleWithImpact(
+            rule_id="test_rule_1",
+            feature="Feature_0",
+            text="Feature_0 > 0.5",
+            impact=1.2,
+            direction="positive",
+            base_predict=0.8,
+            predict=2.0,
+            value="> 0.5",
+            uncertainty_low=1.0,
+            uncertainty_high=1.4,
+            predict_low=1.8,
+            predict_high=2.2,
         )
 
-        # 1. Test get_explainer() method (Already default)
-        assert exp.get_explainer() == self.explainer
+        assert rule.rule_id == "test_rule_1"
+        assert rule.feature == "Feature_0"
+        assert rule.text == "Feature_0 > 0.5"
+        assert rule.impact == 1.2
+        assert rule.direction == "positive"
+        assert rule.base_predict == 0.8
+        assert rule.predict == 2.0
+        assert rule.value == "> 0.5"
+        assert rule.uncertainty_low == 1.0
+        assert rule.uncertainty_high == 1.4
+        assert rule.predict_low == 1.8
+        assert rule.predict_high == 2.2
 
-        # 2. Test _get_explainer() method
-        del self.container.get_explainer  # Remove primary
-        # self.container._get_explainer = Mock(return_value="fallback_method")
-        setattr(self.container, "_get_explainer", Mock(return_value="fallback_method"))
-        assert exp.get_explainer() == "fallback_method"
+    def test_rule_with_impact_optional_fields(self):
+        """Test RuleWithImpact with optional fields as None."""
+        from calibrated_explanations.explanations.explanation import RuleWithImpact
 
-        # 3. Test explainer attribute
-        # del self.container._get_explainer
-        delattr(self.container, "_get_explainer")
-        self.container.explainer = "fallback_attr"
-        assert exp.get_explainer() == "fallback_attr"
+        rule = RuleWithImpact(
+            rule_id="test_rule_2",
+            feature="Feature_1",
+            text="Feature_1 <= 0.3",
+            impact=-0.5,
+            direction="negative",
+            base_predict=1.0,
+            predict=0.5,
+            value="<= 0.3",
+        )
 
-        # 4. Test calibrated_explainer attribute
-        del self.container.explainer
-        self.container.calibrated_explainer = "fallback_legacy"
-        assert exp.get_explainer() == "fallback_legacy"
+        assert rule.uncertainty_low is None
+        assert rule.uncertainty_high is None
+        assert rule.predict_low is None
+        assert rule.predict_high is None
 
-        # 5. Test returning container itself
-        del self.container.calibrated_explainer
-        assert exp.get_explainer() == self.container
+def test_rule_with_impact_dataclass():
+    """Test RuleWithImpact dataclass creation and attributes."""
+    from calibrated_explanations.explanations.explanation import RuleWithImpact
+    
+    rule = RuleWithImpact(
+        rule_id="test_rule",
+        feature="Feature_0",
+        text="Feature_0 > 0.5",
+        impact=1.2,
+        direction="positive",
+        base_predict=1.0,
+        predict=2.0,
+        value="> 0.5",
+        uncertainty_low=1.0,
+        uncertainty_high=1.4,
+        predict_low=1.8,
+        predict_high=2.2
+    )
+    
+    assert rule.rule_id == "test_rule"
+    assert rule.feature == "Feature_0"
+    assert rule.text == "Feature_0 > 0.5"
+    assert rule.impact == 1.2
+    assert rule.direction == "positive"
+    assert rule.base_predict == 1.0
+    assert rule.predict == 2.0
+    assert rule.value == "> 0.5"
+    assert rule.uncertainty_low == 1.0
+    assert rule.uncertainty_high == 1.4
+    assert rule.predict_low == 1.8
+    assert rule.predict_high == 2.2

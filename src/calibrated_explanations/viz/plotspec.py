@@ -51,6 +51,12 @@ class BarItem:
     instance_value: Any | None = None
     # When True, follow legacy behavior: suppress drawing solid when interval crosses zero
     solid_on_interval_crosses_zero: bool = True
+    # Alternative probability segments for complex interval rendering
+    segments: Sequence["IntervalSegment"] | None = None
+    # Regression line overlay
+    line: float | None = None
+    line_color: str | None = None
+    line_alpha: float | None = None
 
 
 @dataclass

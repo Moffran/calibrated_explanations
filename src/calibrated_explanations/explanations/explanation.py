@@ -2172,6 +2172,57 @@ class AlternativeExplanation(CalibratedExplanation):
         )
         return "\n".join(output) + "\n"
 
+    def _rules_with_impact(self, *, top_k: Optional[int] = None, sort: bool = True) -> list[RuleWithImpact]:
+        """Extract canonical rules with explicit signed impact for alternative explanations.
+        
+        For alternative explanations, impact represents the change in prediction
+        from the base instance prediction to the alternative scenario prediction.
+        """
+        rules_dict = self.get_rules()
+        canonical_rules = []
+        
+        # Base prediction is the instance prediction
+        base_predict = self.prediction["predict"]
+        
+        num_rules = len(rules_dict.get("rule", []))
+        for i in range(num_rules):
+            # weight in AlternativeExplanation is defined as (alternative_predict - instance_predict)
+            w = rules_dict["weight"][i]
+            
+            # Canonical sign behavior:
+            # Positive impact = alternative prediction > base prediction
+            # Negative impact = alternative prediction < base prediction
+            if w > 0:
+                direction = "positive"
+            elif w < 0:
+                direction = "negative"
+            else:
+                direction = "neutral"
+                
+            canonical_rules.append(RuleWithImpact(
+                rule_id=str(rules_dict["feature"][i]), # Using feature index as ID
+                feature=str(self.get_explainer().feature_names[rules_dict["feature"][i]]),
+                text=rules_dict["rule"][i],
+                impact=float(w),
+                direction=direction,
+                base_predict=float(base_predict),
+                predict=float(rules_dict["predict"][i]),  # Alternative prediction
+                value=rules_dict["value"][i],
+                uncertainty_low=float(rules_dict["weight_low"][i]),
+                uncertainty_high=float(rules_dict["weight_high"][i]),
+                predict_low=float(rules_dict["predict_low"][i]),
+                predict_high=float(rules_dict["predict_high"][i])
+            ))
+            
+        # Stable sort by absolute impact
+        if sort:
+            canonical_rules.sort(key=lambda r: (-abs(r.impact), r.text))
+        
+        if top_k is not None:
+            canonical_rules = canonical_rules[:top_k]
+            
+        return canonical_rules
+
     def build_rules_payload(self) -> Dict[str, Any]:
         """Return structured payload describing alternative feature rules."""
         rules = self.get_rules()

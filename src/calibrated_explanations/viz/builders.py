@@ -285,6 +285,13 @@ def build_regression_bars_spec(
     ascending: bool
         Sort ascending (default False = descending)
     """
+    if not features_to_plot:
+        from ..utils.exceptions import ValidationError
+        raise ValidationError(
+            "features_to_plot cannot be empty",
+            details={"features_to_plot": features_to_plot},
+        )
+    
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         for key in ("predict", "low", "high"):
@@ -449,6 +456,13 @@ def build_alternative_probabilistic_spec(
     explicit_header_labels: bool = False,
 ) -> PlotSpec:
     """Build an alternative probabilistic PlotSpec mirroring legacy visuals."""
+    if not features_to_plot:
+        from ..utils.exceptions import ValidationError
+        raise ValidationError(
+            "features_to_plot cannot be empty",
+            details={"features_to_plot": features_to_plot},
+        )
+    
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         _ensure_indexable_length(
@@ -691,6 +705,13 @@ def build_alternative_regression_spec(
     xticks: Sequence[float] | None = None,
 ) -> PlotSpec:
     """Build an alternative regression PlotSpec mirroring legacy visuals."""
+    if not features_to_plot:
+        from ..utils.exceptions import ValidationError
+        raise ValidationError(
+            "features_to_plot cannot be empty",
+            details={"features_to_plot": features_to_plot},
+        )
+    
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         _ensure_indexable_length(
@@ -897,6 +918,13 @@ def build_probabilistic_bars_spec(
     and the body is a horizontal bar panel with rule labels on the left and
     instance values on the right.
     """
+    if not features_to_plot:
+        from ..utils.exceptions import ValidationError
+        raise ValidationError(
+            "features_to_plot cannot be empty",
+            details={"features_to_plot": features_to_plot},
+        )
+    
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         for key in ("predict", "low", "high"):
