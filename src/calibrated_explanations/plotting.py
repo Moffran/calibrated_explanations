@@ -996,6 +996,7 @@ def plot_alternative(
     save_ext=None,
     style_override=None,
     use_legacy=None,
+    **kwargs,
 ):
     """
     Plot alternative explanations.
@@ -1026,6 +1027,9 @@ def plot_alternative(
         The list of file extensions to save the plot.
     """
     explainer = _resolve_explainer_from_explanation(explanation)
+    return_plot_spec = kwargs.get("return_plot_spec", False)
+    if return_plot_spec:
+        use_legacy = False
     if use_legacy is None:
         if explainer is not None:
             chain = _resolve_plot_style_chain(explainer, style_override)

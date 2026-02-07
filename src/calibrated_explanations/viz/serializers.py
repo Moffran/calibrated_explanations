@@ -7,6 +7,7 @@ lightweight validator for the MVP spec. The serialized envelope contains
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any, Dict, List, Set
 
 from ..utils.exceptions import ValidationError
