@@ -335,45 +335,40 @@ def build_regression_bars_spec(
 
     # Body (bars)
     bars: list[BarItem] = []
-    if isinstance(feature_weights, dict) and interval:
-        pred_w = feature_weights["predict"]
-        wl = feature_weights["low"]
-        wh = feature_weights["high"]
-        for j in features_to_plot:
-            val = float(pred_w[j])
-            bars.append(
-                BarItem(
-                    label=(
-                        rule_labels[j]
-                        if rule_labels is not None
-                        else (column_names[j] if column_names is not None else str(j))
-                    ),
-                    value=val,
-                    interval_low=float(wl[j]),
-                    interval_high=float(wh[j]),
-                    instance_value=(instance[j] if instance is not None else None),
-                    color_role="regression",
-                    solid_on_interval_crosses_zero=legacy_solid_behavior,
-                )
-            )
+
+    if isinstance(feature_weights, dict):
+        fw_dict = feature_weights
     else:
-        # Simple numeric sequence
-        arr = feature_weights  # type: ignore[assignment]
-        for j in features_to_plot:
-            val = float(arr[j])  # type: ignore[index]
-            bars.append(
-                BarItem(
-                    label=(
-                        rule_labels[j]
-                        if rule_labels is not None
-                        else (column_names[j] if column_names is not None else str(j))
-                    ),
-                    value=val,
-                    instance_value=(instance[j] if instance is not None else None),
-                    color_role="regression",
-                    solid_on_interval_crosses_zero=legacy_solid_behavior,
-                )
+        fw_dict = {"predict": feature_weights}
+
+    pred_w = fw_dict["predict"]
+    wl = fw_dict.get("low")
+    wh = fw_dict.get("high")
+    color_roles = fw_dict.get("color_role")
+
+    for j in features_to_plot:
+        val = float(pred_w[j])
+
+        # Default color role
+        item_color = "regression"
+        if color_roles is not None:
+            item_color = color_roles[j]
+
+        bars.append(
+            BarItem(
+                label=(
+                    rule_labels[j]
+                    if rule_labels is not None
+                    else (column_names[j] if column_names is not None else str(j))
+                ),
+                value=val,
+                interval_low=float(wl[j]) if wl is not None else None,
+                interval_high=float(wh[j]) if wh is not None else None,
+                instance_value=(instance[j] if instance is not None else None),
+                color_role=item_color,
+                solid_on_interval_crosses_zero=legacy_solid_behavior,
             )
+        )
 
     # Optional sorting of bars
     def _key(item: BarItem):  # return type varies by mode (float, str, or tuple for width)
@@ -525,13 +520,21 @@ def build_alternative_probabilistic_spec(
         preds = feature_weights.get("predict", ())
         lows = feature_weights.get("low", ()) if interval else None
         highs = feature_weights.get("high", ()) if interval else None
+        role_overrides = feature_weights.get("color_role", None)
+
         for j in features_to_plot:
             val = float(preds[j])
-            color_role = (
-                "positive"
-                if (pivot is not None and val >= pivot)
-                else ("positive" if pivot is None and val >= base_pred else "negative")
-            )
+            
+            # Use explicit role if provided, otherwise infer loop
+            if role_overrides is not None and len(role_overrides) > j and role_overrides[j] is not None:
+                color_role = role_overrides[j]
+            else:
+                color_role = (
+                    "positive"
+                    if (pivot is not None and val >= pivot)
+                    else ("positive" if pivot is None and val >= base_pred else "negative")
+                )
+                
             if interval and lows is not None and highs is not None:
                 lo = float(lows[j])
                 hi = float(highs[j])

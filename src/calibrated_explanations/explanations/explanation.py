@@ -23,7 +23,8 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from types import MappingProxyType
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Literal
+from dataclasses import dataclass
 
 import numpy as np
 from pandas import Categorical
@@ -43,6 +44,23 @@ from ..utils.helper import assign_threshold as normalize_threshold
 from ..utils.int_utils import collect_ints
 from ._conjunctions import ConjunctionState
 
+
+@dataclass
+class RuleWithImpact:
+    """Canonical representation of a rule's impact for consistent plotting and narrative."""
+    rule_id: str
+    feature: str
+    text: str
+    impact: float
+    direction: Literal['positive', 'negative', 'neutral']
+    base_predict: float
+    predict: float
+    value: Any
+    uncertainty_low: Optional[float] = None
+    uncertainty_high: Optional[float] = None
+    predict_low: Optional[float] = None
+    predict_high: Optional[float] = None
+    
 # @dataclass
 # class PredictionInterval:
 #     """A dataclass representing a prediction interval for a single feature.
@@ -1404,21 +1422,20 @@ class FactualExplanation(CalibratedExplanation):
 
     def __repr__(self):
         """Return a string representation of the factual explanation."""
-        factual = self.get_rules()
+        # Use canonical rules to ensure parity with plot and narrative
+        canonical_rules = self._rules_with_impact()
+        
+        predict = self.prediction
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
-            f"{factual['base_predict'][0]:5.3f} [{factual['base_predict_low'][0]:5.3f}, {factual['base_predict_high'][0]:5.3f}]",
+            f"{predict['predict']:5.3f} [{predict['low']:5.3f}, {predict['high']:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self.rank_features(
-            factual["weight"],
-            width=np.array(factual["weight_high"]) - np.array(factual["weight_low"]),
-            num_to_show=len(factual["rule"]),
-        )
-        output.extend(
-            f"{factual['value'][f]:6}: {factual['rule'][f]:40s} {factual['weight'][f]:>6.3f} [{factual['weight_low'][f]:>6.3f}, {factual['weight_high'][f]:>6.3f}]"
-            for f in reversed(feature_order)
-        )
+        
+        for r in canonical_rules:
+            output.append(
+                f"{str(r.value):6}: {r.text:40s} {r.impact:>6.3f} [{r.uncertainty_low:>6.3f}, {r.uncertainty_high:>6.3f}]"
+            )
         return "\n".join(output) + "\n"
 
     def build_rules_payload(self) -> Dict[str, Any]:
@@ -1540,6 +1557,58 @@ class FactualExplanation(CalibratedExplanation):
                 stacklevel=2,
             )
 
+    def _rules_with_impact(self, *, top_k: Optional[int] = None, sort: bool = True) -> list[RuleWithImpact]:
+        """Extract canonical rules with explicit signed impact.
+        
+        This method is the source of truth for narrative and plotting consistency.
+        It defines 'impact' for FactualExplanation as the weight (delta from baseline).
+        """
+        rules_dict = self.get_rules()
+        canonical_rules = []
+        
+        # Get global prediction
+        prediction = self.prediction["predict"]
+        
+        num_rules = len(rules_dict.get("rule", []))
+        for i in range(num_rules):
+            # weight in FactualExplanation is defined as (prediction - instance_predict)
+            # where instance_predict is the counterfactual/base
+            w = rules_dict["weight"][i]
+            
+            # Canonical sign behavior:
+            # Positive impact = rule increased the prediction relative to base
+            # Negative impact = rule decreased the prediction relative to base
+            if w > 0:
+                direction = "positive"
+            elif w < 0:
+                direction = "negative"
+            else:
+                direction = "neutral"
+                
+            canonical_rules.append(RuleWithImpact(
+                rule_id=str(rules_dict["feature"][i]), # Using feature index as ID for now
+                feature=str(self.get_explainer().feature_names[rules_dict["feature"][i]]),
+                text=rules_dict["rule"][i],
+                impact=float(w),
+                direction=direction,
+                base_predict=float(rules_dict["base_predict"][i] if i < len(rules_dict["base_predict"]) else rules_dict["base_predict"][0]),
+                predict=float(prediction),
+                value=rules_dict["value"][i],
+                uncertainty_low=float(rules_dict["weight_low"][i]),
+                uncertainty_high=float(rules_dict["weight_high"][i]),
+                predict_low=float(rules_dict["predict_low"][i]),
+                predict_high=float(rules_dict["predict_high"][i])
+            ))
+            
+        # Stable sort by absolute impact
+        if sort:
+            canonical_rules.sort(key=lambda r: (-abs(r.impact), r.text))
+        
+        if top_k is not None:
+            canonical_rules = canonical_rules[:top_k]
+            
+        return canonical_rules
+
     def get_rules(self):
         """
         Create factual rules.
@@ -1612,6 +1681,9 @@ class FactualExplanation(CalibratedExplanation):
         """Add conjunctive factual rules."""
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
+        dedupe_by_feature_only = kwargs.get("_dedupe_by_feature_only", True)
+        raise_on_predict_error = kwargs.get("raise_on_predict_error", False)
+        
         if max_rule_size >= 4 and not use_batched:
             from ..utils.exceptions import ConfigurationError
 
@@ -1639,7 +1711,8 @@ class FactualExplanation(CalibratedExplanation):
         state_helper = ConjunctionState(
             self.conjunctive_rules
             if self.has_conjunctive_rules and self.conjunctive_rules is not None
-            else factual
+            else factual,
+            dedupe_by_feature_only=dedupe_by_feature_only
         )
 
         self.has_conjunctive_rules = False
@@ -1662,21 +1735,18 @@ class FactualExplanation(CalibratedExplanation):
         if n_top_features is None:
             n_top_features = len(factual["rule"])
 
-        def _normalise_features(values: Any) -> Tuple[int, ...]:
-            if isinstance(values, (list, tuple, np.ndarray)):
-                return tuple(sorted(int(v) for v in np.asarray(values).ravel()))
-            return (int(values),)
-
         def _feature_length(candidate: Any) -> int:
             if isinstance(candidate, (list, tuple, np.ndarray)):
                 return len(candidate)
             return 1
 
         from collections import Counter
-
-        attempts = 0
-        created = 0
-        skipped = Counter()
+        self.conjunction_stats = {
+            "attempts": 0,
+            "created": 0,
+            "skipped": Counter(),
+        }
+        stats = self.conjunction_stats
 
         def _summarize(arr):
             if arr is None or arr.size == 0:
@@ -1733,24 +1803,24 @@ class FactualExplanation(CalibratedExplanation):
                 )
 
                 for cf2 in top_conjunctives:
-                    attempts += 1
+                    stats["attempts"] += 1
                     rule_values = [rule_value1]
                     original_features = [of1]
                     of2 = state_helper.get_feature(cf2)
                     target_length = current_size - 1
                     if _feature_length(of2) != target_length:
-                        skipped["len_mismatch"] += 1
+                        stats["skipped"]["len_mismatch"] += 1
                         continue
 
                     if state_helper.is_conjunctive(cf2):
                         if of1 in of2:
-                            skipped["same_feature"] += 1
+                            stats["skipped"]["same_feature"] += 1
                             continue
                         original_features.extend(int(v) for v in of2)
                         rule_values.extend(list(state_helper.get_sampled_values(cf2)))
                     else:
                         if of1 == of2:
-                            skipped["same_feature"] += 1
+                            stats["skipped"]["same_feature"] += 1
                             continue
                         original_features.append(of2)
                         sampled_values2 = state_helper.get_sampled_values(cf2)
@@ -1760,11 +1830,10 @@ class FactualExplanation(CalibratedExplanation):
                             else [sampled_values2]
                         )
 
-                    combo_key = _normalise_features(original_features)
-                    if state_helper.has_combination_key(combo_key):
-                        skipped["duplicate_combo"] += 1
+                    if state_helper.has_combination_key(original_features, rule_values):
+                        stats["skipped"]["duplicate_combo"] += 1
                         continue
-                    state_helper.register_combination_key(combo_key)
+                    state_helper.register_combination_key(original_features, rule_values)
 
                     try:
                         rule_predict, rule_low, rule_high = self.predict_conjunctive(
@@ -1776,8 +1845,10 @@ class FactualExplanation(CalibratedExplanation):
                             bins=self.bin,
                             use_batched=use_batched,
                         )
-                    except Exception:  # pylint: disable=broad-except
-                        skipped["predict_error"] += 1
+                    except Exception as e:  # pylint: disable=broad-except
+                        if raise_on_predict_error:
+                            raise e
+                        stats["skipped"]["predict_error"] += 1
                         continue
 
                     state_helper.add_rule(
@@ -1791,23 +1862,30 @@ class FactualExplanation(CalibratedExplanation):
                         feature_value=None,
                         rule_text=factual["rule"][f1] + " & \n" + state_helper.get_rule(cf2),
                     )
-                    created += 1
-
-        if created == 0 and attempts > 0:
-            warnings.warn(
-                f"add_conjunctions: created=0 attempts={attempts} skipped={dict(skipped)} "
-                f"weights={_summarize(weights_array)}",
-                stacklevel=2,
-            )
-            if kwargs.get("_fallback_to_legacy_on_zero", False):
-                from .legacy_conjunctions import add_conjunctions_factual_legacy
-
-                return add_conjunctions_factual_legacy(
-                    self, n_top_features=n_top_features, max_rule_size=max_rule_size
-                )
+                    stats["created"] += 1
 
         self.conjunctive_rules = state_helper.get_state()
         self.has_conjunctive_rules = True
+
+        if stats["created"] == 0 and stats["attempts"] > 0:
+            summary_weights = _summarize(base_weight_array)
+            import warnings
+            
+            warning_msg = (
+                f"add_conjunctions: created={stats['created']} "
+                f"attempts={stats['attempts']} skipped={dict(stats['skipped'])} "
+                f"weights={summary_weights}"
+            )
+            
+            if kwargs.get("_fallback_to_legacy_on_zero", False):
+                warnings.warn(warning_msg + " (falling back to legacy)", UserWarning)
+                from .legacy_conjunctions import add_conjunctions_factual_legacy
+                return add_conjunctions_factual_legacy(
+                    self, n_top_features=n_top_features, max_rule_size=max_rule_size
+                )
+            
+            warnings.warn(warning_msg, UserWarning)
+        
         return self
 
     def _is_lesser(self, rule_boundary, instance_value):
@@ -1897,8 +1975,21 @@ class FactualExplanation(CalibratedExplanation):
                 "low": factual["weight_low"],
                 "high": factual["weight_high"],
             }
+            # Phase 2: Inject canonical color roles if using PlotSpec
+            if not plot_use_legacy:
+                # Derive canonical directions from authoritative source
+                canonical_rules = self._rules_with_impact(sort=False)
+                feature_weights["color_role"] = [r.direction for r in canonical_rules]
         else:
-            feature_weights = factual["weight"]
+            if not plot_use_legacy:
+                # Wrap in dict to pass color info to PlotSpec
+                canonical_rules = self._rules_with_impact(sort=False)
+                feature_weights = {
+                    "predict": factual["weight"],
+                    "color_role": [r.direction for r in canonical_rules],
+                }
+            else:
+                feature_weights = factual["weight"]
         width = np.reshape(
             np.array(factual["weight_high"]) - np.array(factual["weight_low"]),
             (len(factual["weight"])),

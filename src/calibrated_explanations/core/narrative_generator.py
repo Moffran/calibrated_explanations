@@ -321,30 +321,55 @@ class NarrativeGenerator:
         if reject_insert:
             template = reject_insert + template
 
-        # Get feature rules with proper feature names
-        rules = self.serialize_rules(rules_dict, feature_names)
+        # Phase 2: Use canonical rules for consistency if available
+        if hasattr(explanation, "_rules_with_impact"):
+            canonical_rules = explanation._rules_with_impact()
+            pos_features = []
+            neg_features = []
+            for cr in canonical_rules:
+                flat = {
+                    "rule": cr.text,
+                    "value": cr.value,
+                    "weight": cr.impact,
+                    "weight_low": cr.uncertainty_low,
+                    "weight_high": cr.uncertainty_high,
+                    "feature_name": cr.feature,
+                    "feature_index": cr.rule_id,
+                    "predict": cr.predict,
+                    "predict_low": cr.predict_low,
+                    "predict_high": cr.predict_high,
+                    "is_conjunctive": " & " in (cr.text or ""),
+                }
+                if cr.direction == "positive":
+                    pos_features.append(flat)
+                elif cr.direction == "negative":
+                    neg_features.append(flat)
+            # Canonical rules are implicitly sorted by impact
+        else:
+            # Get feature rules with proper feature names
+            rules = self.serialize_rules(rules_dict, feature_names)
 
-        # Split features by weight sign
-        pos_features = [r for r in rules if r.get("weight", 0) > 0]
-        neg_features = [r for r in rules if r.get("weight", 0) < 0]
+            # Split features by weight sign
+            pos_features = [r for r in rules if r.get("weight", 0) > 0]
+            neg_features = [r for r in rules if r.get("weight", 0) < 0]
 
-        # Sort using same logic as rank_features in __repr__:
-        # Primary: absolute weight (descending)
-        # Secondary: width = weight_high - weight_low (descending, larger uncertainty last)
-        def rank_key(r):
-            w = r.get("weight", 0)
-            wl = r.get("weight_low")
-            wh = r.get("weight_high")
-            width = 0.0
-            if wl is not None and wh is not None:
-                try:
-                    width = float(wh) - float(wl)
-                except (ValueError, TypeError):
-                    width = 0.0
-            return (abs(w), width)
+            # Sort using same logic as rank_features in __repr__:
+            # Primary: absolute weight (descending)
+            # Secondary: width = weight_high - weight_low (descending, larger uncertainty last)
+            def rank_key(r):
+                w = r.get("weight", 0)
+                wl = r.get("weight_low")
+                wh = r.get("weight_high")
+                width = 0.0
+                if wl is not None and wh is not None:
+                    try:
+                        width = float(wh) - float(wl)
+                    except (ValueError, TypeError):
+                        width = 0.0
+                return (abs(w), width)
 
-        pos_features.sort(key=rank_key, reverse=True)
-        neg_features.sort(key=rank_key, reverse=True)
+            pos_features.sort(key=rank_key, reverse=True)
+            neg_features.sort(key=rank_key, reverse=True)
 
         # Take top features (min 3)
         min_features = 3

@@ -7,8 +7,9 @@ import numpy as np
 class ConjunctionState:
     """Helper class to manage the state of conjunctive rules."""
 
-    def __init__(self, initial_rules: Optional[Dict[str, Any]] = None):
+    def __init__(self, initial_rules: Optional[Dict[str, Any]] = None, dedupe_by_feature_only: bool = True):
         """Initialize the state with existing rules."""
+        self.dedupe_by_feature_only = dedupe_by_feature_only
         if initial_rules is None:
             self.state = {
                 "base_predict": [],
@@ -35,8 +36,9 @@ class ConjunctionState:
                 self.state["is_conjunctive"] = [False] * len(self.state["rule"])
         self._combination_keys = set()
         if self.state["feature"]:
-            for feature in self.state["feature"]:
-                key = self._normalize_feature_entry(feature)
+            for i, feature in enumerate(self.state["feature"]):
+                values = self.state["sampled_values"][i] if not self.dedupe_by_feature_only else None
+                key = self.get_normalization_key(feature, values)
                 self._combination_keys.add(key)
 
     def _clone_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -129,7 +131,9 @@ class ConjunctionState:
         self.state["feature_value"].append(feature_value)
         self.state["rule"].append(rule_text)
         self.state["is_conjunctive"].append(is_conjunctive)
-        self._combination_keys.add(self._normalize_feature_entry(feature))
+        
+        values = sampled_values if not self.dedupe_by_feature_only else None
+        self._combination_keys.add(self.get_normalization_key(feature, values))
 
     def get_state(self) -> Dict[str, Any]:
         """Return the current state."""
@@ -175,14 +179,34 @@ class ConjunctionState:
             return tuple(sorted(int(v) for v in np.asarray(feature).ravel()))
         return (int(feature),)
 
-    def has_combination_key(self, key: Union[Tuple[int, ...], Any]) -> bool:
-        """Return whether ``key`` has already been registered."""
-        if not isinstance(key, tuple):
-            key = self._normalize_feature_entry(key)
+    @staticmethod
+    def _normalize_value_entry(values: Any) -> Tuple[Any, ...]:
+        """Normalize sampled values into a hashable signature."""
+        if values is None:
+            return (None,)
+        if isinstance(values, (list, tuple, np.ndarray)):
+            # Handle potentially nested structures or numpy types
+            return tuple(
+                ConjunctionState._normalize_value_entry(v) if isinstance(v, (list, tuple, np.ndarray))
+                else (float(v) if isinstance(v, (float, np.floating)) else v)
+                for v in np.asarray(values).ravel()
+            )
+        return (values,)
+
+    def get_normalization_key(self, feature: Any, values: Optional[Any] = None) -> Tuple:
+        """Create a canonical hashable key for deduplication."""
+        f_key = self._normalize_feature_entry(feature)
+        if self.dedupe_by_feature_only or values is None:
+            return f_key
+        v_key = self._normalize_value_entry(values)
+        return (f_key, v_key)
+
+    def has_combination_key(self, feature: Any, values: Optional[Any] = None) -> bool:
+        """Return whether the combination has already been registered."""
+        key = self.get_normalization_key(feature, values)
         return key in self._combination_keys
 
-    def register_combination_key(self, key: Union[Tuple[int, ...], Any]) -> None:
-        """Register ``key`` so subsequent calls can test for duplicates."""
-        if not isinstance(key, tuple):
-            key = self._normalize_feature_entry(key)
+    def register_combination_key(self, feature: Any, values: Optional[Any] = None) -> None:
+        """Register the combination so subsequent calls can test for duplicates."""
+        key = self.get_normalization_key(feature, values)
         self._combination_keys.add(key)
