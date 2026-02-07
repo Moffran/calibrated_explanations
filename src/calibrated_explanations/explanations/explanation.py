@@ -928,6 +928,13 @@ class CalibratedExplanation(ABC):
         predict_fn = self.get_explainer().prediction_orchestrator.predict_internal
         perturbed = np.array(perturbed, copy=True)
 
+        # Ensure perturbed is 2D (single instance → (1, n_features))
+        if perturbed.ndim == 1:
+            perturbed = perturbed.reshape(1, -1)
+
+        # Coerce original_features to plain Python ints for reliable numpy indexing
+        original_features = [int(f) for f in original_features]
+
         # Prepare value arrays
         value_iterables = []
         for values in rule_value_set[: len(original_features)]:
@@ -956,12 +963,10 @@ class CalibratedExplanation(ABC):
             if np.ndim(bins) == 0:
                 batch_bins = np.full(combo_matrix.shape[0], bins)
             else:
-                # Assuming bins corresponds to the instance, so we tile it
-                # But wait, bins usually has shape (n_samples,)
-                # Here we are explaining one instance, so bins should be a scalar or single-element array?
-                # Let's check how it's passed. In add_conjunctions, it's self.bin which is [instance_bin]
-                # So it is a list/array of size 1.
                 batch_bins = np.tile(bins, combo_matrix.shape[0])
+            # Validate batch_bins length matches batch size
+            if len(batch_bins) != batch.shape[0]:
+                batch_bins = batch_bins[: batch.shape[0]]
 
         # Apply perturbations in bulk
         batch[:, original_features] = combo_matrix
@@ -1678,12 +1683,56 @@ class FactualExplanation(CalibratedExplanation):
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
-        """Add conjunctive factual rules."""
+        """Add conjunctive factual rules.
+
+        Builds conjunctions by iterating over feature combinations from
+        ``current_size = 2`` up to ``max_rule_size``.  For each size the
+        method ranks existing rules, then pairs every outer-loop feature
+        (from the original factual rules) with top-ranked inner-loop
+        candidates stored in ``ConjunctionState``.  Duplicate feature
+        combinations are deduplicated and predictions are obtained via
+        :meth:`predict_conjunctive`.
+
+        Parameters
+        ----------
+        n_top_features : int, optional
+            Number of top features to consider when ranking candidates.
+        max_rule_size : int, optional
+            Maximum number of features in a single conjunctive rule.
+
+        Other Parameters
+        ----------------
+        _use_batched : bool
+            Use vectorized batch prediction (default ``True``).
+        _limit_outer_to_ranked : bool
+            Restrict outer loop to rank-filtered features (default ``False``).
+        _dedupe_by_feature_only : bool
+            Deduplicate by feature index only, ignoring sampled values
+            (default ``True``).
+        raise_on_predict_error : bool
+            Re-raise prediction exceptions instead of silently skipping
+            (default ``False``).
+        _fallback_to_legacy_on_zero : bool
+            Fall back to the legacy implementation when no conjunctions are
+            created (default ``False``).
+
+        Returns
+        -------
+        self : :class:`.FactualExplanation`
+            Returns a self reference, to allow for method chaining.
+
+        Notes
+        -----
+        After the call, ``self.conjunction_stats`` contains a diagnostic
+        dict with keys ``"attempts"``, ``"created"``,
+        ``"skipped"`` (:class:`~collections.Counter`), and
+        ``"predict_errors"`` (list of up to 5 captured exception messages).
+        """
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
         dedupe_by_feature_only = kwargs.get("_dedupe_by_feature_only", True)
         raise_on_predict_error = kwargs.get("raise_on_predict_error", False)
-        
+
         if max_rule_size >= 4 and not use_batched:
             from ..utils.exceptions import ConfigurationError
 
@@ -1745,8 +1794,10 @@ class FactualExplanation(CalibratedExplanation):
             "attempts": 0,
             "created": 0,
             "skipped": Counter(),
+            "predict_errors": [],
         }
         stats = self.conjunction_stats
+        _MAX_LOGGED_ERRORS = 5
 
         def _summarize(arr):
             if arr is None or arr.size == 0:
@@ -1794,7 +1845,7 @@ class FactualExplanation(CalibratedExplanation):
                 outer_indices = range(len(factual["feature"]))
 
             for f1 in outer_indices:
-                of1 = factual["feature"][f1]
+                of1 = int(factual["feature"][f1])
                 sampled_values1 = factual["sampled_values"][f1]
                 rule_value1 = (
                     sampled_values1
@@ -1849,6 +1900,10 @@ class FactualExplanation(CalibratedExplanation):
                         if raise_on_predict_error:
                             raise e
                         stats["skipped"]["predict_error"] += 1
+                        if len(stats["predict_errors"]) < _MAX_LOGGED_ERRORS:
+                            stats["predict_errors"].append(
+                                f"{type(e).__name__}: {e}"
+                            )
                         continue
 
                     state_helper.add_rule(
@@ -1870,11 +1925,12 @@ class FactualExplanation(CalibratedExplanation):
         if stats["created"] == 0 and stats["attempts"] > 0:
             summary_weights = _summarize(base_weight_array)
             import warnings
-            
+
+            err_msg = f" predict_errors={stats['predict_errors']}" if stats["predict_errors"] else ""
             warning_msg = (
                 f"add_conjunctions: created={stats['created']} "
                 f"attempts={stats['attempts']} skipped={dict(stats['skipped'])} "
-                f"weights={summary_weights}"
+                f"weights={summary_weights}{err_msg}"
             )
             
             if kwargs.get("_fallback_to_legacy_on_zero", False):
@@ -1947,7 +2003,11 @@ class FactualExplanation(CalibratedExplanation):
         if uncertainty and self.is_one_sided():
             raise Warning("Interval plot is not supported for one-sided explanations.")
 
-        factual = self.get_rules()  # get_explanation(index)
+        # Use conjunctive rules when available so that conjunctions appear in plots
+        if getattr(self, "has_conjunctive_rules", False) and getattr(self, "conjunctive_rules", None):
+            factual = self.conjunctive_rules
+        else:
+            factual = self.get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual["weight"])
@@ -2658,6 +2718,9 @@ class AlternativeExplanation(CalibratedExplanation):
         """
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
+        raise_on_predict_error = kwargs.get("raise_on_predict_error", False)
+        _MAX_LOGGED_ERRORS = 5  # noqa: N806
+        predict_errors = []
         if max_rule_size >= 4 and not use_batched:
             from ..utils.exceptions import ConfigurationError
 
@@ -2788,7 +2851,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 outer_indices = range(len(alternative["feature"]))
 
             for f1 in outer_indices:
-                of1 = alternative["feature"][f1]
+                of1 = int(alternative["feature"][f1])
                 sampled_values1 = alternative["sampled_values"][f1]
                 rule_value1 = (
                     sampled_values1
@@ -2842,8 +2905,12 @@ class AlternativeExplanation(CalibratedExplanation):
                             bins=self.bin,
                             use_batched=use_batched,
                         )
-                    except Exception:  # pylint: disable=broad-except
+                    except Exception as e:  # pylint: disable=broad-except
+                        if raise_on_predict_error:
+                            raise e
                         skipped["predict_error"] += 1
+                        if len(predict_errors) < _MAX_LOGGED_ERRORS:
+                            predict_errors.append(f"{type(e).__name__}: {e}")
                         continue
 
                     conjunctive_state["predict"].append(rule_predict)
@@ -2869,9 +2936,10 @@ class AlternativeExplanation(CalibratedExplanation):
                     created += 1
 
         if created == 0 and attempts > 0:
+            err_msg = f" predict_errors={predict_errors}" if predict_errors else ""
             warnings.warn(
                 f"add_conjunctions: created=0 attempts={attempts} skipped={dict(skipped)} "
-                f"weights={_summarize(weights_array)}",
+                f"weights={_summarize(weights_array)}{err_msg}",
                 stacklevel=2,
             )
             if kwargs.get("_fallback_to_legacy_on_zero", False):
@@ -2939,7 +3007,11 @@ class AlternativeExplanation(CalibratedExplanation):
             rnk_weight = 1.0
             rnk_metric = "ensured"
 
-        alternative = self.get_rules()  # get_explanation(index)
+        # Use conjunctive rules when available so that conjunctions appear in plots
+        if getattr(self, "has_conjunctive_rules", False) and getattr(self, "conjunctive_rules", None):
+            alternative = self.conjunctive_rules
+        else:
+            alternative = self.get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         if len(filename) > 0:
@@ -3312,7 +3384,11 @@ class FastExplanation(CalibratedExplanation):
         if uncertainty and self.is_one_sided():
             raise Warning("Interval plot is not supported for one-sided explanations.")
 
-        factual = self.get_rules()  # get_explanation(index)
+        # Use conjunctive rules when available so that conjunctions appear in plots
+        if getattr(self, "has_conjunctive_rules", False) and getattr(self, "conjunctive_rules", None):
+            factual = self.conjunctive_rules
+        else:
+            factual = self.get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual["weight"])
