@@ -7,6 +7,7 @@ lightweight validator for the MVP spec. The serialized envelope contains
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any, Dict, List, Set
 
 from ..utils.exceptions import ValidationError
@@ -166,6 +167,10 @@ def plotspec_to_dict(spec: PlotSpec) -> Dict[str, Any]:
                 "low": (float(b.interval_low) if b.interval_low is not None else None),
                 "high": (float(b.interval_high) if b.interval_high is not None else None),
                 "instance_value": b.instance_value,
+                "segments": [asdict(s) for s in b.segments] if b.segments else None,
+                "line": float(b.line) if b.line is not None else None,
+                "line_color": b.line_color,
+                "line_alpha": float(b.line_alpha) if b.line_alpha is not None else None,
             }
             entries.append(e)
         inner["body"] = {
@@ -236,6 +241,10 @@ def plotspec_to_dict(spec: PlotSpec) -> Dict[str, Any]:
                     "interval_low": e.get("low"),
                     "interval_high": e.get("high"),
                     "instance_value": e.get("instance_value"),
+                    "segments": e.get("segments"),
+                    "line": e.get("line"),
+                    "line_color": e.get("line_color"),
+                    "line_alpha": e.get("line_alpha"),
                 }
                 for e in feature_entries
             ]
@@ -590,6 +599,10 @@ def plotspec_from_dict(obj: Dict[str, Any]) -> PlotSpec:
                     interval_high=None if r.get("high") is None else float(r.get("high")),
                     color_role=None,
                     instance_value=r.get("instance_value"),
+                    segments=r.get("segments"),
+                    line=None if r.get("line") is None else float(r.get("line")),
+                    line_color=r.get("line_color"),
+                    line_alpha=None if r.get("line_alpha") is None else float(r.get("line_alpha")),
                 )
             )
         body = BarHPanelSpec(bars=bars_list, xlabel=b.get("xlabel"), ylabel=b.get("ylabel"))
@@ -614,6 +627,10 @@ def plotspec_from_dict(obj: Dict[str, Any]) -> PlotSpec:
                     else float(r.get("interval_high")),
                     color_role=r.get("color_role"),
                     instance_value=r.get("instance_value"),
+                    segments=r.get("segments"),
+                    line=None if r.get("line") is None else float(r.get("line")),
+                    line_color=r.get("line_color"),
+                    line_alpha=None if r.get("line_alpha") is None else float(r.get("line_alpha")),
                 )
             )
         body = BarHPanelSpec(bars=bars_list, xlabel=b.get("xlabel"), ylabel=b.get("ylabel"))

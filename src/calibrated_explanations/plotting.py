@@ -1031,6 +1031,9 @@ def plot_alternative(
         use_legacy = False
 
     explainer = _resolve_explainer_from_explanation(explanation)
+    return_plot_spec = kwargs.get("return_plot_spec", False)
+    if return_plot_spec:
+        use_legacy = False
     if use_legacy is None:
         if explainer is not None:
             chain = _resolve_plot_style_chain(explainer, style_override)

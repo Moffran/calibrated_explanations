@@ -5,6 +5,10 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
+### Fixed
+
+- **PlotSpec quality improvements:** Enhanced BarItem dataclass with missing fields, added AlternativeExplanation _rules_with_impact method, improved serialization robustness, added empty features_to_plot validation, and comprehensive RuleWithImpact test coverage to ensure data integrity and reliable plotting.
+
 ## [v0.10.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.3) - 2026-02-04
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.2...v0.10.3)

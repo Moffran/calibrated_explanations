@@ -7,7 +7,11 @@ import numpy as np
 class ConjunctionState:
     """Helper class to manage the state of conjunctive rules."""
 
-    def __init__(self, initial_rules: Optional[Dict[str, Any]] = None, dedupe_by_feature_only: bool = True):
+    def __init__(
+        self,
+        initial_rules: Optional[Dict[str, Any]] = None,
+        dedupe_by_feature_only: bool = True,
+    ):
         """Initialize the state with existing rules."""
         self.dedupe_by_feature_only = dedupe_by_feature_only
         if initial_rules is None:
@@ -106,6 +110,12 @@ class ConjunctionState:
         weight_high: Optional[float] = None,
     ):
         """Add a new conjunctive rule to the state."""
+        normalized_feature = self._coerce_feature_entry(feature)
+        if isinstance(feature_value, np.ndarray):
+            feature_value = feature_value.tolist()
+        elif isinstance(feature_value, (list, tuple)):
+            feature_value = list(feature_value)
+
         self.state["predict"].append(predict)
         self.state["predict_low"].append(low)
         self.state["predict_high"].append(high)
@@ -126,14 +136,14 @@ class ConjunctionState:
             self.state["weight_high"].append(high - base_predict if high != np.inf else np.inf)
 
         self.state["value"].append(value)
-        self.state["feature"].append(feature)
+        self.state["feature"].append(normalized_feature)
         self.state["sampled_values"].append(sampled_values)
         self.state["feature_value"].append(feature_value)
         self.state["rule"].append(rule_text)
         self.state["is_conjunctive"].append(is_conjunctive)
-        
+
         values = sampled_values if not self.dedupe_by_feature_only else None
-        self._combination_keys.add(self.get_normalization_key(feature, values))
+        self._combination_keys.add(self.get_normalization_key(normalized_feature, values))
 
     def get_state(self) -> Dict[str, Any]:
         """Return the current state."""
@@ -172,6 +182,12 @@ class ConjunctionState:
     def is_conjunctive(self, index: int) -> bool:
         """Return ``True`` if the rule at ``index`` is conjunctive."""
         return self.state["is_conjunctive"][index]
+
+    @staticmethod
+    def _coerce_feature_entry(feature: Any) -> Union[int, List[int]]:
+        if isinstance(feature, (list, tuple, np.ndarray)):
+            return [int(v) for v in np.asarray(feature).ravel()]
+        return int(feature)
 
     @staticmethod
     def _normalize_feature_entry(feature: Any) -> Tuple[int, ...]:

@@ -2,8 +2,34 @@ import pytest
 import numpy as np
 import warnings
 from unittest.mock import MagicMock
+from sklearn.ensemble import RandomForestClassifier
+from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.explanations._conjunctions import ConjunctionState
 from calibrated_explanations.explanations.explanation import FactualExplanation, AlternativeExplanation
+
+
+def _make_binary_explainer(binary_dataset):
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+
+    model = RandomForestClassifier(n_estimators=20, random_state=42)
+    model.fit(x_prop_train, y_prop_train)
+
+    explainer = WrapCalibratedExplainer(model)
+    explainer.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+    return explainer, x_test
 
 def test_conjunction_state_normalization():
     # Test normalization of various feature types
