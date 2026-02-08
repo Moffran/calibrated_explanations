@@ -105,6 +105,158 @@ def test_failure_regression(regression_dataset):
         cal_exp.set_difficulty_estimator(DifficultyEstimator)
 
 
+def test_set_difficulty_estimator_refits_cps_with_sigmas(regression_dataset, monkeypatch):
+    """Ensure difficulty estimator changes are forwarded to crepes CPS.
+
+    The regression interval backend (`IntervalRegressor`) fits a crepes
+    `ConformalPredictiveSystem`. When a difficulty estimator is configured,
+    the CPS must be fit with `sigmas=`. Updating the difficulty estimator must
+    therefore rebuild/refit the interval learner, rather than reusing the
+    existing calibrator.
+    """
+
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        _x_test,
+        _y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    previous_interval = cal_exp.interval_learner
+
+    import crepes
+
+    original_fit = crepes.ConformalPredictiveSystem.fit
+    fit_calls = []
+
+    def fit_spy(self, *args, **kwargs):  # noqa: ANN001 - spy
+        fit_calls.append(dict(kwargs))
+        return original_fit(self, *args, **kwargs)
+
+    monkeypatch.setattr(crepes.ConformalPredictiveSystem, "fit", fit_spy, raising=True)
+
+    difficulty = safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True)
+    cal_exp.set_difficulty_estimator(difficulty, initialize=True)
+
+    assert cal_exp.interval_learner is not previous_interval
+    assert len(fit_calls) >= 1
+    assert any("sigmas" in call and call.get("sigmas") is not None for call in fit_calls)
+
+
+def test_should_vary_factual_weight_width_by_feature_when_difficulty_depends_on_perturbations(
+    monkeypatch,
+):
+    """Factual rule weight intervals should reflect per-perturbation difficulty.
+
+    Regression factual explanations compute feature weights by evaluating
+    predictions for perturbed samples. When a difficulty estimator depends on
+    the input features, perturbations for different features should generally
+    induce different sigma distributions and therefore different weight interval
+    widths.
+
+    This test uses a deterministic CPS.predict stub where the returned interval
+    width is proportional to the provided `sigmas`, making the expectation
+    robust and independent of upstream crepes internals.
+    """
+
+    from sklearn.tree import DecisionTreeRegressor
+
+    # Arrange: small, deterministic regression setup with two categorical features.
+    x_train = np.array(
+        [
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 1.0],
+        ]
+    )
+    y_train = (x_train[:, 0] + 2.0 * x_train[:, 1]).astype(float)
+
+    model = DecisionTreeRegressor(random_state=0)
+    model.fit(x_train, y_train)
+
+    x_cal = x_train.copy()
+    y_cal = y_train.copy()
+    x_test = np.array([[0.0, 0.0]])
+
+    feature_names = ["x0", "x1"]
+    categorical_features = [0, 1]
+
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        seed=0,
+    )
+
+    class ThresholdDifficulty:
+        def __init__(self, threshold: float = 0.5) -> None:
+            self.threshold = threshold
+            self.fitted = True
+
+        def fit(self, *args, **kwargs):  # noqa: ANN001 - test stub
+            self.fitted = True
+            return self
+
+        def apply(self, x):  # noqa: ANN001 - test stub
+            x = np.asarray(x)
+            # High difficulty whenever feature 0 exceeds the threshold.
+            return np.where(x[:, 0] > self.threshold, 11.0, 1.0)
+
+    cal_exp.set_difficulty_estimator(ThresholdDifficulty(), initialize=True)
+
+    # Patch CPS.predict to return intervals that scale with provided sigmas.
+    interval_learner = cal_exp.interval_learner
+
+    def cps_predict_stub(*args, **kwargs):  # noqa: ANN001 - test stub
+        sigmas = np.asarray(kwargs.get("sigmas")).reshape(-1)
+        n = int(sigmas.shape[0])
+        if kwargs.get("y") is not None:
+            return np.zeros(n)
+        y_hat = np.asarray(kwargs.get("y_hat")).reshape(-1)
+        if y_hat.shape[0] != n:
+            y_hat = np.resize(y_hat, n)
+        interval = np.zeros((n, 4), dtype=float)
+        # crepes-style 4-column interval; CE's IntervalRegressor uses:
+        # - `interval[:, 0]` for low
+        # - `interval[:, 2]` for high
+        # - median = (`interval[:, 1]` + `interval[:, 3]`) / 2
+        interval[:, 0] = y_hat - sigmas
+        interval[:, 1] = y_hat
+        interval[:, 2] = y_hat + sigmas
+        interval[:, 3] = y_hat
+        return interval
+
+    monkeypatch.setattr(interval_learner.cps, "predict", cps_predict_stub, raising=True)
+
+    # Act
+    explanations = cal_exp.explain_factual(x_test)
+    rules = explanations[0].get_rules()
+
+    # Assert: weight interval widths differ between features (x0 perturbations change sigma).
+    feature_ids = [int(f) for f in rules["feature"]]
+    idx0 = feature_ids.index(0)
+    idx1 = feature_ids.index(1)
+
+    width0 = float(rules["weight_high"][idx0] - rules["weight_low"][idx0])
+    width1 = float(rules["weight_high"][idx1] - rules["weight_low"][idx1])
+
+    assert width0 > width1
+
+
 @pytest.mark.viz
 def test_regression_ce(regression_dataset):
     """
