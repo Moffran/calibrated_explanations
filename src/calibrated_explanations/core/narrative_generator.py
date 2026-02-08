@@ -129,10 +129,35 @@ def crosses_zero(feat: Dict) -> bool:
     """Check if feature weight interval crosses zero (direction uncertain)."""
     wl = feat.get("weight_low")
     wh = feat.get("weight_high")
-    with contextlib.suppress(ValueError, TypeError):
-        if wl is not None and wh is not None:
-            return float(wl) <= 0.0 <= float(wh)
-    return False
+
+    def _as_float_list(x: Any) -> List[float]:
+        if x is None:
+            return []
+        if isinstance(x, (list, tuple, np.ndarray)):
+            arr = np.asarray(x, dtype=object).ravel()
+            out: List[float] = []
+            for v in arr:
+                if v is None:
+                    continue
+                with contextlib.suppress(ValueError, TypeError):
+                    out.append(float(v))
+            return out
+        with contextlib.suppress(ValueError, TypeError):
+            return [float(x)]
+        return []
+
+    lows = _as_float_list(wl)
+    highs = _as_float_list(wh)
+    if not lows or not highs:
+        return False
+
+    # If the interval is provided element-wise (e.g., conjunctive rules), check pairwise.
+    if len(lows) == len(highs):
+        return any(min(lo, hi) <= 0.0 <= max(lo, hi) for lo, hi in zip(lows, highs))
+
+    # Otherwise, conservatively check using the global min/max across all bounds.
+    all_bounds = lows + highs
+    return min(all_bounds) <= 0.0 <= max(all_bounds)
 
 
 def has_wide_prediction_interval(feat: Dict, threshold: float = 0.20) -> bool:
@@ -394,6 +419,8 @@ class NarrativeGenerator:
                 context,
                 expertise_level,
                 problem_type,
+                explanation_type,
+                bp,
                 conjunction_separator,
                 align_weights,
             )
@@ -406,6 +433,8 @@ class NarrativeGenerator:
                 context,
                 expertise_level,
                 problem_type,
+                explanation_type,
+                bp,
                 conjunction_separator,
                 align_weights,
             )
@@ -485,6 +514,8 @@ class NarrativeGenerator:
         context: Dict[str, str],
         level: str,
         problem_type: str = "regression",
+        explanation_type: str = "factual",
+        base_predict: Optional[float] = None,
         conjunction_separator: str = " AND ",
         align_weights: bool = True,
     ) -> str:
@@ -521,6 +552,115 @@ class NarrativeGenerator:
         # Build feature lines (without alignment - alignment applied globally later)
         def build_lines(line: str, feats: List[Dict]) -> List[str]:
             rendered = []
+
+            def _uncertain_for_alternative_threshold(feat: Dict) -> bool:
+                """Flag alternatives as uncertain when the probability interval covers 0.5.
+
+                Alternatives do not display weights, so "direction uncertain" is not meaningful.
+                Instead, show a generic uncertainty tag when the interval straddles the default
+                decision boundary (0.5).
+                """
+
+                if problem_type not in (
+                    "binary_classification",
+                    "multiclass_classification",
+                    "probabilistic_regression",
+                ):
+                    return False
+
+                pl = feat.get("predict_low")
+                ph = feat.get("predict_high")
+                with contextlib.suppress(ValueError, TypeError):
+                    pl_f = float(first_or_none(pl)) if pl is not None else None
+                    ph_f = float(first_or_none(ph)) if ph is not None else None
+                    if pl_f is None or ph_f is None:
+                        return False
+                    lo = min(pl_f, ph_f)
+                    hi = max(pl_f, ph_f)
+                    eps = 1e-12
+                    return (lo - eps) <= 0.5 <= (hi + eps)
+                return False
+
+            def _split_conjunctive_values(raw_value: Any) -> List[str]:
+                if raw_value is None:
+                    return []
+                if isinstance(raw_value, (list, tuple, np.ndarray)):
+                    return [str(v).strip() for v in list(raw_value) if str(v).strip()]
+                text = str(raw_value)
+                parts = [p.strip() for p in text.split("\n")]
+                return [p for p in parts if p]
+
+            def _split_conjunctive_conditions(rule_text: str) -> List[str]:
+                if not rule_text:
+                    return []
+                if " & \n" in rule_text:
+                    parts = rule_text.split(" & \n")
+                elif conjunction_separator in rule_text:
+                    parts = rule_text.split(conjunction_separator)
+                elif " AND " in rule_text:
+                    parts = rule_text.split(" AND ")
+                elif "&" in rule_text:
+                    parts = rule_text.split("&")
+                else:
+                    parts = [rule_text]
+                return [p.strip() for p in parts if p.strip()]
+
+            def _parse_condition_segment(segment: str) -> tuple[str, str, str]:
+                text = (segment or "").strip()
+                if not text:
+                    return "", "", ""
+
+                # Prefer longer operators first.
+                operator_specs = [
+                    ("<=", r"<="),
+                    (">=", r">="),
+                    ("==", r"=="),
+                    ("=", r"="),
+                    ("<", r"<"),
+                    (">", r">"),
+                ]
+                for op, op_pat in operator_specs:
+                    match = re.match(rf"^(?P<feat>.+?)\s*{op_pat}\s*(?P<rhs>.+)$", text)
+                    if match:
+                        return match.group("feat").strip(), op, match.group("rhs").strip()
+
+                match_in = re.match(r"^(?P<feat>.+?)\s+in\s+(?P<rhs>.+)$", text)
+                if match_in:
+                    return match_in.group("feat").strip(), "in", match_in.group("rhs").strip()
+
+                # Unknown/unsupported shape; return raw segment.
+                return text, "raw", ""
+
+            def _format_conjunctive_condition(
+                feature_dict: Dict, include_values: bool
+            ) -> str:
+                rule_text = str(feature_dict.get("rule", "") or "")
+                segments = _split_conjunctive_conditions(rule_text)
+                values = _split_conjunctive_values(feature_dict.get("value"))
+
+                formatted_segments: List[str] = []
+                for idx, seg in enumerate(segments):
+                    feat, op, rhs = _parse_condition_segment(seg)
+                    value = values[idx] if idx < len(values) else ""
+                    if op == "raw":
+                        formatted_segments.append(seg)
+                        continue
+                    if include_values and value:
+                        formatted_segments.append(f"{feat} ({value}) {op} {rhs}".strip())
+                    else:
+                        formatted_segments.append(f"{feat} {op} {rhs}".strip())
+
+                if not formatted_segments:
+                    # Fall back to the legacy condition cleaning.
+                    feat_name_raw = feature_dict.get("feature_name")
+                    feat_name = str(feat_name_raw) if feat_name_raw is not None else ""
+                    cond_fallback = clean_condition(rule_text, feat_name)
+                    cond_fallback = cond_fallback.replace(" & \n", conjunction_separator)
+                    cond_fallback = cond_fallback.replace("\n", " ").strip()
+                    return f"({cond_fallback})" if cond_fallback else ""
+
+                return f"({conjunction_separator.join(formatted_segments)})"
+
             for f in feats:
                 # Ensure feature_name is a string
                 feat_name_raw = f.get("feature_name")
@@ -533,22 +673,39 @@ class NarrativeGenerator:
 
                 rule = f.get("rule", "")
                 cond = clean_condition(rule, feat_name)
+                cond = cond.replace(" & \n", conjunction_separator).replace("\n", " ").strip()
 
-                # Format conjunctive rules with cleaner separator
                 if f.get("is_conjunctive"):
-                    cond = cond.replace(" & \n", conjunction_separator)
-                    cond = f"({cond})"  # Wrap in parens for clarity
+                    include_values = "{feature_actual_value}" in line
+                    cond = _format_conjunctive_condition(f, include_values)
 
                 # Per-feature uncertainty tags
                 tags = []
-                if has_wide_prediction_interval(f):
-                    tags.append("⚠️ highly uncertain")
-                if crosses_zero(f):
-                    tags.append("⚠️ direction uncertain")
+                if problem_type in (
+                    "binary_classification",
+                    "multiclass_classification",
+                    "probabilistic_regression",
+                ):
+                    if has_wide_prediction_interval(f):
+                        tags.append("⚠️ highly uncertain")
+                if explanation_type == "alternative":
+                    if _uncertain_for_alternative_threshold(f):
+                        tags.append("⚠️ uncertain")
+                else:
+                    if crosses_zero(f):
+                        tags.append("⚠️ direction uncertain")
                 uncertainty_tag = " [" + ", ".join(tags) + "]" if tags else ""
 
+                line_for_rule = line
+                if f.get("is_conjunctive"):
+                    # Conjunctive condition already includes feature names and values.
+                    line_for_rule = line_for_rule.replace("{feature_name}", "")
+                    line_for_rule = line_for_rule.replace("{feature_actual_value}", "")
+                    line_for_rule = line_for_rule.replace("()", "")
+                    line_for_rule = re.sub(r"\s{2,}", " ", line_for_rule).strip()
+
                 txt = (
-                    line.replace("{feature_name}", feat_name)
+                    line_for_rule.replace("{feature_name}", feat_name)
                     .replace("{feature_actual_value}", str(f.get("value", "")))
                     .replace("{condition}", cond)
                 )

@@ -67,6 +67,11 @@ def test_crosses_zero_fallback():
     assert crosses_zero({"weight_low": "abc", "weight_high": 1}) is False
 
 
+def test_crosses_zero_should_handle_array_like_intervals():
+    assert crosses_zero({"weight_low": [-0.1, 0.2], "weight_high": [0.1, 0.3]}) is True
+    assert crosses_zero({"weight_low": [0.1, 0.2], "weight_high": [0.3, 0.4]}) is False
+
+
 def test_has_wide_prediction_interval_fallback():
     assert has_wide_prediction_interval({"predict_low": "abc", "predict_high": 1}) is False
 
@@ -160,3 +165,185 @@ def test_expand_template_feat_name_fallback():
     pos_features2 = [{"feature_name": None, "rule": "", "weight": 1.0}]
     res2 = gen.expand_template(template, pos_features2, [], [], {}, "beginner")
     assert res2 == ""
+
+
+def test_expand_template_formats_conjunctive_rules_with_values():
+    gen = NarrativeGenerator()
+    template = "* {feature_name} ({feature_actual_value}) {condition}"
+    pos_features = [
+        {
+            "feature_name": "f1 & f2",
+            "rule": "f1 <= -121.83 & \nmedian_income > 4.92",
+            "value": "-122.17\n7.62",
+            "weight": 0.1,
+            "weight_low": 0.0,
+            "weight_high": 0.2,
+            "predict": 0.5,
+            "predict_low": 0.4,
+            "predict_high": 0.6,
+            "is_conjunctive": True,
+        }
+    ]
+
+    res = gen.expand_template(
+        template,
+        pos_features,
+        [],
+        [],
+        {},
+        "beginner",
+        problem_type="probabilistic_regression",
+        conjunction_separator=" AND ",
+        align_weights=False,
+    )
+
+    # Preferred formatting: single-line, interleaved values, no duplicated prefix.
+    assert "\n" not in res
+    assert "f1 & f2" not in res
+    assert "()" not in res
+    assert "(f1 (-122.17) <= -121.83 AND median_income (7.62) > 4.92)" in res
+
+
+def test_generate_narrative_should_not_crash_for_alternative_conjunctive_features():
+    from calibrated_explanations.explanations.explanation import AlternativeExplanation
+
+    class AltStub(AlternativeExplanation):
+        def __init__(self):
+            pass
+
+        def get_explainer(self):
+            return MagicMock(feature_names=["f1", "median_income"])
+
+        def get_rules(self):
+            return {
+                "base_predict": [0.5],
+                "base_predict_low": [0.4],
+                "base_predict_high": [0.6],
+                "rule": ["f1 <= -121.83 & \nmedian_income > 4.92"],
+                "value": ["-122.17\n7.62"],
+                "feature": [[0, 1]],
+                "weight": [0.1],
+                "weight_low": [0.0],
+                "weight_high": [0.2],
+                "predict": [0.55],
+                "predict_low": [0.45],
+                "predict_high": [0.65],
+            }
+
+    gen = NarrativeGenerator()
+    gen.templates = {
+        "narrative_templates": {
+            "probabilistic_regression": {
+                "alternative": {
+                    "beginner": "* {feature_name} ({feature_actual_value}) {condition}",
+                }
+            }
+        }
+    }
+
+    exp = AltStub()
+    exp.prediction = {"predict": 0.5, "low": 0.4, "high": 0.6}
+
+    res = gen.generate_narrative(
+        exp,
+        "probabilistic_regression",
+        explanation_type="alternative",
+        expertise_level="beginner",
+        conjunction_separator=" AND ",
+        align_weights=False,
+    )
+
+    assert "Error generating narrative" not in res
+    assert "(f1 (-122.17) <= -121.83 AND median_income (7.62) > 4.92)" in res
+
+
+def test_expand_template_should_tag_uncertain_for_alternatives_when_interval_covers_point_five():
+    gen = NarrativeGenerator()
+    template = "\n".join(
+        [
+            "Alternatives to increase:",
+            "- If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]",
+            "Alternatives to decrease:",
+            "- If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]",
+        ]
+    )
+
+    pos_features = [
+        {
+            "feature_name": "total_bedrooms",
+            "rule": "total_bedrooms < 9.00",
+            "value": "8",
+            "weight": 0.01,
+            "predict": 0.45,
+            "predict_low": 0.42,
+            "predict_high": 0.48,
+            "is_conjunctive": False,
+        },
+        {
+            "feature_name": "housing_median_age",
+            "rule": "housing_median_age < 13.50 & \nocean_proximity = INLAND & \nmedian_income > 3.23",
+            "value": "10\nINLAND\n4.0",
+            "weight": 0.02,
+            "predict": 0.46,
+            "predict_low": 0.38,  # covers 0.5 -> uncertain
+            "predict_high": 0.50,
+            "is_conjunctive": True,
+        },
+    ]
+
+    neg_features = [
+        {
+            "feature_name": "median_income",
+            "rule": "median_income > 2.0",
+            "value": "3.0",
+            "weight": -0.02,
+            "predict": 0.30,
+            "predict_low": 0.25,
+            "predict_high": 0.35,
+            "is_conjunctive": False,
+        },
+        {
+            "feature_name": "f2",
+            "rule": "f2 > 1.0",
+            "value": "2.0",
+            "weight": -0.02,
+            "predict": 0.49,
+            "predict_low": 0.48,
+            "predict_high": 0.52,  # covers 0.5 -> uncertain
+            "is_conjunctive": False,
+        },
+    ]
+
+    res = gen.expand_template(
+        template,
+        pos_features,
+        neg_features,
+        [],
+        context={},
+        level="advanced",
+        problem_type="probabilistic_regression",
+        explanation_type="alternative",
+        base_predict=None,
+        conjunction_separator=" AND ",
+        align_weights=False,
+    )
+
+    lines = [ln.strip() for ln in res.splitlines() if ln.strip().startswith("-")]
+
+    total_bedrooms_line = next(ln for ln in lines if "total_bedrooms < 9.00" in ln)
+    assert "⚠️ direction uncertain" not in total_bedrooms_line
+    assert "⚠️ uncertain" not in total_bedrooms_line
+
+    housing_line = next(ln for ln in lines if "housing_median_age" in ln)
+    assert "⚠️ direction uncertain" not in housing_line
+    assert "⚠️ uncertain" in housing_line
+
+    median_income_line = next(ln for ln in lines if "median_income > 2.0" in ln)
+    assert "⚠️ direction uncertain" not in median_income_line
+    assert "⚠️ uncertain" not in median_income_line
+
+    f2_line = next(ln for ln in lines if "f2 > 1.0" in ln)
+    assert "⚠️ direction uncertain" not in f2_line
+    assert "⚠️ uncertain" in f2_line
+
+    assert "⚠️ direction uncertain" not in res

@@ -408,6 +408,8 @@ def plot_triangular(
         min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
         max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
         if math.isclose(min_x, max_x, rel_tol=1e-9):
+            warnings.warn("All predictions are (almost) identical.", Warning, stacklevel=2)
+        if math.isclose(min_y, max_y, rel_tol=1e-9):
             warnings.warn("All uncertainties are (almost) identical.", Warning, stacklevel=2)
         min_y = min_y - 0.1 * (max_y - min_y)
         max_y = max_y + 0.1 * (max_y - min_y)

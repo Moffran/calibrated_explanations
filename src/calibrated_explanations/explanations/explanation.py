@@ -546,8 +546,15 @@ class CalibratedExplanation(ABC):
         class SingleExplanationWrapper:
             def __init__(self, explanation):
                 self.explanations = [explanation]
+                self._parent = explanation.calibrated_explanations
                 self.calibrated_explainer = explanation.calibrated_explanations.calibrated_explainer
                 self.y_threshold = explanation.y_threshold
+
+            def is_alternative(self) -> bool:
+                parent_is_alternative = getattr(self._parent, "is_alternative", None)
+                if callable(parent_is_alternative):
+                    return bool(parent_is_alternative())
+                return "Alternative" in type(self.explanations[0]).__name__
 
         wrapper = SingleExplanationWrapper(self)
 
@@ -597,13 +604,19 @@ class CalibratedExplanation(ABC):
 
     def reset(self):
         """Reset the explanation to its original state."""
+        # Reset both base rules and any derived conjunctive overlays.
+        # Conjunctions can change downstream payloads (plots, telemetry), so a
+        # reset should restore the atomic/original representation.
         self.has_rules = False
+        self.has_conjunctive_rules = False
+        self.conjunctive_rules = None
         self.get_rules()
         return self
 
     def remove_conjunctions(self):
         """Remove any conjunctive rules."""
         self.has_conjunctive_rules = False
+        self.conjunctive_rules = None
         return self
 
     # ------------------------------------------------------------------
@@ -945,13 +958,6 @@ class CalibratedExplanation(ABC):
                 "original_features must contain integer indices",
                 details={"param": "original_features", "value": original_features},
             ) from exc
-
-        # Ensure perturbed is 2D (single instance → (1, n_features))
-        if perturbed.ndim == 1:
-            perturbed = perturbed.reshape(1, -1)
-
-        # Coerce original_features to plain Python ints for reliable numpy indexing
-        original_features = [int(f) for f in original_features]
 
         # Prepare value arrays
         value_iterables = []
@@ -1611,20 +1617,39 @@ class FactualExplanation(CalibratedExplanation):
             else:
                 direction = "neutral"
                 
-            canonical_rules.append(RuleWithImpact(
-                rule_id=str(rules_dict["feature"][i]), # Using feature index as ID for now
-                feature=str(self.get_explainer().feature_names[rules_dict["feature"][i]]),
-                text=rules_dict["rule"][i],
-                impact=float(w),
-                direction=direction,
-                base_predict=float(rules_dict["base_predict"][i] if i < len(rules_dict["base_predict"]) else rules_dict["base_predict"][0]),
-                predict=float(prediction),
-                value=rules_dict["value"][i],
-                uncertainty_low=float(rules_dict["weight_low"][i]),
-                uncertainty_high=float(rules_dict["weight_high"][i]),
-                predict_low=float(rules_dict["predict_low"][i]),
-                predict_high=float(rules_dict["predict_high"][i])
-            ))
+            feature_id = rules_dict["feature"][i]
+            if isinstance(feature_id, (list, tuple, np.ndarray)):
+                feature_names = []
+                for idx in list(feature_id):
+                    with contextlib.suppress(Exception):
+                        feature_names.append(str(self._safe_feature_name(idx)))
+                feature_label = " & ".join(feature_names) if feature_names else str(feature_id)
+            else:
+                feature_label = str(self._safe_feature_name(feature_id))
+
+            base_predicts = rules_dict.get("base_predict", [])
+            base_predict_value = (
+                base_predicts[i]
+                if i < len(base_predicts)
+                else (base_predicts[0] if base_predicts else None)
+            )
+
+            canonical_rules.append(
+                RuleWithImpact(
+                    rule_id=str(feature_id),  # Using feature index/list as ID for now
+                    feature=feature_label,
+                    text=rules_dict["rule"][i],
+                    impact=float(w),
+                    direction=direction,
+                    base_predict=float(base_predict_value) if base_predict_value is not None else float("nan"),
+                    predict=float(prediction),
+                    value=rules_dict["value"][i],
+                    uncertainty_low=float(rules_dict["weight_low"][i]),
+                    uncertainty_high=float(rules_dict["weight_high"][i]),
+                    predict_low=float(rules_dict["predict_low"][i]),
+                    predict_high=float(rules_dict["predict_high"][i]),
+                )
+            )
             
         # Stable sort by absolute impact
         if sort:
@@ -1644,6 +1669,12 @@ class FactualExplanation(CalibratedExplanation):
         List[Dict[str, List]]
             A list of dictionaries containing the factual rules.
         """
+        if (
+            getattr(self, "has_conjunctive_rules", False)
+            and getattr(self, "conjunctive_rules", None) is not None
+        ):
+            return self.conjunctive_rules
+
         # i = self.index
         instance = np.array(self.x_test, copy=True)
 
@@ -2270,6 +2301,22 @@ class AlternativeExplanation(CalibratedExplanation):
         
         # Base prediction is the instance prediction
         base_predict = self.prediction["predict"]
+        base_predict_value = base_predict
+        if isinstance(base_predict_value, (list, tuple, np.ndarray)):
+            base_predict_value = base_predict_value[0] if len(base_predict_value) else 0.0
+
+        def _format_feature(feature_index: Any) -> tuple[str, str]:
+            if isinstance(feature_index, (list, tuple, np.ndarray)):
+                raw_ids = []
+                names = []
+                for idx in feature_index:
+                    try:
+                        raw_ids.append(str(int(idx)))
+                    except (TypeError, ValueError):  # ADR002_ALLOW: tolerate non-numeric ids.
+                        raw_ids.append(str(idx))
+                    names.append(self._safe_feature_name(idx))
+                return ",".join(raw_ids), " & ".join(names)
+            return str(feature_index), self._safe_feature_name(feature_index)
         
         num_rules = len(rules_dict.get("rule", []))
         for i in range(num_rules):
@@ -2286,20 +2333,25 @@ class AlternativeExplanation(CalibratedExplanation):
             else:
                 direction = "neutral"
                 
-            canonical_rules.append(RuleWithImpact(
-                rule_id=str(rules_dict["feature"][i]), # Using feature index as ID
-                feature=str(self.get_explainer().feature_names[rules_dict["feature"][i]]),
-                text=rules_dict["rule"][i],
-                impact=float(w),
-                direction=direction,
-                base_predict=float(base_predict),
-                predict=float(rules_dict["predict"][i]),  # Alternative prediction
-                value=rules_dict["value"][i],
-                uncertainty_low=float(rules_dict["weight_low"][i]),
-                uncertainty_high=float(rules_dict["weight_high"][i]),
-                predict_low=float(rules_dict["predict_low"][i]),
-                predict_high=float(rules_dict["predict_high"][i])
-            ))
+            feature_index = rules_dict["feature"][i]
+            rule_id, feature_name = _format_feature(feature_index)
+
+            canonical_rules.append(
+                RuleWithImpact(
+                    rule_id=rule_id,
+                    feature=feature_name,
+                    text=rules_dict["rule"][i],
+                    impact=float(w),
+                    direction=direction,
+                    base_predict=float(base_predict_value),
+                    predict=float(rules_dict["predict"][i]),  # Alternative prediction
+                    value=rules_dict["value"][i],
+                    uncertainty_low=float(rules_dict["weight_low"][i]),
+                    uncertainty_high=float(rules_dict["weight_high"][i]),
+                    predict_low=float(rules_dict["predict_low"][i]),
+                    predict_high=float(rules_dict["predict_high"][i]),
+                )
+            )
             
         # Stable sort by absolute impact
         if sort:
@@ -2419,6 +2471,12 @@ class AlternativeExplanation(CalibratedExplanation):
         Array-like : List[Dict[str, List]]
             A list of dictionaries containing the alternative rules.
         """
+        if (
+            getattr(self, "has_conjunctive_rules", False)
+            and getattr(self, "conjunctive_rules", None) is not None
+        ):
+            return self.conjunctive_rules
+
         self.rules = []
         self.labels = {}  # pylint: disable=attribute-defined-outside-init
         instance = np.array(self.x_test, copy=True)
@@ -2821,9 +2879,9 @@ class AlternativeExplanation(CalibratedExplanation):
         # ConjunctionState tracks accumulated rules and deduplication keys.
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
+        dedupe_by_feature_only = kwargs.get("_dedupe_by_feature_only", True)
         raise_on_predict_error = kwargs.get("raise_on_predict_error", False)
         _MAX_LOGGED_ERRORS = 5  # noqa: N806
-        predict_errors = []
         if max_rule_size >= 4 and not use_batched:
             from ..utils.exceptions import ConfigurationError
 
@@ -2896,7 +2954,6 @@ class AlternativeExplanation(CalibratedExplanation):
             "predict_errors": [],
         }
         stats = self.conjunction_stats
-        predict_error_limit = 5
 
         def _summarize(arr):
             if arr is None or arr.size == 0:
@@ -3004,10 +3061,12 @@ class AlternativeExplanation(CalibratedExplanation):
                         )
                     except Exception as e:  # pylint: disable=broad-except
                         if raise_on_predict_error:
-                            raise e
-                        skipped["predict_error"] += 1
-                        if len(predict_errors) < _MAX_LOGGED_ERRORS:
-                            predict_errors.append(f"{type(e).__name__}: {e}")
+                            raise
+                        stats["skipped"]["predict_error"] += 1
+                        if len(stats["predict_errors"]) < _MAX_LOGGED_ERRORS:
+                            stats["predict_errors"].append(
+                                f"{type(e).__name__}: {e}"
+                            )
                         continue
 
                     state_helper.add_rule(
@@ -3023,20 +3082,37 @@ class AlternativeExplanation(CalibratedExplanation):
                     )
                     stats["created"] += 1
 
-        if created == 0 and attempts > 0:
-            err_msg = f" predict_errors={predict_errors}" if predict_errors else ""
-            warnings.warn(
-                f"add_conjunctions: created=0 attempts={attempts} skipped={dict(skipped)} "
-                f"weights={_summarize(weights_array)}{err_msg}",
-                stacklevel=2,
+        self.conjunctive_rules = state_helper.get_state()
+        self.has_conjunctive_rules = True
+
+        if stats["created"] == 0 and stats["attempts"] > 0:
+            summary_weights = _summarize(base_weight_array)
+            import warnings
+
+            err_msg = (
+                f" predict_errors={stats['predict_errors']}"
+                if stats["predict_errors"]
+                else ""
             )
-            warnings.warn(warning_msg, stacklevel=2)
+            warning_msg = (
+                f"add_conjunctions: created={stats['created']} "
+                f"attempts={stats['attempts']} skipped={dict(stats['skipped'])} "
+                f"weights={summary_weights}{err_msg}"
+            )
+
             if kwargs.get("_fallback_to_legacy_on_zero", False):
+                warnings.warn(
+                    warning_msg + " (falling back to legacy)",
+                    UserWarning,
+                    stacklevel=2,
+                )
                 from .legacy_conjunctions import add_conjunctions_alternative_legacy
 
                 return add_conjunctions_alternative_legacy(
                     self, n_top_features=n_top_features, max_rule_size=max_rule_size
                 )
+
+            warnings.warn(warning_msg, UserWarning, stacklevel=2)
 
         self.conjunctive_rules = state_helper.get_state()
         self.has_conjunctive_rules = True
@@ -3168,11 +3244,26 @@ class AlternativeExplanation(CalibratedExplanation):
 
         if "style" in kwargs and kwargs["style"] == "triangular":
             proba = predict["predict"]
-            uncertainty = np.abs(predict["high"] - predict["low"])
+            # Uncertainty is the calibrated interval width (high-low).
+            # Keep semantics consistent with ADR-021 and other plot styles.
+            y_minmax = getattr(self, "y_minmax", None)
+            base_low = predict["low"]
+            base_high = predict["high"]
+            if y_minmax is not None:
+                if base_low == -np.inf:
+                    base_low = y_minmax[0]
+                if base_high == np.inf:
+                    base_high = y_minmax[1]
+            uncertainty = base_high - base_low
             rule_proba = alternative["predict"]
-            rule_uncertainty = np.abs(
-                np.array(alternative["predict_high"]) - np.array(alternative["predict_low"])
-            )
+            rule_low = np.array(alternative["predict_low"], dtype=float)
+            rule_high = np.array(alternative["predict_high"], dtype=float)
+            # Replace infinite endpoints with observed bounds so the triangle plot
+            # can render meaningful widths.
+            if y_minmax is not None:
+                rule_low = np.where(np.isneginf(rule_low), y_minmax[0], rule_low)
+                rule_high = np.where(np.isposinf(rule_high), y_minmax[1], rule_high)
+            rule_uncertainty = rule_high - rule_low
             # Use list comprehension or NumPy array indexing to select elements
             selected_rule_proba = [rule_proba[i] for i in features_to_plot]
             selected_rule_uncertainty = [rule_uncertainty[i] for i in features_to_plot]

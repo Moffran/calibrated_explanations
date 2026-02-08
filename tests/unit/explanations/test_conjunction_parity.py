@@ -173,6 +173,8 @@ def test_factual_conjunctions_actually_created(binary_dataset):
     for exp in explanation:
         assert exp.has_conjunctive_rules, "has_conjunctive_rules should be True"
         assert exp.conjunctive_rules is not None, "conjunctive_rules should not be None"
+        # Public API: once conjunctions are added, get_rules() should expose them.
+        assert exp.get_rules() is exp.conjunctive_rules
         rules = exp.conjunctive_rules
         assert len(rules["rule"]) > 0, (
             f"Expected conjunctive rules to be created but got 0. "
@@ -190,6 +192,8 @@ def test_alternative_conjunctions_actually_created(binary_dataset):
     for exp in explanation:
         assert exp.has_conjunctive_rules, "has_conjunctive_rules should be True"
         assert exp.conjunctive_rules is not None, "conjunctive_rules should not be None"
+        # Public API: once conjunctions are added, get_rules() should expose them.
+        assert exp.get_rules() is exp.conjunctive_rules
         rules = exp.conjunctive_rules
         assert len(rules["rule"]) > 0, (
             f"Expected conjunctive rules to be created but got 0. "
