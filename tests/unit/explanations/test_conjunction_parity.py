@@ -9,30 +9,6 @@ from calibrated_explanations.explanations.legacy_conjunctions import (
 )
 
 
-def _make_explainer(binary_dataset):
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,
-        _,
-        _,
-        categorical_features,
-        feature_names,
-    ) = binary_dataset
-
-    model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(x_prop_train, y_prop_train)
-
-    explainer = WrapCalibratedExplainer(model)
-    explainer.calibrate(
-        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
-    )
-    return explainer, x_test
-
-
 def compare_payloads(p1, p2):
     assert p1.keys() == p2.keys()
     for k in p1:
@@ -65,7 +41,7 @@ def compare_payloads(p1, p2):
             assert v1 == v2
 
 
-def _build_explainer(binary_dataset):
+def build_explainer(binary_dataset):
     """Build and return (explainer, x_test) from dataset."""
     (
         x_prop_train,
@@ -91,7 +67,7 @@ def _build_explainer(binary_dataset):
 
 
 def test_factual_conjunction_parity(binary_dataset):
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     # Get an explanation for the first test instance
     explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
@@ -110,7 +86,7 @@ def test_factual_conjunction_parity(binary_dataset):
 
 
 def test_alternative_conjunction_parity(binary_dataset):
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     # Get an explanation for the first test instance
     explanation = explainer.explore_alternatives(x_test[0].reshape(1, -1))
@@ -128,24 +104,8 @@ def test_alternative_conjunction_parity(binary_dataset):
         compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
 
 
-def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset)
-
-    explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
-    explanation_legacy = explainer.explain_factual(x_test[0].reshape(1, -1))
-
-    explanation.add_conjunctions(n_top_features=5, max_rule_size=3)
-
-    for exp in explanation_legacy:
-        add_conjunctions_factual_legacy(exp, n_top_features=5, max_rule_size=3)
-
-    for e1, e2 in zip(explanation, explanation_legacy):
-        assert len(e1.conjunctive_rules["rule"]) > 0
-        compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
-
-
 def test_alternative_conjunction_parity_max_rule_size_3(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     explanation = explainer.explore_alternatives(x_test[0].reshape(1, -1))
     explanation_legacy = explainer.explore_alternatives(x_test[0].reshape(1, -1))
@@ -165,7 +125,7 @@ def test_alternative_conjunction_parity_max_rule_size_3(binary_dataset):
 
 def test_factual_conjunctions_actually_created(binary_dataset):
     """Verify that add_conjunctions actually produces conjunctive rules."""
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
     explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
@@ -184,7 +144,7 @@ def test_factual_conjunctions_actually_created(binary_dataset):
 
 def test_alternative_conjunctions_actually_created(binary_dataset):
     """Verify that add_conjunctions actually produces conjunctive rules for alternatives."""
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     explanation = explainer.explore_alternatives(x_test[0].reshape(1, -1))
     explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
@@ -203,7 +163,7 @@ def test_alternative_conjunctions_actually_created(binary_dataset):
 
 def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):
     """Test parity with max_rule_size=3."""
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
     explanation_legacy = explainer.explain_factual(x_test[0].reshape(1, -1))
@@ -220,7 +180,7 @@ def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):
 @pytest.mark.parametrize("instance_idx", [0, 1])
 def test_factual_parity_multiple_instances(binary_dataset, instance_idx):
     """Test factual parity across multiple test instances."""
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     if instance_idx >= len(x_test):
         pytest.skip("Not enough test instances")
@@ -240,7 +200,7 @@ def test_factual_parity_multiple_instances(binary_dataset, instance_idx):
 @pytest.mark.parametrize("instance_idx", [0, 1])
 def test_alternative_parity_multiple_instances(binary_dataset, instance_idx):
     """Test alternative parity across multiple test instances."""
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     if instance_idx >= len(x_test):
         pytest.skip("Not enough test instances")
@@ -259,7 +219,7 @@ def test_alternative_parity_multiple_instances(binary_dataset, instance_idx):
 
 def test_calibration_invariant_on_conjunctions(binary_dataset):
     """For every conjunctive rule, assert predict_low <= predict <= predict_high."""
-    explainer, x_test = _build_explainer(binary_dataset)
+    explainer, x_test = build_explainer(binary_dataset)
 
     explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
     explanation.add_conjunctions(n_top_features=5, max_rule_size=2)

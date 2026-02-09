@@ -5,14 +5,9 @@ explanations into the streaming API. Intended as a lightweight check rather
 than a full CI-grade benchmark.
 
 Usage:
-    python scripts/stream_benchmark.py --n 10000 --chunk 256 --format jsonl
+    python scripts/perf/stream_benchmark.py --n 10000 --chunk 256 --format jsonl
 """
 from __future__ import annotations
-
-if __name__ == "__main__":  # pragma: no cover - shim
-    from scripts.perf.stream_benchmark import main as _main
-
-    raise SystemExit(_main())
 
 import argparse
 import json

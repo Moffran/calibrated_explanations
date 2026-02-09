@@ -250,7 +250,7 @@ def missing_offline_dependency(script: str) -> Optional[str]:
     if "tests/parity_reference/run_parity_reference.py" in lower:
         if importlib.util.find_spec("calibrated_explanations") is None:
             return "calibrated_explanations"
-    if "scripts/micro_bench_perf.py" in lower:
+    if "scripts/perf/micro_bench_perf.py" in lower:
         if importlib.util.find_spec("calibrated_explanations") is None:
             return "calibrated_explanations"
     if "check_coverage_gates.py" in lower and not Path("coverage.xml").exists():

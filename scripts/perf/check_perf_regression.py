@@ -2,7 +2,7 @@
 """Check performance regressions against stored baseline and thresholds.
 
 Usage:
-  python scripts/check_perf_regression.py \
+  python scripts/perf/check_perf_regression.py \
       --baseline tests/benchmarks/baseline_20250816.json \
       --thresholds tests/benchmarks/perf_thresholds.json \
       --current tests/benchmarks/new_baseline.json
@@ -13,11 +13,6 @@ Exit code 0 = OK, 1 = regression detected, 2 = configuration error.
 """
 
 from __future__ import annotations
-
-if __name__ == "__main__":  # pragma: no cover - shim
-    from scripts.perf.check_perf_regression import main as _main
-
-    raise SystemExit(_main())
 
 import argparse
 import json
@@ -71,7 +66,7 @@ def main():
         # Collect a fresh baseline
         with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as tmp:
             tmp_path = Path(tmp.name)
-        cmd = [sys.executable, "scripts/collect_baseline.py", "--output", str(tmp_path)]
+        cmd = [sys.executable, "scripts/perf/collect_baseline.py", "--output", str(tmp_path)]
         subprocess.check_call(cmd)
         current_path = tmp_path
 

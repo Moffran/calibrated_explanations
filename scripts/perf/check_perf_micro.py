@@ -3,8 +3,8 @@
 Exits with non-zero status if thresholds are exceeded.
 
 Inputs:
-- baseline JSON produced by scripts/micro_bench_perf.py
-- current JSON produced by scripts/micro_bench_perf.py
+- baseline JSON produced by scripts/perf/micro_bench_perf.py
+- current JSON produced by scripts/perf/micro_bench_perf.py
 - thresholds JSON (tests/benchmarks/perf_thresholds.json)
 
 Currently enforced:
@@ -14,11 +14,6 @@ Other fields are logged for visibility but not enforced yet.
 """
 
 from __future__ import annotations
-
-if __name__ == "__main__":  # pragma: no cover - shim
-    from scripts.perf.check_perf_micro import main as _main
-
-    raise SystemExit(_main())
 
 import argparse
 import json

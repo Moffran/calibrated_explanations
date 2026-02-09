@@ -86,6 +86,15 @@ static audits. Specifically:
   - Private-member usage scan in tests (fail on non-allowlisted usage).
   - Fallback-chain restrictions (tests must opt in when validating fallbacks).
 
+- **Over-testing density gate (advisory → enforced)**:
+  - Use per-test coverage contexts (`pytest --cov-context=test`) to compute per-line
+    test-count density with `scripts/over_testing/over_testing_report.py` and
+    `scripts/over_testing/over_testing_triage.py`.
+  - Gate on an **over-testing ratio** (share of covered lines above a test-count
+    threshold) with a ratcheting baseline, similar to the coverage fail-under model.
+  - Allowlist exceptions only with justification and a planned sunset; keep outputs
+    checked in under `reports/over_testing/` for visibility.
+
 - **Expand test anti-pattern checks** (incremental, non-breaking rollout):
   - Extend the existing anti-pattern detector to flag:
     - tests without assertions (including `pytest.raises` and `pytest.warns` as
@@ -131,6 +140,8 @@ Negative/Risks:
 - Phase 2: extend the detector to cover assertion presence, determinism, and
   mocking heuristics; add allowlists only with justification.
 - Phase 3: enforce marker hygiene and slow-test budgets once tagging is complete.
+- Phase 4: introduce the over-testing density gate in advisory mode, then ratchet
+  the threshold once baselines are stable.
 
 ## Resolved Questions
 
@@ -143,3 +154,6 @@ Based on analysis of current test practices (directory-based organization, ~2000
 ## Implementation status
 
 - 2026-01-11 – Drafted ADR with priorities and enforcement plan; resolved open questions on marker taxonomy and mutation testing modules; no code changes yet.
+- 2026-02-09 – Added over-testing density analysis scripts and proposed a ratcheting
+  gate based on per-test coverage contexts (pending CI rollout).
+- 2026-02-09 – Completed coverage improvement iteration: added integration tests for plotting style overrides/legacy fallbacks, cache fallback testing, and YAML template loading to increase coverage in low-coverage modules (plotting.py, cache.py, narrative_generator.py).

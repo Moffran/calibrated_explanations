@@ -7,20 +7,13 @@ Validates that the import graph respects documented ADR-001 boundaries:
 - No unintended imports from private submodules
 
 Usage:
-    python scripts/check_import_graph.py [--strict] [--report] [--fix]
+    python scripts/quality/check_import_graph.py [--strict] [--report] [--fix]
 
 Exit codes:
     0: No violations found
     1: Violations found
     2: Configuration error
 """
-
-if __name__ == "__main__":  # pragma: no cover - shim
-    import runpy
-    from pathlib import Path
-
-    runpy.run_path(str(Path(__file__).parent / "quality" / "check_import_graph.py"), run_name="__main__")
-    raise SystemExit(0)
 
 import ast
 import sys
@@ -267,168 +260,116 @@ def check_import_violations(src_dir: Path, config: BoundaryConfig, *, strict: bo
         if '__pycache__' in py_file.parts or py_file.name.startswith('test_'):
             continue
 
-        # Determine the module being checked
-        try:
-            rel_path = py_file.relative_to(src_dir.parent)
-            module_parts = rel_path.parts[:-1] + (rel_path.stem,)
-            importing_module = '.'.join(module_parts)
-        except ValueError:
-            continue
-
-        source_top_level = get_top_level_package(importing_module)
-        if not source_top_level:
-            continue
-
-        # Extract imports
         imports = extract_imports(py_file)
+        source_module = py_file.relative_to(src_dir).as_posix().replace('/', '.').replace('.py', '')
+        source_pkg = get_top_level_package(source_module)
 
-        for imported, line_no in imports:
+        for imp, line in imports:
             # Resolve relative imports
-            if imported.startswith('.'):
-                imported = resolve_relative_import(py_file, imported)
-                if not imported:
+            if imp.startswith('.'):
+                resolved = resolve_relative_import(py_file, imp)
+                if not resolved:
                     continue
+                imp = resolved
 
-            # Get top-level package of import
-            imported_top_level = get_top_level_package(imported)
-            if not imported_top_level:
+            target_pkg = get_top_level_package(imp)
+            if not target_pkg or not source_pkg:
                 continue
 
-            # Skip imports within the same package
-            if source_top_level == imported_top_level:
+            # Skip same-package imports
+            if target_pkg == source_pkg:
                 continue
 
-            # Check for cross-sibling imports
-            if source_top_level not in config.top_level_packages:
-                continue
-            if imported_top_level not in config.top_level_packages:
-                continue
-
-            # Check if this cross-sibling import is allowed
-            is_allowed = False
-
-            # Check direct allowance
-            if (source_top_level, imported_top_level) in config.allowed_cross_sibling:
-                is_allowed = True
-
-            # Check wildcard allowance
-            if ('*', imported_top_level) in config.allowed_cross_sibling:
-                is_allowed = True
-
-            # Check if in strict mode
-            in_strict = False
-            if strict:
-                in_strict = any(
-                    py_file.match(f"*{strict_mod}")
-                    for strict_mod in config.strict_modules
-                )
-
-            if not is_allowed or in_strict:
+            # Check forbidden cycles
+            if (source_pkg, target_pkg) in config.forbidden_cycles:
                 violations.append(ImportViolation(
                     file_path=str(py_file),
-                    line_number=line_no,
-                    imported_from=imported,
-                    importing_module=importing_module,
-                    violation_type='cross_sibling',
-                    message=f"Cross-sibling import: {importing_module} imports {imported} (not allowed by ADR-001)"
+                    line_number=line,
+                    imported_from=imp,
+                    importing_module=source_module,
+                    violation_type='circular',
+                    message=f"Forbidden import cycle: {source_pkg} -> {target_pkg}"
                 ))
+                continue
+
+            # Check allowed cross-sibling imports
+            allowed = config.allowed_cross_sibling.get((source_pkg, target_pkg))
+            wildcard_allowed = config.allowed_cross_sibling.get(('*', target_pkg))
+
+            if allowed is None and wildcard_allowed is None:
+                violations.append(ImportViolation(
+                    file_path=str(py_file),
+                    line_number=line,
+                    imported_from=imp,
+                    importing_module=source_module,
+                    violation_type='cross_sibling',
+                    message=f"Cross-sibling import not allowed: {source_pkg} -> {target_pkg}"
+                ))
+                continue
+
+            # If strict, even allowed imports may be forbidden in specific modules
+            rel_path = py_file.relative_to(src_dir).as_posix()
+            if strict and rel_path in config.strict_modules:
+                violations.append(ImportViolation(
+                    file_path=str(py_file),
+                    line_number=line,
+                    imported_from=imp,
+                    importing_module=source_module,
+                    violation_type='cross_sibling',
+                    message=f"Strict mode violation: {source_pkg} -> {target_pkg} in {rel_path}"
+                ))
+                continue
+
+            # If allowed list is empty or wildcard, accept all; otherwise check module path
+            allowed_list = allowed if allowed is not None else wildcard_allowed
+            if allowed_list:
+                if not any(imp.startswith(p) for p in allowed_list):
+                    violations.append(ImportViolation(
+                        file_path=str(py_file),
+                        line_number=line,
+                        imported_from=imp,
+                        importing_module=source_module,
+                        violation_type='cross_sibling',
+                        message=f"Import not in allowlist: {imp}"
+                    ))
 
     return violations
 
 
-def print_violations(violations: List[ImportViolation]) -> None:
-    """Pretty-print import violations."""
-    if not violations:
-        print("[OK] No import graph violations detected (ADR-001 compliant)")
-        return
-
-    print(f"[VIOLATIONS] Found {len(violations)} import graph violation(s):\n")
-
-    # Group by file
-    by_file = {}
-    for v in violations:
-        if v.file_path not in by_file:
-            by_file[v.file_path] = []
-        by_file[v.file_path].append(v)
-
-    for file_path in sorted(by_file.keys()):
-        print(f"  {file_path}")
-        for v in by_file[file_path]:
-            print(f"    Line {v.line_number}: {v.message}")
-            print(f"      From: {v.importing_module}")
-            print(f"      To:   {v.imported_from}")
-            print()
+def write_report(violations: List[ImportViolation], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = [violation.__dict__ for violation in violations]
+    with output_path.open('w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2)
 
 
-def generate_report(violations: List[ImportViolation], output_file: Path) -> None:
-    """Generate a JSON report of violations."""
-    report = {
-        'timestamp': __import__('datetime').datetime.now().isoformat(),
-        'total_violations': len(violations),
-        'violations': [
-            {
-                'file': v.file_path,
-                'line': v.line_number,
-                'from': v.importing_module,
-                'to': v.imported_from,
-                'type': v.violation_type,
-                'message': v.message,
-            }
-            for v in violations
-        ],
-    }
-
-    output_file.write_text(json.dumps(report, indent=2))
-    print(f"[REPORT] Written to {output_file}")
-
-
-def main() -> int:
-    """Main entry point."""
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Check import graph compliance with ADR-001 boundaries"
-    )
-    parser.add_argument(
-        '--strict',
-        action='store_true',
-        help='Strict mode: disallow all cross-sibling imports'
-    )
-    parser.add_argument(
-        '--report',
-        type=Path,
-        help='Generate JSON report to this file'
-    )
-    parser.add_argument(
-        '--src-dir',
-        type=Path,
-        default=Path('src/calibrated_explanations'),
-        help='Path to source directory (default: src/calibrated_explanations)'
-    )
-
+def main():
+    parser = argparse.ArgumentParser(description="Check import graph for ADR-001 compliance")
+    parser.add_argument("--strict", action="store_true", help="Enable strict mode")
+    parser.add_argument("--report", action="store_true", help="Write JSON report to reports/import_graph.json")
+    parser.add_argument("--fix", action="store_true", help="Attempt to auto-fix simple violations")
     args = parser.parse_args()
 
-    # Validate src_dir
-    if not args.src_dir.exists():
-        print(f"❌ Source directory not found: {args.src_dir}", file=sys.stderr)
-        return 2
+    src_dir = Path('src/calibrated_explanations')
+    if not src_dir.exists():
+        print(f"Source directory not found: {src_dir}")
+        sys.exit(2)
 
-    # Load configuration
     config = BoundaryConfig()
+    violations = check_import_violations(src_dir, config, strict=args.strict)
 
-    # Check for violations
-    violations = check_import_violations(args.src_dir, config, strict=args.strict)
-
-    # Print violations
-    print_violations(violations)
-
-    # Generate report if requested
     if args.report:
-        generate_report(violations, args.report)
+        write_report(violations, Path('reports/import_graph.json'))
+        print(f"Import graph report written to reports/import_graph.json")
 
-    # Return appropriate exit code
-    return 1 if violations else 0
+    if violations:
+        print(f"Found {len(violations)} import violations:")
+        for v in violations:
+            print(f"  {v.file_path}:{v.line_number} {v.message}")
+        sys.exit(1)
+
+    print("No import violations detected.")
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

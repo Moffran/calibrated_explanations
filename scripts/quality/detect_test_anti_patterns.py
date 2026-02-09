@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 def _load_detector_module():
-    script_path = Path(__file__).parent / "quality" / "detect_test_anti_patterns.py"
+    script_path = Path(__file__).parents[1] / "anti-pattern-analysis" / "detect_test_anti_patterns.py"
     spec = spec_from_loader("detect_test_anti_patterns", SourceFileLoader("detect_test_anti_patterns", str(script_path)))
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load anti-pattern detector from {script_path}")

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from calibrated_explanations.explanations.explanation import FactualExplanation
 
 
-def _make_explanation_with_mock_predict(predict_fn_return):
+def make_explanation_with_mock_predict(predict_fn_return):
     """Create a minimal CalibratedExplanation with mocked predict_internal."""
     exp = FactualExplanation.__new__(FactualExplanation)
 
@@ -32,7 +32,7 @@ def test_predict_conjunction_tuple_basic():
     high_vals = np.array([0.7, 0.9])
     dummy = np.array([0.0, 0.0])
 
-    exp, mock_predict = _make_explanation_with_mock_predict(
+    exp, mock_predict = make_explanation_with_mock_predict(
         (p_vals, low_vals, high_vals, dummy)
     )
 
@@ -62,7 +62,7 @@ def test_predict_conjunction_tuple_1d_perturbed():
     high_vals = np.array([0.6])
     dummy = np.array([0.0])
 
-    exp, mock_predict = _make_explanation_with_mock_predict(
+    exp, mock_predict = make_explanation_with_mock_predict(
         (p_vals, low_vals, high_vals, dummy)
     )
 
@@ -83,7 +83,7 @@ def test_predict_conjunction_tuple_1d_perturbed():
 
 def test_predict_conjunction_tuple_empty_values():
     """Empty value iterables should return zeros."""
-    exp, _ = _make_explanation_with_mock_predict((np.array([]), np.array([]), np.array([]), np.array([])))
+    exp, _ = make_explanation_with_mock_predict((np.array([]), np.array([]), np.array([]), np.array([])))
 
     perturbed = np.array([[1.0, 2.0]])
     rule_value_set = []
@@ -106,7 +106,7 @@ def test_predict_conjunction_tuple_bins_scalar():
     high_vals = np.array([0.6, 0.7])
     dummy = np.array([0.0, 0.0])
 
-    exp, mock_predict = _make_explanation_with_mock_predict(
+    exp, mock_predict = make_explanation_with_mock_predict(
         (p_vals, low_vals, high_vals, dummy)
     )
 
@@ -132,7 +132,7 @@ def test_predict_conjunction_tuple_bins_array():
     high_vals = np.array([0.6, 0.7])
     dummy = np.array([0.0, 0.0])
 
-    exp, mock_predict = _make_explanation_with_mock_predict(
+    exp, mock_predict = make_explanation_with_mock_predict(
         (p_vals, low_vals, high_vals, dummy)
     )
 
@@ -157,7 +157,7 @@ def test_predict_conjunction_tuple_numpy_int_features():
     high_vals = np.array([0.6])
     dummy = np.array([0.0])
 
-    exp, mock_predict = _make_explanation_with_mock_predict(
+    exp, mock_predict = make_explanation_with_mock_predict(
         (p_vals, low_vals, high_vals, dummy)
     )
 
@@ -182,7 +182,7 @@ def test_predict_conjunction_tuple_multi_feature():
     high_vals = np.array([0.6, 0.7, 0.8, 0.9])
     dummy = np.zeros(4)
 
-    exp, mock_predict = _make_explanation_with_mock_predict(
+    exp, mock_predict = make_explanation_with_mock_predict(
         (p_vals, low_vals, high_vals, dummy)
     )
 

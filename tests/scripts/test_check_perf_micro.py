@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts import check_perf_micro
+from scripts.perf import check_perf_micro
 
 
 def write(path: Path, payload: dict) -> None:

@@ -256,3 +256,83 @@ def testplot_alternative_infers_features_to_plot(tmp_path):
     # Semantic assertion: verify that a PNG file with the title was created
     png_files = list(Path(outdir).glob("*" + title + "*.png"))
     assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
+
+
+def test_plot_regression_with_style_override(tmp_path):
+    """Test that plot_regression accepts and applies style_override parameter."""
+    # prepare feature weights as dict with interval arrays
+    n = 4
+    fw = {
+        "predict": np.array([0.1, -0.2, 0.3, 0.0]),
+        "low": np.array([0.05, -0.25, 0.25, -0.05]),
+        "high": np.array([0.15, -0.15, 0.35, 0.05]),
+    }
+    expl = FakeExplanation(mode="regression")
+    outdir = str(tmp_path)
+    title = "reg_style_override"
+    # Test with a style_override dict
+    style_override = {
+        "figure": {"width": "8"},
+        "colors": {"positive": "green", "negative": "purple"}
+    }
+    # call with save_ext to force render+save behavior
+    _plots.plot_regression(
+        explanation=expl,
+        instance=[0, 0, 0, 0],
+        predict={"predict": 0.5, "low": 0.4, "high": 0.6},
+        feature_weights=fw,
+        features_to_plot=list(range(n)),
+        num_to_show=n,
+        column_names=[f"f{i}" for i in range(n)],
+        title=title,
+        path=outdir + os.path.sep,
+        show=False,
+        interval=True,
+        save_ext=[".png"],
+        use_legacy=False,
+        style_override=style_override,
+    )
+    # Semantic assertion: verify that a PNG file with the title was created
+    png_files = list(Path(outdir).glob("*" + title + "*.png"))
+    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
+
+    # Verify file is non-trivial in size
+    for png_file in png_files:
+        assert png_file.stat().st_size > 100, f"PNG file {png_file} is too small"
+
+
+def test_plot_regression_legacy_fallback(tmp_path):
+    """Test that plot_regression falls back to legacy when use_legacy=True."""
+    # prepare feature weights as dict with interval arrays
+    n = 4
+    fw = {
+        "predict": np.array([0.1, -0.2, 0.3, 0.0]),
+        "low": np.array([0.05, -0.25, 0.25, -0.05]),
+        "high": np.array([0.15, -0.15, 0.35, 0.05]),
+    }
+    expl = FakeExplanation(mode="regression")
+    outdir = str(tmp_path)
+    title = "reg_legacy"
+    # Force legacy plotting
+    _plots.plot_regression(
+        explanation=expl,
+        instance=[0, 0, 0, 0],
+        predict={"predict": 0.5, "low": 0.4, "high": 0.6},
+        feature_weights=fw,
+        features_to_plot=list(range(n)),
+        num_to_show=n,
+        column_names=[f"f{i}" for i in range(n)],
+        title=title,
+        path=outdir + os.path.sep,
+        show=False,
+        interval=True,
+        save_ext=[".png"],
+        use_legacy=True,
+    )
+    # Semantic assertion: verify that a PNG file with the title was created
+    png_files = list(Path(outdir).glob("*" + title + "*.png"))
+    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
+
+    # Verify file is non-trivial in size
+    for png_file in png_files:
+        assert png_file.stat().st_size > 100, f"PNG file {png_file} is too small"

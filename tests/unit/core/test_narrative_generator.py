@@ -30,6 +30,18 @@ def test_load_template_file_errors(tmp_path):
     with pytest.raises(SerializationError, match="Failed to parse JSON template"):
         load_template_file(str(invalid_json))
 
+    # Valid YAML
+    valid_yaml = tmp_path / "test.yaml"
+    valid_yaml.write_text("key: value\nlist:\n  - item1\n  - item2")
+    result = load_template_file(str(valid_yaml))
+    assert result == {"key": "value", "list": ["item1", "item2"]}
+
+    # Invalid YAML
+    invalid_yaml = tmp_path / "test_invalid.yaml"
+    invalid_yaml.write_text("key: value\n  invalid_indent")
+    with pytest.raises(SerializationError, match="Failed to parse YAML template"):
+        load_template_file(str(invalid_yaml))
+
 
 def test_to_py_variants():
     assert to_py(np.bool_(True)) is True
