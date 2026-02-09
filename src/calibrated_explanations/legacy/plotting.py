@@ -790,7 +790,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             plt.xlabel("Probability of Y = 1")
     plt.xlim(min_x, max_x)
     plt.ylim(min_y, max_y)
-    plt.show()
+    if show:
+        plt.show()
 
 
 def _plot_proba_triangle():
