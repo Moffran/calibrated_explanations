@@ -25,6 +25,7 @@ from collections.abc import Sequence
 from types import MappingProxyType
 from typing import Any, Dict, Optional, Tuple, Literal
 from dataclasses import dataclass
+from copy import copy, deepcopy
 
 import numpy as np
 from pandas import Categorical
@@ -308,6 +309,16 @@ class CalibratedExplanation(ABC):
         if hasattr(container, "explainer"):
             return container.explainer
         return getattr(container, "calibrated_explainer", container)
+
+    def copy(self):
+        """Create a shallow copy of the explanation object.
+
+        Returns
+        -------
+        CalibratedExplanation
+            A shallow copy of the explanation object.
+        """
+        return copy(self)
 
     def ignored_features_for_instance(self):
         """Return the set of feature indices ignored for this instance.
@@ -2649,10 +2660,9 @@ class AlternativeExplanation(CalibratedExplanation):
         new_rules = self.__set_up_result()
         rules = self.get_rules()  # pylint: disable=protected-access
         for rule in range(len(rules["rule"])):
+            is_potential = rules["predict_low"][rule] < 0.5 < rules["predict_high"][rule]
             # filter out potential rules if include_potential is False
-            if not include_potential and (
-                rules["predict_low"][rule] < 0.5 < rules["predict_high"][rule]
-            ):
+            if not include_potential and is_potential:
                 continue
             if make_super and (
                 positive_class
@@ -2664,20 +2674,26 @@ class AlternativeExplanation(CalibratedExplanation):
             if make_semi:
                 if positive_class:
                     if (
-                        rules["predict"][rule] < 0.5
-                        or rules["predict"][rule] > self.prediction["predict"]
+                        not (include_potential and is_potential) and (
+                            rules["predict"][rule] < 0.5
+                            or rules["predict"][rule] > self.prediction["predict"]
+                        )
                     ):
                         continue
                 elif (
-                    rules["predict"][rule] > 0.5
-                    or rules["predict"][rule] < self.prediction["predict"]
+                    not (include_potential and is_potential) and (
+                        rules["predict"][rule] > 0.5
+                        or rules["predict"][rule] < self.prediction["predict"]
+                    )
                 ):
                     continue
             if make_counter and (
-                positive_class
-                and rules["predict"][rule] > 0.5
-                or not positive_class
-                and rules["predict"][rule] < 0.5
+                not (include_potential and is_potential) and (
+                    positive_class
+                    and rules["predict"][rule] > 0.5
+                    or not positive_class
+                    and rules["predict"][rule] < 0.5
+                )
             ):
                 continue
             # if only_ensured is True, filter out rules that lead to increased uncertainty
@@ -2716,65 +2732,12 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def __extracted_non_conjunctive_rules(self, new_rules):
         """Split out non-conjunctive rules while preserving the original mapping."""
-        self.conjunctive_rules = MappingProxyType(new_rules)
-        new_rules["predict"] = [
-            value
-            for i, value in enumerate(new_rules["predict"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["predict_low"] = [
-            value
-            for i, value in enumerate(new_rules["predict_low"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["predict_high"] = [
-            value
-            for i, value in enumerate(new_rules["predict_high"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["weight"] = [
-            value
-            for i, value in enumerate(new_rules["weight"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["weight_low"] = [
-            value
-            for i, value in enumerate(new_rules["weight_low"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["weight_high"] = [
-            value
-            for i, value in enumerate(new_rules["weight_high"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["value"] = [
-            value
-            for i, value in enumerate(new_rules["value"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["rule"] = [
-            value for i, value in enumerate(new_rules["rule"]) if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["feature"] = [
-            value
-            for i, value in enumerate(new_rules["feature"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["sampled_values"] = [
-            value
-            for i, value in enumerate(new_rules["sampled_values"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["feature_value"] = [
-            value
-            for i, value in enumerate(new_rules["feature_value"])
-            if not new_rules["is_conjunctive"][i]
-        ]
-        new_rules["is_conjunctive"] = [
-            value
-            for i, value in enumerate(new_rules["is_conjunctive"])
-            if not new_rules["is_conjunctive"][i]
-        ]
+        self.conjunctive_rules = MappingProxyType({k: list(v) if isinstance(v, list) else v for k, v in new_rules.items()})
+        mask = [not is_conj for is_conj in new_rules["is_conjunctive"]]
+        for k, v in new_rules.items():
+            if isinstance(v, list) and len(v) == len(mask):
+                new_rules[k] = [val for i, val in enumerate(v) if mask[i]]
+        self.rules = new_rules
 
     def reset(self):
         """Reset the explanation to its original state."""
@@ -2785,58 +2748,96 @@ class AlternativeExplanation(CalibratedExplanation):
         self.get_rules()
         return self
 
-    def super_explanations(self, only_ensured=False, include_potential=False):
+    def super_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Provide super-explanations that support the predicted class.
 
+        Parameters
+        ----------
+        only_ensured : bool, default=False
+            Determines whether to return only ensured explanations.
+        include_potential : bool, default=True
+            Determines whether to include potential explanations in the super-explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanation or modify it in place.
+
         Returns
         -------
         :class:`.AlternativeExplanation`
         """
-        self.__filter_rules(
+        target = self.copy() if copy else self
+        target.__filter_rules(
             only_ensured=only_ensured, make_super=True, include_potential=include_potential
         )
-        self.__is_super_explanation = True
-        return self
+        target._AlternativeExplanation__is_super_explanation = True  # pylint: disable=protected-access
+        return target
 
-    def semi_explanations(self, only_ensured=False, include_potential=False):
+    def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Provide semi-explanations that partially support the predicted class.
 
+        Parameters
+        ----------
+        only_ensured : bool, default=False
+            Determines whether to return only ensured explanations.
+        include_potential : bool, default=True
+            Determines whether to include potential explanations in the semi-explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanation or modify it in place.
+
         Returns
         -------
         :class:`.AlternativeExplanation`
         """
-        self.__filter_rules(
+        target = self.copy() if copy else self
+        target.__filter_rules(
             only_ensured=only_ensured, make_semi=True, include_potential=include_potential
         )
-        self.__is_semi_explanation = True
-        return self
+        target._AlternativeExplanation__is_semi_explanation = True  # pylint: disable=protected-access
+        return target
 
-    def counter_explanations(self, only_ensured=False, include_potential=False):
+    def counter_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Provide counter-explanations that do not support the predicted class.
 
+        Parameters
+        ----------
+        only_ensured : bool, default=False
+            Determines whether to return only ensured explanations.
+        include_potential : bool, default=True
+            Determines whether to include potential explanations in the counter-explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanation or modify it in place.
+
         Returns
         -------
         :class:`.AlternativeExplanation`
         """
-        self.__filter_rules(
+        target = self.copy() if copy else self
+        target.__filter_rules(
             only_ensured=only_ensured, make_counter=True, include_potential=include_potential
         )
-        self.__is_counter_explanation = True
-        return self
+        target._AlternativeExplanation__is_counter_explanation = True  # pylint: disable=protected-access
+        return target
 
-    def ensured_explanations(self, include_potential=False):
+    def ensured_explanations(self, include_potential=True, copy=True):
         """
         Provide ensured explanations with smaller confidence intervals.
 
+        Parameters
+        ----------
+        include_potential : bool, default=True
+            Determines whether to include potential explanations in the ensured explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanation or modify it in place.
+
         Returns
         -------
         :class:`.AlternativeExplanation`
         """
-        self.__filter_rules(only_ensured=True, include_potential=include_potential)
-        return self
+        target = self.copy() if copy else self
+        target.__filter_rules(only_ensured=True, include_potential=include_potential)
+        return target
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """
@@ -3234,12 +3235,16 @@ class AlternativeExplanation(CalibratedExplanation):
         # rank_features (which yields ascending by design).
         features_to_plot = list(reversed(features_to_plot))
 
-        # Filter out rules that don't change the prediction (exactly identical to base).
+        # Filter out rules that don't change the prediction or uncertainty (exactly identical to base).
         # Keep ordering from the ranking.
         features_to_plot = [
             i
             for i in features_to_plot
-            if not np.isclose(feature_predict["predict"][i], predict["predict"])
+            if not (
+                np.isclose(feature_predict["predict"][i], predict["predict"])
+                and np.isclose(feature_predict["low"][i], predict["low"])
+                and np.isclose(feature_predict["high"][i], predict["high"])
+            )
         ]
         # Adjust the number to show after filtering
         num_to_show_filtered = min(num_to_show_, len(features_to_plot))

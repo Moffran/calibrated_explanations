@@ -129,17 +129,21 @@ class DummyExplanation:
     def get_rules(self):
         return {"rule": [0, 1]}
 
-    def super_explanations(self, **_kwargs) -> None:
+    def super_explanations(self, only_ensured=False, include_potential=True, copy=True) -> DummyExplanation:
         self.conjunction_calls.append("super")
+        return self
 
-    def semi_explanations(self, **_kwargs) -> None:
+    def semi_explanations(self, only_ensured=False, include_potential=True, copy=True) -> DummyExplanation:
         self.conjunction_calls.append("semi")
+        return self
 
-    def counter_explanations(self, **_kwargs) -> None:
+    def counter_explanations(self, only_ensured=False, include_potential=True, copy=True) -> DummyExplanation:
         self.conjunction_calls.append("counter")
+        return self
 
-    def ensured_explanations(self) -> None:
+    def ensured_explanations(self, include_potential=True, copy=True) -> DummyExplanation:
         self.conjunction_calls.append("ensured")
+        return self
 
 
 @pytest.fixture()

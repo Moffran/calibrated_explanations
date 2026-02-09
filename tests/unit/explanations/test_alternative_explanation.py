@@ -113,7 +113,7 @@ class TestAlternativeExplanation:
         }
         self.setup_test_rules(explanation, rules)
 
-        explanation.super_explanations()
+        explanation = explanation.super_explanations()
 
         filtered = explanation.rules
         assert filtered["predict"] == [0.1, 0.2]
@@ -140,7 +140,7 @@ class TestAlternativeExplanation:
         }
         self.setup_test_rules(explanation, rules)
 
-        explanation.counter_explanations()
+        explanation = explanation.counter_explanations()
 
         filtered = explanation.rules
         assert filtered["predict"] == [0.6]
@@ -167,7 +167,7 @@ class TestAlternativeExplanation:
         }
         self.setup_test_rules(explanation, rules)
 
-        explanation.semi_explanations()
+        explanation = explanation.semi_explanations()
 
         filtered = explanation.rules
         assert filtered["predict"] == [0.4]
@@ -194,7 +194,7 @@ class TestAlternativeExplanation:
         }
         self.setup_test_rules(explanation, rules)
 
-        explanation.ensured_explanations()
+        explanation = explanation.ensured_explanations()
 
         filtered = explanation.rules
         assert filtered["predict_low"] == [0.35]

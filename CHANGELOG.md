@@ -5,8 +5,10 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
-### Fixed
+### Added
+- **Non-destructive explanation filtering:** Added a `copy` parameter (default `True`) to `super_explanations`, `semi_explanations`, `counter_explanations`, and `ensured_explanations` in both `AlternativeExplanation` and `AlternativeExplanations` collection. This allows users to filter/reduce explanations without modifying the original object. Added `copy()` methods to `CalibratedExplanation` and `CalibratedExplanations` base classes for consistent object duplication.
 
+### Fixed
 - **PlotSpec quality improvements:** Enhanced BarItem dataclass with missing fields, added AlternativeExplanation _rules_with_impact method, improved serialization robustness, added empty features_to_plot validation, and comprehensive RuleWithImpact test coverage to ensure data integrity and reliable plotting.
 - **Narrative quality improvements:** Ensured narratives support conjunctions, updated narrative formatting with possibility to align rules for easier oversight, adjusted default content in explain_template.yaml.
 

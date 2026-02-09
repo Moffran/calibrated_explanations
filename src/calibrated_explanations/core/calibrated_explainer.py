@@ -226,7 +226,14 @@ class CalibratedExplainer:
         # Identify constant calibration features that can be ignored downstream
         from .calibration_helpers import identify_constant_features  # pylint: disable=import-outside-toplevel
 
-        self.features_to_ignore = identify_constant_features(self.x_cal)
+        constant_ignore = identify_constant_features(self.x_cal)
+        try:
+            self.features_to_ignore = (
+                np.union1d(self.features_to_ignore, constant_ignore).astype(int).tolist()
+            )
+        except Exception:
+            # Be defensive: if union fails, fall back to constants to preserve behavior.
+            self.features_to_ignore = list(constant_ignore)
 
         if feature_names is None:
             feature_names = (
