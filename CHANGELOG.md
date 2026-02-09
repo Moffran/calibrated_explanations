@@ -8,6 +8,7 @@
 ### Fixed
 
 - **PlotSpec quality improvements:** Enhanced BarItem dataclass with missing fields, added AlternativeExplanation _rules_with_impact method, improved serialization robustness, added empty features_to_plot validation, and comprehensive RuleWithImpact test coverage to ensure data integrity and reliable plotting.
+- **Narrative quality improvements:** Ensured narratives support conjunctions, updated narrative formatting with possibility to align rules for easier oversight, adjusted default content in explain_template.yaml.
 
 ## [v0.10.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.3) - 2026-02-04
 

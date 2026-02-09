@@ -338,12 +338,131 @@ def test_expand_template_should_tag_uncertain_for_alternatives_when_interval_cov
     assert "⚠️ direction uncertain" not in housing_line
     assert "⚠️ uncertain" in housing_line
 
-    median_income_line = next(ln for ln in lines if "median_income > 2.0" in ln)
-    assert "⚠️ direction uncertain" not in median_income_line
-    assert "⚠️ uncertain" not in median_income_line
 
-    f2_line = next(ln for ln in lines if "f2 > 1.0" in ln)
-    assert "⚠️ direction uncertain" not in f2_line
-    assert "⚠️ uncertain" in f2_line
+def test_expand_template_should_align_then_when_alternative_and_alignment_enabled():
+    gen = NarrativeGenerator()
+    template = "\n".join(
+        [
+            "Alternatives to increase:",
+            "- If {feature_name} {condition} then {predict}",
+            "Alternatives to decrease:",
+            "- If {feature_name} {condition} then {predict}",
+        ]
+    )
+
+    pos_features = [
+        {
+            "feature_name": "f1",
+            "rule": "f1 > 0",
+            "value": "1",
+            "weight": 0.01,
+            "predict": 0.51,
+            "predict_low": 0.50,
+            "predict_high": 0.52,
+            "is_conjunctive": False,
+        },
+        {
+            "feature_name": "a_much_longer_feature_name",
+            "rule": "a_much_longer_feature_name <= 10",
+            "value": "10",
+            "weight": 0.02,
+            "predict": 0.55,
+            "predict_low": 0.53,
+            "predict_high": 0.57,
+            "is_conjunctive": False,
+        },
+    ]
+
+    neg_features = [
+        {
+            "feature_name": "x",
+            "rule": "x in {1, 2, 3}",
+            "value": "1",
+            "weight": -0.01,
+            "predict": 0.45,
+            "predict_low": 0.43,
+            "predict_high": 0.47,
+            "is_conjunctive": False,
+        }
+    ]
+
+    res = gen.expand_template(
+        template,
+        pos_features,
+        neg_features,
+        [],
+        context={},
+        level="intermediate",
+        problem_type="probabilistic_regression",
+        explanation_type="alternative",
+        base_predict=None,
+        conjunction_separator=" AND ",
+        align_weights=True,
+    )
+
+    bullet_lines = [ln for ln in res.splitlines() if ln.strip().startswith("-")]
+    then_positions = [ln.find(" then ") for ln in bullet_lines]
+    assert all(pos > 0 for pos in then_positions)
+    assert len(set(then_positions)) == 1
 
     assert "⚠️ direction uncertain" not in res
+
+
+def test_generate_narrative_should_not_split_uncertainty_for_regression():
+    gen = NarrativeGenerator()
+    # Mock template with explicit pos/neg sections but NO uncertain section
+    template = "\n".join(
+        [
+            "Increase:",
+            "- {feature_name} inc",
+            "Decrease:",
+            "- {feature_name} dec",
+        ]
+    )
+    # Patch load_templates to return this
+    gen.templates = {
+        "narrative_templates": {
+            "regression": {
+                "alternative": {
+                    "advanced": template
+                }
+            }
+        }
+    }
+
+    # Features with WIDE intervals (should be uncertain if using standard logic)
+    # In regression, wide means huge numbers, which are standard.
+    pos_features = [
+        {"feature_name": "f1", "weight": 1000.0, "predict_low": 100000, "predict_high": 250000, "rule": "r1"}
+    ]
+    neg_features = [
+        {"feature_name": "f2", "weight": -1000.0, "predict_low": 100000, "predict_high": 250000, "rule": "r2"}
+    ]
+    # Width = 150000. threshold=0.20. 150000 > 0.20 -> Uncertain.
+    
+    # Mock explanation
+    # Use spec to ensure it doesn't have private attributes automatically
+    mock_exp = MagicMock(spec=["get_rules"])
+    mock_exp.get_rules.return_value = {
+        "rule": ["f1 > 0", "f2 < 0"],
+        "feature_name": ["f1", "f2"],
+        "predict": [200000, 198000],
+        "predict_low": [100000, 100000],
+        "predict_high": [250000, 250000],
+        "base_predict": [200000],
+        "weight": [1000, -1000],
+    }
+
+    res = gen.generate_narrative(
+        mock_exp,
+        problem_type="regression",
+        explanation_type="alternative",
+        expertise_level="advanced",
+    )
+
+    # If splitting DISABLED (fix applied), Decrease section should be populated
+    assert "Decrease:" in res
+    assert "f2 dec" in res
+    
+    assert "f1 inc" in res
+

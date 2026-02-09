@@ -404,7 +404,8 @@ class NarrativeGenerator:
         neg_features = neg_features[:max_features]
 
         # For advanced level: split by prediction interval width
-        if expertise_level == "advanced":
+        # (Exclude standard regression because absolute width threshold 0.20 is not applicable)
+        if expertise_level == "advanced" and problem_type != "regression":
             pos_certain = [r for r in pos_features if not has_wide_prediction_interval(r)]
             pos_uncertain = [r for r in pos_features if has_wide_prediction_interval(r)]
             neg_certain = [r for r in neg_features if not has_wide_prediction_interval(r)]
@@ -741,36 +742,45 @@ class NarrativeGenerator:
             return rendered
 
         def align_lines_globally(all_line_groups: List[List[str]]) -> List[List[str]]:
-            """Apply vertical alignment across all feature groups using global max prefix."""
-            weight_marker = "— weight"
+            """Apply vertical alignment across all feature groups.
 
-            # Find global max prefix length across ALL groups
-            global_max_prefix = 0
-            for group in all_line_groups:
-                for txt in group:
-                    marker_pos = txt.find(weight_marker)
-                    if marker_pos > 0:
-                        global_max_prefix = max(global_max_prefix, marker_pos)
+            Alignment is marker-driven:
+            - Factual narratives align the weight marker ("— weight …").
+            - Alternative narratives align the "then" keyword in rule lines.
+            """
 
-            if global_max_prefix == 0:
-                return all_line_groups
+            def _align_marker(groups: List[List[str]], marker: str) -> List[List[str]]:
+                global_max_prefix = 0
+                for group in groups:
+                    for txt in group:
+                        marker_pos = txt.find(marker)
+                        if marker_pos > 0:
+                            global_max_prefix = max(global_max_prefix, marker_pos)
 
-            # Apply alignment to all groups using global max
-            aligned_groups = []
-            for group in all_line_groups:
-                aligned = []
-                for txt in group:
-                    marker_pos = txt.find(weight_marker)
-                    if marker_pos > 0:
-                        prefix = txt[:marker_pos]
-                        suffix = txt[marker_pos:]
-                        padding = " " * (global_max_prefix - len(prefix))
-                        aligned.append(prefix + padding + suffix)
-                    else:
-                        aligned.append(txt)
-                aligned_groups.append(aligned)
+                if global_max_prefix == 0:
+                    return groups
 
-            return aligned_groups
+                aligned_groups: List[List[str]] = []
+                for group in groups:
+                    aligned: List[str] = []
+                    for txt in group:
+                        marker_pos = txt.find(marker)
+                        if marker_pos > 0:
+                            prefix = txt[:marker_pos]
+                            suffix = txt[marker_pos:]
+                            padding = " " * (global_max_prefix - len(prefix))
+                            aligned.append(prefix + padding + suffix)
+                        else:
+                            aligned.append(txt)
+                    aligned_groups.append(aligned)
+                return aligned_groups
+
+            aligned = all_line_groups
+            if explanation_type == "alternative":
+                aligned = _align_marker(aligned, " then ")
+            else:
+                aligned = _align_marker(aligned, "— weight")
+            return aligned
 
         lines = template.splitlines()
         placeholder = "{feature_name}"

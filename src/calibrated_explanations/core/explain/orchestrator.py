@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
+from ...utils.int_utils import as_int_array, coerce_to_int
 from ...logging import (
     ensure_logging_context_filter,
     logging_context,
@@ -88,6 +89,34 @@ class ExplanationOrchestrator:
         - explainer._explanation_contexts
         """
         self.explainer = explainer
+
+    def _coerce_ignore_items(self, items: Iterable[Any]) -> tuple[list[Any], list[str]]:
+        """Coerce ignore entries to indices when possible.
+
+        Supports feature names (strings) and numeric indices. Unknown feature
+        names are collected for warning messages.
+        """
+        feature_names = getattr(self.explainer, "feature_names", None)
+        name_to_index = None
+        if feature_names:
+            name_to_index = {str(name): idx for idx, name in enumerate(feature_names)}
+
+        resolved: list[Any] = []
+        unknown: list[str] = []
+        for item in items:
+            if isinstance(item, (str, bytes)):
+                text = item.decode() if isinstance(item, bytes) else item
+                if name_to_index and text in name_to_index:
+                    resolved.append(name_to_index[text])
+                    continue
+                numeric = coerce_to_int(text)
+                if numeric is not None:
+                    resolved.append(numeric)
+                    continue
+                unknown.append(text)
+                continue
+            resolved.append(item)
+        return resolved, unknown
 
     def initialize_chains(self) -> None:
         """Delegate to PluginManager for chain initialization.
@@ -468,19 +497,55 @@ class ExplanationOrchestrator:
         )
         per_instance_ignore = None
         features_arg = features_to_ignore or []
+        if isinstance(features_arg, np.ndarray):
+            features_arg = features_arg.tolist()
         if (
             features_arg
             and isinstance(features_arg, (list, tuple))
             and isinstance(features_arg[0], (list, tuple, np.ndarray))
         ):
             # User supplied per-instance masks
-            per_instance_ignore = tuple(tuple(int(f) for f in mask) for mask in features_arg)
-            flat_ignore = np.unique(
-                np.concatenate([np.asarray(mask, dtype=int) for mask in features_arg])
-            )
+            per_instance_ignore_list: list[tuple[int, ...]] = []
+            unknown_names: list[str] = []
+            for mask in features_arg:
+                mapped, unknown = self._coerce_ignore_items(mask)
+                unknown_names.extend(unknown)
+                per_instance_ignore_list.append(tuple(as_int_array(mapped).tolist()))
+            if unknown_names:
+                unknown_sorted = sorted(set(unknown_names))
+                warnings.warn(
+                    "Unknown feature names in features_to_ignore were ignored: "
+                    + ", ".join(unknown_sorted[:5])
+                    + ("..." if len(unknown_sorted) > 5 else ""),
+                    UserWarning,
+                    stacklevel=2,
+                )
+            per_instance_ignore = tuple(per_instance_ignore_list)
+            flat_arrays = [
+                np.asarray(mask, dtype=int)
+                for mask in per_instance_ignore
+                if len(mask) > 0
+            ]
+            if flat_arrays:
+                flat_ignore = np.unique(np.concatenate(flat_arrays))
+            else:
+                flat_ignore = np.array([], dtype=int)
             features_to_ignore_flat = tuple(int(f) for f in flat_ignore.tolist())
         else:
-            features_to_ignore_flat = tuple(features_arg)
+            if isinstance(features_arg, (list, tuple)):
+                mapped, unknown = self._coerce_ignore_items(features_arg)
+                if unknown:
+                    unknown_sorted = sorted(set(unknown))
+                    warnings.warn(
+                        "Unknown feature names in features_to_ignore were ignored: "
+                        + ", ".join(unknown_sorted[:5])
+                        + ("..." if len(unknown_sorted) > 5 else ""),
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                features_to_ignore_flat = tuple(as_int_array(mapped).tolist())
+            else:
+                features_to_ignore_flat = tuple(as_int_array(features_arg).tolist())
 
         # Attempt FAST-based feature filtering if enabled and not already overridden by user
         feature_filter_config = getattr(self.explainer, "feature_filter_config", None)

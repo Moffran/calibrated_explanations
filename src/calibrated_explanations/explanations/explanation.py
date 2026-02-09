@@ -492,7 +492,9 @@ class CalibratedExplanation(ABC):
             Separator to use for conjunctive rules. Conjunctive rules combine
             multiple feature conditions (e.g., "Glucose > 120 AND BMI > 28").
         align_weights : bool, default=True
-            If True, vertically align weight columns in the narrative output.
+            If True, vertically align columns in the narrative output.
+            For factual explanations this aligns the weight marker ("— weight …").
+            For alternative explanations this aligns the "then" keyword in rule lines.
             If False, no alignment is applied.
         **kwargs : dict
             Additional keyword arguments passed to the narrative plugin.
