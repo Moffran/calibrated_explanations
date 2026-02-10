@@ -1679,6 +1679,59 @@ class FactualExplanation(CalibratedExplanation):
 
         return canonical_rules
 
+    # -- Convenience retrieval API -------------------------------------------------
+    def _factual_rule_to_dict(self, rules: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        """Normalize an internal factual rule into a user-friendly dict."""
+        feature_index = rules["feature"][idx]
+        weight_value = CalibratedExplanation.to_python_number(rules["weight"][idx])
+        weight_interval = CalibratedExplanation._build_interval(
+            rules["weight_low"][idx], rules["weight_high"][idx]
+        )
+        return {
+            "index": int(idx),
+            "feature": self._safe_feature_name(feature_index),
+            "condition": rules["rule"][idx],
+            "weight": weight_value,
+            "uncertainty_interval": weight_interval,
+            "support": rules.get("support", [None])[idx]
+            if isinstance(rules.get("support"), list)
+            else None,
+        }
+
+    def get_rule_by_index(self, index: int) -> Dict[str, Any]:
+        """Return a single factual rule by its numeric index.
+
+        Raises ``IndexError`` when the index is out of range.
+        """
+        rules = self.get_rules()
+        count = len(rules.get("rule", []))
+        if index < 0 or index >= count:
+            raise IndexError(f"No factual rule at index {index}")
+        return self._factual_rule_to_dict(rules, index)
+
+    def get_rules_by_feature(self, feature: str) -> list[Dict[str, Any]]:
+        """Return all factual rules that mention the given feature name.
+
+        Raises ``KeyError`` when no matching rules are found.
+        """
+        rules = self.get_rules()
+        matches: list[Dict[str, Any]] = []
+        for i, f in enumerate(rules.get("feature", [])):
+            try:
+                fname = self._safe_feature_name(f)
+            except Exception:
+                fname = str(f)
+            if fname == feature:
+                matches.append(self._factual_rule_to_dict(rules, i))
+        if not matches:
+            raise KeyError(f"No factual rules for feature {feature}")
+        return matches
+
+    def list_rules(self) -> list[Dict[str, Any]]:
+        """Return all factual rules as normalized dicts."""
+        rules = self.get_rules()
+        return [self._factual_rule_to_dict(rules, i) for i in range(len(rules.get("rule", [])))]
+
     def get_rules(self):
         """
         Create factual rules.
@@ -2738,6 +2791,60 @@ class AlternativeExplanation(CalibratedExplanation):
             self.__extracted_non_conjunctive_rules(new_rules)
         self.rules = new_rules
         return self
+
+    # -- Convenience retrieval API -------------------------------------------------
+    def _alternative_rule_to_dict(self, rules: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        """Normalize an internal alternative rule into a user-friendly dict."""
+        feature_index = rules["feature"][idx]
+        prediction_value = CalibratedExplanation.to_python_number(rules["predict"][idx])
+        prediction_interval = CalibratedExplanation._build_interval(
+            rules["predict_low"][idx], rules["predict_high"][idx]
+        )
+        weight_value = CalibratedExplanation.to_python_number(rules["weight"][idx])
+        weight_interval = CalibratedExplanation._build_interval(
+            rules["weight_low"][idx], rules["weight_high"][idx]
+        )
+        return {
+            "index": int(idx),
+            "feature": self._safe_feature_name(feature_index),
+            "condition": rules["rule"][idx],
+            "alternative_prediction": prediction_value,
+            "uncertainty_interval": prediction_interval,
+        }
+
+    def get_rule_by_index(self, index: int) -> Dict[str, Any]:
+        """Return a single alternative rule by its numeric index.
+
+        Raises ``IndexError`` when the index is out of range.
+        """
+        rules = self.get_rules()
+        count = len(rules.get("rule", []))
+        if index < 0 or index >= count:
+            raise IndexError(f"No alternative rule at index {index}")
+        return self._alternative_rule_to_dict(rules, index)
+
+    def get_rules_by_feature(self, feature: str) -> list[Dict[str, Any]]:
+        """Return all alternative rules that mention the given feature name.
+
+        Raises ``KeyError`` when no matching rules are found.
+        """
+        rules = self.get_rules()
+        matches: list[Dict[str, Any]] = []
+        for i, f in enumerate(rules.get("feature", [])):
+            try:
+                fname = self._safe_feature_name(f)
+            except Exception:
+                fname = str(f)
+            if fname == feature:
+                matches.append(self._alternative_rule_to_dict(rules, i))
+        if not matches:
+            raise KeyError(f"No alternative rules for feature {feature}")
+        return matches
+
+    def list_rules(self) -> list[Dict[str, Any]]:
+        """Return all alternative rules as normalized dicts."""
+        rules = self.get_rules()
+        return [self._alternative_rule_to_dict(rules, i) for i in range(len(rules.get("rule", [])))]
 
     def __extracted_non_conjunctive_rules(self, new_rules):
         """Split out non-conjunctive rules while preserving the original mapping."""
