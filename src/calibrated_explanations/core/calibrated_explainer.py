@@ -231,8 +231,8 @@ class CalibratedExplainer:
             self.features_to_ignore = (
                 np.union1d(self.features_to_ignore, constant_ignore).astype(int).tolist()
             )
-        except Exception:
-            # Be defensive: if union fails, fall back to constants to preserve behavior.
+        except (TypeError, ValueError):
+            # Be defensive: if union fails due to incompatible types, fall back to constants.
             self.features_to_ignore = list(constant_ignore)
 
         if feature_names is None:

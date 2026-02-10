@@ -1,18 +1,1 @@
 file,line,name,type,category,pattern,message
-tests\unit\explanations\test_conjunction_parity.py,94,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,113,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,132,_make_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,148,_make_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,168,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,187,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,206,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,223,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,243,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_conjunction_parity.py,262,_build_explainer,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,35,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,65,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,86,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,109,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,135,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,160,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.
-tests\unit\explanations\test_predict_conjunction_tuple.py,185,_make_explanation_with_mock_predict,function_call,Category B: Test Utilities (Likely),Pattern 2 (Test Utility Fix),Could not find definition in analysis data.

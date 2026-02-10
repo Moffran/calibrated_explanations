@@ -544,6 +544,17 @@ class LRUCache(Generic[K, V]):
                 raise
             logger.debug("Telemetry callback failed for %s: %s", event, sys.exc_info()[1])
 
+    def __getstate__(self) -> dict:
+        """Support pickling by excluding the unpicklable RLock."""
+        state = self.__dict__.copy()
+        state.pop("_lock", None)
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        """Restore state and recreate the unpicklable RLock."""
+        self.__dict__.update(state)
+        self._lock = threading.RLock()
+
 
 @dataclass
 class CalibratorCache(Generic[V]):

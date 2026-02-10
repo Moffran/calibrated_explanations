@@ -170,6 +170,6 @@ narrative_templates:
 
 ## See Also
 
-- [API Reference: to_narrative](../api/explanations.rst)
+- [API Reference: Calibrated Explainer](../api/calibrated_explainer.md)
 - [Probabilistic Regression](../foundations/concepts/probabilistic_regression.md)
 - [Explanation Types](../tasks/capabilities.md)

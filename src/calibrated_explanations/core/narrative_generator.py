@@ -554,14 +554,13 @@ class NarrativeGenerator:
         def build_lines(line: str, feats: List[Dict]) -> List[str]:
             rendered = []
 
-            def _uncertain_for_alternative_threshold(feat: Dict) -> bool:
+            def uncertain_for_alternative_threshold(feat: Dict) -> bool:
                 """Flag alternatives as uncertain when the probability interval covers 0.5.
 
                 Alternatives do not display weights, so "direction uncertain" is not meaningful.
                 Instead, show a generic uncertainty tag when the interval straddles the default
                 decision boundary (0.5).
                 """
-
                 if problem_type not in (
                     "binary_classification",
                     "multiclass_classification",
@@ -687,7 +686,7 @@ class NarrativeGenerator:
                 ) and has_wide_prediction_interval(f):
                     tags.append("⚠️ highly uncertain")
                 if explanation_type == "alternative":
-                    if _uncertain_for_alternative_threshold(f):
+                    if uncertain_for_alternative_threshold(f):
                         tags.append("⚠️ uncertain")
                 else:
                     if crosses_zero(f):

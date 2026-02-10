@@ -41,6 +41,7 @@ from ..utils import (
     safe_first_element,
     safe_mean,
 )
+from ..utils.exceptions import CalibratedError
 from ..utils.helper import assign_threshold as normalize_threshold
 from ..utils.int_utils import collect_ints
 from ._conjunctions import ConjunctionState
@@ -1719,7 +1720,7 @@ class FactualExplanation(CalibratedExplanation):
         for i, f in enumerate(rules.get("feature", [])):
             try:
                 fname = self._safe_feature_name(f)
-            except Exception:
+            except (TypeError, ValueError):
                 fname = str(f)
             if fname == feature:
                 matches.append(self._factual_rule_to_dict(rules, i))
@@ -2027,7 +2028,7 @@ class FactualExplanation(CalibratedExplanation):
                             bins=self.bin,
                             use_batched=use_batched,
                         )
-                    except Exception as e:  # pylint: disable=broad-except
+                    except (CalibratedError, ValueError, TypeError, RuntimeError, Exception) as e:
                         if raise_on_predict_error:
                             raise
                         stats["skipped"]["predict_error"] += 1
@@ -2800,10 +2801,6 @@ class AlternativeExplanation(CalibratedExplanation):
         prediction_interval = CalibratedExplanation._build_interval(
             rules["predict_low"][idx], rules["predict_high"][idx]
         )
-        weight_value = CalibratedExplanation.to_python_number(rules["weight"][idx])
-        weight_interval = CalibratedExplanation._build_interval(
-            rules["weight_low"][idx], rules["weight_high"][idx]
-        )
         return {
             "index": int(idx),
             "feature": self._safe_feature_name(feature_index),
@@ -2833,7 +2830,7 @@ class AlternativeExplanation(CalibratedExplanation):
         for i, f in enumerate(rules.get("feature", [])):
             try:
                 fname = self._safe_feature_name(f)
-            except Exception:
+            except (TypeError, ValueError):
                 fname = str(f)
             if fname == feature:
                 matches.append(self._alternative_rule_to_dict(rules, i))
@@ -3180,7 +3177,7 @@ class AlternativeExplanation(CalibratedExplanation):
                             bins=self.bin,
                             use_batched=use_batched,
                         )
-                    except Exception as e:  # pylint: disable=broad-except
+                    except (CalibratedError, ValueError, TypeError, RuntimeError) as e:
                         if raise_on_predict_error:
                             raise
                         stats["skipped"]["predict_error"] += 1

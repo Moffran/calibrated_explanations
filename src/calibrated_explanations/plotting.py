@@ -54,22 +54,9 @@ def derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
     return (f"Y < {value:.2f}", f"Y >= {value:.2f}")
 
 
-try:
-    import tomllib as _plot_tomllib
-except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
-    try:  # pragma: no cover - optional dependency path
-        import tomli as _plot_tomllib  # type: ignore[assignment]
-    except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
-        _plot_tomllib = None  # type: ignore[assignment]
-
 _MATPLOTLIB_IMPORT_ERROR = None
 mcolors = None
 plt = None
-
-try:
-    import matplotlib  # noqa: F401
-except (ImportError, RuntimeError) as e:
-    _MATPLOTLIB_IMPORT_ERROR = e
 
 
 def __require_matplotlib() -> None:
@@ -113,6 +100,15 @@ def __require_matplotlib() -> None:
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
+    # Import tomllib/tomli lazily to avoid a top-level hard dependency
+    try:
+        import tomllib as _plot_tomllib
+    except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
+        try:  # pragma: no cover - optional dependency path
+            import tomli as _plot_tomllib  # type: ignore[assignment]
+        except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
+            _plot_tomllib = None  # type: ignore[assignment]
+
     if _plot_tomllib is None:
         return {}
 
