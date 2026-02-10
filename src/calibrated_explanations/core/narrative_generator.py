@@ -153,7 +153,7 @@ def crosses_zero(feat: Dict) -> bool:
 
     # If the interval is provided element-wise (e.g., conjunctive rules), check pairwise.
     if len(lows) == len(highs):
-        return any(min(lo, hi) <= 0.0 <= max(lo, hi) for lo, hi in zip(lows, highs))
+        return any(min(lo, hi) <= 0.0 <= max(lo, hi) for lo, hi in zip(lows, highs, strict=False))
 
     # Otherwise, conservatively check using the global min/max across all bounds.
     all_bounds = lows + highs
@@ -632,9 +632,7 @@ class NarrativeGenerator:
                 # Unknown/unsupported shape; return raw segment.
                 return text, "raw", ""
 
-            def _format_conjunctive_condition(
-                feature_dict: Dict, include_values: bool
-            ) -> str:
+            def _format_conjunctive_condition(feature_dict: Dict, include_values: bool) -> str:
                 rule_text = str(feature_dict.get("rule", "") or "")
                 segments = _split_conjunctive_conditions(rule_text)
                 values = _split_conjunctive_values(feature_dict.get("value"))
@@ -686,9 +684,8 @@ class NarrativeGenerator:
                     "binary_classification",
                     "multiclass_classification",
                     "probabilistic_regression",
-                ):
-                    if has_wide_prediction_interval(f):
-                        tags.append("⚠️ highly uncertain")
+                ) and has_wide_prediction_interval(f):
+                    tags.append("⚠️ highly uncertain")
                 if explanation_type == "alternative":
                     if _uncertain_for_alternative_threshold(f):
                         tags.append("⚠️ uncertain")

@@ -8,6 +8,8 @@
 ### Added
 - **Non-destructive explanation filtering:** Added a `copy` parameter (default `True`) to `super_explanations`, `semi_explanations`, `counter_explanations`, and `ensured_explanations` in both `AlternativeExplanation` and `AlternativeExplanations` collection. This allows users to filter/reduce explanations without modifying the original object. Added `copy()` methods to `CalibratedExplanation` and `CalibratedExplanations` base classes for consistent object duplication.
 - **Over-testing workflow docs:** Documented the over-testing density gate in ADR-030 and grouped test-quality/perf scripts under `scripts/over_testing`, `scripts/quality`, and `scripts/perf`.
+- **Over-testing workflow docs:** Documented the over-testing density gate in ADR-030 and grouped test-quality/perf scripts under `scripts/over_testing`, `scripts/quality`, and `scripts/perf`.
+- **Over-testing helpers:** Added `scripts/over_testing/evaluate_cov_fill_adr030.py` and `scripts/over_testing/prune_generated_tests.py` plus `reports/over_testing/cov_fill_adr30_scan.csv`/`prune_plan.json` support files to formalize ADR-030 compliance scanning and conservative pruning.
 - **Coverage improvement iteration:** Added integration tests for plotting style overrides and legacy fallbacks, plus cache fallback testing when cachetools is unavailable, to increase coverage in low-coverage modules (plotting.py, cache.py).
 
 ### Fixed

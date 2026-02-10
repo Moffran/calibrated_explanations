@@ -202,3 +202,5 @@ evaluation/experimental/
 CLAUDE.md
 .claude/settings.local.json
 file.diff
+tests/generated/*
+reports/over_testing/backup_removed_tests/*

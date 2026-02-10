@@ -474,7 +474,9 @@ def plot_probabilistic(
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    if not return_plot_spec and not show and plt is None:  # lightweight path for tests/CI without viz extra
+    if (
+        not return_plot_spec and not show and plt is None
+    ):  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
     if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
@@ -772,7 +774,9 @@ def plot_regression(
         return
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if not return_plot_spec and not show and plt is None:  # lightweight path for tests/CI without viz extra
+    if (
+        not return_plot_spec and not show and plt is None
+    ):  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
     if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
@@ -1063,7 +1067,9 @@ def plot_alternative(
         return
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if not return_plot_spec and not show and plt is None:  # lightweight path for tests/CI without viz extra
+    if (
+        not return_plot_spec and not show and plt is None
+    ):  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
     if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):

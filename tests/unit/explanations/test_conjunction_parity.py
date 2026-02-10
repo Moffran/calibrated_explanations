@@ -234,9 +234,5 @@ def test_calibration_invariant_on_conjunctions(binary_dataset):
             hi = rules["predict_high"][i]
             # Skip non-finite values (some interval calibrators may produce -inf/inf)
             if np.isfinite(lo) and np.isfinite(hi) and np.isfinite(p):
-                assert lo <= p + 1e-10, (
-                    f"Rule {i}: predict_low ({lo}) > predict ({p})"
-                )
-                assert p <= hi + 1e-10, (
-                    f"Rule {i}: predict ({p}) > predict_high ({hi})"
-                )
+                assert lo <= p + 1e-10, f"Rule {i}: predict_low ({lo}) > predict ({p})"
+                assert p <= hi + 1e-10, f"Rule {i}: predict ({p}) > predict_high ({hi})"

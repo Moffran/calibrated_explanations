@@ -84,7 +84,7 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 
 ### src\calibrated_explanations\plugins\registry.py:108 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -111,7 +111,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:109 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -138,7 +138,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:110 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -165,7 +165,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:111 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -192,7 +192,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:112 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -219,7 +219,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:114 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -246,7 +246,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:119 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -273,7 +273,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:120 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -516,7 +516,7 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 
 ### src\calibrated_explanations\logging.py:72 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -543,7 +543,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:73 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -570,7 +570,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:74 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -597,7 +597,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:76 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -624,7 +624,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:77 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -651,7 +651,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:79 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -678,7 +678,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:75 (test_count=572)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -705,7 +705,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:80 (test_count=572)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -869,7 +869,7 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 
 ### src\calibrated_explanations\plugins\registry.py:108-112 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -896,7 +896,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:114-114 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -923,7 +923,7 @@
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 
 ### src\calibrated_explanations\plugins\registry.py:119-120 (test_count=594)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1166,7 +1166,7 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 
 ### src\calibrated_explanations\logging.py:72-74 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1193,7 +1193,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:76-77 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1220,7 +1220,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:79-79 (test_count=573)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1247,7 +1247,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:75-75 (test_count=572)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1274,7 +1274,7 @@
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
 ### src\calibrated_explanations\logging.py:80-80 (test_count=572)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1490,7 +1490,7 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
 ### src\calibrated_explanations\core\reject\policy.py:25-25 (test_count=530)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
@@ -1517,7 +1517,7 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 
 ### src\calibrated_explanations\core\reject\policy.py:34-34 (test_count=530)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run

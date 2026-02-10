@@ -129,15 +129,21 @@ class DummyExplanation:
     def get_rules(self):
         return {"rule": [0, 1]}
 
-    def super_explanations(self, only_ensured=False, include_potential=True, copy=True) -> DummyExplanation:
+    def super_explanations(
+        self, only_ensured=False, include_potential=True, copy=True
+    ) -> DummyExplanation:
         self.conjunction_calls.append("super")
         return self
 
-    def semi_explanations(self, only_ensured=False, include_potential=True, copy=True) -> DummyExplanation:
+    def semi_explanations(
+        self, only_ensured=False, include_potential=True, copy=True
+    ) -> DummyExplanation:
         self.conjunction_calls.append("semi")
         return self
 
-    def counter_explanations(self, only_ensured=False, include_potential=True, copy=True) -> DummyExplanation:
+    def counter_explanations(
+        self, only_ensured=False, include_potential=True, copy=True
+    ) -> DummyExplanation:
         self.conjunction_calls.append("counter")
         return self
 

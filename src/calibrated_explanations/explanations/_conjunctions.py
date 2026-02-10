@@ -41,7 +41,9 @@ class ConjunctionState:
         self._combination_keys = set()
         if self.state["feature"]:
             for i, feature in enumerate(self.state["feature"]):
-                values = self.state["sampled_values"][i] if not self.dedupe_by_feature_only else None
+                values = (
+                    self.state["sampled_values"][i] if not self.dedupe_by_feature_only else None
+                )
                 key = self.get_normalization_key(feature, values)
                 self._combination_keys.add(key)
 
@@ -53,7 +55,7 @@ class ConjunctionState:
             else:
                 cloned[key] = value
         # normalize lengths
-        L = len(cloned.get("rule", []))
+        num_rules = len(cloned.get("rule", []))
         # ensure fields exist with correct lengths
         for field in [
             "is_conjunctive",
@@ -66,14 +68,14 @@ class ConjunctionState:
         ]:
             if field not in cloned:
                 if field == "is_conjunctive":
-                    cloned[field] = [False] * L
+                    cloned[field] = [False] * num_rules
                 else:
-                    cloned[field] = [None] * L
+                    cloned[field] = [None] * num_rules
         # normalize features
         normalized_features = []
         for feat in cloned["feature"]:
             if isinstance(feat, (list, tuple, np.ndarray)):
-                normalized_features.append(list(int(v) for v in np.asarray(feat).ravel()))
+                normalized_features.append([int(v) for v in np.asarray(feat).ravel()])
             else:
                 normalized_features.append(int(feat))
         cloned["feature"] = normalized_features
@@ -203,7 +205,8 @@ class ConjunctionState:
         if isinstance(values, (list, tuple, np.ndarray)):
             # Handle potentially nested structures or numpy types
             return tuple(
-                ConjunctionState._normalize_value_entry(v) if isinstance(v, (list, tuple, np.ndarray))
+                ConjunctionState._normalize_value_entry(v)
+                if isinstance(v, (list, tuple, np.ndarray))
                 else (float(v) if isinstance(v, (float, np.floating)) else v)
                 for v in np.asarray(values).ravel()
             )

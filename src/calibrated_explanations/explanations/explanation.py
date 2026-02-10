@@ -22,10 +22,10 @@ import re
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from types import MappingProxyType
-from typing import Any, Dict, Optional, Tuple, Literal
+from copy import copy
 from dataclasses import dataclass
-from copy import copy, deepcopy
+from types import MappingProxyType
+from typing import Any, Dict, Literal, Optional, Tuple
 
 import numpy as np
 from pandas import Categorical
@@ -49,11 +49,12 @@ from ._conjunctions import ConjunctionState
 @dataclass
 class RuleWithImpact:
     """Canonical representation of a rule's impact for consistent plotting and narrative."""
+
     rule_id: str
     feature: str
     text: str
     impact: float
-    direction: Literal['positive', 'negative', 'neutral']
+    direction: Literal["positive", "negative", "neutral"]
     base_predict: float
     predict: float
     value: Any
@@ -61,7 +62,8 @@ class RuleWithImpact:
     uncertainty_high: Optional[float] = None
     predict_low: Optional[float] = None
     predict_high: Optional[float] = None
-    
+
+
 # @dataclass
 # class PredictionInterval:
 #     """A dataclass representing a prediction interval for a single feature.
@@ -1469,14 +1471,14 @@ class FactualExplanation(CalibratedExplanation):
         """Return a string representation of the factual explanation."""
         # Use canonical rules to ensure parity with plot and narrative
         canonical_rules = self._rules_with_impact()
-        
+
         predict = self.prediction
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
             f"{predict['predict']:5.3f} [{predict['low']:5.3f}, {predict['high']:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
-        
+
         for r in canonical_rules:
             output.append(
                 f"{str(r.value):6}: {r.text:40s} {r.impact:>6.3f} [{r.uncertainty_low:>6.3f}, {r.uncertainty_high:>6.3f}]"
@@ -1602,24 +1604,26 @@ class FactualExplanation(CalibratedExplanation):
                 stacklevel=2,
             )
 
-    def _rules_with_impact(self, *, top_k: Optional[int] = None, sort: bool = True) -> list[RuleWithImpact]:
+    def _rules_with_impact(
+        self, *, top_k: Optional[int] = None, sort: bool = True
+    ) -> list[RuleWithImpact]:
         """Extract canonical rules with explicit signed impact.
-        
+
         This method is the source of truth for narrative and plotting consistency.
         It defines 'impact' for FactualExplanation as the weight (delta from baseline).
         """
         rules_dict = self.get_rules()
         canonical_rules = []
-        
+
         # Get global prediction
         prediction = self.prediction["predict"]
-        
+
         num_rules = len(rules_dict.get("rule", []))
         for i in range(num_rules):
             # weight in FactualExplanation is defined as (prediction - instance_predict)
             # where instance_predict is the counterfactual/base
             w = rules_dict["weight"][i]
-            
+
             # Canonical sign behavior:
             # Positive impact = rule increased the prediction relative to base
             # Negative impact = rule decreased the prediction relative to base
@@ -1629,7 +1633,7 @@ class FactualExplanation(CalibratedExplanation):
                 direction = "negative"
             else:
                 direction = "neutral"
-                
+
             feature_id = rules_dict["feature"][i]
             if isinstance(feature_id, (list, tuple, np.ndarray)):
                 feature_names = []
@@ -1654,7 +1658,9 @@ class FactualExplanation(CalibratedExplanation):
                     text=rules_dict["rule"][i],
                     impact=float(w),
                     direction=direction,
-                    base_predict=float(base_predict_value) if base_predict_value is not None else float("nan"),
+                    base_predict=float(base_predict_value)
+                    if base_predict_value is not None
+                    else float("nan"),
                     predict=float(prediction),
                     value=rules_dict["value"][i],
                     uncertainty_low=float(rules_dict["weight_low"][i]),
@@ -1663,14 +1669,14 @@ class FactualExplanation(CalibratedExplanation):
                     predict_high=float(rules_dict["predict_high"][i]),
                 )
             )
-            
+
         # Stable sort by absolute impact
         if sort:
             canonical_rules.sort(key=lambda r: (-abs(r.impact), r.text))
-        
+
         if top_k is not None:
             canonical_rules = canonical_rules[:top_k]
-            
+
         return canonical_rules
 
     def get_rules(self):
@@ -1826,7 +1832,7 @@ class FactualExplanation(CalibratedExplanation):
             self.conjunctive_rules
             if self.has_conjunctive_rules and self.conjunctive_rules is not None
             else factual,
-            dedupe_by_feature_only=dedupe_by_feature_only
+            dedupe_by_feature_only=dedupe_by_feature_only,
         )
 
         self.has_conjunctive_rules = False
@@ -1860,6 +1866,7 @@ class FactualExplanation(CalibratedExplanation):
             return int(value)
 
         from collections import Counter
+
         self.conjunction_stats = {
             "attempts": 0,
             "created": 0,
@@ -1867,7 +1874,7 @@ class FactualExplanation(CalibratedExplanation):
             "predict_errors": [],
         }
         stats = self.conjunction_stats
-        _MAX_LOGGED_ERRORS = 5
+        max_logged_errors = 5
 
         def _summarize(arr):
             if arr is None or arr.size == 0:
@@ -1971,10 +1978,8 @@ class FactualExplanation(CalibratedExplanation):
                         if raise_on_predict_error:
                             raise
                         stats["skipped"]["predict_error"] += 1
-                        if len(stats["predict_errors"]) < _MAX_LOGGED_ERRORS:
-                            stats["predict_errors"].append(
-                                f"{type(e).__name__}: {e}"
-                            )
+                        if len(stats["predict_errors"]) < max_logged_errors:
+                            stats["predict_errors"].append(f"{type(e).__name__}: {e}")
                         continue
 
                     state_helper.add_rule(
@@ -1997,22 +2002,25 @@ class FactualExplanation(CalibratedExplanation):
             summary_weights = _summarize(base_weight_array)
             import warnings
 
-            err_msg = f" predict_errors={stats['predict_errors']}" if stats["predict_errors"] else ""
+            err_msg = (
+                f" predict_errors={stats['predict_errors']}" if stats["predict_errors"] else ""
+            )
             warning_msg = (
                 f"add_conjunctions: created={stats['created']} "
                 f"attempts={stats['attempts']} skipped={dict(stats['skipped'])} "
                 f"weights={summary_weights}{err_msg}"
             )
-            
+
             if kwargs.get("_fallback_to_legacy_on_zero", False):
-                warnings.warn(warning_msg + " (falling back to legacy)", UserWarning)
+                warnings.warn(warning_msg + " (falling back to legacy)", UserWarning, stacklevel=2)
                 from .legacy_conjunctions import add_conjunctions_factual_legacy
+
                 return add_conjunctions_factual_legacy(
                     self, n_top_features=n_top_features, max_rule_size=max_rule_size
                 )
-            
-            warnings.warn(warning_msg, UserWarning)
-        
+
+            warnings.warn(warning_msg, UserWarning, stacklevel=2)
+
         return self
 
     def _is_lesser(self, rule_boundary, instance_value):
@@ -2075,7 +2083,9 @@ class FactualExplanation(CalibratedExplanation):
             raise Warning("Interval plot is not supported for one-sided explanations.")
 
         # Use conjunctive rules when available so that conjunctions appear in plots
-        if getattr(self, "has_conjunctive_rules", False) and getattr(self, "conjunctive_rules", None):
+        if getattr(self, "has_conjunctive_rules", False) and getattr(
+            self, "conjunctive_rules", None
+        ):
             factual = self.conjunctive_rules
         else:
             factual = self.get_rules()  # get_explanation(index)
@@ -2303,15 +2313,17 @@ class AlternativeExplanation(CalibratedExplanation):
         )
         return "\n".join(output) + "\n"
 
-    def _rules_with_impact(self, *, top_k: Optional[int] = None, sort: bool = True) -> list[RuleWithImpact]:
+    def _rules_with_impact(
+        self, *, top_k: Optional[int] = None, sort: bool = True
+    ) -> list[RuleWithImpact]:
         """Extract canonical rules with explicit signed impact for alternative explanations.
-        
+
         For alternative explanations, impact represents the change in prediction
         from the base instance prediction to the alternative scenario prediction.
         """
         rules_dict = self.get_rules()
         canonical_rules = []
-        
+
         # Base prediction is the instance prediction
         base_predict = self.prediction["predict"]
         base_predict_value = base_predict
@@ -2330,12 +2342,12 @@ class AlternativeExplanation(CalibratedExplanation):
                     names.append(self._safe_feature_name(idx))
                 return ",".join(raw_ids), " & ".join(names)
             return str(feature_index), self._safe_feature_name(feature_index)
-        
+
         num_rules = len(rules_dict.get("rule", []))
         for i in range(num_rules):
             # weight in AlternativeExplanation is defined as (alternative_predict - instance_predict)
             w = rules_dict["weight"][i]
-            
+
             # Canonical sign behavior:
             # Positive impact = alternative prediction > base prediction
             # Negative impact = alternative prediction < base prediction
@@ -2345,7 +2357,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 direction = "negative"
             else:
                 direction = "neutral"
-                
+
             feature_index = rules_dict["feature"][i]
             rule_id, feature_name = _format_feature(feature_index)
 
@@ -2365,14 +2377,14 @@ class AlternativeExplanation(CalibratedExplanation):
                     predict_high=float(rules_dict["predict_high"][i]),
                 )
             )
-            
+
         # Stable sort by absolute impact
         if sort:
             canonical_rules.sort(key=lambda r: (-abs(r.impact), r.text))
-        
+
         if top_k is not None:
             canonical_rules = canonical_rules[:top_k]
-            
+
         return canonical_rules
 
     def build_rules_payload(self) -> Dict[str, Any]:
@@ -2673,22 +2685,19 @@ class AlternativeExplanation(CalibratedExplanation):
                 continue
             if make_semi:
                 if positive_class:
-                    if (
-                        not (include_potential and is_potential) and (
-                            rules["predict"][rule] < 0.5
-                            or rules["predict"][rule] > self.prediction["predict"]
-                        )
+                    if not (include_potential and is_potential) and (
+                        rules["predict"][rule] < 0.5
+                        or rules["predict"][rule] > self.prediction["predict"]
                     ):
                         continue
-                elif (
-                    not (include_potential and is_potential) and (
-                        rules["predict"][rule] > 0.5
-                        or rules["predict"][rule] < self.prediction["predict"]
-                    )
+                elif not (include_potential and is_potential) and (
+                    rules["predict"][rule] > 0.5
+                    or rules["predict"][rule] < self.prediction["predict"]
                 ):
                     continue
             if make_counter and (
-                not (include_potential and is_potential) and (
+                not (include_potential and is_potential)
+                and (
                     positive_class
                     and rules["predict"][rule] > 0.5
                     or not positive_class
@@ -2732,7 +2741,9 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def __extracted_non_conjunctive_rules(self, new_rules):
         """Split out non-conjunctive rules while preserving the original mapping."""
-        self.conjunctive_rules = MappingProxyType({k: list(v) if isinstance(v, list) else v for k, v in new_rules.items()})
+        self.conjunctive_rules = MappingProxyType(
+            {k: list(v) if isinstance(v, list) else v for k, v in new_rules.items()}
+        )
         mask = [not is_conj for is_conj in new_rules["is_conjunctive"]]
         for k, v in new_rules.items():
             if isinstance(v, list) and len(v) == len(mask):
@@ -3067,9 +3078,7 @@ class AlternativeExplanation(CalibratedExplanation):
                             raise
                         stats["skipped"]["predict_error"] += 1
                         if len(stats["predict_errors"]) < _MAX_LOGGED_ERRORS:
-                            stats["predict_errors"].append(
-                                f"{type(e).__name__}: {e}"
-                            )
+                            stats["predict_errors"].append(f"{type(e).__name__}: {e}")
                         continue
 
                     state_helper.add_rule(
@@ -3093,9 +3102,7 @@ class AlternativeExplanation(CalibratedExplanation):
             import warnings
 
             err_msg = (
-                f" predict_errors={stats['predict_errors']}"
-                if stats["predict_errors"]
-                else ""
+                f" predict_errors={stats['predict_errors']}" if stats["predict_errors"] else ""
             )
             warning_msg = (
                 f"add_conjunctions: created={stats['created']} "
@@ -3176,7 +3183,9 @@ class AlternativeExplanation(CalibratedExplanation):
             rnk_metric = "ensured"
 
         # Use conjunctive rules when available so that conjunctions appear in plots
-        if getattr(self, "has_conjunctive_rules", False) and getattr(self, "conjunctive_rules", None):
+        if getattr(self, "has_conjunctive_rules", False) and getattr(
+            self, "conjunctive_rules", None
+        ):
             alternative = self.conjunctive_rules
         else:
             alternative = self.get_rules()  # get_explanation(index)
@@ -3572,7 +3581,9 @@ class FastExplanation(CalibratedExplanation):
             raise Warning("Interval plot is not supported for one-sided explanations.")
 
         # Use conjunctive rules when available so that conjunctions appear in plots
-        if getattr(self, "has_conjunctive_rules", False) and getattr(self, "conjunctive_rules", None):
+        if getattr(self, "has_conjunctive_rules", False) and getattr(
+            self, "conjunctive_rules", None
+        ):
             factual = self.conjunctive_rules
         else:
             factual = self.get_rules()  # get_explanation(index)

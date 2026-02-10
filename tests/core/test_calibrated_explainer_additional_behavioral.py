@@ -174,6 +174,7 @@ def test_mode_sets_num_classes_correctly(explainer_factory):
         explainer_factory(mode="unsupported")
 
 
+@pytest.mark.skip(reason="overtesting prune batch1: skip duplicative metadata accessor test")
 def test_runtime_metadata_helpers_return_copies(explainer_factory):
     explainer = explainer_factory()
     explainer.plugin_manager.last_telemetry = {"source": "initial"}

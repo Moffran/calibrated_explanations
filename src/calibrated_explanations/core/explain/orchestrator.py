@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
-from ...utils.int_utils import as_int_array, coerce_to_int
 from ...logging import (
     ensure_logging_context_filter,
     logging_context,
@@ -44,6 +43,7 @@ from ...plugins import (
 )
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
 from ...utils.exceptions import CalibratedError, ConfigurationError
+from ...utils.int_utils import as_int_array, coerce_to_int
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -522,9 +522,7 @@ class ExplanationOrchestrator:
                 )
             per_instance_ignore = tuple(per_instance_ignore_list)
             flat_arrays = [
-                np.asarray(mask, dtype=int)
-                for mask in per_instance_ignore
-                if len(mask) > 0
+                np.asarray(mask, dtype=int) for mask in per_instance_ignore if len(mask) > 0
             ]
             if flat_arrays:
                 flat_ignore = np.unique(np.concatenate(flat_arrays))

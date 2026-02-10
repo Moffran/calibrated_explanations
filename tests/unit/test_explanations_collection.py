@@ -121,21 +121,46 @@ class DummyExplanation:
         self.calls.append(("reset", None))
 
     def super_explanations(self, only_ensured=False, include_potential=True, copy=True):
-        self.calls.append(("super", {"only_ensured": only_ensured, "include_potential": include_potential, "copy": copy}))
+        self.calls.append(
+            (
+                "super",
+                {
+                    "only_ensured": only_ensured,
+                    "include_potential": include_potential,
+                    "copy": copy,
+                },
+            )
+        )
         return self
 
     def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
-        self.calls.append(("semi", {"only_ensured": only_ensured, "include_potential": include_potential, "copy": copy}))
+        self.calls.append(
+            (
+                "semi",
+                {
+                    "only_ensured": only_ensured,
+                    "include_potential": include_potential,
+                    "copy": copy,
+                },
+            )
+        )
         return self
 
     def counter_explanations(self, only_ensured=False, include_potential=True, copy=True):
-        self.calls.append(("counter", {"only_ensured": only_ensured, "include_potential": include_potential, "copy": copy}))
+        self.calls.append(
+            (
+                "counter",
+                {
+                    "only_ensured": only_ensured,
+                    "include_potential": include_potential,
+                    "copy": copy,
+                },
+            )
+        )
         return self
 
     def ensured_explanations(self, include_potential=True, copy=True):
         self.calls.append(("ensured", {"include_potential": include_potential, "copy": copy}))
-        return self
-        self.calls.append(("ensured", kwargs))
         return self
 
     def rank_features(self, feature_weights, num_to_show=None):

@@ -287,11 +287,12 @@ def build_regression_bars_spec(
     """
     if not features_to_plot:
         from ..utils.exceptions import ValidationError
+
         raise ValidationError(
             "features_to_plot cannot be empty",
             details={"features_to_plot": features_to_plot},
         )
-    
+
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         for key in ("predict", "low", "high"):
@@ -343,10 +344,7 @@ def build_regression_bars_spec(
     # Body (bars)
     bars: list[BarItem] = []
 
-    if isinstance(feature_weights, dict):
-        fw_dict = feature_weights
-    else:
-        fw_dict = {"predict": feature_weights}
+    fw_dict = feature_weights if isinstance(feature_weights, dict) else {"predict": feature_weights}
 
     pred_w = fw_dict["predict"]
     wl = fw_dict.get("low")
@@ -458,11 +456,12 @@ def build_alternative_probabilistic_spec(
     """Build an alternative probabilistic PlotSpec mirroring legacy visuals."""
     if not features_to_plot:
         from ..utils.exceptions import ValidationError
+
         raise ValidationError(
             "features_to_plot cannot be empty",
             details={"features_to_plot": features_to_plot},
         )
-    
+
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         _ensure_indexable_length(
@@ -538,9 +537,13 @@ def build_alternative_probabilistic_spec(
 
         for j in features_to_plot:
             val = float(preds[j])
-            
+
             # Use explicit role if provided, otherwise infer loop
-            if role_overrides is not None and len(role_overrides) > j and role_overrides[j] is not None:
+            if (
+                role_overrides is not None
+                and len(role_overrides) > j
+                and role_overrides[j] is not None
+            ):
                 color_role = role_overrides[j]
             else:
                 color_role = (
@@ -548,7 +551,7 @@ def build_alternative_probabilistic_spec(
                     if (pivot is not None and val >= pivot)
                     else ("positive" if pivot is None and val >= base_pred else "negative")
                 )
-                
+
             if interval and lows is not None and highs is not None:
                 lo = float(lows[j])
                 hi = float(highs[j])
@@ -707,11 +710,12 @@ def build_alternative_regression_spec(
     """Build an alternative regression PlotSpec mirroring legacy visuals."""
     if not features_to_plot:
         from ..utils.exceptions import ValidationError
+
         raise ValidationError(
             "features_to_plot cannot be empty",
             details={"features_to_plot": features_to_plot},
         )
-    
+
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         _ensure_indexable_length(
@@ -920,11 +924,12 @@ def build_probabilistic_bars_spec(
     """
     if not features_to_plot:
         from ..utils.exceptions import ValidationError
+
         raise ValidationError(
             "features_to_plot cannot be empty",
             details={"features_to_plot": features_to_plot},
         )
-    
+
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         for key in ("predict", "low", "high"):

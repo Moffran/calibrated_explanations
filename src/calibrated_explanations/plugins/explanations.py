@@ -323,10 +323,9 @@ def validate_explanation_batch(
 
             if issubclass(cls, CalibratedExplanations):
                 return True
-        for base in getattr(cls, "__mro__", ()):  # pragma: no cover - defensive
-            if base.__name__ == "CalibratedExplanations":
-                return True
-        return False
+        return any(
+            base.__name__ == "CalibratedExplanations" for base in getattr(cls, "__mro__", ())
+        )
 
     if not _inherits_calibrated_explanations(container_cls):
         raise ValidationError("batch.container_cls must inherit from CalibratedExplanations")
@@ -343,10 +342,7 @@ def validate_explanation_batch(
 
             if issubclass(cls, CalibratedExplanation):
                 return True
-        for base in getattr(cls, "__mro__", ()):  # pragma: no cover - defensive
-            if base.__name__ == "CalibratedExplanation":
-                return True
-        return False
+        return any(base.__name__ == "CalibratedExplanation" for base in getattr(cls, "__mro__", ()))
 
     if not _inherits_calibrated_explanation(explanation_cls):
         raise ValidationError("batch.explanation_cls must inherit from CalibratedExplanation")

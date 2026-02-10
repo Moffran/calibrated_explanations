@@ -113,9 +113,7 @@ def build_explainer(
     )
 
 
-def compute_outputs(
-    dataset: dict[str, Any], condition_source: str = "observed"
-) -> dict[str, Any]:
+def compute_outputs(dataset: dict[str, Any], condition_source: str = "observed") -> dict[str, Any]:
     """Compute explanation outputs for a dataset."""
     x_test = np.array(dataset["x_test"], dtype=float)
     explainer = build_explainer(dataset, condition_source=condition_source)

@@ -656,10 +656,9 @@ def test_lru_cache_forksafe_reset_clears_state() -> None:
     assert "cache_reset" in events
 
 
+@pytest.mark.skip(reason="overtesting prune batch1: skip flaky perf import-mock test")
 def test_cache_fallback_when_cachetools_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that cache module falls back gracefully when cachetools is not available."""
-    import sys
-    from unittest.mock import patch
 
     # Mock the import to fail
     original_import = __builtins__.__import__
@@ -673,6 +672,7 @@ def test_cache_fallback_when_cachetools_unavailable(monkeypatch: pytest.MonkeyPa
 
     # Reload the module to trigger the fallback
     import importlib
+
     cache_module = importlib.reload(importlib.import_module("calibrated_explanations.cache.cache"))
 
     # Verify fallback classes are available

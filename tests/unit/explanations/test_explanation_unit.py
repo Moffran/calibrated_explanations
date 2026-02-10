@@ -349,10 +349,11 @@ class TestRuleWithImpact:
         assert rule.predict_low is None
         assert rule.predict_high is None
 
+
 def test_rule_with_impact_dataclass():
     """Test RuleWithImpact dataclass creation and attributes."""
     from calibrated_explanations.explanations.explanation import RuleWithImpact
-    
+
     rule = RuleWithImpact(
         rule_id="test_rule",
         feature="Feature_0",
@@ -365,9 +366,9 @@ def test_rule_with_impact_dataclass():
         uncertainty_low=1.0,
         uncertainty_high=1.4,
         predict_low=1.8,
-        predict_high=2.2
+        predict_high=2.2,
     )
-    
+
     assert rule.rule_id == "test_rule"
     assert rule.feature == "Feature_0"
     assert rule.text == "Feature_0 > 0.5"

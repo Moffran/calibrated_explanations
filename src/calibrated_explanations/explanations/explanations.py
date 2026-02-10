@@ -1209,17 +1209,19 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             for i, explanation in enumerate(self.explanations):
                 if len(filename) > 0:
                     filename = path + title + str(i) + ext
-                results.append(explanation.plot(
-                    filter_top=filter_top,
-                    show=show,
-                    filename=filename,
-                    uncertainty=uncertainty,
-                    style=style,
-                    rnk_metric=rnk_metric,
-                    rnk_weight=rnk_weight,
-                    style_override=style_override,
-                    **kwargs,
-                ))
+                results.append(
+                    explanation.plot(
+                        filter_top=filter_top,
+                        show=show,
+                        filename=filename,
+                        uncertainty=uncertainty,
+                        style=style,
+                        rnk_metric=rnk_metric,
+                        rnk_weight=rnk_weight,
+                        style_override=style_override,
+                        **kwargs,
+                    )
+                )
             if kwargs.get("return_plot_spec"):
                 return results[0] if len(results) == 1 else results
 

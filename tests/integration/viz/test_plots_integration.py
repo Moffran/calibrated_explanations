@@ -273,7 +273,7 @@ def test_plot_regression_with_style_override(tmp_path):
     # Test with a style_override dict
     style_override = {
         "figure": {"width": "8"},
-        "colors": {"positive": "green", "negative": "purple"}
+        "colors": {"positive": "green", "negative": "purple"},
     }
     # call with save_ext to force render+save behavior
     _plots.plot_regression(
@@ -326,6 +326,7 @@ def test_plot_regression_legacy_fallback(tmp_path):
         path=outdir + os.path.sep,
         show=False,
         interval=True,
+        idx=0,
         save_ext=[".png"],
         use_legacy=True,
     )

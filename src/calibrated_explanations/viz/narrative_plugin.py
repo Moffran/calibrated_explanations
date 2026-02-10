@@ -524,8 +524,7 @@ class NarrativePlotPlugin:
 
             # Get all narrative keys (excluding metadata)
             narrative_keys = [
-                k for k in result
-                if k not in ("instance_index", "expertise_level", "problem_type")
+                k for k in result if k not in ("instance_index", "expertise_level", "problem_type")
             ]
 
             for key in sorted(narrative_keys):

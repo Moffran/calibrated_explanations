@@ -13,6 +13,9 @@ from calibrated_explanations.utils.exceptions import SerializationError, Validat
 from unittest.mock import MagicMock
 
 
+@pytest.mark.skip(
+    reason="overtesting prune batch1: skip duplicate serialization negative-path test"
+)
 def test_load_template_file_errors(tmp_path):
     # File not found
     with pytest.raises(SerializationError, match="Template file not found"):
@@ -432,26 +435,12 @@ def test_generate_narrative_should_not_split_uncertainty_for_regression():
         ]
     )
     # Patch load_templates to return this
-    gen.templates = {
-        "narrative_templates": {
-            "regression": {
-                "alternative": {
-                    "advanced": template
-                }
-            }
-        }
-    }
+    gen.templates = {"narrative_templates": {"regression": {"alternative": {"advanced": template}}}}
 
     # Features with WIDE intervals (should be uncertain if using standard logic)
     # In regression, wide means huge numbers, which are standard.
-    pos_features = [
-        {"feature_name": "f1", "weight": 1000.0, "predict_low": 100000, "predict_high": 250000, "rule": "r1"}
-    ]
-    neg_features = [
-        {"feature_name": "f2", "weight": -1000.0, "predict_low": 100000, "predict_high": 250000, "rule": "r2"}
-    ]
     # Width = 150000. threshold=0.20. 150000 > 0.20 -> Uncertain.
-    
+
     # Mock explanation
     # Use spec to ensure it doesn't have private attributes automatically
     mock_exp = MagicMock(spec=["get_rules"])
@@ -475,6 +464,5 @@ def test_generate_narrative_should_not_split_uncertainty_for_regression():
     # If splitting DISABLED (fix applied), Decrease section should be populated
     assert "Decrease:" in res
     assert "f2 dec" in res
-    
-    assert "f1 inc" in res
 
+    assert "f1 inc" in res
