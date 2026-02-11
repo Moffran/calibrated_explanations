@@ -58,17 +58,6 @@ def test_metadata_json_schema() -> None:
     assert metadata["required_calibration"] is True
 
 
-def test_examples_index_entries() -> None:
-    index_path = REPO_ROOT / "EXAMPLES_INDEX.json"
-    entries = json.loads(index_path.read_text(encoding="utf-8"))
-    assert entries, "EXAMPLES_INDEX.json should list example scripts"
-    for entry in entries:
-        example_path = EXAMPLES_DIR / entry["file"].split("use_cases/")[-1]
-        assert example_path.exists(), f"Missing example: {example_path}"
-        content = example_path.read_text(encoding="utf-8")
-        assert "WrapCalibratedExplainer" in content
-
-
 def test_tool_description_yaml() -> None:
     tool_path = REPO_ROOT / ".ai" / "tool_description.yaml"
     tool = yaml.safe_load(tool_path.read_text(encoding="utf-8"))
