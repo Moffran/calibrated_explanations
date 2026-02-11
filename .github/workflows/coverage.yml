@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   coverage:
-    uses: ./.github/workflows/reusable/python-test.yml
+    uses: ./.github/workflows/reusable-python-test.yml
     with:
       python-version: '3.11'
       install-mode: core

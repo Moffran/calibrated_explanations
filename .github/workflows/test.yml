@@ -15,22 +15,20 @@ permissions:
 
 jobs:
   matrix-tests:
-    runs-on: ubuntu-latest
     # Skip CI if commit message starts with 'info:'
     if: ${{!startsWith(github.event.head_commit.message, 'info:') && !startsWith(github.event.head_commit.message, 'Info:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'Docs:')}}
     strategy:
       matrix:
         python-version: ['3.10','3.11','3.12','3.13']
-    uses: ./.github/workflows/reusable/python-test.yml
+    uses: ./.github/workflows/reusable-python-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       install-mode: dev
       test-command: make test-core
 
   core-only:
-    runs-on: ubuntu-latest
     needs: matrix-tests
-    uses: ./.github/workflows/reusable/python-test.yml
+    uses: ./.github/workflows/reusable-python-test.yml
     with:
       python-version: '3.11'
       install-mode: core
@@ -70,9 +68,8 @@ jobs:
           python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression --condition-source prediction
 
   viz-only:
-    runs-on: ubuntu-latest
     needs: matrix-tests
-    uses: ./.github/workflows/reusable/python-test.yml
+    uses: ./.github/workflows/reusable-python-test.yml
     with:
       python-version: '3.11'
       install-mode: viz

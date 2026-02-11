@@ -16,7 +16,7 @@ on:
       - 'requirements.txt'
       - 'constraints.txt'
       - '.github/workflows/ci-full.yml'
-      - '.github/workflows/reusable/**'
+      - '.github/workflows/reusable-*.yml'
   workflow_dispatch: {}
 
 concurrency:
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   core-tests:
-    uses: ./.github/workflows/reusable/python-test.yml
+    uses: ./.github/workflows/reusable-python-test.yml
     with:
       python-version: '3.11'
       install-mode: core
@@ -33,7 +33,7 @@ jobs:
 
   viz-tests:
     needs: core-tests
-    uses: ./.github/workflows/reusable/python-test.yml
+    uses: ./.github/workflows/reusable-python-test.yml
     with:
       python-version: '3.11'
       install-mode: viz
