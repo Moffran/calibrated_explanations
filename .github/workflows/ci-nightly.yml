@@ -1,0 +1,107 @@
+# CI: Nightly heavy jobs
+# Purpose: Scheduled heavy jobs (parity harness, notebook audits, examples).
+# Scope: Runs nightly or on demand; not required for quick PRs. See
+# docs/improvement/CI-upgrade.md for rationale and scheduling guidance.
+name: CI — Nightly heavy jobs
+on:
+  schedule:
+    - cron: '0 3 * * *' # daily at 03:00 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-nightly
+  cancel-in-progress: true
+
+jobs:
+  parity-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install . -c constraints.txt
+      - name: Run parity harness (observed)
+        run: |
+          python tests/parity_reference/run_parity_reference.py --dataset classification
+          python tests/parity_reference/run_parity_reference.py --dataset regression
+          python tests/parity_reference/run_parity_reference.py --dataset multiclass
+          python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression
+      - name: Run parity harness (prediction)
+        run: |
+          python tests/parity_reference/run_parity_reference.py --dataset classification --condition-source prediction
+          python tests/parity_reference/run_parity_reference.py --dataset regression --condition-source prediction
+          python tests/parity_reference/run_parity_reference.py --dataset multiclass --condition-source prediction
+          python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression --condition-source prediction
+
+  notebook-audit:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install audit deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install nbconvert pytest -c constraints.txt
+      - name: Run notebook audit
+        run: |
+          mkdir -p artifacts
+          python scripts/notebook_audit.py 2>&1 | tee artifacts/notebook_audit.log
+      - name: Upload notebook audit logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notebook-audit-logs
+          path: |
+            artifacts/notebook_audit.log
+
+  examples-run:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install . -c constraints.txt
+      - name: Run examples smoke
+        run: |
+          mkdir -p artifacts
+          pytest examples -q 2>&1 | tee artifacts/examples_smoke.log
+      - name: Upload examples logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples-smoke-logs
+          path: |
+            artifacts/examples_smoke.log

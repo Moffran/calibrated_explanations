@@ -1,3 +1,9 @@
+# CI: Update baseline (manual)
+# Purpose: Manually generate and commit new performance baselines and related
+# artifacts. Requires `contents: write` permission and is intended for
+# maintainers. See docs/improvement/CI-upgrade.md for maintenance guidance.
+# NOTE: This workflow is scheduled for decommission and will be removed after the
+# CI validation window. See docs/improvement/CI-upgrade.md for the removal schedule.
 name: update-baseline
 
 on:
@@ -20,12 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -44,7 +55,7 @@ jobs:
       - name: Micro baseline diff vs current committed baseline
         id: api_diff
         run: |
-          OLD=$(ls tests/benchmarks/micro_*.json | sort | head -n 1 || true)
+          OLD=$(ls tests/benchmarks/micro_*.json | sort | tail -n 1 || true)
           NEW=tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
           echo "Old micro baseline: $OLD" > tests/benchmarks/perf_diff.txt
           echo "New micro baseline: $NEW" >> tests/benchmarks/perf_diff.txt
@@ -58,7 +69,7 @@ jobs:
           echo "Threshold regeneration not automated; adjust manually if needed." >> tests/benchmarks/perf_diff.txt
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: new-micro-baseline-${{ steps.gen.outputs.date_tag }}
           path: |
@@ -66,7 +77,7 @@ jobs:
             tests/benchmarks/perf_diff.txt
 
       - name: Create Pull Request with new baseline
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@v6
         with:
           commit-message: "chore: update micro performance baseline ${{ steps.gen.outputs.date_tag }}"
           title: "Update micro performance baseline ${{ steps.gen.outputs.date_tag }}"

@@ -40,6 +40,11 @@ ci-local-dry-run:
 ci-local:
 	python scripts/run_ci_locally.py
 
+# Run only the new CI entrypoints (keeps legacy duplicates out of the run).
+.PHONY: ci-local-new
+ci-local-new:
+	python scripts/run_ci_locally.py --shell bash --workflow ci-pr --workflow ci-full --workflow ci-main --workflow ci-nightly
+
 .PHONY: check-private-members
 check-private-members:
 	python scripts/anti-pattern-analysis/scan_private_usage.py --check

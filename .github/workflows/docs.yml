@@ -1,18 +1,36 @@
+# CI: Docs build
+# Purpose: Build Sphinx HTML and run linkcheck/nav tests. Triggered on docs
+# changes. See docs/improvement/CI-upgrade.md for build policy and gallery rules.
+# NOTE: This workflow is scheduled for decommission and will be removed after the
+# CI validation window. See docs/improvement/CI-upgrade.md for the removal schedule.
 name: docs
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'docs/**.rst'
+      - 'docs/**.md'
+      - 'docs/conf.py'
+      - 'pyproject.toml'
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -37,7 +55,7 @@ jobs:
         run: pytest -o addopts="" tests/docs
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: docs-html
           path: docs/_build/html

@@ -270,6 +270,10 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   3. Plotspec hardening.
   4. Narrative hardening. Make compatible with conjunctive explanations.
   5. Upgrade CI with better structure and easier oversight. Run old CI in parallel until v1.0.0-rc.
+       - Introduce modular CI with reusable workflows under `.github/workflows/reusable/` and top-level orchestration under `.github/workflows/`.
+       - Validation window: keep old and new CI running in parallel for at least 2 full development cycles (recommended 2 weeks) before flipping branch-protection.
+       - Workflows to decommission prior to `v1.0.0-rc`: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
+       - Branch-protection flip: add new checks, verify two consecutive green runs, then remove old checks and monitor for 48 hours (see `docs/improvement/CI-upgrade.md`).
 
 ### v0.11.0 (domain model & preprocessing finalisation)
 
@@ -284,6 +288,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   9. Empty the private member allow-list (.github/private_member_allowlist.json) as part of the final Pattern 1 remediation hardening.
   10. Perform a final ADR, standards, and improvement docs gap closure sweep.
   11. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
+  12. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
 
   Release gate: ADR-009/012/026/030/031 gaps are closed or explicitly deferred, observability enforcement is in place (ADR-027/028), and core-only install expectations are verified ahead of v1.0.0-rc.
 ### v1.0.0-rc (release candidate readiness)

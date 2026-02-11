@@ -1,3 +1,6 @@
+# CI: Mypy typechecks
+# Purpose: Run mypy on selected files. Triggered on changes to typed modules.
+# Scope: Targeted typecheck to reduce CI cost; see docs/improvement/CI-upgrade.md.
 name: mypy
 on:
   push:
@@ -14,11 +17,13 @@ on:
 jobs:
   typecheck:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
       - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
