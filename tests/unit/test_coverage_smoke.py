@@ -45,7 +45,7 @@ def test_serialization_invariant_low_greater_than_high():
         task="classification",
         index=0,
         explanation_type="factual",
-        prediction={"predict": 0.5, "low": 0.9, "high": 0.1},
+        prediction={"predict": [0.2, 0.8], "low": [0.1, 0.9], "high": [0.3, 0.7]},
         rules=[
             FeatureRule(
                 feature=0,

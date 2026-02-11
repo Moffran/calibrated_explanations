@@ -79,7 +79,10 @@ def test_explain_metrics_pass_when_within_threshold(tmp_path, capsys):
 
 
 def test_committed_micro_baseline_includes_explain_metrics():
-    micro_files = sorted(Path("tests/benchmarks").glob("micro_*.json"))
+    micro_files = sorted(
+        path for path in Path("tests/benchmarks").glob("micro_*.json")
+        if path.name != "micro_current.json"
+    )
     assert micro_files, "expected at least one micro baseline file"
     latest = micro_files[-1]
     payload = json.loads(latest.read_text(encoding="utf-8"))

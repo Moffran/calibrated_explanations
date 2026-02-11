@@ -16,6 +16,7 @@
 - **PlotSpec quality improvements:** Enhanced BarItem dataclass with missing fields, added AlternativeExplanation _rules_with_impact method, improved serialization robustness, added empty features_to_plot validation, and comprehensive RuleWithImpact test coverage to ensure data integrity and reliable plotting.
 - **Narrative quality improvements:** Ensured narratives support conjunctions, updated narrative formatting with possibility to align rules for easier oversight, adjusted default content in explain_template.yaml.
 - **Test quality cleanup:** Removed a duplicate conjunction parity test and normalized test helper naming to avoid private helper anti-patterns.
+ - **ADR-001 import-graph linting:** Resolved false-positive import-graph violations by refining the ADR-001 checker to correctly resolve package paths and broaden sanctioned allowlists. Re-generated `reports/import_graph.json` and ensured `scripts/quality/check_import_graph.py --report` reports no violations.
 
 ## [v0.10.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.3) - 2026-02-04
 

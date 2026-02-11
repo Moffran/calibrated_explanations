@@ -2028,7 +2028,13 @@ class FactualExplanation(CalibratedExplanation):
                             bins=self.bin,
                             use_batched=use_batched,
                         )
-                    except (CalibratedError, ValueError, TypeError, RuntimeError, Exception) as e:
+                    except (
+                        CalibratedError,
+                        ValueError,
+                        TypeError,
+                        RuntimeError,
+                        Exception,  # adr002_allow - defensive guard for predict_conjunctive failures
+                    ) as e:
                         if raise_on_predict_error:
                             raise
                         stats["skipped"]["predict_error"] += 1

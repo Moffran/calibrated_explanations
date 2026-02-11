@@ -15,11 +15,6 @@ Other fields are logged for visibility but not enforced yet.
 
 from __future__ import annotations
 
-if __name__ == "__main__":  # pragma: no cover - shim
-    from scripts.perf.check_perf_micro import main as _main
-
-    raise SystemExit(_main())
-
 import argparse
 import json
 import sys

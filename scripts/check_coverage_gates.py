@@ -4,10 +4,6 @@ Usage:
     python scripts/check_coverage_gates.py [coverage_xml_path]
 """
 
-if __name__ == "__main__":  # pragma: no cover - shim
-    from scripts.quality.check_coverage_gates import main as _main
-
-    raise SystemExit(_main())
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path

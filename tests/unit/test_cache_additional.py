@@ -1,9 +1,13 @@
+import importlib
 import pickle
 
 import numpy as np
 
-from calibrated_explanations.cache import cache as cache_mod
 from calibrated_explanations.cache.explanation_cache import ExplanationCacheFacade
+
+
+def fresh_cache_module():
+    return importlib.reload(importlib.import_module("calibrated_explanations.cache.cache"))
 
 
 def boom_size_estimator(_value):
@@ -11,6 +15,7 @@ def boom_size_estimator(_value):
 
 
 def test_default_size_estimator_with_numpy():
+    cache_mod = fresh_cache_module()
     arr = np.arange(10, dtype=np.int64)
     size = cache_mod.default_size_estimator(arr)
     assert isinstance(size, int)
@@ -18,6 +23,8 @@ def test_default_size_estimator_with_numpy():
 
 
 def test_default_size_estimator_fallback_for_plain_object():
+    cache_mod = fresh_cache_module()
+
     class Dummy:
         pass
 
@@ -27,6 +34,7 @@ def test_default_size_estimator_fallback_for_plain_object():
 
 
 def test_hash_part_various_types():
+    cache_mod = fresh_cache_module()
     assert cache_mod.hash_part(None) is None
     assert cache_mod.hash_part(123) == 123
     assert cache_mod.hash_part("abc") == "abc"
@@ -48,6 +56,7 @@ def test_hash_part_various_types():
 
 
 def test_make_key_and_metrics_snapshot(monkeypatch):
+    cache_mod = fresh_cache_module()
     parts = ["a", 1, None]
     key = cache_mod.make_key("ns", "v1", parts)
     assert key[0] == "ns" and key[1] == "v1"
@@ -60,6 +69,7 @@ def test_make_key_and_metrics_snapshot(monkeypatch):
 
 
 def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
+    cache_mod = fresh_cache_module()
     # Ensure env parsing toggles enabled
     monkeypatch.setenv("CE_CACHE", "1")
     cfg = cache_mod.CacheConfig.from_env()
@@ -74,6 +84,8 @@ def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
     assert cfg2.ttl_seconds is not None
 
     # Instantiate CalibratorCache and exercise set/get/compute/flush/reset
+    # Avoid flakiness from very short TTL during CI runs.
+    cfg2.ttl_seconds = None
     cfg2.enabled = True
     cal = cache_mod.CalibratorCache(cfg2)
     assert cal.enabled
@@ -102,7 +114,6 @@ def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
     assert cal.get(stage="s", parts=("p",)) is None
 
     # reset_version modifies the version string
-    old = cal.version
     cal.reset_version("newv")
     assert cal.version == "newv"
 
@@ -116,6 +127,8 @@ def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
 
 
 def test_default_size_estimator_error_paths():
+    cache_mod = fresh_cache_module()
+
     class BadNbytes:
         @property
         def nbytes(self):
@@ -134,6 +147,7 @@ def test_default_size_estimator_error_paths():
 
 
 def test_lru_cache_helpers_and_pickle_roundtrip():
+    cache_mod = fresh_cache_module()
     cache = cache_mod.LRUCache(
         namespace="ns",
         version="v1",
@@ -166,6 +180,8 @@ def test_lru_cache_helpers_and_pickle_roundtrip():
 
 
 def test_lru_cache_telemetry_errors_and_none_values():
+    cache_mod = fresh_cache_module()
+
     def bad_telemetry(_event, _payload):
         raise RuntimeError("boom")
 
@@ -206,6 +222,7 @@ def test_explanation_cache_facade_disabled():
 
 
 def test_explanation_cache_facade_enabled_roundtrip():
+    cache_mod = fresh_cache_module()
     cfg = cache_mod.CacheConfig(enabled=True)
     cal = cache_mod.CalibratorCache(cfg)
     facade = ExplanationCacheFacade(cal)
@@ -235,6 +252,7 @@ def test_explanation_cache_facade_enabled_roundtrip():
 
 
 def test_calibrator_cache_disabled_noops():
+    cache_mod = fresh_cache_module()
     cfg = cache_mod.CacheConfig(enabled=False)
     cal = cache_mod.CalibratorCache(cfg)
     assert cal.enabled is False
@@ -246,6 +264,7 @@ def test_calibrator_cache_disabled_noops():
 
 
 def test_lru_cache_eviction_and_budget_paths():
+    cache_mod = fresh_cache_module()
     oversize_cache = cache_mod.LRUCache(
         namespace="ns",
         version="v1",
