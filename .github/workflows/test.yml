@@ -68,6 +68,9 @@ jobs:
           # while still omitting other optional viz extras (like lime/ipython).
           pip install numpy pyyaml pandas scikit-learn "crepes>=0.7.1" "venn-abers>=1.4.1" matplotlib pytest pytest-cov jsonschema -c constraints.txt
 
+      - name: Show cache test helper
+        run: sed -n '1,20p' tests/unit/test_cache_additional.py
+
       - name: Run core test subset (skip viz)
         run: pytest -q -k "not viz" --no-cov
 
