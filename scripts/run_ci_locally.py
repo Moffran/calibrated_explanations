@@ -68,6 +68,34 @@ def load_workflow(path: str) -> Dict[str, Any]:
         return yaml.safe_load(fh)
 
 
+def _get_on_section(workflow: Dict[str, Any]) -> Any:
+    """Return the workflow `on` section.
+
+    Notes
+    -----
+    PyYAML uses YAML 1.1 semantics by default, where the bare key `on` may be
+    parsed as boolean True. GitHub Actions uses `on` as a normal mapping key.
+    This helper supports both representations.
+    """
+
+    return workflow.get("on") if "on" in workflow else workflow.get(True)
+
+
+def is_reusable_workflow_only(workflow: Dict[str, Any]) -> bool:
+    """Return True for workflows that are only reusable via `workflow_call`.
+
+    Reusable workflows contain jobs/steps but are invoked via `uses:` from other
+    workflows and may contain `${{ inputs.* }}` expressions that cannot be
+    resolved locally by this helper.
+    """
+
+    on_section = _get_on_section(workflow)
+    if not isinstance(on_section, dict):
+        return False
+    keys = set(on_section.keys())
+    return keys == {"workflow_call"}
+
+
 def extract_run_steps(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Return a list of dicts: {job, step_idx, name, env, run}.
 
@@ -132,6 +160,11 @@ def collect_all_runs(workflow_files: List[str], selected: Optional[List[str]] = 
         except Exception as exc:
             print(f"Failed to parse {wf}: {exc}")
             continue
+
+        if isinstance(data, dict) and is_reusable_workflow_only(data):
+            # Avoid attempting to execute reusable workflow_call definitions.
+            continue
+
         steps = extract_run_steps(data)
         if steps:
             collected[name] = steps

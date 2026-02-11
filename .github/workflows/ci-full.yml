@@ -29,7 +29,7 @@ jobs:
     with:
       python-version: '3.11'
       install-mode: core
-      test-command: pytest -q -k "not viz"
+      test-command: pytest -q -m "not viz" --no-cov
 
   viz-tests:
     needs: core-tests

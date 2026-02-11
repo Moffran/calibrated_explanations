@@ -32,7 +32,7 @@ jobs:
     with:
       python-version: '3.11'
       install-mode: core
-      test-command: pytest -q -k "not viz" --no-cov
+      test-command: pytest -q -m "not viz" --no-cov
 
   parity-reference:
     runs-on: ubuntu-latest

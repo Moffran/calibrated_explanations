@@ -270,7 +270,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   3. Plotspec hardening.
   4. Narrative hardening. Make compatible with conjunctive explanations.
   5. Upgrade CI with better structure and easier oversight. Run old CI in parallel until v1.0.0-rc.
-       - Introduce modular CI with reusable workflows under `.github/workflows/reusable/` and top-level orchestration under `.github/workflows/`.
+     - Introduce modular CI with reusable workflows at the top level of `.github/workflows/` (GitHub Actions `workflow_call` requirement) and top-level orchestration under `.github/workflows/`.
        - Validation window: keep old and new CI running in parallel for at least 2 full development cycles (recommended 2 weeks) before flipping branch-protection.
        - Workflows to decommission prior to `v1.0.0-rc`: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
        - Branch-protection flip: add new checks, verify two consecutive green runs, then remove old checks and monitor for 48 hours (see `docs/improvement/CI-upgrade.md`).

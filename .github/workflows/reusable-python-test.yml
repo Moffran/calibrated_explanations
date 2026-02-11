@@ -44,12 +44,14 @@ jobs:
         if: ${{ inputs.install-mode == 'core' }}
         run: |
           pip install -r requirements.txt -c constraints.txt
+          pip install pytest pytest-cov -c constraints.txt
           pip install -e . -c constraints.txt
 
       - name: Install viz dependencies
         if: ${{ inputs.install-mode == 'viz' }}
         run: |
           pip install -r requirements.txt -c constraints.txt
+          pip install pytest pytest-cov -c constraints.txt
           pip install -e .[viz] -c constraints.txt
 
       - name: Install dev dependencies

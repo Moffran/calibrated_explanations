@@ -3,7 +3,7 @@
 This document describes the planned reorganization of GitHub Actions workflows for the project, the steps to decommission older workflows, and the branch-protection flip procedure to be executed before the v1.0.0-rc release.
 
 Summary
-- Move to a modular CI layout using reusable workflows under `.github/workflows/reusable/` and thin top-level entrypoints under `.github/workflows/`.
+- Move to a modular CI layout using reusable workflows at the top level of `.github/workflows/` (GitHub Actions requires this for `workflow_call`) and thin entrypoints under `.github/workflows/`.
 - Preserve current capabilities: PR fast checks, full PR checks (viz), parity reference, nightly/perf runs, audits, and maintenance tasks.
 - Run old CI in parallel with the new layout during validation; remove old workflows before the `v1.0.0-rc` freeze.
 
@@ -19,9 +19,9 @@ Implementation notes (local trial)
 - The manual maintenance baseline task generates micro benchmark baselines via `scripts/micro_bench_perf.py` and can optionally open a PR.
 
 Workflows introduced
-- `.github/workflows/reusable/python-test.yml` — canonical python setup + pytest runner.
-- `.github/workflows/reusable/run-make.yml` — standardized `make` target runner.
-- `.github/workflows/reusable/build-docs.yml` — Sphinx/linkcheck builder.
+- `.github/workflows/reusable-python-test.yml` — canonical python setup + pytest runner.
+- `.github/workflows/reusable-run-make.yml` — standardized `make` target runner.
+- `.github/workflows/reusable-build-docs.yml` — Sphinx/linkcheck builder.
 - `.github/workflows/ci-pr.yml` — fast PR checks (lint, mypy, core tests matrix).
 - `.github/workflows/ci-full.yml` — viz-focused PR checks (path-gated) + manual parity run.
 - `.github/workflows/ci-nightly.yml` — scheduled heavy jobs (parity, notebook audits, example smoke runs).

@@ -102,4 +102,4 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       install-mode: core
-      test-command: pytest -q -k "not viz"
+      test-command: pytest -q -m "not viz" --no-cov
