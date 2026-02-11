@@ -1,5 +1,11 @@
-import json
+import runpy
 from pathlib import Path
+
+if __name__ == "__main__":  # pragma: no cover - shim
+    runpy.run_path(str(Path(__file__).parent / "quality" / "prune_allowlist.py"), run_name="__main__")
+    raise SystemExit(0)
+
+import json
 
 path = Path(r"c:\Users\loftuw\Documents\Github\kristinebergs-calibrated_explanations\.github\private_member_allowlist.json")
 data = json.loads(path.read_text(encoding="utf-8"))

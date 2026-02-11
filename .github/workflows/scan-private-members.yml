@@ -1,3 +1,8 @@
+# CI: Scan Private Members in Tests
+# Purpose: Run anti-pattern scanner to detect private-member usage in tests.
+# Scope: Triggered on tests changes; designed to help ADR-030 remediation.
+# NOTE: This workflow is scheduled for decommission and will be removed after the
+# CI validation window. See docs/improvement/CI-upgrade.md for the removal schedule.
 name: Scan Private Members in Tests
 
 on:
@@ -10,15 +15,26 @@ on:
       - 'tests/**'
       - '.github/private_member_allowlist.json'
 
+concurrency:
+  group: scan-private-members-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   scan-private-members:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

@@ -152,6 +152,23 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Delegate payload materialisation to each stored explanation."""
         return [exp.build_rules_payload() for exp in self.explanations]
 
+    def copy(self, deep=False):
+        """Return a copy of the collection.
+
+        Parameters
+        ----------
+        deep : bool, default=False
+            Determines whether to return a shallow or deep copy.
+
+        Returns
+        -------
+        CalibratedExplanations
+            A copy of the collection.
+        """
+        if deep:
+            return deepcopy(self)
+        return copy(self)
+
     def __getitem__(self, key: Union[int, slice, List[int], List[bool], np.ndarray]):
         """Return the explanation for the given key.
 
@@ -1026,6 +1043,30 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             explanation.remove_conjunctions()
         return self
 
+    def filter_rule_sizes(
+        self,
+        *,
+        rule_sizes: Optional[Any] = None,
+        size_range: Optional[Tuple[int, int]] = None,
+        copy: bool = True,
+    ):
+        """Filter rules by conjunctive rule size across the collection."""
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.filter_rule_sizes(
+                    rule_sizes=rule_sizes, size_range=size_range, copy=True
+                )
+                for explanation in self.explanations
+            ]
+            return new_obj
+
+        for idx, explanation in enumerate(self.explanations):
+            self.explanations[idx] = explanation.filter_rule_sizes(
+                rule_sizes=rule_sizes, size_range=size_range, copy=False
+            )
+        return self
+
     def get_explanation(self, index):
         """Return the explanation corresponding to the index.
 
@@ -1176,7 +1217,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            self[index].plot(
+            return self[index].plot(
                 filter_top=filter_top,
                 show=show,
                 filename=filename,
@@ -1185,27 +1226,36 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 rnk_metric=rnk_metric,
                 rnk_weight=rnk_weight,
                 style_override=style_override,
+                **kwargs,
             )
         else:
+            results = []
             for i, explanation in enumerate(self.explanations):
                 if len(filename) > 0:
                     filename = path + title + str(i) + ext
-                explanation.plot(
-                    filter_top=filter_top,
-                    show=show,
-                    filename=filename,
-                    uncertainty=uncertainty,
-                    style=style,
-                    rnk_metric=rnk_metric,
-                    rnk_weight=rnk_weight,
-                    style_override=style_override,
+                results.append(
+                    explanation.plot(
+                        filter_top=filter_top,
+                        show=show,
+                        filename=filename,
+                        uncertainty=uncertainty,
+                        style=style,
+                        rnk_metric=rnk_metric,
+                        rnk_weight=rnk_weight,
+                        style_override=style_override,
+                        **kwargs,
+                    )
                 )
+            if kwargs.get("return_plot_spec"):
+                return results[0] if len(results) == 1 else results
 
     def to_narrative(
         self,
         template_path="exp.yaml",
         expertise_level=("beginner", "advanced"),
         output_format="dataframe",
+        conjunction_separator=" AND ",
+        align_weights=True,
         **kwargs,
     ):
         """
@@ -1223,7 +1273,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             The expertise level(s) for narrative generation. Can be a single
             level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
         output_format : str, default="dataframe"
-            Output format. Valid values: "dataframe", "text", "html", "dict".
+            Output format. Valid values: "dataframe", "text", "html", "dict", "markdown".
+        conjunction_separator : str, default=" AND "
+            Separator to use for conjunctive rules. Conjunctive rules combine
+            multiple feature conditions (e.g., "Glucose > 120 AND BMI > 28").
+        align_weights : bool, default=True
+            If True, vertically align weight columns in the narrative output.
+            If False, no alignment is applied.
         **kwargs : dict
             Additional keyword arguments passed to the narrative plugin.
 
@@ -1272,6 +1328,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             template_path=template_path,
             expertise_level=expertise_level,
             output=output_format,
+            conjunction_separator=conjunction_separator,
+            align_weights=align_weights,
             **kwargs,
         )
 
@@ -1345,7 +1403,7 @@ class AlternativeExplanations(CalibratedExplanations):
     alternative explanations, such as filtering explanations by type.
     """
 
-    def super_explanations(self, only_ensured=False, include_potential=True):
+    def super_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Return a copy with only super-explanations.
 
@@ -1357,6 +1415,8 @@ class AlternativeExplanations(CalibratedExplanations):
             Determines whether to return only ensured explanations.
         include_potential : bool, default=True
             Determines whether to include potential explanations in the super-explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanations or modify them in place.
 
         Returns
         -------
@@ -1367,9 +1427,18 @@ class AlternativeExplanations(CalibratedExplanations):
         -----
         Super-explanations are only available for `AlternativeExplanation` explanations.
         """
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.super_explanations(
+                    only_ensured=only_ensured, include_potential=include_potential, copy=True
+                )
+                for explanation in self.explanations
+            ]
+            return new_obj
         for explanation in self.explanations:
             explanation.super_explanations(
-                only_ensured=only_ensured, include_potential=include_potential
+                only_ensured=only_ensured, include_potential=include_potential, copy=False
             )
         return self
 
@@ -1409,7 +1478,7 @@ class AlternativeExplanations(CalibratedExplanations):
         inst._class_labels_cache = getattr(collection, "_class_labels_cache", None)
         return inst
 
-    def semi_explanations(self, only_ensured=False, include_potential=True):
+    def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Return a copy with only semi-explanations.
 
@@ -1421,6 +1490,8 @@ class AlternativeExplanations(CalibratedExplanations):
             Determines whether to return only ensured explanations.
         include_potential : bool, default=True
             Determines whether to include potential explanations in the semi-explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanations or modify them in place.
 
         Returns
         -------
@@ -1431,13 +1502,22 @@ class AlternativeExplanations(CalibratedExplanations):
         -----
         Semi-explanations are only available for `AlternativeExplanation` explanations.
         """
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.semi_explanations(
+                    only_ensured=only_ensured, include_potential=include_potential, copy=True
+                )
+                for explanation in self.explanations
+            ]
+            return new_obj
         for explanation in self.explanations:
             explanation.semi_explanations(
-                only_ensured=only_ensured, include_potential=include_potential
+                only_ensured=only_ensured, include_potential=include_potential, copy=False
             )
         return self
 
-    def counter_explanations(self, only_ensured=False, include_potential=True):
+    def counter_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Return a copy with only counter-explanations.
 
@@ -1449,6 +1529,8 @@ class AlternativeExplanations(CalibratedExplanations):
             Determines whether to return only ensured explanations.
         include_potential : bool, default=True
             Determines whether to include potential explanations in the counter-explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanations or modify them in place.
 
         Returns
         -------
@@ -1459,25 +1541,48 @@ class AlternativeExplanations(CalibratedExplanations):
         -----
         Counter-explanations are only available for `AlternativeExplanation` explanations.
         """
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.counter_explanations(
+                    only_ensured=only_ensured, include_potential=include_potential, copy=True
+                )
+                for explanation in self.explanations
+            ]
+            return new_obj
         for explanation in self.explanations:
             explanation.counter_explanations(
-                only_ensured=only_ensured, include_potential=include_potential
+                only_ensured=only_ensured, include_potential=include_potential, copy=False
             )
         return self
 
-    def ensured_explanations(self):
+    def ensured_explanations(self, include_potential=True, copy=True):
         """
         Return a copy with only ensured explanations.
 
         Ensured explanations are individual rules that have a smaller confidence interval.
+
+        Parameters
+        ----------
+        include_potential : bool, default=True
+            Determines whether to include potential explanations in the ensured explanations.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanations or modify them in place.
 
         Returns
         -------
         AlternativeExplanations
             A new `AlternativeExplanations` object containing only ensured explanations.
         """
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.ensured_explanations(include_potential=include_potential, copy=True)
+                for explanation in self.explanations
+            ]
+            return new_obj
         for explanation in self.explanations:
-            explanation.ensured_explanations()
+            explanation.ensured_explanations(include_potential=include_potential, copy=False)
         return self
 
 

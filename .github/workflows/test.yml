@@ -1,103 +1,66 @@
-name: test
+# CI: Test compat wrapper
+# Purpose: Compatibility wrapper to preserve previous `test.yml` behavior during
+# CI migration. Will be removed after validation window — see
+# docs/improvement/CI-upgrade.md for removal schedule.
+name: test (compat wrapper)
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  matrix-tests:
     # Skip CI if commit message starts with 'info:'
     if: ${{!startsWith(github.event.head_commit.message, 'info:') && !startsWith(github.event.head_commit.message, 'Info:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'Docs:')}}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip' # caching pip dependencies
-
-      - name: Cache pip
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies (core + dev, no viz extras)
-        run: |
-          pip install -r requirements.txt -c constraints.txt
-          pip install -e .[dev,eval] -c constraints.txt
-          pip install pytest pytest-cov xgboost lime shap setuptools psutil -c constraints.txt
-
-      - name: Run core tests with coverage (exclude viz)
-        id: run_tests
-        run: make test-core
-
-      - name: Run doctests
-        run: python src/calibrated_explanations/utils/helper.py
-
-      - name: (coverage steps removed) Skip uploading coverage and gates here
-        run: echo "Coverage upload and gate checks moved to dedicated coverage workflow"
+        python-version: ['3.10','3.11','3.12','3.13']
+    uses: ./.github/workflows/reusable-python-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      install-mode: dev
+      test-command: make test-core
 
   core-only:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install core dependencies only (no viz extras)
-        run: |
-          python -m pip install --upgrade pip
-          # Install project without dependencies to control deps explicitly
-          pip install . --no-deps -c constraints.txt
-          # Install minimal runtime deps explicitly. Matplotlib is required at import-time
-          # by some core modules (it only supplies the visualization backend), so include it
-          # while still omitting other optional viz extras (like lime/ipython).
-          pip install numpy pyyaml pandas scikit-learn "crepes>=0.7.1" "venn-abers>=1.4.1" matplotlib pytest pytest-cov jsonschema -c constraints.txt
-
-      - name: Run core test subset (skip viz)
-        run: pytest -q -k "not viz" --no-cov
+    needs: matrix-tests
+    uses: ./.github/workflows/reusable-python-test.yml
+    with:
+      python-version: '3.11'
+      install-mode: core
+      test-command: pytest -q -m "not viz" --no-cov
 
   parity-reference:
     runs-on: ubuntu-latest
+    needs: matrix-tests
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies (core only)
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -c constraints.txt
           pip install . -c constraints.txt
           pip install jsonschema -c constraints.txt
-
-      - name: Run parity reference harness for all datasets (condition_source=observed)
+      - name: Run parity harness (observed)
         run: |
           python tests/parity_reference/run_parity_reference.py --dataset classification
           python tests/parity_reference/run_parity_reference.py --dataset regression
           python tests/parity_reference/run_parity_reference.py --dataset multiclass
           python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression
-
-      - name: Run parity reference harness for all datasets (condition_source=prediction)
+      - name: Run parity harness (prediction)
         run: |
           python tests/parity_reference/run_parity_reference.py --dataset classification --condition-source prediction
           python tests/parity_reference/run_parity_reference.py --dataset regression --condition-source prediction
@@ -105,78 +68,61 @@ jobs:
           python tests/parity_reference/run_parity_reference.py --dataset probabilistic_regression --condition-source prediction
 
   viz-only:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies with viz extras
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -c constraints.txt
-          pip install .[viz] -c constraints.txt
-          pip install pytest pytest-cov -c constraints.txt
-
-      - name: Run visualization tests
-        run: pytest -m viz --no-cov -q
+    needs: matrix-tests
+    uses: ./.github/workflows/reusable-python-test.yml
+    with:
+      python-version: '3.11'
+      install-mode: viz
+      test-command: pytest -q -m viz --no-cov
 
   perf-guard:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    needs: test
+    needs: matrix-tests
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install dependencies
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
         run: |
           pip install -r requirements.txt -c constraints.txt
           pip install . psutil -c constraints.txt
-
       - name: Run micro benchmark
         run: |
           python scripts/micro_bench_perf.py > tests/benchmarks/micro_current.json
-
       - name: Compare micro metrics with baseline thresholds
         run: |
           python scripts/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
 
   anti-pattern-audit:
     name: Anti-pattern Audit
-    needs: test
+    needs: matrix-tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
       - name: Run anti-pattern detector
         run: |
           python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
-          # Fail if any violations found
           if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
-            echo "Anti-pattern violations detected:"
-            cat reports/test_anti_pattern_report.csv
-            exit 1
-          fi
-
+            echo "Anti-pattern violations detected:"; cat reports/test_anti_pattern_report.csv; exit 1; fi
       - name: Upload anti-pattern report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: anti-pattern-report
           path: reports/test_anti_pattern_report.csv

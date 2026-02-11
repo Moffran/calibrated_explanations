@@ -714,7 +714,9 @@ class PredictionOrchestrator:
         enriched_metadata.setdefault(
             "predict_function", getattr(self.explainer, "predict_function", None)
         )
-        enriched_metadata.setdefault("difficulty_estimator", self.explainer.difficulty_estimator)
+        # Difficulty estimator can be updated post-init via `set_difficulty_estimator`.
+        # Always overwrite any cached value so interval plugins see the current estimator.
+        enriched_metadata["difficulty_estimator"] = self.explainer.difficulty_estimator
         enriched_metadata.setdefault("explainer", self.explainer)
         enriched_metadata.setdefault(
             "categorical_features", tuple(self.explainer.categorical_features)

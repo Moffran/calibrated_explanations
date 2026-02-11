@@ -544,6 +544,26 @@ class LRUCache(Generic[K, V]):
                 raise
             logger.debug("Telemetry callback failed for %s: %s", event, sys.exc_info()[1])
 
+    def __getstate__(self) -> dict:
+        """Support pickling by excluding the unpicklable RLock."""
+        state = self.__dict__.copy()
+        state.pop("_lock", None)
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        """Restore state and recreate the unpicklable RLock."""
+        self.__dict__.update(state)
+        self._lock = threading.RLock()
+
+    def __reduce__(self):
+        """Provide a stable reduce implementation.
+
+        Avoid module-reimport pickling issues when the module is loaded under
+        multiple import paths. Returns a top-level reconstruct function plus the
+        pickled state.
+        """
+        return (_reconstruct_lru_cache, (self.__getstate__(),))
+
 
 @dataclass
 class CalibratorCache(Generic[V]):
@@ -673,6 +693,10 @@ class CalibratorCache(Generic[V]):
         # Recreate the lock after unpickling
         self._version_lock = threading.RLock()
 
+    def __reduce__(self):
+        """Stable reduce implementation for `CalibratorCache` similar to `LRUCache`."""
+        return (_reconstruct_calibrator_cache, (self.__getstate__(),))
+
 
 __all__ = [
     "CacheConfig",
@@ -682,3 +706,27 @@ __all__ = [
     "TelemetryCallback",
     "make_key",
 ]
+
+
+def _reconstruct_lru_cache(state: dict):
+    """Top-level helper used by pickle to recreate an `LRUCache` instance.
+
+    Using a module-level function avoids issues when the module object is
+    imported multiple times under different names; pickle uses this
+    callable reference to reconstruct the instance and then applies the
+    saved state via ``__setstate__``.
+    """
+    obj = object.__new__(LRUCache)
+    # __setstate__ will recreate the lock and other transient fields
+    LRUCache.__setstate__(obj, state)
+    return obj
+
+
+def _reconstruct_calibrator_cache(state: dict):
+    """Top-level helper used by pickle to recreate a `CalibratorCache`.
+
+    See `_reconstruct_lru_cache` for rationale.
+    """
+    obj = object.__new__(CalibratorCache)
+    CalibratorCache.__setstate__(obj, state)
+    return obj

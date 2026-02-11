@@ -16,6 +16,15 @@ import calibrated_explanations
 for finder, mod_name, ispkg in pkgutil.walk_packages(
     calibrated_explanations.__path__, calibrated_explanations.__name__ + "."
 ):
+    # Skip deprecated shims to avoid noise in test logs
+    if any(
+        mod_name.startswith(p)
+        for p in [
+            "calibrated_explanations.core.calibration.",
+            "calibrated_explanations.perf.",
+        ]
+    ):
+        continue
     try:
         importlib.import_module(mod_name)
     except Exception as exc:  # pragma: no cover - best-effort imports

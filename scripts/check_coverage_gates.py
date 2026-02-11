@@ -3,6 +3,7 @@
 Usage:
     python scripts/check_coverage_gates.py [coverage_xml_path]
 """
+
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path

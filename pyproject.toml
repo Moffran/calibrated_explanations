@@ -1,13 +1,13 @@
 [build-system]
 requires = [
-    "setuptools>=61.0,<81",
+    "setuptools>=61.0,<83",
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-version = "0.11.0-dev"
+version = "0.10.4-dev"
 description = "Extract calibrated explanations from machine learning models."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -118,7 +118,7 @@ filterwarnings = [
     "error:.*fall.*back.*:UserWarning",
     "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
     "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
-    "ignore:Auto-close.*backend switching.*:matplotlib._api.deprecation.MatplotlibDeprecationWarning",
+    "ignore:Auto-close.*backend switching.*:DeprecationWarning:matplotlib.*",
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
     "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",

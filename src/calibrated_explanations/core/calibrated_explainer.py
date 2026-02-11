@@ -226,7 +226,14 @@ class CalibratedExplainer:
         # Identify constant calibration features that can be ignored downstream
         from .calibration_helpers import identify_constant_features  # pylint: disable=import-outside-toplevel
 
-        self.features_to_ignore = identify_constant_features(self.x_cal)
+        constant_ignore = identify_constant_features(self.x_cal)
+        try:
+            self.features_to_ignore = (
+                np.union1d(self.features_to_ignore, constant_ignore).astype(int).tolist()
+            )
+        except (TypeError, ValueError):
+            # Be defensive: if union fails due to incompatible types, fall back to constants.
+            self.features_to_ignore = list(constant_ignore)
 
         if feature_names is None:
             feature_names = (
@@ -2164,6 +2171,32 @@ class CalibratedExplainer:
         validate_difficulty_estimator(difficulty_estimator)
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
+
+        # Invalidate cached interval plugin metadata.
+        # Interval resolution persists context metadata (including a cached calibrator)
+        # across invocations for performance. When the difficulty estimator changes,
+        # we must drop that cache so the regression backend (IntervalRegressor)
+        # re-fits crepes' ConformalPredictiveSystem with the updated `sigmas`.
+        plugin_manager = getattr(self, "_plugin_manager", None)
+        if plugin_manager is not None:
+            meta = getattr(plugin_manager, "interval_context_metadata", None)
+            if isinstance(meta, dict):
+                for key in ("default", "fast"):
+                    bucket = meta.get(key)
+                    if isinstance(bucket, dict):
+                        bucket.pop("calibrator", None)
+                        bucket.pop("fast_calibrators", None)
+                        bucket.pop("existing_fast_calibrators", None)
+                        bucket.pop("difficulty_estimator", None)
+
+        # Clear the active interval learner if orchestrators are available.
+        # (During __init__ we call set_difficulty_estimator before orchestrator setup.)
+        orchestrator_ready = (
+            plugin_manager is not None
+            and getattr(plugin_manager, "_prediction_orchestrator", None) is not None
+        )
+        if orchestrator_ready:
+            self.interval_learner = None
         if initialize:
             self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
 

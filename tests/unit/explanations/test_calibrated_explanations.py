@@ -129,17 +129,33 @@ class DummyExplanation:
     def get_rules(self):
         return {"rule": [0, 1]}
 
-    def super_explanations(self, **_kwargs) -> None:
+    def super_explanations(
+        self, only_ensured=False, include_potential=True, copy=True
+    ) -> DummyExplanation:
         self.conjunction_calls.append("super")
+        return self
 
-    def semi_explanations(self, **_kwargs) -> None:
+    def semi_explanations(
+        self, only_ensured=False, include_potential=True, copy=True
+    ) -> DummyExplanation:
         self.conjunction_calls.append("semi")
+        return self
 
-    def counter_explanations(self, **_kwargs) -> None:
+    def counter_explanations(
+        self, only_ensured=False, include_potential=True, copy=True
+    ) -> DummyExplanation:
         self.conjunction_calls.append("counter")
+        return self
 
-    def ensured_explanations(self) -> None:
+    def ensured_explanations(self, include_potential=True, copy=True) -> DummyExplanation:
         self.conjunction_calls.append("ensured")
+        return self
+
+    def filter_rule_sizes(
+        self, *, rule_sizes=None, size_range=None, copy=True
+    ) -> DummyExplanation:
+        self.conjunction_calls.append(("filter_rule_sizes", rule_sizes, size_range, copy))
+        return self
 
 
 @pytest.fixture()
@@ -184,6 +200,12 @@ def test_getitem_invalid_type_raises(collection: CalibratedExplanations) -> None
 
     with pytest.raises(ValidationError):
         _ = collection[1.5]  # type: ignore[index]
+
+
+def test_collection_filter_rule_sizes_delegates(collection: CalibratedExplanations) -> None:
+    filtered = collection.filter_rule_sizes(rule_sizes=1, copy=True)
+    for exp in filtered.explanations:
+        assert ("filter_rule_sizes", 1, None, True) in exp.conjunction_calls
 
 
 def test_prediction_helpers_cache_results(collection: CalibratedExplanations) -> None:

@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "min_count": 20,
+    "summary": "reports\\over_testing\\summary.json",
+    "lines": "reports\\over_testing\\line_coverage_counts.csv",
+    "blocks": "reports\\over_testing\\block_coverage_counts.csv",
+    "coverage_file": ".coverage",
+    "contexts_detected": 1,
+    "context_regex": null,
+    "source_root": "src\\calibrated_explanations",
+    "over_testing_threshold": 20,
+    "warnings": [
+      "Only one coverage context detected. Over-testing analysis is unreliable; run pytest with --cov-context=test."
+    ]
+  },
+  "top_files": [
+    {
+      "file": "src\\calibrated_explanations\\__init__.py",
+      "lines_covered": 30,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\api\\__init__.py",
+      "lines_covered": 6,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\api\\config.py",
+      "lines_covered": 70,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\api\\params.py",
+      "lines_covered": 15,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\api\\quick.py",
+      "lines_covered": 17,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\cache\\__init__.py",
+      "lines_covered": 24,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\cache\\cache.py",
+      "lines_covered": 98,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\cache\\explanation_cache.py",
+      "lines_covered": 34,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\__init__.py",
+      "lines_covered": 24,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\interval_learner.py",
+      "lines_covered": 15,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\interval_regressor.py",
+      "lines_covered": 56,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\interval_wrappers.py",
+      "lines_covered": 25,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\state.py",
+      "lines_covered": 19,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\summaries.py",
+      "lines_covered": 11,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    },
+    {
+      "file": "src\\calibrated_explanations\\calibration\\venn_abers.py",
+      "lines_covered": 23,
+      "mean_count": 1.0,
+      "median_count": 1.0,
+      "max_count": 1,
+      "over_threshold": 0,
+      "over_ratio": 0.0
+    }
+  ],
+  "top_lines": [],
+  "top_blocks": []
+}

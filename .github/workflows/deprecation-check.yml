@@ -1,3 +1,6 @@
+# CI: Deprecation-sensitive tests
+# Purpose: Run a focused test subset with deprecation warnings treated as errors.
+# Scope: PRs and manual runs to catch API deprecations early.
 name: Deprecation Check
 
 on:
@@ -8,20 +11,21 @@ jobs:
   deprecation-check:
     name: Deprecation-sensitive tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Cache pip
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
 
       - name: Install dependencies
         run: |

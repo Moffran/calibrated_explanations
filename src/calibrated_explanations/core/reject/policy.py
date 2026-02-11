@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import warnings
-from enum import Enum
 from typing import Any
 
-
 from ...explanations.reject import RejectPolicy
-
 
 # Deprecation map for attribute-style access (e.g., RejectPolicy.PREDICT_AND_FLAG)
 _DEPRECATED_ATTRS = {

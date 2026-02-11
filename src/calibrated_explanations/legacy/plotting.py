@@ -408,6 +408,8 @@ def plot_triangular(
         min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
         max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
         if math.isclose(min_x, max_x, rel_tol=1e-9):
+            warnings.warn("All predictions are (almost) identical.", Warning, stacklevel=2)
+        if math.isclose(min_y, max_y, rel_tol=1e-9):
             warnings.warn("All uncertainties are (almost) identical.", Warning, stacklevel=2)
         min_y = min_y - 0.1 * (max_y - min_y)
         max_y = max_y + 0.1 * (max_y - min_y)
@@ -788,7 +790,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             plt.xlabel("Probability of Y = 1")
     plt.xlim(min_x, max_x)
     plt.ylim(min_y, max_y)
-    plt.show()
+    if show:
+        plt.show()
 
 
 def _plot_proba_triangle():

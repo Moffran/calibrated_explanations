@@ -31,4 +31,6 @@ stakeholders who only need the core explanations.
 task_api_comparison
 playbooks/index
 advanced/index
+narrative_templates
+../over_testing_method
 ```

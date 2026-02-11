@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+pytestmark = pytest.mark.viz
+
 
 def test_plot_with_plotspec_snippet(tmp_path):
     pytest.importorskip("calibrated_explanations.viz")

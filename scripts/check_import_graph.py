@@ -15,6 +15,13 @@ Exit codes:
     2: Configuration error
 """
 
+if __name__ == "__main__":  # pragma: no cover - shim
+    import runpy
+    from pathlib import Path
+
+    runpy.run_path(str(Path(__file__).parent / "quality" / "check_import_graph.py"), run_name="__main__")
+    raise SystemExit(0)
+
 import ast
 import sys
 from pathlib import Path

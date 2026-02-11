@@ -5,6 +5,21 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
+### Added
+- **Non-destructive explanation filtering:** Added a `copy` parameter (default `True`) to `super_explanations`, `semi_explanations`, `counter_explanations`, and `ensured_explanations` in both `AlternativeExplanation` and `AlternativeExplanations` collection. This allows users to filter/reduce explanations without modifying the original object. Added `copy()` methods to `CalibratedExplanation` and `CalibratedExplanations` base classes for consistent object duplication.
+- **Over-testing workflow:**
+  - Documented the over-testing density gate in ADR-030 and grouped test-quality/perf scripts under `scripts/over_testing`, `scripts/quality`, and `scripts/perf`.
+  - Added `scripts/over_testing/evaluate_cov_fill_adr030.py` and `scripts/over_testing/prune_generated_tests.py` plus `reports/over_testing/cov_fill_adr30_scan.csv`/`prune_plan.json` support files to formalize ADR-030 compliance scanning and conservative pruning.
+- **Coverage improvement iteration:** Added integration tests for plotting style overrides and legacy fallbacks, plus cache fallback testing when cachetools is unavailable, to increase coverage in low-coverage modules (plotting.py, cache.py).
+
+### Fixed
+- **Conjunctive quality improvements:** Fixed a bug blocking conjunctive rules to materialise. Made performance improvements, making it possible to create arbitrary large conjunctives. Added feature size filtering and functions for retrieval of internal content. 
+- **PlotSpec quality improvements:** Enhanced BarItem dataclass with missing fields, added AlternativeExplanation _rules_with_impact method, improved serialization robustness, added empty features_to_plot validation, and comprehensive RuleWithImpact test coverage to ensure data integrity and reliable plotting.
+- **Narrative quality improvements:** Ensured narratives support conjunctions, updated narrative formatting with possibility to align rules for easier oversight, adjusted default content in explain_template.yaml.
+- **Test quality cleanup:** Removed a duplicate conjunction parity test and normalized test helper naming to avoid private helper anti-patterns.
+ - **ADR-001 import-graph linting:** Resolved false-positive import-graph violations by refining the ADR-001 checker to correctly resolve package paths and broaden sanctioned allowlists. Re-generated `reports/import_graph.json` and ensured `scripts/quality/check_import_graph.py --report` reports no violations.
+- **CI workflow improvement:** Remodelled the entire CI workflow into a more streamlined setup. The update is documented `docs/improvement/CI-upgrade.md`.
+
 ## [v0.10.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.3) - 2026-02-04
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.2...v0.10.3)
@@ -17,7 +32,7 @@
   - `ONLY_ACCEPTED` (replaces `EXPLAIN_NON_REJECTS` and `SKIP_ON_REJECT`) - Process only accepted (confident) instances
   - `NONE` - Unchanged, legacy behavior with no reject orchestration
 
-- **Transparent Rejection Integration (Solution 1):** `explain_factual` now returns a specialized `RejectCalibratedExplanations` collection when a rejection policy is active. This subclass behaves exactly like the standard collection (supporting `plot()`, slicing, and `add_conjunctions()`) while transparently carrying rejection metadata (ambiguity masks, etc.). This restores existing workflow compatibility while surfacing rejection signals.
+- **Transparent Rejection Integration:** `explain_factual` now returns a specialized `RejectCalibratedExplanations` collection when a rejection policy is active. This subclass behaves exactly like the standard collection (supporting `plot()`, slicing, and `add_conjunctions()`) while transparently carrying rejection metadata (ambiguity masks, etc.). This restores existing workflow compatibility while surfacing rejection signals.
 
 - **Linting and Security Compliance:** Replaced bare `except: pass` blocks with logged exceptions to satisfy Bandit security checks (B110) and ensure robust error visibility.
 

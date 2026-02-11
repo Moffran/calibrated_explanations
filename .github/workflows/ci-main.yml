@@ -1,0 +1,98 @@
+# CI: Main branch gates
+# Purpose: Main-branch gating workflow — coverage upload, perf guard, anti-pattern audits.
+# Scope: Runs on `main` pushes; protects releases. See docs/improvement/CI-upgrade.md
+# for branch-protection flip instructions.
+name: CI — Main branch gates
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: ci-main
+  cancel-in-progress: true
+
+jobs:
+  coverage-and-gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install -e .[dev,eval] -c constraints.txt
+      - name: Run core tests with coverage
+        run: |
+          pytest -q -o addopts= \
+            --cov=src/calibrated_explanations \
+            --cov-config=pyproject.toml \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=90
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+      - name: Run per-module coverage gates
+        run: python scripts/check_coverage_gates.py coverage.xml
+
+  perf-guard:
+    needs: coverage-and-gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt -c constraints.txt
+          pip install . psutil -c constraints.txt
+      - name: Run micro benchmark
+        run: |
+          python scripts/micro_bench_perf.py > tests/benchmarks/micro_current.json
+      - name: Compare micro metrics
+        run: |
+          python scripts/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
+
+  anti-pattern-audit:
+    needs: coverage-and-gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Run anti-pattern detector
+        run: |
+          python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
+          if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
+            echo "Anti-pattern violations detected:"; cat reports/test_anti_pattern_report.csv; exit 1; fi
+      - name: Upload anti-pattern report
+        uses: actions/upload-artifact@v4
+        with:
+          name: anti-pattern-report
+          path: reports/test_anti_pattern_report.csv

@@ -1,3 +1,13 @@
+import runpy
+from pathlib import Path
+
+if __name__ == "__main__":  # pragma: no cover - shim
+    runpy.run_path(
+        str(Path(__file__).parent / "quality" / "find_missing_numpy_imports.py"),
+        run_name="__main__",
+    )
+    raise SystemExit(0)
+
 import os
 import re
 
