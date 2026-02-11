@@ -1,0 +1,284 @@
+{
+  "summary": {
+    "total": 20,
+    "compliant": 20,
+    "failed": 0
+  },
+  "notebooks": [
+    {
+      "path": "notebooks/demo_binary_classification.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/demo_classification.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/demo_conditional.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/demo_multiclass_glass.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "get_explanation",
+        "plot",
+        "predict_proba"
+      ]
+    },
+    {
+      "path": "notebooks/demo_narrative_explanations.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "explain_factual",
+        "fit"
+      ]
+    },
+    {
+      "path": "notebooks/demo_plugin_wiring.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "explain_factual",
+        "fit",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/demo_probabilistic_regression.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict",
+        "remove_conjunctions",
+        "set_difficulty_estimator"
+      ]
+    },
+    {
+      "path": "notebooks/demo_regression.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict",
+        "remove_conjunctions",
+        "set_difficulty_estimator"
+      ]
+    },
+    {
+      "path": "notebooks/demo_reject.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "calibrate",
+        "default_reject_policy",
+        "explain_factual",
+        "explainer",
+        "fit",
+        "predict",
+        "predict_proba"
+      ]
+    },
+    {
+      "path": "notebooks/demo_under_the_hood.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "get_explanation",
+        "plot",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/fast_feature_filtering_demo.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "calibrate",
+        "explain_factual",
+        "explainer",
+        "fit",
+        "num_features",
+        "perf_parallel",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/quickstart.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "remove_conjunctions",
+        "set_difficulty_estimator"
+      ]
+    },
+    {
+      "path": "notebooks/quickstart_tiny.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "explain_factual",
+        "fit",
+        "get_explanation",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/quickstart_wrap.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "explainer",
+        "explore_alternatives",
+        "fit",
+        "learner",
+        "plot",
+        "predict",
+        "predict_proba",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/quickstart_wrap_oob.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "explainer",
+        "explore_alternatives",
+        "fit",
+        "learner",
+        "plot",
+        "predict",
+        "predict_proba",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/additional_notebooks/demo_multiclass.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "get_explanation",
+        "plot",
+        "predict_proba",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/additional_notebooks/demo_speeddating.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict",
+        "predict_proba"
+      ]
+    },
+    {
+      "path": "notebooks/additional_notebooks/imbalanced_wrap.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict_proba",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/additional_notebooks/LIME_comparison.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "explain_factual",
+        "fit",
+        "get_explanation",
+        "plot",
+        "predict",
+        "predict_proba",
+        "show_in_notebook"
+      ]
+    },
+    {
+      "path": "notebooks/additional_notebooks/support_xgboost_lightgbm_catboost_issue_92.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict",
+        "predict_proba"
+      ]
+    }
+  ]
+}

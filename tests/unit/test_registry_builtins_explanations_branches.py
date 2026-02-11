@@ -2,6 +2,7 @@ import types
 import warnings
 
 import numpy as np
+import pytest
 
 from calibrated_explanations.plugins import registry, builtins
 from calibrated_explanations.explanations import legacy_conjunctions
@@ -247,6 +248,67 @@ def test_alternative_plot_triangle_calls_plot_triangular(monkeypatch):
         style_override=None,
     )
     assert "args" in called
+
+    proba, uncertainty, sel_proba, sel_unc, num_to_show = called["args"]
+    assert proba == 0.6
+    assert uncertainty == pytest.approx(0.2)
+    assert sel_proba == [0.7]
+    assert list(sel_unc) == pytest.approx([0.2])
+    assert num_to_show == 1
+
+
+def test_alternative_plot_triangle_uses_interval_width_for_regression(monkeypatch):
+    # Arrange: minimal regression-mode explanation stub
+    fake = types.SimpleNamespace()
+    fake.rank_features = lambda *a, **k: [0]
+    fake.feature_predict = {"predict": [5.0], "low": [4.0], "high": [6.0]}
+    fake.prediction = {"predict": 5.0, "low": 4.0, "high": 6.0}
+    fake.y_minmax = (0.0, 10.0)
+    alternative = {
+        "predict": [6.0],
+        "predict_low": [5.5],
+        "predict_high": [7.5],
+        "value": ["v"],
+        "rule": ["r"],
+        "weight": [1.0],
+        "weight_low": [0.5],
+        "weight_high": [1.5],
+    }
+    fake.get_explainer = lambda: types.SimpleNamespace(
+        num_features=1, feature_names=["f0"], categorical_features=(), categorical_labels=None
+    )
+    fake.get_rules = lambda *a, **k: alternative
+    check_pre_attr = "_" + "check_preconditions"
+    setattr(fake, check_pre_attr, lambda *a, **k: None)
+    fake.get_mode = lambda: "regression"
+    fake.is_thresholded = lambda: False
+
+    called = {}
+
+    def fake_plot_triangular(self_, proba, uncertainty, sel_proba, sel_unc, num_to_show, **kwargs):
+        called["args"] = (proba, uncertainty, sel_proba, sel_unc, num_to_show)
+
+    monkeypatch.setattr(expl_mod, "plot_triangular", fake_plot_triangular)
+
+    # Act
+    expl_mod.AlternativeExplanation.plot(
+        fake,
+        filter_top=None,
+        style="triangular",
+        title=None,
+        path=None,
+        show=False,
+        save_ext=None,
+        style_override=None,
+    )
+
+    # Assert: uncertainty is width = high-low
+    proba, uncertainty, sel_proba, sel_unc, num_to_show = called["args"]
+    assert proba == 5.0
+    assert uncertainty == pytest.approx(2.0)
+    assert sel_proba == [6.0]
+    assert list(sel_unc) == pytest.approx([2.0])
+    assert num_to_show == 1
 
 
 def test_load_entrypoint_plugins_loads_valid_plugin(monkeypatch):

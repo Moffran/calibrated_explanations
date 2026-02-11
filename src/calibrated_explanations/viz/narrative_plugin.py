@@ -90,6 +90,8 @@ class NarrativePlotPlugin:
         template_path: Optional[str] = None,
         expertise_level: Union[str, Tuple[str, ...]] = ("beginner", "intermediate", "advanced"),
         output: str = "dataframe",
+        conjunction_separator: str = " AND ",
+        align_weights: bool = True,
         **kwargs,
     ) -> Union[Any, str, List[Dict[str, Any]]]:
         """Generate narratives for a collection of explanations.
@@ -105,7 +107,13 @@ class NarrativePlotPlugin:
             The expertise level(s) for narrative generation. Can be a single
             level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
         output : str, default="dataframe"
-            Output format. Valid values: "dataframe", "text", "html", "dict".
+            Output format. Valid values: "dataframe", "text", "html", "dict", "markdown".
+        conjunction_separator : str, default=" AND "
+            Separator to use for conjunctive rules. Default is " AND ".
+            Conjunctive rules combine multiple feature conditions.
+        align_weights : bool, default=True
+            If True, vertically align weight columns in the narrative output.
+            If False, no alignment is applied.
         **kwargs : dict
             Additional keyword arguments (currently unused, reserved for future extensions).
 
@@ -187,7 +195,7 @@ class NarrativePlotPlugin:
                 )
 
         # Validate output format
-        valid_outputs = {"dataframe", "text", "html", "dict"}
+        valid_outputs = {"dataframe", "text", "html", "dict", "markdown"}
         if output not in valid_outputs:
             from ..utils.exceptions import ValidationError
 
@@ -235,6 +243,8 @@ class NarrativePlotPlugin:
                         expertise_level=level,
                         threshold=threshold,
                         feature_names=feature_names,
+                        conjunction_separator=conjunction_separator,
+                        align_weights=align_weights,
                     )
                     row[f"{explanation_type}_explanation_{level}"] = narrative
                 except BaseException:
@@ -397,6 +407,9 @@ class NarrativePlotPlugin:
         if output_format == "html":
             return self._format_as_html(results)
 
+        if output_format == "markdown":
+            return self._format_as_markdown(results)
+
         # Should not reach here due to validation
         from ..utils.exceptions import ConfigurationError
 
@@ -405,7 +418,7 @@ class NarrativePlotPlugin:
             details={
                 "param": "output_format",
                 "value": output_format,
-                "allowed_values": ["dataframe", "text", "html", "dict"],
+                "allowed_values": ["dataframe", "text", "html", "dict", "markdown"],
             },
         )
 
@@ -489,6 +502,45 @@ class NarrativePlotPlugin:
 
         html.append("</table>")
         return "\n".join(html)
+
+    def _format_as_markdown(self, results: List[Dict[str, Any]]) -> str:
+        """Format results as markdown.
+
+        Parameters
+        ----------
+        results : list of dict
+            The narrative results.
+
+        Returns
+        -------
+        str
+            Markdown formatted output.
+        """
+        lines = []
+        for result in results:
+            idx = result["instance_index"]
+            lines.append(f"## Instance {idx}")
+            lines.append("")
+
+            # Get all narrative keys (excluding metadata)
+            narrative_keys = [
+                k for k in result if k not in ("instance_index", "expertise_level", "problem_type")
+            ]
+
+            for key in sorted(narrative_keys):
+                # Extract level from key (e.g., "factual_explanation_beginner" -> "Beginner")
+                parts = key.split("_")
+                if len(parts) >= 3:
+                    level = parts[-1].capitalize()
+                    exp_type = parts[0].capitalize()
+                    lines.append(f"### {exp_type} Explanation ({level})")
+                    lines.append("")
+                    lines.append("```")
+                    lines.append(result[key])
+                    lines.append("```")
+                    lines.append("")
+
+        return "\n".join(lines)
 
 
 __all__ = ["NarrativePlotPlugin"]

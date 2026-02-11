@@ -136,18 +136,29 @@ def test_plotting_update_plot_config():
 )
 def test_style_override(styled_explainer, style_section, style_params):
     """Test that style overrides work for all configurable parameters"""
+    import matplotlib.pyplot as plt
+    import matplotlib
+
+    # Suppress figure limit warning locally if it persists
+    old_val = matplotlib.rcParams["figure.max_open_warning"]
+    matplotlib.rcParams["figure.max_open_warning"] = 100
+
     explainer, x_test, y_test = styled_explainer
 
-    # Test global plot
-    explainer.plot(x_test, y_test, show=False, style_override={style_section: style_params})
+    try:
+        # Test global plot
+        explainer.plot(x_test, y_test, show=False, style_override={style_section: style_params})
 
-    # Test factual explanation plot
-    explanation = explainer.explain_factual(x_test)
-    explanation.plot(show=False, style_override={style_section: style_params})
+        # Test factual explanation plot
+        explanation = explainer.explain_factual(x_test)
+        explanation.plot(show=False, style_override={style_section: style_params})
 
-    # Test alternative explanation plot
-    explanation = explainer.explore_alternatives(x_test)
-    explanation.plot(show=False, style_override={style_section: style_params})
+        # Test alternative explanation plot
+        explanation = explainer.explore_alternatives(x_test)
+        explanation.plot(show=False, style_override={style_section: style_params})
+    finally:
+        plt.close("all")
+        matplotlib.rcParams["figure.max_open_warning"] = old_val
 
     # # No errors should occur with any style override
     # assert True

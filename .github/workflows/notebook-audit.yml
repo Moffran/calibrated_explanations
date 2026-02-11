@@ -1,14 +1,34 @@
+# CI: Notebook audit
+# Purpose: Run notebook audit tooling for notebooks and gallery artifacts.
+# Scope: Scheduled and PR-triggered for notebook-related changes; artifacts
+# uploaded for inspection. See docs/improvement/CI-upgrade.md.
+# NOTE: This workflow is scheduled for decommission and will be removed after the
+# CI validation window. See docs/improvement/CI-upgrade.md for the removal schedule.
 name: notebook-audit
 
 on:
   push:
     branches: [ main, 'release/*' ]
+    paths:
+      - 'notebooks/**'
+      - 'evaluation/**'
+      - 'scripts/**'
   pull_request:
     branches: [ main, 'release/*' ]
+    paths:
+      - 'notebooks/**'
+      - 'evaluation/**'
+      - 'scripts/**'
+
+concurrency:
+  group: notebook-audit-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

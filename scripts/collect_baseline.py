@@ -8,6 +8,11 @@ Windows PowerShell example:
 
 from __future__ import annotations
 
+if __name__ == "__main__":  # pragma: no cover - shim
+    from scripts.perf.collect_baseline import main as _main
+
+    raise SystemExit(_main())
+
 import argparse
 import importlib
 import json

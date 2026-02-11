@@ -11,7 +11,19 @@ test-cov:
 # Fast test target for core modules (excludes viz-marked tests).
 .PHONY: test-core
 test-core:
-	export HOME="$USERPROFILE" && pytest -m "not viz" --no-cov
+	@home="$${HOME:-$${USERPROFILE:-$${HOMEDRIVE}$${HOMEPATH}}}"; \
+	if [ -z "$$home" ]; then \
+		if pwd -W >/dev/null 2>&1; then home="$$(pwd -W)"; else home="$$PWD"; fi; \
+	fi; \
+	export HOME="$$home"; \
+	export USERPROFILE="$$home"; \
+	if echo "$$home" | grep -q '^[A-Za-z]:'; then \
+		export HOMEDRIVE="$${home%%:*}:"; \
+		export HOMEPATH="$${home#*:}"; \
+	fi; \
+	export MPLCONFIGDIR="$$home/.matplotlib"; \
+	export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1; \
+	pytest -o addopts= -m "not viz"
 
 # Run only viz-marked tests (useful when the `[viz]` extras are installed).
 .PHONY: test-viz
@@ -27,6 +39,11 @@ ci-local-dry-run:
 .PHONY: ci-local
 ci-local:
 	python scripts/run_ci_locally.py
+
+# Run only the new CI entrypoints (keeps legacy duplicates out of the run).
+.PHONY: ci-local-new
+ci-local-new:
+	python scripts/run_ci_locally.py --shell bash --workflow ci-pr --workflow ci-full --workflow ci-main --workflow ci-nightly
 
 .PHONY: check-private-members
 check-private-members:

@@ -57,13 +57,14 @@ def test_to_narrative_handles_output_formats(monkeypatch):
             self.template_path = template_path
 
         def plot(self, wrapper, template_path=None, expertise_level=None, output=None, **_kw):
+            is_alt = getattr(wrapper, "is_alternative", lambda: False)()
             # simple behavior depending on output
             if output == "dict":
-                return [{"narrative": "ok"}]
+                return [{"narrative": "alt" if is_alt else "factual"}]
             if output == "text":
-                return "narrative text"
+                return "alternative narrative" if is_alt else "factual narrative"
             if output == "dataframe":
-                return pd.DataFrame([{"narrative": "ok"}])
+                return pd.DataFrame([{"narrative": "alt" if is_alt else "factual"}])
             return []
 
     mod.NarrativePlotPlugin = FakePlugin
@@ -72,7 +73,10 @@ def test_to_narrative_handles_output_formats(monkeypatch):
     # Minimal Dummy explanation subclass (do not call super())
     class Dummy(CalibratedExplanation):
         def __init__(self):
-            self.calibrated_explanations = types.SimpleNamespace(calibrated_explainer=None)
+            self.calibrated_explanations = types.SimpleNamespace(
+                calibrated_explainer=None,
+                is_alternative=lambda: True,
+            )
             self.y_threshold = None
 
         def get_explainer_helper(self):
@@ -111,12 +115,14 @@ def test_to_narrative_handles_output_formats(monkeypatch):
     # dict
     out = d.to_narrative(output_format="dict")
     assert isinstance(out, (dict, list))
+    assert out.get("narrative") == "alt"
     # text
     out_text = d.to_narrative(output_format="text")
-    assert isinstance(out_text, str) and "narrative" in out_text
+    assert isinstance(out_text, str) and "alternative" in out_text
     # dataframe
     out_df = d.to_narrative(output_format="dataframe")
     assert isinstance(out_df, pd.DataFrame)
+    assert out_df.iloc[0]["narrative"] == "alt"
 
 
 def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):

@@ -9,6 +9,11 @@ Usage:
 """
 from __future__ import annotations
 
+if __name__ == "__main__":  # pragma: no cover - shim
+    from scripts.perf.stream_benchmark import main as _main
+
+    raise SystemExit(_main())
+
 import argparse
 import json
 import random

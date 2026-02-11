@@ -30,6 +30,36 @@ if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
+@pytest.fixture(scope="session", autouse=True)
+def configure_matplotlib_backend():
+    """Ensure matplotlib uses a non-interactive backend for all tests.
+
+    This avoids 'Windows fatal exception: code 0x8001010d' (RPC_E_CANTCALLOUT_INEXTERNALCALL)
+    errors caused by UI event loop interference on Windows and prevents windows from
+    popping up during test execution.
+    """
+    if find_spec("matplotlib") is not None:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        # Increase the limit for open figures to avoid warnings in large test suites
+        matplotlib.rcParams["figure.max_open_warning"] = 100
+
+
+@pytest.fixture(autouse=True)
+def close_matplotlib_figures():
+    """Close all open matplotlib figures after each test.
+
+    This avoids 'RuntimeWarning: More than 20 figures have been opened' which
+    consumes memory and clutters test logs.
+    """
+    yield
+    if find_spec("matplotlib") is not None:
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+
 @pytest.fixture(autouse=True)
 def skip_viz_if_missing(request: FixtureRequest):
     """Auto-skip tests marked with ``viz`` or ``viz_render`` when matplotlib is missing.

@@ -1,0 +1,102 @@
+# CI: Maintenance (manual)
+# Purpose: Manual maintenance workflow for baseline updates and docs regeneration.
+# Scope: Manual `workflow_dispatch` actions; requires write permissions.
+name: CI — Maintenance (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        required: true
+        type: choice
+        options:
+          - update-baseline
+          - regen-docs
+      create_pr:
+        description: "For update-baseline: create a PR with the new baseline (yes/no)"
+        required: false
+        default: "yes"
+        type: choice
+        options:
+          - "yes"
+          - "no"
+      reason:
+        description: "For update-baseline: why update the baseline?"
+        required: false
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install -e .[dev,eval] -c constraints.txt
+      - name: Update baseline (micro benchmarks)
+        if: ${{ github.event.inputs.task == 'update-baseline' }}
+        id: gen
+        run: |
+          set -e
+          DATE_TAG=$(date -u +%Y%m%d)
+          mkdir -p tests/benchmarks
+          python scripts/micro_bench_perf.py --explain-backend legacy > tests/benchmarks/micro_${DATE_TAG}.json
+
+          echo "date_tag=$DATE_TAG" >> $GITHUB_OUTPUT
+
+          OLD=$(ls tests/benchmarks/micro_*.json 2>/dev/null | sort | tail -n 1 || true)
+          NEW=tests/benchmarks/micro_${DATE_TAG}.json
+          echo "Reason: ${{ github.event.inputs.reason || 'manual update' }}" > tests/benchmarks/perf_diff.txt
+          echo "Old micro baseline: $OLD" >> tests/benchmarks/perf_diff.txt
+          echo "New micro baseline: $NEW" >> tests/benchmarks/perf_diff.txt
+          if [ -n "$OLD" ]; then python scripts/check_perf_micro.py "$OLD" "$NEW" tests/benchmarks/perf_thresholds.json >> tests/benchmarks/perf_diff.txt || true; else echo "No existing micro baseline found." >> tests/benchmarks/perf_diff.txt; fi
+          cat tests/benchmarks/perf_diff.txt
+
+      - name: Upload baseline artifacts
+        if: ${{ github.event.inputs.task == 'update-baseline' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-micro-baseline
+          path: |
+            tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+            tests/benchmarks/perf_diff.txt
+
+      - name: Create Pull Request with new baseline
+        if: ${{ github.event.inputs.task == 'update-baseline' && github.event.inputs.create_pr == 'yes' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: update micro performance baseline"
+          title: "Update micro performance baseline"
+          body: |
+            Reason: ${{ github.event.inputs.reason || 'manual update' }}
+
+            Includes:
+            - tests/benchmarks/micro_*.json
+
+            Perf summary:
+            ```
+            (see tests/benchmarks/perf_diff.txt in the PR)
+            ```
+          branch: chore/update-baseline
+          base: main
+          add-paths: |
+            tests/benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+            tests/benchmarks/perf_diff.txt
+          labels: performance, baseline-update
+      - name: Regenerate docs
+        if: ${{ github.event.inputs.task == 'regen-docs' }}
+        run: |
+          cd docs
+          sphinx-build -b html . _build/html

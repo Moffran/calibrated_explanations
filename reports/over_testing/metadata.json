@@ -1,0 +1,10 @@
+{
+  "coverage_file": ".coverage",
+  "contexts_detected": 1,
+  "context_regex": null,
+  "source_root": "src\\calibrated_explanations",
+  "over_testing_threshold": 20,
+  "warnings": [
+    "Only one coverage context detected. Over-testing analysis is unreliable; run pytest with --cov-context=test."
+  ]
+}

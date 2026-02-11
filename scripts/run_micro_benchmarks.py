@@ -7,6 +7,11 @@ Use pytest-benchmark for deeper analysis later.
 
 from __future__ import annotations
 
+if __name__ == "__main__":  # pragma: no cover - shim
+    from scripts.perf.run_micro_benchmarks import main as _main
+
+    raise SystemExit(_main())
+
 import argparse
 import json
 import statistics

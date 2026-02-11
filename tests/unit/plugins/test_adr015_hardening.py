@@ -400,9 +400,9 @@ class TestImmutablePluginHandles:
 
         # Using __slots__, the handle should not allow new attributes
         # but the private attributes are read-only by design
-        # Note: this test verifies the design intent; direct reassignment
-        # is prevented by __slots__
-        assert hasattr(handle, "_ExplainerHandle__explainer")
+        # Note: __slots__ was removed to fix autoreload issues, so mutation happens
+        # to be possible now, but we check that the attribute exists.
+        assert hasattr(handle, "_explainer")
 
     def test_explanation_context_is_frozen(self):
         """Test that ExplanationContext is a frozen dataclass."""

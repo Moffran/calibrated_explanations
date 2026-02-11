@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+if __name__ == "__main__":  # pragma: no cover - shim
+    from scripts.quality.check_docstring_coverage import main as _main
+
+    raise SystemExit(_main())
+
 import argparse
 import ast
 import dataclasses

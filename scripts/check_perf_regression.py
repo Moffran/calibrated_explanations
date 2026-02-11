@@ -14,6 +14,11 @@ Exit code 0 = OK, 1 = regression detected, 2 = configuration error.
 
 from __future__ import annotations
 
+if __name__ == "__main__":  # pragma: no cover - shim
+    from scripts.perf.check_perf_regression import main as _main
+
+    raise SystemExit(_main())
+
 import argparse
 import json
 import subprocess
