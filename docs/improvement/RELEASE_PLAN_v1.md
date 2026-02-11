@@ -262,6 +262,15 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   8. Add a reject hardening task to strictly verify and document each reject policy, including ablations evaluation, ensuring solid testing and verification.
 
   Release gate: ADR-005/008/010/020 gaps closed, condition_source default updated, and plugin authoring docs shipped.
+
+### v0.10.4 (bug fix and CI improvement)
+
+  1. Debug conjunctive explanations. Issue identified that they did not materialize.
+  2. Initialize ADR-030 test quality tooling upgrades.
+  3. Plotspec hardening.
+  4. Narrative hardening. Make compatible with conjunctive explanations.
+  5. Upgrade CI with better structure and easier oversight. Run old CI in parallel until v1.0.0-rc.
+
 ### v0.11.0 (domain model & preprocessing finalisation)
 
   1. Complete ADR-009 preprocessing automation with auto_encode='auto', unseen-category enforcement, mapping export/import helpers, and aligned telemetry.

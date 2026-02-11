@@ -1,5 +1,6 @@
 import importlib
 import pickle
+import sys
 
 import numpy as np
 
@@ -121,6 +122,7 @@ def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
     cal.forksafe_reset()
 
     # pickling roundtrip recreates lock
+    sys.modules["calibrated_explanations.cache.cache"] = cache_mod
     state = pickle.dumps(cal)
     new = pickle.loads(state)
     assert hasattr(new, "__dict__")
@@ -174,6 +176,7 @@ def test_lru_cache_helpers_and_pickle_roundtrip():
     cache.set(("k",), {"v": 1})
     assert cache.get(("k",)) == {"v": 1}
 
+    sys.modules["calibrated_explanations.cache.cache"] = cache_mod
     state = pickle.dumps(cache)
     restored = pickle.loads(state)
     assert restored.get(("k",)) == {"v": 1}
