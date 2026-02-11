@@ -13,7 +13,7 @@
 - **Coverage improvement iteration:** Added integration tests for plotting style overrides and legacy fallbacks, plus cache fallback testing when cachetools is unavailable, to increase coverage in low-coverage modules (plotting.py, cache.py).
 
 ### Fixed
-- **Conjunctive quality improvements:** Fixed a bug blocking conjunctive rules to materialise. Made performance improvements, making it possible to create arbitrary large conjunctives. Added feature size filtering and functions for retrieval of internal content. 
+- **Conjunctive quality improvements:** Fixed a bug blocking conjunctive rules to materialise. Made performance improvements, making it possible to create arbitrary large conjunctives. Added feature size filtering and functions for retrieval of internal content.
 - **PlotSpec quality improvements:** Enhanced BarItem dataclass with missing fields, added AlternativeExplanation _rules_with_impact method, improved serialization robustness, added empty features_to_plot validation, and comprehensive RuleWithImpact test coverage to ensure data integrity and reliable plotting.
 - **Narrative quality improvements:** Ensured narratives support conjunctions, updated narrative formatting with possibility to align rules for easier oversight, adjusted default content in explain_template.yaml.
 - **Test quality cleanup:** Removed a duplicate conjunction parity test and normalized test helper naming to avoid private helper anti-patterns.

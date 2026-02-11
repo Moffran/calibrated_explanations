@@ -674,7 +674,9 @@ class CalibratedExplanation(ABC):
                     details={"rule_sizes": rule_sizes},
                 )
             if not normalized_sizes:
-                raise ValidationError("rule_sizes must not be empty", details={"rule_sizes": rule_sizes})
+                raise ValidationError(
+                    "rule_sizes must not be empty", details={"rule_sizes": rule_sizes}
+                )
             if any(size <= 0 for size in normalized_sizes):
                 raise ValidationError(
                     "rule_sizes must contain positive integers",
@@ -741,7 +743,9 @@ class CalibratedExplanation(ABC):
         target = self.copy() if copy else self
         has_conjunctive = bool(getattr(target, "has_conjunctive_rules", False))
 
-        extractor = getattr(target, "_AlternativeExplanation__extracted_non_conjunctive_rules", None)
+        extractor = getattr(
+            target, "_AlternativeExplanation__extracted_non_conjunctive_rules", None
+        )
         if has_conjunctive and callable(extractor):
             extractor(filtered_rules)
             target.has_conjunctive_rules = True

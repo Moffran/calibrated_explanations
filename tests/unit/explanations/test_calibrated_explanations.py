@@ -151,9 +151,7 @@ class DummyExplanation:
         self.conjunction_calls.append("ensured")
         return self
 
-    def filter_rule_sizes(
-        self, *, rule_sizes=None, size_range=None, copy=True
-    ) -> DummyExplanation:
+    def filter_rule_sizes(self, *, rule_sizes=None, size_range=None, copy=True) -> DummyExplanation:
         self.conjunction_calls.append(("filter_rule_sizes", rule_sizes, size_range, copy))
         return self
 

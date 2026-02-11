@@ -40,6 +40,7 @@ repos:
       - id: trailing-whitespace
       - id: check-added-large-files
         args: ["--maxkb=1500"]
+        exclude: "(^notebooks/|\\.ipynb$)"
 
   # Local repo hooks
   # (removed heavy pre-push pytest hook to speed up pushes)

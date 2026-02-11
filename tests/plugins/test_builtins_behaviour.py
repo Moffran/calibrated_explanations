@@ -551,6 +551,7 @@ def test_builtin_fast_interval_plugin_builds_calibrators(monkeypatch):
     x_cal = np.array([[1.0, 2.0], [3.0, 4.0]])
     y_cal = np.array([1.0, 2.0])
     bins = np.array([0, 1])
+
     class DummyExplainer:
         def __init__(self):
             self.bins = bins
@@ -558,6 +559,7 @@ def test_builtin_fast_interval_plugin_builds_calibrators(monkeypatch):
             self.y_cal = y_cal
 
     explainer = DummyExplainer()
+
     class DummyLearner:
         def predict_proba(self, _x):
             return np.asarray([[0.5, 0.5]])
@@ -587,6 +589,8 @@ def test_builtin_fast_interval_plugin_builds_calibrators(monkeypatch):
     assert explainer.x_cal is x_cal
     assert explainer.y_cal is y_cal
     assert calls[-1][1]["predict_function"] == "predict_fn"
+
+
 def test_plotspec_builder_handles_non_mapping_predict_payload(monkeypatch):
     captured = {}
 

@@ -51,7 +51,9 @@ def test_plot_alternative__should_normalize_features_to_plot_when_mixed_inputs(m
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
+    monkeypatch.setattr(
+        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
+    )
 
     explanation = DummyExplanation(mode="classification", thresholded=False)
 
@@ -79,7 +81,9 @@ def test_plot_alternative__should_default_features_to_plot_when_none_and_feature
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
+    monkeypatch.setattr(
+        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
+    )
 
     explanation = DummyExplanation(mode="classification", thresholded=False)
 
@@ -107,11 +111,15 @@ def test_plot_alternative__should_format_xlabel_for_thresholded_regression_scala
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
+    monkeypatch.setattr(
+        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
+    )
     monkeypatch.setattr(
         builders,
         "build_alternative_regression_spec",
-        lambda **_kwargs: pytest.fail("regression builder should not be used for thresholded regression"),
+        lambda **_kwargs: pytest.fail(
+            "regression builder should not be used for thresholded regression"
+        ),
     )
 
     explanation = DummyExplanation(mode="regression", thresholded=True, y_threshold=0.5)
@@ -141,7 +149,9 @@ def test_plot_alternative__should_format_xlabel_for_thresholded_regression_tuple
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
+    monkeypatch.setattr(
+        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
+    )
 
     explanation = DummyExplanation(mode="regression", thresholded=True, y_threshold=(0.4, 0.6))
 
@@ -164,7 +174,9 @@ def test_plot_alternative__should_format_xlabel_for_thresholded_regression_tuple
     assert captured["xlabel"] == "Probability of target being between 0.400 and 0.600"
 
 
-def test_plot_alternative__should_fallback_to_legacy_when_builder_raises(monkeypatch, enable_fallbacks):
+def test_plot_alternative__should_fallback_to_legacy_when_builder_raises(
+    monkeypatch, enable_fallbacks
+):
     import calibrated_explanations.viz.builders as builders
     import calibrated_explanations.legacy.plotting as legacy
 
@@ -202,7 +214,9 @@ def test_plot_alternative__should_fallback_to_legacy_when_builder_raises(monkeyp
     assert legacy_spy.called is True
 
 
-def test_plot_global__should_warn_and_log_when_renderer_override_missing(monkeypatch, caplog, enable_fallbacks):
+def test_plot_global__should_warn_and_log_when_renderer_override_missing(
+    monkeypatch, caplog, enable_fallbacks
+):
     import calibrated_explanations.plugins as plugins
     import calibrated_explanations.plugins.registry as registry
 
@@ -222,8 +236,12 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(monkeyp
     dummy = DummyPlugin()
 
     monkeypatch.setattr(plugins, "ensure_builtin_plugins", lambda: None)
-    monkeypatch.setattr(plugins, "find_plot_plugin_trusted", lambda ident: dummy if ident == "dummy-style" else None)
-    monkeypatch.setattr(plugins, "find_plot_plugin", lambda ident: dummy if ident == "dummy-style" else None)
+    monkeypatch.setattr(
+        plugins, "find_plot_plugin_trusted", lambda ident: dummy if ident == "dummy-style" else None
+    )
+    monkeypatch.setattr(
+        plugins, "find_plot_plugin", lambda ident: dummy if ident == "dummy-style" else None
+    )
 
     def raise_missing(_identifier: str) -> Any:
         raise Exception("missing")
