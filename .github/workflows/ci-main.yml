@@ -34,7 +34,7 @@ jobs:
           pip install -e .[dev,eval] -c constraints.txt
       - name: Run core tests with coverage
         run: |
-          pytest -q -m "not viz" -o addopts= \
+          pytest -q -o addopts= \
             --cov=src/calibrated_explanations \
             --cov-config=pyproject.toml \
             --cov-report=xml:coverage.xml \

@@ -17,6 +17,7 @@ Responsibilities:
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from types import MappingProxyType
@@ -85,6 +86,7 @@ class PluginManager:
             Parent explainer instance for accessing configuration and metadata.
         """
         self.explainer = explainer
+        self._logger = logging.getLogger(__name__)
 
         # Default identifiers (can be patched in tests)
         self._default_explanation_identifiers = dict(DEFAULT_EXPLANATION_IDENTIFIERS)

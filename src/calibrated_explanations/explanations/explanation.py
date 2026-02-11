@@ -653,7 +653,6 @@ class CalibratedExplanation(ABC):
         copy : bool, default=True
             If True, return a filtered copy without mutating the original.
         """
-
         if (rule_sizes is None) == (size_range is None):
             raise ValidationError(
                 "Exactly one of rule_sizes or size_range must be provided",

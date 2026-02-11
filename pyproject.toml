@@ -118,7 +118,7 @@ filterwarnings = [
     "error:.*fall.*back.*:UserWarning",
     "ignore:.*(parseString|resetCache|enablePackrat).*deprecated.*:DeprecationWarning",
     "ignore:.*L-BFGS-B solver.*:DeprecationWarning",
-    "ignore:Auto-close.*backend switching.*:matplotlib._api.deprecation.MatplotlibDeprecationWarning",
+    "ignore:Auto-close.*backend switching.*:DeprecationWarning:matplotlib.*",
     "ignore::UserWarning",
     "ignore:numpy.ufunc size changed, may indicate binary incompatibility.*:RuntimeWarning",
     "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",

@@ -2,11 +2,15 @@ import os
 from pathlib import Path
 
 import numpy as np
+import pytest
 
-from calibrated_explanations.viz import plots as _plots
+import calibrated_explanations.viz.plots as _plots
 
 
 from tests.helpers.explainer_utils import FakeExplanation, FakeExplainer
+
+
+pytestmark = pytest.mark.viz
 
 
 def testplot_regression_writes_file(tmp_path):

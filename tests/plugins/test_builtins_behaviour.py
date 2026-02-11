@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 import types
 
@@ -12,6 +13,8 @@ from calibrated_explanations.core import (
     ConfigurationError,
     NotFittedError,
 )
+from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
+from calibrated_explanations.plugins import find_interval_plugin
 from calibrated_explanations.plugins import builtins
 from calibrated_explanations.plugins.explanations import (
     ExplanationBatch,
@@ -363,6 +366,227 @@ def test_plotspec_builder_rejects_non_mapping_payloads():
         )
 
 
+def test_execution_plugin_supports_false_falls_back_to_legacy(monkeypatch):
+    class DummyExecutionPlugin:
+        def supports(self, *_args, **_kwargs):
+            return False
+
+    class DummyExplanation:
+        def __init__(self):
+            self.reset_called = False
+
+        def reset(self):
+            self.reset_called = True
+
+    class DummyExplainer:
+        def __init__(self):
+            self.last_collection = None
+            self.feature_filter_config = None
+
+        def explain_factual(self, _x, **_kwargs):
+            collection = types.SimpleNamespace(
+                mode="factual",
+                explanations=[DummyExplanation()],
+            )
+            self.last_collection = collection
+            return collection
+
+    def fake_build_plan(_explainer, _x, _request):
+        explain_request = types.SimpleNamespace()
+        explain_config = types.SimpleNamespace(executor=None)
+        runtime = contextlib.nullcontext()
+        return explain_request, explain_config, runtime
+
+    def raise_cfg(_base):
+        raise builtins.CalibratedError("filter config boom")
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.explain.parallel_runtime.build_explain_execution_plan",
+        fake_build_plan,
+    )
+    monkeypatch.setattr(builtins.FeatureFilterConfig, "from_base_and_env", staticmethod(raise_cfg))
+
+    explainer = DummyExplainer()
+    plugin = builtins.SequentialExplanationPlugin()
+    plugin.execution_plugin_class = DummyExecutionPlugin
+    plugin.initialize(
+        make_explanation_context(
+            explainer=explainer, predict_bridge=builtins.LegacyPredictBridge(SentinelExplainer([1]))
+        )
+    )
+
+    request = ExplanationRequest(
+        threshold=None,
+        low_high_percentiles=None,
+        bins=None,
+        features_to_ignore=(1,),
+        extras={},
+        feature_filter_per_instance_ignore=((0, 2),),
+    )
+
+    with pytest.warns(UserWarning):
+        batch = plugin.explain_batch(np.asarray([[1.0]]), request)
+
+    assert isinstance(batch, ExplanationBatch)
+    assert explainer.last_collection.feature_filter_per_instance_ignore == ((0, 2),)
+    assert explainer.last_collection.explanations[0].reset_called is True
+    assert "filter_error" in explainer.last_collection.filter_telemetry
+
+
+def test_legacy_plot_builder_global_payload():
+    builder = builtins.LegacyPlotBuilder()
+    context = make_plot_context(
+        intent={"type": "global"},
+        options={"payload": {"x": [1], "y": [2], "threshold": 0.5}},
+        show=True,
+        path="out.png",
+        save_ext=".png",
+    )
+    payload = builder.build(context)
+    assert payload["legacy_function"] == "global"
+    assert payload["x"] == [1]
+    assert payload["y"] == [2]
+    assert payload["threshold"] == 0.5
+    assert payload["show"] is True
+    assert payload["path"] == "out.png"
+    assert payload["save_ext"] == ".png"
+
+
+def test_legacy_plot_builder_rejects_bad_payload():
+    builder = builtins.LegacyPlotBuilder()
+    context = make_plot_context(intent={"type": "global"}, options={"payload": 1})
+    with pytest.raises(ConfigurationError):
+        builder.build(context)
+
+
+def test_legacy_plot_renderer_invokes_global(monkeypatch):
+    calls = {}
+
+    def fake_plot_global(**kwargs):
+        calls.update(kwargs)
+
+    monkeypatch.setattr(
+        "calibrated_explanations.legacy.plotting.plot_global",
+        fake_plot_global,
+    )
+
+    renderer = builtins.LegacyPlotRenderer()
+    context = make_plot_context()
+    artifact = {
+        "legacy_function": "global",
+        "explainer": "explainer",
+        "x": [1],
+        "y": [2],
+        "threshold": 0.5,
+        "show": False,
+        "path": "out",
+        "save_ext": ".png",
+    }
+    result = renderer.render(artifact, context=context)
+    assert calls["explainer"] == "explainer"
+    assert calls["x"] == [1]
+    assert calls["y"] == [2]
+    assert calls["threshold"] == 0.5
+    assert calls["show"] is False
+    assert calls["path"] == "out"
+    assert calls["save_ext"] == ".png"
+    assert result.saved_paths == ()
+
+
+def test_plot_spec_default_renderer_wraps_errors(monkeypatch):
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("kaput")
+
+    monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", boom)
+
+    renderer = builtins.PlotSpecDefaultRenderer()
+    context = make_plot_context()
+    with pytest.raises(ConfigurationError, match="PlotSpec renderer failed"):
+        renderer.render({"spec": True}, context=context)
+
+
+def test_plot_spec_builder_sets_scalar_threshold_xlabel(monkeypatch):
+    builder = builtins.PlotSpecDefaultBuilder()
+
+    def fake_prob_spec(**kwargs):
+        return kwargs
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_alternative_probabilistic_spec",
+        fake_prob_spec,
+        raising=False,
+    )
+
+    explanation = types.SimpleNamespace(
+        is_thresholded=lambda: True,
+        y_threshold=0.42,
+        get_mode=lambda: "regression",
+    )
+    ctx = make_plot_context(
+        intent={"type": "alternative", "mode": "regression"},
+        options={"payload": {"predict": {"predict": 0.4}, "feature_predict": {"predict": [0.2]}}},
+        explanation=explanation,
+    )
+
+    spec = builder.build(ctx)
+    assert spec["xlabel"] == "Probability of target being below 0.42"
+
+
+def test_builtin_fast_interval_plugin_builds_calibrators(monkeypatch):
+    plugin = find_interval_plugin("core.interval.fast")
+    assert plugin is not None
+
+    calls = []
+
+    class DummyVennAbers:
+        def __init__(self, *args, **kwargs):
+            calls.append((args, kwargs))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.VennAbers",
+        DummyVennAbers,
+        raising=False,
+    )
+
+    x_cal = np.array([[1.0, 2.0], [3.0, 4.0]])
+    y_cal = np.array([1.0, 2.0])
+    bins = np.array([0, 1])
+    class DummyExplainer:
+        def __init__(self):
+            self.bins = bins
+            self.x_cal = x_cal
+            self.y_cal = y_cal
+
+    explainer = DummyExplainer()
+    class DummyLearner:
+        def predict_proba(self, _x):
+            return np.asarray([[0.5, 0.5]])
+
+    context = make_interval_context(
+        metadata={
+            "task": "classification",
+            "explainer": explainer,
+            "difficulty_estimator": None,
+            "num_features": 2,
+            "predict_function": "predict_fn",
+            "noise_config": {"noise_type": "uniform", "scale_factor": 2, "severity": 0.1},
+        },
+        learner=DummyLearner(),
+        bins={"calibration": bins},
+        calibration_splits=[(x_cal, y_cal)],
+    )
+
+    wrapper = plugin.create(context, fast=True)
+
+    assert isinstance(wrapper, FastIntervalCalibrator)
+    assert len(wrapper) == 3
+    assert explainer.fast_x_cal.shape[0] == 2 * x_cal.shape[0]
+    assert explainer.scaled_x_cal.shape[0] == 2 * x_cal.shape[0]
+    assert explainer.scaled_y_cal.shape[0] == 2 * y_cal.shape[0]
+    assert explainer.bins is bins
+    assert explainer.x_cal is x_cal
+    assert explainer.y_cal is y_cal
+    assert calls[-1][1]["predict_function"] == "predict_fn"
 def test_plotspec_builder_handles_non_mapping_predict_payload(monkeypatch):
     captured = {}
 

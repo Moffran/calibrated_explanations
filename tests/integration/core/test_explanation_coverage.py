@@ -3,7 +3,7 @@ Integration tests for src/calibrated_explanations/explanations/explanation.py.
 Focusing on plotting, rule filtering, and property flags which have low coverage.
 """
 
-import matplotlib.pyplot as plt
+import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from calibrated_explanations import CalibratedExplainer
@@ -23,8 +23,12 @@ def setup_classification():
     return explainer, test_X
 
 
+@pytest.mark.viz
 def test_explanation_plots_smoke():
     """Smoke test for plot() methods in Explanation classes."""
+    pytest.importorskip("matplotlib")
+    import matplotlib.pyplot as plt
+
     # Setup classification
     X, y = make_classification(n_samples=50, n_features=5, random_state=42)
     model = RandomForestClassifier(n_estimators=10, random_state=42)
