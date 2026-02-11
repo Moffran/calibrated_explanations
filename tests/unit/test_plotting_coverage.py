@@ -24,7 +24,7 @@ def test_split_csv_sequence_non_str():
 
 
 @dataclass
-class _DummyExplanation:
+class DummyExplanation:
     mode: str = "classification"
     thresholded: bool = False
     y_threshold: Any = None
@@ -39,21 +39,21 @@ class _DummyExplanation:
         return bool(self.thresholded)
 
 
-def _capture_builder_kwargs(store: dict[str, Any]) -> Callable[..., dict[str, Any]]:
-    def _builder(**kwargs: Any) -> dict[str, Any]:
+def capture_builder_kwargs(store: dict[str, Any]) -> Callable[..., dict[str, Any]]:
+    def builder(**kwargs: Any) -> dict[str, Any]:
         store.update(kwargs)
         return {"plot_spec": {"kind": "dummy"}}
 
-    return _builder
+    return builder
 
 
 def test_plot_alternative__should_normalize_features_to_plot_when_mixed_inputs(monkeypatch):
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", _capture_builder_kwargs(captured))
+    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
 
-    explanation = _DummyExplanation(mode="classification", thresholded=False)
+    explanation = DummyExplanation(mode="classification", thresholded=False)
 
     _ = plotting.plot_alternative(
         explanation,
@@ -79,9 +79,9 @@ def test_plot_alternative__should_default_features_to_plot_when_none_and_feature
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", _capture_builder_kwargs(captured))
+    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
 
-    explanation = _DummyExplanation(mode="classification", thresholded=False)
+    explanation = DummyExplanation(mode="classification", thresholded=False)
 
     _ = plotting.plot_alternative(
         explanation,
@@ -107,14 +107,14 @@ def test_plot_alternative__should_format_xlabel_for_thresholded_regression_scala
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", _capture_builder_kwargs(captured))
+    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
     monkeypatch.setattr(
         builders,
         "build_alternative_regression_spec",
         lambda **_kwargs: pytest.fail("regression builder should not be used for thresholded regression"),
     )
 
-    explanation = _DummyExplanation(mode="regression", thresholded=True, y_threshold=0.5)
+    explanation = DummyExplanation(mode="regression", thresholded=True, y_threshold=0.5)
 
     _ = plotting.plot_alternative(
         explanation,
@@ -141,9 +141,9 @@ def test_plot_alternative__should_format_xlabel_for_thresholded_regression_tuple
     captured: dict[str, Any] = {}
     import calibrated_explanations.viz.builders as builders
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", _capture_builder_kwargs(captured))
+    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured))
 
-    explanation = _DummyExplanation(mode="regression", thresholded=True, y_threshold=(0.4, 0.6))
+    explanation = DummyExplanation(mode="regression", thresholded=True, y_threshold=(0.4, 0.6))
 
     _ = plotting.plot_alternative(
         explanation,
@@ -168,18 +168,18 @@ def test_plot_alternative__should_fallback_to_legacy_when_builder_raises(monkeyp
     import calibrated_explanations.viz.builders as builders
     import calibrated_explanations.legacy.plotting as legacy
 
-    def _boom(**_kwargs: Any):
+    def boom_builder(**_kwargs: Any):
         raise Exception("boom")
 
-    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", _boom)
+    monkeypatch.setattr(builders, "build_alternative_probabilistic_spec", boom_builder)
     legacy_spy = SimpleNamespace(called=False)
 
-    def _legacy_noop(*_args: Any, **_kwargs: Any) -> None:
+    def legacy_noop(*_args: Any, **_kwargs: Any) -> None:
         legacy_spy.called = True
 
-    monkeypatch.setattr(legacy, "plot_alternative", _legacy_noop)
+    monkeypatch.setattr(legacy, "plot_alternative", legacy_noop)
 
-    explanation = _DummyExplanation(mode="classification", thresholded=False)
+    explanation = DummyExplanation(mode="classification", thresholded=False)
 
     with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
         res = plotting.plot_alternative(
@@ -206,7 +206,7 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(monkeyp
     import calibrated_explanations.plugins as plugins
     import calibrated_explanations.plugins.registry as registry
 
-    class _DummyPlugin:
+    class DummyPlugin:
         def __init__(self):
             self.builder = SimpleNamespace(plugin_meta={})
             self.plugin_meta = {"style": "plot_spec"}
@@ -219,25 +219,24 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(monkeyp
             assert context.options.get("payload") is not None
             return "ok"
 
-    dummy = _DummyPlugin()
+    dummy = DummyPlugin()
 
-    monkeypatch.setattr(plotting, "_resolve_plot_style_chain", lambda _explainer, _style: ("dummy-style",))
     monkeypatch.setattr(plugins, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(plugins, "find_plot_plugin_trusted", lambda ident: dummy if ident == "dummy-style" else None)
     monkeypatch.setattr(plugins, "find_plot_plugin", lambda ident: dummy if ident == "dummy-style" else None)
 
-    def _raise_missing(_identifier: str) -> Any:
+    def raise_missing(_identifier: str) -> Any:
         raise Exception("missing")
 
-    monkeypatch.setattr(registry, "find_plot_renderer", _raise_missing)
+    monkeypatch.setattr(registry, "find_plot_renderer", raise_missing)
 
-    class _DummyLearner:
+    class DummyLearner:
         def predict_proba(self):  # pragma: no cover - marker only
             raise NotImplementedError
 
-    class _DummyExplainer:
+    class DummyExplainer:
         def __init__(self):
-            self.learner = _DummyLearner()
+            self.learner = DummyLearner()
             self.latest_explanation = None
             self.last_explanation_mode = None
             self.plot_plugin_fallbacks = {}
@@ -245,7 +244,7 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(monkeyp
         def predict_proba(self, _x: Any, *, uq_interval: bool, threshold: Any, bins: Any):
             return [0.2, 0.8], ([0.1, 0.7], [0.3, 0.9])
 
-    explainer = _DummyExplainer()
+    explainer = DummyExplainer()
 
     caplog.set_level(logging.INFO)
     with pytest.warns(UserWarning, match="Failed to find plot renderer"):
@@ -256,6 +255,7 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(monkeyp
             threshold=None,
             use_legacy=False,
             show=False,
+            style="dummy-style",
             renderer="nope",
         )
 

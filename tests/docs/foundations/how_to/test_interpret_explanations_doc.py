@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from tests.helpers.doc_utils import run_quickstart_classification
+
+pytestmark = pytest.mark.viz
 
 
 def test_interpret_explanations_snippets(enable_fallbacks):
