@@ -7,7 +7,7 @@ from calibrated_explanations.cache.explanation_cache import ExplanationCacheFaca
 
 
 def fresh_cache_module():
-    return importlib.reload(importlib.import_module("calibrated_explanations.cache.cache"))
+    return importlib.import_module("calibrated_explanations.cache.cache")
 
 
 def boom_size_estimator(_value):
