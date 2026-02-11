@@ -41,7 +41,7 @@ from ..utils import (
     safe_first_element,
     safe_mean,
 )
-from ..utils.exceptions import CalibratedError
+from ..utils.exceptions import CalibratedError, ValidationError
 from ..utils.helper import assign_threshold as normalize_threshold
 from ..utils.int_utils import collect_ints
 from ._conjunctions import ConjunctionState
@@ -634,6 +634,124 @@ class CalibratedExplanation(ABC):
         self.has_conjunctive_rules = False
         self.conjunctive_rules = None
         return self
+
+    def filter_rule_sizes(
+        self,
+        *,
+        rule_sizes: Optional[Any] = None,
+        size_range: Optional[Tuple[int, int]] = None,
+        copy: bool = True,
+    ):
+        """Filter rules by conjunctive rule size.
+
+        Parameters
+        ----------
+        rule_sizes : int or sequence of int, optional
+            Explicit rule sizes to keep (e.g., 1, 2, 3).
+        size_range : tuple(int, int), optional
+            Inclusive (min_size, max_size) range of rule sizes to keep.
+        copy : bool, default=True
+            If True, return a filtered copy without mutating the original.
+        """
+
+        if (rule_sizes is None) == (size_range is None):
+            raise ValidationError(
+                "Exactly one of rule_sizes or size_range must be provided",
+                details={"rule_sizes": rule_sizes, "size_range": size_range},
+            )
+
+        normalized_sizes: Optional[set[int]] = None
+        min_size: Optional[int] = None
+        max_size: Optional[int] = None
+
+        if rule_sizes is not None:
+            if isinstance(rule_sizes, (int, np.integer)):
+                normalized_sizes = {int(rule_sizes)}
+            elif isinstance(rule_sizes, (list, tuple, set, np.ndarray)):
+                normalized_sizes = {int(v) for v in rule_sizes}
+            else:
+                raise ValidationError(
+                    "rule_sizes must be an int or a sequence of ints",
+                    details={"rule_sizes": rule_sizes},
+                )
+            if not normalized_sizes:
+                raise ValidationError("rule_sizes must not be empty", details={"rule_sizes": rule_sizes})
+            if any(size <= 0 for size in normalized_sizes):
+                raise ValidationError(
+                    "rule_sizes must contain positive integers",
+                    details={"rule_sizes": sorted(normalized_sizes)},
+                )
+
+        if size_range is not None:
+            if not isinstance(size_range, (list, tuple)) or len(size_range) != 2:
+                raise ValidationError(
+                    "size_range must be a (min_size, max_size) tuple",
+                    details={"size_range": size_range},
+                )
+            min_size = int(size_range[0])
+            max_size = int(size_range[1])
+            if min_size <= 0 or max_size <= 0:
+                raise ValidationError(
+                    "size_range bounds must be positive integers",
+                    details={"size_range": size_range},
+                )
+            if min_size > max_size:
+                raise ValidationError(
+                    "size_range must satisfy min_size <= max_size",
+                    details={"size_range": size_range},
+                )
+
+        rules = self.get_rules()
+        num_rules = len(rules.get("rule", []))
+
+        def _rule_size(feature: Any) -> int:
+            if isinstance(feature, (list, tuple, np.ndarray)):
+                return len(np.asarray(feature).ravel())
+            return 1
+
+        mask = []
+        features = rules.get("feature", [None] * num_rules)
+        for i in range(num_rules):
+            size = _rule_size(features[i]) if i < len(features) else 1
+            if normalized_sizes is not None:
+                keep = size in normalized_sizes
+            else:
+                keep = min_size <= size <= max_size  # type: ignore[operator]
+            mask.append(keep)
+
+        mask_array = np.asarray(mask, dtype=bool)
+
+        def _clone_value(val: Any) -> Any:
+            if isinstance(val, MappingProxyType):
+                return {k: _clone_value(v) for k, v in val.items()}
+            if isinstance(val, list):
+                return list(val)
+            if isinstance(val, np.ndarray):
+                return val.copy()
+            return val
+
+        def _filter_value(val: Any) -> Any:
+            if isinstance(val, list) and len(val) == num_rules:
+                return [v for v, keep in zip(val, mask, strict=False) if keep]
+            if isinstance(val, np.ndarray) and val.shape[0] == num_rules:
+                return val[mask_array].copy()
+            return _clone_value(val)
+
+        filtered_rules = {k: _filter_value(v) for k, v in rules.items()}
+
+        target = self.copy() if copy else self
+        has_conjunctive = bool(getattr(target, "has_conjunctive_rules", False))
+
+        extractor = getattr(target, "_AlternativeExplanation__extracted_non_conjunctive_rules", None)
+        if has_conjunctive and callable(extractor):
+            extractor(filtered_rules)
+            target.has_conjunctive_rules = True
+            return target
+
+        target.rules = filtered_rules
+        if has_conjunctive:
+            target.conjunctive_rules = filtered_rules
+        return target
 
     # ------------------------------------------------------------------
     # Telemetry helpers

@@ -163,6 +163,15 @@ class DummyExplanation:
         self.calls.append(("ensured", {"include_potential": include_potential, "copy": copy}))
         return self
 
+    def filter_rule_sizes(self, *, rule_sizes=None, size_range=None, copy=True):
+        self.calls.append(
+            (
+                "filter_rule_sizes",
+                {"rule_sizes": rule_sizes, "size_range": size_range, "copy": copy},
+            )
+        )
+        return self
+
     def rank_features(self, feature_weights, num_to_show=None):
         order = list(range(len(feature_weights)))
         return order[: num_to_show if num_to_show is not None else len(order)]
@@ -538,6 +547,12 @@ def test_alternative_specific_filters(calibrated_collection):
             call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}
         ]
         assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
+
+
+def test_collection_filter_rule_sizes(calibrated_collection):
+    filtered = calibrated_collection.filter_rule_sizes(rule_sizes=[1, 2], copy=True)
+    for exp in filtered.explanations:
+        assert any(call[0] == "filter_rule_sizes" for call in exp.calls)
 
 
 def test_collection_to_json_and_back(calibrated_collection):

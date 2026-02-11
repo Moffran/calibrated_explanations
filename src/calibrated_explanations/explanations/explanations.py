@@ -1043,6 +1043,30 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             explanation.remove_conjunctions()
         return self
 
+    def filter_rule_sizes(
+        self,
+        *,
+        rule_sizes: Optional[Any] = None,
+        size_range: Optional[Tuple[int, int]] = None,
+        copy: bool = True,
+    ):
+        """Filter rules by conjunctive rule size across the collection."""
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.filter_rule_sizes(
+                    rule_sizes=rule_sizes, size_range=size_range, copy=True
+                )
+                for explanation in self.explanations
+            ]
+            return new_obj
+
+        for idx, explanation in enumerate(self.explanations):
+            self.explanations[idx] = explanation.filter_rule_sizes(
+                rule_sizes=rule_sizes, size_range=size_range, copy=False
+            )
+        return self
+
     def get_explanation(self, index):
         """Return the explanation corresponding to the index.
 

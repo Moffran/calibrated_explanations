@@ -5,6 +5,7 @@ from unittest.mock import Mock
 from calibrated_explanations.explanations.explanation import CalibratedExplanation
 import numpy as np
 import pandas as pd
+from calibrated_explanations.utils.exceptions import ValidationError
 
 # Alias for convenience
 Explanation = CalibratedExplanation
@@ -147,6 +148,35 @@ class TestExplanationUnit:
         expl = self.create_expl()
         # Code hardcodes [0, 0] for Categorical
         assert expl.y_minmax == [0, 0]
+
+    def test_filter_rule_sizes_copy_preserves_original(self):
+        expl = self.create_expl()
+        expl.rules = {
+            "rule": ["r1", "r2", "r3"],
+            "feature": [0, [0, 1], [0, 1, 2]],
+            "predict": [0.1, 0.2, 0.3],
+            "predict_low": [0.0, 0.1, 0.2],
+            "predict_high": [0.2, 0.3, 0.4],
+            "weight": [0.1, 0.2, 0.3],
+            "weight_low": [0.05, 0.15, 0.25],
+            "weight_high": [0.15, 0.25, 0.35],
+            "value": ["v1", "v2", "v3"],
+            "sampled_values": [1, 2, 3],
+            "feature_value": [10, 20, 30],
+            "is_conjunctive": [False, True, True],
+        }
+        filtered = expl.filter_rule_sizes(rule_sizes=[1, 3], copy=True)
+        assert len(filtered.rules["rule"]) == 2
+        assert filtered.rules["rule"] == ["r1", "r3"]
+        assert len(expl.rules["rule"]) == 3
+        assert expl.rules["rule"] == ["r1", "r2", "r3"]
+
+    def test_filter_rule_sizes_validation(self):
+        expl = self.create_expl()
+        with pytest.raises(ValidationError):
+            expl.filter_rule_sizes()
+        with pytest.raises(ValidationError):
+            expl.filter_rule_sizes(rule_sizes=1, size_range=(1, 2))
 
     # --- Tests for add_new_rule_condition ---
 
