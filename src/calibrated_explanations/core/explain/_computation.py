@@ -479,7 +479,7 @@ def explain_predict_step(
                     )
                     perturbed_bins_list.append(selected_bins)
 
-                p_class = prediction.get("predict", np.zeros_like(active_indices))[active_indices]
+                p_class = prediction["classes"][active_indices]
                 if not hasattr(p_class, "__len__"):
                     p_class = np.full(len(active_indices), p_class)
                 perturbed_class_list.append(p_class)

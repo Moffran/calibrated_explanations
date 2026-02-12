@@ -242,8 +242,8 @@ class VennAbers:
                 if output_interval:
                     return (
                         np.asarray(va_proba),
-                        [low[i, c] for i, c in enumerate(classes)],
-                        [high[i, c] for i, c in enumerate(classes)],
+                        np.array([low[i, c] for i, c in enumerate(classes)]),
+                        np.array([high[i, c] for i, c in enumerate(classes)]),
                         classes,
                     )
                 return np.asarray(va_proba), classes

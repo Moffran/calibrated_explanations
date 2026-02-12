@@ -2200,7 +2200,8 @@ class FactualExplanation(CalibratedExplanation):
                     self, n_top_features=n_top_features, max_rule_size=max_rule_size
                 )
 
-            warnings.warn(warning_msg, UserWarning, stacklevel=2)
+            if kwargs.get("verbose", False):
+                warnings.warn(warning_msg, UserWarning, stacklevel=2)
 
         return self
 
@@ -3353,7 +3354,8 @@ class AlternativeExplanation(CalibratedExplanation):
                     self, n_top_features=n_top_features, max_rule_size=max_rule_size
                 )
 
-            warnings.warn(warning_msg, UserWarning, stacklevel=2)
+            if kwargs.get("verbose", False):
+                warnings.warn(warning_msg, UserWarning, stacklevel=2)
 
         self.conjunctive_rules = state_helper.get_state()
         self.has_conjunctive_rules = True

@@ -86,7 +86,7 @@ def test_add_conjunctions_diagnostic_warning():
     f.predict_conjunctive = MagicMock(side_effect=Exception("Predict failed"))
 
     with pytest.warns(UserWarning, match="add_conjunctions: created=0"):
-        FactualExplanation.add_conjunctions(f, n_top_features=2, max_rule_size=2)
+        FactualExplanation.add_conjunctions(f, n_top_features=2, max_rule_size=2, verbose=True)
 
 
 def test_fallback_to_legacy(monkeypatch):
@@ -236,7 +236,7 @@ def test_conjunction_diagnostic_includes_predict_errors():
     f.predict_conjunctive = MagicMock(side_effect=RuntimeError("shape mismatch"))
 
     with pytest.warns(UserWarning, match="predict_errors"):
-        FactualExplanation.add_conjunctions(f, n_top_features=2, max_rule_size=2)
+        FactualExplanation.add_conjunctions(f, n_top_features=2, max_rule_size=2, verbose=True)
 
 
 # --- Phase 4C: Edge case tests ---
