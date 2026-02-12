@@ -135,7 +135,6 @@ def generate_classification(
     seed : int, optional
         Random seed for deterministic generation.
     """
-
     rng = np.random.RandomState(seed)
     X, y = make_classification(
         n_samples=n_samples,
