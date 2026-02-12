@@ -172,6 +172,26 @@ autosummary_imported_members = True
 # The todo extension settings
 todo_include_todos = True
 
+
 # nbsphinx configuration (ADR-012)
-nbsphinx_execute = "always"
+def _sphinx_builder_name_from_argv(argv: list[str]) -> str | None:
+    if "-b" in argv:
+        idx = argv.index("-b")
+        if idx + 1 < len(argv):
+            return argv[idx + 1]
+
+    # Sphinx make-mode: `sphinx-build -M <builder> <sourcedir> <outdir>`
+    if "-M" in argv:
+        idx = argv.index("-M")
+        if idx + 1 < len(argv):
+            return argv[idx + 1]
+
+    return None
+
+
+_builder_name = _sphinx_builder_name_from_argv(sys.argv)
+
+# Linkcheck should never execute notebooks (it is a link validator, not a rendering gate).
+# Executing notebooks makes linkcheck flaky and can fail on time ceilings.
+nbsphinx_execute = "never" if _builder_name == "linkcheck" else "always"
 nbsphinx_timeout = 60  # seconds per cell (enforce time ceilings)

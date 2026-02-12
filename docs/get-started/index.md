@@ -6,7 +6,7 @@ links directly to the companion notebook.
 
 | Binary & multiclass classification | Probabilistic regression |
 | --- | --- |
-| [Classification quickstart](quickstart_classification.md)<br>[Demo notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) | [Regression quickstart](quickstart_regression.md)<br>[Probabilistic regression notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) |
+| [Classification quickstart](quickstart_classification.md)<br>[Demo notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_binary_classification.ipynb) | [Regression quickstart](quickstart_regression.md)<br>[Probabilistic regression notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_probabilistic_regression.ipynb) |
 
 > 📈 **Interval regression signpost:** The regression quickstart highlights how
 > calibrated interval outputs complement probabilistic thresholds, with links to

@@ -42,7 +42,7 @@ The interval tells you *where* the value will be; the probability tells you *how
 
 1. Start with the {doc}`../../get-started/quickstart_regression` flow or the
    companion {download}`probabilistic regression notebook
-   <https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb>`.
+   <https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_probabilistic_regression.ipynb>`.
 2. Call :meth:`calibrated_explanations.WrapCalibratedExplainer.predict` with
    ``threshold`` and ``uq_interval=True`` to obtain the calibrated probability
    and its `(low, high)` interval bounds.

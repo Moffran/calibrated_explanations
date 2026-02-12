@@ -6,7 +6,7 @@
   },
   "notebooks": [
     {
-      "path": "notebooks/demo_binary_classification.ipynb",
+      "path": "notebooks/core_demos/demo_binary_classification.ipynb",
       "compliant": true,
       "violations": [],
       "usage": [
@@ -77,7 +77,7 @@
       ]
     },
     {
-      "path": "notebooks/demo_probabilistic_regression.ipynb",
+      "path": "notebooks/core_demos/demo_probabilistic_regression.ipynb",
       "compliant": true,
       "violations": [],
       "usage": [

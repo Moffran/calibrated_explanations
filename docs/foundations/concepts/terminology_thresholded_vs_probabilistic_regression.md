@@ -136,7 +136,7 @@ Both terms describe **regression with a threshold**, but emphasize different asp
 | `docs/get-started/index.md:25-26` | Feature table | "probabilistic thresholds pair with interval regression" |
 | `docs/citing.md:76, 135` | Citation abstracts | "probabilistic regression", "thresholded regression tasks" |
 | `docs/researcher/advanced/theory_and_literature.md:18, 65` | Research page | Links to journal articles on "probabilistic regression" |
-| `notebooks/demo_probabilistic_regression.ipynb` | **Example notebook** | Complete workflow demonstration |
+| `notebooks/core_demos/demo_probabilistic_regression.ipynb` | **Example notebook** | Complete workflow demonstration |
 | `external_plugins/test_calibrated_lime_shap.py:3, 134-135` | Plugin test | "Passing a threshold argument triggers probabilistic regression behaviour" |
 
 #### Total: **~35 documentation references** to "probabilistic regression"
@@ -215,7 +215,7 @@ def test_probabilistic_regression_threshold(self):
 
 | File | Content |
 |------|---------|
-| `notebooks/demo_probabilistic_regression.ipynb` | **Entire notebook** dedicated to probabilistic regression workflow |
+| `notebooks/core_demos/demo_probabilistic_regression.ipynb` | **Entire notebook** dedicated to probabilistic regression workflow |
 | `external_plugins/save_calibrated_plugins_demo.ipynb:9, 379-380` | "Probabilistic regression example (SHAP)" |
 
 ---
@@ -230,7 +230,7 @@ def test_probabilistic_regression_threshold(self):
 - `docs/get-started/quickstart_regression.md` – Uses "probabilistic regression" in user examples
 - `README.md` – Links to "probabilistic regression quickstart"
 - `docs/foundations/concepts/probabilistic_regression.md` – Entire concept guide titled with this term
-- `notebooks/demo_probabilistic_regression.ipynb` – Notebook uses this term
+- `notebooks/core_demos/demo_probabilistic_regression.ipynb` – Notebook uses this term
 
 **Rationale:** Clearer to practitioners; emphasizes the probability output rather than the technical operation. Differentiates from "percentile regression" (interval-only).
 
@@ -402,7 +402,7 @@ def test_lime_plugin_probabilistic_regression():
 | `docs/foundations/concepts/probabilistic_regression.md` | **entire file** | Dedicated concept guide | User doc |
 | `docs/researcher/advanced/theory_and_literature.md` | 18, 65 | Research citations | User doc |
 | `docs/citing.md` | 76, 135 | Paper abstracts | User doc |
-| `notebooks/demo_probabilistic_regression.ipynb` | **entire file** | Example notebook | Code |
+| `notebooks/core_demos/demo_probabilistic_regression.ipynb` | **entire file** | Example notebook | Code |
 | `external_plugins/test_calibrated_lime_shap.py` | 3, 134–135 | Test comments | Code |
 | `external_plugins/save_calibrated_plugins_demo.ipynb` | 9, 379–380 | Example notebook | Code |
 | `external_plugins/shap_lime/DESIGN.md` | 21 | Design document | Tech doc |

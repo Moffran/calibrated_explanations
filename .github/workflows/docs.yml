@@ -49,7 +49,7 @@ jobs:
       - name: Build documentation (linkcheck)
         run: |
           cd docs
-          sphinx-build -b linkcheck . _build/linkcheck
+          sphinx-build -b linkcheck -D nbsphinx_execute=never . _build/linkcheck
 
       - name: Run documentation navigation tests
         run: pytest -o addopts="" tests/docs

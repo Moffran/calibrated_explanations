@@ -63,7 +63,7 @@ hard guardrails without accidentally breaking published workflows. Terminology f
   - The zero-argument form is used throughout the quick-start and regression
     guides.【F:docs/getting_started.md†L218-L223】【F:docs/getting_started.md†L374-L377】
   - `max_rule_size` and `n_top_features` arguments appear in the regression and
-    probabilistic notebooks and therefore need to remain supported.【F:notebooks/demo_regression.ipynb†L614-L614】【F:notebooks/demo_probabilistic_regression.ipynb†L1213-L1213】
+    probabilistic notebooks and therefore need to remain supported.【F:notebooks/demo_regression.ipynb†L614-L614】【F:notebooks/core_demos/demo_probabilistic_regression.ipynb†L1213-L1213】
 - Downstream consumers call `.get_explanation(i)` to pull individual
   explanations, and immediately call `.plot(...)` (often with filenames) on the
   returned objects; both operations and their keyword arguments are
