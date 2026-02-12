@@ -3,6 +3,6 @@ Docstring coverage summary (Standard-018 baseline)
 Modules   :  114/ 115 ( 99.13%)
 Classes   :  128/ 128 (100.00%)
 Functions :  392/ 418 ( 93.78%)
-Methods   :  868/ 919 ( 94.45%)
+Methods   :  870/ 921 ( 94.46%)
 ------------------------------------------------
-Overall    :  95.06%
+Overall    :  95.07%

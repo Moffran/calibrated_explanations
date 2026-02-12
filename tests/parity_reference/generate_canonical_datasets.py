@@ -113,18 +113,6 @@ def generate_classification(
     n_classes=2,
     seed=42,
 ):
-    rng = np.random.RandomState(seed)
-    X, y = make_classification(
-        n_samples=n_samples,
-        n_features=n_features - n_categorical,
-        n_informative=n_informative,
-        n_redundant=0,
-        n_repeated=0,
-        n_classes=n_classes,
-        random_state=seed,
-    )
-    # prepend categorical integer-coded features
-    cats = rng.randint(0, 4, size=(n_samples, n_categorical))
     """Generate and write a canonical classification dataset JSON file.
 
     The produced JSON contains train/cal/test splits, feature names, and
@@ -147,6 +135,19 @@ def generate_classification(
     seed : int, optional
         Random seed for deterministic generation.
     """
+
+    rng = np.random.RandomState(seed)
+    X, y = make_classification(
+        n_samples=n_samples,
+        n_features=n_features - n_categorical,
+        n_informative=n_informative,
+        n_redundant=0,
+        n_repeated=0,
+        n_classes=n_classes,
+        random_state=seed,
+    )
+    # prepend categorical integer-coded features
+    cats = rng.randint(0, 4, size=(n_samples, n_categorical))
 
     X_full = np.hstack([cats.astype(float), X])
 
@@ -211,7 +212,6 @@ def main() -> None:
     probabilistic-regression variants. This function is intended for
     development/test fixture regeneration.
     """
-
     generate_classification(
         ROOT / "canonical_dataset.json",
         n_samples=1000,
