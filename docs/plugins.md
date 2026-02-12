@@ -24,10 +24,11 @@ Notes
   plugins from sources you control or have reviewed.
 - Trust/deny controls and discovery are available via the registry and CLI; see contributor docs for details.
 - For detailed wiring (env vars, pyproject, dependency seeding), see {doc}`contributor/extending/plugin-advanced-contract`.
-- ADR references: {doc}`improvement/adrs/ADR-006-plugin-registry-trust-model`,
-  {doc}`improvement/adrs/ADR-013-interval-calibrator-plugin-strategy`,
-  {doc}`improvement/adrs/ADR-015-explanation-plugin`,
-  {doc}`improvement/adrs/ADR-026-explanation-plugin-semantics`.
+- ADR references (GitHub):
+  [ADR-006 plugin registry trust model](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md),
+  [ADR-013 interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md),
+  [ADR-015 explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md),
+  [ADR-026 explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md).
 
 Trust model (who, why, when)
 ----------------------------

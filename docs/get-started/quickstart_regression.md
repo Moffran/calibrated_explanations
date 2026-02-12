@@ -24,7 +24,7 @@ with CPython 3.8–3.11.
 * Conformal intervals require a calibration set for CPS fitting (the `x_cal`, `y_cal` split below)
 * Probabilistic regression uses CPS + Venn-Abers for calibrated threshold probabilities
 * Interval width reflects the requested `low_high_percentiles` (default: 5th–95th for 90% coverage)
-* See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for formal semantics
+* See [ADR-021 formal semantics (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 ```
 
 ## 1. Prepare the dataset

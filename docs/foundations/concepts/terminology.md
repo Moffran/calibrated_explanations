@@ -102,7 +102,7 @@ Follow ADR-021 terminology guidance:
 
 - Use **"probabilistic regression"** in public-facing docstrings and error messages
 - Use **"thresholded regression"** in implementation comments where you discuss the threshold mechanism or CPS/Venn-Abers details
-- See the [ADR-021 Terminology section](../../improvement/adrs/ADR-021-calibrated-interval-semantics.md) for details
+- See the [ADR-021 Terminology section (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md) for details
 
 ### If You Maintain Tests
 
@@ -133,7 +133,7 @@ def test_probabilistic_regression():
 ## Further Reading
 
 - [Concept Guide: Probabilistic Regression](probabilistic_regression.md)
-- [ADR-021: Calibrated Interval Semantics](../../improvement/adrs/ADR-021-calibrated-interval-semantics.md)
+- [ADR-021: Calibrated Interval Semantics (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 
 ---
 

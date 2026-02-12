@@ -221,4 +221,4 @@ Calibration Requirements:
 * {doc}`../advanced/reject-policy` - Full RejectPolicy API documentation
 * {doc}`ensured-explanations` - Uncertainty-based alternative filtering
 * {doc}`../../tasks/capabilities` - Full capability manifest
-* {doc}`../../improvement/adrs/ADR-029-reject-integration-strategy` - Reject architecture
+* [ADR-029 reject integration strategy (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-029-reject-integration-strategy.md) - Reject architecture

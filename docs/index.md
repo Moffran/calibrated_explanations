@@ -24,9 +24,16 @@ x_train, x_test, y_train, y_test = train_test_split(
     stratify=breast_cancer.target,
     random_state=0,
 )
+x_proper, x_cal, y_proper, y_cal = train_test_split(
+  x_train,
+  y_train,
+  test_size=0.25,
+  stratify=y_train,
+  random_state=0,
+)
 explainer_cls = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-explainer_cls.fit(x_train, y_train)
-explainer_cls.calibrate(x_train, y_train, feature_names=breast_cancer.feature_names)
+explainer_cls.fit(x_proper, y_proper)
+explainer_cls.calibrate(x_cal, y_cal, feature_names=breast_cancer.feature_names)
 factual_cls = explainer_cls.explain_factual(x_test[:1])
 probabilities_cls, probability_interval_cls = explainer_cls.predict_proba(
     x_test[:1], uq_interval=True
@@ -41,9 +48,15 @@ x_train_reg, x_test_reg, y_train_reg, y_test_reg = train_test_split(
     test_size=0.2,
     random_state=0,
 )
+x_proper_reg, x_cal_reg, y_proper_reg, y_cal_reg = train_test_split(
+  x_train_reg,
+  y_train_reg,
+  test_size=0.25,
+  random_state=0,
+)
 explainer_reg = WrapCalibratedExplainer(RandomForestRegressor(random_state=0))
-explainer_reg.fit(x_train_reg, y_train_reg)
-explainer_reg.calibrate(x_train_reg, y_train_reg, feature_names=boston.feature_names)
+explainer_reg.fit(x_proper_reg, y_proper_reg)
+explainer_reg.calibrate(x_cal_reg, y_cal_reg, feature_names=boston.feature_names)
 factual_reg = explainer_reg.explain_factual(x_test_reg[:1])
 prob_reg, (low_reg, high_reg) = explainer_reg.predict(x_test_reg[:1], uq_interval=True)
 
@@ -63,6 +76,7 @@ Next, interpret the outputs with the
 ## Audience paths
 
 - {doc}`get-started/index` – Quickstarts, installation, and troubleshooting.
+- {doc}`get-started/quick_api` – Minimal working examples and core method cheat sheet.
 - {doc}`practitioner/index` – Core practitioner journey plus advanced telemetry
   and performance references.
 - {doc}`researcher/index` – Replication workflow and literature map.
@@ -146,5 +160,4 @@ citing
 :caption: Project Management
 
 ROADMAP
-improvement/index
 ```

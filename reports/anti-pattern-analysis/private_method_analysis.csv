@@ -1,6 +1,6 @@
 name,def_file,def_line,src_usages,test_usages,pattern,scope
-_check_preconditions,calibrated_explanations\explanations\explanation.py,3683,6,0,Consistent (Internal Only),library
-_is_lesser,calibrated_explanations\explanations\explanation.py,3666,1,0,Consistent (Internal Only),library
+_check_preconditions,calibrated_explanations\explanations\explanation.py,3685,6,0,Consistent (Internal Only),library
+_is_lesser,calibrated_explanations\explanations\explanation.py,3668,1,0,Consistent (Internal Only),library
 _get_explainer,unit\explanations\test_explanation_more.py,42,0,0,Pattern 2 (Local Test Helper),test
 _make_binary_explainer,unit\explanations\test_conjunction_hardening.py,14,0,0,Pattern 2 (Local Test Helper),test
 _get_rule_str,calibrated_explanations\explanations\explanation.py,1470,1,0,Consistent (Internal Only),library
@@ -178,21 +178,21 @@ _safe_feature_name,calibrated_explanations\explanations\explanation.py,926,12,0,
 _parse_condition,calibrated_explanations\explanations\explanation.py,961,2,0,Consistent (Internal Only),library
 _build_condition_payload,calibrated_explanations\explanations\explanation.py,980,3,0,Consistent (Internal Only),library
 _predict_conjunctive,calibrated_explanations\explanations\explanation.py,1153,1,0,Consistent (Internal Only),library
-_rules_with_impact,calibrated_explanations\explanations\explanation.py,2497,4,0,Consistent (Internal Only),library
+_rules_with_impact,calibrated_explanations\explanations\explanation.py,2498,4,0,Consistent (Internal Only),library
 _factual_rule_to_dict,calibrated_explanations\explanations\explanation.py,1805,3,0,Consistent (Internal Only),library
-_alternative_rule_to_dict,calibrated_explanations\explanations\explanation.py,2924,3,0,Consistent (Internal Only),library
+_alternative_rule_to_dict,calibrated_explanations\explanations\explanation.py,2925,3,0,Consistent (Internal Only),library
 _rule_size,calibrated_explanations\explanations\explanation.py,708,2,0,Consistent (Internal Only),library
 _clone_value,calibrated_explanations\explanations\explanation.py,725,4,0,Consistent (Internal Only),library
 _filter_value,calibrated_explanations\explanations\explanation.py,734,2,0,Consistent (Internal Only),library
 _restore,calibrated_explanations\explanations\legacy_conjunctions.py,74,4,0,Consistent (Internal Only),library
 _feature_length,calibrated_explanations\explanations\legacy_conjunctions.py,339,8,0,Consistent (Internal Only),library
-_coerce_feature_scalar,calibrated_explanations\explanations\explanation.py,3188,4,0,Consistent (Internal Only),library
-_summarize,calibrated_explanations\explanations\explanation.py,3203,4,0,Consistent (Internal Only),library
-_format_feature,calibrated_explanations\explanations\explanation.py,2514,2,0,Consistent (Internal Only),library
-_AlternativeExplanation__is_super_explanation,calibrated_explanations\explanations\explanation.py,3014,1,0,Consistent (Internal Only),library
-_AlternativeExplanation__is_semi_explanation,calibrated_explanations\explanations\explanation.py,3038,1,0,Consistent (Internal Only),library
-_AlternativeExplanation__is_counter_explanation,calibrated_explanations\explanations\explanation.py,3062,1,0,Consistent (Internal Only),library
-_MAX_LOGGED_ERRORS,calibrated_explanations\explanations\explanation.py,3129,2,0,Consistent (Internal Only),library
+_coerce_feature_scalar,calibrated_explanations\explanations\explanation.py,3189,4,0,Consistent (Internal Only),library
+_summarize,calibrated_explanations\explanations\explanation.py,3204,4,0,Consistent (Internal Only),library
+_format_feature,calibrated_explanations\explanations\explanation.py,2515,2,0,Consistent (Internal Only),library
+_AlternativeExplanation__is_super_explanation,calibrated_explanations\explanations\explanation.py,3015,1,0,Consistent (Internal Only),library
+_AlternativeExplanation__is_semi_explanation,calibrated_explanations\explanations\explanation.py,3039,1,0,Consistent (Internal Only),library
+_AlternativeExplanation__is_counter_explanation,calibrated_explanations\explanations\explanation.py,3063,1,0,Consistent (Internal Only),library
+_MAX_LOGGED_ERRORS,calibrated_explanations\explanations\explanation.py,3130,2,0,Consistent (Internal Only),library
 _parent,calibrated_explanations\explanations\explanation.py,565,2,0,Consistent (Internal Only),library
 _LOGGER,calibrated_explanations\plugins\registry.py,49,7,0,Consistent (Internal Only),library
 _jsonify,calibrated_explanations\explanations\explanations.py,49,39,0,Consistent (Internal Only),library

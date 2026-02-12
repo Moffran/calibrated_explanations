@@ -26,6 +26,7 @@ walkthrough.
 Need CE-first guidance for agents and humans? See the
 {doc}`ce_first_agent_guide` for a runnable, OSS-only workflow.
 Need a faster start? Use the {doc}`../getting_started_60s` decision tree.
+Need a method cheat-sheet? Start with the {doc}`quick_api` page.
 For quick programmatic access to explanation rules see
 {doc}`../practitioner/advanced/explanation_retrieval` (retrieval helpers and examples).
 
@@ -43,6 +44,7 @@ For quick programmatic access to explanation rules see
 :maxdepth: 1
 
 installation
+quick_api
 quickstart_classification
 quickstart_regression
 ../getting_started_60s

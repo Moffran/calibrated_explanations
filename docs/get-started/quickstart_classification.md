@@ -24,7 +24,7 @@ CPython 3.8–3.11 for Linux runners.
 * Calibrated probabilities require a held-out calibration set (the `x_cal`, `y_cal` split below)
 * Venn-Abers calibration provides valid probability intervals under exchangeability
 * Feature weights include uncertainty bounds reflecting calibration quality
-* See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for formal semantics
+* See [ADR-021 formal semantics (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 ```
 
 ## 1. Load data and split sets

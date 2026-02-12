@@ -533,15 +533,15 @@ guides.
 
 Use these decision records when designing new plugins:
 
-- [ADR-013 - interval calibrator plugin strategy](../improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
+- [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
-- [ADR-015 - explanation plugin architecture](../improvement/adrs/ADR-015-explanation-plugin.md)
+- [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-024 - legacy plot input contracts](../improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
+- [ADR-024 - legacy plot input contracts](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   defines PlotSpec and legacy plot inputs that plugins must honour.
-- [ADR-025 - legacy plot rendering semantics](../improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
+- [ADR-025 - legacy plot rendering semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
   documents rendering semantics so PlotSpec builders remain interchangeable.
-- [ADR-026 – explanation plugin semantics](../improvement/adrs/ADR-026-explanation-plugin-semantics.md)
+- [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval
   plugins.
 

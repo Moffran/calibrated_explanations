@@ -92,6 +92,15 @@ exclude_patterns = [
     "improvement/adr_mending",
 ]
 
+_ON_READTHEDOCS = os.environ.get("READTHEDOCS", "").lower() == "true"
+_INCLUDE_IMPROVEMENT_DOCS = os.environ.get("CE_INCLUDE_IMPROVEMENT_DOCS", "").lower() == "true"
+
+# Keep maintainers-only planning material out of the public docs surface by default.
+# This avoids CI failures under `sphinx-build -W` while still allowing an opt-in
+# local build when needed.
+if not _INCLUDE_IMPROVEMENT_DOCS:
+    exclude_patterns.append("improvement/**")
+
 # Skip notebooks that require pandoc when it is unavailable (local CI parity).
 if shutil.which("pandoc") is None:
     exclude_patterns.append("improvement/anti_pattern_gap_analysis.ipynb")
@@ -193,5 +202,5 @@ _builder_name = _sphinx_builder_name_from_argv(sys.argv)
 
 # Linkcheck should never execute notebooks (it is a link validator, not a rendering gate).
 # Executing notebooks makes linkcheck flaky and can fail on time ceilings.
-nbsphinx_execute = "never" if _builder_name == "linkcheck" else "always"
+nbsphinx_execute = "never" if (_builder_name == "linkcheck" or _ON_READTHEDOCS) else "always"
 nbsphinx_timeout = 60  # seconds per cell (enforce time ceilings)

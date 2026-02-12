@@ -12,7 +12,8 @@ All capabilities share these foundational requirements:
 - **Uncertainty decomposition**: Intervals capture both aleatoric (data) and epistemic (model) uncertainty
 - **Calibration validity**: Guarantees hold when calibration and test distributions match
 
-See {doc}`../../improvement/adrs/ADR-021-calibrated-interval-semantics` for formal semantics.
+See the ADR-021 formal semantics on GitHub:
+<https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md>.
 ```
 
 ## Capability Matrix

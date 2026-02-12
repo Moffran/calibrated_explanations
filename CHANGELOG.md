@@ -5,6 +5,10 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
+## [v0.10.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.4) - 2026-02-12
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...v0.10.4)
+
 ### Added
 - **Non-destructive explanation filtering:** Added a `copy` parameter (default `True`) to `super_explanations`, `semi_explanations`, `counter_explanations`, and `ensured_explanations` in both `AlternativeExplanation` and `AlternativeExplanations` collection. This allows users to filter/reduce explanations without modifying the original object. Added `copy()` methods to `CalibratedExplanation` and `CalibratedExplanations` base classes for consistent object duplication.
 - **Over-testing workflow:**
@@ -19,6 +23,7 @@
 - **Test quality cleanup:** Removed a duplicate conjunction parity test and normalized test helper naming to avoid private helper anti-patterns.
  - **ADR-001 import-graph linting:** Resolved false-positive import-graph violations by refining the ADR-001 checker to correctly resolve package paths and broaden sanctioned allowlists. Re-generated `reports/import_graph.json` and ensured `scripts/quality/check_import_graph.py --report` reports no violations.
 - **CI workflow improvement:** Remodelled the entire CI workflow into a more streamlined setup. The update is documented `docs/improvement/CI-upgrade.md`.
+- **Parity reference updates:** Updated the parity references with larger datasets and conjunctives.
 
 ## [v0.10.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.3) - 2026-02-04
 
