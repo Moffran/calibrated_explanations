@@ -44,7 +44,9 @@ jobs:
       - name: Build documentation (HTML)
         run: |
           cd docs
-          sphinx-build -b html . _build/html
+          export READTHEDOCS=True
+          export READTHEDOCS_OUTPUT=_build
+          python -m sphinx -T -b html -d _build/doctrees -D language=en . $READTHEDOCS_OUTPUT/html
 
       - name: Build documentation (linkcheck)
         run: |
