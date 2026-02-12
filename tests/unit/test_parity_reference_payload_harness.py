@@ -11,13 +11,13 @@ from tests.parity_reference.run_parity_reference import (
 )
 
 
-def _contains_is_conjunctive_true(obj: Any) -> bool:
+def contains_is_conjunctive_true(obj: Any) -> bool:
     if isinstance(obj, dict):
         if obj.get("is_conjunctive") is True:
             return True
-        return any(_contains_is_conjunctive_true(v) for v in obj.values())
+        return any(contains_is_conjunctive_true(v) for v in obj.values())
     if isinstance(obj, list):
-        return any(_contains_is_conjunctive_true(v) for v in obj)
+        return any(contains_is_conjunctive_true(v) for v in obj)
     return False
 
 
@@ -40,8 +40,8 @@ def test_compute_outputs__should_include_is_conjunctive_true_in_json_payload() -
 
     outputs = compute_outputs(dataset, condition_source="observed")
 
-    assert _contains_is_conjunctive_true(outputs["factual"])
-    assert _contains_is_conjunctive_true(outputs["alternatives"])
+    assert contains_is_conjunctive_true(outputs["factual"])
+    assert contains_is_conjunctive_true(outputs["alternatives"])
 
 
 def test_dump_json__should_write_conjunctive_rules_to_json_files(tmp_path: Path) -> None:
@@ -52,4 +52,4 @@ def test_dump_json__should_write_conjunctive_rules_to_json_files(tmp_path: Path)
     dump_json(factual_path, outputs["factual"])
 
     factual_payload = load_json(factual_path)
-    assert _contains_is_conjunctive_true(factual_payload)
+    assert contains_is_conjunctive_true(factual_payload)

@@ -24,6 +24,19 @@ ROOT = Path(__file__).resolve().parent
 
 
 def to_serializable(obj: Any) -> Any:
+    """Convert nested structures and numpy types to JSON-serializable values.
+
+    Parameters
+    ----------
+    obj : Any
+        Object to convert (may be dict, list, tuple, numpy array, or scalar).
+
+    Returns
+    -------
+    Any
+        A JSON-serializable representation of ``obj`` (lists, dicts, and
+        Python scalars).
+    """
     if isinstance(obj, dict):
         return {k: to_serializable(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -38,6 +51,24 @@ def to_serializable(obj: Any) -> Any:
 
 
 def make_splits(x: np.ndarray, y: np.ndarray, *, train_frac=0.8, cal_frac=0.1):
+    """Shuffle and split feature and label arrays into train/cal/test sets.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Feature matrix with shape (n_samples, n_features).
+    y : np.ndarray
+        Target array with length n_samples.
+    train_frac : float, optional
+        Fraction of samples to use for training (default 0.8).
+    cal_frac : float, optional
+        Fraction of samples to use for calibration (default 0.1).
+
+    Returns
+    -------
+    tuple
+        A 5-tuple of lists: (x_train, y_train, x_cal, y_cal, x_test).
+    """
     n = x.shape[0]
     idx = np.arange(n)
     rng = np.random.default_rng()
@@ -57,6 +88,18 @@ def make_splits(x: np.ndarray, y: np.ndarray, *, train_frac=0.8, cal_frac=0.1):
 
 
 def build_feature_names(n_features: int) -> List[str]:
+    """Return a list of sequential feature names.
+
+    Parameters
+    ----------
+    n_features : int
+        Number of feature names to generate.
+
+    Returns
+    -------
+    List[str]
+        Feature names 'f0' .. 'f{n_features-1}'.
+    """
     return [f"f{i}" for i in range(n_features)]
 
 
@@ -82,6 +125,29 @@ def generate_classification(
     )
     # prepend categorical integer-coded features
     cats = rng.randint(0, 4, size=(n_samples, n_categorical))
+    """Generate and write a canonical classification dataset JSON file.
+
+    The produced JSON contains train/cal/test splits, feature names, and
+    metadata suitable for parity/reference tests.
+
+    Parameters
+    ----------
+    path : Path
+        Output file path to write the dataset JSON.
+    n_samples : int, optional
+        Number of samples to generate (default 1000).
+    n_features : int, optional
+        Total number of features including categorical ones (default 25).
+    n_categorical : int, optional
+        Number of integer-coded categorical features prepended to X.
+    n_informative : int, optional
+        Number of informative features for sklearn's generator.
+    n_classes : int, optional
+        Number of target classes.
+    seed : int, optional
+        Random seed for deterministic generation.
+    """
+
     X_full = np.hstack([cats.astype(float), X])
 
     x_train, y_train, x_cal, y_cal, x_test = make_splits(X_full, y, train_frac=0.8, cal_frac=0.1)
@@ -101,6 +167,21 @@ def generate_classification(
 
 
 def generate_regression(path: Path, *, n_samples=1000, n_features=25, n_categorical=5, seed=42):
+    """Generate and write a canonical regression dataset JSON file.
+
+    Parameters
+    ----------
+    path : Path
+        Output file path to write the dataset JSON.
+    n_samples : int, optional
+        Number of samples to generate (default 1000).
+    n_features : int, optional
+        Total number of features including categorical ones (default 25).
+    n_categorical : int, optional
+        Number of integer-coded categorical features prepended to X.
+    seed : int, optional
+        Random seed for deterministic generation.
+    """
     rng = np.random.RandomState(seed)
     X, y = make_regression(
         n_samples=n_samples, n_features=n_features - n_categorical, noise=0.1, random_state=seed
@@ -124,6 +205,13 @@ def generate_regression(path: Path, *, n_samples=1000, n_features=25, n_categori
 
 
 def main() -> None:
+    """Generate all canonical dataset JSON fixtures in the module directory.
+
+    Writes four files covering classification, regression, multiclass, and
+    probabilistic-regression variants. This function is intended for
+    development/test fixture regeneration.
+    """
+
     generate_classification(
         ROOT / "canonical_dataset.json",
         n_samples=1000,
