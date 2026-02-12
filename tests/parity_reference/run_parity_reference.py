@@ -51,9 +51,20 @@ def to_serializable(obj: Any) -> Any:
 
 def build_payload(exp: Any) -> dict[str, Any]:
     """Build a payload dictionary from an explanation object."""
+    rules_payload: Any = None
+    if getattr(exp, "has_conjunctive_rules", False):
+        rules_payload = getattr(exp, "conjunctive_rules", None)
+    if not rules_payload:
+        try:
+            rules_payload = exp.get_rules()
+        except Exception:
+            rules_payload = getattr(exp, "rules", None)
+    if not rules_payload:
+        rules_payload = {"rule": [], "feature": []}
+
     return {
         "task": getattr(exp, "get_mode", lambda: "unknown")(),
-        "rules": getattr(exp, "rules", {"rule": [], "feature": []}),
+        "rules": rules_payload,
         "feature_weights": getattr(exp, "feature_weights", {}),
         "feature_predict": getattr(exp, "feature_predict", {}),
         "prediction": getattr(exp, "prediction", {}),
@@ -121,6 +132,12 @@ def compute_outputs(dataset: dict[str, Any], condition_source: str = "observed")
     predictions = explainer.predict(x_test).tolist()
     factual = explainer.explain_factual(x_test)
     alternatives = explainer.explore_alternatives(x_test)
+    factual.add_conjunctions()
+    alternatives.add_conjunctions()
+    if len(factual.filter_rule_sizes(rule_sizes=2)) == 0:
+        raise ValueError("No factual explanations with 2 rules to test conjunctions.")
+    if len(alternatives.filter_rule_sizes(rule_sizes=2)) == 0:
+        raise ValueError("No alternative explanations with 2 rules to test conjunctions.")
 
     ensure_builtin_plugins()
     fast_explainer = build_explainer(dataset, fast=True, condition_source=condition_source)
