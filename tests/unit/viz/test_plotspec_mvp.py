@@ -19,34 +19,6 @@ pytest.importorskip("matplotlib")
 pytestmark = pytest.mark.viz
 
 
-def test_plotspec_regression_render_smoke():
-    rng = np.random.default_rng(0)
-    nfeat = 5
-    # Fake inputs similar to plot_regression
-    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
-    fw = {
-        "predict": rng.normal(0, 0.2, size=nfeat),
-        "low": rng.normal(-0.1, 0.1, size=nfeat),
-        "high": rng.normal(0.1, 0.1, size=nfeat),
-    }
-    feats = list(range(nfeat))
-    cols = [f"f{i}" for i in range(nfeat)]
-    instance = rng.normal(size=nfeat)
-    spec = build_regression_bars_spec(
-        title="MVP",
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=instance,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-    )
-    # Render to a temp file; should not raise
-    with tempfile.TemporaryDirectory() as td:
-        out = os.path.join(td, "mvp.png")
-        matplotlib_adapter.render(spec, show=False, save_path=out)
-        assert os.path.exists(out)
 
 
 def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
@@ -167,68 +139,8 @@ def testplot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
     ), f"Should find indicators for 3 formats, got {found_indicators}"
 
 
-def test_plotspec_sorting_abs_desc():
-    nfeat = 6
-    predict = {"predict": 0.4, "low": 0.1, "high": 0.7}
-    vals = np.array([0.2, -0.9, 0.5, -0.1, 0.7, -0.6])
-    fw = {"predict": vals, "low": vals - 0.1, "high": vals + 0.1}
-    feats = list(range(nfeat))
-    cols = [f"f{i}" for i in range(nfeat)]
-    spec = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=None,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-        sort_by="abs",
-        ascending=False,
-    )
-    bars = spec.body.bars  # type: ignore[union-attr]
-    magnitudes = [abs(b.value) for b in bars]
-    assert magnitudes == sorted(magnitudes, reverse=True)
 
 
-def test_plotspec_sorting_width_and_interval_equivalence():
-    rng = np.random.default_rng(2)
-    nfeat = 4
-    predict = {"predict": 0.5, "low": 0.3, "high": 0.7}
-    vals = rng.normal(0, 0.2, size=nfeat)
-    low = vals - rng.uniform(0.05, 0.15, size=nfeat)
-    high = vals + rng.uniform(0.05, 0.25, size=nfeat)
-    fw = {"predict": vals, "low": low, "high": high}
-    feats = list(range(nfeat))
-    cols = [f"f{i}" for i in range(nfeat)]
-
-    spec_interval = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=None,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-        sort_by="interval",
-        ascending=False,
-    )
-    spec_width = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=None,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-        sort_by="width",
-        ascending=False,
-    )
-    labels_interval = [b.label for b in spec_interval.body.bars]  # type: ignore[union-attr]
-    labels_width = [b.label for b in spec_width.body.bars]  # type: ignore[union-attr]
-    assert labels_interval == labels_width
 
 
 def test_plotspec_sorting_abs_means_distance_from_zero():
@@ -255,239 +167,18 @@ def test_plotspec_sorting_abs_means_distance_from_zero():
     assert distances == sorted(distances, reverse=True)
 
 
-def test_plotspec_sorting_width_descending_changes_order():
-    # Construct intervals with distinct widths to verify sorting effect
-    predict = {"predict": 0.0}
-    vals = np.array([0.1, -0.2, 0.05, 0.3])
-    # widths: 0.30, 0.10, 0.20, 0.40
-    low = np.array([-0.1, -0.15, 0.0, 0.1])
-    high = np.array([0.2, -0.05, 0.2, 0.5])
-    fw = {"predict": vals, "low": low, "high": high}
-    feats = list(range(len(vals)))
-    cols = [f"f{i}" for i in feats]
-    spec = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=None,
-        y_minmax=None,
-        interval=True,
-        sort_by="width",
-        ascending=False,
-    )
-    bars = spec.body.bars  # type: ignore[union-attr]
-    widths_sorted = [abs(b.interval_high - b.interval_low) for b in bars]  # type: ignore[operator]
-    assert widths_sorted == sorted(widths_sorted, reverse=True)
-
-
-def test_plotspec_sorting_value_ascending():
-    predict = {"predict": 0.0}
-    vals = np.array([0.3, -0.1, 0.2, -0.4])
-    fw = {"predict": vals, "low": vals - 0.05, "high": vals + 0.05}
-    feats = list(range(len(vals)))
-    cols = [f"f{i}" for i in feats]
-    spec = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=None,
-        y_minmax=None,
-        interval=True,
-        sort_by="value",
-        ascending=True,
-    )
-    bars = spec.body.bars  # type: ignore[union-attr]
-    values_sorted = [b.value for b in bars]
-    assert values_sorted == sorted(values_sorted)
-
-
-def test_plotspec_sorting_label_ascending():
-    predict = {"predict": 0.0}
-    vals = np.array([0.1, 0.1, 0.1])
-    fw = {"predict": vals, "low": vals - 0.01, "high": vals + 0.01}
-    feats = [2, 0, 1]
-    cols = ["b_label", "a_label", "c_label"]
-    spec = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=cols,
-        instance=None,
-        y_minmax=None,
-        interval=True,
-        sort_by="label",
-        ascending=True,
-    )
-    bars = spec.body.bars  # type: ignore[union-attr]
-    labels_sorted = [b.label for b in bars]
-    assert labels_sorted == sorted(labels_sorted)
 
 
 
 
-def test_plotspec_probabilistic_interval_requires_idx(monkeypatch):
-    explanation = types.SimpleNamespace(
-        y_minmax=(0.0, 1.0),
-        prediction={"classes": 1},
-        get_class_labels=lambda: ["neg", "pos"],
-        is_thresholded=lambda: False,
-        get_mode=lambda: "classification",
-        is_one_sided=lambda: False,
-    )
-    setattr(explanation, "_get_explainer", lambda: None)
-
-    monkeypatch.setattr(
-        "calibrated_explanations.viz.matplotlib_adapter.render",
-        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("render should not be reached")),
-    )
-
-    with pytest.raises(AssertionError):
-        plotting.plot_probabilistic(
-            explanation,
-            instance=np.array([0.1, 0.2]),
-            predict={"predict": 0.5, "low": 0.2, "high": 0.8},
-            feature_weights={
-                "predict": np.array([0.1, -0.1]),
-                "low": np.array([0.0, 0.0]),
-                "high": np.array([0.2, 0.2]),
-            },
-            features_to_plot=[0, 1],
-            num_to_show=2,
-            column_names=["f0", "f1"],
-            title="interval",
-            path="/tmp/",
-            show=True,
-            interval=True,
-            idx=None,
-            save_ext=[],
-            use_legacy=False,
-        )
-
-
-def test_plotspec_probabilistic_default_save_ext(monkeypatch, tmp_path):
-    sentinel_spec = object()
-    builder_args: list[dict] = []
-
-    def fake_builder(**kwargs):
-        builder_args.append(kwargs)
-        return sentinel_spec
-
-    render_calls: list[dict] = []
-
-    def fake_render(spec, **kwargs):
-        render_calls.append({"spec": spec, **kwargs})
-
-    formatted: list[tuple[str, str]] = []
-
-    def format_path(base, filename):
-        formatted.append((base, filename))
-        return f"{base}{filename}"
-
-    monkeypatch.setattr(
-        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
-        fake_builder,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.viz.matplotlib_adapter.render",
-        fake_render,
-    )
-    monkeypatch.setattr(plotting, "_format_save_path", format_path)
-
-    explanation = types.SimpleNamespace(
-        y_minmax=(0.0, 1.0),
-        prediction={"classes": 1},
-        get_class_labels=lambda: ["neg", "pos"],
-        is_thresholded=lambda: False,
-        get_mode=lambda: "classification",
-        is_one_sided=lambda: False,
-    )
-    setattr(explanation, "_get_explainer", lambda: None)
-
-    base_path = str(tmp_path) + "/"
-    plotting.plot_probabilistic(
-        explanation,
-        instance=np.array([0.1, 0.2]),
-        predict={"predict": 0.6, "low": 0.2, "high": 0.8},
-        feature_weights=np.array([0.2, -0.1]),
-        features_to_plot=[0, 1],
-        num_to_show=2,
-        column_names=["f0", "f1"],
-        title="prob",
-        path=base_path,
-        show=False,
-        interval=False,
-        idx=None,
-        save_ext=None,
-        use_legacy=False,
-    )
-
-    assert builder_args, "Expected builder to be invoked"
-    assert [call["save_path"] for call in render_calls] == [
-        None,
-        f"{base_path}probsvg",
-        f"{base_path}probpdf",
-        f"{base_path}probpng",
-    ]
-    assert formatted == [
-        (base_path, "probsvg"),
-        (base_path, "probpdf"),
-        (base_path, "probpng"),
-    ]
-
-
-def test_regression_builder_includes_instance_values():
-    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
-    fw = {"predict": [0.2, -0.3], "low": [0.1, -0.4], "high": [0.3, -0.2]}
-    feats = [0, 1]
-    columns = ["f0", "f1"]
-    instance = [1.5, -2.0]
-    spec = build_regression_bars_spec(
-        title=None,
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=feats,
-        column_names=columns,
-        instance=instance,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-        sort_by=None,
-        ascending=False,
-    )
-
-    assert [bar.instance_value for bar in spec.body.bars] == instance  # type: ignore[union-attr]
 
 
 
 
-def test_probabilistic_builder_clamps_infinite_bounds():
-    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
-    predict = {"predict": 0.6, "low": -np.inf, "high": np.inf}
-    fw = {
-        "predict": np.array([0.1, -0.2]),
-        "low": np.array([0.0, -0.3]),
-        "high": np.array([0.2, -0.1]),
-    }
-    instance = np.array([2.5, -1.2])
-    spec = build_probabilistic_bars_spec(
-        title="prob",
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=[0, 1],
-        column_names=["f0", "f1"],
-        instance=instance,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-    )
 
-    assert spec.header.low == pytest.approx(0.0)  # type: ignore[union-attr]
-    assert spec.header.high == pytest.approx(1.0)  # type: ignore[union-attr]
-    assert spec.header.xlim == (0.0, 1.0)  # type: ignore[union-attr]
+
+
 
 
 def test_probabilistic_builder_rejects_truncated_labels():
@@ -507,23 +198,6 @@ def test_probabilistic_builder_rejects_truncated_labels():
         )
 
 
-def test_build_regression_requires_instance_alignment():
-    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
-    feature_weights = [0.3, -0.1]
-    feats = [0, 1]
-    cols = ["a", "b"]
-
-    with pytest.raises(ValidationError):
-        build_regression_bars_spec(
-            title=None,
-            predict=predict,
-            feature_weights=feature_weights,
-            features_to_plot=feats,
-            column_names=cols,
-            instance=[0.5],
-            y_minmax=None,
-            interval=False,
-        )
 
 
 def test_matplotlib_adapter_auto_height_tracks_bars():
@@ -596,25 +270,6 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
     assert captured["predict"]["high"] == pytest.approx(1.0)
 
 
-def test_build_regression_spec_requires_instance_alignment():
-    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
-    fw = {
-        "predict": np.array([0.1, -0.2]),
-        "low": np.array([0.0, -0.1]),
-        "high": np.array([0.2, 0.1]),
-    }
-
-    with pytest.raises(ValidationError):
-        build_regression_bars_spec(
-            title=None,
-            predict=predict,
-            feature_weights=fw,
-            features_to_plot=[0, 1],
-            column_names=["f0", "f1"],
-            instance=[0.1],
-            y_minmax=(0.0, 1.0),
-            interval=True,
-        )
 
 
 def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):

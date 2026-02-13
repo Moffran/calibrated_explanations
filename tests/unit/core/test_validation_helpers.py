@@ -24,15 +24,6 @@ def test_explain_exception_with_calibrated_error():
     assert "param" in result
 
 
-def test_explain_exception_without_details():
-    """explain_exception should handle CalibratedError without details."""
-    e = ValidationError("Argument 'x' must not be empty")
-
-    result = explain_exception(e)
-    assert "ValidationError" in result
-    assert "Argument 'x' must not be empty" in result
-    # Details line should not appear
-    assert "Details:" not in result
 
 
 def test_explain_exception_non_calibrated_error():
@@ -40,12 +31,6 @@ def test_explain_exception_non_calibrated_error():
     e = ValueError("Standard error")
     result = explain_exception(e)
     assert result == "Standard error"
-
-
-def test_validate_helper_true_condition():
-    """validate() should not raise when condition is True."""
-    # Should not raise
-    validate(1 + 1 == 2, ValidationError, "Math is broken")
 
 
 

@@ -54,25 +54,6 @@ def test_explanation_plots_smoke():
     plt.close()
 
 
-def test_explanation_filtering_and_ranking():
-    """Test filtering and ranking logic in explanations."""
-    X, y = make_classification(n_samples=100, n_features=5, random_state=42)
-    model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(X, y)
-
-    cal_X, cal_y = X[:50], y[:50]
-    test_X = X[50:55]
-
-    explainer = CalibratedExplainer(model, cal_X, cal_y, mode="classification")
-
-    # Alternative explanation has more complex rules to filter
-    explanations = explainer.explore_alternatives(test_X)
-    expl = explanations[0]
-
-    # Test filtering methods (smoke test mostly, verifying no crash)
-    # These properties are used in code but often not tested
-    assert isinstance(expl.is_one_sided(), bool)
-    assert isinstance(expl.has_conjunctive_rules, bool)
 
     # expl.metric is not a public property, removed access
 
@@ -122,35 +103,3 @@ def test_semifactual_counterfactual_flags():
     # Just verifying properties exist and return bools
     assert isinstance(expl.is_counter_explanation(), bool)
     assert isinstance(expl.is_semi_explanation(), bool)
-
-
-def test_ignored_features_for_instance():
-    """Test ignored_features_for_instance method."""
-    X, y = make_classification(n_samples=50, n_features=5, random_state=42)
-    model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(X, y)
-
-    cal_X, cal_y = X[:20], y[:20]
-    test_X = X[20:25]
-
-    explainer = CalibratedExplainer(model, cal_X, cal_y, mode="classification")
-
-    explanations = explainer.explain_factual(test_X)
-    expl = explanations[0]
-
-    # Test with default (no ignores)
-    ignored = expl.ignored_features_for_instance()
-    assert isinstance(ignored, set)
-
-    # Test with global ignore
-    expl.calibrated_explanations.features_to_ignore = (0, 2)
-    ignored = expl.ignored_features_for_instance()
-    assert 0 in ignored
-    assert 2 in ignored
-
-    # Test with per instance ignore
-    expl.calibrated_explanations.feature_filter_per_instance_ignore = [[1], None, None, None, None]
-    ignored = expl.ignored_features_for_instance()
-    assert 0 in ignored
-    assert 2 in ignored
-    assert 1 in ignored

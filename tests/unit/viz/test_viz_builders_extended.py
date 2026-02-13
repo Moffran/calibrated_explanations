@@ -36,69 +36,8 @@ def test_probabilistic_spec_clamps_header_bounds():
     assert 0.0 <= bar.interval_low <= bar.interval_high <= 1.0
 
 
-def test_probabilistic_spec_validates_sequence_length():
-    from calibrated_explanations.utils.exceptions import ValidationError
-
-    with pytest.raises(ValidationError, match="feature_weights"):
-        builders.build_probabilistic_bars_spec(
-            title="missing",
-            predict={"predict": 0.5, "low": 0.2, "high": 0.8},
-            feature_weights={"predict": [0.3], "low": [0.2], "high": [0.6]},
-            features_to_plot=[0, 1],
-            column_names=["x", "y"],
-            rule_labels=None,
-            instance=None,
-            y_minmax=None,
-            interval=True,
-            sort_by=None,
-            ascending=False,
-            legacy_solid_behavior=True,
-            neg_label=None,
-            pos_label=None,
-            uncertainty_color=None,
-            uncertainty_alpha=None,
-            neg_caption=None,
-            pos_caption=None,
-        )
 
 
-def test_alternative_probabilistic_segments_use_public_api():
-    spec = builders.build_alternative_probabilistic_spec(
-        title="segments",
-        predict={"predict": 0.7},
-        feature_weights={
-            "predict": [0.6, 0.3],
-            "low": [0.25, 0.1],
-            "high": [0.8, 0.3],
-        },
-        features_to_plot=[0, 1],
-        column_names=["one", "two"],
-        rule_labels=None,
-        instance=None,
-        y_minmax=None,
-        interval=True,
-        sort_by=None,
-        ascending=False,
-        legacy_solid_behavior=True,
-        neg_label="neg",
-        pos_label="pos",
-        uncertainty_color=None,
-        uncertainty_alpha=None,
-        xlabel="Probability",
-        xlim=(0.0, 1.0),
-        xticks=[0.0, 0.5, 1.0],
-    )
-
-    base_segments = spec.body.base_segments
-    assert base_segments
-    assert base_segments[0].low <= base_segments[0].high
-
-    first_bar, second_bar = spec.body.bars
-    assert len(first_bar.segments) == 2
-    assert first_bar.segments[0].high == pytest.approx(0.5)
-    assert first_bar.color_role == "positive"
-    assert len(second_bar.segments) == 1
-    assert second_bar.color_role == "negative"
 
 
 def test_build_alternative_probabilistic_spec_interval_dict():

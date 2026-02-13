@@ -25,24 +25,28 @@ def test_joblib_backend_falls_back_when_missing(monkeypatch: pytest.MonkeyPatch)
     assert result == [2, 4, 6]
 
 
-def test_joblib_backend_uses_parallel_module(monkeypatch: pytest.MonkeyPatch):
-    """Verify that a provided joblib module is invoked."""
+def test_joblib_backend_uses_explicit_workers(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, object] = {}
 
-    class FakeParallel:
+    def delayed(fn):
+        return lambda item: lambda: fn(item)
+
+    class ParallelStub:
         def __init__(self, *, n_jobs):
-            self.n_jobs = n_jobs
+            calls["n_jobs"] = n_jobs
 
-        def __call__(self, iterator):
-            return [task() for task in iterator]
+        def __call__(self, tasks):
+            return [task() for task in tasks]
 
-    fake_joblib = SimpleNamespace(
-        Parallel=lambda n_jobs: FakeParallel(n_jobs=n_jobs),
-        delayed=lambda fn: (lambda value: (lambda: fn(value))),
-    )
-    monkeypatch.setitem(sys.modules, "joblib", fake_joblib)
-
+    monkeypatch.setitem(sys.modules, "joblib", SimpleNamespace(Parallel=ParallelStub, delayed=delayed))
     backend = perf_helpers.JoblibBackend()
-    assert backend.map(lambda x: x + 1, [0, 1], workers=2) == [1, 2]
+
+    result = backend.map(lambda x: x + 1, [1, 2, 3], workers=2)
+
+    assert calls["n_jobs"] == 2
+    assert result == [2, 3, 4]
+
+
 
 
 def test_sequential_map_returns_collection():

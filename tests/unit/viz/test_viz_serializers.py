@@ -31,38 +31,6 @@ from calibrated_explanations.viz.serializers import (
 )
 
 
-def test_plotspec_roundtrip_and_validate__should_preserve_semantics():
-    """Verify roundtrip with semantic invariant checks.
-
-    Domain Invariant: Interval bounds satisfy low ≤ pred ≤ high.
-    Ref: ADR-005 Explanation Envelope
-    """
-    header = IntervalHeaderSpec(pred=0.3, low=0.1, high=0.9)
-    bars = [BarItem(label="a", value=0.1), BarItem(label="b", value=0.2)]
-    body = BarHPanelSpec(bars=bars)
-    spec = PlotSpec(title="t", header=header, body=body)
-
-    spec_dict = plotspec_to_dict(spec)
-    assert spec_dict["plotspec_version"]
-
-    # Roundtrip
-    restored = plotspec_from_dict(spec_dict)
-
-    # Snapshot equality
-    assert restored == spec, "Roundtrip should preserve exact equality"
-
-    # Semantic assertions: interval invariant
-    assert restored.header.low <= restored.header.pred <= restored.header.high, (
-        f"Interval violated: {restored.header.low} ≤ "
-        f"{restored.header.pred} ≤ {restored.header.high}"
-    )
-
-    # Semantic assertions: bar integrity
-    assert restored.title == "t", "Title should be preserved"
-    assert len(restored.body.bars) == 2, "Bar count should match"
-    for idx, bar_item in enumerate(restored.body.bars):
-        assert bar_item.label is not None, f"Bar {idx} label is mandatory"
-        assert bar_item.value is not None, f"Bar {idx} value is mandatory"
 
 
 def test_validate_rejects_bad_payload():

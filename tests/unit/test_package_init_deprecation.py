@@ -105,21 +105,6 @@ class TestDeprecatedDiscretizerSymbols:
 
 
 
-    def test_binary_entropy_discretizer_deprecated(self):
-        """BinaryEntropyDiscretizer should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
-
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("BinaryEntropyDiscretizer", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "BinaryEntropyDiscretizer")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
 
 
 

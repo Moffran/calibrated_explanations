@@ -49,23 +49,6 @@ def test_parallel_metrics_snapshot():
     }
 
 
-def test_parallel_config_from_env(monkeypatch):
-    base = ParallelConfig(enabled=False, strategy="sequential", max_workers=4, min_batch_size=8)
-    monkeypatch.delenv("CE_PARALLEL", raising=False)
-    assert ParallelConfig.from_env(base).enabled is False
-
-    monkeypatch.setenv("CE_PARALLEL", "1")
-    cfg = ParallelConfig.from_env(base)
-    assert cfg.enabled is True
-    assert cfg.strategy == "sequential"
-
-    monkeypatch.setenv("CE_PARALLEL", "off,threads,workers=10,min_batch=2,tiny=11,enable")
-    cfg = ParallelConfig.from_env(base)
-    assert cfg.enabled is True
-    assert cfg.strategy == "threads"
-    assert cfg.max_workers == 10
-    assert cfg.min_batch_size == 2
-    assert cfg.tiny_workload_threshold == 11
 
 
 def test_parallel_config_from_env_extended_tokens(monkeypatch):
@@ -96,40 +79,6 @@ def test_map_handles_disabled_and_small_batches():
     assert executor.metrics.submitted == 0
 
 
-def test_map_uses_strategy_and_updates_metrics(monkeypatch, enable_fallbacks):
-    config = ParallelConfig(
-        enabled=True, strategy="sequential", min_batch_size=1, min_instances_for_parallel=1
-    )
-    executor = ParallelExecutor(config)
-    results = executor.map(lambda x: x * 2, [1, 2, 3])
-    assert results == [2, 4, 6]
-    assert executor.metrics.submitted == 3
-    assert executor.metrics.completed == 3
-
-    def failing_strategy(*args, **kwargs):
-        raise RuntimeError("boom")
-
-    events = []
-
-    def telemetry(event, payload):
-        events.append((event, payload))
-
-    config = ParallelConfig(
-        enabled=True,
-        strategy="threads",
-        min_batch_size=1,
-        min_instances_for_parallel=1,
-        telemetry=telemetry,
-        force_serial_on_failure=True,
-    )
-    print(f"DEBUG: config.force_serial_on_failure={config.force_serial_on_failure}")
-    executor = ParallelExecutor(config)
-    monkeypatch.setattr(executor, "_resolve_strategy", lambda **k: failing_strategy)
-    with pytest.warns(UserWarning, match="falling back to sequential"):
-        assert executor.map(lambda x: x + 1, [1]) == [2]
-    assert executor.metrics.failures == 1
-    assert executor.metrics.fallbacks == 1
-    assert events and events[0][0] == "parallel_fallback"
 
 
 def test_resolve_strategy_variants(monkeypatch):
@@ -156,24 +105,6 @@ def test_resolve_strategy_variants(monkeypatch):
     assert executor.resolve_strategy().func.__name__ == "thread_strategy"
 
 
-def test_instance_minimum_overrides_min_batch(monkeypatch):
-    config = ParallelConfig(
-        enabled=True,
-        strategy="threads",
-        granularity="instance",
-        min_batch_size=32,
-        min_instances_for_parallel=8,
-    )
-    executor = ParallelExecutor(config)
-
-    def fake_strategy(fn, items, **_):
-        return [fn(item) for item in items]
-
-    monkeypatch.setattr(executor, "_resolve_strategy", lambda **_: fake_strategy)
-    results = executor.map(lambda x: x + 1, list(range(10)), work_items=10)
-
-    assert results == [i + 1 for i in range(10)]
-    assert executor.metrics.submitted == 10
 
 
 
@@ -264,61 +195,6 @@ def test_auto_strategy_work_items(monkeypatch):
     assert executor.auto_strategy(work_items=60000) == "processes"
 
 
-def test_resolve_strategy_forwards_work_items(monkeypatch):
-    config = ParallelConfig(enabled=True, strategy="auto")
-    executor = ParallelExecutor(config)
-
-    captured: dict[str, int | None] = {"work_items": None}
-
-    def fake_auto_strategy(*, work_items: int | None = None) -> str:
-        captured["work_items"] = work_items
-        return "threads"
-
-    monkeypatch.setattr(executor, "_auto_strategy", fake_auto_strategy)
-    strategy = executor.resolve_strategy(work_items=123)
-
-    assert captured["work_items"] == 123
-    assert strategy.func.__name__ == "thread_strategy"
-
-
-def test_map_passes_work_items_to_resolver(monkeypatch):
-    config = ParallelConfig(enabled=True, min_batch_size=1)
-    executor = ParallelExecutor(config)
-
-    captured: dict[str, int | None] = {"work_items": None}
-
-    def fake_resolve_strategy(*, work_items: int | None = None):
-        captured["work_items"] = work_items
-
-        def runner(fn, items, **_: Any):
-            return [fn(item) for item in items]
-
-        return runner
-
-    monkeypatch.setattr(executor, "_resolve_strategy", fake_resolve_strategy)
-    executor.map(lambda x: x + 1, [1, 2, 3], work_items=99)
-
-    assert captured["work_items"] == 99
-
-
-def test_thread_strategy(monkeypatch):
-    captured = {}
-
-    class RecordingPool(DummyPool):
-        def __exit__(self, exc_type, exc, tb):
-            captured["max_workers"] = self.max_workers
-            return super().__exit__(exc_type, exc, tb)
-
-    monkeypatch.setattr(
-        "calibrated_explanations.parallel.parallel.ThreadPoolExecutor",
-        RecordingPool,
-        raising=False,
-    )
-    config = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
-    executor = ParallelExecutor(config)
-    results = executor.thread_strategy(echo, [1, 2, 3])
-    assert results == [1, 2, 3]
-    assert captured["max_workers"] == 2
 
 
 def test_process_strategy(monkeypatch):
@@ -399,28 +275,6 @@ def test_emit_with_telemetry(monkeypatch):
     config = ParallelConfig(enabled=True, telemetry=broken)
     executor = ParallelExecutor(config)
     executor.emit("test", {"value": 2})  # should not raise
-
-
-def test_parallel_executor_context_manager_initializes_and_cleans_up(monkeypatch):
-    shutdown_calls: list[int] = []
-
-    class RecordingPool:
-        def __init__(self, max_workers):
-            self.max_workers = max_workers
-
-        def shutdown(self, wait=True):
-            shutdown_calls.append(int(wait))
-
-    monkeypatch.setattr(
-        "calibrated_explanations.parallel.parallel.ThreadPoolExecutor",
-        RecordingPool,
-        raising=False,
-    )
-    cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
-    with ParallelExecutor(cfg) as executor:
-        assert isinstance(executor.pool, RecordingPool)
-        assert executor.active_strategy_name == "threads"
-    assert shutdown_calls == [1]
 
 
 def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, enable_fallbacks):

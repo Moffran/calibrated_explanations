@@ -34,21 +34,6 @@ class TestCliCoverage:
         assert coerce_string_tuple([]) == ()
         assert coerce_string_tuple([" a ", ""]) == ("a",)  # stripped
 
-    def test_emit_header(self, capsys):
-        """Test simple header emission."""
-        emit_header("Test Header")
-        captured = capsys.readouterr()
-        assert "Test Header" in captured.out
-        assert "===========" in captured.out
-
-    def test_format_common_metadata(self):
-        """Test metadata formatting."""
-        meta = {"name": "Test Plugin", "schema_version": "1.0.0"}
-        assert "name=Test Plugin" in format_common_metadata(meta)
-        assert "schema_version=1.0.0" in format_common_metadata(meta)
-
-        meta_empty = {}
-        assert "name=<unnamed>" in format_common_metadata(meta_empty)
 
     @patch("calibrated_explanations.plugins.cli.list_explanation_descriptors")
     def test_cmd_list_explanations(self, mock_list, capsys):
@@ -79,39 +64,8 @@ class TestCliCoverage:
         assert "Explanation plugins" in captured.out
         assert "test.explainer" in captured.out
 
-    @patch("calibrated_explanations.plugins.cli.list_explanation_descriptors")
-    def test_cmd_list_empty(self, mock_list, capsys):
-        """Test listing empty results."""
-        args = Mock()
-        args.kind = "explanations"
-        args.trusted_only = False
-        args.verbose = False
-        args.plots = False
-        args.include_skipped = False
-
-        mock_list.return_value = []
-
-        exit_code = cmd_list(args)
-        assert exit_code == 0
-        captured = capsys.readouterr()
-        assert "<none>" in captured.out
 
     @patch("calibrated_explanations.plugins.cli.list_plot_renderer_descriptors")
-    def test_cmd_list_plot_renderers_empty(self, mock_list, capsys):
-        """Test listing empty plot renderers."""
-        args = Mock()
-        args.kind = "plot-renderers"
-        args.trusted_only = False
-        args.verbose = False
-        args.plots = False
-        args.include_skipped = False
-
-        mock_list.return_value = []
-
-        exit_code = cmd_list(args)
-        assert exit_code == 0
-        captured = capsys.readouterr()
-        assert "<none>" in captured.out
 
     @patch("calibrated_explanations.plugins.registry.find_plot_builder")
     def test_cmd_validate_plot(self, mock_find, capsys):

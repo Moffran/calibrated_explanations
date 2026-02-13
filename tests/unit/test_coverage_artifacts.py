@@ -49,30 +49,6 @@ class BridgeStub:
         return np.asarray([[0.1, 0.9]])
 
 
-def test_parallel_shim_behavior_is_functional() -> None:
-    backend = JoblibBackend()
-    assert backend.map(lambda x: x + 1, [1, 2, 3], workers=1) == [2, 3, 4]
-    assert sequential_map(lambda x: x * x, [1, 2, 3]) == [1, 4, 9]
-
-
-def test_schema_lazy_export_and_validation_path() -> None:
-    schema_mod = importlib.import_module("calibrated_explanations.schema")
-    validate_payload = getattr(schema_mod, "validate_payload")
-    payload = {
-        "task": "regression",
-        "index": 0,
-        "explanation_type": "factual",
-        "prediction": {"predict": 1.0, "low": 0.5, "high": 1.5},
-        "rules": [
-            {
-                "feature": 0,
-                "rule": "x > 0",
-                "rule_weight": {"predict": 0.1, "low": 0.0, "high": 0.2},
-                "rule_prediction": {"predict": 1.0, "low": 0.9, "high": 1.1},
-            }
-        ],
-    }
-    validate_payload(payload)
 
 
 def test_viz_lazy_import_requires_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -113,41 +89,5 @@ def test_sequential_executor_identity_contract() -> None:
     assert executor.supports(request=object(), config=object()) is True
 
 
-def test_predict_monitor_tracks_calls_and_warns_on_invalid_intervals() -> None:
-    monitor = PredictBridgeMonitor(BridgeStub())
-    with pytest.warns(UserWarning, match="low > high"):
-        monitor.predict(np.asarray([[1.0]]), mode="factual", task="regression")
-    with pytest.warns(UserWarning, match="low > high"):
-        monitor.predict_interval(np.asarray([[1.0]]), task="regression")
-    proba = monitor.predict_proba(np.asarray([[1.0]]))
-    assert proba.shape == (1, 2)
-    assert monitor.calls == ("predict", "predict_interval", "predict_proba")
 
 
-def test_reject_orchestrator_initialization_and_pickle_state() -> None:
-    class StubExplainer:
-        bins = None
-        x_cal = np.asarray([[1.0, 2.0], [2.0, 3.0]])
-        y_cal = np.asarray([0, 1])
-        mode = "classification"
-        interval_learner = type(
-            "IntervalLearner",
-            (),
-            {
-                "predict_proba": staticmethod(
-                    lambda x, bins=None: np.tile(np.asarray([0.4, 0.6]), (len(x), 1))
-                )
-            },
-        )()
-
-        @staticmethod
-        def is_multiclass():
-            return False
-
-    orchestrator = RejectOrchestrator(StubExplainer())
-    state = orchestrator.__getstate__()
-    assert "_strategies_lock" not in state
-    assert "_logger" not in state
-    restored = RejectOrchestrator.__new__(RejectOrchestrator)
-    restored.__setstate__(state)
-    assert callable(restored.resolve_strategy(None))

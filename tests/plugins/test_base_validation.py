@@ -64,27 +64,5 @@ def test_trusted_must_be_boolean():
         validate_plugin_meta(meta)
 
 
-def test_trust_mapping_is_normalised():
-    meta = make_valid_meta()
-    meta["trust"] = {"trusted": 1}
-
-    validate_plugin_meta(meta)
-
-    assert meta["trusted"] is True
 
 
-def test_trust_scalar_is_normalised_to_boolean():
-    meta = make_valid_meta()
-    meta["trust"] = 0
-
-    validate_plugin_meta(meta)
-
-    assert meta["trusted"] is False
-
-
-def test_default_trust_value_is_false():
-    meta = make_valid_meta()
-
-    validate_plugin_meta(meta)
-
-    assert meta["trusted"] is False

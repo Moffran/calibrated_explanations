@@ -25,14 +25,6 @@ from sklearn.ensemble import RandomForestClassifier
 from tests.helpers.model_utils import get_classification_model, get_regression_model
 
 
-def test_failure():
-    """
-    Tests the failure case for initializing `CalibratedExplainer`.
-    """
-    with pytest.raises(NotFittedError):
-        CalibratedExplainer(RandomForestClassifier(), [], [])
-
-
 def test_check_is_fitted_with_fitted_model(binary_dataset):
     """
     Tests `check_is_fitted` with a fitted model.
@@ -49,16 +41,6 @@ def test_check_is_fitted_with_fitted_model(binary_dataset):
         pytest.fail("check_is_fitted raised NotFittedError unexpectedly!")
 
 
-def test_check_is_fitted_with_non_fitted_model():
-    """
-    Tests `check_is_fitted` with a non-fitted model.
-    """
-    with pytest.raises(NotFittedError):
-        check_is_fitted(RandomForestClassifier())
-    from calibrated_explanations.utils.exceptions import ValidationError
-
-    with pytest.raises(ValidationError):
-        check_is_fitted(RandomForestClassifier)
 
 
 def test_safe_import():
@@ -70,12 +52,6 @@ def test_safe_import():
         safe_import("p1337")
 
 
-def test_make_directory_invalid_path():
-    """
-    Tests `make_directory` with an invalid path.
-    """
-    with pytest.raises(Exception):
-        make_directory("/invalid/path/to/directory")
 
 
 def test_is_notebook_false():

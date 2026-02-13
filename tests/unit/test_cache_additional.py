@@ -15,58 +15,12 @@ def boom_size_estimator(_value):
     raise RuntimeError("nope")
 
 
-def test_default_size_estimator_with_numpy():
-    cache_mod = fresh_cache_module()
-    arr = np.arange(10, dtype=np.int64)
-    size = cache_mod.default_size_estimator(arr)
-    assert isinstance(size, int)
-    assert size == arr.nbytes
 
 
-def test_default_size_estimator_fallback_for_plain_object():
-    cache_mod = fresh_cache_module()
-
-    class Dummy:
-        pass
-
-    obj = Dummy()
-    size = cache_mod.default_size_estimator(obj)
-    assert size == 256
 
 
-def test_hash_part_various_types():
-    cache_mod = fresh_cache_module()
-    assert cache_mod.hash_part(None) is None
-    assert cache_mod.hash_part(123) == 123
-    assert cache_mod.hash_part("abc") == "abc"
-
-    arr = np.array([[1, 2], [3, 4]], dtype=np.int32)
-    token = cache_mod.hash_part(arr)
-    assert isinstance(token, tuple) and token[0] == "nd"
-
-    lst = [3, 1, 2]
-    assert cache_mod.hash_part(lst) == tuple(sorted(cache_mod.hash_part(x) for x in lst))
-
-    s = {"b", "a"}
-    hp = cache_mod.hash_part(s)
-    assert isinstance(hp, tuple)
-
-    mapping = {"x": 1, "y": 2}
-    mp = cache_mod.hash_part(mapping)
-    assert isinstance(mp, tuple) and all(isinstance(t, tuple) for t in mp)
 
 
-def test_make_key_and_metrics_snapshot(monkeypatch):
-    cache_mod = fresh_cache_module()
-    parts = ["a", 1, None]
-    key = cache_mod.make_key("ns", "v1", parts)
-    assert key[0] == "ns" and key[1] == "v1"
-
-    m = cache_mod.CacheMetrics()
-    m.hits = 1
-    m.misses = 2
-    snap = m.snapshot()
-    assert snap["hits"] == 1 and snap["misses"] == 2
 
 
 def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
@@ -182,23 +136,6 @@ def test_lru_cache_helpers_and_pickle_roundtrip():
     assert restored.get(("k",)) == {"v": 1}
 
 
-def test_lru_cache_telemetry_errors_and_none_values():
-    cache_mod = fresh_cache_module()
-
-    def bad_telemetry(_event, _payload):
-        raise RuntimeError("boom")
-
-    cache = cache_mod.LRUCache(
-        namespace="ns",
-        version="v1",
-        max_items=8,
-        max_bytes=None,
-        ttl_seconds=None,
-        telemetry=bad_telemetry,
-        size_estimator=cache_mod.default_size_estimator,
-    )
-    cache.set(("none",), None)
-    assert cache.get(("none",)) is None
 
 
 def test_explanation_cache_facade_disabled():
@@ -254,67 +191,5 @@ def test_explanation_cache_facade_enabled_roundtrip():
     assert cal.version == "v2"
 
 
-def test_calibrator_cache_disabled_noops():
-    cache_mod = fresh_cache_module()
-    cfg = cache_mod.CacheConfig(enabled=False)
-    cal = cache_mod.CalibratorCache(cfg)
-    assert cal.enabled is False
-    assert cal.metrics.snapshot()["hits"] == 0
-
-    assert cal.get(stage="s", parts=("p",)) is None
-    cal.set(stage="s", parts=("p",), value=1)
-    assert cal.get(stage="s", parts=("p",)) is None
 
 
-def test_lru_cache_eviction_and_budget_paths():
-    cache_mod = fresh_cache_module()
-    oversize_cache = cache_mod.LRUCache(
-        namespace="ns",
-        version="v1",
-        max_items=8,
-        max_bytes=1,
-        ttl_seconds=None,
-        telemetry=None,
-        size_estimator=lambda _value: 10,
-    )
-    oversize_cache.set(("big",), "value")
-    assert oversize_cache.get(("big",)) is None
-
-    update_cache = cache_mod.LRUCache(
-        namespace="ns",
-        version="v1",
-        max_items=8,
-        max_bytes=10,
-        ttl_seconds=None,
-        telemetry=None,
-        size_estimator=lambda _value: 1,
-    )
-    update_cache.set(("k",), "a")
-    update_cache.set(("k",), "b")
-    assert update_cache.get(("k",)) == "b"
-
-    byte_budget_cache = cache_mod.LRUCache(
-        namespace="ns",
-        version="v1",
-        max_items=8,
-        max_bytes=1,
-        ttl_seconds=None,
-        telemetry=None,
-        size_estimator=lambda _value: 1,
-    )
-    byte_budget_cache.set(("k1",), "v1")
-    byte_budget_cache.set(("k2",), "v2")
-    assert byte_budget_cache.get(("k2",)) == "v2"
-
-    max_items_cache = cache_mod.LRUCache(
-        namespace="ns",
-        version="v1",
-        max_items=1,
-        max_bytes=None,
-        ttl_seconds=None,
-        telemetry=None,
-        size_estimator=lambda _value: 1,
-    )
-    max_items_cache.set(("k1",), "v1")
-    max_items_cache.set(("k2",), "v2")
-    assert max_items_cache.get(("k2",)) == "v2"

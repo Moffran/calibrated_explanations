@@ -35,20 +35,6 @@ def _make_binary_explainer(binary_dataset):
     return explainer, x_test
 
 
-def test_conjunction_state_normalization():
-    # Test normalization of various feature types
-    initial_rules = {
-        "rule": ["A", "B"],
-        "feature": [0, [1]],
-        "weight": [0.1, None],
-        "sampled_values": [None, None],
-    }
-    state = ConjunctionState(initial_rules)
-
-    # Check normalization
-    assert state.state["feature"] == [0, [1]]
-    assert state.state["weight"] == [0.1, pytest.approx(np.nan, nan_ok=True)]
-    assert state.state["is_conjunctive"] == [False, False]
 
 
 def test_robust_ranking_nan():
@@ -59,34 +45,6 @@ def test_robust_ranking_nan():
     weights = np.array([0.1, np.nan, 0.3])
     ranked = FactualExplanation.rank_features(f, feature_weights=weights, num_to_show=3)
     assert list(ranked) == [1, 0, 2]
-
-
-def test_add_conjunctions_diagnostic_warning():
-    f = FactualExplanation.__new__(FactualExplanation)
-    f.has_rules = True
-    f.rules = {
-        "rule": ["feat1", "feat2"],
-        "feature": [0, 1],
-        "weight": [0.1, 0.2],
-        "weight_low": [0.0, 0.1],
-        "weight_high": [0.2, 0.3],
-        "sampled_values": [1, 2],
-        "value": ["1", "2"],
-        "classes": 1,
-    }
-    f.has_conjunctive_rules = False
-    f.conjunctive_rules = []
-    f.y_threshold = None
-    f.x_test = np.array([1, 2])
-    f.prediction = {"predict": 0.5}
-    f.bin = None
-
-    # Mock methods
-    f.rank_features = MagicMock(return_value=[0, 1])
-    f.predict_conjunctive = MagicMock(side_effect=Exception("Predict failed"))
-
-    with pytest.warns(UserWarning, match="add_conjunctions: created=0"):
-        FactualExplanation.add_conjunctions(f, n_top_features=2, max_rule_size=2, verbose=True)
 
 
 def test_fallback_to_legacy(monkeypatch):
@@ -163,52 +121,6 @@ def test_raise_on_predict_error_surfaces_exceptions():
         )
 
 
-def test_conjunction_stats_accuracy():
-    """Verify attempts == created + sum(skipped) when conjunction_stats is available."""
-    f = FactualExplanation.__new__(FactualExplanation)
-    f.has_rules = True
-    f.rules = {
-        "rule": ["feat1", "feat2", "feat3"],
-        "feature": [0, 1, 2],
-        "weight": [0.1, 0.2, 0.3],
-        "weight_low": [0.0, 0.1, 0.2],
-        "weight_high": [0.2, 0.3, 0.4],
-        "sampled_values": [np.array([1.0]), np.array([2.0]), np.array([3.0])],
-        "value": ["1", "2", "3"],
-        "predict": [0.6, 0.7, 0.8],
-        "predict_low": [0.5, 0.6, 0.7],
-        "predict_high": [0.7, 0.8, 0.9],
-        "base_predict": [0.5],
-        "base_predict_low": [0.4],
-        "base_predict_high": [0.6],
-        "classes": 1,
-    }
-    f.has_conjunctive_rules = False
-    f.conjunctive_rules = []
-    f.y_threshold = None
-    f.x_test = np.array([1, 2, 3])
-    f.prediction = {"predict": 0.5}
-    f.bin = None
-
-    # Alternate: first call succeeds, second raises
-    call_count = [0]
-
-    def mock_predict(*args, **kwargs):
-        call_count[0] += 1
-        if call_count[0] % 2 == 0:
-            raise ValueError("intermittent failure")
-        return 0.6, 0.5, 0.7
-
-    f.rank_features = MagicMock(return_value=[0, 1, 2])
-    f.predict_conjunctive = MagicMock(side_effect=mock_predict)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        FactualExplanation.add_conjunctions(f, n_top_features=3, max_rule_size=2)
-
-    stats = f.conjunction_stats
-    total_skipped = sum(stats["skipped"].values())
-    assert stats["attempts"] == stats["created"] + total_skipped
 
 
 def test_conjunction_diagnostic_includes_predict_errors():

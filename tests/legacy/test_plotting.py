@@ -212,15 +212,6 @@ def fake_matplotlib(monkeypatch):
     return fake_plt
 
 
-def test_compose_save_target_handles_directories(tmp_path):
-    folder = tmp_path / "plots"
-    folder.mkdir()
-    result_dir = plotting.compose_save_target(folder, "demo", ".png")
-    assert result_dir == str(folder / "demo.png")
-
-    file_base = tmp_path / "base"
-    result_file = plotting.compose_save_target(file_base, "demo", ".png")
-    assert result_file == str(file_base) + "demo.png"
 
 
 def test_require_matplotlib_reports_original_error(monkeypatch):

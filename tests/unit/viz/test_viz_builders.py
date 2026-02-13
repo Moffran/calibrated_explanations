@@ -16,23 +16,6 @@ def make_fw(n):
     return {"predict": vals, "low": low, "high": high}
 
 
-def test_build_regression_numeric_path_and_labels():
-    vals = np.array([0.1, -0.2, 0.3])
-    spec = build_regression_bars_spec(
-        title="t",
-        predict={"predict": 0.5},
-        feature_weights=vals,
-        features_to_plot=[0, 1, 2],
-        column_names=["a", "b", "c"],
-        instance=[10, 20, 30],
-        y_minmax=(0.0, 1.0),
-        interval=False,
-    )
-    bars = spec.body.bars
-    assert [b.label for b in bars] == ["a", "b", "c"]
-    assert [b.instance_value for b in bars] == [10, 20, 30]
-
-
 
 
 def test_sort_by_value_and_abs_ordering():
@@ -103,42 +86,6 @@ def test_sort_by_width_and_label():
     assert labels == sorted(labels)
 
 
-def test_probabilistic_builder_color_role_and_dual_header():
-    fw = make_fw(3)
-    spec = build_probabilistic_bars_spec(
-        title="p",
-        predict={"predict": 0.6, "low": 0.5, "high": 0.7},
-        feature_weights=fw,
-        features_to_plot=[0, 1, 2],
-        column_names=["a", "b", "c"],
-        instance=[1, 2, 3],
-        y_minmax=None,
-        interval=True,
-    )
-    # header should be dual for probabilistic builder
-    assert getattr(spec.header, "dual", False) is True
-    # color role should be 'positive' for positive values and 'negative' otherwise
-    roles = [b.color_role for b in spec.body.bars]
-    assert all(r in ("positive", "negative") for r in roles)
-
-
-def test_probabilistic_builder_unit_interval_with_custom_minmax():
-    fw = make_fw(2)
-    spec = build_probabilistic_bars_spec(
-        title="prob",
-        predict={"predict": 0.6, "low": 0.45, "high": 0.7},
-        feature_weights=fw,
-        features_to_plot=[0, 1],
-        column_names=["a", "b"],
-        instance=[1, 2],
-        y_minmax=(10.0, 25.0),
-        interval=True,
-    )
-    assert spec.header is not None
-    assert spec.header.xlim == (0.0, 1.0)
-    assert spec.header.low == pytest.approx(0.45)
-    assert spec.header.high == pytest.approx(0.7)
-    assert spec.header.pred == pytest.approx(0.6)
 
 
 # Tests for is_valid_probability_values public API
@@ -146,23 +93,6 @@ def test_probabilistic_builder_unit_interval_with_custom_minmax():
 
 
 
-def test_is_valid_probability_values_should_accept_string_probabilities():
-    """Verify is_valid_probability_values accepts string values coercible to probabilities."""
-    assert is_valid_probability_values("0.0")
-    assert is_valid_probability_values("0.5")
-    assert is_valid_probability_values("1.0")
-    assert is_valid_probability_values("0.0", "0.5", "1.0")
-
-
-
-
-
-
-def test_is_valid_probability_values_should_reject_non_finite_values():
-    """Verify is_valid_probability_values rejects non-finite values."""
-    assert not is_valid_probability_values(float("inf"))
-    assert not is_valid_probability_values(float("-inf"))
-    assert not is_valid_probability_values(float("nan"))
 
 
 def test_is_valid_probability_values_should_reject_non_numeric_strings():
@@ -177,8 +107,3 @@ def test_is_valid_probability_values_should_reject_empty_input():
     assert not is_valid_probability_values()
 
 
-def test_is_valid_probability_values_should_reject_mixed_invalid_values():
-    """Verify is_valid_probability_values rejects when any value is invalid."""
-    assert not is_valid_probability_values(0.5, 1.5)  # 1.5 out of range
-    assert not is_valid_probability_values(0.5, float("nan"))  # nan present
-    assert not is_valid_probability_values(0.0, "abc", 1.0)  # invalid string

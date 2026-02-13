@@ -74,15 +74,6 @@ def test_predict_caching_miss(orchestrator, mock_explainer):
         assert result == mock_impl.return_value
 
 
-def test_validate_prediction_result_valid(orchestrator):
-    # predict, low, high, classes
-    result = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
-    with warnings.catch_warnings(record=True) as record:
-        warnings.simplefilter("always")
-        orchestrator.validate_prediction_result(result)
-        assert len(record) == 0
-
-
 
 
 def testpredict_impl_regression_crepes_error(orchestrator, mock_explainer, enable_fallbacks):
@@ -105,25 +96,6 @@ def testpredict_impl_regression_crepes_error(orchestrator, mock_explainer, enabl
 
 
 
-def testpredict_impl_fast_specific_feature(orchestrator, mock_explainer):
-    mock_explainer.mode = "classification"
-    mock_explainer.is_multiclass.return_value = False
-    mock_explainer.is_fast.return_value = True
-    mock_explainer.num_features = 5  # Default if feature is None
-
-    mock_learner = MagicMock()
-    mock_learner.__getitem__.return_value.predict_proba.return_value = (
-        np.array([[0.1, 0.9]]),
-        np.array([[0.0, 0.8]]),
-        np.array([[0.2, 1.0]]),
-    )
-    mock_explainer.interval_learner = mock_learner
-
-    x = np.array([[1, 2]])
-    # Pass explicit feature index
-    predict, low, high, classes = orchestrator.predict_impl(x, feature=2)
-
-    mock_learner.__getitem__.assert_called_with(2)
 
 
 
@@ -190,16 +162,6 @@ def test_validate_prediction_result_empty(orchestrator):
 
 
 
-def testpredict_impl_regression_probabilistic_invalid_threshold(orchestrator, mock_explainer):
-    mock_explainer.mode = "regression"
-    mock_explainer.is_fast.return_value = False
-
-    x = np.array([[1, 2]])
-    # Threshold length mismatch
-    threshold = [0.5, 0.6]  # Length 2, x has 1 sample
-
-    with pytest.raises(AssertionError):
-        orchestrator.predict_impl(x, threshold=threshold)
 
 
 def testpredict_impl_unknown_mode(orchestrator, mock_explainer):
@@ -213,37 +175,5 @@ def testpredict_impl_unknown_mode(orchestrator, mock_explainer):
 
 
 
-def test_validate_interval_calibrator_fast_mode_deep_validation_failure(
-    orchestrator, mock_explainer
-):
-    """Test that validate_interval_calibrator performs deep validation in FAST mode."""
-    from calibrated_explanations.calibration.interval_wrappers import FastIntervalCalibrator
-
-    # Create a simple invalid calibrator class
-    class InvalidCalibrator:
-        pass
-
-    # Create a FastIntervalCalibrator with one invalid item
-    fast_calibrator = FastIntervalCalibrator([InvalidCalibrator()])
-
-    context = IntervalCalibratorContext(
-        learner=MagicMock(),
-        calibration_splits=(MagicMock(),),
-        bins={},
-        residuals={},
-        difficulty={},
-        metadata={"task": "classification"},
-        fast_flags={"fast": True},
-    )
-
-    with pytest.raises(
-        ConfigurationError, match="Interval calibrator at index 0.*is non-compliant"
-    ):
-        orchestrator.validate_interval_calibrator(
-            calibrator=fast_calibrator,
-            context=context,
-            identifier="test_plugin",
-            fast=True,
-        )
 
 

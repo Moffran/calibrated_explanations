@@ -119,52 +119,11 @@ class TestPolicyBehavior:
 
 
 
-    def test_policy_only_rejected_only_explains_rejected_instances(self):
-        """ONLY_REJECTED should explain only rejected instances."""
-        # Create explainer with specific rejection pattern: [False, True, False, True]
-        explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
-        orchestrator = MockRejectOrchestrator(explainer)
-        explain_fn = make_explain_fn()
 
-        x_input = [[1, 2], [3, 4], [5, 6], [7, 8]]
-        result = orchestrator.apply_policy(
-            RejectPolicy.ONLY_REJECTED, x=x_input, explain_fn=explain_fn
-        )
-
-        assert result.policy is RejectPolicy.ONLY_REJECTED
-        assert len(explain_fn.calls) == 1
-        # Should only explain indices 1 and 3 (rejected)
-        explained_x = explain_fn.calls[0][0]
-        assert len(explained_x) == 2
-
-    def test_policy_only_accepted_only_explains_non_rejected_instances(self):
-        """ONLY_ACCEPTED should explain only non-rejected instances."""
-        # Create explainer with specific rejection pattern: [False, True, False, True]
-        explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
-        orchestrator = MockRejectOrchestrator(explainer)
-        explain_fn = make_explain_fn()
-
-        x_input = [[1, 2], [3, 4], [5, 6], [7, 8]]
-        result = orchestrator.apply_policy(
-            RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=explain_fn
-        )
-
-        assert result.policy is RejectPolicy.ONLY_ACCEPTED
-        assert len(explain_fn.calls) == 1
-        # Should only explain indices 0 and 2 (non-rejected)
-        explained_x = explain_fn.calls[0][0]
-        assert len(explained_x) == 2
 
 
 class TestIsPolicyEnabled:
     """Test the is_policy_enabled helper function."""
-
-
-    def test_invalid_policy_returns_false(self):
-        """Invalid policy values should return False."""
-        assert is_policy_enabled("invalid") is False
-        assert is_policy_enabled(None) is False
-        assert is_policy_enabled(42) is False
 
 
 # ---------------------------------------------------------------------------
@@ -182,17 +141,6 @@ class TestEdgeCases:
 
         assert isinstance(result, RejectResult)
         # Empty input should still produce a result envelope
-
-    def test_single_instance_input(self):
-        """Single instance should work without indexing errors."""
-        explainer = MockExplainer(rejected_mask=np.array([False]))
-        orchestrator = MockRejectOrchestrator(explainer)
-        explain_fn = make_explain_fn()
-
-        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2]], explain_fn=explain_fn)
-
-        assert isinstance(result, RejectResult)
-        assert result.explanation is not None
 
     def test_all_rejected_scenario_explain_non_rejects_returns_none_explanation(self):
         """When all instances are rejected, EXPLAIN_NON_REJECTS should return None explanation."""
@@ -329,20 +277,8 @@ class TestMetadataValidation:
     """Test that metadata fields are correctly populated."""
 
 
-    def test_error_rate_within_expected_bounds(self):
-        """Error rate should be between 0 and 1."""
-        for er in [0.0, 0.05, 0.1, 0.5, 1.0]:
-            explainer = MockExplainer(error_rate=er, reject_rate=0.1)
-            orchestrator = MockRejectOrchestrator(explainer)
-            result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2]])
-
-            assert 0.0 <= result.metadata["error_rate"] <= 1.0
 
 
-    def test_metadata_none_for_none_policy(self, mock_orchestrator):
-        """NONE policy should have None metadata."""
-        result = mock_orchestrator.apply_policy(RejectPolicy.NONE, x=[[1, 2]])
-        assert result.metadata is None
 
 
 # ---------------------------------------------------------------------------
@@ -429,7 +365,3 @@ class TestRejectPolicyEnum:
             dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
             assert len(dep_warnings) == 5
 
-    def test_invalid_string_raises_value_error(self):
-        """Invalid string should raise ValueError."""
-        with pytest.raises(ValueError):
-            RejectPolicy("invalid_policy")

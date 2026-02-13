@@ -5,6 +5,9 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
+### Added
+- **Preprocessor mapping persistence helpers:** Added `export_preprocessor_mapping` and `import_preprocessor_mapping` helpers to `WrapCalibratedExplainer` to support ADR-009 mapping export/import, plus unit tests covering export/import and stash fallback behaviour. This provides a best-effort, non-invasive persistence surface for preprocessor mappings and improves telemetry visibility.
+
 ## [v0.10.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.4) - 2026-02-12
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...v0.10.4)

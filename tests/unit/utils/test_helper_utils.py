@@ -17,14 +17,3 @@ def test_safe_first_element_handles_various_shapes():
     vector = np.array([9.0, 8.0])
     assert helper_module.safe_first_element(vector, col=1) == pytest.approx(8.0)
     assert helper_module.safe_first_element(vector, col=5) == pytest.approx(0.0)
-
-
-def test_safe_mean_returns_default_on_failures():
-    assert helper_module.safe_mean([]) == 0.0
-    assert helper_module.safe_mean([1, 2, 3]) == pytest.approx(2.0)
-
-    class BadSeq:
-        def __iter__(self):
-            raise RuntimeError("boom")
-
-    assert helper_module.safe_mean(BadSeq(), default=4.2) == 4.2

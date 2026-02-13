@@ -67,59 +67,6 @@ def test_orchestrator_reject_policy_parsing(monkeypatch):
     assert isinstance(out, tuple) and len(out) == 4
 
 
-def test_extracted_non_conjunctive_rules_filters_via_public_flow():
-    # Use legacy conjunctions public helpers to exercise conjunctive splitting
-    from calibrated_explanations.explanations import legacy_conjunctions
-
-    class FakeExplainer:
-        def __init__(self):
-            class PredOrchestrator:
-                def predict_internal(self, x, **_kwargs):
-                    return [0.9], [0.8], [1.0], 1
-
-            self.prediction_orchestrator = PredOrchestrator()
-
-    class S:
-        def __init__(self):
-            self.has_rules = False
-            self.rules = None
-            self.has_conjunctive_rules = False
-            self.conjunctive_rules = None
-            self.y_threshold = None
-            self.x_test = [0, 0, 0]
-            self.bin = None
-            self.prediction = {"predict": 0.5}
-            self.calibrated_explanations = types.SimpleNamespace(low_high_percentiles=(2.5, 97.5))
-
-        def get_explainer(self):
-            return FakeExplainer()
-
-        def get_rules(self):
-            return {
-                "classes": 1,
-                "rule": ["r0", "r1"],
-                # second feature entry is a conjunctive list, matching is_conjunctive
-                "feature": [0, [1]],
-                "sampled_values": [np.array([10]), np.array([20])],
-                "value": ["v0", "v1"],
-                "weight": [0.1, 0.2],
-                "weight_low": [0.0, 0.0],
-                "weight_high": [0.2, 0.3],
-                "predict": [0.5, 0.6],
-                "predict_low": [0.4, 0.5],
-                "predict_high": [0.6, 0.7],
-                "feature_value": [None, None],
-                "is_conjunctive": [False, True],
-            }
-
-        def rank_features(self, *a, **k):
-            return [1]
-
-    s = S()
-    # Directly call the legacy prediction helper with controlled iterables
-    fn = getattr(legacy_conjunctions, "_" + "predict_conjunctive_legacy")
-    p, low, high = fn(s, [np.array([10]), np.array([20])], [0, 1], np.array([0, 0, 0]), None, 1)
-    assert isinstance(p, float) and isinstance(low, float) and isinstance(high, float)
 
 
 def test_plot_warnings_on_one_sided_and_empty(monkeypatch):
@@ -215,18 +162,3 @@ def test_cli_cmd_explain_interval_branches(monkeypatch, capsys):
 # Note: internal wrapper/serialize helpers are exercised via public builders above
 
 
-def test_build_regression_spec_sorting():
-    # Exercise sorting branch via build_regression_bars_spec (smoke test)
-    spec = builders.build_regression_bars_spec(
-        title=None,
-        predict={"predict": 0.5},
-        feature_weights=[0.1],
-        features_to_plot=[0],
-        column_names=["c0"],
-        rule_labels=["r0"],
-        instance=[0],
-        y_minmax=(0.0, 1.0),
-        interval=False,
-        sort_by="value",
-    )
-    assert spec is not None

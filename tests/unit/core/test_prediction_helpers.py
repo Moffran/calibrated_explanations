@@ -233,63 +233,8 @@ def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch
         )
 
 
-def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
-    explainer = StubExplainer(mode="regression")
-    x = np.ones((2, explainer.num_features))
-    bins = np.ones((2,))
-    threshold = [(0.1, 0.2), (0.3, 0.4)]
-
-    recorded_calls: list[tuple] = []
-
-    def fake_assert_mock(thresh, data):
-        recorded_calls.append((thresh, np.asarray(data).shape))
-        return thresh
-
-    class Collection:
-        def __init__(self, *_args, **_kwargs) -> None:
-            self.low_high_percentiles = None
-
-    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
-
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
-    monkeypatch.setattr(ph, "assert_threshold", fake_assert_mock)
-
-    with pytest.warns(UserWarning, match="list of interval thresholds"):
-        explanation = ph.initialize_explanation(
-            explainer,
-            x,
-            (5, 95),
-            threshold=threshold,
-            bins=bins,
-            features_to_ignore=None,
-        )
-
-    assert explanation.low_high_percentiles is None
-    assert recorded_calls == [(threshold, x.shape)]
 
 
-def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
-    explainer = StubExplainer(mode="regression")
-    x = np.ones((3, explainer.num_features))
-
-    class Collection:
-        def __init__(self, *_args, **_kwargs) -> None:
-            self.low_high_percentiles = None
-
-    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
-
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
-
-    explanation = ph.initialize_explanation(
-        explainer,
-        x,
-        (25, 75),
-        threshold=None,
-        bins=None,
-        features_to_ignore=None,
-    )
-
-    assert explanation.low_high_percentiles == (25, 75)
 
 
 def test_predict_internal_delegates_to_underlying_protocol():

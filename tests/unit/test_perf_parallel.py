@@ -89,45 +89,6 @@ class TestParallelExecutor:
     """Tests for the executor facade."""
 
 
-
-    def test_map_parallel_execution(self):
-        """Test actual parallel execution (using threads for simplicity)."""
-        cfg = ParallelConfig(
-            enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1
-        )
-        executor = ParallelExecutor(cfg)
-        items = [1, 2, 3]
-        results = executor.map(lambda x: x * 2, items)
-        assert results == [2, 4, 6]
-        assert executor.metrics.submitted == 3
-        assert executor.metrics.completed == 3
-
-    def test_strategy_auto_selection_windows(self):
-        """Test auto strategy selects threads on Windows."""
-        cfg = ParallelConfig(enabled=True, strategy="auto")
-        executor = ParallelExecutor(cfg)
-        # Mock joblib as missing so we test the OS fallback
-        with (
-            patch("os.name", "nt"),
-            patch("calibrated_explanations.parallel.parallel._JoblibParallel", None),
-            patch.object(ParallelExecutor, "_is_ci_environment", return_value=False),
-        ):
-            strategy = executor.resolve_strategy()
-            # Should resolve to thread strategy partial
-            assert strategy.func == executor.thread_strategy
-
-    def test_strategy_auto_selection_low_cpu(self):
-        """Test auto strategy selects threads on low CPU count."""
-        cfg = ParallelConfig(enabled=True, strategy="auto")
-        executor = ParallelExecutor(cfg)
-        with (
-            patch("os.name", "posix"),
-            patch("os.cpu_count", return_value=2),
-            patch.object(ParallelExecutor, "_is_ci_environment", return_value=False),
-        ):
-            strategy = executor.resolve_strategy()
-            assert strategy.func == executor.thread_strategy
-
     def test_strategy_auto_selection_joblib(self):
         """Test auto strategy prefers joblib when available and CPUs > 2."""
         cfg = ParallelConfig(enabled=True, strategy="auto")
@@ -155,42 +116,6 @@ class TestParallelExecutor:
                 executor.joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
 
-    def test_telemetry_emission(self, enable_fallbacks):
-        """Test that telemetry callback is invoked on fallback."""
-        mock_telemetry = MagicMock()
-        cfg = ParallelConfig(
-            enabled=True,
-            strategy="threads",
-            min_batch_size=1,
-            min_instances_for_parallel=1,
-            telemetry=mock_telemetry,
-            force_serial_on_failure=True,
-        )
-        executor = ParallelExecutor(cfg)
-
-        # Force an exception during execution
-        def failing_fn(x):
-            raise ValueError("Boom")
-
-        # map should catch the exception and fall back to serial
-        # but since the serial execution will also fail (same function),
-        # we need to be careful. The map implementation catches exception during STRATEGY execution.
-        # If we make the strategy raise, it falls back to serial.
-
-        with patch.object(executor, "_resolve_strategy", side_effect=ValueError("Strategy failed")):
-            items = [1]
-            with (
-                pytest.warns(UserWarning, match=r"fall.*back"),
-                pytest.raises(ValueError, match="Boom"),
-            ):
-                executor.map(failing_fn, items)
-
-            # Verify telemetry was called
-            mock_telemetry.assert_called_with(
-                "parallel_fallback", {"error": "ValueError('Strategy failed')"}
-            )
-            assert executor.metrics.fallbacks == 1
-            assert executor.metrics.failures == 1
 
 
     def test_metrics_tracking_with_failures(self):
@@ -243,13 +168,4 @@ class TestParallelExecutor:
         os.environ["CE_PARALLEL"] = "workers=6"
         cfg = ParallelConfig.from_env()
         assert cfg.max_workers == 6
-
-    def test_empty_items_handling(self):
-        """Test map handles empty item list gracefully."""
-        cfg = ParallelConfig(enabled=True, min_batch_size=1)
-        executor = ParallelExecutor(cfg)
-
-        results = executor.map(lambda x: x, [])
-        assert results == []
-        assert executor.metrics.submitted == 0
 

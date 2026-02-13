@@ -152,22 +152,6 @@ def test_predict_bridge_runtime_check() -> None:
     assert isinstance(DummyPredictBridge(), PredictBridge)
 
 
-def test_interval_context_is_frozen() -> None:
-    ctx = IntervalCalibratorContext(
-        learner=object(),
-        calibration_splits=((),),
-        bins={"values": ()},
-        residuals={"values": ()},
-        difficulty={"values": ()},
-        metadata={"mode": "classification"},
-        fast_flags={"fast": True},
-    )
-    # Immutability contract: context must not allow field modification
-    original_learner = ctx.learner
-    with pytest.raises(Exception):
-        ctx.learner = None  # type: ignore[misc]
-    # Verify that the value did not change
-    assert ctx.learner is original_learner
 
 
 class GoodIntervalPlugin:

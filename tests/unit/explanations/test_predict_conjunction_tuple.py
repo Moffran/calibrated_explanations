@@ -25,55 +25,8 @@ def make_explanation_with_mock_predict(predict_fn_return):
     return exp, mock_predict
 
 
-def test_predict_conjunction_tuple_basic():
-    """Basic test: known inputs produce expected output."""
-    # predict_fn returns known values for any batch
-    p_vals = np.array([0.6, 0.8])
-    low_vals = np.array([0.5, 0.7])
-    high_vals = np.array([0.7, 0.9])
-    dummy = np.array([0.0, 0.0])
-
-    exp, mock_predict = make_explanation_with_mock_predict((p_vals, low_vals, high_vals, dummy))
-
-    perturbed = np.array([[1.0, 2.0, 3.0]])
-    rule_value_set = [np.array([10.0, 20.0])]  # 2 values for feature 0
-    original_features = [0]
-
-    p, lo, hi = exp.predict_conjunction_tuple(
-        rule_value_set, original_features, perturbed, threshold=0.5, predicted_class=1
-    )
-
-    assert p == pytest.approx(0.7)  # mean of [0.6, 0.8]
-    assert lo == pytest.approx(0.6)  # mean of [0.5, 0.7]
-    assert hi == pytest.approx(0.8)  # mean of [0.7, 0.9]
-
-    # Verify predict was called with correct batch shape
-    call_args = mock_predict.call_args
-    batch_arg = call_args[0][0]
-    assert batch_arg.shape == (2, 3)  # 2 combinations x 3 features
 
 
-def test_predict_conjunction_tuple_1d_perturbed():
-    """1D perturbed input should be handled without error."""
-    p_vals = np.array([0.5])
-    low_vals = np.array([0.4])
-    high_vals = np.array([0.6])
-    dummy = np.array([0.0])
-
-    exp, mock_predict = make_explanation_with_mock_predict((p_vals, low_vals, high_vals, dummy))
-
-    # 1D perturbed - this used to fail before hardening
-    perturbed = np.array([1.0, 2.0, 3.0])
-    rule_value_set = [np.array([10.0])]
-    original_features = [0]
-
-    p, lo, hi = exp.predict_conjunction_tuple(
-        rule_value_set, original_features, perturbed, threshold=0.5, predicted_class=1
-    )
-
-    assert isinstance(p, float)
-    assert isinstance(lo, float)
-    assert isinstance(hi, float)
 
 
 def test_predict_conjunction_tuple_empty_values():

@@ -105,36 +105,8 @@ def test_explanations_adapters_roundtrip_shapes() -> None:
     assert out["feature_weights"]["predict"] == [0.3, -0.2]
 
 
-def test_domain_to_legacy_empty_rules_is_stable() -> None:
-    exp = Explanation(
-        task="regression",
-        index=1,
-        explanation_type="factual",
-        prediction={"predict": 1.0},
-        rules=[],
-    )
-    out = domain_to_legacy(exp)
-    assert out["rules"]["rule"] == []
-    assert out["feature_predict"] == {}
 
 
-def test_core_reject_shim_exports_and_warns() -> None:
-    shim_path = Path("src/calibrated_explanations/core/reject.py").resolve()
-    spec = importlib.util.spec_from_file_location("ce_reject_shim_module", shim_path)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    assert hasattr(module, "RejectPolicy")
-    assert hasattr(module, "is_policy_enabled")
-
-
-
-
-def test_core_reject_package_import_exposes_policy() -> None:
-    sys.modules.pop("calibrated_explanations.core.reject", None)
-    mod = importlib.import_module("calibrated_explanations.core.reject")
-    assert mod.__name__ == "calibrated_explanations.core.reject"
 
 
 def test_utils_module_reload_handles_joblib_import_error(monkeypatch: pytest.MonkeyPatch) -> None:

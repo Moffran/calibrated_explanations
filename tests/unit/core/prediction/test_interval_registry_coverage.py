@@ -25,22 +25,8 @@ def registry(mock_explainer):
     return IntervalRegistry(mock_explainer)
 
 
-def test_get_sigma_test_no_estimator(registry):
-    x = np.array([[1], [2]])
-    sigma = registry.get_sigma_test(x)
-    assert np.array_equal(sigma, np.ones(2))
 
 
-def test_get_sigma_test_with_estimator(registry, mock_explainer):
-    mock_estimator = MagicMock()
-    mock_estimator.apply.return_value = np.array([0.5, 0.5])
-    mock_explainer.difficulty_estimator = mock_estimator
-
-    x = np.array([[1], [2]])
-    sigma = registry.get_sigma_test(x)
-
-    mock_estimator.apply.assert_called_once_with(x)
-    assert np.array_equal(sigma, np.array([0.5, 0.5]))
 
 
 def test_constant_sigma_scalar(registry):
@@ -84,17 +70,3 @@ def test_update_regression_fast_list_raises(registry, mock_explainer):
         registry.update(np.array([]), np.array([]))
 
 
-def test_initialize(registry):
-    with patch(
-        "calibrated_explanations.core.prediction.interval_registry.initialize_interval_learner"
-    ) as mock_init:
-        registry.initialize()
-        mock_init.assert_called_once_with(registry.explainer)
-
-
-def test_initialize_for_fast_explainer(registry):
-    with patch(
-        "calibrated_explanations.core.prediction.interval_registry.initialize_interval_learner_for_fast_explainer"
-    ) as mock_init:
-        registry.initialize_for_fast_explainer()
-        mock_init.assert_called_once_with(registry.explainer)

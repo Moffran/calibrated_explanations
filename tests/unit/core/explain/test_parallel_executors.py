@@ -107,13 +107,6 @@ class TestInstanceParallelExecutor:
         # Should return False because 0 instances < 2
         assert executor.supports(request, config) is False
 
-    def test_should_initialize_with_sequential_plugin(self):
-        """Executor should initialize with a sequential explanation plugin."""
-        executor = InstanceParallelExplainExecutor()
-
-        # Sequential plugin should be created and stored
-        assert hasattr(executor, "sequential_plugin")
-        assert executor.sequential_plugin is not None
 
 
 # class TestFeatureParallelExecutor:

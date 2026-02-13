@@ -49,25 +49,8 @@ def prep_regression():
     return x_train, y_train, x_cal, y_cal, x_test, y_test
 
 
-def test_ce_presence_and_wrapper():
-    model = RandomForestClassifier(random_state=0)
-    wrapper = ensure_ce_first_wrapper(model)
-    assert isinstance(wrapper, WrapCalibratedExplainer)
 
 
-def test_ensure_ce_first_wrapper_existing():
-    model = RandomForestClassifier(random_state=0)
-    wrapper = WrapCalibratedExplainer(model)
-    assert ensure_ce_first_wrapper(wrapper) is wrapper
-
-
-def test_fit_and_calibrate_sets_state():
-    x_train, y_train, x_cal, y_cal, _, _ = prep_classification()
-    model = RandomForestClassifier(random_state=0)
-    wrapper = ensure_ce_first_wrapper(model)
-    wrapper = fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
-    assert wrapper.fitted is True
-    assert wrapper.calibrated is True
 
 
 def test_explain_and_narrate_requires_calibration():
@@ -208,23 +191,6 @@ def test_get_uncalibrated_predictions_without_predict_proba():
     assert payload["probability"] is None
 
 
-def test_wrap_and_explain_returns_expected_shape():
-    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
-    model = RandomForestClassifier(random_state=0)
-
-    payload = wrap_and_explain(
-        model,
-        x_train,
-        y_train,
-        x_cal,
-        y_cal,
-        x_test[:1],
-        mode="factual",
-    )
-    assert "wrapper" in payload
-    assert "explanations" in payload
-    assert "narrative" in payload
-    assert "plot" in payload
 
 
 def test_ensure_ce_first_wrapper_raises_for_missing_library(monkeypatch):

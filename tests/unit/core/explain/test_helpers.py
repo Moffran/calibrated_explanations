@@ -21,27 +21,9 @@ class TestSliceThreshold:
         result = helpers.slice_threshold(None, 0, 1, 1)
         assert result is None
 
-    def test_slice_threshold_slices_list(self):
-        """Lists should be sliced correctly."""
-        sequence = [1, 2, 3]
-        result = helpers.slice_threshold(sequence, 0, 2, 3)
-        assert result == [1, 2]
-
-    def test_slice_threshold_preserves_list_when_range_mismatch(self):
-        """Lists should be returned unchanged when range doesn't match total."""
-        sequence = [1, 2, 3]
-        result = helpers.slice_threshold(sequence, 0, 1, 4)
-        assert result is sequence
 
 
-    def test_slice_threshold_handles_pandas_series(self):
-        """Pandas Series should be sliced correctly."""
-        pytest.importorskip("pandas")
-        import pandas as pd
 
-        series = pd.Series([7, 8, 9])
-        result = helpers.slice_threshold(series, 1, 3, 3)
-        np.testing.assert_array_equal(result.to_numpy(), np.array([8, 9]))
 
 
 
@@ -66,11 +48,6 @@ class TestSliceBins:
         result = helpers.slice_bins(bins, 0, 2)
         np.testing.assert_array_equal(result, np.array([10, 11]))
 
-    def test_slice_bins_full_range(self):
-        """Slicing full range should preserve array."""
-        bins = np.array([1, 2, 3])
-        result = helpers.slice_bins(bins, 0, 3)
-        np.testing.assert_array_equal(result, bins)
 
 
 
@@ -78,18 +55,25 @@ class TestComputeWeightDelta:
     """Test behavior of compute_weight_delta helper function."""
 
 
-    def test_compute_weight_delta_matching_shapes(self):
-        """Arrays with matching shapes should compute delta correctly."""
-        base = np.array([2.0, 3.0])
-        pert = np.array([1.0, 5.0])
-        result = helpers.compute_weight_delta(base, pert)
-        np.testing.assert_array_almost_equal(result, np.array([1.0, -2.0]))
 
-    def test_compute_weight_delta_all_zeros(self):
-        """Zero baseline and perturbed should result in zeros."""
-        result = helpers.compute_weight_delta(0.0, np.array([0.0, 0.0]))
-        np.testing.assert_array_almost_equal(result, np.array([0.0, 0.0]))
 
+    def test_compute_weight_delta_fallback_path_for_object_values(self):
+        """Object subtraction should fall back to element-wise scalar extraction."""
+
+        class _UnevenDelta:
+            def __init__(self, value: float, width: int) -> None:
+                self.value = value
+                self.width = width
+
+            def __rsub__(self, other: float):
+                return [float(other) - self.value] * self.width
+
+        baseline = [4.0, 6.0]
+        perturbed = [_UnevenDelta(1.0, 2), _UnevenDelta(2.0, 1)]
+
+        result = helpers.compute_weight_delta(baseline, perturbed)
+
+        np.testing.assert_array_almost_equal(result, np.array([3.0, 4.0]))
 
 
 

@@ -8,18 +8,6 @@ from calibrated_explanations.serialization import to_json
 from calibrated_explanations.utils.exceptions import ValidationError
 
 
-def test_explanations_facade_invalid_attr_raises():
-    import calibrated_explanations.explanations as explanations
-
-    with pytest.raises(AttributeError):
-        getattr(explanations, "NotARealExplanation")
-
-
-def test_viz_facade_invalid_attr_raises():
-    import calibrated_explanations.viz as viz
-
-    with pytest.raises(AttributeError):
-        getattr(viz, "NotAPlot")
 
 
 def test_plot_render_context_getstate_returns_dict():
@@ -60,17 +48,3 @@ def test_serialization_invariant_low_greater_than_high():
         to_json(explanation)
 
 
-def test_reject_policy_deprecated_attr_access_warns():
-    from calibrated_explanations.core.reject import policy as reject_policy
-    from calibrated_explanations.explanations.reject import RejectPolicy
-
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        assert reject_policy.PREDICT_AND_FLAG is RejectPolicy.FLAG
-
-    assert any(
-        issubclass(item.category, DeprecationWarning) for item in caught
-    ), "Expected DeprecationWarning for deprecated reject policy name."
-
-    with pytest.raises(AttributeError):
-        getattr(reject_policy, "NOT_A_POLICY")

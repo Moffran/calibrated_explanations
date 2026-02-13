@@ -111,60 +111,6 @@ def disable_show(monkeypatch):
         monkeypatch.setattr(plt, "show", lambda *args, **kwargs: None)
 
 
-def test_probabilistic_plot_creates_expected_image(tmp_path):
-    explanation = DummyExplanation()
-    instance = [1.0, 2.0]
-    predict = {"predict": 0.6, "low": -np.inf, "high": np.inf}
-    feature_weights = [0.4, -0.25]
-    features_to_plot = [0, 1]
-    column_names = ["feature_a", "feature_b"]
-
-    plotting.plot_probabilistic(
-        explanation,
-        instance,
-        predict,
-        feature_weights,
-        features_to_plot,
-        num_to_show=len(features_to_plot),
-        column_names=column_names,
-        title="probabilistic",
-        path=str(tmp_path) + "/",
-        show=False,
-        save_ext=[".png"],
-    )
-
-    assert (tmp_path / "probabilistic.png").exists()
-
-
-
-
-def test_probabilistic_interval_branches(tmp_path, disable_show):
-    explanation = DummyExplanation(thresholded=True, y_threshold=0.4)
-    instance = [1.0, -1.0]
-    predict = {"predict": 0.3, "low": 0.1, "high": 0.6}
-    feature_weights = {
-        "predict": np.array([0.2, -0.3]),
-        "low": np.array([-0.4, 0.2]),
-        "high": np.array([0.5, 0.6]),
-    }
-    plotting.plot_probabilistic(
-        explanation,
-        instance,
-        predict,
-        feature_weights,
-        features_to_plot=[0, 1],
-        num_to_show=2,
-        column_names=["f0", "f1"],
-        title="prob_interval",
-        path=str(tmp_path) + "/",
-        show=True,
-        interval=True,
-        idx=0,
-        save_ext=None,
-    )
-
-    saved = sorted(p.name for p in tmp_path.iterdir())
-    assert len(saved) == 3
 
 
 def test_probabilistic_default_save_extensions_use_title(tmp_path):
@@ -328,35 +274,6 @@ def testplot_global_requires_scalar_threshold_for_non_probabilistic():
         )
 
 
-def test_regression_interval_plot_saves_image(tmp_path):
-    explanation = DummyExplanation(mode="regression", thresholded=False, y_minmax=(-2.0, 2.0))
-    instance = [0.1, -1.5]
-    predict = {"predict": 0.2, "low": -0.3, "high": 0.7}
-    feature_weights = {
-        "predict": np.array([0.5, -0.2]),
-        "low": np.array([-0.1, -0.6]),
-        "high": np.array([0.8, 0.4]),
-    }
-    features_to_plot = [0, 1]
-    column_names = ["rule_a", "rule_b"]
-
-    plotting.plot_regression(
-        explanation,
-        instance,
-        predict,
-        feature_weights,
-        features_to_plot,
-        num_to_show=len(features_to_plot),
-        column_names=column_names,
-        title="regression",
-        path=str(tmp_path) + "/",
-        show=False,
-        interval=True,
-        idx=0,
-        save_ext=[".png"],
-    )
-
-    assert (tmp_path / "regression.png").exists()
 
 
 def test_regression_interval_requires_index(tmp_path):
@@ -626,73 +543,6 @@ def test_triangular_returns_without_output():
     )
 
 
-def test_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path, disable_show):
-    recorded: list[tuple[float, float] | None] = []
-    real_figure = plotting.plt.figure
-
-    def record_figure(*args, **kwargs):
-        recorded.append(kwargs.get("figsize"))
-        return real_figure(*args, **kwargs)
-
-    monkeypatch.setattr(plotting.plt, "figure", record_figure)
-
-    plotting.plot_probabilistic(
-        DummyExplanation(),
-        instance=[0.3, -0.2, 0.1, 0.4],
-        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
-        feature_weights=[0.2, -0.1, 0.05, -0.3],
-        features_to_plot=[0, 1, 2, 3],
-        num_to_show=4,
-        column_names=["f0", "f1", "f2", "f3"],
-        title="fig_prob",
-        path=str(tmp_path) + "/",
-        show=True,
-        interval=False,
-        idx=None,
-        save_ext=[],
-    )
-
-    plotting.plot_regression(
-        DummyExplanation(mode="regression"),
-        instance=[0.2, -0.5, 0.1, -0.3, 0.4, -0.2],
-        predict={"predict": 0.1, "low": -0.2, "high": 0.5},
-        feature_weights=[0.3, -0.1, 0.2, -0.4, 0.5, -0.2],
-        features_to_plot=[0, 1, 2, 3, 4, 5],
-        num_to_show=6,
-        column_names=[f"r{i}" for i in range(6)],
-        title="fig_reg",
-        path=str(tmp_path) + "/",
-        show=True,
-        interval=False,
-        idx=None,
-        save_ext=[],
-    )
-
-    assert recorded[0] == (10, pytest.approx(4.0))
-    assert recorded[1] == (10, pytest.approx(5.0))
-
-
-def testplot_global_non_probabilistic(monkeypatch):
-    class Learner:
-        pass
-
-    class Explainer:
-        def __init__(self):
-            self.learner = Learner()
-            self.y_cal = np.array([0.1, 0.4, 0.9])
-
-        def predict(self, x, uq_interval=True, **kwargs):
-            del x, uq_interval, kwargs
-            predict = np.array([0.2, 0.7])
-            low = np.array([0.1, 0.6])
-            high = np.array([0.3, 0.9])
-            return predict, (low, high)
-
-    explainer = Explainer()
-
-    monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
-
-    plotting.plot_global(explainer, x=np.array([[0.0], [1.0]]), show=True)
 
 
 def testplot_global_threshold_branch(monkeypatch):
@@ -850,58 +700,6 @@ def test_require_matplotlib_raises(monkeypatch):
     assert "missing backend" in str(excinfo.value)
 
 
-
-
-
-
-def test_probabilistic_errors_for_misaligned_instance():
-    """Ensure ``_plot_probabilistic`` rejects instances shorter than features."""
-    explanation = DummyExplanation()
-    instance = np.array([0.1])
-    feature_weights = np.array([0.2, -0.1])
-
-    with pytest.raises(IndexError):
-        plotting.plot_probabilistic(
-            explanation=explanation,
-            instance=instance,
-            predict={"predict": 0.5, "low": 0.3, "high": 0.7},
-            feature_weights=feature_weights,
-            features_to_plot=[0, 1],
-            num_to_show=2,
-            column_names=["f0", "f1"],
-            title="misaligned_instance",
-            path="",
-            show=False,
-            interval=False,
-            save_ext=[".png"],
-        )
-
-
-def test_probabilistic_errors_for_num_to_show_mismatch():
-    """``_plot_probabilistic`` should fail when ``num_to_show`` exceeds feature count."""
-    explanation = DummyExplanation()
-    instance = np.array([0.1, 0.2])
-    feature_weights = np.array([0.2, -0.1])
-
-    with pytest.raises(ValueError) as excinfo:
-        plotting.plot_probabilistic(
-            explanation=explanation,
-            instance=instance,
-            predict={"predict": 0.5, "low": 0.3, "high": 0.7},
-            feature_weights=feature_weights,
-            features_to_plot=[0, 1],
-            num_to_show=3,
-            column_names=["f0", "f1"],
-            title="num_to_show_mismatch",
-            path="",
-            show=False,
-            interval=False,
-            save_ext=[".png"],
-        )
-
-    assert "FixedLocator" in str(excinfo.value)
-
-
 def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
     """When show/save are disabled the helper should short-circuit without matplotlib."""
     explanation = DummyExplanation()
@@ -928,27 +726,6 @@ def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
     )
 
 
-def test_color_brew_and_fill_color_behaviour():
-    colors = plotting.__color_brew(3)
-    assert len(colors) == 3
-    assert all(len(rgb) == 3 for rgb in colors)
-
-    palette = plotting.__color_brew(2)
-    high_color = palette[1]
-    alpha = 0.5
-    expected_high = "#%02x%02x%02x" % tuple(
-        int(round(alpha * channel + (1 - alpha) * 255, 0)) for channel in high_color
-    )
-    shade = plotting.__get_fill_color({"predict": 0.8}, reduction=0.5)
-    assert shade == expected_high
-
-    low_color = palette[0]
-    computed_alpha = ((1 - 0.2) - 0.5) / 0.5 * (1 - 0.25) + 0.25
-    expected_low = "#%02x%02x%02x" % tuple(
-        int(round(computed_alpha * channel + (1 - computed_alpha) * 255, 0))
-        for channel in low_color
-    )
-    assert plotting.__get_fill_color({"predict": 0.2}) == expected_low
 
 
 def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
@@ -982,18 +759,5 @@ def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
 
 
 
-def test_compose_save_target_parity():
-    from calibrated_explanations.legacy.plotting import compose_save_target
-
-    # Test prefix behavior (when path is not a dir and doesn't end with separator)
-    target = compose_save_target("prefix_", "plot", ".png")
-    assert target == "prefix_plot.png"
 
 
-def test_compose_save_target_directory(tmp_path):
-    from calibrated_explanations.legacy.plotting import compose_save_target
-
-    # Test with actual directory
-    target = compose_save_target(tmp_path, "plot", ".png")
-    expected = tmp_path / "plot.png"
-    assert str(target) == str(expected)

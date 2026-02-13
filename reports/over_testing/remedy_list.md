@@ -64,3 +64,23 @@ The method is **efficient as-is for implementation flow** (role split + remedy l
    - run full `pytest --cov-fail-under=90`
 2. Add a "coverage cliff recovery playbook" subsection:
    - prioritize high-yield branch modules (`_feature_filter`, CE shims, perturbation/adapter seams) before broad exploratory additions.
+
+## 2026-02-13 Implementer + Process-Architect Follow-up (Cycle 2)
+
+- Continued low-quality cleanup by replacing placeholder/no-op plotting tests with behavioral assertions in `tests/unit/test_plotting.py`.
+- Added high-yield non-viz gap-closure coverage in `tests/unit/core/explain/test_helpers.py`:
+  - `test_compute_weight_delta_fallback_path_for_object_values` now exercises the fallback branch in `core/explain/_helpers.py` and contributes **9 unique lines** in `reports/over_testing/per_test_summary.csv`.
+- Re-ran method verification end-to-end:
+  - `pytest --cov-fail-under=90` -> **PASS**, coverage **90.14%**
+  - `python scripts/over_testing/run_over_testing_pipeline.py` -> **PASS**
+  - `python scripts/over_testing/extract_per_test.py` -> **PASS**
+  - `python scripts/over_testing/detect_redundant_tests.py` -> **PASS** (1553 contexts)
+  - `python scripts/quality/check_coverage_gates.py` -> **PASS** (all critical modules)
+
+### Process Architect verdict (Cycle 2)
+
+The current method remains **efficient as-is** for cleanup + backfill execution.
+One small process/documentation adjustment is recommended:
+
+1. Add an explicit sequencing rule to the README: run `run_over_testing_pipeline.py` to completion before `extract_per_test.py` and `detect_redundant_tests.py` (avoid race conditions from parallel execution).
+2. Add a short note that the canonical path is `docs/improvement/test-quality-method/README.md` (the historical `docs/improvement/test-quality/README.md` path is stale).

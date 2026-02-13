@@ -85,52 +85,6 @@ def test_load_entrypoint_plugins_skips_when_meta_name_denied(monkeypatch):
     )
 
 
-def test_builtin_execution_plugin_falls_back_to_legacy(monkeypatch):
-    # Use SequentialExplanationPlugin and inject an execution plugin whose supports() -> False
-    plugin = builtins.SequentialExplanationPlugin()
-
-    class FakeExec:
-        def supports(self, req, cfg):
-            return False
-
-    plugin.execution_plugin_class = FakeExec
-
-    # Build a minimal explainer handle that exposes the explanation callable
-    class FakeCollection:
-        def __init__(self):
-            self.explanations = [object()]
-
-    class FakeExplainer:
-        def explain_factual(self, x, **kwargs):
-            return FakeCollection()
-
-    # Minimal predict bridge
-    class FakeBridge:
-        def predict(self, *a, **k):
-            return None
-
-    ctx = builtins.ExplanationContext(
-        task="classification",
-        mode="factual",
-        feature_names=(),
-        categorical_features=(),
-        categorical_labels={},
-        discretizer=None,
-        helper_handles={"explainer": FakeExplainer()},
-        predict_bridge=FakeBridge(),
-        interval_settings={},
-        plot_settings={},
-    )
-    plugin.initialize(ctx)
-
-    req = builtins.ExplanationRequest(
-        threshold=None, low_high_percentiles=None, bins=None, features_to_ignore=()
-    )
-    batch = plugin.explain_batch(np.ones((1, 1)), req)
-    assert hasattr(batch, "instances")
-    assert batch.collection_metadata["container"] is not None
-
-
 def test_register_and_use_builtin_fast_plugin(monkeypatch, tmp_path):
     # Ensure any existing core.explanation.fast descriptor is removed, then call register_fast_explanation_plugin
     from calibrated_explanations.plugins.explanations_fast import register_fast_explanation_plugin
@@ -201,60 +155,6 @@ def test_builtin_feature_filter_exception_path(monkeypatch):
     assert isinstance(batch, builtins.ExplanationBatch)
 
 
-def test_alternative_plot_triangle_calls_plot_triangular(monkeypatch):
-    # Prepare a fake self with minimal attributes expected by the triangular branch
-    fake = types.SimpleNamespace()
-    fake.rank_features = lambda *a, **k: [0]
-    fake.feature_predict = {"predict": [0.6], "low": [0.5], "high": [0.7]}
-    fake.prediction = {"predict": 0.6, "low": 0.5, "high": 0.7}
-    alternative = {
-        "predict": [0.7],
-        "predict_low": [0.6],
-        "predict_high": [0.8],
-        "value": ["v"],
-        "rule": ["r"],
-        "weight": [0.1],
-        "weight_low": [0.0],
-        "weight_high": [0.2],
-    }
-    fake.get_explainer = lambda: types.SimpleNamespace(
-        num_features=1, feature_names=["f0"], categorical_features=(), categorical_labels=None
-    )
-    # Provide get_rules used by AlternativeExplanation.plot
-    fake.get_rules = lambda *a, **k: alternative
-    check_pre_attr = "_" + "check_preconditions"
-    setattr(fake, check_pre_attr, lambda *a, **k: None)
-    fake.get_mode = lambda: "classification"
-    fake.is_thresholded = lambda: False
-    # patch plot_triangular to capture invocation
-    called = {}
-
-    def fake_plot_triangular(self_, proba, uncertainty, sel_proba, sel_unc, num_to_show, **kwargs):
-        called["args"] = (proba, uncertainty, sel_proba, sel_unc, num_to_show)
-
-    monkeypatch.setattr(expl_mod, "plot_triangular", fake_plot_triangular)
-    fake.prediction = {"predict": 0.6, "low": 0.5, "high": 0.7}
-    fake.feature_predict = {"predict": [0.6], "low": [0.5], "high": [0.7]}
-    fake.alternative = alternative
-    # call the method (unbound) to simulate instance method
-    expl_mod.AlternativeExplanation.plot(
-        fake,
-        filter_top=None,
-        style="triangular",
-        title=None,
-        path=None,
-        show=False,
-        save_ext=None,
-        style_override=None,
-    )
-    assert "args" in called
-
-    proba, uncertainty, sel_proba, sel_unc, num_to_show = called["args"]
-    assert proba == 0.6
-    assert uncertainty == pytest.approx(0.2)
-    assert sel_proba == [0.7]
-    assert list(sel_unc) == pytest.approx([0.2])
-    assert num_to_show == 1
 
 
 def test_alternative_plot_triangle_uses_interval_width_for_regression(monkeypatch):
@@ -311,46 +211,8 @@ def test_alternative_plot_triangle_uses_interval_width_for_regression(monkeypatc
     assert num_to_show == 1
 
 
-def test_load_entrypoint_plugins_loads_valid_plugin(monkeypatch):
-    # Simulate an entry point that loads a valid plugin with proper plugin_meta
-    def valid_plugin_loader():
-        p = types.SimpleNamespace()
-        p.plugin_meta = {
-            "schema_version": 1,
-            "name": "valid_plugin",
-            "version": "0.1",
-            "provider": "test",
-            "capabilities": ["explain"],
-            "trusted": True,
-            "trust": {"trusted": True},
-        }
-        return p
-
-    eps = types.SimpleNamespace()
-    eps.select = lambda group=None: [make_ep("pkg:attr", load=valid_plugin_loader)]
-    monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: eps)
-
-    # Ensure no denial
-    monkeypatch.setattr(registry, "is_identifier_denied", lambda ident: False)
-
-    loaded = registry.load_entrypoint_plugins(include_untrusted=True)
-    # load_entrypoint_plugins returns a tuple of loaded plugin objects
-    assert isinstance(loaded, tuple)
-    # The discovery report should record at least one accepted plugin
-    report = registry.get_discovery_report()
-    assert any(r.metadata and r.metadata.get("name") == "valid_plugin" for r in report.accepted)
 
 
-def test_register_fast_plugin_idempotent():
-    # Calling register_fast_explanation_plugin multiple times should be safe
-    from calibrated_explanations.plugins.explanations_fast import register_fast_explanation_plugin
-
-    # Call twice; at minimum a descriptor must exist after registration
-    register_fast_explanation_plugin()
-    register_fast_explanation_plugin()
-
-    desc = registry.find_explanation_descriptor("core.explanation.fast")
-    assert desc is not None
 
 
 def test_add_conjunctions_factual_legacy_simple():

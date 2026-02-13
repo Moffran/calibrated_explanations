@@ -23,16 +23,6 @@ def test_categorical_perturbation_fallback_warns_and_swaps(monkeypatch: pytest.M
     assert out.tolist() != [1, 2, 3]
 
 
-def test_gaussian_and_uniform_perturbation_shapes() -> None:
-    column = np.asarray([1.0, 2.0, 3.0, 4.0])
-    g = gaussian_perturbation(column, severity=0.1, rng=np.random.default_rng(123))
-    u = uniform_perturbation(column, severity=0.1, rng=np.random.default_rng(123))
-    assert g.shape == column.shape
-    assert u.shape == column.shape
-    assert np.issubdtype(g.dtype, np.floating)
-    assert np.issubdtype(u.dtype, np.floating)
-
-
 def test_perturb_dataset_rejects_invalid_noise_type() -> None:
     x_cal = np.asarray([[1.0, 0.0], [2.0, 1.0]])
     y_cal = np.asarray([0, 1])

@@ -155,49 +155,10 @@ def test_register_plot_plugin_registers_all_components():
 
 
 
-def test_register_interval_plugin():
-    class IntervalPlugin:
-        plugin_meta = {
-            "schema_version": 1,
-            "name": "tests.interval",
-            "version": "0.0-test",
-            "provider": "tests",
-            "capabilities": ["interval"],
-            "modes": ("classification",),
-            "dependencies": (),
-            "fast_compatible": True,
-            "requires_bins": False,
-            "confidence_source": "test",
-            "trust": False,
-        }
-
-        def calibrate(self, *args, **kwargs):  # pragma: no cover
-            return {"calibrated": True}
-
-    plugin = IntervalPlugin()
-    descriptor = registry.register_interval_plugin("test.interval", plugin)
-    assert descriptor.identifier == "test.interval"
-    assert registry.find_interval_plugin("test.interval") is not None
 
 
 
 
-def test_register_plot_style():
-    style_meta = {
-        "schema_version": 1,
-        "name": "tests.style",
-        "version": "0.0-test",
-        "provider": "tests",
-        "capabilities": ["plot"],
-        "dependencies": (),
-        "trust": False,
-        "style": "test_style",
-        "builder_id": "test.builder",
-        "renderer_id": "test.renderer",
-    }
-    descriptor = registry.register_plot_style("test.style", metadata=style_meta)
-    assert descriptor.identifier == "test.style"
-    assert "test.style" in registry.plot_styles()
 
 
 

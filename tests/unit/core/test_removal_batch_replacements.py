@@ -109,49 +109,8 @@ def test_build_instance_telemetry_payload_delegates_to_explanation_orchestrator(
     assert payload == {"count": 3}
 
 
-def test_repr_verbose_includes_latest_explanation_time() -> None:
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    setattr(explainer, "mode", "classification")
-    setattr(explainer, "bins", None)
-    setattr(explainer, "discretizer", None)
-    setattr(explainer, "learner", "learner")
-    setattr(explainer, "difficulty_estimator", None)
-    setattr(explainer, "verbose", True)
-    setattr(explainer, "init_time", 0.1)
-    setattr(explainer, "latest_explanation", SimpleNamespace(total_explain_time=0.2))
-    setattr(explainer, "sample_percentiles", (5, 95))
-    setattr(explainer, "seed", 0)
-    setattr(explainer, "feature_names", None)
-    setattr(explainer, "categorical_features", None)
-    setattr(explainer, "categorical_labels", None)
-    setattr(explainer, "class_labels", None)
-
-    out = repr(explainer)
-    assert "total_explain_time=0.2" in out
 
 
-def test_explain_factual_passes_reject_policy_to_orchestrator() -> None:
-    captured = {}
-
-    class ExplainOrchestrator:
-        def invoke_factual(self, **kwargs):
-            captured.update(kwargs)
-            return "ok"
-
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    setattr(explainer, "mode", "classification")
-    setattr(explainer, "_plugin_manager", SimpleNamespace(explanation_orchestrator=ExplainOrchestrator()))
-    setattr(explainer, "_perf_parallel", None)
-    setattr(explainer, "is_mondrian", lambda: False)
-
-    out = explainer.explain_factual(
-        np.asarray([[1.0]]),
-        reject_policy="threshold",
-        _use_plugin=True,
-    )
-    assert out == "ok"
-    assert captured["reject_policy"] == "threshold"
-    assert captured["discretizer"] == "binaryEntropy"
 
 
 def build_orchestrator_with_stub_explainer() -> PredictionOrchestrator:

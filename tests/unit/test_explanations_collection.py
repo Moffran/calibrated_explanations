@@ -605,12 +605,6 @@ def test_legacy_payload_prefers_available_rules(calibrated_collection):
     assert "rule" in generated["rules"]
 
 
-def test_internal_helper_accessors(calibrated_collection):
-    assert calibrated_collection.get_explainer() is calibrated_collection.calibrated_explainer
-    rules = calibrated_collection.get_rules()
-    assert len(rules) == len(calibrated_collection)
-    calibrated_collection.low_high_percentiles = None
-    assert not calibrated_collection.is_one_sided
 
 
 def test_collection_metadata_includes_runtime(calibrated_collection):

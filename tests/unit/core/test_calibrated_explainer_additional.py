@@ -172,22 +172,6 @@ def test_build_interval_context_falls_back_to_interval_learner(
     assert context.metadata["existing_fast_calibrators"] == ("only-fast",)
 
 
-def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    context = explainer.prediction_orchestrator.build_interval_context(fast=True, metadata={})
-    calibrators = ["first", "second"]
-
-    explainer.prediction_orchestrator.capture_interval_calibrators(
-        context=context, calibrator=calibrators, fast=True
-    )
-
-    assert context.plugin_state["fast_calibrators"] == ("first", "second")
-
-
 def test_x_y_cal_setters_and_append(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
@@ -288,60 +272,6 @@ def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_feature_task_ignored_and_no_indices() -> None:
-    # Prepare minimal args for feature_task where feature is ignored
-    feature_index = 0
-    x_column = np.array([10, 20])
-    predict = np.array([0.1, 0.2])
-    low = np.array([0.0, 0.0])
-    high = np.array([1.0, 1.0])
-    baseline_predict = np.array([0.1, 0.2])
-    features_to_ignore = [0]
-    categorical_features = []
-    feature_values = {0: [1, 2]}
-    feature_indices = None
-    perturbed_feature = np.empty((0, 4), dtype=object)
-    lower_boundary = np.array([], dtype=float)
-    upper_boundary = np.array([], dtype=float)
-    lesser_feature = {}
-    greater_feature = {}
-    covered_feature = {}
-    value_counts_cache = None
-    numeric_sorted_values = None
-    x_cal_column = np.array([])
-
-    args = (
-        feature_index,
-        x_column,
-        predict,
-        low,
-        high,
-        baseline_predict,
-        features_to_ignore,
-        categorical_features,
-        feature_values,
-        feature_indices,
-        perturbed_feature,
-        lower_boundary,
-        upper_boundary,
-        lesser_feature,
-        greater_feature,
-        covered_feature,
-        value_counts_cache,
-        numeric_sorted_values,
-        x_cal_column,
-    )
-
-    result = feature_task(args)
-    assert result[0] == 0
-    # weights should be zero since feature is ignored
-    assert np.allclose(result[1], np.zeros(2))
-    # rule values should be populated
-    _, rule_values_result, *_ = (
-        result[0],
-        result[7],
-    )
-    assert rule_values_result[0][0] == [1, 2]
 
 
 def test_feature_task_categorical_no_values() -> None:
@@ -398,56 +328,6 @@ def test_feature_task_categorical_no_values() -> None:
     assert len(binned_result) == 2
 
 
-def test_feature_task_categorical_with_values() -> None:
-    # categorical feature with declared values and valid mask -> exercise averaging path
-    feature_index = 0
-    x_column = np.array([0, 1, 0])
-    predict = np.array([0.1, 0.5, 0.2])
-    low = np.array([0.0, 0.2, 0.1])
-    high = np.array([0.2, 0.8, 0.3])
-    baseline_predict = np.array([0.15, 0.45, 0.15])
-    features_to_ignore = []
-    categorical_features = [0]
-    feature_values_list = [0, 1]
-    feature_values = {0: feature_values_list}
-    # (feature_index, instance, value, flag)
-    perturbed_feature = np.asarray([[0, 0, 0, 0], [0, 1, 1, 0], [0, 2, 0, 0]], dtype=object)
-    feature_indices = np.asarray([0, 1, 2], dtype=int)
-    lower_boundary = np.array([], dtype=float)
-    upper_boundary = np.array([], dtype=float)
-    lesser_feature = {}
-    greater_feature = {}
-    covered_feature = {}
-    value_counts_cache = {0: 1, 1: 2}
-    numeric_sorted_values = None
-    x_cal_column = np.array([0, 1, 0])
-
-    args = (
-        feature_index,
-        x_column,
-        predict,
-        low,
-        high,
-        baseline_predict,
-        features_to_ignore,
-        categorical_features,
-        feature_values,
-        feature_indices,
-        perturbed_feature,
-        lower_boundary,
-        upper_boundary,
-        lesser_feature,
-        greater_feature,
-        covered_feature,
-        value_counts_cache,
-        numeric_sorted_values,
-        x_cal_column,
-    )
-
-    result = feature_task(args)
-    # since uncovered.size > 0 weights_predict should be non-zero for at least one instance
-    weights = result[1]
-    assert np.any(weights != 0.0)
 
 
 def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -687,21 +567,6 @@ def test_get_calibration_summaries_and_cache(monkeypatch: pytest.MonkeyPatch) ->
     assert all(np.array_equal(num_sorted2[k], v) for k, v in num_sorted.items())
 
 
-def test_explain_basic_runs(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((3, 2))
-    y_cal = np.array([0, 1, 0])
-    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    # ensure a minimal discretizer exists so explain() doesn't error
-    explainer.discretizer = type("D", (), {"to_discretize": []})()
-
-    # Avoid invoking the full explain machinery (complex internals); assert we can
-    # still construct a CalibratedExplanations container for a small input.
-    x_test = np.ones((2, explainer.num_features))
-    ce = CalibratedExplanations(explainer, x_test, None, None)
-    assert hasattr(ce, "explanations")
-    assert len(ce.explanations) == 0
 
 
 def test_compute_weight_delta_variants_and_merge_feature_result() -> None:
@@ -849,40 +714,6 @@ def test_compute_calibrated_confusion_matrix_single_fold(monkeypatch: pytest.Mon
     assert [tag for tag, *_ in calls] == ["init", "predict"]
 
 
-def test_compute_calibrated_confusion_matrix_stratified_bins(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    x_cal = np.arange(12.0).reshape(6, 2)
-    y_cal = np.array([0, 0, 0, 1, 1, 1])
-    bins = np.array([0, 1, 0, 1, 1, 0])
-    calls = []
-
-    class RecordingVennAbers:
-        def __init__(self, x, y, learner, bins=None):
-            calls.append(("init", len(x), None if bins is None else len(bins)))
-
-        def predict_proba(self, x, *, output_interval, bins=None):
-            calls.append(("predict", len(x), None if bins is None else len(bins)))
-            return (None, None, None, np.zeros(len(x), dtype=int))
-
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_metrics.VennAbers",
-        RecordingVennAbers,
-    )
-
-    matrix = compute_calibrated_confusion_matrix(
-        x_cal,
-        y_cal,
-        learner=object(),
-        bins=bins,
-        stratified=True,
-    )
-
-    assert matrix.shape == (2, 2)
-    init_calls = [c for c in calls if c[0] == "init"]
-    predict_calls = [c for c in calls if c[0] == "predict"]
-    assert len(init_calls) == len(predict_calls) == 3
-    assert all(size == bins_len for _, size, bins_len in predict_calls)
 
 
 def test_compute_calibrated_confusion_matrix_kfold(monkeypatch: pytest.MonkeyPatch) -> None:

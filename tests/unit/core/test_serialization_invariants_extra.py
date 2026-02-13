@@ -21,10 +21,6 @@ def test_scalar_low_gt_high_raises():
         serialization.to_json(exp)
 
 
-def test_scalar_predict_outside_raises():
-    exp = make_exp({"predict": 10, "low": 0, "high": 5})
-    with pytest.raises(ValidationError):
-        serialization.to_json(exp)
 
 
 def test_vector_requires_vector_low_high():

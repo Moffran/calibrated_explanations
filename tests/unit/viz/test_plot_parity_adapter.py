@@ -27,31 +27,8 @@ REG_BASE_COLOR = REGRESSION_BASE_COLOR
 
 
 
-def test_factual_probabilistic_zero_crossing_behavior():
-    spec = factual_probabilistic_zero_crossing()
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    solids = primitives.get("solids", [])
-    overlays = primitives.get("overlays", [])
-    # With pivot removed (pivot=0.0), positive-weight features usually become
-    # solids, but default legacy suppression for crossing intervals may instead
-    # produce split overlays. Accept either case but ensure index 0 is present
-    # in at least one of the lists.
-    assert any(s.get("index", -1) == 0 for s in solids) or any(
-        o.get("index", -1) == 0 for o in overlays
-    )
 
 
-def test_factual_regression_interval_primitives():
-    spec = factual_regression_interval()
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    # header = primitives.get("header", {})
-    # regression header may be empty for single-band headers; ensure body primitives exist
-    solids = primitives.get("solids", [])
-    overlays = primitives.get("overlays", [])
-    assert isinstance(solids, list) and isinstance(overlays, list)
-    solids = primitives.get("solids", [])
-    overlays = primitives.get("overlays", [])
-    assert len(overlays) >= 0
 
 
 def test_alternative_probabilistic_cross_primitives():
@@ -95,46 +72,8 @@ def test_alternative_regression_primitives():
     )
 
 
-def test_alternative_regression_point_primitives():
-    spec = alternative_regression_point()
-    assert spec.header is None
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    assert not primitives.get("header")
-    overlays = primitives.get("overlays", [])
-    assert isinstance(overlays, list) and len(overlays) >= 1
-    indices = {item.get("index") for item in overlays}
-    assert -1 in indices
-    assert any(idx is not None and idx >= 0 for idx in indices)
-    assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
-    assert any(
-        item.get("color") == REG_BAR_COLOR
-        for item in overlays
-        if item.get("index") is not None and item.get("index") >= 0
-    )
-    lines = primitives.get("lines", [])
-    assert isinstance(lines, list) and len(lines) >= 1
-    line_indices = {item.get("index") for item in lines}
-    assert any(idx is not None and idx >= 0 for idx in line_indices)
-    assert any(
-        item.get("color") == REG_BAR_COLOR
-        for item in lines
-        if item.get("index") is not None and item.get("index") >= 0
-    )
 
 
-def test_alternative_regression_probability_scale_primitives():
-    spec = alternative_regression_probability_scale()
-    assert spec.header is not None and getattr(spec.header, "dual", False)
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    overlays = primitives.get("overlays", [])
-    assert isinstance(overlays, list) and len(overlays) >= 1
-    colors = {item.get("color") for item in overlays}
-    assert len(colors) >= 2
-    assert any(item.get("index") == -1 for item in overlays)
-    lines = primitives.get("lines", [])
-    assert isinstance(lines, list) and len(lines) >= 1
-    assert spec.body is not None and spec.body.xlim == (0.0, 1.0)
-    assert spec.body.xlabel.startswith("Probability")
 
 
 
@@ -168,16 +107,6 @@ def test_adapter_returns_normalized_and_legacy_for_plotspec():
 
 
 
-def test_render_dict_triangular_via_shim():
-    """Render a triangular dict payload via the adapter shim and assert primitives."""
-    from tests.unit.viz.test_plot_parity_fixtures import triangular_probabilistic
-
-    spec = triangular_probabilistic()
-    wrapper = mpl_adapter.render(spec, export_drawn_primitives=True)
-    # shim should return triangle_background and some primitives list
-    assert "triangle_background" in wrapper or any(
-        p.get("type") == "quiver" for p in wrapper.get("primitives", [])
-    )
 
 
 

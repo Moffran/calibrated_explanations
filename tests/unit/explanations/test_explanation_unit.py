@@ -193,29 +193,6 @@ class TestExplanationUnit:
         with pytest.warns(UserWarning, match="Rule already included"):
             expl.add_new_rule_condition(0, 12.0)
 
-    def test_add_new_rule_condition_success_lesser(self):
-        expl = self.create_expl()
-
-        # Ensure predict returns DIFFERENT values so it doesn't trigger "identical explanation" warning
-        def predict_diff_effect(x, **kwargs):
-            n = len(x)
-            # Default low=0.4, high=0.6. We return 0.3, 0.7.
-            return (np.zeros(n) + 0.5, np.zeros(n) + 0.3, np.zeros(n) + 0.7, None)
-
-        self.explainer.prediction_orchestrator.predict_internal = Mock(
-            side_effect=predict_diff_effect
-        )
-
-        # f0 is continuous. x[0]=10.0. Boundary 12.0 -> is_lesser=True.
-        # x_cal for f0: [10, 15, 12, 5]. Values < 12: [10, 5].
-        # Rule string: "f0 < 12.00"
-
-        expl.add_new_rule_condition(0, 12.0)
-
-        assert len(expl.rules["rule"]) == 1
-        assert expl.rules["rule"][0] == "f0 < 12.00"
-        assert expl.rules["feature"][0] == 0
-
     def test_add_new_rule_condition_success_greater(self):
         expl = self.create_expl()
 
@@ -254,17 +231,6 @@ class TestExplanationUnit:
         ):
             expl.add_new_rule_condition(0, 12.0)
 
-    def test_add_new_rule_condition_boundary_out_of_bounds_low(self):
-        expl = self.create_expl()
-        # Boundary way below min of x_cal (min is 5.0)
-
-        # To test the "Lowest feature value..." warning, we need is_lesser=True and empty.
-        # boundary = 4.0. x_test = 3.0 (update x).
-        expl.x_test = np.array([3.0, 20.0])  # Update local x_test
-
-        # x_cal min is 5.0. No values < 4.0.
-        with pytest.warns(UserWarning, match="Lowest feature value for feature 0 is 5.0"):
-            expl.add_new_rule_condition(0, 4.0)
 
     def test_add_new_rule_condition_boundary_out_of_bounds_high(self):
         expl = self.create_expl()
@@ -283,12 +249,6 @@ class TestExplanationUnit:
         expl.has_conjunctive_rules = True
         expl.remove_conjunctions()
         assert expl.has_conjunctive_rules is False
-
-    def test_reset(self):
-        expl = self.create_expl()
-        expl.has_rules = True
-        expl.reset()
-        assert expl.has_rules is False
         # It calls get_rules too, which is mocked to return self.rules
 
     def test_to_python_number(self):

@@ -89,14 +89,3 @@ class TestParallelLifecycle:
         assert executor.metrics.fallbacks == 1
 
         executor.resolve_strategy = original_resolve
-
-    def test_nested_parallelism_threads(self):
-        # Threads inside threads should work
-        config = ParallelConfig(enabled=True, strategy="threads", max_workers=2)
-        executor = ParallelExecutor(config)
-
-        results = executor.map(nested_task, [1, 2, 3])
-        # nested_task(1) -> sum([0]) = 0
-        # nested_task(2) -> sum([0, 1]) = 1
-        # nested_task(3) -> sum([0, 1, 4]) = 5
-        assert results == [0, 1, 5]

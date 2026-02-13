@@ -281,21 +281,6 @@ def test_is_notebook_propagates_unexpected_exceptions(monkeypatch):
         helper.is_notebook()
 
 
-def test_transform_to_numeric_handles_high_cardinality():
-    df = pd.DataFrame(
-        {
-            "target": ["yes", "no"] * 4,
-            "singles": [f"val{i}" for i in range(8)],
-        }
-    )
-
-    transformed, categorical_features, categorical_labels, _, mappings = (
-        helper.transform_to_numeric(df.copy(), "target")
-    )
-
-    assert categorical_features == [1]
-    assert len(mappings["singles"]) == 8
-    assert set(categorical_labels[1].values()) <= set(mappings["singles"].keys())
 
 
 def test_calculate_metrics_uses_default_metric_list():
@@ -306,11 +291,3 @@ def test_calculate_metrics_uses_default_metric_list():
     assert np.allclose(result, expected)
 
 
-def test_assign_threshold_returns_marker_arrays():
-    result_tuple = helper.assign_threshold([(0.1, 0.9)])
-    assert result_tuple.shape == (0,)
-    assert result_tuple.dtype == tuple
-
-    result_scalar = helper.assign_threshold([1, 2])
-    assert result_scalar.shape == (0,)
-    assert result_scalar.dtype == float

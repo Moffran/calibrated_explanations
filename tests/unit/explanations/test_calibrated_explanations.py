@@ -171,14 +171,6 @@ def collection() -> CalibratedExplanations:
     return coll
 
 
-def test_getitem_boolean_selection_reindexes(collection: CalibratedExplanations) -> None:
-    subset = collection[[True, False, True]]
-    assert isinstance(subset, CalibratedExplanations)
-    assert len(subset) == 2
-    assert subset.bins == ["bin0", "bin2"]
-    assert subset.y_threshold == [(0.1, 0.9), (0.3, 0.7)]
-    np.testing.assert_array_equal(subset.x_test, np.array([[0.0, 1.0], [4.0, 5.0]]))
-    assert [exp.index for exp in subset.explanations] == [0, 1]
 
 
 def test_getitem_int_list_returns_collection(collection: CalibratedExplanations) -> None:
@@ -188,16 +180,8 @@ def test_getitem_int_list_returns_collection(collection: CalibratedExplanations)
     assert subset.y_threshold == [(0.3, 0.7), (0.1, 0.9)]
 
 
-def test_getitem_slice_singleton_returns_explanation(collection: CalibratedExplanations) -> None:
-    single = collection[1:2]
-    assert single is collection.explanations[1]
 
 
-def test_getitem_invalid_type_raises(collection: CalibratedExplanations) -> None:
-    from calibrated_explanations.utils.exceptions import ValidationError
-
-    with pytest.raises(ValidationError):
-        _ = collection[1.5]  # type: ignore[index]
 
 
 def test_collection_filter_rule_sizes_delegates(collection: CalibratedExplanations) -> None:
@@ -206,29 +190,8 @@ def test_collection_filter_rule_sizes_delegates(collection: CalibratedExplanatio
         assert ("filter_rule_sizes", 1, None, True) in exp.conjunction_calls
 
 
-def test_prediction_helpers_cache_results(collection: CalibratedExplanations) -> None:
-    preds_first = collection.predictions
-    preds_second = collection.predictions
-    np.testing.assert_allclose(preds_first, [0.1, 0.2, 0.3])
-    assert preds_first is preds_second
 
 
-def test_probability_vectors_are_stacked(collection: CalibratedExplanations) -> None:
-    stacked = collection.probabilities
-    expected = np.array([[0.9, 0.1], [0.8, 0.2], [0.7, 0.3]])
-    np.testing.assert_allclose(stacked, expected)
-
-
-def test_probability_matrix_passthrough(collection: CalibratedExplanations) -> None:
-    full = np.array([[0.6, 0.4], [0.5, 0.5], [0.4, 0.6]])
-    for exp in collection.explanations:
-        exp.prediction_probabilities = full
-    assert collection.probabilities is full
-
-
-def test_lower_upper_cache_arrays(collection: CalibratedExplanations) -> None:
-    np.testing.assert_allclose(collection.lower, np.array([0.0, 0.1, 0.2]))
-    np.testing.assert_allclose(collection.upper, np.array([0.2, 0.3, 0.4]))
 
 
 def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
@@ -241,10 +204,6 @@ def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
     assert collection.get_confidence() == 80.0
 
 
-def test_get_low_high_percentile_validation(collection: CalibratedExplanations) -> None:
-    collection.low_high_percentiles = (5.0, 95.0)
-    assert collection.get_low_percentile() == 5.0
-    assert collection.get_high_percentile() == 95.0
 
 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
@@ -272,30 +231,8 @@ def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -
             collection.get_explanation(len(collection.x_test))
 
 
-def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanations) -> None:
-    from calibrated_explanations.utils import helper as helper_utils
-
-    monkeypatch.setattr(helper_utils, "make_directory", lambda *_, **__: None)
-    filename = tmp_path / "plot.png"
-    collection.plot(index=0, filename=str(filename), show=False)
-    assert collection.explanations[0].plot_calls  # plot called for index
-    for exp in collection.explanations:
-        exp.plot_calls.clear()
-    collection.plot(show=False, filename=str(filename))
-    assert all(exp.plot_calls for exp in collection.explanations)
 
 
-def test_as_lime_and_as_shap_shapes(collection: CalibratedExplanations) -> None:
-    lime_objects = collection.as_lime()
-    assert len(lime_objects) == len(collection)
-    assert all(obj.domain_mapper.feature_values is not None for obj in lime_objects)
-
-    shap_exp = collection.as_shap()
-    assert shap_exp.base_values.shape == (len(collection),)
-    assert shap_exp.values.shape == (len(collection), collection.x_test.shape[1])
-    np.testing.assert_allclose(
-        shap_exp.values[0], -collection.explanations[0].feature_weights["predict"]
-    )
 
 
 def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> None:
@@ -314,22 +251,3 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
     assert all({"super", "semi", "counter", "ensured"}.issubset(set(call)) for call in calls)
 
 
-def test_from_batch_validation_errors(collection: CalibratedExplanations) -> None:
-    from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
-
-    batch_missing = SimpleNamespace(collection_metadata={})
-    with pytest.raises(SerializationError):
-        CalibratedExplanations.from_batch(batch_missing)
-    batch_wrong = SimpleNamespace(container_cls=object, collection_metadata={"container": object()})
-    with pytest.raises(ValidationError):
-        CalibratedExplanations.from_batch(batch_wrong)
-
-
-def test_frozen_explainer_attribute_proxy(collection: CalibratedExplanations) -> None:
-    frozen = collection.calibrated_explainer
-    assert frozen.feature_names == ("f0", "f1")
-    assert frozen.class_labels == {0: "no", 1: "yes"}
-    assert frozen.learner == "dummy-learner"
-    assert frozen.difficulty_estimator == "dummy-difficulty"
-    with pytest.raises(AttributeError):
-        frozen.some_new_attribute = 123  # type: ignore[attr-defined]

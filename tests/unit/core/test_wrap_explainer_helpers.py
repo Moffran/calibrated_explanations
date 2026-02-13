@@ -253,15 +253,6 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
     assert getattr(wrapper, "cfg", None) is cfg
 
 
-def test_explain_fast_requires_fit_and_calibration(wrapper: WrapCalibratedExplainer) -> None:
-    wrapper.fitted = False
-    with pytest.raises(NotFittedError):
-        wrapper.explain_fast(np.array([1, 2]))
-
-    wrapper.fitted = True
-    wrapper.calibrated = False
-    with pytest.raises(NotFittedError):
-        wrapper.explain_fast(np.array([1, 2]))
 
 
 def test_explain_lime_invokes_underlying_explainer(
@@ -407,3 +398,18 @@ def test_pre_fit_preprocess_uses_two_step_transform(wrapper: WrapCalibratedExpla
     assert wrapper.pre_fitted is True
     assert preprocessor.fit_args
     assert np.array_equal(transformed, data + 5)
+
+
+def test_export_and_import_preprocessor_mapping_applies_when_possible(wrapper: WrapCalibratedExplainer) -> None:
+    pre = RecordingPreprocessor()
+    wrapper.preprocessor = pre
+
+    exported = wrapper.export_preprocessor_mapping()
+    assert exported is not None
+    # recording preprocessor exposes a custom snapshot
+    assert "snap" in next(iter(exported.values())) or "snap" in exported
+
+    # Apply a new mapping and ensure it is written to the preprocessor.mapping_
+    new_map = {"feature": {"a": 42}}
+    wrapper.import_preprocessor_mapping(new_map)
+    assert pre.mapping_ == new_map

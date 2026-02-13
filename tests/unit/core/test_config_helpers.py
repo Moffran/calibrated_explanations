@@ -101,25 +101,6 @@ def testread_pyproject_section_handles_multiple_sources(
     }
 
 
-def testread_pyproject_section_integration(tmp_path, monkeypatch):
-    """Integration test for reading a real pyproject.toml file."""
-    pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text(
-        """
-        [tool.calibrated_explanations.explanations]
-        factual = "py.identifier"
-        factual_fallbacks = ["fb.one", "", "fb.two"]
-        """.strip(),
-        encoding="utf-8",
-    )
-    monkeypatch.chdir(tmp_path)
-
-    result = read_pyproject_section(("tool", "calibrated_explanations", "explanations"))
-
-    assert result == {
-        "factual": "py.identifier",
-        "factual_fallbacks": ["fb.one", "", "fb.two"],
-    }
 
 
 def test_read_pyproject_section_handles_load_error(

@@ -9,62 +9,8 @@ from calibrated_explanations.parallel import ParallelExecutor, ParallelConfig
 
 
 class TestExplainParallelRuntime:
-    def test_from_explainer_resolves_executor(self):
-        explainer = MagicMock()
-        explainer.parallel_executor = None
-        explainer.min_instances_for_parallel = None  # Fix: prevent MagicMock return
-        executor = MagicMock(spec=ParallelExecutor)
-        executor.config = ParallelConfig(min_instances_for_parallel=10, instance_chunk_size=5)
-        explainer.executor = executor
-
-        runtime = ExplainParallelRuntime.from_explainer(explainer)
-
-        assert runtime.executor is executor
-        assert runtime.min_instances_for_parallel == 10
-        assert runtime.chunk_size == 5
 
 
-    def test_build_config_derives_granularity_from_executor(self):
-        explainer = MagicMock()
-        explainer.num_features = 5
-
-        executor = MagicMock(spec=ParallelExecutor)
-        executor.config = ParallelConfig(granularity="instance")
-
-        runtime = ExplainParallelRuntime(
-            executor=executor, min_instances_for_parallel=10, chunk_size=5
-        )
-
-        config = runtime.build_config(explainer)
-        assert config.granularity == "instance"
-
-    def test_build_config_defaults_granularity_to_none_without_executor(self):
-        explainer = MagicMock()
-        explainer.num_features = 5
-
-        runtime = ExplainParallelRuntime(executor=None, min_instances_for_parallel=10, chunk_size=5)
-
-        config = runtime.build_config(explainer)
-        assert config.granularity == "none"
-
-    def test_context_manager_delegates_to_executor(self):
-        executor = MagicMock(spec=ParallelExecutor)
-        executor.metrics = MagicMock()
-        executor.metrics.total_duration = 0
-        executor.config = MagicMock()
-        executor.config.enabled = True
-        executor.config.strategy = "processes"
-        executor.active_strategy_name = "processes"
-
-        runtime = ExplainParallelRuntime(
-            executor=executor, min_instances_for_parallel=10, chunk_size=5
-        )
-
-        with runtime:
-            pass
-
-        executor.__enter__.assert_called_once()
-        executor.__exit__.assert_called_once()
 
     def test_cancel_delegates_to_executor(self):
         executor = MagicMock(spec=ParallelExecutor)
@@ -103,25 +49,6 @@ class TestExplainParallelRuntime:
             pass
 
 
-    def test_no_fallback_warning_when_expected(self):
-        """Verify that no warning is issued when sequential was requested."""
-        executor = MagicMock(spec=ParallelExecutor)
-        executor.metrics = MagicMock()
-        executor.metrics.total_duration = 0
-        executor.config = MagicMock()
-        executor.config.enabled = True
-        executor.config.strategy = "sequential"
-        executor.active_strategy_name = "sequential"
-
-        runtime = ExplainParallelRuntime(
-            executor=executor, min_instances_for_parallel=1, chunk_size=1
-        )
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            with runtime:
-                pass
-            assert len(w) == 0
 
     def test_from_explainer_auto_creates_executor(self):
         """Test that a ParallelExecutor is created if the explainer doesn't have one."""

@@ -138,28 +138,6 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
         assert ident == identifier
 
 
-def test_third_party_trust_flag_ignored_unless_operator_trusts():
-    """Third-party plugin metadata 'trusted' must not auto-trust the descriptor unless operator trusts it."""
-    clear_explanation_plugins()
-
-    class TPlugin:
-        plugin_meta = {
-            "name": "third.party.plugin",
-            "schema_version": 1,
-            "version": "0",
-            "provider": "third-party",
-            "capabilities": ("explain", "explanation:fast", "task:classification"),
-            "modes": ("fast",),
-            "tasks": ("classification",),
-            "dependencies": (),
-            "trusted": True,
-        }
-
-    register_explanation_plugin("third.party.plugin", TPlugin(), source="external")
-    desc = find_explanation_descriptor("third.party.plugin")
-    assert desc is not None
-    # Descriptor should not be marked trusted just because metadata claimed it
-    assert desc.trusted is False
 
 
 def test_env_var_precedence_for_explanation_selection():

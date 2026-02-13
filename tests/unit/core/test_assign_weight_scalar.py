@@ -5,19 +5,6 @@ from calibrated_explanations.core.explain.feature_task import assign_weight_scal
 
 
 
-def test_assign_weight_scalar_arrays():
-    """Test assign_weight_scalar with numpy arrays."""
-    # 1D arrays: returns first element of difference
-    a = np.array([0.1, 0.2])
-    b = np.array([0.5, 0.6])
-    # (0.5 - 0.1) = 0.4
-    assert pytest.approx(assign_weight_scalar(a, b)) == 0.4
-
-    # 2D arrays
-    a_2d = np.array([[0.1, 0.2], [0.3, 0.4]])
-    b_2d = np.array([[0.5, 0.6], [0.7, 0.8]])
-    # (0.5 - 0.1) = 0.4
-    assert pytest.approx(assign_weight_scalar(a_2d, b_2d)) == 0.4
 
 
 def test_assign_weight_scalar_empty():

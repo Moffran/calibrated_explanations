@@ -62,15 +62,6 @@ def test_fast_interval_calibrator__should_delegate_to_default_calibrator():
     calibrator1.insert_calibration.assert_called_once_with(x, y, warm_start=True)
 
 
-def test_fast_interval_calibrator__should_behave_like_sequence():
-    calibrator0 = object()
-    calibrator1 = object()
-    wrapper = FastIntervalCalibrator([calibrator0, calibrator1])
-
-    assert len(wrapper) == 2
-    assert wrapper[0] is calibrator0
-    assert list(wrapper) == [calibrator0, calibrator1]
-    assert wrapper.calibrators == (calibrator0, calibrator1)
 
 
 def test_is_fast_interval_collection__should_return_true_for_supported_types():

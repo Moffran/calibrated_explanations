@@ -2,21 +2,17 @@
 
 ## Top hotspot lines
 
-### src\calibrated_explanations\utils\exceptions.py:33 (test_count=222)
+### src\calibrated_explanations\utils\exceptions.py:33 (test_count=193)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_check_is_fitted_with_non_fitted_model|run
-- tests/integration/core/test_framework.py::test_failure|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
 - tests/integration/core/test_wrap_classification.py::test_calibrate_with_string_labels_oob|run
 - tests/integration/core/test_wrap_classification.py::test_missing_values|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_binary_ce|run
-- tests/integration/core/test_wrap_classification.py::test_wrap_binary_conditional_ce|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_multiclass_ce|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_multiclass_conditional_ce|run
 - tests/integration/test_reject_envelope_integration.py::test_classification_predict_and_explain_envelope_binary|run
@@ -28,22 +24,22 @@
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value1-only string values]|run
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value2-non-empty string values]|run
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value3-must not be empty]|run
+- tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[explain-sequence of strings]|run
+- tests/plugins/test_base_validation.py::test_capabilities_required|run
+- tests/plugins/test_base_validation.py::test_checksum_type_is_validated|run
+- tests/plugins/test_base_validation.py::test_trusted_must_be_boolean|run
 
-### src\calibrated_explanations\utils\exceptions.py:34 (test_count=222)
+### src\calibrated_explanations\utils\exceptions.py:34 (test_count=193)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_check_is_fitted_with_non_fitted_model|run
-- tests/integration/core/test_framework.py::test_failure|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
 - tests/integration/core/test_wrap_classification.py::test_calibrate_with_string_labels_oob|run
 - tests/integration/core/test_wrap_classification.py::test_missing_values|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_binary_ce|run
-- tests/integration/core/test_wrap_classification.py::test_wrap_binary_conditional_ce|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_multiclass_ce|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_multiclass_conditional_ce|run
 - tests/integration/test_reject_envelope_integration.py::test_classification_predict_and_explain_envelope_binary|run
@@ -55,19 +51,316 @@
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value1-only string values]|run
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value2-non-empty string values]|run
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value3-must not be empty]|run
+- tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[explain-sequence of strings]|run
+- tests/plugins/test_base_validation.py::test_capabilities_required|run
+- tests/plugins/test_base_validation.py::test_checksum_type_is_validated|run
+- tests/plugins/test_base_validation.py::test_trusted_must_be_boolean|run
 
-### src\calibrated_explanations\plugins\manager.py:88 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:72 (test_count=137)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:82 (test_count=137)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:83 (test_count=137)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:73 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:95 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:100 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:103 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:106 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:108 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:111 (test_count=136)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\utils\helper.py:114 (test_count=135)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+
+### src\calibrated_explanations\plugins\registry.py:108 (test_count=129)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -75,26 +368,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:89 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:109 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -102,26 +395,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:92 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:110 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -129,26 +422,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:93 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:111 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -156,26 +449,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:96 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:112 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -183,26 +476,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:97 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:114 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -210,26 +503,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:98 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:119 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -237,26 +530,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:99 (test_count=186)
+### src\calibrated_explanations\plugins\registry.py:120 (test_count=129)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -264,26 +557,25 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\manager.py:102 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:88 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -291,26 +583,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:103 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:89 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -318,26 +610,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:104 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:92 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -345,26 +637,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:107 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:93 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -372,26 +664,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:108 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:96 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -399,26 +691,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:109 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:97 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -426,26 +718,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:110 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:98 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -453,26 +745,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:113 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:99 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -480,26 +772,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\plugins\manager.py:114 (test_count=186)
+### src\calibrated_explanations\plugins\manager.py:102 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -507,328 +799,32 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:115 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:117 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:118 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:119 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:121 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:122 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:123 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:125 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:126 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:127 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:128 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
 ## Top hotspot blocks
 
-### src\calibrated_explanations\utils\exceptions.py:33-34 (test_count=222)
+### src\calibrated_explanations\utils\exceptions.py:33-34 (test_count=193)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_check_is_fitted_with_non_fitted_model|run
-- tests/integration/core/test_framework.py::test_failure|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
 - tests/integration/core/test_wrap_classification.py::test_calibrate_with_string_labels_oob|run
 - tests/integration/core/test_wrap_classification.py::test_missing_values|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_binary_ce|run
-- tests/integration/core/test_wrap_classification.py::test_wrap_binary_conditional_ce|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_multiclass_ce|run
 - tests/integration/core/test_wrap_classification.py::test_wrap_multiclass_conditional_ce|run
 - tests/integration/test_reject_envelope_integration.py::test_classification_predict_and_explain_envelope_binary|run
@@ -840,371 +836,289 @@
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value1-only string values]|run
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value2-non-empty string values]|run
 - tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[bad_value3-must not be empty]|run
+- tests/plugins/test_base_validation.py::test_capabilities_must_be_sequence_of_strings[explain-sequence of strings]|run
+- tests/plugins/test_base_validation.py::test_capabilities_required|run
+- tests/plugins/test_base_validation.py::test_checksum_type_is_validated|run
+- tests/plugins/test_base_validation.py::test_trusted_must_be_boolean|run
 
-### src\calibrated_explanations\plugins\manager.py:88-89 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:72-72 (test_count=137)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:92-93 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:82-83 (test_count=137)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:96-99 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:73-73 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:102-104 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:95-95 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:107-110 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:100-100 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:113-115 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:103-103 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:117-119 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:106-106 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:121-123 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:108-108 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:125-128 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:111-111 (test_count=136)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:130-132 (test_count=186)
+### src\calibrated_explanations\utils\helper.py:114-114 (test_count=135)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
-### src\calibrated_explanations\plugins\manager.py:136-136 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:139-144 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\manager.py:147-149 (test_count=186)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
-- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
-- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
-- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
-- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
-- tests/integration/core/test_regression.py::test_failure_regression|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
-
-### src\calibrated_explanations\plugins\registry.py:108-112 (test_count=183)
+### src\calibrated_explanations\plugins\registry.py:108-112 (test_count=129)
 - 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -1212,26 +1126,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\registry.py:114-114 (test_count=183)
+### src\calibrated_explanations\plugins\registry.py:114-114 (test_count=129)
 - 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -1239,26 +1153,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\plugins\registry.py:119-120 (test_count=183)
+### src\calibrated_explanations\plugins\registry.py:119-120 (test_count=129)
 - 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -1266,296 +1180,377 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\utils\helper.py:72-72 (test_count=183)
+### src\calibrated_explanations\plugins\manager.py:88-89 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:82-83 (test_count=183)
+### src\calibrated_explanations\plugins\manager.py:92-93 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:73-73 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:96-99 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:95-95 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:102-104 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:100-100 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:107-110 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:103-103 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:113-115 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:106-106 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:117-119 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:108-108 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:121-123 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:111-111 (test_count=182)
+### src\calibrated_explanations\plugins\manager.py:125-128 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\utils\helper.py:114-114 (test_count=180)
+### src\calibrated_explanations\plugins\manager.py:130-132 (test_count=127)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
 - tests/integration/core/test_framework.py::test_explanation_functions_regression|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_calibrate_and_inference|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_applied_on_fit|run
-- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_is_persistent_and_deterministic|run
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
 
-### src\calibrated_explanations\logging.py:72-74 (test_count=177)
+### src\calibrated_explanations\plugins\manager.py:136-136 (test_count=127)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
+
+### src\calibrated_explanations\plugins\manager.py:139-144 (test_count=127)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
+
+### src\calibrated_explanations\plugins\manager.py:147-149 (test_count=127)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
+- tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
+- tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
+- tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
+- tests/integration/core/test_framework.py::test_explanation_functions_classification|run
+- tests/integration/core/test_framework.py::test_explanation_functions_regression|run
+- tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
+- tests/integration/core/test_regression.py::test_failure_regression|run
+- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run
+
+### src\calibrated_explanations\logging.py:72-77 (test_count=126)
 - 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -1563,26 +1558,26 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\logging.py:76-77 (test_count=177)
+### src\calibrated_explanations\logging.py:79-80 (test_count=126)
 - 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -1590,26 +1585,25 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
-### src\calibrated_explanations\logging.py:79-79 (test_count=177)
-- 
+### src\calibrated_explanations\core\config_helpers.py:220-220 (test_count=123)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/integration/core/test_explanation_coverage.py::test_explanation_filtering_and_ranking|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
-- tests/integration/core/test_explanation_coverage.py::test_ignored_features_for_instance|run
 - tests/integration/core/test_explanation_coverage.py::test_regression_threshold_explanation|run
 - tests/integration/core/test_explanation_coverage.py::test_semifactual_counterfactual_flags|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_dependency_metadata_populates_context|run
-- tests/integration/core/test_explanation_plugin_resolution.py::test_fast_mode_predict_bridge_and_parity|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_future_schema_plugin_rejected|run
 - tests/integration/core/test_explanation_plugin_resolution.py::test_unknown_plugin_identifier_raises|run
 - tests/integration/core/test_framework.py::test_explanation_functions_classification|run
@@ -1617,9 +1611,15 @@
 - tests/integration/core/test_preprocessor_wiring.py::test_preprocessor_metadata_exposed_in_telemetry|run
 - tests/integration/core/test_regression.py::test_failure_regression|run
 - tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_probabilistic_regression_fast_ce|run
-- tests/integration/core/test_regression.py::test_knn_normalized_regression_ce|run
 - tests/integration/core/test_regression.py::test_knn_normalized_regression_fast_ce|run
 - tests/integration/core/test_regression.py::test_probabilistic_regression_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_ce|run
-- tests/integration/core/test_regression.py::test_probabilistic_regression_conditional_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_probabilistic_regression_int_threshold_ce|run
+- tests/integration/core/test_regression.py::test_regression_as_classification_ce|run
+- tests/integration/core/test_regression.py::test_regression_ce|run
+- tests/integration/core/test_regression.py::test_regression_conditional_ce|run
+- tests/integration/core/test_regression.py::test_regression_fast_ce|run
+- tests/integration/core/test_regression.py::test_regression_predict_reject_requires_threshold|run
+- tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
+- tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
+- tests/integration/core/test_regression.py::test_var_normalized_probabilistic_regression_fast_ce|run

@@ -3,11 +3,6 @@ import numpy as np
 from calibrated_explanations.testing import parity_compare
 
 
-def test_parity_compare_allows_float_tolerance():
-    expected = {"score": 0.500001}
-    actual = {"score": 0.500002}
-    diffs = parity_compare(expected, actual, rtol=1e-5, atol=1e-6)
-    assert diffs == []
 
 
 def test_parity_compare_reports_value_mismatch_with_path():

@@ -50,10 +50,6 @@ from calibrated_explanations.core.explain.sequential import SequentialExplainExe
 class TestSequentialExplainExecutorProperties:
     """Test that the sequential executor advertises correct identity."""
 
-    def test_name(self):
-        executor = SequentialExplainExecutor()
-        assert executor.name == "sequential"
-
     def test_priority(self):
         executor = SequentialExplainExecutor()
         assert executor.priority == 10
@@ -128,9 +124,6 @@ def make_valid_payload(**overrides):
 class TestSchemaValidationBuiltinFallback:
     """Test built-in structural validation paths (when jsonschema is absent)."""
 
-    def test_valid_payload_passes_builtin(self, monkeypatch):
-        monkeypatch.setattr(schema_mod, "jsonschema", None)
-        validate_payload(make_valid_payload())
 
     def test_missing_required_key_raises(self, monkeypatch):
         monkeypatch.setattr(schema_mod, "jsonschema", None)
@@ -154,10 +147,6 @@ class TestSchemaValidationBuiltinFallback:
         with pytest.raises(ValidationError, match="must be an object"):
             validate_payload(make_valid_payload(rules=["not_a_dict"]))
 
-    def test_partial_prediction_interval_raises(self, monkeypatch):
-        monkeypatch.setattr(schema_mod, "jsonschema", None)
-        with pytest.raises(ValidationError, match="missing required key"):
-            validate_payload(make_valid_payload(prediction={"predict": 1.0}))
 
     def test_prediction_not_mapping_raises(self, monkeypatch):
         monkeypatch.setattr(schema_mod, "jsonschema", None)

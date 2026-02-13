@@ -1067,6 +1067,81 @@ class WrapCalibratedExplainer:
         """
         return self._maybe_preprocess_for_inference(X)
 
+    def export_preprocessor_mapping(self) -> dict[str, Any] | None:
+        """Export the current preprocessor mapping snapshot.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            A mapping snapshot suitable for telemetry or round-tripping, or
+            ``None`` when no mapping information is available.
+        """
+        pre = getattr(self, "_preprocessor", None)
+        if pre is None:
+            return None
+        # Prefer a custom getter when available
+        getter = getattr(pre, "get_mapping_snapshot", None)
+        if callable(getter):
+            try:
+                return getter()
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                self._logger.warning("Preprocessor.get_mapping_snapshot failed; falling back to mapping_")
+        # Fall back to attribute if present
+        mapping_attr = getattr(pre, "mapping_", None)
+        if mapping_attr is not None:
+            # Shallow copy to avoid exposing internal objects
+            try:
+                return dict(mapping_attr)
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                return None
+        return None
+
+    def import_preprocessor_mapping(self, mapping: Mapping[str, Any]) -> None:
+        """Attempt to apply a mapping snapshot to the configured preprocessor.
+
+        This is a best-effort helper: when an attached preprocessor exposes a
+        setter (``set_mapping``) or a writable ``mapping_`` attribute we will
+        apply the mapping. Otherwise the mapping is stashed on the wrapper as
+        ``_imported_preprocessor_mapping`` for potential downstream use.
+
+        A warning is emitted when the mapping could not be applied to ensure
+        visibility per the fallback policy.
+        """
+        pre = getattr(self, "_preprocessor", None)
+        applied = False
+        if pre is not None:
+            setter = getattr(pre, "set_mapping", None)
+            if callable(setter):
+                try:
+                    setter(mapping)
+                    applied = True
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    self._logger.warning("Preprocessor.set_mapping failed; stashing mapping")
+            else:
+                # Try to set mapping_ directly when writable
+                try:
+                    setattr(pre, "mapping_", mapping)
+                    applied = True
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    # fall through to stashing below
+                    pass
+        if not applied:
+            # Keep for later application or external tooling
+            self._imported_preprocessor_mapping = dict(mapping) if mapping is not None else None
+            _warnings.warn(
+                "Preprocessor mapping could not be applied directly; mapping stashed on wrapper",
+                UserWarning,
+                stacklevel=2,
+            )
+
     @property
     def pre_fitted(self) -> bool:
         """Check if the preprocessor is pre-fitted.
@@ -1176,7 +1251,9 @@ class WrapCalibratedExplainer:
         # dicts recursively so pickle/joblib can serialize them.
         def _convert(obj: Any) -> Any:
             if isinstance(obj, MappingProxyType):
-                return dict(obj)
+                # Recursively convert mappingproxy to plain dict and convert
+                # nested values as well.
+                return _convert(dict(obj))
             if isinstance(obj, dict):
                 return {k: _convert(v) for k, v in obj.items()}
             if isinstance(obj, (list, tuple, set)):

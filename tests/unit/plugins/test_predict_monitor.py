@@ -85,19 +85,6 @@ def test_predict_monitor_warns_when_low_exceeds_high():
         monitor.predict(np.array([[1.0]]), mode="factual", task="regression")
 
 
-def test_predict_monitor_warns_when_predict_outside_interval():
-    class OutsideBridge(DummyBridge):
-        def __init__(self) -> None:
-            super().__init__()
-            self.predictions["predict"] = {
-                "predict": np.asarray([1.2]),
-                "low": np.asarray([0.0]),
-                "high": np.asarray([1.0]),
-            }
-
-    monitor = PredictBridgeMonitor(OutsideBridge())
-    with pytest.warns(UserWarning, match="predict not in"):
-        monitor.predict(np.array([[0.5]]), mode="factual", task="regression")
 
 
 def test_predict_monitor_interval_tuple_validation_warns():

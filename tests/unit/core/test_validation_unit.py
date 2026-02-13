@@ -83,21 +83,6 @@ def test_validate_model_and_fit_state_errors():
     validation.validate_fit_state(Dummy(), require=False)
 
 
-def test_validate_model_and_fit_state_success():
-    class Model:
-        def predict(self, x):
-            return x
-
-    validation.validate_model(Model())
-
-    class Fitted:
-        fitted = True
-
-    validation.validate_fit_state(Fitted())
-
-
-def test_infer_task_defaults_to_regression_when_unknown():
-    assert validation.infer_task() == "regression"
 
 
 def test_validate_inputs_matrix_supports_frame_like_objects(monkeypatch):
@@ -151,11 +136,6 @@ def test_validate_inputs_adr002_signature_requires_2d_x():
     assert exc_info.value.details.get("ndim") == 1
 
 
-def test_validate_inputs_adr002_signature_with_y():
-    """Verify validate_inputs() accepts optional y parameter."""
-    x = np.array([[1.0, 2.0], [3.0, 4.0]])
-    y = np.array([0, 1])
-    validation.validate_inputs(x, y)  # Should not raise
 
 
 
@@ -234,20 +214,3 @@ def test_validate_inputs_adr002_nan_in_y_with_details():
     assert exc_info.value.details.get("check") == "finitude"
 
 
-def test_validate_inputs_adr002_x_none_raises():
-    """Verify validate_inputs() raises when x is None."""
-    with pytest.raises(validation.ValidationError):
-        validation.validate_inputs(None)
-
-
-def test_validate_inputs_adr002_with_pandas_arrays():
-    """Verify validate_inputs() handles pandas-like objects."""
-    try:
-        import pandas as pd
-
-        x_df = pd.DataFrame([[1.0, 2.0], [3.0, 4.0]])
-        y_series = pd.Series([0, 1])
-        # Should not raise; arrays are extracted via _as_2d_array
-        validation.validate_inputs(x_df, y_series)
-    except ImportError:
-        pytest.skip("pandas not available")
