@@ -75,27 +75,6 @@ def test_narrative_plugin_with_custom_template():
     assert plugin.template_path == "custom_template.yaml"
 
 
-# Test with classification
-def test_narrative_plugin_classification_factual_beginner(classification_explainer, iris_data):
-    """Test narrative generation for binary classification with beginner level."""
-    _, x_test, _, _ = iris_data
-    x_test_binary = x_test[iris_data[3] < 2][:3]  # Get 3 test instances
-
-    explanations = classification_explainer.explain_factual(x_test_binary)
-
-    plugin = NarrativePlotPlugin()
-    result = plugin.plot(explanations, expertise_level="beginner", output="dict")
-
-    assert isinstance(result, list)
-    assert len(result) == 3
-    assert "instance_index" in result[0]
-    assert "factual_explanation_beginner" in result[0]
-    assert "problem_type" in result[0]
-    assert result[0]["problem_type"] == "binary_classification"
-
-
-
-
 # Test with regression
 def test_narrative_plugin_regression_factual(regression_explainer, diabetes_data):
     """Test narrative generation for regression."""

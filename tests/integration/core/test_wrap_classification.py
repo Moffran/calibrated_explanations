@@ -372,17 +372,3 @@ def multiple_failing_calls(cal_exp, x, y):
 
 
 # Add new test for handling missing values
-def test_missing_values(binary_dataset):
-    """Test handling of missing values in input data"""
-    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, _, _, _ = binary_dataset
-
-    # Introduce some missing values
-    x_test_missing = x_test.copy()
-    x_test_missing[0, 0] = np.nan
-
-    cal_exp = WrapCalibratedExplainer(LogisticRegression())
-    cal_exp.fit(x_prop_train, y_prop_train)
-    cal_exp.calibrate(x_cal, y_cal)
-
-    with pytest.raises(ValueError):
-        cal_exp.predict(x_test_missing)

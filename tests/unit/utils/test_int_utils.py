@@ -14,10 +14,6 @@ def test_collect_ints_processes_iterables_and_bytes() -> None:
     assert collect_ints(None) == []
 
 
-def test_as_int_array_filters_non_integer_values() -> None:
-    """Ensure the numpy array only contains successfully converted integers."""
-    raw_values = ["7", 8.0, "skip", b"9"]
-    assert np.array_equal(as_int_array(raw_values), np.array([7, 8, 9], dtype=int))
 
 
 def test_coerce_to_int_handles_whitespace_and_invalid_strings() -> None:

@@ -87,23 +87,6 @@ def test_alternative_conjunction_parity_max_rule_size_3(binary_dataset):
 # --- Phase 4D: Strengthened parity tests ---
 
 
-def test_factual_conjunctions_actually_created(binary_dataset):
-    """Verify that add_conjunctions actually produces conjunctive rules."""
-    explainer, x_test = build_explainer(binary_dataset)
-
-    explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
-    explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
-
-    for exp in explanation:
-        assert exp.has_conjunctive_rules, "has_conjunctive_rules should be True"
-        assert exp.conjunctive_rules is not None, "conjunctive_rules should not be None"
-        # Public API: once conjunctions are added, get_rules() should expose them.
-        assert exp.get_rules() is exp.conjunctive_rules
-        rules = exp.conjunctive_rules
-        assert len(rules["rule"]) > 0, (
-            f"Expected conjunctive rules to be created but got 0. "
-            f"Stats: {getattr(exp, 'conjunction_stats', 'N/A')}"
-        )
 
 
 def test_alternative_conjunctions_actually_created(binary_dataset):

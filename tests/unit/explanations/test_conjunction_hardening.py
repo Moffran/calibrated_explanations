@@ -37,14 +37,6 @@ def _make_binary_explainer(binary_dataset):
 
 
 
-def test_robust_ranking_nan():
-    # We can test rank_features by creating a minimal FactualExplanation
-    f = FactualExplanation.__new__(FactualExplanation)
-    f.mode = "classification"
-
-    weights = np.array([0.1, np.nan, 0.3])
-    ranked = FactualExplanation.rank_features(f, feature_weights=weights, num_to_show=3)
-    assert list(ranked) == [1, 0, 2]
 
 
 def test_fallback_to_legacy(monkeypatch):
@@ -184,34 +176,6 @@ def test_max_rule_size_1_returns_self():
     assert result is f
 
 
-def test_single_feature_explanation_no_crash():
-    """An explanation with only one feature should not crash."""
-    f = FactualExplanation.__new__(FactualExplanation)
-    f.has_rules = True
-    f.rules = {
-        "rule": ["feat1"],
-        "feature": [0],
-        "weight": [0.1],
-        "weight_low": [0.0],
-        "weight_high": [0.2],
-        "sampled_values": [np.array([1.0])],
-        "value": ["1"],
-        "classes": 1,
-    }
-    f.has_conjunctive_rules = False
-    f.conjunctive_rules = []
-    f.y_threshold = None
-    f.x_test = np.array([1])
-    f.prediction = {"predict": 0.5}
-    f.bin = None
-    f.rank_features = MagicMock(return_value=[0])
-    f.predict_conjunctive = MagicMock()
-
-    # Should not raise
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        result = FactualExplanation.add_conjunctions(f, n_top_features=1, max_rule_size=2)
-    assert result is f
 
 
 def test_alternative_raise_on_predict_error():

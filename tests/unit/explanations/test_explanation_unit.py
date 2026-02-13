@@ -117,28 +117,8 @@ class TestExplanationUnit:
         expl = ConcreteExplanation(**params)
         return expl
 
-    def test_init_basic(self):
-        """Test successful initialization and attribute mapping."""
-        expl = self.create_expl()
-        assert expl.index == 0
-        assert np.array_equal(expl.x_test, self.x)
-        assert expl.prediction["predict"] == 0.5
-        assert expl.y_minmax == [0, 1]
 
-    def test_init_full_probabilities(self):
-        """Test __full_probabilities__ special handling."""
-        prediction_with_full = self.prediction.copy()
-        prediction_with_full["__full_probabilities__"] = [[0.1, 0.9]]
-        expl = self.create_expl(prediction=prediction_with_full)
-        assert expl.prediction["__full_probabilities__"] == [[0.1, 0.9]]
 
-    def test_init_y_threshold_array(self):
-        """Test array-like y_threshold indexing."""
-        expl = self.create_expl(y_threshold=np.array([0.7]))
-        assert expl.y_threshold == 0.7
-
-        expl_tuple = self.create_expl(y_threshold=(0.5, 0.6))
-        assert expl_tuple.y_threshold == (0.5, 0.6)
 
 
     def test_filter_rule_sizes_copy_preserves_original(self):

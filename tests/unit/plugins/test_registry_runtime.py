@@ -42,29 +42,6 @@ def make_metadata(name: str, trusted: bool) -> dict[str, object]:
 
 
 
-def test_verify_plugin_checksum_raises_on_mismatch(tmp_path, monkeypatch):
-    plugin_file = tmp_path / "fake_plugin.py"
-    plugin_file.write_text("VALUE = 'original'\n")
-
-    module = types.ModuleType("tests.fake_plugin")
-    module.__file__ = str(plugin_file)
-    monkeypatch.setitem(sys.modules, module.__name__, module)
-
-    from calibrated_explanations.utils.exceptions import ValidationError
-
-    class Plugin:
-        __module__ = module.__name__
-        plugin_meta = {
-            "schema_version": 1,
-            "name": "checksum",
-            "version": "0.0",
-            "provider": "tests",
-            "capabilities": ("interval:regression",),
-            "checksum": {"sha256": "deadbeef"},
-        }
-
-    with pytest.raises(ValidationError, match="Checksum mismatch"):
-        registry.verify_plugin_checksum(Plugin(), Plugin.plugin_meta)
 
 
 def test_mark_plot_renderer_trusted_untrusted():

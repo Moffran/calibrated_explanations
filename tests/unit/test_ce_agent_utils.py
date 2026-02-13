@@ -17,6 +17,7 @@ from calibrated_explanations.ce_agent_utils import (
     get_uncalibrated_predictions,
     policy_as_dict,
     probe_optional_features,
+    summarize_explanations,
     serialize_policy,
     set_telemetry_hook,
     wrap_and_explain,
@@ -50,6 +51,13 @@ def prep_regression():
 
 
 
+def test_enforce_ce_first_and_execute():
+    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
+    model = RandomForestClassifier(random_state=0)
+    wrapper = ensure_ce_first_wrapper(model)
+    fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
+    result = enforce_ce_first_and_execute(lambda w, x: w.explain_factual(x), wrapper, x_test[:1])
+    assert result is not None
 
 
 
@@ -124,30 +132,6 @@ def test_add_conjunctions_collection_and_single():
     assert explanations[0].has_conjunctive_rules is True
 
 
-def test_enforce_ce_first_and_execute():
-    x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
-    model = RandomForestClassifier(random_state=0)
-    wrapper = ensure_ce_first_wrapper(model)
-    fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
-    result = enforce_ce_first_and_execute(lambda w, x: w.explain_factual(x), wrapper, x_test[:1])
-    assert result is not None
-
-
-def test_probe_optional_features_warning():
-    def fake_import(name):
-        if name.startswith("crepes"):
-            raise ImportError("missing")
-        return importlib.import_module(name)
-
-    report = probe_optional_features(import_module=fake_import)
-    assert "warnings" in report
-    assert any(
-        "difficulty" in warning or "conditional" in warning for warning in report["warnings"]
-    )
-
-
-
-
 def test_telemetry_hook_receives_events():
     seen = []
 
@@ -164,6 +148,53 @@ def test_telemetry_hook_receives_events():
     names = [name for name, _ in seen]
     assert "ce.fit_and_calibrate.start" in names
     assert "ce.fit_and_calibrate.end" in names
+
+
+def test_summarize_explanations_handles_none_first_item() -> None:
+    class Container(list):
+        low_high_percentiles = (5, 95)
+        y_threshold = None
+
+    summary = summarize_explanations(Container([None]), top_k=2)
+    assert summary["prediction"] is None
+    assert summary["top_rules"] == []
+    assert summary["has_conjunctions"] is False
+
+
+def test_explain_and_narrate_handles_scalar_probability_and_missing_interval(monkeypatch) -> None:
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+
+    # Unit-test internal narrative formatting behavior without wrapper enforcement.
+    monkeypatch.setattr(
+        ce_utils,
+        "enforce_ce_first_and_execute",
+        lambda action, *args, **kwargs: action(*args, **kwargs),
+    )
+
+    class Explanation:
+        prediction = None
+
+        def to_narrative(self, format="short"):
+            _ = format
+            return "base narrative"
+
+    class Wrapper:
+        fitted = True
+        calibrated = True
+        learner = types.SimpleNamespace(predict_proba=True)
+
+        def explain_factual(self, _x, **_kwargs):
+            return [Explanation()]
+
+        def predict(self, _x, **_kwargs):
+            return [0.1]
+
+        def predict_proba(self, _x, **_kwargs):
+            return 0.42
+
+    _explanations, narrative = ce_utils.explain_and_narrate(Wrapper(), [[1.0]], mode="factual")
+    assert "Calibrated probability: 0.42" in narrative
+    assert "Uncertainty interval: n/a" in narrative
 
 
 def test_probe_optional_features_with_find_spec_gate():
@@ -409,21 +440,6 @@ def test_explain_and_summarize_with_percentiles_and_no_conjunctions(monkeypatch)
     assert payload["summary"]["prediction"]["predict"] == 0.3
 
 
-def test_get_calibrated_predictions_without_validation_or_predict_proba(monkeypatch):
-    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
-
-    class W:
-        fitted = False
-        calibrated = False
-        learner = types.SimpleNamespace()
-
-        def predict(self, _x, **_kwargs):
-            return [1]
-
-    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
-    out = ce_utils.get_calibrated_predictions(W(), [[1]], calibrated=False)
-    assert out["prediction"] == [1]
-    assert out["probability"] is None
 
 
 def test_wrap_and_explain_plot_failure_is_tolerated(monkeypatch):
@@ -452,10 +468,146 @@ def test_wrap_and_explain_plot_failure_is_tolerated(monkeypatch):
     assert out["plot"] is None
 
 
-def test_probe_optional_features_warns_when_missing() -> None:
-    def broken_import(_name):
-        raise ImportError("missing")
 
-    with pytest.warns(UserWarning):
-        report = probe_optional_features(import_module=broken_import)
-    assert report["warnings"]
+
+def test_get_calibrated_predictions_tolerates_signature_probe_failures(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+
+    def _broken_signature(_callable):
+        raise ValueError("boom")
+
+    monkeypatch.setattr(ce_utils.inspect, "signature", _broken_signature)
+    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
+
+    class FakeWrapper:
+        fitted = True
+        calibrated = True
+        learner = types.SimpleNamespace()
+
+        def predict(self, _x, **_kwargs):
+            return [0.4]
+
+        def predict_proba(self, _x, **_kwargs):
+            return [[0.6, 0.4]]
+
+    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
+    out = ce_utils.get_calibrated_predictions(FakeWrapper(), [[0.0]], threshold=0.25)
+    assert out["probability"] == [[0.6, 0.4]]
+
+
+def test_public_validation_and_summary_paths(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
+
+    class NotFittedWrapper:
+        fitted = False
+        calibrated = True
+        learner = types.SimpleNamespace()
+
+        def predict(self, _x, **_kwargs):
+            return [1]
+
+    with pytest.raises(NotFittedError):
+        ce_utils.get_calibrated_predictions(NotFittedWrapper(), [[1]], calibrated=True)
+
+    summary = ce_utils.summarize_explanations(
+        [types.SimpleNamespace(prediction=[1, 2], rules={}, has_conjunctive_rules=False)]
+    )
+    assert summary["prediction"] == [1, 2]
+
+
+def test_explain_and_narrate_covers_no_probability_and_fallback_action(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+    monkeypatch.setattr(
+        ce_utils,
+        "enforce_ce_first_and_execute",
+        lambda action, *args, **kwargs: action(*args, **kwargs),
+    )
+
+    class FakeExplanation:
+        prediction = {"predict": 1.0, "low": 1.0, "high": 1.0}
+        rules = {"rule": [], "weight": []}
+
+    class FakeWrapper:
+        fitted = True
+        calibrated = True
+        learner = types.SimpleNamespace()
+
+        def explain_factual(self, _x, **_kwargs):
+            return [FakeExplanation()]
+
+        def explore_alternatives(self, _x, **_kwargs):
+            return [FakeExplanation()]
+
+        def predict(self, _x, **_kwargs):
+            return [1.0]
+
+        def predict_proba(self, _x, **_kwargs):
+            return [[0.1, 0.9]]
+
+    _explanations, narrative = ce_utils.explain_and_narrate(FakeWrapper(), [[1.0]], mode="factual")
+    assert "Review the most influential features" in narrative
+
+
+
+
+def test_ensure_ce_first_wrapper_rejects_missing_attrs_and_methods(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+
+    class FakeWrapMissingAttrs:
+        def __init__(self, _model):
+            pass
+
+    monkeypatch.setattr(ce_utils, "_require_ce", lambda: FakeWrapMissingAttrs)
+    with pytest.raises(ModelNotSupportedError):
+        ce_utils.ensure_ce_first_wrapper(object())
+
+    class FakeWrapMissingMethods:
+        fitted = True
+        calibrated = True
+
+        def __init__(self, _model):
+            pass
+
+        def fit(self, *_args, **_kwargs):
+            return None
+
+    monkeypatch.setattr(ce_utils, "_require_ce", lambda: FakeWrapMissingMethods)
+    with pytest.raises(ModelNotSupportedError):
+        ce_utils.ensure_ce_first_wrapper(object())
+
+
+def test_get_calibrated_predictions_covers_kwarg_filter_variants(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
+
+    class StrictWrapper:
+        fitted = True
+        calibrated = True
+        learner = types.SimpleNamespace()
+
+        def predict(self, x):
+            return [len(x)]
+
+    out = ce_utils.get_calibrated_predictions(StrictWrapper(), [[0.0]], calibrated=False, foo=1)
+    assert out["prediction"] == [1]
+
+    class KwargNamedWrapper:
+        fitted = True
+        calibrated = True
+        learner = types.SimpleNamespace(predict_proba=True)
+
+        def predict(self, x, kwargs=None):
+            return [len(x) + (0 if kwargs is None else 1)]
+
+        def predict_proba(self, x, kwargs=None):
+            return [[0.5, 0.5]]
+
+    out2 = ce_utils.get_calibrated_predictions(
+        KwargNamedWrapper(),
+        [[0.0]],
+        calibrated=False,
+        kwargs=1,
+    )
+    assert out2["prediction"] == [2]
+    assert out2["probability"] == [[0.5, 0.5]]

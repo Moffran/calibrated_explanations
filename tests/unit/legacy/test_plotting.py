@@ -138,30 +138,6 @@ def test_probabilistic_default_save_extensions_use_title(tmp_path):
         assert any(name.startswith(f"auto{ext}") for name in saved), saved
 
 
-def test_probabilistic_interval_requires_index():
-    explanation = DummyExplanation(thresholded=True)
-    feature_weights = {
-        "predict": np.array([0.1, -0.2]),
-        "low": np.array([0.0, -0.3]),
-        "high": np.array([0.2, 0.4]),
-    }
-
-    with pytest.raises(AssertionError):
-        plotting.plot_probabilistic(
-            explanation,
-            instance=[0.5, 0.1],
-            predict={"predict": 0.6, "low": 0.4, "high": 0.8},
-            feature_weights=feature_weights,
-            features_to_plot=[0, 1],
-            num_to_show=2,
-            column_names=["f0", "f1"],
-            title="missing_idx",
-            path="",
-            show=False,
-            interval=True,
-            idx=None,
-            save_ext=[".png"],
-        )
 
 
 def test_probabilistic_threshold_and_label_variants(tmp_path):
@@ -276,30 +252,6 @@ def testplot_global_requires_scalar_threshold_for_non_probabilistic():
 
 
 
-def test_regression_interval_requires_index(tmp_path):
-    explanation = DummyExplanation(mode="regression")
-    feature_weights = {
-        "predict": np.array([0.5, -0.2]),
-        "low": np.array([0.3, -0.4]),
-        "high": np.array([0.7, -0.1]),
-    }
-
-    with pytest.raises(AssertionError):
-        plotting.plot_regression(
-            explanation,
-            instance=[1.0, -1.0],
-            predict={"predict": 0.2, "low": -0.1, "high": 0.5},
-            feature_weights=feature_weights,
-            features_to_plot=[0, 1],
-            num_to_show=2,
-            column_names=["f0", "f1"],
-            title="reg_idx",
-            path=str(tmp_path) + "/",
-            show=False,
-            interval=True,
-            idx=None,
-            save_ext=[".png"],
-        )
 
 
 def test_regression_non_interval_branches(tmp_path, disable_show):
@@ -688,16 +640,6 @@ def test_probabilistic_saves_before_show(monkeypatch, tmp_path):
     assert order[:2] == ["save", "show"]
 
 
-def test_require_matplotlib_raises(monkeypatch):
-    from calibrated_explanations.core import ConfigurationError
-
-    monkeypatch.setattr(plotting, "plt", None)
-    monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("missing backend"))
-
-    with pytest.raises(ConfigurationError) as excinfo:
-        plotting.__require_matplotlib()
-
-    assert "missing backend" in str(excinfo.value)
 
 
 def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):

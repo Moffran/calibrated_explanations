@@ -589,11 +589,6 @@ def test_build_condition_payload_parses_rules(telemetry_explanation):
 
 
 
-def test_to_telemetry_includes_serialized_rules(telemetry_explanation):
-    telemetry = telemetry_explanation.to_telemetry()
-    assert set(telemetry.keys()) == {"uncertainty", "rules", "metadata"}
-    assert telemetry["rules"]["core"]
-    assert telemetry["uncertainty"]["representation"] == "percentile"
 
 
 def test_predict_conjunctive_average():

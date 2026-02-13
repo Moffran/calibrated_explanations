@@ -47,17 +47,31 @@ def test_vector_low_gt_high_at_index_raises():
         serialization.to_json(exp)
 
 
-
-
-def test_rule_and_instance_prediction_checks():
-    # Attach problematic predictions to a rule and its instance_prediction
-    fr = FeatureRule(
-        feature=0,
-        rule="r",
-        rule_weight={},
-        rule_prediction={"predict": 5, "low": 0, "high": 1},
-        instance_prediction={"predict": [1, 2], "low": [0], "high": [1, 2]},
-    )
-    exp = make_exp(prediction={}, rules=[fr])
+def test_scalar_predict_outside_tolerance_raises():
+    exp = make_exp({"predict": 1.1, "low": 0.0, "high": 1.0})
     with pytest.raises(ValidationError):
         serialization.to_json(exp)
+
+
+def test_rule_prediction_with_missing_bounds_is_tolerated():
+    rule = FeatureRule(
+        feature=0,
+        rule="x <= 1",
+        rule_weight={"predict": 0.5},
+        rule_prediction={"predict": 1.0},
+        instance_prediction=None,
+        feature_value=0.5,
+    )
+    exp = make_exp({"predict": 1.0, "low": 0.0, "high": 2.0}, [rule])
+    payload = serialization.to_json(exp)
+    assert payload["rules"][0]["rule_prediction"]["predict"] == 1.0
+
+
+def test_valid_vector_prediction_interval_serializes():
+    exp = make_exp({"predict": [1.0, 2.0], "low": [0.0, 1.5], "high": [1.5, 2.5]})
+    payload = serialization.to_json(exp)
+    assert payload["prediction"]["predict"] == [1.0, 2.0]
+
+
+
+

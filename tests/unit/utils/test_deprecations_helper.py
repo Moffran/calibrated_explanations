@@ -39,28 +39,9 @@ class TestShouldRaise:
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}, clear=True):
             assert should_raise() is True
 
-    def test_should_return_false_for_unknown_value(self):
-        with patch.dict(os.environ, {"CE_DEPRECATIONS": "maybe"}, clear=True):
-            assert should_raise() is False
-
-
-
-
-
-
-
-
-
 class TestDeprecate:
     """Tests for deprecate() function."""
 
-    def test_should_emit_warning_when_not_set_to_raise(self):
-        """deprecate() should emit a DeprecationWarning by default."""
-        with (
-            patch.dict(os.environ, {}, clear=True),
-            pytest.warns(DeprecationWarning, match="Test warning"),
-        ):
-            deprecate("Test warning", key="test_key_1")
 
     def test_should_raise_deprecation_when_set_to_error(self):
         """deprecate() should raise DeprecationWarning when CE_DEPRECATIONS='error'."""
@@ -105,13 +86,6 @@ class TestDeprecate:
             assert pytest_test_id in per
             assert unique_key in per[pytest_test_id]
 
-    def test_should_respect_custom_stacklevel(self):
-        """deprecate() should pass stacklevel to warnings.warn."""
-        with patch.dict(os.environ, {}, clear=True):
-            clear_emitted()
-
-            with pytest.warns(DeprecationWarning):
-                deprecate("Test stacklevel", key="stacklevel_test", stacklevel=3)
 
     def test_should_record_key_when_raising_in_ci(self):
         """deprecate() should record key even when raising in CI (non-pytest mode)."""

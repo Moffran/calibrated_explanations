@@ -163,25 +163,9 @@ def test_register_plot_plugin_registers_all_components():
 
 
 
-def test_list_plot_builder_descriptors_filters_trusted(monkeypatch):
-    registry.ensure_builtin_plugins()
-    # Clear trusted flags using public setter.
-    for d in registry.list_plot_builder_descriptors():
-        registry.set_plot_builder(d.identifier, d, trusted=False)
-
-    all_descriptors = list(registry.list_plot_builder_descriptors())
-    trusted_descriptors = list(registry.list_plot_builder_descriptors(trusted_only=True))
-
-    assert len(all_descriptors) >= len(trusted_descriptors)
 
 
 
 
-def test_register_explanation_plugin_no_metadata():
-    class Plugin:
-        pass
-
-    with pytest.raises(ValidationError, match="plugin must expose plugin_meta metadata"):
-        registry.register_explanation_plugin("test_no_meta", Plugin())
 
 

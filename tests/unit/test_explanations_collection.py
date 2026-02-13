@@ -392,41 +392,6 @@ class FakeFast(DummyExplanation):
         }
 
 
-def test_finalize_variants(calibrated_collection, monkeypatch):
-    monkeypatch.setattr(explanations_mod, "FactualExplanation", FakeFactual)
-    start = time.time()
-    result = calibrated_collection.finalize(
-        binned={},
-        feature_weights={},
-        feature_predict={},
-        prediction={"predict": 0.5},
-        instance_time=[0.1, 0.2, 0.3],
-        total_time=start,
-    )
-    assert result is calibrated_collection
-    assert len(calibrated_collection.explanations) == 6
-    assert calibrated_collection.total_explain_time is not None
-
-    new_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
-    )
-    monkeypatch.setattr(explanations_mod, "AlternativeExplanation", FakeAlternative)
-    monkeypatch.setattr(CalibratedExplanations, "is_alternative", lambda self: True)
-    alt_result = new_collection.finalize({}, {}, {}, {"predict": 0.2})
-    assert isinstance(alt_result, AlternativeExplanations)
-
-    monkeypatch.setattr(explanations_mod, "FastExplanation", FakeFast)
-    fast_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
-    )
-    fast_collection.finalize_fast(
-        {},
-        {"predict": 0.1},
-        {"predict": 0.2},
-        instance_time=[0.1, 0.2, 0.3],
-        total_time=start,
-    )
-    assert len(fast_collection.explanations) == 3
 
 
 def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):

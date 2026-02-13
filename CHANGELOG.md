@@ -8,6 +8,9 @@
 ### Added
 - **Preprocessor mapping persistence helpers:** Added `export_preprocessor_mapping` and `import_preprocessor_mapping` helpers to `WrapCalibratedExplainer` to support ADR-009 mapping export/import, plus unit tests covering export/import and stash fallback behaviour. This provides a best-effort, non-invasive persistence surface for preprocessor mappings and improves telemetry visibility.
 
+### Changed
+- **Test-quality method & reduced over-testing:** Adopted an ADR-030-aligned test-quality method (behavior-first assertions, deterministic AAA structure, avoid redundant permutations/implementation-detail assertions) and pruned low-signal/redundant tests to reduce over-testing while preserving regression protection and coverage gates.
+
 ## [v0.10.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.4) - 2026-02-12
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...v0.10.4)

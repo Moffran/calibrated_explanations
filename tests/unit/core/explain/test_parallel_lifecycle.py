@@ -48,14 +48,6 @@ class TestParallelLifecycle:
         assert results1 == [x * x for x in range(5)]
         assert results2 == [x * x for x in range(5, 10)]
 
-    def test_chunking(self):
-        # Verify chunksize parameter is accepted
-        config = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
-        executor = ParallelExecutor(config)
-
-        # We can't easily verify chunking happened without mocking, but we can verify it runs
-        results = executor.map(square, range(10), chunksize=2)
-        assert results == [x * x for x in range(10)]
 
     def test_force_serial_on_failure(self):
         config = ParallelConfig(

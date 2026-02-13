@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import builtins
 
 import numpy as np
 import pytest
@@ -51,15 +52,6 @@ class BridgeStub:
 
 
 
-def test_viz_lazy_import_requires_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
-    viz_mod = importlib.import_module("calibrated_explanations.viz")
-    monkeypatch.setattr(
-        viz_mod,
-        "_require_matplotlib",
-        lambda: (_ for _ in ()).throw(ModuleNotFoundError("missing")),
-    )
-    with pytest.raises(ModuleNotFoundError):
-        viz_mod.__getattr__("render")
 
 
 def test_calibration_state_dict_rows_append_and_getters(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -87,6 +79,38 @@ def test_sequential_executor_identity_contract() -> None:
     assert executor.name == "sequential"
     assert executor.priority == 10
     assert executor.supports(request=object(), config=object()) is True
+
+
+def test_joblib_backend_falls_back_when_joblib_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    backend = JoblibBackend()
+    original_import = builtins.__import__
+
+    def fail_joblib(name, *args, **kwargs):
+        if name == "joblib":
+            raise ImportError("joblib missing")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fail_joblib)
+
+    result = backend.map(lambda x: x + 1, [1, 2, 3], workers=2)
+    assert result == [2, 3, 4]
+
+
+def test_joblib_backend_falls_back_when_joblib_submodule_import_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend = JoblibBackend()
+    original_import = builtins.__import__
+
+    def fail_any_joblib(name, *args, **kwargs):
+        if name.startswith("joblib"):
+            raise ImportError("joblib unavailable")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fail_any_joblib)
+
+    result = backend.map(lambda x: x * 2, [2, 3], workers=1)
+    assert result == [4, 6]
 
 
 

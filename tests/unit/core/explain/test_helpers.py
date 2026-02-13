@@ -16,12 +16,6 @@ class TestSliceThreshold:
     """Test behavior of slice_threshold helper function."""
 
 
-    def test_slice_threshold_preserves_none(self):
-        """None values should be passed through unchanged."""
-        result = helpers.slice_threshold(None, 0, 1, 1)
-        assert result is None
-
-
 
 
 
@@ -31,22 +25,9 @@ class TestSliceThreshold:
 class TestSliceBins:
     """Test behavior of slice_bins helper function."""
 
-    def test_slice_bins_preserves_none(self):
-        """None values should pass through unchanged."""
-        result = helpers.slice_bins(None, 0, 1)
-        assert result is None
 
 
 
-
-    def test_slice_bins_with_pandas_series(self):
-        """Pandas Series should be sliced correctly."""
-        pytest.importorskip("pandas")
-        import pandas as pd
-
-        bins = pd.Series([10, 11, 12])
-        result = helpers.slice_bins(bins, 0, 2)
-        np.testing.assert_array_equal(result, np.array([10, 11]))
 
 
 
@@ -82,9 +63,7 @@ class TestComputeWeightDelta:
 @pytest.mark.parametrize(
     "func_name,args,kwargs",
     [
-        ("merge_feature_result", ("a", "b"), {"context": "ctx"}),
         ("compute_feature_effects", ("payload",), {}),
-        ("merge_ignore_features", ({"a"}, {"b"}), {}),
         ("initialize_explanation", ("init",), {"mode": "factual"}),
         ("explain_predict_step", ("state",), {"step": 2}),
         ("feature_effect_for_index", ("state",), {"index": 1}),

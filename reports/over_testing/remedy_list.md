@@ -84,3 +84,54 @@ One small process/documentation adjustment is recommended:
 
 1. Add an explicit sequencing rule to the README: run `run_over_testing_pipeline.py` to completion before `extract_per_test.py` and `detect_redundant_tests.py` (avoid race conditions from parallel execution).
 2. Add a short note that the canonical path is `docs/improvement/test-quality-method/README.md` (the historical `docs/improvement/test-quality/README.md` path is stale).
+
+## 2026-02-13 Implementer Update (Current)
+
+- Executed an aggressive zero-unique pruning pass using method data (`per_test_summary.csv`, `|run` contexts only), then constrained final removals to keep the hard 90% gate.
+- Final pruning result in this execution: **47 test functions removed** (net), with targeted branch-focused replacements added where coverage gaps emerged.
+- Added high-quality gap-closing tests:
+  - `tests/unit/testing/test_parity_compare.py`
+  - `tests/unit/core/test_logging_context.py`
+  - `tests/unit/test_ce_agent_utils.py`
+  - `tests/unit/core/test_serialization_invariants_extra.py`
+- Verified quality and coverage:
+  - `pytest --cov-fail-under=90` -> **PASS at 90.00%** (`968 passed, 1 skipped`)
+  - `python scripts/over_testing/run_over_testing_pipeline.py` -> **PASS**
+  - `python scripts/over_testing/extract_per_test.py` -> **PASS**
+  - `python scripts/over_testing/detect_redundant_tests.py` -> **PASS**
+- Updated current over-testing metrics:
+  - `|run` contexts with `unique_lines=0`: **98**
+  - `|run` contexts with `unique_lines<5`: **560**
+  - Redundancy report: **19 exact duplicate groups**, **69 subset groups**, **361 potential redundant tests**
+
+## 2026-02-13 Implementer Update (Additional Iteration)
+
+- Executed another pruning iteration focused on low-value `|run` subset redundancies while keeping ADR-030-safe behavioral coverage.
+- Net removals kept in this iteration:
+  - `tests/plugins/test_cli_additional.py`: removed `test_emit_plot_builder_descriptor_reports_legacy`
+  - `tests/unit/utils/test_deprecations_helper.py`: removed `TestShouldRaise::test_should_return_false_for_unknown_value`
+  - `tests/unit/test_ce_agent_utils.py`: removed `test_probe_optional_features_warning`
+  - `tests/unit/core/test_validation_unit.py`: removed `test_validate_inputs_adr002_signature_accepts_2d_array`
+- Verification:
+  - `pytest --cov=src/calibrated_explanations --cov-context=test --cov-fail-under=90` -> **PASS** (`954 passed, 1 skipped`, coverage **90.00%**)
+  - `python scripts/over_testing/run_over_testing_pipeline.py` -> **PASS**
+  - `python scripts/over_testing/extract_per_test.py` -> **PASS**
+  - `python scripts/over_testing/detect_redundant_tests.py` -> **PASS**
+- Updated over-testing metrics after this iteration:
+  - Per-test contexts: **1038**
+  - Redundancy report: **18 exact duplicate groups**, **56 subset groups**, **345 potential redundant tests**
+  - `|run` contexts appearing in `redundant_tests.csv`: **44**
+
+## 2026-02-13 Implementer Update (One More Pass)
+
+- Performed one additional conservative pruning step on smallest redundant `|run` subset helpers in `tests/unit/core/explain/test_helpers.py`:
+  - removed `TestSliceThreshold::test_slice_threshold_preserves_none`
+  - removed `TestSliceBins::test_slice_bins_preserves_none`
+- Verification:
+  - `pytest --cov=src/calibrated_explanations --cov-context=test --cov-fail-under=90` -> **PASS** (`952 passed, 1 skipped`, coverage **90.00%**)
+  - `python scripts/over_testing/run_over_testing_pipeline.py` -> **PASS**
+  - `python scripts/over_testing/extract_per_test.py` -> **PASS**
+  - `python scripts/over_testing/detect_redundant_tests.py` -> **PASS**
+- Updated over-testing metrics after this pass:
+  - Per-test contexts: **1036**
+  - Redundancy report: **18 exact duplicate groups**, **54 subset groups**, **343 potential redundant tests**

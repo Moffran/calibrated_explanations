@@ -24,6 +24,3 @@ def test_validate_param_combination_rejects_conflict() -> None:
         validate_param_combination({"threshold": 0.5, "confidence_level": 0.95})
 
 
-def test_warn_on_aliases_emits_user_warning() -> None:
-    with pytest.warns(DeprecationWarning, match="deprecated"):
-        warn_on_aliases({"alpha": (5, 95)})

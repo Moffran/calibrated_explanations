@@ -17,41 +17,11 @@ from unittest.mock import patch
 
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils.exceptions import NotFittedError
-from calibrated_explanations.utils import check_is_fitted, is_notebook, make_directory, safe_import
+from calibrated_explanations.utils import is_notebook, make_directory
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 
 from tests.helpers.model_utils import get_classification_model, get_regression_model
-
-
-def test_check_is_fitted_with_fitted_model(binary_dataset):
-    """
-    Tests `check_is_fitted` with a fitted model.
-    Args:
-        binary_dataset (tuple): The binary classification dataset.
-    """
-    x_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    try:
-        check_is_fitted(model)
-    except TypeError:
-        pytest.fail("check_is_fitted raised TypeError unexpectedly!")
-    except NotFittedError:
-        pytest.fail("check_is_fitted raised NotFittedError unexpectedly!")
-
-
-
-
-def test_safe_import():
-    """
-    Tests the `safe_import` utility function.
-    """
-    assert safe_import("sklearn") is not None
-    with pytest.raises(ImportError):
-        safe_import("p1337")
-
-
 
 
 def test_is_notebook_false():

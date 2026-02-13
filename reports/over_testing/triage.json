@@ -4,8 +4,8 @@
     "summary": "reports\\over_testing\\summary.json",
     "lines": "reports\\over_testing\\line_coverage_counts.csv",
     "blocks": "reports\\over_testing\\block_coverage_counts.csv",
-    "coverage_file": ".coverage",
-    "contexts_detected": 1089,
+    "coverage_file": ".coverage.over_testing",
+    "contexts_detected": 1037,
     "context_regex": null,
     "source_root": "src\\calibrated_explanations",
     "over_testing_threshold": 20,
@@ -15,135 +15,135 @@
     {
       "file": "src\\calibrated_explanations\\core\\explain\\sequential.py",
       "lines_covered": 133,
-      "mean_count": 34.88,
-      "median_count": 42.0,
-      "max_count": 42,
+      "mean_count": 33.218,
+      "median_count": 40.0,
+      "max_count": 40,
       "over_threshold": 110,
       "over_ratio": 0.8271
     },
     {
       "file": "src\\calibrated_explanations\\core\\explain\\_computation.py",
       "lines_covered": 291,
-      "mean_count": 29.409,
-      "median_count": 44.0,
-      "max_count": 46,
+      "mean_count": 28.096,
+      "median_count": 42.0,
+      "max_count": 44,
       "over_threshold": 191,
       "over_ratio": 0.6564
     },
     {
       "file": "src\\calibrated_explanations\\core\\explain\\feature_task.py",
       "lines_covered": 429,
-      "mean_count": 24.054,
-      "median_count": 39.0,
-      "max_count": 45,
+      "mean_count": 22.953,
+      "median_count": 37.0,
+      "max_count": 43,
       "over_threshold": 236,
       "over_ratio": 0.5501
     },
     {
       "file": "src\\calibrated_explanations\\calibration\\summaries.py",
       "lines_covered": 62,
-      "mean_count": 28.065,
-      "median_count": 42.0,
-      "max_count": 93,
+      "mean_count": 26.79,
+      "median_count": 40.0,
+      "max_count": 89,
       "over_threshold": 33,
       "over_ratio": 0.5323
     },
     {
       "file": "src\\calibrated_explanations\\core\\explain\\orchestrator.py",
       "lines_covered": 676,
-      "mean_count": 25.839,
-      "median_count": 38.0,
-      "max_count": 111,
+      "mean_count": 24.772,
+      "median_count": 36.0,
+      "max_count": 107,
       "over_threshold": 352,
       "over_ratio": 0.5207
     },
     {
       "file": "src\\calibrated_explanations\\core\\explain\\_shared.py",
       "lines_covered": 199,
-      "mean_count": 22.03,
+      "mean_count": 21.035,
       "median_count": 3.0,
-      "max_count": 44,
+      "max_count": 42,
       "over_threshold": 99,
       "over_ratio": 0.4975
     },
     {
       "file": "src\\calibrated_explanations\\core\\prediction\\validation.py",
       "lines_covered": 29,
-      "mean_count": 44.034,
+      "mean_count": 41.621,
       "median_count": 3.0,
-      "max_count": 90,
+      "max_count": 85,
       "over_threshold": 14,
       "over_ratio": 0.4828
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\base.py",
       "lines_covered": 55,
-      "mean_count": 17.6,
+      "mean_count": 17.127,
       "median_count": 11.0,
-      "max_count": 38,
+      "max_count": 37,
       "over_threshold": 26,
       "over_ratio": 0.4727
     },
     {
       "file": "src\\calibrated_explanations\\core\\prediction\\orchestrator.py",
       "lines_covered": 480,
-      "mean_count": 36.55,
+      "mean_count": 34.754,
       "median_count": 6.0,
-      "max_count": 115,
+      "max_count": 108,
       "over_threshold": 222,
       "over_ratio": 0.4625
     },
     {
-      "file": "src\\calibrated_explanations\\explanations\\_conjunctions.py",
-      "lines_covered": 153,
-      "mean_count": 20.876,
-      "median_count": 16.0,
-      "max_count": 53,
-      "over_threshold": 70,
-      "over_ratio": 0.4575
-    },
-    {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "lines_covered": 452,
-      "mean_count": 40.075,
+      "mean_count": 37.865,
       "median_count": 2.0,
-      "max_count": 127,
+      "max_count": 118,
       "over_threshold": 202,
       "over_ratio": 0.4469
     },
     {
       "file": "src\\calibrated_explanations\\core\\explain\\parallel_runtime.py",
       "lines_covered": 181,
-      "mean_count": 15.624,
+      "mean_count": 14.906,
       "median_count": 2.0,
-      "max_count": 42,
+      "max_count": 40,
       "over_threshold": 65,
       "over_ratio": 0.3591
     },
     {
       "file": "src\\calibrated_explanations\\core\\explain\\_helpers.py",
       "lines_covered": 135,
-      "mean_count": 17.193,
+      "mean_count": 16.452,
       "median_count": 5.0,
-      "max_count": 44,
+      "max_count": 42,
       "over_threshold": 48,
       "over_ratio": 0.3556
     },
     {
+      "file": "src\\calibrated_explanations\\explanations\\_conjunctions.py",
+      "lines_covered": 153,
+      "mean_count": 19.627,
+      "median_count": 14.0,
+      "max_count": 50,
+      "over_threshold": 52,
+      "over_ratio": 0.3399
+    },
+    {
       "file": "src\\calibrated_explanations\\utils\\discretizers.py",
       "lines_covered": 157,
-      "mean_count": 17.777,
+      "mean_count": 17.102,
       "median_count": 9.0,
-      "max_count": 50,
+      "max_count": 48,
       "over_threshold": 53,
       "over_ratio": 0.3376
     },
     {
       "file": "src\\calibrated_explanations\\calibration\\state.py",
       "lines_covered": 48,
-      "mean_count": 33.125,
+      "mean_count": 31.792,
       "median_count": 2.5,
-      "max_count": 102,
+      "max_count": 98,
       "over_threshold": 16,
       "over_ratio": 0.3333
     }
@@ -152,152 +152,152 @@
     {
       "file": "src\\calibrated_explanations\\utils\\exceptions.py",
       "line": 33,
-      "test_count": 193
+      "test_count": 191
     },
     {
       "file": "src\\calibrated_explanations\\utils\\exceptions.py",
       "line": 34,
-      "test_count": 193
+      "test_count": 191
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 72,
-      "test_count": 137
+      "test_count": 134
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 82,
-      "test_count": 137
+      "test_count": 134
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 83,
-      "test_count": 137
+      "test_count": 134
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 73,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 95,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 100,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 103,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 106,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 108,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 111,
-      "test_count": 136
+      "test_count": 133
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "line": 114,
-      "test_count": 135
+      "test_count": 132
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 108,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 109,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 110,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 111,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 112,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 114,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 119,
-      "test_count": 129
+      "test_count": 122
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "line": 120,
-      "test_count": 129
+      "test_count": 122
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 72,
+      "test_count": 120
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 73,
+      "test_count": 120
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 74,
+      "test_count": 120
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 76,
+      "test_count": 120
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 77,
+      "test_count": 120
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 79,
+      "test_count": 120
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 75,
+      "test_count": 119
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "line": 80,
+      "test_count": 119
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "line": 88,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 89,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 92,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 93,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 96,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 97,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 98,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 99,
-      "test_count": 127
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "line": 102,
-      "test_count": 127
+      "test_count": 118
     }
   ],
   "top_blocks": [
@@ -305,210 +305,210 @@
       "file": "src\\calibrated_explanations\\utils\\exceptions.py",
       "start_line": 33,
       "end_line": 34,
-      "test_count": 193,
+      "test_count": 191,
       "length": 2
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 72,
       "end_line": 72,
-      "test_count": 137,
+      "test_count": 134,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 82,
       "end_line": 83,
-      "test_count": 137,
+      "test_count": 134,
       "length": 2
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 73,
       "end_line": 73,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 95,
       "end_line": 95,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 100,
       "end_line": 100,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 103,
       "end_line": 103,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 106,
       "end_line": 106,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 108,
       "end_line": 108,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 111,
       "end_line": 111,
-      "test_count": 136,
+      "test_count": 133,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\utils\\helper.py",
       "start_line": 114,
       "end_line": 114,
-      "test_count": 135,
+      "test_count": 132,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "start_line": 108,
       "end_line": 112,
-      "test_count": 129,
+      "test_count": 122,
       "length": 5
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "start_line": 114,
       "end_line": 114,
-      "test_count": 129,
+      "test_count": 122,
       "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\registry.py",
       "start_line": 119,
       "end_line": 120,
-      "test_count": 129,
+      "test_count": 122,
       "length": 2
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "start_line": 72,
+      "end_line": 74,
+      "test_count": 120,
+      "length": 3
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "start_line": 76,
+      "end_line": 77,
+      "test_count": 120,
+      "length": 2
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "start_line": 79,
+      "end_line": 79,
+      "test_count": 120,
+      "length": 1
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "start_line": 75,
+      "end_line": 75,
+      "test_count": 119,
+      "length": 1
+    },
+    {
+      "file": "src\\calibrated_explanations\\logging.py",
+      "start_line": 80,
+      "end_line": 80,
+      "test_count": 119,
+      "length": 1
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 88,
       "end_line": 89,
-      "test_count": 127,
+      "test_count": 118,
       "length": 2
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 92,
       "end_line": 93,
-      "test_count": 127,
+      "test_count": 118,
       "length": 2
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 96,
       "end_line": 99,
-      "test_count": 127,
+      "test_count": 118,
       "length": 4
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 102,
       "end_line": 104,
-      "test_count": 127,
+      "test_count": 118,
       "length": 3
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 107,
       "end_line": 110,
-      "test_count": 127,
+      "test_count": 118,
       "length": 4
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 113,
       "end_line": 115,
-      "test_count": 127,
+      "test_count": 118,
       "length": 3
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 117,
       "end_line": 119,
-      "test_count": 127,
+      "test_count": 118,
       "length": 3
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 121,
       "end_line": 123,
-      "test_count": 127,
+      "test_count": 118,
       "length": 3
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 125,
       "end_line": 128,
-      "test_count": 127,
+      "test_count": 118,
       "length": 4
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 130,
       "end_line": 132,
-      "test_count": 127,
+      "test_count": 118,
       "length": 3
     },
     {
       "file": "src\\calibrated_explanations\\plugins\\manager.py",
       "start_line": 136,
       "end_line": 136,
-      "test_count": 127,
-      "length": 1
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "start_line": 139,
-      "end_line": 144,
-      "test_count": 127,
-      "length": 6
-    },
-    {
-      "file": "src\\calibrated_explanations\\plugins\\manager.py",
-      "start_line": 147,
-      "end_line": 149,
-      "test_count": 127,
-      "length": 3
-    },
-    {
-      "file": "src\\calibrated_explanations\\logging.py",
-      "start_line": 72,
-      "end_line": 77,
-      "test_count": 126,
-      "length": 6
-    },
-    {
-      "file": "src\\calibrated_explanations\\logging.py",
-      "start_line": 79,
-      "end_line": 80,
-      "test_count": 126,
-      "length": 2
-    },
-    {
-      "file": "src\\calibrated_explanations\\core\\config_helpers.py",
-      "start_line": 220,
-      "end_line": 220,
-      "test_count": 123,
+      "test_count": 118,
       "length": 1
     }
   ]

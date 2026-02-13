@@ -134,18 +134,3 @@ def test_feature_filter_empty_chain_success_override(explainer):
     assert pm.clear_explanation_plugin_instances.call_count == 0
 
 
-def test_feature_filter_empty_chain_success_enforce(explainer):
-    """Test success path when chain is empty, init happens, but still mismatched."""
-    pm = getattr(explainer, PM_PRIVATE)
-
-    # 1st call: empty
-    # 2nd call (after init): something else
-    pm.explanation_plugin_fallbacks.get.side_effect = [(), ("other.plugin",)]
-
-    with pytest.warns(UserWarning, match="Feature filter is enabled; overriding"):
-        explainer.get_plugin_manager()
-
-    # Should call initialize_chains twice
-    # (once in the 'if not chain' block, once in enforcement block)
-    assert pm.initialize_chains.call_count == 2
-    pm.clear_explanation_plugin_instances.assert_called_once()

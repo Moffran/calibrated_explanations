@@ -23,27 +23,7 @@ class TestPluginManagerInitialization:
 class TestPluginManagerInitializeFromKwargs:
     """Tests for initialize_from_kwargs method."""
 
-    def test_initialize_plot_override(self):
-        """should_initialize_plot_style_override_from_kwargs."""
-        mock_explainer = Mock()
-        manager = PluginManager(mock_explainer)
 
-        kwargs = {"plot_style": "my_style"}
-        manager.initialize_from_kwargs(kwargs)
-
-        assert manager.plot_style_override == "my_style"
-
-    def test_initialize_missing_overrides_remain_none(self):
-        """should_keep_overrides_none_when_not_in_kwargs."""
-        mock_explainer = Mock()
-        manager = PluginManager(mock_explainer)
-
-        kwargs = {}
-        manager.initialize_from_kwargs(kwargs)
-
-        assert manager.interval_plugin_override is None
-        assert manager.fast_interval_plugin_override is None
-        assert manager.plot_style_override is None
 
 
 class TestCoercePluginOverride:

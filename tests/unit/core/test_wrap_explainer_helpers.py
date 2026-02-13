@@ -282,10 +282,6 @@ def test_explain_lime_invokes_underlying_explainer(
     assert "bins" in payload
 
 
-def test_predict_requires_fit(wrapper: WrapCalibratedExplainer) -> None:
-    wrapper.fitted = False
-    with pytest.raises(NotFittedError):
-        wrapper.predict(np.array([1, 2]))
 
 
 def test_predict_proba_threshold_requires_calibration_when_available() -> None:

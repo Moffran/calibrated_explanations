@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/c/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/**)"
+    ]
+  }
+}

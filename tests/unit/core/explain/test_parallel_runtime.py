@@ -50,22 +50,6 @@ class TestExplainParallelRuntime:
 
 
 
-    def test_from_explainer_auto_creates_executor(self):
-        """Test that a ParallelExecutor is created if the explainer doesn't have one."""
-        explainer = MagicMock()
-        # Ensure attributes are missing/None
-        explainer.parallel_executor = None
-        explainer.executor = None
-        # We assume _perf_parallel is not in __dict__ by default for a fresh mock
-        explainer.min_instances_for_parallel = None
-
-        runtime = ExplainParallelRuntime.from_explainer(explainer)
-
-        assert runtime.executor is not None
-        assert isinstance(runtime.executor, ParallelExecutor)
-        # Verify test-friendly defaults
-        assert runtime.executor.config.granularity == "instance"
-        assert runtime.min_instances_for_parallel == 1
 
     def test_worker_init_sets_module_global(self):
         """Test that worker init populates the module-level explain_slice."""
@@ -141,44 +125,3 @@ class TestExplainParallelRuntime:
             mock_seq_cls.assert_called()
             mock_executor_instance.execute.assert_called_once()
 
-    def test_build_explain_execution_plan(self):
-        from calibrated_explanations.core.explain.parallel_runtime import (
-            build_explain_execution_plan,
-            ExplainParallelRuntime,
-        )
-
-        explainer = MagicMock()
-        explainer.num_features = 2
-        explainer.features_to_ignore = []
-        explainer.categorical_features = []
-        explainer.parallel_executor = None
-        explainer.executor = None
-
-        # x input
-        x = [[1, 2]]
-
-        # Request object
-        request = MagicMock()
-        # Ensure mocks are traversable
-        request.features_to_ignore = []
-        request.threshold = 0.5
-        request.low_high_percentiles = (5, 95)
-        request.bins = None
-        request.feature_filter_per_instance_ignore = None
-
-        # Mock validate_and_prepare_input from _helpers
-        with (
-            patch(
-                "calibrated_explanations.core.explain.parallel_runtime.validate_and_prepare_input",
-                return_value=np.array(x),
-            ),
-            patch(
-                "calibrated_explanations.core.explain.parallel_runtime.merge_ignore_features",
-                return_value=np.array([]),
-            ),
-        ):
-            req, cfg, run = build_explain_execution_plan(explainer, x, request)
-
-            np.testing.assert_array_equal(req.x, np.array(x))
-            assert cfg.num_features == 2
-            assert isinstance(run, ExplainParallelRuntime)

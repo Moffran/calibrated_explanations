@@ -187,30 +187,3 @@ def test_binary_predict_rounds_probabilities():
     assert low.shape == high.shape == (2,)
 
 
-def test_predict_function_without_bins_argument_scales_binary_difficulty():
-    """Binary calibration uses the difficulty estimator when bins are unsupported."""
-
-    x_cal = np.array([[0.0], [1.0], [2.0]])
-    y_cal = np.array([0, 1, 0])
-
-    def predict_without_bins(x):
-        base = np.array([[0.55, 0.45], [0.40, 0.60], [0.35, 0.65]])
-        repeats = int(np.ceil(len(x) / len(base)))
-        tiled = np.vstack([base] * repeats)
-        return tiled[: len(x)]
-
-    difficulty = DifficultyEstimator(np.array([0.3, 0.6, 0.2]))
-
-    calibrator = VennAbers(
-        x_cal,
-        y_cal,
-        learner=DummyLearner(np.array([[0.6, 0.4], [0.4, 0.6]])),
-        difficulty_estimator=difficulty,
-        predict_function=predict_without_bins,
-    )
-
-    baseline = predict_without_bins(x_cal)
-    assert not np.allclose(calibrator.cprobs, baseline)
-
-    probs = calibrator.predict_proba(np.array([[3.0], [4.0]]))
-    assert probs.shape == (2, 2)

@@ -17,17 +17,6 @@ def test_infer_task_from_model_like():
     assert validation.infer_task(model=C()) == "classification"
 
 
-@pytest.mark.parametrize(
-    "labels, expected",
-    [
-        (np.array([0, 1, 0]), "classification"),
-        (np.array([1.2, 3.4, 5.6]), "regression"),
-    ],
-)
-def test_infer_task_from_labels(labels, expected):
-    assert validation.infer_task(y=labels) == expected
-
-
 def test_validate_not_none_and_non_empty_errors():
     with pytest.raises(validation.ValidationError):
         validation.validate_not_none(None, "param")
@@ -111,19 +100,11 @@ def test_validate_inputs_matrix_supports_frame_like_objects(monkeypatch):
     assert recorded["args"] == (x, y, None)
 
 
-def test_validate_inputs_matrix_accepts_none_y_when_optional():
-    validation.validate_inputs_matrix(np.zeros((2, 2)))
 
 
 # ============================================================================
 # ADR-002 Contract Tests: validate_inputs() Signature Compliance
 # ============================================================================
-
-
-def test_validate_inputs_adr002_signature_accepts_2d_array():
-    """Verify validate_inputs() accepts x parameter (2D array)."""
-    x = np.array([[1.0, 2.0], [3.0, 4.0]])
-    validation.validate_inputs(x)  # Should not raise
 
 
 def test_validate_inputs_adr002_signature_requires_2d_x():

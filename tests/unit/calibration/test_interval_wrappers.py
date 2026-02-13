@@ -64,8 +64,3 @@ def test_fast_interval_calibrator__should_delegate_to_default_calibrator():
 
 
 
-def test_is_fast_interval_collection__should_return_true_for_supported_types():
-    assert is_fast_interval_collection([]) is True
-    assert is_fast_interval_collection(()) is True
-    assert is_fast_interval_collection(FastIntervalCalibrator([object()])) is True
-    assert is_fast_interval_collection(object()) is False

@@ -35,34 +35,6 @@ class TestCliCoverage:
         assert coerce_string_tuple([" a ", ""]) == ("a",)  # stripped
 
 
-    @patch("calibrated_explanations.plugins.cli.list_explanation_descriptors")
-    def test_cmd_list_explanations(self, mock_list, capsys):
-        """Test listing explanations."""
-        args = Mock()
-        args.kind = "explanations"
-        args.trusted_only = False
-        args.verbose = False
-        args.plots = False
-        args.include_skipped = False
-
-        # Mock descriptor
-        desc = Mock()
-        desc.identifier = "test.explainer"
-        desc.metadata = {
-            "name": "Test Explainer",
-            "modes": ["classification"],
-            "tasks": ["binary"],
-            "fallbacks": [],
-        }
-        desc.trusted = True
-
-        mock_list.return_value = [desc]
-
-        exit_code = cmd_list(args)
-        assert exit_code == 0
-        captured = capsys.readouterr()
-        assert "Explanation plugins" in captured.out
-        assert "test.explainer" in captured.out
 
 
     @patch("calibrated_explanations.plugins.cli.list_plot_renderer_descriptors")

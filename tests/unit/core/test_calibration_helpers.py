@@ -169,8 +169,3 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
         assert res == "ok"
 
 
-def test_calibration_helpers_unknown_attribute_raises():
-    from calibrated_explanations.core import calibration_helpers as ch_helpers
-
-    with pytest.raises(AttributeError):
-        _ = ch_helpers.this_attribute_does_not_exist

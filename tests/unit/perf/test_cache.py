@@ -163,60 +163,6 @@ def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) ->
     assert config_enabled.enabled is True
 
 
-def test_cache_forksafe_reset_clears_state_and_emits_telemetry() -> None:
-    events: list[tuple[str, dict[str, object]]] = []
-
-    def telemetry(event: str, payload: dict[str, object]) -> None:
-        events.append((event, payload))
-
-    cache = LRUCache[str, str](
-        namespace="telemetry",
-        version="v1",
-        max_items=4,
-        max_bytes=64,
-        ttl_seconds=None,
-        telemetry=telemetry,
-        size_estimator=lambda value: len(value.encode("utf8")),
-    )
-
-    cache.set("alpha", "payload")
-    assert cache.get("alpha") == "payload"
-
-    cache.forksafe_reset()
-    assert cache.get("alpha") is None
-    assert cache.metrics.resets == 1
-    assert any(
-        event == "cache_reset"
-        and payload["namespace"] == "telemetry"
-        and payload["reason"] == "forksafe"
-        for event, payload in events
-    )
-
-
-
-
-
-
-def test_cache_telemetry_errors_do_not_raise() -> None:
-    def noisy(event: str, payload: dict[str, object]) -> None:
-        raise RuntimeError(f"fail {event} {payload}")
-
-    cache = LRUCache[str, int](
-        namespace="errors",
-        version="v1",
-        max_items=2,
-        max_bytes=None,
-        ttl_seconds=None,
-        telemetry=noisy,
-        size_estimator=lambda _: 1,
-    )
-
-    cache.set("key", 1)
-    assert cache.metrics.sets == 1
-    assert cache.get("key") == 1
-    assert cache.metrics.hits == 1
-
-
 def test_lru_cache_updates_existing_and_enforces_limits() -> None:
     events: List[str] = []
 

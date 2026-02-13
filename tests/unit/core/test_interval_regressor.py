@@ -222,16 +222,6 @@ def test_predict_probability_rejects_mismatched_bin_length(monkeypatch):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
-def test_predict_uncertainty_uses_interval_outputs(monkeypatch):
-    regressor = make_regressor(monkeypatch)
-    x = np.array([[0.3, 0.2]])
-
-    median, low, high, extra = regressor.predict_uncertainty(x, low_high_percentiles=(5, 95))
-
-    assert np.allclose(median, 0.5)
-    assert np.allclose(low, -2.0)
-    assert np.allclose(high, 1.0)
-    assert extra is None
 
 
 def test_insert_calibration_requires_bins_when_existing_none(monkeypatch):
@@ -255,42 +245,6 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
 
 
-def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
-    """Verify fallback import mechanism for safe_first_element when relative import fails.
-
-    Note: With the refactored structure where interval_regressor lives in the top-level
-    calibration package (not core.calibration), the relative import from ..utils.helper
-    now resolves correctly and doesn't require fallback. This test validates that
-    safe_first_element is called correctly in the new structure.
-    """
-    regressor = make_regressor(monkeypatch)
-    regressor.split["cps"].predict_queue = [0.4, 0.6]
-    x = np.array([[0.5, 0.1], [0.6, 0.2]])
-    thresholds = np.array([0.3, 0.7])
-
-    calls: list[tuple[int | None, float]] = []
-    original_safe_first = utils_module.safe_first_element
-
-    def tracking_safe_first(values, default=0.0, col=None):
-        result = original_safe_first(values, default=default, col=col)
-        calls.append((col, result))
-        return result
-
-    monkeypatch.setattr(
-        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
-        tracking_safe_first,
-        raising=False,
-    )
-
-    proba, _, _, _ = regressor.predict_probability(x, y_threshold=thresholds)
-
-    assert np.allclose(proba, 0.7)
-    # With the new structure, the relative import succeeds correctly from calibration/utils.
-    # Verify that safe_first_element is still called the expected number of times.
-    assert len(calls) == thresholds.size * 3
-    for offset in range(0, len(calls), 3):
-        cols = [calls[offset + i][0] for i in range(3)]
-        assert cols == [1, None, None]
 
 
 

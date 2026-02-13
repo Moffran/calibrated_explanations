@@ -1,5 +1,57 @@
 # Final Remedy Plan: Test Quality Improvement (Fact-Based)
 
+## 2026-02-13 Execution Update (Current)
+
+- Applied aggressive zero-unique pruning batch from `per_test_summary.csv` (`|run` contexts only), then iteratively kept only the removals that remained compatible with the 90% gate.
+- Added targeted high-quality gap-closers instead of reintroducing low-value padding:
+  - `tests/unit/testing/test_parity_compare.py`
+  - `tests/unit/core/test_logging_context.py`
+  - `tests/unit/test_ce_agent_utils.py`
+  - `tests/unit/core/test_serialization_invariants_extra.py`
+- Re-ran full method verification:
+  - `pytest --cov-fail-under=90` -> **PASS**, total coverage **90.00%** (`968 passed, 1 skipped`)
+  - `python scripts/over_testing/run_over_testing_pipeline.py` -> **PASS**
+  - `python scripts/over_testing/extract_per_test.py` -> **PASS**
+  - `python scripts/over_testing/detect_redundant_tests.py` -> **PASS**
+
+### Current measured outcomes
+
+| Metric | Value |
+|---|---|
+| Coverage gate | **90.00% PASS** |
+| Per-test contexts | **1054** |
+| Zero-unique `|run` tests | **98** |
+| `<5` unique `|run` tests | **560** |
+| Exact duplicate groups | **19** |
+| Subset redundancy groups | **69** |
+| Potential redundant tests (report) | **361** |
+| Net removed test defs in this execution | **47** |
+
+## 2026-02-13 Execution Update (Additional Iteration)
+
+- Completed an additional over-testing reduction pass concentrated on low-signal redundant `|run` contexts and retained only changes compatible with the hard 90% coverage gate.
+- Removed four redundant tests (all mapped by subset redundancy report) from:
+  - `tests/plugins/test_cli_additional.py`
+  - `tests/unit/utils/test_deprecations_helper.py`
+  - `tests/unit/test_ce_agent_utils.py`
+  - `tests/unit/core/test_validation_unit.py`
+- Kept `tests/plugins/test_cli.py::test_cmd_list_intervals_empty` to preserve gate stability after attempted removal (coverage dipped to 89.98% without it).
+- Re-verified end-to-end:
+  - `pytest --cov=src/calibrated_explanations --cov-context=test --cov-fail-under=90` -> **PASS** (`954 passed, 1 skipped`, **90.00%**)
+  - `python scripts/over_testing/run_over_testing_pipeline.py` -> **PASS**
+  - `python scripts/over_testing/extract_per_test.py` -> **PASS**
+  - `python scripts/over_testing/detect_redundant_tests.py` -> **PASS**
+
+### Measured outcomes (additional iteration)
+
+| Metric | Value |
+|---|---|
+| Per-test contexts | **1038** |
+| Exact duplicate groups | **18** |
+| Subset redundancy groups | **56** |
+| Potential redundant tests (report) | **345** |
+| Redundant `|run` contexts (in report) | **44** |
+
 > Consolidated from: pruner, deadcode-hunter, process-architect, and devils-advocate analyses.
 > Updated with **verified multi-context coverage data** (2,967 contexts, run 2026-02-12).
 >

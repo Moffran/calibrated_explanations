@@ -41,22 +41,7 @@ class TestIntervalCalibratorContextPickle:
 
 
 # ---------------------------------------------------------------------------
-# 2. SequentialExplainExecutor properties  (~2 coverage items)
-#    Covers lines 58 and 63 (name and priority returns)
-# ---------------------------------------------------------------------------
-from calibrated_explanations.core.explain.sequential import SequentialExplainExecutor
-
-
-class TestSequentialExplainExecutorProperties:
-    """Test that the sequential executor advertises correct identity."""
-
-    def test_priority(self):
-        executor = SequentialExplainExecutor()
-        assert executor.priority == 10
-
-
-# ---------------------------------------------------------------------------
-# 3. ConjunctionState normalization via public API  (~8 coverage items)
+# 2. ConjunctionState normalization via public API  (~8 coverage items)
 #    Exercises get_normalization_key which internally calls the
 #    normalize helpers, covering lines 203-213, 220-221.
 # ---------------------------------------------------------------------------
@@ -81,10 +66,6 @@ class TestConjunctionStateNormalization:
         assert len(key) == 2
 
 
-    def test_normalization_key_dedupe_by_feature_only(self):
-        s = self.make_state(dedupe_by_feature_only=True)
-        key = s.get_normalization_key(0, [1.0, 2.0])
-        assert key == (0,)
 
     def test_normalization_key_with_scalar_int_value(self):
         s = self.make_state()
@@ -93,7 +74,7 @@ class TestConjunctionStateNormalization:
 
 
 # ---------------------------------------------------------------------------
-# 4. schema/validation.py edge cases  (~5+ coverage items)
+# 3. schema/validation.py edge cases  (~5+ coverage items)
 #    Covers lines 72, 76-79, 109 (validation error paths)
 # ---------------------------------------------------------------------------
 import calibrated_explanations.schema.validation as schema_mod
@@ -125,12 +106,6 @@ class TestSchemaValidationBuiltinFallback:
     """Test built-in structural validation paths (when jsonschema is absent)."""
 
 
-    def test_missing_required_key_raises(self, monkeypatch):
-        monkeypatch.setattr(schema_mod, "jsonschema", None)
-        payload = make_valid_payload()
-        del payload["task"]
-        with pytest.raises(ValidationError, match="Missing required"):
-            validate_payload(payload)
 
     def test_non_integer_index_raises(self, monkeypatch):
         monkeypatch.setattr(schema_mod, "jsonschema", None)
@@ -148,7 +123,3 @@ class TestSchemaValidationBuiltinFallback:
             validate_payload(make_valid_payload(rules=["not_a_dict"]))
 
 
-    def test_prediction_not_mapping_raises(self, monkeypatch):
-        monkeypatch.setattr(schema_mod, "jsonschema", None)
-        with pytest.raises(ValidationError, match="must be an object"):
-            validate_payload(make_valid_payload(prediction="not_a_dict"))

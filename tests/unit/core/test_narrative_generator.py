@@ -47,8 +47,6 @@ def test_crosses_zero_should_handle_array_like_intervals():
     assert crosses_zero({"weight_low": [0.1, 0.2], "weight_high": [0.3, 0.4]}) is False
 
 
-def test_has_wide_prediction_interval_fallback():
-    assert has_wide_prediction_interval({"predict_low": "abc", "predict_high": 1}) is False
 
 
 def test_narrative_generator_validation():

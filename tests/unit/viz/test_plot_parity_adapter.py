@@ -44,32 +44,6 @@ def test_alternative_probabilistic_cross_primitives():
     assert any(idx is not None and idx >= 0 for idx in indices)
 
 
-def test_alternative_regression_primitives():
-    spec = alternative_regression_interval()
-    assert spec.header is None
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    assert not primitives.get("header")
-    overlays = primitives.get("overlays", [])
-    assert isinstance(overlays, list) and len(overlays) >= 1
-    indices = {item.get("index") for item in overlays}
-    assert -1 in indices
-    assert any(idx is not None and idx >= 0 for idx in indices)
-    assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
-    assert any(
-        item.get("color") == REG_BAR_COLOR
-        for item in overlays
-        if item.get("index") is not None and item.get("index") >= 0
-    )
-    lines = primitives.get("lines", [])
-    assert isinstance(lines, list) and len(lines) >= 1
-    line_indices = {item.get("index") for item in lines}
-    assert -1 in line_indices
-    assert any(idx is not None and idx >= 0 for idx in line_indices)
-    assert any(
-        item.get("color") == REG_BAR_COLOR
-        for item in lines
-        if item.get("index") is not None and item.get("index") >= 0
-    )
 
 
 

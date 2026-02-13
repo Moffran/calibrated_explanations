@@ -196,14 +196,6 @@ def test_calculate_metrics_behaviour():
         helper.calculate_metrics(uncertainty, prediction, w=2)
 
 
-def test_convert_targets_to_numeric_handles_strings_and_numeric():
-    numeric, mapping = helper.convert_targets_to_numeric(np.array(["cat", "dog"]))
-    assert list(numeric) == [0, 1]
-    assert mapping == {"cat": 0, "dog": 1}
-
-    arr, mapping_none = helper.convert_targets_to_numeric(np.array([1, 2, 3]))
-    assert mapping_none is None
-    assert list(arr) == [1, 2, 3]
 
 
 def test_concatenate_thresholds_handles_tuples_and_lists():

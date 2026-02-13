@@ -40,21 +40,24 @@ def test_should_coerce_bool_with_various_inputs(monkeypatch):
     assert coerce_bool("random") is False
 
 
-def test_update_logging_context_ignores_unknown_keys():
-    update_logging_context(request_id="abc", unknown_field="ignored")
+def test_update_logging_context_ignores_unknown_keys_and_context_manager_noop_for_unknown():
+    update_logging_context(request_id=None, tenant_id=None, explainer_id=None)
 
-    context = get_logging_context()
-    assert context["request_id"] == "abc"
-    assert "unknown_field" not in context
+    update_logging_context(request_id="req-1", unknown_key="ignored")
+    ctx = get_logging_context()
+    assert ctx["request_id"] == "req-1"
+    assert "unknown_key" not in ctx
+
+    with logging_context(unknown_key="ignored"):
+        assert get_logging_context()["request_id"] == "req-1"
+
+    assert get_logging_context()["request_id"] == "req-1"
 
 
-def test_logging_context_temporarily_overrides_and_resets():
-    update_logging_context(request_id="outer")
 
-    with logging_context(request_id="inner"):
-        assert get_logging_context()["request_id"] == "inner"
 
-    assert get_logging_context()["request_id"] == "outer"
+
+
 
 
 

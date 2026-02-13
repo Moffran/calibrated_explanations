@@ -120,14 +120,6 @@ def test_plot_warnings_on_one_sided_and_empty(monkeypatch):
         assert True
 
 
-def test_register_builtin_fast_plugins_registers_interval(monkeypatch):
-    # Force find_interval_descriptor to return None so builtin registration runs
-    monkeypatch.setattr(builtins, "find_interval_descriptor", lambda ident: None)
-    # Call the public registration helper which will register builtins
-    builtins.register_builtins()
-    # After registration, registry should have the interval descriptor
-    desc = registry.find_interval_descriptor("core.interval.fast")
-    assert desc is not None
 
 
 def test_cli_cmd_explain_interval_branches(monkeypatch, capsys):

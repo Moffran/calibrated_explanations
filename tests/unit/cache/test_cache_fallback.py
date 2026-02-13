@@ -78,19 +78,6 @@ def test_cache_fallback_logic():
         del sys.modules["calibrated_explanations.cache.cache"]
 
 
-def test_hash_part_should_produce_stable_hashable_keys():
-    """hash_part should normalize complex inputs into stable hashable values."""
-    payload = {
-        "array": np.array([1, 2, 3], dtype=int),
-        "mapping": {"b": 2, "a": 1},
-        "set": {"x", "y"},
-    }
-
-    first = hash_part(payload)
-    second = hash_part(payload)
-
-    assert first == second
-    assert isinstance(first, tuple)
 
 
 def test_make_key_should_include_namespace_version_and_parts():

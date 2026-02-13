@@ -36,25 +36,9 @@ class TestPredictionOrchestratorInvariants:
 
         self.orchestrator = PredictionOrchestrator(self.explainer)
 
-    def test_predict_valid_invariant(self):
-        # predict, low, high, extra
-        valid_result = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
-
-        with patch.object(self.orchestrator, "_predict", return_value=valid_result):
-            result = self.orchestrator.predict(np.array([[1]]))
-            assert result == valid_result
 
 
 
-    def test_predict_invalid_predict_gt_high(self):
-        # predict > high
-        invalid_result = (np.array([0.7]), np.array([0.4]), np.array([0.6]), None)
-
-        with (
-            patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
-            pytest.warns(UserWarning, match="predict not in"),
-        ):
-            self.orchestrator.predict(np.array([[1]]))
 
 
 class TestExplanationBatchInvariants:

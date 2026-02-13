@@ -519,21 +519,6 @@ def test_plot_spec_builder_unsupported_intent():
 
 
 
-def test_plot_spec_renderer_without_save(monkeypatch: pytest.MonkeyPatch):
-    renderer = PlotSpecDefaultRenderer()
-
-    def fake_render(artifact: Dict[str, Any], *, show: bool, save_path: str | None) -> None:
-        if save_path == "bad":
-            raise RuntimeError("boom")
-
-    monkeypatch.setattr(
-        "calibrated_explanations.viz.matplotlib_adapter.render",
-        fake_render,
-        raising=False,
-    )
-    ctx = make_local_plot_context(save_ext=None, path=None, show=False)
-    result = renderer.render({"spec": 1}, context=ctx)
-    assert result.saved_paths == ()
 
 
 def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch):
@@ -552,21 +537,3 @@ def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch
         renderer.render({"spec": 1}, context=ctx)
 
 
-def test_register_builtins_imports_fast_plugins(monkeypatch: pytest.MonkeyPatch):
-    calls: list[str] = []
-
-    fake_module = ModuleType("external_plugins.fast_explanations")
-
-    def fake_register():
-        calls.append("register")
-
-    fake_module.register = fake_register
-    monkeypatch.setitem(sys.modules, "external_plugins.fast_explanations", fake_module)
-    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_style", lambda *args, **kwargs: None)
-
-    register_builtins()
-    assert calls == ["register"]

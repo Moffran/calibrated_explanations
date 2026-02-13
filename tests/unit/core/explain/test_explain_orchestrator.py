@@ -240,23 +240,8 @@ def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
 
 
 
-def test_check_metadata_valid(orchestrator, mock_explainer):
-    """Test _check_metadata with valid metadata."""
-    from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-
-    metadata = {
-        "schema_version": EXPLANATION_PROTOCOL_VERSION,
-        "tasks": ("classification",),
-        "modes": ("factual",),
-        "capabilities": ("explain", "explanation:factual", "task:classification"),
-    }
-    assert orchestrator.check_metadata(metadata, identifier="test", mode="factual") is None
 
 
-def test_check_metadata_invalid_version(orchestrator):
-    """Test _check_metadata with invalid version."""
-    metadata = {"schema_version": -1}
-    assert "unsupported" in orchestrator.check_metadata(metadata, identifier="test", mode="factual")
 
 
 def test_check_metadata_missing_tasks(orchestrator):

@@ -62,29 +62,6 @@ def testplot_alternative_thresholded_writes_file(tmp_path):
 
 
 
-def testplot_alternative_early_noop_when_not_saving():
-    # if not showing and save_ext is None, function returns early without matplotlib
-    expl = FakeExplanation(mode="regression")
-    feature_predict = {
-        "predict": np.array([0.2]),
-        "low": np.array([0.1]),
-        "high": np.array([0.3]),
-    }
-    # should not raise even if matplotlib not available because save_ext is None
-    _plots.plot_alternative(
-        explanation=expl,
-        instance=[1],
-        predict={"predict": 0.6, "low": 0.5, "high": 0.7},
-        feature_predict=feature_predict,
-        features_to_plot=[0],
-        num_to_show=1,
-        column_names=["a"],
-        title="noop",
-        path=None,
-        show=False,
-        save_ext=None,
-        use_legacy=False,
-    )
 
 
 

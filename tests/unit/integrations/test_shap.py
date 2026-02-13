@@ -74,20 +74,6 @@ def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.Monke
 
 
 
-@pytest.mark.parametrize("x_cal_value", [None, np.empty((0, 2)), object()])
-def test_should_return_none_when_calibration_data_unusable(
-    x_cal_value, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Unset, empty, or non-sized calibration data should disable SHAP wiring."""
-    helper = ShapHelper(explainer=DummyExplainer(x_cal_value))
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: FakeShap())
-
-    explainer, reference = helper.preload()
-
-    assert explainer is None
-    assert reference is None
-
-
 def test_should_build_and_cache_explainer_when_shap_available(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -113,3 +99,39 @@ def test_should_build_and_cache_explainer_when_shap_available(
 
     assert cached_same_shape == (explainer, reference)
     assert cached_default == (explainer, reference)
+
+
+@pytest.mark.parametrize(
+    "x_cal",
+    [
+        None,
+        np.empty((0, 2)),
+        object(),
+    ],
+)
+def test_preload_returns_none_for_unusable_calibration_data(
+    monkeypatch: pytest.MonkeyPatch,
+    x_cal,
+) -> None:
+    """Unusable calibration payloads should short-circuit without building SHAP explainers."""
+    helper = ShapHelper(explainer=DummyExplainer(x_cal))
+    monkeypatch.setattr(shap_module, "safe_import", lambda _name: FakeShap())
+
+    explainer, reference = helper.preload()
+
+    assert explainer is None
+    assert reference is None
+    assert helper.enabled is False
+
+
+def test_legacy_aliases_delegate_to_enabled_state() -> None:
+    helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
+
+    assert helper.isenabled() is False
+
+    helper.setenabled(True)
+    assert helper.is_enabled() is True
+    assert helper.isenabled() is True
+
+    helper.setenabled(False)
+    assert helper.is_enabled() is False

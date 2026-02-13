@@ -144,14 +144,6 @@ class StubExplainer:
         return {"rule": "boundaries", "shape": np.asarray(x_perturbed).shape}
 
 
-def test_validate_and_prepare_input_reshapes_vector():
-    explainer = StubExplainer(num_features=3)
-    vector = np.array([1.0, 2.0, 3.0])
-
-    prepared = ph.validate_and_prepare_input(explainer, vector)
-
-    assert prepared.shape == (1, 3)
-    assert isinstance(prepared, np.ndarray)
 
 
 def test_validate_and_prepare_input_rejects_wrong_width():
@@ -282,24 +274,6 @@ def test_format_regression_prediction_handles_thresholds():
     assert isinstance(interval_result, tuple)
 
 
-def test_format_classification_prediction_maps_labels():
-    predict = np.array([0.6, 0.4])
-    low = np.zeros_like(predict)
-    high = np.ones_like(predict)
-    new_classes = None
-    class_labels = np.array(["neg", "pos"])
-
-    mapped = ph.format_classification_prediction(
-        predict,
-        low,
-        high,
-        new_classes,
-        is_multiclass_val=False,
-        class_labels=class_labels,
-        uq_interval=True,
-    )
-    assert isinstance(mapped, tuple)
-    assert mapped[0].tolist() == ["pos", "neg"]
 
 
 def test_handle_uncalibrated_regression_prediction():

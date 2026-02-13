@@ -134,12 +134,6 @@ class TestIsPolicyEnabled:
 class TestEdgeCases:
     """Test edge cases for reject policy handling."""
 
-    def test_empty_input_array(self, mock_orchestrator):
-        """Empty input should be handled gracefully."""
-        explain_fn = make_explain_fn()
-        result = mock_orchestrator.apply_policy(RejectPolicy.FLAG, x=[], explain_fn=explain_fn)
-
-        assert isinstance(result, RejectResult)
         # Empty input should still produce a result envelope
 
     def test_all_rejected_scenario_explain_non_rejects_returns_none_explanation(self):

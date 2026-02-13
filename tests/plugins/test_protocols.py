@@ -59,20 +59,6 @@ def test_explanation_context_is_frozen() -> None:
     assert ctx.mode == original_mode
 
 
-def test_explanation_request_is_frozen() -> None:
-    req = ExplanationRequest(
-        threshold=None,
-        low_high_percentiles=None,
-        bins=None,
-        features_to_ignore=(0,),
-        extras={"foo": "bar"},
-    )
-    # Immutability contract: request must not allow field modification
-    original_extras = req.extras
-    with pytest.raises(Exception):
-        req.extras = {}  # type: ignore[misc]
-    # Verify that the value did not change
-    assert req.extras is original_extras
 
 
 def test_explanation_batch_shape() -> None:

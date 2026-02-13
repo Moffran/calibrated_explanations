@@ -156,16 +156,5 @@ class TestParallelExecutor:
         assert results == [2, 4, 6]
         assert call_order == [1, 2, 3]
 
-    def test_auto_strategy_with_environment_override(self, clean_env):
-        """Test that auto strategy respects forced overrides via environment."""
-        os.environ["CE_PARALLEL"] = "enable,workers=4"
-        cfg = ParallelConfig.from_env()
-        assert cfg.enabled
-        assert cfg.max_workers == 4
 
-    def test_max_workers_environment_override(self, clean_env):
-        """Test max_workers can be set via environment variable."""
-        os.environ["CE_PARALLEL"] = "workers=6"
-        cfg = ParallelConfig.from_env()
-        assert cfg.max_workers == 6
 

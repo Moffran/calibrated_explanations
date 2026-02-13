@@ -45,34 +45,6 @@ def capture_builder_kwargs(store: dict[str, Any]) -> Callable[..., dict[str, Any
     return builder
 
 
-def test_plot_alternative__should_normalize_features_to_plot_when_mixed_inputs(monkeypatch):
-    captured: dict[str, Any] = {}
-    import calibrated_explanations.viz.builders as builders
-
-    monkeypatch.setattr(
-        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
-    )
-
-    explanation = DummyExplanation(mode="classification", thresholded=False)
-
-    _ = plotting.plot_alternative(
-        explanation,
-        instance=[0.0],
-        predict={"predict": 0.2, "low": 0.1, "high": 0.3},
-        feature_predict=[0.1, 0.2, 0.3],
-        features_to_plot=["0", -1, "bad", 2.7],
-        num_to_show=5,
-        column_names=None,
-        title="T",
-        path=None,
-        show=False,
-        save_ext=None,
-        use_legacy=False,
-        return_plot_spec=True,
-    )
-
-    assert captured["features_to_plot"] == [0, 2]
-    assert captured["column_names"] == ["0", "1", "2"]
 
 
 def test_plot_alternative__should_default_features_to_plot_when_none_and_feature_count(monkeypatch):

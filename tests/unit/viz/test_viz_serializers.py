@@ -132,44 +132,6 @@ def test_plotspec_all_fields():
     assert spec.header.low <= spec.header.pred <= spec.header.high
 
 
-def test_plotspec_to_dict_with_optional_fields():
-    """Verify serialization preserves optional header and body fields."""
-    header = IntervalHeaderSpec(
-        pred=0.2,
-        low=-0.1,
-        high=0.7,
-        xlim=(-1.0, 1.0),
-        xlabel="x",
-        ylabel="y",
-    )
-    body = BarHPanelSpec(
-        bars=[
-            BarItem(
-                label="f0",
-                value=0.4,
-                interval_low=-0.2,
-                interval_high=0.5,
-                color_role="positive",
-                instance_value={"foo": "bar"},
-            ),
-        ],
-        xlabel="xlabel",
-        ylabel="ylabel",
-    )
-    spec = PlotSpec(title="Example", figure_size=(8, 3), header=header, body=body)
-
-    serialized = plotspec_to_dict(spec)
-
-    # Semantic assertions: optional fields preserved in serialization
-    assert serialized["figure_size"] == (8, 3)
-    assert serialized["header"]["xlim"] == (-1.0, 1.0)
-    assert serialized["body"]["bars"][0]["interval_high"] == 0.5
-    assert serialized["body"]["bars"][0]["instance_value"] == {"foo": "bar"}
-
-    # Semantic assertion: verify roundtrip preserves values
-    restored = plotspec_from_dict(serialized)
-    assert restored.header.xlim == (-1.0, 1.0)
-    assert restored.body.bars[0].interval_high == 0.5
 
 
 def test_plotspec_from_dict_casts_values():

@@ -172,26 +172,6 @@ def test_build_interval_context_falls_back_to_interval_learner(
     assert context.metadata["existing_fast_calibrators"] == ("only-fast",)
 
 
-def test_x_y_cal_setters_and_append(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-    explainer.x_cal = df
-    assert isinstance(explainer.x_cal, np.ndarray)
-
-    explainer.y_cal = np.array([[1], [0]])
-    assert explainer.y_cal.shape == (2,)
-
-    with pytest.raises(DataShapeError):
-        explainer.append_cal(np.ones((1, explainer.num_features + 1)), np.array([1]))
-
-    explainer.append_cal(np.ones((1, explainer.num_features)), np.array([1]))
-    assert explainer.y_cal.shape[0] == 3
-
-
 def test_ensure_interval_state_and_coerce_override(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))

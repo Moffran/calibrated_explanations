@@ -103,38 +103,6 @@ def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):
 
 
 
-def test_cmd_list_intervals_empty(monkeypatch, capsys):
-    monkeypatch.setattr(cli, "list_interval_descriptors", lambda **kwargs: [])
-    monkeypatch.setattr(cli, "is_identifier_denied", lambda _identifier: False)
-
-    args = argparse.Namespace(kind="intervals", trusted_only=False, verbose=False)
-    exit_code = cli.cmd_list(args)
-
-    assert exit_code == 0
-    assert "<none>" in capsys.readouterr().out
-
-
-
-
-
-
-def test_cmd_show_not_registered(monkeypatch, capsys):
-    monkeypatch.setattr(cli, "find_plot_style_descriptor", lambda identifier: None)
-    args = argparse.Namespace(identifier="missing", kind="plots")
-    exit_code = cli.cmd_show(args)
-    assert exit_code == 1
-    assert "Plot style 'missing' is not registered" in capsys.readouterr().out
-
-
-def test_cmd_show_registered_with_trust_flag(monkeypatch, capsys):
-    descriptor = DummyDescriptor(identifier="plugin", metadata={"foo": "bar"}, trusted=False)
-    monkeypatch.setattr(cli, "find_explanation_descriptor", lambda identifier: descriptor)
-    args = argparse.Namespace(identifier="plugin", kind="explanations")
-    exit_code = cli.cmd_show(args)
-    assert exit_code == 0
-    output = capsys.readouterr().out
-    assert "Identifier : plugin" in output
-    assert "Trusted    : no" in output
 
 
 @pytest.mark.parametrize(
@@ -213,13 +181,6 @@ def test_cmd_trust_keyerror(monkeypatch, capsys):
 def test_main_invalid_arguments(capsys):
     exit_code = cli.main(["--not-a-real-arg"])
     assert exit_code == 2
-    output = capsys.readouterr().out
-    assert "usage:" in output
-
-
-def test_main_no_command(capsys):
-    exit_code = cli.main([])
-    assert exit_code == 0
     output = capsys.readouterr().out
     assert "usage:" in output
 

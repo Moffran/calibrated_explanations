@@ -79,47 +79,6 @@ def test_invoke_per_instance_ignore(orchestrator, mock_explainer):
     assert set(request.features_to_ignore) == {0, 1}
 
 
-def test_invoke_wrappers(orchestrator, mock_explainer):
-    # Mock invoke to verify delegation
-    orchestrator.invoke = MagicMock()
-
-    # Test invoke_factual
-    orchestrator.invoke_factual(
-        x=[[1]],
-        threshold=0.5,
-        low_high_percentiles=None,
-        bins=None,
-        features_to_ignore=None,
-        discretizer="binaryEntropy",
-    )
-    orchestrator.invoke.assert_called_with(
-        mode="factual",
-        x=[[1]],
-        threshold=0.5,
-        low_high_percentiles=None,
-        bins=None,
-        features_to_ignore=None,
-        extras={},
-    )
-
-    # Test invoke_alternative
-    orchestrator.invoke_alternative(
-        x=[[1]],
-        threshold=0.5,
-        low_high_percentiles=None,
-        bins=None,
-        features_to_ignore=None,
-        discretizer="entropy",
-    )
-    orchestrator.invoke.assert_called_with(
-        mode="alternative",
-        x=[[1]],
-        threshold=0.5,
-        low_high_percentiles=None,
-        bins=None,
-        features_to_ignore=None,
-        extras={},
-    )
 
 
 

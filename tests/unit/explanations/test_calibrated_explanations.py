@@ -173,11 +173,6 @@ def collection() -> CalibratedExplanations:
 
 
 
-def test_getitem_int_list_returns_collection(collection: CalibratedExplanations) -> None:
-    subset = collection[[2, 0]]
-    assert isinstance(subset, CalibratedExplanations)
-    assert [exp.index for exp in subset.explanations] == [0, 1]
-    assert subset.y_threshold == [(0.3, 0.7), (0.1, 0.9)]
 
 
 
