@@ -10,8 +10,6 @@ working notes used to steer releases.
 RELEASE_PLAN_v1
 v0.11.0_plan
 release_checklist
-coverage_uplift_plan
-ANTI_PATTERN_REMEDIATION_PLAN
 
 test-quality-method/README
 

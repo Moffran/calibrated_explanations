@@ -22,7 +22,7 @@ It must be reviewed and completed for every pull request that touches the user-f
 - **Gallery examples execute? (within time ceilings)**
   - [ ] Yes
 
-## Test Quality (ADR-030) (run `python scripts/detect_test_anti_patterns.py --check`)
+## Test Quality (ADR-030) (run `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --check`)
 
 - **Anti-patterns check**
   - [ ] Passed

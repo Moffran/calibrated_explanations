@@ -7,6 +7,37 @@
 
 ---
 
+## Iteration Update (2026-02-13)
+
+### Batch execution
+
+- Removed another **100 zero-unique tests** in clustered areas to maximize meaningful gap surfacing:
+  - `tests/unit/core/test_calibrated_explainer_runtime_helpers.py` (40)
+  - `tests/plugins/test_builtins_behaviour.py` (34)
+  - `tests/plugins/test_registry_metadata_ext.py` (26)
+- Added/expanded behavioral replacements:
+  - `tests/unit/core/test_removal_batch_replacements.py`
+  - `tests/unit/test_quick_adapters_and_shims.py`
+  - `tests/unit/viz/test_smoke_coverage.py`
+- Stabilized shim-forwarding tests against suite-level warning policy variance:
+  - `tests/unit/test_perf_cache_shim.py`
+  - `tests/unit/test_perf_parallel.py`
+  - `tests/unit/test_perf_parallel_shim.py`
+
+### Verification status
+
+- `python scripts/anti-pattern-analysis/scan_private_usage.py --check`: **PASS**
+- `pytest --tb=no -q`: **PASS** (`1670 passed, 1 skipped`)
+
+### Process-architect conclusion for this iteration
+
+- The current removal-plus-replacement workflow is **efficient as-is** and remains the right default.
+- One operational hardening is now recommended as a standard step:
+  - Make shim/deprecation tests policy-agnostic (assert forwarding behavior, not warning filter mechanics) to avoid full-suite flakiness.
+- No structural redesign is required before the next 100-test batch.
+
+---
+
 ## Executive Summary
 
 The test suite has **no dead source code** (codebase is clean) but has significant **test quality debt**:

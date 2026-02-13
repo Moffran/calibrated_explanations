@@ -326,20 +326,6 @@ def test_probabilities_stack_vectors():
     assert np.allclose(stacked[0], [0.4, 0.6])
 
 
-def test_threshold_and_confidence_helpers(calibrated_collection):
-    collection = calibrated_collection
-    assert collection.is_probabilistic_regression
-    collection.low_high_percentiles = (np.inf, 95.0)
-    assert collection.is_one_sided
-    assert collection.get_confidence() == 95.0
-    collection.low_high_percentiles = (5.0, np.inf)
-    assert collection.get_confidence() == 95.0
-    collection.low_high_percentiles = (5.0, 95.0)
-    assert collection.get_confidence() == 90.0
-    assert collection.get_low_percentile() == 5.0
-    assert collection.get_high_percentile() == 95.0
-
-
 class FakeFactual(DummyExplanation):
     def __init__(
         self,

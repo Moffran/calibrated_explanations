@@ -1,7 +1,7 @@
 name,def_file,def_line,src_usages,test_usages,pattern,scope
+_get_explainer,unit\explanations\test_explanation_more.py,42,0,0,Pattern 2 (Local Test Helper),test
 _check_preconditions,calibrated_explanations\explanations\explanation.py,3685,6,0,Consistent (Internal Only),library
 _is_lesser,calibrated_explanations\explanations\explanation.py,3668,1,0,Consistent (Internal Only),library
-_get_explainer,unit\explanations\test_explanation_more.py,42,0,0,Pattern 2 (Local Test Helper),test
 _make_binary_explainer,unit\explanations\test_conjunction_hardening.py,14,0,0,Pattern 2 (Local Test Helper),test
 _get_rule_str,calibrated_explanations\explanations\explanation.py,1470,1,0,Consistent (Internal Only),library
 _emit,calibrated_explanations\parallel\parallel.py,721,36,0,Consistent (Internal Only),library

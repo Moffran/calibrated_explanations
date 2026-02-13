@@ -74,3 +74,12 @@ def test_smoke_import_key_modules():
 
     # Call public style resolver (avoids accessing private helpers)
     _ = plotting.resolve_plot_style_chain(None, None)
+
+
+def test_plotting_lazy_load_legacy():
+    """Lazy loading of legacy plotting module should expose and cache the module."""
+    import calibrated_explanations.plotting as plotting
+
+    legacy = plotting.legacy
+    assert legacy is not None
+    assert plotting.legacy is legacy

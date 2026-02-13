@@ -1,4 +1,9 @@
-"""Compatibility wrapper for the anti-pattern detector script."""
+"""Archived legacy wrapper.
+
+This file preserves the previous wrapper chain so the repository retains
+historical context after redirecting the CI entrypoint to the canonical
+implementation.
+"""
 
 from __future__ import annotations
 
@@ -9,8 +14,11 @@ from pathlib import Path
 
 
 def _load_detector_module():
-    script_path = Path(__file__).parents[1] / "anti-pattern-analysis" / "detect_test_anti_patterns.py"
-    spec = spec_from_loader("detect_test_anti_patterns", SourceFileLoader("detect_test_anti_patterns", str(script_path)))
+    script_path = Path(__file__).parents[1] / "quality" / "detect_test_anti_patterns.py"
+    spec = spec_from_loader(
+        "detect_test_anti_patterns",
+        SourceFileLoader("detect_test_anti_patterns", str(script_path)),
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load anti-pattern detector from {script_path}")
     module = module_from_spec(spec)

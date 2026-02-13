@@ -53,6 +53,12 @@ Critical modules require >= 95% coverage:
 
 Modules failing their gates are the highest priority targets.
 
+Coverage uplift heuristics (mined from Standard-003 uplift planning):
+
+- Prefer targets with small miss counts (2–20) for fast wins.
+- Treat viz coverage as special-case triage when ADR-023 applies; prefer strong non-viz unit tests when possible.
+- Work in iterations by subsystem: fix a cluster of related modules, re-run gates, then move on.
+
 ### Task 3: Analyze the pytest coverage report
 
 Read the most recent pytest coverage output (run `pytest --tb=no -q` if

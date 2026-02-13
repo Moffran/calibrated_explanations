@@ -32,7 +32,8 @@ Your process must address this as the #1 prerequisite.
 
 Read and analyze:
 
-- `docs/over_testing_method.md` -- the current quick-start workflow
+- `docs/improvement/test-quality-method/README.md` -- the canonical workflow
+- `docs/improvement/archived/over_testing_method.md` -- archived stub (historical pointer)
 - `scripts/over_testing/finalize_over_testing.md` -- finalization process
 - `reports/over_testing/remedy_list.md` -- current remediation status
 - ADR-030 (search in `docs/improvement/adrs/` for the test quality
@@ -171,7 +172,8 @@ Write your proposal as a message to `devils-advocate` containing:
 
 ## Key Files
 
-- `docs/over_testing_method.md`
+- `docs/improvement/test-quality-method/README.md`
+- `docs/improvement/archived/over_testing_method.md` (archived stub)
 - `scripts/over_testing/finalize_over_testing.md`
 - `scripts/over_testing/README.md`
 - All scripts in `scripts/over_testing/`
@@ -181,6 +183,7 @@ Write your proposal as a message to `devils-advocate` containing:
 - `reports/over_testing/` (all report files)
 - `reports/anti-pattern-analysis/` (all report files)
 - `docs/improvement/adrs/` (ADR-030 and related)
+- `docs/improvement/anti_pattern_gap_analysis.ipynb` (analysis notebook)
 - `pyproject.toml` (pytest config, coverage config, CI-related settings)
 - `.github/workflows/` (CI workflow definitions)
 - `.github/private_member_allowlist.json`

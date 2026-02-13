@@ -53,7 +53,7 @@ For questions, see the improvement docs or ask a test steward.
 ```powershell
 # From the repository root (PowerShell)
 .
-\scripts\run_fast_tests.ps1
+\scripts\archived\run_fast_tests.ps1
 ```
 
 This sets `FAST_TESTS=1` and `SAMPLE_LIMIT=200` which makes fixtures return smaller datasets and skips slow tests marked `@pytest.mark.slow`.

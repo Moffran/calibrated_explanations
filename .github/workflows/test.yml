@@ -118,7 +118,7 @@ jobs:
             pyproject.toml
       - name: Run anti-pattern detector
         run: |
-          python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
+          python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
           if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
             echo "Anti-pattern violations detected:"; cat reports/test_anti_pattern_report.csv; exit 1; fi
       - name: Upload anti-pattern report

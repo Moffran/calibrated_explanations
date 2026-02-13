@@ -21,3 +21,46 @@ Next steps (manual):
 3. Record per-file decisions in this document (append) and run `python scripts/over_testing/prune_generated_tests.py --apply` to apply deletions once reviewed.
 
 This remedy list must be reviewed and signed off by a core maintainer before any mass removals.
+
+## 2026-02-13 Implementer Update
+
+- Replaced low-quality coverage padding in `tests/unit/test_coverage_artifacts.py`.
+- Removed `exec(compile(...))` line-marking behavior and added deterministic behavioral tests for:
+  - `calibration/state.py` (`set_x_cal`, `set_y_cal`, `append_calibration`)
+  - `core/test.py` (`JoblibBackend`, `sequential_map`)
+  - `schema/__init__.py` lazy export path
+  - `viz/__init__.py` matplotlib-required lazy path
+  - `plugins/predict_monitor.py` invariant warning and call tracking paths
+  - `core/reject/orchestrator.py` initialization and pickle state restoration paths
+- Verified local quality checks:
+  - `pytest -q --no-cov tests/unit/test_coverage_artifacts.py` passes (7 tests)
+  - `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py` reports 0 anti-patterns
+  - `python scripts/anti-pattern-analysis/scan_private_usage.py --check` reports 0 private-member violations
+
+## 2026-02-13 Implementer + Process-Architect Follow-up
+
+- Continued post-cleanup under-testing remediation with high-signal tests (no import-only padding):
+  - `tests/unit/core/test_feature_filter_branch_boosters.py`
+  - `tests/unit/test_quick_adapters_and_shims.py`
+  - `tests/unit/test_utils_perturbation.py`
+  - `tests/unit/test_api_params.py`
+  - extended `tests/unit/test_ce_agent_utils.py`
+- Fixed failing regression test `test_viz_lazy_import_requires_matplotlib` by exercising `viz.__getattr__("render")` directly.
+- Coverage gate status after full run:
+  - `pytest --tb=no -q` passes
+  - total coverage: **90.04%** (gate 90%)
+  - test result: **1846 passed, 1 skipped**
+- Quality safety checks:
+  - `python scripts/anti-pattern-analysis/scan_private_usage.py --check` passes (0 violations)
+  - `ruff` passes on all new/updated tests
+
+### Process Architect verdict (current cycle)
+
+The method is **efficient as-is for implementation flow** (role split + remedy ledger + safety checks worked), but two process updates remain warranted:
+
+1. Add an explicit "post-remediation gate pack" step to the README:
+   - run `ruff` on changed tests
+   - run `scan_private_usage.py --check`
+   - run full `pytest --cov-fail-under=90`
+2. Add a "coverage cliff recovery playbook" subsection:
+   - prioritize high-yield branch modules (`_feature_filter`, CE shims, perturbation/adapter seams) before broad exploratory additions.

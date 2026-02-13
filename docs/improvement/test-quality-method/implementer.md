@@ -66,6 +66,11 @@ Your job is to merge these into a single actionable document:
 
 Execute actions **in strict phase order**. After each phase, verify coverage.
 
+**Batching rule (important):** prefer **large batches of test removals per iteration**.
+Aim to remove **~100 tests at a time** (or as many as safely possible) before measuring the
+coverage impact. If coverage drops below the gate, **stop removing tests immediately** and
+close the gap with **new, high-quality behavioral tests** (Phase B.3) before continuing.
+
 #### B.1: Safe immediate actions (no prerequisites)
 
 These are changes all experts and the devil's advocate agree are zero-risk:
@@ -79,7 +84,14 @@ These are changes all experts and the devil's advocate agree are zero-risk:
 3. **Fix marker hygiene violations**: Add missing `slow`, `integration`,
    `viz`, or `platform_dependent` markers identified by the anti-pattern
    auditor.
-4. **Verify after each batch**:
+4. **Work in large removal batches**:
+
+   - Treat a **batch** as **~100 test functions** (or more) removed in one iteration.
+   - Prefer removing many low-risk tests together (e.g., already-skipped, generated placeholders,
+     other “safe immediate actions”) rather than doing one-off deletions.
+   - If you suspect a set is higher-risk, reduce batch size — but default to large batches.
+
+5. **Verify after each batch**:
 
    ```bash
    pytest --cov-fail-under=90
@@ -130,6 +142,14 @@ Implement new tests designed by the test-creator, ordered by efficiency:
    - Use shared fixtures from `tests/helpers/`
    - No import-only tests
 
+**Iteration pattern (how to combine B.1/B.4 removals with B.3 additions):**
+
+- Remove a **large batch** of tests (target ~100).
+- Run `pytest --cov-fail-under=90`.
+- If the gate fails, **pause further removals** and implement Tier 1/2 tests (B.3)
+   until the gate passes again.
+- Resume removals with the next large batch.
+
 #### B.4: Coverage-dependent removals
 
 These require compensating tests to be in place before removal:
@@ -145,6 +165,10 @@ These require compensating tests to be in place before removal:
 3. **Delete the padding test** only after the gate passes without it
 4. **Clean up**: Remove unused imports, trailing whitespace, and empty lines
    left behind
+
+**Batching note:** perform coverage-dependent removals in **chunks** as well.
+Prefer accumulating many candidate padding tests (up to ~100) to deselect/remove,
+then use the same remove → verify → add-tests-if-needed loop.
 
 #### B.5: Test consolidation
 
@@ -237,6 +261,9 @@ Before reporting completion of any phase, verify ALL of these:
 - **The 90% coverage gate is non-negotiable.** If removing a test drops
   coverage below 90%, you must write compensating behavioral tests BEFORE
   removing it.
+- **Remove in big chunks, then backfill with better tests.** Default to removing
+   **~100 tests per iteration**, then close any coverage gap with high-quality,
+   public-API tests before continuing.
 - **Use public APIs in new tests.** The private member scanner hook will block
   commits that access private members (`_name`) from test files. Use public
   methods that internally exercise the private code.

@@ -12,4 +12,4 @@ Quick workflow:
 4. If coverage is below `0.90`, use `gap_analyzer.py` to find untested blocks and `generate_test_templates.py` to scaffold minimal tests.
 5. Commit large safe removal batches and run the full pipeline once to verify.
 
-See docs/over_testing_method.md for a detailed method and examples.
+See docs/improvement/archived/over_testing_method.md for a detailed method and examples.

@@ -141,38 +141,6 @@ their findings and executes the cleanup. Each has a dedicated instruction file
 in this directory. They can be run as AI agents or used as checklists for
 manual analysis.
 
-### [implementer.md](implementer.md) -- Consolidator and Executor
-
-Merges the four expert proposals into a final remedy plan and carries out
-the approved cleanup actions. This is the only role that modifies code.
-
-**Key tasks**:
-
-- Consolidate all four proposals into `reports/over_testing/final_remedy_plan.md`
-- Verify data freshness (check `metadata.json` for multiple contexts)
-- Execute safe immediate actions (delete skipped/generated tests)
-- Write compensating behavioral tests to close coverage gaps
-- Remove coverage-padding tests after gap is closed
-- Consolidate overlapping test pairs
-- Re-run pipeline after changes and update reports
-
-**Key constraint**: The 90% coverage gate is non-negotiable. Verify with
-`pytest --cov-fail-under=90` after every batch of changes.
-
-**Key files**:
-
-- `reports/over_testing/final_remedy_plan.md` -- final consolidated plan
-- `reports/over_testing/remedy_list.md` -- decision ledger
-- `reports/over_testing/baseline_summary.json` -- current baseline metrics
-- `scripts/over_testing/*` and `scripts/anti-pattern-analysis/*` -- tooling invoked during implementation
-
-**Key principles**:
-
-- Execute changes in phased batches and verify metrics after each phase.
-- Maintain ADR conformance; consult `docs/improvement/adrs/` for relevant ADRs before major changes.
-- Commit logically grouped changes (remove, then add compensating tests in separate commits).
--- Record rationale and results in `reports/over_testing/` and update `CHANGELOG.md` when milestones complete.
-
 ### [pruner.md](pruner.md) -- Test Removal Expert
 
 Identifies overlapping and low-value tests for safe removal.
@@ -224,31 +192,6 @@ Identifies source code that is unreachable or only tested by low-value tests.
 - Verify runtime reachability (lazy imports, plugin entry points) before declaring code dead.
 - Prefer conservative refactors that expose public seams rather than wholesale deletion.
 - Document findings with concrete evidence (coverage hits, call graph snippets).
-
-### [process_architect.md](process_architect.md) -- Process Optimization Expert
-
-Designs and improves the test quality workflow and tooling.
-
-**Key tasks**:
-
-- Audit all scripts in `scripts/over_testing/` and `scripts/anti-pattern-analysis/`
-- Assess current process gaps (documentation, automation, CI integration)
-- Design quality gates with specific thresholds and ratcheting baselines
-- Plan CI integration (per-PR checks vs periodic analysis)
-
-**Key files to analyze**:
-
-- All scripts in `scripts/over_testing/` and `scripts/anti-pattern-analysis/`
-- `docs/over_testing_method.md`
-- `scripts/over_testing/finalize_over_testing.md`
-- `.github/workflows/` (CI definitions)
-- `pyproject.toml` (pytest config, coverage config)
-
-**Key principles**:
-
-- Design gates to be actionable and measurable; avoid overly-brittle thresholds.
-- Prioritize CI runtime and developer feedback loops when choosing what runs per-PR vs periodic.
-- Ensure Windows compatibility and surface any platform-dependent caveats in the plan.
 
 ### [test_creator.md](test_creator.md) -- Coverage Gap Closer
 
@@ -379,6 +322,65 @@ cross-referenced risk assessment that reconciles conflicts across roles.
 - `reports/over_testing/baseline_summary.json`
 - `reports/over_testing/per_test_summary.csv`
 
+### [implementer.md](implementer.md) -- Consolidator and Executor
+
+Merges the four expert proposals into a final remedy plan and carries out
+the approved cleanup actions. This is the only role that modifies code.
+
+**Key tasks**:
+
+- Consolidate all proposals into `reports/over_testing/final_remedy_plan.md`
+- Verify data freshness (check `metadata.json` for multiple contexts)
+- Execute safe immediate actions (delete skipped/generated tests)
+- Write compensating behavioral tests to close coverage gaps
+- Remove coverage-padding tests after gap is closed
+- Consolidate overlapping test pairs
+- Re-run pipeline after changes and update reports
+
+**Key constraint**: The 90% coverage gate is non-negotiable. Verify with
+`pytest --cov-fail-under=90` after every batch of changes.
+
+**Key files**:
+
+- `reports/over_testing/final_remedy_plan.md` -- final consolidated plan
+- `reports/over_testing/remedy_list.md` -- decision ledger
+- `reports/over_testing/baseline_summary.json` -- current baseline metrics
+- `scripts/over_testing/*` and `scripts/anti-pattern-analysis/*` -- tooling invoked during implementation
+
+**Key principles**:
+
+- Execute changes in phased batches and verify metrics after each phase.
+- Maintain ADR conformance; consult `docs/improvement/adrs/` for relevant ADRs before major changes.
+- Commit logically grouped changes (remove, then add compensating tests in separate commits).
+-- Record rationale and results in `reports/over_testing/` and update `CHANGELOG.md` when milestones complete.
+
+### [process_architect.md](process_architect.md) -- Process Optimization Expert
+
+Designs and improves the test quality workflow and tooling.
+
+**Key tasks**:
+
+- Audit all scripts in `scripts/over_testing/` and `scripts/anti-pattern-analysis/`
+- Assess current process gaps (documentation, automation, CI integration)
+- Design quality gates with specific thresholds and ratcheting baselines
+- Plan CI integration (per-PR checks vs periodic analysis)
+
+**Key files to analyze**:
+
+- All scripts in `scripts/over_testing/` and `scripts/anti-pattern-analysis/`
+- `docs/improvement/test-quality-method/README.md`
+- `docs/improvement/archived/over_testing_method.md` (historical notes)
+- `docs/improvement/archived/over_testing_method.md` (archived stub)
+- `scripts/over_testing/finalize_over_testing.md`
+- `.github/workflows/` (CI definitions)
+- `pyproject.toml` (pytest config, coverage config)
+
+**Key principles**:
+
+- Design gates to be actionable and measurable; avoid overly-brittle thresholds.
+- Prioritize CI runtime and developer feedback loops when choosing what runs per-PR vs periodic.
+- Ensure Windows compatibility and surface any platform-dependent caveats in the plan.
+
 ---
 
 ## Script Reference
@@ -403,7 +405,7 @@ cross-referenced risk assessment that reconciles conflicts across roles.
 
 | Script                           | Purpose                                          | When to use                  |
 | -------------------------------- | ------------------------------------------------ | ---------------------------- |
-| `detect_test_anti_patterns.py`   | Detect anti-patterns in test files               | CI + manual audits           |
+| `scripts/anti-pattern-analysis/detect_test_anti_patterns.py`   | Detect anti-patterns in test files               | CI + manual audits           |
 | `analyze_private_methods.py`     | Find dead or test-only private methods in `src/` | Dead code analysis           |
 | `scan_private_usage.py`          | Scan for private member usage across codebase    | Allowlist maintenance        |
 | `generate_triage_report.py`      | Produce analysis triage report                   | After anti-pattern scan      |
@@ -467,6 +469,12 @@ committed for future reference:
 6. **Maintain the remedy list**. Record all decisions in
    `reports/over_testing/remedy_list.md` and update the final remedy plan after
    each round.
+
+7. **Protect docs + build-validation tests**. Avoid pruning tests under `tests/docs/` and tests marked `docs`/`rtd` unless you have an explicit docs CI strategy for replacements.
+
+8. **Batch removals to reduce churn**. Prefer fewer, estimator-approved removal batches and re-run the pipeline after each batch; avoid micro-removals that require re-running the expensive pipeline repeatedly.
+
+9. **Respect ADR-023 for viz coverage**. If coverage instrumentation breaks matplotlib adapter imports, follow ADR-023’s split strategy (run viz validation under `pytest --no-cov -m viz` and keep the coverage omit scoped to the documented adapter file).
 
 ---
 

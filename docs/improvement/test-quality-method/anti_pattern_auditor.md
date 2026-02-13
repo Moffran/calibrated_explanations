@@ -35,6 +35,19 @@ Every test should satisfy these five criteria (from ADR-030):
 5. **Fixture discipline**: Tests use shared fixtures from `tests/helpers/`
    and `tests/conftest.py`, not ad-hoc duplicated setup
 
+## Private-member usage taxonomy (mined)
+
+Use these categories when triaging private member access findings:
+
+- **Category A (High)**: internal logic testing via private calls (rewrite to public-contract tests)
+- **Category B (Medium)**: underscored test utilities that are effectively shared APIs (promote/rename into `tests/helpers/`)
+- **Category C (Medium)**: deprecated/legacy access (migrate tests to the modern public API)
+- **Category D (Low)**: factory/setup bypass (prefer public constructors/factories; consider exposing a public factory if needed)
+
+Allowlist hygiene:
+
+- Any allowlist entry should carry a clear justification and an expiry (version/date).
+
 ## Your Tasks
 
 ### Task 1: Run anti-pattern detection
@@ -146,6 +159,7 @@ Write your proposal containing:
 
 - `reports/anti-pattern-analysis/test_anti_pattern_report.csv`
 - `reports/anti-pattern-analysis/private_usage_scan_*.csv`
+- `docs/improvement/anti_pattern_gap_analysis.ipynb` (analysis notebook)
 - `.github/private_member_allowlist.json`
 - ADR-030: `docs/improvement/adrs/` (search for ADR-030)
 

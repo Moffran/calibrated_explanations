@@ -27,7 +27,7 @@ primary quality criteria (beyond coverage) and define how they are enforced in C
   `scripts/check_coverage_gates.py`, plus the PR checklist and contributor guidance.
 - Private-member usage in tests is blocked by the `scan-private-members` workflow
   (`scripts/anti-pattern-analysis/scan_private_usage.py --check`).
-- A test anti-pattern report is generated in CI (`scripts/detect_test_anti_patterns.py`).
+- A test anti-pattern report is generated in CI (`scripts/anti-pattern-analysis/detect_test_anti_patterns.py`).
 - The test guidance explicitly requires behavior-first pytest tests, determinism,
   and avoiding private helpers, plus explicit fallback-chain opt-in.
 
