@@ -2,741 +2,12 @@
 
 ## Top hotspot lines
 
-### src\calibrated_explanations\utils\helper.py:72 (test_count=596)
+### src\calibrated_explanations\utils\helper.py:72 (test_count=599)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:82 (test_count=596)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:83 (test_count=596)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\plugins\registry.py:108 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:109 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:110 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:111 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:112 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:114 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:119 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\plugins\registry.py:120 (test_count=594)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-
-### src\calibrated_explanations\utils\helper.py:95 (test_count=594)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:100 (test_count=594)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:73 (test_count=593)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:103 (test_count=592)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:106 (test_count=592)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:108 (test_count=592)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:111 (test_count=591)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\utils\helper.py:114 (test_count=583)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\logging.py:72 (test_count=573)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:73 (test_count=573)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:74 (test_count=573)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:76 (test_count=573)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:77 (test_count=573)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:79 (test_count=573)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:75 (test_count=572)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\logging.py:80 (test_count=572)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-
-### src\calibrated_explanations\plugins\registry.py:1028 (test_count=555)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
@@ -758,12 +29,12 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\plugins\registry.py:1033 (test_count=555)
+### src\calibrated_explanations\utils\helper.py:82 (test_count=599)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
@@ -785,11 +56,685 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\plugins\registry.py:1034 (test_count=555)
+### src\calibrated_explanations\utils\helper.py:83 (test_count=599)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\plugins\registry.py:108 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:109 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:110 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:111 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:112 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:114 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:119 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\plugins\registry.py:120 (test_count=597)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloPlotPlugin::test_plot_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+
+### src\calibrated_explanations\utils\helper.py:95 (test_count=597)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:100 (test_count=597)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:73 (test_count=596)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:103 (test_count=595)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:106 (test_count=595)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:108 (test_count=595)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:111 (test_count=594)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\utils\helper.py:114 (test_count=586)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+
+### src\calibrated_explanations\logging.py:72 (test_count=576)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:73 (test_count=576)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:74 (test_count=576)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:76 (test_count=576)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:77 (test_count=576)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:79 (test_count=576)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:75 (test_count=575)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\logging.py:80 (test_count=575)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_explanation_plugin_fallback_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_doc.py::test_plugin_contract_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloExplanationPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestHelloIntervalCalibratorPlugin::test_plugin_registration|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+
+### src\calibrated_explanations\plugins\registry.py:1028 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -811,14 +756,68 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1033 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1034 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
 
 ## Top hotspot blocks
 
-### src\calibrated_explanations\utils\helper.py:72-72 (test_count=596)
+### src\calibrated_explanations\utils\helper.py:72-72 (test_count=599)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -840,12 +839,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:82-83 (test_count=596)
+### src\calibrated_explanations\utils\helper.py:82-83 (test_count=599)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -867,13 +866,13 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\plugins\registry.py:108-112 (test_count=594)
--
+### src\calibrated_explanations\plugins\registry.py:108-112 (test_count=597)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -894,13 +893,13 @@
 - tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
-### src\calibrated_explanations\plugins\registry.py:114-114 (test_count=594)
--
+### src\calibrated_explanations\plugins\registry.py:114-114 (test_count=597)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -921,13 +920,13 @@
 - tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
-### src\calibrated_explanations\plugins\registry.py:119-120 (test_count=594)
--
+### src\calibrated_explanations\plugins\registry.py:119-120 (test_count=597)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -948,12 +947,12 @@
 - tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
 
-### src\calibrated_explanations\utils\helper.py:95-95 (test_count=594)
+### src\calibrated_explanations\utils\helper.py:95-95 (test_count=597)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -975,12 +974,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:100-100 (test_count=594)
+### src\calibrated_explanations\utils\helper.py:100-100 (test_count=597)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1002,12 +1001,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:73-73 (test_count=593)
+### src\calibrated_explanations\utils\helper.py:73-73 (test_count=596)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1029,12 +1028,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:103-103 (test_count=592)
+### src\calibrated_explanations\utils\helper.py:103-103 (test_count=595)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1056,12 +1055,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:106-106 (test_count=592)
+### src\calibrated_explanations\utils\helper.py:106-106 (test_count=595)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1083,12 +1082,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:108-108 (test_count=592)
+### src\calibrated_explanations\utils\helper.py:108-108 (test_count=595)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1110,12 +1109,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:111-111 (test_count=591)
+### src\calibrated_explanations\utils\helper.py:111-111 (test_count=594)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1137,12 +1136,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\utils\helper.py:114-114 (test_count=583)
+### src\calibrated_explanations\utils\helper.py:114-114 (test_count=586)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_slice_helpers_support_multiple_input_types|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
@@ -1164,13 +1163,13 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\logging.py:72-74 (test_count=573)
--
+### src\calibrated_explanations\logging.py:72-74 (test_count=576)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1191,13 +1190,13 @@
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
 
-### src\calibrated_explanations\logging.py:76-77 (test_count=573)
--
+### src\calibrated_explanations\logging.py:76-77 (test_count=576)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1218,13 +1217,13 @@
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
 
-### src\calibrated_explanations\logging.py:79-79 (test_count=573)
--
+### src\calibrated_explanations\logging.py:79-79 (test_count=576)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1245,13 +1244,13 @@
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
 
-### src\calibrated_explanations\logging.py:75-75 (test_count=572)
--
+### src\calibrated_explanations\logging.py:75-75 (test_count=575)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1272,13 +1271,13 @@
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
 
-### src\calibrated_explanations\logging.py:80-80 (test_count=572)
--
+### src\calibrated_explanations\logging.py:80-80 (test_count=575)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1299,12 +1298,202 @@
 - tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
 - tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
 - tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
 
-### src\calibrated_explanations\plugins\registry.py:1028-1028 (test_count=555)
+### src\calibrated_explanations\plugins\registry.py:1028-1028 (test_count=558)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1033-1036 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1038-1039 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1042-1042 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1045-1045 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1048-1048 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\plugins\registry.py:1050-1050 (test_count=558)
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
+- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
+- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
+- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
+- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
+- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
+- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
+- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
+- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
+- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
+- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
+- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
+
+### src\calibrated_explanations\core\reject\policy.py:22-22 (test_count=534)
+- 
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
+- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1327,11 +1516,11 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\plugins\registry.py:1033-1036 (test_count=555)
+### src\calibrated_explanations\core\reject\policy.py:31-31 (test_count=534)
+- 
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1354,11 +1543,10 @@
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
 
-### src\calibrated_explanations\plugins\registry.py:1038-1039 (test_count=555)
+### src\calibrated_explanations\core\prediction\interval_summary.py:26-27 (test_count=525)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1380,12 +1568,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
 
-### src\calibrated_explanations\plugins\registry.py:1042-1042 (test_count=555)
+### src\calibrated_explanations\core\calibrated_explainer.py:392-392 (test_count=517)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1407,12 +1595,12 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run
 
-### src\calibrated_explanations\plugins\registry.py:1045-1045 (test_count=555)
+### src\calibrated_explanations\core\calibrated_explainer.py:394-395 (test_count=517)
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
 - tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
@@ -1434,192 +1622,4 @@
 - tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
 - tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
-
-### src\calibrated_explanations\plugins\registry.py:1048-1048 (test_count=555)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
-
-### src\calibrated_explanations\plugins\registry.py:1050-1050 (test_count=555)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
-
-### src\calibrated_explanations\core\reject\policy.py:25-25 (test_count=530)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\core\reject\policy.py:34-34 (test_count=530)
--
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-
-### src\calibrated_explanations\core\prediction\interval_summary.py:26-27 (test_count=522)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
-
-### src\calibrated_explanations\core\calibrated_explainer.py:392-392 (test_count=514)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
-
-### src\calibrated_explanations\core\calibrated_explainer.py:394-395 (test_count=514)
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_lime_and_shap_flags_toggle|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_mode_sets_num_classes_correctly|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_runtime_metadata_helpers_return_copies|run
-- tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
-- tests/core/test_calibrated_explainer_utils.py::test_instantiate_plugin_prefers_fresh_instances|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodCEnvironmentVariables::test_ce_plot_style_fallbacks_environment_variable|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestMethodEPluginMetadata::test_plugin_dependency_propagation_in_explainer|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_fallback_chain|run
-- tests/docs/contributor/test_plugin_advanced_contract.py::TestPriorityResolution::test_method_priority_order|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginDependencyPropagation::test_plugin_dependency_metadata_seeding|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_a_explainer_parameter|run
-- tests/docs/contributor/test_plugin_contract_examples.py::TestPluginWiringMethodsAB::test_method_b_plot_parameter|run
-- tests/docs/foundations/concepts/test_probabilistic_regression_doc.py::test_probabilistic_regression_snippets|run
-- tests/docs/foundations/governance/test_optional_telemetry_doc.py::test_optional_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_configure_telemetry_doc.py::test_configure_telemetry_snippets|run
-- tests/docs/foundations/how_to/test_export_explanations_doc.py::test_export_explanations_snippets|run
-- tests/docs/foundations/how_to/test_integrate_with_pipelines_doc.py::test_integrate_with_pipelines_snippet|run
-- tests/docs/foundations/how_to/test_interpret_explanations_doc.py::test_interpret_explanations_snippets|run
-- tests/docs/foundations/how_to/test_tune_runtime_performance_doc.py::test_tune_runtime_performance_snippet|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_metadata|run
-- tests/docs/get_started/test_quickstart_classification_doc.py::test_quickstart_classification_snippet_output|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_metadata|run
-- tests/docs/get_started/test_quickstart_regression_doc.py::test_quickstart_regression_snippet_output|run
+- tests/docs/index/test_index_doc.py::test_index_snippet_execution|run

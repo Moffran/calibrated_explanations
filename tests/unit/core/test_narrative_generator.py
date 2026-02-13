@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 from calibrated_explanations.core.narrative_generator import (
-    load_template_file,
     to_py,
     first_or_none,
     clean_condition,
@@ -9,41 +8,9 @@ from calibrated_explanations.core.narrative_generator import (
     has_wide_prediction_interval,
     NarrativeGenerator,
 )
-from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from unittest.mock import MagicMock
 
-
-@pytest.mark.skip(
-    reason="overtesting prune batch1: skip duplicate serialization negative-path test"
-)
-def test_load_template_file_errors(tmp_path):
-    # File not found
-    with pytest.raises(SerializationError, match="Template file not found"):
-        load_template_file(str(tmp_path / "nonexistent.json"))
-
-    # Unsupported format
-    unsupported = tmp_path / "test.txt"
-    unsupported.write_text("hello")
-    with pytest.raises(SerializationError, match="Unsupported template file format"):
-        load_template_file(str(unsupported))
-
-    # Invalid JSON
-    invalid_json = tmp_path / "test.json"
-    invalid_json.write_text("{invalid")
-    with pytest.raises(SerializationError, match="Failed to parse JSON template"):
-        load_template_file(str(invalid_json))
-
-    # Valid YAML
-    valid_yaml = tmp_path / "test.yaml"
-    valid_yaml.write_text("key: value\nlist:\n  - item1\n  - item2")
-    result = load_template_file(str(valid_yaml))
-    assert result == {"key": "value", "list": ["item1", "item2"]}
-
-    # Invalid YAML
-    invalid_yaml = tmp_path / "test_invalid.yaml"
-    invalid_yaml.write_text("key: value\n  invalid_indent")
-    with pytest.raises(SerializationError, match="Failed to parse YAML template"):
-        load_template_file(str(invalid_yaml))
 
 
 def test_to_py_variants():

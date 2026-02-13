@@ -174,22 +174,6 @@ def test_mode_sets_num_classes_correctly(explainer_factory):
         explainer_factory(mode="unsupported")
 
 
-@pytest.mark.skip(reason="overtesting prune batch1: skip duplicative metadata accessor test")
-def test_runtime_metadata_helpers_return_copies(explainer_factory):
-    explainer = explainer_factory()
-    explainer.plugin_manager.last_telemetry = {"source": "initial"}
-    explainer.set_preprocessor_metadata({"scaler": "std"})
-    telemetry = explainer.runtime_telemetry
-    telemetry["source"] = "mutated"
-    assert explainer.plugin_manager.last_telemetry["source"] == "initial"
-
-    metadata = explainer.preprocessor_metadata
-    metadata["scaler"] = "modified"
-    assert explainer.preprocessor_metadata["scaler"] == "std"
-
-    explainer.set_preprocessor_metadata(None)
-    assert explainer.preprocessor_metadata is None
-
 
 def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pandas):
     explainer = explainer_factory()

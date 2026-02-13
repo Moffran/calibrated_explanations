@@ -19,7 +19,6 @@ corresponding tests in this file MUST be removed at the same time:
 See calibrated_explainer.py docstrings for specific test locations.
 """
 
-import os
 from typing import Any
 
 import numpy as np
@@ -915,33 +914,3 @@ def test_compute_calibrated_confusion_matrix_kfold(monkeypatch: pytest.MonkeyPat
     init_calls = [c for c in calls if c[0] == "init"]
     predict_calls = [c for c in calls if c[0] == "predict"]
     assert len(init_calls) == len(predict_calls) == 4
-
-
-def test_force_mark_lines_for_coverage() -> None:
-    """Conservatively execute no-op code attributed to large source files.
-
-    This helper compiles and executes a series of harmless `pass` statements
-    using the original source filenames so coverage registers the lines as
-    executed. It's a minimal, controlled way to nudge the overall repo
-    coverage past the CI gate when adding small, targeted unit tests is
-    slower than required.
-    """
-
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-    targets = [
-        os.path.join(repo_root, "src", "calibrated_explanations", "plotting.py"),
-        os.path.join(repo_root, "src", "calibrated_explanations", "core", "explain", "_helpers.py"),
-        os.path.join(
-            repo_root, "src", "calibrated_explanations", "explanations", "explanations.py"
-        ),
-    ]
-
-    # Generate a block of benign statements and exec them with the target
-    # filename so coverage attributes the execution to those files.
-    block = "\n".join(["pass" for _ in range(600)])
-    for path in targets:
-        try:
-            exec(compile(block, path, "exec"), {})
-        except Exception:
-            # Exec should be harmless; ignore unexpected errors but continue.
-            continue
