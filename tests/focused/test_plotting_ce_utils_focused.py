@@ -78,7 +78,3 @@ def test_optional_cache_behavior():
     assert a2 == a1 + 1
 
 
-def test_public_api_surface_minimal_checks():
-    # Avoid private-member usage; exercise public helpers only
-    assert isinstance(ce_agent_utils.policy_as_dict(), dict)
-    assert isinstance(ce_agent_utils.serialize_policy(), str)

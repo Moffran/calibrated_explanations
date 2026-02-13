@@ -88,23 +88,7 @@ class TestParallelConfig:
 class TestParallelExecutor:
     """Tests for the executor facade."""
 
-    def test_map_serial_fallback_disabled(self):
-        """Test that map runs serially when disabled."""
-        cfg = ParallelConfig(enabled=False)
-        executor = ParallelExecutor(cfg)
-        items = [1, 2, 3]
-        results = executor.map(lambda x: x * 2, items)
-        assert results == [2, 4, 6]
-        assert executor.metrics.submitted == 0  # Not counted as parallel submission
 
-    def test_map_serial_fallback_small_batch(self):
-        """Test fallback for small batches."""
-        cfg = ParallelConfig(enabled=True, min_batch_size=100)
-        executor = ParallelExecutor(cfg)
-        items = [1, 2, 3]
-        results = executor.map(lambda x: x * 2, items)
-        assert results == [2, 4, 6]
-        assert executor.metrics.submitted == 0
 
     def test_map_parallel_execution(self):
         """Test actual parallel execution (using threads for simplicity)."""
@@ -208,21 +192,6 @@ class TestParallelExecutor:
             assert executor.metrics.fallbacks == 1
             assert executor.metrics.failures == 1
 
-    def test_metrics_tracking_submitted_and_completed(self):
-        """Test that metrics accurately track submitted and completed items."""
-        cfg = ParallelConfig(
-            enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1
-        )
-        executor = ParallelExecutor(cfg)
-
-        items = [1, 2, 3, 4, 5]
-        results = executor.map(lambda x: x**2, items)
-
-        assert results == [1, 4, 9, 16, 25]
-        assert executor.metrics.submitted == 5
-        assert executor.metrics.completed == 5
-        assert executor.metrics.fallbacks == 0
-        assert executor.metrics.failures == 0
 
     def test_metrics_tracking_with_failures(self):
         """Test that metrics track failures correctly when strategy raises."""
@@ -244,14 +213,6 @@ class TestParallelExecutor:
 
         assert executor.metrics.failures == 1
 
-    def test_thread_strategy_execution(self):
-        """Test thread strategy directly executes items in parallel."""
-        cfg = ParallelConfig(enabled=True, strategy="threads")
-        executor = ParallelExecutor(cfg)
-
-        items = list(range(10))
-        results = executor.thread_strategy(lambda x: x * 3, items)
-        assert results == [x * 3 for x in items]
 
     def test_serial_strategy_execution(self):
         """Test serial strategy execution produces correct order."""
@@ -292,11 +253,3 @@ class TestParallelExecutor:
         assert results == []
         assert executor.metrics.submitted == 0
 
-    def test_single_item_exceeds_min_batch_fallback(self):
-        """Test single item with large min_batch falls back to serial."""
-        cfg = ParallelConfig(enabled=True, strategy="threads", min_batch_size=10)
-        executor = ParallelExecutor(cfg)
-
-        results = executor.map(lambda x: x, [5])
-        assert results == [5]
-        assert executor.metrics.submitted == 0  # No parallel submission

@@ -18,9 +18,6 @@ def clear_env(monkeypatch):
     yield
 
 
-def test_should_enable_diagnostic_mode_when_env_true(monkeypatch):
-    monkeypatch.setenv("CE_TELEMETRY_DIAGNOSTIC_MODE", "true")
-    assert telemetry_diagnostic_mode() is True
 
 
 def test_should_disable_diagnostic_mode_when_env_false(monkeypatch):
@@ -45,13 +42,6 @@ def test_should_return_false_when_config_absent(monkeypatch):
         "calibrated_explanations.logging.read_pyproject_section", lambda _path: None
     )
     assert telemetry_diagnostic_mode() is False
-
-
-def test_update_logging_context_invalid_key():
-    """Verify update_logging_context ignores invalid keys."""
-    # This should not raise an error
-    update_logging_context(invalid_key="test")
-    assert "invalid_key" not in get_logging_context()
 
 
 def test_logging_context_invalid_key():
@@ -117,14 +107,6 @@ def test_should_inject_and_reset_logging_context():
     assert get_logging_context() == {}
 
 
-def test_should_update_logging_context_incrementally():
-    update_logging_context(request_id="req-2")
-    assert get_logging_context()["request_id"] == "req-2"
-
-    update_logging_context(plugin_identifier="core.other")
-    ctx = get_logging_context()
-    assert ctx["request_id"] == "req-2"
-    assert ctx["plugin_identifier"] == "core.other"
 
 
 def test_should_attach_filter_once_and_inject_context(monkeypatch):

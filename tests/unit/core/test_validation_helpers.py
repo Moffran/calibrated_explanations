@@ -48,23 +48,8 @@ def test_validate_helper_true_condition():
     validate(1 + 1 == 2, ValidationError, "Math is broken")
 
 
-def test_validate_helper_false_condition_raises():
-    """validate() should raise when condition is False."""
-    with pytest.raises(ValidationError, match="Math is broken"):
-        validate(1 + 1 == 3, ValidationError, "Math is broken")
 
 
-def test_validate_helper_with_details():
-    """validate() should attach details to exception."""
-    try:
-        validate(
-            False,
-            ConfigurationError,
-            "Parameter mismatch",
-            details={"conflict": ["a", "b"], "requirement": "choose one"},
-        )
-    except ConfigurationError as e:
-        assert e.details == {"conflict": ["a", "b"], "requirement": "choose one"}
 
 
 def test_validate_helper_different_exception_types():

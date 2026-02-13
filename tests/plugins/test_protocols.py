@@ -214,21 +214,6 @@ class BadIntervalPlugin:
     }
 
 
-def test_interval_plugin_runtime_checks() -> None:
-    good_calibrator = GoodIntervalPlugin().create(
-        IntervalCalibratorContext(
-            learner=object(),
-            calibration_splits=(),
-            bins={},
-            residuals={},
-            difficulty={},
-            metadata={},
-            fast_flags={},
-        )
-    )
-    assert isinstance(GoodIntervalPlugin(), IntervalCalibratorPlugin)
-    assert isinstance(good_calibrator, ClassificationIntervalCalibrator)
-    assert not isinstance(BadIntervalPlugin(), IntervalCalibratorPlugin)
 
 
 class RegressionCalibrator:

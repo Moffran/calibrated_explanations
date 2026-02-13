@@ -331,28 +331,6 @@ def test_resolve_plugin_denied(orchestrator, mock_explainer):
         orchestrator.resolve_plugin("factual")
 
 
-def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
-    """Test _resolve_plugin with unregistered plugin."""
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["missing_plugin"]}
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=False,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-            return_value=None,
-        ),
-        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
-    ):
-        orchestrator.resolve_plugin("factual")
 
 
 def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
@@ -384,33 +362,6 @@ def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
         orchestrator.resolve_plugin("factual")
 
 
-def test_resolve_plugin_supports_mode_failure(orchestrator, mock_explainer):
-    """Test _resolve_plugin when supports_mode returns False."""
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["unsupported_plugin"]}
-
-    mock_plugin = MagicMock()
-    mock_plugin.plugin_meta = None
-    mock_plugin.supports_mode.return_value = False
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=False,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-            return_value=mock_plugin,
-        ),
-        patch.object(orchestrator, "check_metadata", return_value=None),
-        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
-    ):
-        orchestrator.resolve_plugin("factual")
 
 
 def test_check_metadata_valid(orchestrator, mock_explainer):

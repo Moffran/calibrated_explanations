@@ -129,13 +129,6 @@ def test_core_reject_shim_exports_and_warns() -> None:
     assert hasattr(module, "is_policy_enabled")
 
 
-def test_core_reject_shim_package_context_emits_warning() -> None:
-    shim_path = Path("src/calibrated_explanations/core/reject.py").resolve()
-    ns = runpy.run_path(
-        str(shim_path),
-        init_globals={"__package__": "calibrated_explanations.core"},
-    )
-    assert "RejectPolicy" in ns
 
 
 def test_core_reject_package_import_exposes_policy() -> None:

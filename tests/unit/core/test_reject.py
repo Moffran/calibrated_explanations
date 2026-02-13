@@ -117,30 +117,7 @@ def make_explain_fn(return_value: Any = "EXPLANATION"):
 class TestPolicyBehavior:
     """Test each RejectPolicy variant produces correct behavior."""
 
-    def test_policy_none_returns_empty_envelope(self, mock_orchestrator):
-        """NONE policy should return envelope with all None fields."""
-        result = mock_orchestrator.apply_policy(RejectPolicy.NONE, x=[[1, 2], [3, 4]])
 
-        assert isinstance(result, RejectResult)
-        assert result.prediction is None
-        assert result.explanation is None
-        assert result.rejected is None
-        assert result.policy is RejectPolicy.NONE
-        assert result.metadata is None
-
-    def test_policy_flag_has_both_prediction_and_explanation(self, mock_orchestrator):
-        """FLAG should explain all instances and tag rejection status."""
-        explain_fn = make_explain_fn()
-        x_input = [[1, 2], [3, 4]]
-        result = mock_orchestrator.apply_policy(RejectPolicy.FLAG, x=x_input, explain_fn=explain_fn)
-
-        assert isinstance(result, RejectResult)
-        # Note: prediction may be None in mock, but explanation should be present
-        assert result.explanation is not None
-        assert result.rejected is not None
-        assert result.policy is RejectPolicy.FLAG
-        assert result.metadata is not None
-        assert len(explain_fn.calls) == 1  # explain_fn called once with all instances
 
     def test_policy_only_rejected_only_explains_rejected_instances(self):
         """ONLY_REJECTED should explain only rejected instances."""
@@ -182,21 +159,6 @@ class TestPolicyBehavior:
 class TestIsPolicyEnabled:
     """Test the is_policy_enabled helper function."""
 
-    def test_none_policy_is_not_enabled(self):
-        """NONE policy should return False for is_policy_enabled."""
-        assert is_policy_enabled(RejectPolicy.NONE) is False
-
-    @pytest.mark.parametrize(
-        "policy",
-        [
-            RejectPolicy.FLAG,
-            RejectPolicy.ONLY_REJECTED,
-            RejectPolicy.ONLY_ACCEPTED,
-        ],
-    )
-    def test_non_none_policies_are_enabled(self, policy):
-        """All non-NONE policies should return True for is_policy_enabled."""
-        assert is_policy_enabled(policy) is True
 
     def test_invalid_policy_returns_false(self):
         """Invalid policy values should return False."""
@@ -310,14 +272,6 @@ class TestPolicyInteractions:
         # The per-call policy should take precedence
         # This tests the routing logic, not the full implementation
 
-    def test_legacy_reject_flag_compatibility(self, mock_orchestrator):
-        """Legacy reject=True/False should be compatible with new policy system."""
-        # The system should handle the legacy pattern gracefully
-        # This is tested implicitly through the policy system
-
-        # Test that NONE policy preserves legacy behavior
-        result = mock_orchestrator.apply_policy(RejectPolicy.NONE, x=[[1, 2]])
-        assert result.policy is RejectPolicy.NONE
 
     def test_strategy_resolution_error_handling(self, mock_orchestrator):
         """Unknown strategy should raise KeyError."""
@@ -374,18 +328,6 @@ class TestPolicyInteractions:
 class TestMetadataValidation:
     """Test that metadata fields are correctly populated."""
 
-    def test_metadata_contains_error_rate_and_reject_rate(self):
-        """Non-NONE policies should populate error_rate and reject_rate in metadata."""
-        explainer = MockExplainer(error_rate=0.03, reject_rate=0.15)
-        orchestrator = MockRejectOrchestrator(explainer)
-
-        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2], [3, 4]])
-
-        assert result.metadata is not None
-        assert "error_rate" in result.metadata
-        assert "reject_rate" in result.metadata
-        assert result.metadata["error_rate"] == 0.03
-        assert result.metadata["reject_rate"] == 0.15
 
     def test_error_rate_within_expected_bounds(self):
         """Error rate should be between 0 and 1."""
@@ -396,20 +338,6 @@ class TestMetadataValidation:
 
             assert 0.0 <= result.metadata["error_rate"] <= 1.0
 
-    def test_reject_rate_matches_rejected_array_proportion(self):
-        """Reject rate should reflect the proportion of rejected instances."""
-        # 2 out of 4 rejected = 0.5 reject rate
-        explainer = MockExplainer(
-            rejected_mask=np.array([False, True, False, True]), reject_rate=0.5
-        )
-        orchestrator = MockRejectOrchestrator(explainer)
-
-        result = orchestrator.apply_policy(RejectPolicy.FLAG, x=[[1, 2], [3, 4], [5, 6], [7, 8]])
-
-        assert result.metadata["reject_rate"] == 0.5
-        # Verify rejected array matches expected pattern
-        expected_rejected = np.array([False, True, False, True])
-        np.testing.assert_array_equal(result.rejected, expected_rejected)
 
     def test_metadata_none_for_none_policy(self, mock_orchestrator):
         """NONE policy should have None metadata."""

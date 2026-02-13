@@ -136,29 +136,6 @@ def test_probabilistic_plot_creates_expected_image(tmp_path):
     assert (tmp_path / "probabilistic.png").exists()
 
 
-def test_plotting_reload_handles_missing_matplotlib(monkeypatch):
-    import builtins
-    import importlib
-    from calibrated_explanations.utils.exceptions import ConfigurationError
-
-    real_import = builtins.__import__
-
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name.startswith("matplotlib"):
-            raise ImportError("matplotlib missing")
-        return real_import(name, globals, locals, fromlist, level)
-
-    with monkeypatch.context() as ctx:
-        ctx.setattr(builtins, "__import__", fake_import)
-        importlib.reload(plotting)
-        assert plotting.plt is None
-        # Verify public behavior: attempting to use plotting raises ConfigurationError
-        # with the original import error message
-        with pytest.raises(ConfigurationError) as exc_info:
-            plotting.__require_matplotlib()
-        assert "matplotlib missing" in str(exc_info.value)
-
-    importlib.reload(plotting)
 
 
 def test_probabilistic_interval_branches(tmp_path, disable_show):
@@ -313,43 +290,8 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
     )
 
 
-def test_probabilistic_interval_one_sided_error(tmp_path):
-    explanation = DummyExplanation(one_sided=True)
-    with pytest.raises(Warning):
-        plotting.plot_probabilistic(
-            explanation,
-            instance=[0.3],
-            predict={"predict": 0.5, "low": 0.2, "high": 0.8},
-            feature_weights={
-                "predict": np.array([0.1]),
-                "low": np.array([0.0]),
-                "high": np.array([0.2]),
-            },
-            features_to_plot=[0],
-            num_to_show=1,
-            column_names=["feat"],
-            title="prob_error",
-            path=str(tmp_path) + "/",
-            show=False,
-            interval=True,
-            idx=0,
-            save_ext=[".png"],
-        )
 
 
-def test_probabilistic_returns_without_output():
-    plotting.plot_probabilistic(
-        DummyExplanation(),
-        instance=[0.1],
-        predict={"predict": 0.5, "low": 0.2, "high": 0.8},
-        feature_weights=[0.1],
-        features_to_plot=[0],
-        num_to_show=1,
-        column_names=["feat"],
-        title="unused",
-        path=None,
-        show=False,
-    )
 
 
 def testplot_global_requires_scalar_threshold_for_non_probabilistic():
@@ -510,36 +452,6 @@ def test_interval_requires_idx_and_two_sided(tmp_path):
         )
 
 
-def testplot_global_threshold_requires_scalar():
-    class NonProbExplainer:
-        def __init__(self):
-            self.learner = object()
-
-        def predict(self, x, uq_interval=False, **kwargs):
-            preds = np.linspace(0.2, 0.4, len(x))
-            return preds, (preds - 0.05, preds + 0.05)
-
-        def predict_proba(self, x, uq_interval=False, threshold=None, **kwargs):
-            preds, (low, high) = self.predict(x, uq_interval=uq_interval, **kwargs)
-            # Mimic binary proba output for thresholded regression fallback path
-            stacked = np.vstack([preds, preds]).T
-            return stacked, (low, high)
-
-        def is_multiclass(self):
-            return False
-
-    explainer = NonProbExplainer()
-    x = np.zeros((3, 1))
-    y = np.array([0.1, 0.2, 0.3])
-
-    with pytest.raises(AssertionError):
-        plotting.plot_global(
-            explainer,
-            x,
-            y=y,
-            threshold=(0.2, 0.5),
-            show=False,
-        )
 
 
 def test_regression_interval_one_sided_error(tmp_path):
@@ -887,37 +799,6 @@ def testplot_global_headless_short_circuit(monkeypatch):
     plotting.plot_global(explainer, x=np.zeros((1, 1)), show=False)
 
 
-def testplot_global_requires_scalar_threshold_for_predict_only(disable_show):
-    class PredictOnlyExplainer:
-        def __init__(self):
-            self.learner = types.SimpleNamespace()
-            self.y_cal = np.array([0.1, 0.2, 0.3])
-
-        def predict(self, x, uq_interval=False, **kwargs):
-            preds = np.linspace(0.2, 0.4, len(x))
-            return preds, (preds - 0.05, preds + 0.05)
-
-        def predict_proba(self, x, uq_interval=False, threshold=None, **kwargs):
-            preds = np.tile([0.6, 0.4], (len(x), 1))
-            lows = np.tile([0.5, 0.3], (len(x), 1))
-            highs = np.tile([0.7, 0.5], (len(x), 1))
-            return preds, (lows, highs)
-
-        def is_multiclass(self):
-            return False
-
-    explainer = PredictOnlyExplainer()
-    x = np.zeros((3, 1))
-    y = np.array([0.1, 0.2, 0.3])
-
-    with pytest.raises(AssertionError):
-        plotting.plot_global(
-            explainer,
-            x,
-            y=y,
-            threshold=(0.2, 0.4),
-            show=False,
-        )
 
 
 def test_plot_proba_triangle_helper():
@@ -969,53 +850,8 @@ def test_require_matplotlib_raises(monkeypatch):
     assert "missing backend" in str(excinfo.value)
 
 
-def test_probabilistic_rejects_mismatched_lengths():
-    """Feature/instance size mismatches should be rejected to avoid mis-rendering."""
-    instance = np.array([0.1])
-    predict = {"predict": 0.5, "low": 0.2, "high": 0.7}
-    feature_weights = np.array([0.3, -0.2])
-
-    with pytest.raises(IndexError):
-        plotting.plot_probabilistic(
-            explanation=DummyExplanation(),
-            instance=instance,
-            predict=predict,
-            feature_weights=feature_weights,
-            features_to_plot=[0, 1],
-            num_to_show=2,
-            column_names=["f0", "f1"],
-            title="mismatch",
-            path="",
-            show=True,
-            interval=False,
-            save_ext=[".png"],
-        )
 
 
-def test_probabilistic_headless_short_circuit(monkeypatch):
-    """Headless invocations without save metadata must return without importing mpl."""
-    monkeypatch.setattr(plotting, "plt", None)
-    monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("backend missing"))
-    monkeypatch.setattr(
-        plotting,
-        "__require_matplotlib",
-        lambda: (_ for _ in ()).throw(RuntimeError("should not import")),
-    )
-
-    plotting.plot_probabilistic(
-        explanation=DummyExplanation(),
-        instance=np.array([]),
-        predict={"predict": 0.5, "low": 0.2, "high": 0.7},
-        feature_weights=np.array([]),
-        features_to_plot=[],
-        num_to_show=0,
-        column_names=None,
-        title=None,
-        path=None,
-        show=False,
-        interval=False,
-        save_ext=None,
-    )
 
 
 def test_probabilistic_errors_for_misaligned_instance():
@@ -1144,33 +980,6 @@ def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
         )
 
 
-def test_probabilistic_short_circuits_without_show_or_save(monkeypatch):
-    """Headless mode should exit before importing matplotlib."""
-    explanation = DummyExplanation()
-    instance = np.array([0.1])
-    predict = {"predict": 0.2, "low": 0.1, "high": 0.3}
-    feature_weights = np.array([0.05])
-
-    def boom():
-        raise AssertionError("matplotlib should not be required")
-
-    monkeypatch.setattr(plotting, "__require_matplotlib", boom)
-
-    plotting.plot_probabilistic(
-        explanation=explanation,
-        instance=instance,
-        predict=predict,
-        feature_weights=feature_weights,
-        features_to_plot=[0],
-        num_to_show=1,
-        column_names=["f0"],
-        title=None,
-        path=None,
-        show=False,
-        interval=False,
-        idx=None,
-        save_ext=None,
-    )
 
 
 def test_compose_save_target_parity():

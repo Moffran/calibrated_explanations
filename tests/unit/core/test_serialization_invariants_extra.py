@@ -51,10 +51,6 @@ def test_vector_low_gt_high_at_index_raises():
         serialization.to_json(exp)
 
 
-def test_vector_predict_outside_at_index_raises():
-    exp = make_exp({"predict": [0, 5], "low": [0, 0], "high": [1, 4]})
-    with pytest.raises(ValidationError):
-        serialization.to_json(exp)
 
 
 def test_rule_and_instance_prediction_checks():

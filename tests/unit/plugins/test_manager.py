@@ -142,16 +142,6 @@ class TestCoercePluginOverride:
         with pytest.raises(ConfigurationError):
             manager.coerce_plugin_override(bad_factory)
 
-    def test_coerce_instance_with_plugin_meta_returns_as_is(self):
-        """should_return_instance_with_plugin_meta_unchanged."""
-        mock_explainer = Mock()
-        manager = PluginManager(mock_explainer)
-
-        mock_plugin = Mock()
-        mock_plugin.plugin_meta = {"name": "test"}
-
-        result = manager.coerce_plugin_override(mock_plugin)
-        assert result is mock_plugin
 
     def test_coerce_dict_returns_as_is(self):
         """should_return_dict_unchanged."""
@@ -174,14 +164,6 @@ class TestBridgeMonitorManagement:
         monitor = manager.get_bridge_monitor("my_plugin")
         assert isinstance(monitor, PredictBridgeMonitor)
 
-    def test_get_bridge_monitor_returns_cached(self):
-        """should_return_cached_bridge_monitor_on_subsequent_calls."""
-        mock_explainer = Mock()
-        manager = PluginManager(mock_explainer)
-
-        monitor1 = manager.get_bridge_monitor("my_plugin")
-        monitor2 = manager.get_bridge_monitor("my_plugin")
-        assert monitor1 is monitor2
 
     def test_clear_bridge_monitors_empties_cache(self):
         """should_empty_bridge_monitor_cache_on_clear."""

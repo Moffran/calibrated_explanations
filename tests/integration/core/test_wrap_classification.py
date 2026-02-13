@@ -45,24 +45,6 @@ def verify_predictions(y_pred1, y_pred2, bounds=None):
             assert low[i] <= p1 <= high[i], f"Prediction {p1} outside bounds at index {i}"
 
 
-@pytest.mark.parametrize(
-    "invalid_x",
-    [
-        None,
-        np.array([]),
-        np.array([[1, 2], [3, 4], [5, 6]]),  # Wrong feature count
-    ],
-)
-def test_invalid_inputs(binary_dataset, invalid_x):
-    """Test handling of invalid inputs"""
-    x_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
-    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-    cal_exp.fit(x_prop_train, y_prop_train)
-
-    with pytest.raises(ValueError):
-        cal_exp.predict(invalid_x, calibrated=False)
-
-
 def test_wrap_binary_ce(binary_dataset):
     """
     Test the WrapCalibratedExplainer class for binary classification.

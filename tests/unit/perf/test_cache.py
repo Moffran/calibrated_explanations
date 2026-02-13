@@ -396,20 +396,6 @@ def test_should_handle_cache_miss_with_none_value() -> None:
     assert cache.metrics.snapshot()["hits"] >= 1
 
 
-def test_should_handle_multiple_parts_as_composite_key() -> None:
-    """Cache key should be composite of stage, parts list."""
-    config = CacheConfig(enabled=True, max_items=10)
-    cache: CalibratorCache[str] = CalibratorCache(config)
-
-    # Store with different parts
-    cache.set(stage="predict", parts=[1, 2], value="result_1_2")
-    cache.set(stage="predict", parts=[1, 3], value="result_1_3")
-    cache.set(stage="predict", parts=[1, 2, 3], value="result_1_2_3")
-
-    assert cache.get(stage="predict", parts=[1, 2]) == "result_1_2"
-    assert cache.get(stage="predict", parts=[1, 3]) == "result_1_3"
-    assert cache.get(stage="predict", parts=[1, 2, 3]) == "result_1_2_3"
-    assert cache.get(stage="predict", parts=[1]) is None
 
 
 def test_should_handle_different_stages_independently() -> None:

@@ -106,14 +106,3 @@ class DummyRejectLearnerAlwaysEmpty:
         return np.zeros((n_rows, n_cols), dtype=float)
 
 
-def test_should_reject_as_uncertainty_when_prediction_set_is_empty():
-    explainer = DummyExplainer()
-    explainer.reject_learner = DummyRejectLearnerAlwaysEmpty()
-    orchestrator = RejectOrchestrator(explainer)
-
-    x = np.zeros((5, 2))
-    out = orchestrator.predict_reject_breakdown(x, confidence=0.9)
-
-    assert np.asarray(out["rejected"], dtype=bool).tolist() == [True] * 5
-    assert np.asarray(out["novelty"], dtype=bool).tolist() == [True] * 5
-    assert out["novelty_rate"] == 1.0

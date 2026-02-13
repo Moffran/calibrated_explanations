@@ -40,22 +40,6 @@ def test_capabilities_must_be_sequence_of_strings(bad_value, message):
         validate_plugin_meta(meta)
 
 
-@pytest.mark.parametrize(
-    "key, value",
-    [
-        ("schema_version", "1"),
-        ("name", ""),
-        ("provider", 42),
-    ],
-)
-def test_required_scalar_fields_are_validated(key, value):
-    meta = make_valid_meta()
-    meta[key] = value
-
-    with pytest.raises(ValidationError, match="must be a non-empty"):
-        validate_plugin_meta(meta)
-
-
 def test_capabilities_required():
     meta = make_valid_meta()
     meta.pop("capabilities")

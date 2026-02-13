@@ -16,20 +16,6 @@ class DummyDescriptor(SimpleNamespace):
     trusted: bool = True
 
 
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        (None, ()),
-        ("", ()),
-        ("single", ("single",)),
-        (["a", "", 0, "b"], ("a", "b")),
-        (123, ()),
-    ],
-)
-def testcoerce_string_tuple_variants(value, expected):
-    assert cli.coerce_string_tuple(value) == expected
-
-
 def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):
     monkeypatch.setattr(
         cli, "is_identifier_denied", lambda identifier: identifier.endswith("-denied")

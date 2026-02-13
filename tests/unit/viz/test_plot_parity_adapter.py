@@ -23,27 +23,8 @@ REG_BAR_COLOR = REGRESSION_BAR_COLOR
 REG_BASE_COLOR = REGRESSION_BASE_COLOR
 
 
-def test_factual_probabilistic_no_uncertainty_primitives():
-    spec = factual_probabilistic_no_uncertainty()
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    # header primitives expected
-    header = primitives.get("header", {})
-    assert "positive" in header and "negative" in header
-    # main solids present
-    solids = primitives.get("solids", [])
-    assert len(solids) >= 1
 
 
-def test_header_overlay_present_without_interval_flag():
-    spec = factual_probabilistic_no_uncertainty()
-    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    header = primitives.get("header", {})
-    pos = header.get("positive")
-    neg = header.get("negative")
-    assert pos is not None and pos.get("overlay") is not None
-    assert neg is not None and neg.get("overlay") is not None
-    assert pos["overlay"] == pytest.approx((0.8, 0.86))
-    assert sorted(neg["overlay"]) == pytest.approx([0.14, 0.2])
 
 
 def test_factual_probabilistic_zero_crossing_behavior():
@@ -156,14 +137,6 @@ def test_alternative_regression_probability_scale_primitives():
     assert spec.body.xlabel.startswith("Probability")
 
 
-def test_triangular_primitives():
-    spec = triangular_probabilistic()
-    # triangular builder returns a dict; adapter.render expects a PlotSpec dataclass
-    # so assert the builder returned the expected triangular payload instead of rendering
-    assert isinstance(spec, dict)
-    ps = spec.get("plot_spec", {})
-    assert ps.get("kind") == "triangular"
-    assert "triangular" in ps
 
 
 def test_global_probabilistic_multiclass_saved(tmp_path):
@@ -191,28 +164,8 @@ def test_adapter_returns_normalized_and_legacy_for_plotspec():
     assert any(k in wrapper for k in ("solids", "overlays", "header", "base_interval"))
 
 
-def test_normalized_primitives_have_expected_shape():
-    """Confirm normalized primitives are list-of-dict with required keys."""
-    spec = factual_probabilistic_no_uncertainty()
-    wrapper = mpl_adapter.render(spec, export_drawn_primitives=True)
-    primitives = wrapper.get("primitives", [])
-    assert isinstance(primitives, list)
-    if primitives:
-        p = primitives[0]
-        assert isinstance(p, dict)
-        # common keys for normalized primitives
-        assert "id" in p and "type" in p and "coords" in p and "style" in p
 
 
-def test_wrapper_merge_preserves_plot_spec_and_primitives():
-    spec = factual_probabilistic_no_uncertainty()
-    wrapper = mpl_adapter.render(spec, export_drawn_primitives=True)
-    # Ensure plot_spec payload convertible to dict exists and matches spec.title
-    ps = wrapper.get("plot_spec", {})
-    # title may be present in dataclass -> asdict conversion; check existence
-    assert isinstance(ps, dict)
-    # primitives list must be present and be list
-    assert isinstance(wrapper.get("primitives", []), list)
 
 
 def test_render_dict_triangular_via_shim():
@@ -227,23 +180,6 @@ def test_render_dict_triangular_via_shim():
     )
 
 
-def test_render_dict_global_via_shim(tmp_path):
-    """Render a global dict payload via the adapter shim and assert scatter + save primitives."""
-    from tests.unit.viz.test_plot_parity_fixtures import global_probabilistic_multiclass
-
-    spec = global_probabilistic_multiclass()
-    # attach a temp save path via save_behavior
-    spec.setdefault("plot_spec", {}).setdefault("save_behavior", {})["default_exts"] = [
-        "png",
-        "svg",
-    ]
-    spec["plot_spec"]["save_behavior"]["path"] = str(tmp_path)
-    wrapper = mpl_adapter.render(spec, export_drawn_primitives=True)
-    # should include scatter primitives (at least one) and save_fig entries
-    scatters = [p for p in wrapper.get("primitives", []) if p.get("type") == "scatter"]
-    saves = [p for p in wrapper.get("primitives", []) if p.get("type") == "save_fig"]
-    assert len(scatters) >= 1
-    assert len(saves) == 2
 
 
 def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):

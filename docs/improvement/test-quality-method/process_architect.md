@@ -20,11 +20,22 @@ You are part of team `test-quality-improvement`. Your teammates are:
 
 The repository root (run all commands from here).
 
-## CRITICAL FINDING
+## CRITICAL REQUIREMENT (ADR-030 Priority #6)
 
-The over-testing report was run with **only 1 coverage context** (not
-`--cov-context=test`). This means ALL per-test density data is unreliable.
-Your process must address this as the #1 prerequisite.
+The Test Quality Method now enforces **Zero Redundant Tests**.
+- **Metric:** `Unique Lines` (from `coverage.xml`)
+- **Stronger Metric:** `Coverage Fingerprint` (set of lines hit)
+- **Gate:** No *new* tests allowed with 0 unique lines unless strictly parameterized.
+- **Process:** Periodic audits to prune tests with 0 unique lines.
+
+## Process Improvement (ADR-030 Priority #6)
+
+The primary goal of the process is now to eliminate **Redundant Testing** (tests with 0 unique lines and identical coverage fingerprints).
+
+Your process designs must prioritize:
+1.  **Measuring Uniformity:** Ensure all reports highlight "tests with 0 unique lines".
+2.  **Enforcing Efficiency:** Create gates or checklists that prevent adding new tests with 0 unique contribution.
+3.  **Consolidation:** Recommend parameterization over copy-paste.
 
 ## Your Tasks
 
@@ -39,6 +50,12 @@ Read and analyze:
 - ADR-030 (search in `docs/improvement/adrs/` for the test quality
   priorities ADR). Understand all 5 criteria and 4-phase rollout.
 - `scripts/over_testing/README.md`
+
+**MANDATORY CHECK:** Confirm `detect_redundant_tests.py` is included in the
+canonical pipeline and that the process prescribes regenerating
+`reports/over_testing/redundant_tests.csv` on every assessment. The process
+must require a human-review CSV (`reports/over_testing/redundant_tests_review.csv`)
+for any manual exceptions so decisions remain auditable.
 
 Document what the current process prescribes vs. what was actually done (gaps).
 

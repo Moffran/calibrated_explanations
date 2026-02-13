@@ -163,11 +163,6 @@ def test_probe_optional_features_warning():
     )
 
 
-def test_policy_serialization_helpers():
-    policy_dict = policy_as_dict()
-    serialized = serialize_policy()
-    assert isinstance(policy_dict, dict)
-    assert '"required_class"' in serialized
 
 
 def test_telemetry_hook_receives_events():

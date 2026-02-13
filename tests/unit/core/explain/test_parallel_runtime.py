@@ -23,16 +23,6 @@ class TestExplainParallelRuntime:
         assert runtime.min_instances_for_parallel == 10
         assert runtime.chunk_size == 5
 
-    def test_from_explainer_ignores_granularity_arg(self):
-        explainer = MagicMock()
-        explainer.parallel_executor = None
-        explainer.executor = None
-        explainer.min_instances_for_parallel = None  # Fix: prevent MagicMock return
-
-        # Passing granularity should not affect the runtime object itself as it was removed
-        runtime = ExplainParallelRuntime.from_explainer(explainer, granularity="instance")
-
-        assert not hasattr(runtime, "granularity")
 
     def test_build_config_derives_granularity_from_executor(self):
         explainer = MagicMock()
@@ -112,25 +102,6 @@ class TestExplainParallelRuntime:
         with pytest.warns(UserWarning, match="Parallel execution fell back to sequential"), runtime:
             pass
 
-    def test_telemetry_duration_tracking(self):
-        """Verify that total_duration is updated on exit."""
-        executor = MagicMock(spec=ParallelExecutor)
-        executor.metrics = MagicMock()
-        executor.metrics.total_duration = 0
-        executor.config = MagicMock()
-        executor.config.enabled = True
-        executor.config.strategy = "threads"
-        executor.active_strategy_name = "threads"
-
-        runtime = ExplainParallelRuntime(
-            executor=executor, min_instances_for_parallel=1, chunk_size=1
-        )
-
-        with patch("time.perf_counter", side_effect=[100.0, 100.5]), runtime:
-            pass
-
-        # The runtime adds the duration to the existing total_duration
-        assert executor.metrics.total_duration == 0.5
 
     def test_no_fallback_warning_when_expected(self):
         """Verify that no warning is issued when sequential was requested."""

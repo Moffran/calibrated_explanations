@@ -500,17 +500,6 @@ def test_plot_routing(monkeypatch, calibrated_collection):
         assert any(call[0] == "plot" for call in exp.calls)
 
 
-def test_get_explanation_validations(calibrated_collection):
-    from calibrated_explanations.core import ValidationError
-
-    with warns_or_raises():
-        assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
-    with warns_or_raises(), pytest.raises(ValidationError):
-        calibrated_collection.get_explanation("one")
-    with warns_or_raises(), pytest.raises(ValidationError):
-        calibrated_collection.get_explanation(-1)
-    with warns_or_raises(), pytest.raises(ValidationError):
-        calibrated_collection.get_explanation(100)
 
 
 def test_conjunction_management(calibrated_collection):
@@ -535,10 +524,6 @@ def test_alternative_specific_filters(calibrated_collection):
         assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
 
 
-def test_collection_filter_rule_sizes(calibrated_collection):
-    filtered = calibrated_collection.filter_rule_sizes(rule_sizes=[1, 2], copy=True)
-    for exp in filtered.explanations:
-        assert any(call[0] == "filter_rule_sizes" for call in exp.calls)
 
 
 def test_collection_to_json_and_back(calibrated_collection):

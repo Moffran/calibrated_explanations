@@ -45,35 +45,6 @@ class TestBuiltinsCoverage:
         labels = derive_threshold_labels("foo")
         assert labels == ("Target within threshold", "Outside threshold")
 
-    def test_legacy_predict_bridge_classification(self):
-        """Test LegacyPredictBridge in classification mode."""
-        mock_explainer = Mock()
-        # Mock predict return: (probs, (low_probs, high_probs))
-        probs = np.array([[0.2, 0.8]])
-        low = np.array([[0.1, 0.7]])
-        high = np.array([[0.3, 0.9]])
-
-        def predict_side_effect(*args, **kwargs):
-            if kwargs.get("uq_interval"):
-                return (probs, (low, high))
-            if kwargs.get("calibrated"):
-                return probs
-            return probs  # Default
-
-        mock_explainer.predict.side_effect = predict_side_effect
-        mock_explainer.predict_proba.return_value = probs
-
-        bridge = LegacyPredictBridge(mock_explainer)
-
-        result = bridge.predict("X", mode="classification", task="classification")
-
-        assert "classes" in result
-        np.testing.assert_array_equal(result["classes"], probs)
-        np.testing.assert_array_equal(result["predict"], probs)
-        np.testing.assert_array_equal(result["low"], low)
-        np.testing.assert_array_equal(result["high"], high)
-        assert result["mode"] == "classification"
-        assert result["task"] == "classification"
 
     def test_legacy_predict_bridge_regression_invariants(self):
         """Test invariant checks in LegacyPredictBridge."""

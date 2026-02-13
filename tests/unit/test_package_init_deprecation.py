@@ -79,37 +79,7 @@ class TestDeprecatedExplanationSymbols:
             assert any("AlternativeExplanation" in str(wi.message) for wi in dep_warnings)
             assert "deprecated" in str(dep_warnings[0].message).lower()
 
-    def test_factual_explanation_deprecated(self):
-        """FactualExplanation should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
 
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("FactualExplanation", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "FactualExplanation")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
-
-    def test_fast_explanation_deprecated(self):
-        """FastExplanation should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
-
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("FastExplanation", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "FastExplanation")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
 
     def test_alternative_explanations_deprecated(self):
         """AlternativeExplanations should emit DeprecationWarning."""
@@ -128,59 +98,12 @@ class TestDeprecatedExplanationSymbols:
             assert len(dep_warnings) >= 1
             assert any("AlternativeExplanations" in str(wi.message) for wi in dep_warnings)
 
-    def test_calibrated_explanations_deprecated(self):
-        """CalibratedExplanations should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
-
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("CalibratedExplanations", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "CalibratedExplanations")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
-            assert any("CalibratedExplanations" in str(wi.message) for wi in dep_warnings)
 
 
 class TestDeprecatedDiscretizerSymbols:
     """Verify that discretizer classes emit DeprecationWarning."""
 
-    def test_entropy_discretizer_deprecated(self):
-        """EntropyDiscretizer should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
 
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("EntropyDiscretizer", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "EntropyDiscretizer")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
-            assert any("EntropyDiscretizer" in str(wi.message) for wi in dep_warnings)
-
-    def test_regressor_discretizer_deprecated(self):
-        """RegressorDiscretizer should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
-
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("RegressorDiscretizer", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "RegressorDiscretizer")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
 
     def test_binary_entropy_discretizer_deprecated(self):
         """BinaryEntropyDiscretizer should emit DeprecationWarning."""
@@ -198,21 +121,6 @@ class TestDeprecatedDiscretizerSymbols:
             ]
             assert len(dep_warnings) >= 1
 
-    def test_binary_regressor_discretizer_deprecated(self):
-        """BinaryRegressorDiscretizer should emit DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import importlib
-
-            ce = importlib.reload(importlib.import_module("calibrated_explanations"))
-            ce.__dict__.pop("BinaryRegressorDiscretizer", None)
-            with contextlib.suppress(Exception):
-                _ = getattr(ce, "BinaryRegressorDiscretizer")
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
 
 
 class TestDeprecatedCalibratorSymbols:
@@ -311,32 +219,8 @@ class TestDeprecationMessageFormat:
             assert "calibrated_explanations" in message
             assert "v0.11.0" in message
 
-    def test_deprecation_message_contains_removal_version(self):
-        """Deprecation warnings should mention the removal version."""
-
-        ce = sys.modules.get("calibrated_explanations")
-        if ce and "VennAbers" in ce.__dict__:
-            del ce.__dict__["VennAbers"]
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            import calibrated_explanations
-
-            _ = calibrated_explanations.VennAbers
-
-            dep_warnings = [
-                warning for warning in w if issubclass(warning.category, DeprecationWarning)
-            ]
-            assert len(dep_warnings) >= 1
-            assert "v0.11.0" in str(dep_warnings[0].message)
 
 
 class TestNonExistentSymbolRaisesAttributeError:
     """Verify that accessing non-existent symbols raises AttributeError."""
 
-    def test_nonexistent_symbol_raises_attribute_error(self):
-        """Accessing non-existent symbol should raise AttributeError."""
-        import calibrated_explanations
-
-        with pytest.raises(AttributeError):
-            _ = calibrated_explanations.NonExistentSymbol

@@ -158,26 +158,8 @@ def test_validate_inputs_adr002_signature_with_y():
     validation.validate_inputs(x, y)  # Should not raise
 
 
-def test_validate_inputs_adr002_signature_y_length_mismatch():
-    """Verify validate_inputs() enforces y length matches x samples."""
-    x = np.array([[1.0, 2.0], [3.0, 4.0]])
-    y = np.array([0, 1, 2])  # Wrong length
-    with pytest.raises(validation.DataShapeError) as exc_info:
-        validation.validate_inputs(x, y)
-    assert "Length of 'y'" in str(exc_info.value) or "does not match" in str(exc_info.value)
-    assert exc_info.value.details is not None
-    assert exc_info.value.details.get("y_length") == 3
-    assert exc_info.value.details.get("x_samples") == 2
 
 
-def test_validate_inputs_adr002_task_parameter():
-    """Verify validate_inputs() accepts task parameter."""
-    x = np.array([[1.0, 2.0], [3.0, 4.0]])
-    y = np.array([0, 1])
-    # All task types should be accepted
-    validation.validate_inputs(x, y, task="auto")
-    validation.validate_inputs(x, y, task="classification")
-    validation.validate_inputs(x, y, task="regression")
 
 
 def test_validate_inputs_adr002_allow_nan_parameter():
@@ -227,15 +209,6 @@ def test_validate_inputs_adr002_class_labels_parameter():
     validation.validate_inputs(x, y, class_labels=None)
 
 
-def test_validate_inputs_adr002_check_finite_parameter():
-    """Verify validate_inputs() accepts check_finite parameter."""
-    x = np.array([[1.0, np.inf], [3.0, 4.0]])
-    # Should raise when check_finite=True and x contains inf
-    with pytest.raises(validation.ValidationError) as exc_info:
-        validation.validate_inputs(x, check_finite=True)
-    assert exc_info.value.details is not None
-    # Should pass when check_finite=False
-    validation.validate_inputs(x, check_finite=False)
 
 
 def test_validate_inputs_adr002_signature_details_payload():

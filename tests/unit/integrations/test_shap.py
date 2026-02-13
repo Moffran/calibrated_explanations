@@ -102,15 +102,6 @@ def test_should_return_cached_when_shape_matches(monkeypatch: pytest.MonkeyPatch
     assert cached_reference is helper.reference_explanation
 
 
-def test_should_return_none_when_shap_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No shap module should short-circuit to (None, None)."""
-    helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: None)
-
-    explainer, reference = helper.preload()
-
-    assert explainer is None
-    assert reference is None
 
 
 @pytest.mark.parametrize("x_cal_value", [None, np.empty((0, 2)), object()])

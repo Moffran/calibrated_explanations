@@ -145,48 +145,5 @@ def test_predict_conjunction_tuple_bins_array():
     assert len(batch_bins) == 2
 
 
-def test_predict_conjunction_tuple_numpy_int_features():
-    """numpy integer features should be coerced to Python ints."""
-    p_vals = np.array([0.5])
-    low_vals = np.array([0.4])
-    high_vals = np.array([0.6])
-    dummy = np.array([0.0])
-
-    exp, mock_predict = make_explanation_with_mock_predict((p_vals, low_vals, high_vals, dummy))
-
-    perturbed = np.array([[1.0, 2.0, 3.0]])
-    rule_value_set = [np.array([10.0])]
-    # Use numpy int64 instead of Python int
-    original_features = [np.int64(1)]
-
-    p, lo, hi = exp.predict_conjunction_tuple(
-        rule_value_set, original_features, perturbed, threshold=0.5, predicted_class=1
-    )
-
-    assert isinstance(p, float)
 
 
-def test_predict_conjunction_tuple_multi_feature():
-    """Test conjunctions with multiple features."""
-    # 2 features x 2 values each = 4 combinations
-    p_vals = np.array([0.5, 0.6, 0.7, 0.8])
-    low_vals = np.array([0.4, 0.5, 0.6, 0.7])
-    high_vals = np.array([0.6, 0.7, 0.8, 0.9])
-    dummy = np.zeros(4)
-
-    exp, mock_predict = make_explanation_with_mock_predict((p_vals, low_vals, high_vals, dummy))
-
-    perturbed = np.array([[1.0, 2.0, 3.0]])
-    rule_value_set = [np.array([10.0, 20.0]), np.array([30.0, 40.0])]
-    original_features = [0, 2]
-
-    p, lo, hi = exp.predict_conjunction_tuple(
-        rule_value_set, original_features, perturbed, threshold=0.5, predicted_class=1
-    )
-
-    assert p == pytest.approx(0.65)  # mean of [0.5, 0.6, 0.7, 0.8]
-
-    # Verify batch shape
-    call_args = mock_predict.call_args
-    batch_arg = call_args[0][0]
-    assert batch_arg.shape == (4, 3)

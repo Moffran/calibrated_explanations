@@ -121,44 +121,6 @@ def testplot_alternative_thresholded_tuple(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def testplot_alternative_multiclass(mock_require, mock_render):
-    """Should correctly determine axis labels for multiclass."""
-    explanation = MagicMock()
-    explanation.get_mode.return_value = "classification"
-    explanation.get_class_labels.return_value = ["A", "B", "C"]
-    explanation.prediction = {"classes": 2}
-    explanation.is_thresholded.return_value = False
-
-    # Mock explainer for is_multiclass check
-    explainer = MagicMock()
-    explainer.is_multiclass.return_value = True
-    explanation.get_explainer.return_value = explainer
-
-    # Fix inputs
-    instance = [0.5]
-    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
-    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
-    features_to_plot = [0]
-    column_names = ["f1"]
-
-    plotting.plot_alternative(
-        explanation,
-        instance,
-        predict,
-        feature_predict,
-        features_to_plot,
-        1,
-        column_names,
-        "Title",
-        None,
-        True,
-        use_legacy=False,
-    )
-    mock_render.assert_called()
-
-
-@patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy.plot_alternative")
 def testplot_alternative_fallback_on_error(
     mock_legacy, mock_require, mock_render, enable_fallbacks

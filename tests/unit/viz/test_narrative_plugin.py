@@ -459,18 +459,6 @@ def test_narrative_plugin_empty_explanations():
     assert result == []
 
 
-def test_narrative_plugin_single_instance(classification_explainer, iris_data):
-    """Test with a single instance."""
-    _, x_test, _, _ = iris_data
-    x_test_binary = x_test[iris_data[3] < 2][:1]
-
-    explanations = classification_explainer.explain_factual(x_test_binary)
-
-    plugin = NarrativePlotPlugin()
-    result = plugin.plot(explanations, expertise_level="beginner", output="dict")
-
-    assert len(result) == 1
-    assert result[0]["instance_index"] == 0
 
 
 def test_narrative_plugin_template_fallback(enable_fallbacks, tmp_path, monkeypatch):

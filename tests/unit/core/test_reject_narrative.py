@@ -94,19 +94,6 @@ def test_narrative_prepends_rejection_text_outlier(generator):
     assert "Base narrative." in narrative
 
 
-def test_narrative_no_rejection_text_if_not_rejected(generator):
-    context = FakeRejectContext(rejected=False, reject_type="ambiguity")
-    explanation = FakeExplanation(reject_context=context)
-
-    narrative = generator.generate_narrative(
-        explanation,
-        problem_type="classification",
-        explanation_type="factual",
-        expertise_level="advanced",
-    )
-
-    assert "Ambiguous prediction" not in narrative
-    assert "Base narrative." in narrative
 
 
 def test_narrative_handles_missing_reject_context(generator):

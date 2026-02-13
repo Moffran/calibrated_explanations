@@ -57,42 +57,6 @@ def ensure_toml_modules_restored() -> Iterator[None]:
         config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=ORIG_TOMLI_W)
 
 
-@pytest.mark.parametrize(
-    "input_value, expected",
-    [
-        (None, ()),
-        ("", ()),
-        ("   ", ()),
-        ("a", ("a",)),
-        ("a,b", ("a", "b")),
-        (" a , b ", ("a", "b")),
-        ("a, ,b", ("a", "b")),
-        ("a,b,c", ("a", "b", "c")),
-        (False, ()),
-    ],
-)
-def testsplit_csv(input_value, expected):
-    """Test split_csv with various inputs."""
-    assert split_csv(input_value) == expected
-
-
-@pytest.mark.parametrize(
-    "input_value, expected",
-    [
-        (None, ()),
-        ("", ()),
-        ("value", ("value",)),
-        (["a", "b"], ("a", "b")),
-        (("a", "b"), ("a", "b")),
-        (["a", "", "b", None], ("a", "b")),
-        ([1, "a", 2.5], ("a",)),
-    ],
-)
-def testcoerce_string_tuple(input_value, expected):
-    """Test coerce_string_tuple with various inputs."""
-    assert coerce_string_tuple(input_value) == expected
-
-
 def testread_pyproject_section_handles_multiple_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
 ) -> None:
@@ -193,22 +157,6 @@ def test_write_pyproject_section_returns_false_when_missing_file(
     assert write_pyproject_section(("tool",), {"k": "v"}) is False
 
 
-def test_write_pyproject_section_rejects_non_mapping_prefix(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-) -> None:
-    """Non-dict traversal should return False."""
-
-    class DummyTomliW:
-        @staticmethod
-        def dump(_data: dict[str, Any], fh) -> None:
-            fh.write(b"noop")
-
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "pyproject.toml").write_text("tool = 1\n", encoding="utf-8")
-    reset_toml_modules()
-    config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=DummyTomliW)
-
-    assert write_pyproject_section(("tool", "calibrated_explanations"), {"k": "v"}) is False
 
 
 def test_write_pyproject_section_rejects_non_mapping_leaf(

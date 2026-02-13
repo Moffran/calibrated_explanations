@@ -657,76 +657,8 @@ def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
     cal_exp.explore_alternatives(x_test, y_test[0])
 
 
-def test_var_normalized_regression_ce(regression_dataset):
-    """
-    Tests variance normalized explanations for regression models.
-    Args:
-        regression_dataset (tuple): The regression dataset.
-    """
-    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, categorical_features, feature_names = (
-        regression_dataset
-    )
-    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(
-        model,
-        x_cal,
-        y_cal,
-        feature_names,
-        categorical_features,
-        mode="regression",
-        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
-    )
-
-    factual_explanation = cal_exp.explain_factual(x_test)
-    factual_explanation.add_conjunctions()
-
-    factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
-
-    factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
-
-    cal_exp.explore_alternatives(x_test)
-
-    cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
-
-    cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
 
 
-def test_var_normalized_probabilistic_regression_ce(regression_dataset):
-    """
-    Tests variance normalized probabilistic explanations for regression models.
-    Args:
-        regression_dataset (tuple): The regression dataset.
-    """
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        y_test,
-        _,
-        categorical_features,
-        feature_names,
-    ) = regression_dataset
-    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(
-        model,
-        x_cal,
-        y_cal,
-        feature_names,
-        categorical_features,
-        mode="regression",
-        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
-    )
-
-    factual_explanation = cal_exp.explain_factual(x_test, y_test)
-    factual_explanation.add_conjunctions()
-
-    factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
-
-    cal_exp.explore_alternatives(x_test, y_test)
-
-    cal_exp.explore_alternatives(x_test, y_test[0])
 
 
 @pytest.mark.viz
@@ -933,34 +865,6 @@ def test_knn_normalized_probabilistic_regression_fast_ce(regression_dataset):
     fast_explanation = cal_exp.explain_fast(x_test, y_test[0])
 
 
-def test_var_normalized_regression_fast_ce(regression_dataset):
-    """
-    Tests variance normalized fast explanations for regression models.
-    Args:
-        regression_dataset (tuple): The regression dataset.
-    """
-    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, categorical_features, feature_names = (
-        regression_dataset
-    )
-    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(
-        model,
-        x_cal,
-        y_cal,
-        feature_names,
-        categorical_features,
-        mode="regression",
-        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
-        fast=True,
-    )
-
-    fast_explanation = cal_exp.explain_fast(x_test)
-    with pytest.warns(UserWarning):
-        fast_explanation.add_conjunctions()
-
-    fast_explanation = cal_exp.explain_fast(x_test, low_high_percentiles=(0.1, np.inf))
-
-    fast_explanation = cal_exp.explain_fast(x_test, low_high_percentiles=(-np.inf, 0.9))
 
 
 def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):

@@ -48,6 +48,13 @@ Your job is to merge these into a single actionable document:
    ```bash
    python scripts/over_testing/run_over_testing_pipeline.py
    python scripts/over_testing/extract_per_test.py
+   # Also: regenerate redundancy report and include in your review
+   python scripts/over_testing/detect_redundant_tests.py
+
+   NOTE: `detect_redundant_tests.py` is mandatory for the assessment. If a
+   generated `reports/over_testing/redundant_tests.csv` entry is a false
+   positive, document the decision by creating
+   `reports/over_testing/redundant_tests_review.csv` (columns: `fingerprint,test_count,lines_covered,unique_lines_per_test,description,tests,status,reviewer,notes`) and commit it with your `final_remedy_plan.md`.
    ```
 
 4. **Produce `reports/over_testing/final_remedy_plan.md`** with:
@@ -198,6 +205,7 @@ After all actions are complete:
    ```bash
    python scripts/over_testing/run_over_testing_pipeline.py
    python scripts/over_testing/extract_per_test.py
+   python scripts/over_testing/detect_redundant_tests.py
    ```
 
 2. **Re-run anti-pattern analysis** to confirm remediation:

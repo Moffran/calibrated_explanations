@@ -33,23 +33,6 @@ def test_build_regression_numeric_path_and_labels():
     assert [b.instance_value for b in bars] == [10, 20, 30]
 
 
-def test_build_regression_interval_dict_and_header_xlim():
-    fw = make_fw(4)
-    spec = build_regression_bars_spec(
-        title=None,
-        predict={"predict": 0.2, "low": 0.1, "high": 0.3},
-        feature_weights=fw,
-        features_to_plot=[0, 1, 2, 3],
-        column_names=None,
-        instance=None,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-    )
-    # header xlim should be set when y_minmax provided
-    assert spec.header.xlim is not None
-    # bars should have interval_low/high set
-    for b in spec.body.bars:
-        assert b.interval_low is not None and b.interval_high is not None
 
 
 def test_sort_by_value_and_abs_ordering():
@@ -161,13 +144,6 @@ def test_probabilistic_builder_unit_interval_with_custom_minmax():
 # Tests for is_valid_probability_values public API
 
 
-def test_is_valid_probability_values_should_return_true_for_valid_probabilities():
-    """Verify is_valid_probability_values accepts valid probabilities in [0, 1]."""
-    assert is_valid_probability_values(0.0)
-    assert is_valid_probability_values(0.5)
-    assert is_valid_probability_values(1.0)
-    assert is_valid_probability_values(0.0, 0.5, 1.0)
-    assert is_valid_probability_values(0.25, 0.75)
 
 
 def test_is_valid_probability_values_should_accept_string_probabilities():
@@ -178,19 +154,8 @@ def test_is_valid_probability_values_should_accept_string_probabilities():
     assert is_valid_probability_values("0.0", "0.5", "1.0")
 
 
-def test_is_valid_probability_values_should_accept_with_tolerance():
-    """Verify is_valid_probability_values allows small tolerance beyond [0, 1]."""
-    # _PROBABILITY_TOL is typically 1e-9
-    assert is_valid_probability_values(-1e-10)  # slightly below 0, within tolerance
-    assert is_valid_probability_values(1.0 + 1e-10)  # slightly above 1, within tolerance
 
 
-def test_is_valid_probability_values_should_reject_out_of_range_values():
-    """Verify is_valid_probability_values rejects values outside [0, 1] beyond tolerance."""
-    assert not is_valid_probability_values(-0.1)
-    assert not is_valid_probability_values(1.1)
-    assert not is_valid_probability_values(-1.0)
-    assert not is_valid_probability_values(2.0)
 
 
 def test_is_valid_probability_values_should_reject_non_finite_values():

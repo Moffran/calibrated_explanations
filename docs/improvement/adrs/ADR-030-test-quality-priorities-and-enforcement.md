@@ -76,6 +76,16 @@ criteria that measure reliability and behavioral correctness. The primary criter
    - **Pytest fit:** strong fit due to fixture scoping, parametrization, and local
      helpers in conftest files.
 
+6. **Semantic efficiency (avoid meaningful over-testing)**
+   - **Definition:** Every test must provide a unique contribution to the suite's
+     confidence. A test is considered **redundant** if it has 0 unique lines unless it
+     provides a unique parameter combination, return-value assertion, or side-effect check
+     that is not covered by any other test.
+   - **Pros:** Reduces suite runtime, maintenance burden, and "false confidence" from high test counts.
+   - **Cons:** Requires careful design of parameterized tests; may flag valid regression tests if not marked.
+   - **Pytest fit:** `pytest.mark.parametrize` is the preferred pattern for variations;
+     copy-pasted tests are explicitly discouraged.
+
 ## Enforcement
 
 The quality criteria above are enforced through a combination of CI gates and
@@ -86,14 +96,16 @@ static audits. Specifically:
   - Private-member usage scan in tests (fail on non-allowlisted usage).
   - Fallback-chain restrictions (tests must opt in when validating fallbacks).
 
-- **Over-testing density gate (advisory → enforced)**:
-  - Use per-test coverage contexts (`pytest --cov-context=test`) to compute per-line
-    test-count density with `scripts/over_testing/over_testing_report.py` and
-    `scripts/over_testing/over_testing_triage.py`.
-  - Gate on an **over-testing ratio** (share of covered lines above a test-count
-    threshold) with a ratcheting baseline, similar to the coverage fail-under model.
-  - Allowlist exceptions only with justification and a planned sunset; keep outputs
-    checked in under `reports/over_testing/` for visibility.
+- **Redundant test strictness (zero unique lines)**:
+  - **Metric:** `Unique Lines` per test (calculated via `pytest --cov-context=test`).
+  - **Requirement:** **0 tests with 0 unique lines**, unless:
+    1.  The test is a `pytest.mark.parametrize` case where the variation is meaningful (input/output).
+    2.  The test is explicitly marked as a regression test for an issue (`@pytest.mark.issue`).
+  - **Stronger Goal (Behavioral Uniqueness):** No two non-parameterized tests shall have
+    **identical coverage fingerprints** (set of all lines hit). Identical fingerprints
+    indicate a purely redundant test that should be deleted or parameterized.
+  - **Mechanism:** `scripts/over_testing/over_testing_report.py` computes unique lines and
+    fingerprints. CI will warn (advisory) and eventually block (enforced) on violations.
 
 - **Expand test anti-pattern checks** (incremental, non-breaking rollout):
   - Extend the existing anti-pattern detector to flag:

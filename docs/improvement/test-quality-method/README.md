@@ -68,32 +68,55 @@ tracking was not active).
 | `hotspot_contexts.json`      | For each hotspot: which specific tests hit it                    |
 | `hotspot_contexts.md`        | Human-readable hotspot-to-test mapping                           |
 
-### Step 2: Extract per-test unique line counts
+### Step 2: Extract per-test unique line counts and fingerprints
 
 ```bash
 python scripts/over_testing/extract_per_test.py
+python scripts/over_testing/detect_redundant_tests.py
 ```
 
-Requires both `.coverage` (SQLite database from step 1) and `coverage.xml`
-(produced by pytest-cov). Outputs:
+IMPORTANT: `detect_redundant_tests.py` MUST be run as part of every
+test-quality assessment. Preferred workflow to update `redundant_tests.csv`:
+
+- Regenerate (preferred):
+
+   1. Run the full pipeline: `python scripts/over_testing/run_over_testing_pipeline.py`
+   2. Extract per-test summaries: `python scripts/over_testing/extract_per_test.py`
+   3. Recreate redundancy report: `python scripts/over_testing/detect_redundant_tests.py`
+
+- Manual exceptions (only when a generated entry is a false positive):
+
+   1. Do not edit the generated `reports/over_testing/redundant_tests.csv` silently.
+   2. Create `reports/over_testing/redundant_tests_review.csv` with these columns:
+       `fingerprint,test_count,lines_covered,unique_lines_per_test,description,tests,status,reviewer,notes`
+   3. Record `status` as `ACCEPTED`/`REJECTED`/`UNDER_REVIEW`, add a short `notes`, and commit
+       `redundant_tests_review.csv` alongside your `reports/over_testing/final_remedy_plan.md`.
+   4. If you must change the generated CSV, add an accompanying changelog entry in `CHANGELOG.md`.
+
+This makes review decisions auditable and avoids losing the authoritative generated report.
+
+Outputs:
 
 | File                    | Content                                                                   |
 | ----------------------- | ------------------------------------------------------------------------- |
 | `per_test_summary.csv`  | Per test: name, unique lines (lines only this test covers), runtime       |
+| `redundant_tests.csv`   | Per fingerprint: hash, test_count, unique_lines, list of test names       |
 
-> **Important**: A test with 0 unique lines does NOT mean it is useless -- it
-> means every line it covers is also covered by at least one other test. This
-> is expected for the majority of tests.
+> **Primary Metric**: **Unique Lines**.
+>
+> A test with **0 unique lines** is a strong candidate for removal or consolidation.
+> A test with **Identical Coverage Fingerprint** (same set of lines hit as another test)
+> is a **Redundant Test** and must be removed or parameterized (per ADR-030).
 
 ### Step 3: Analyze the data
 
 Use the triage reports and per-test summary to understand the current state.
 Key questions to answer:
 
-1. **How many tests exist?** Check `metadata.json` for `contexts_detected`
-2. **How many tests have zero unique lines?** Count rows in `per_test_summary.csv` where `unique_lines=0`
-3. **What are the over-testing hotspots?** Read `triage.md` for the top files, lines, and blocks
-4. **Which tests hit each hotspot?** Read `hotspot_contexts.md`
+1. **How many tests have ZERO unique lines?** Count rows in `per_test_summary.csv` where `unique_lines=0`. These are the primary targets for pruning.
+2. **Which tests have identical coverage fingerprints?** (Advanced) Identify groups of tests that hit exactly the same lines.
+3. **What are the over-testing hotspots?** Read `triage.md` for the top files, lines, and blocks.
+4. **Which tests hit each hotspot?** Read `hotspot_contexts.md`.
 
 ### Step 4: Simulate removals (optional, before acting)
 
@@ -195,20 +218,25 @@ Identifies source code that is unreachable or only tested by low-value tests.
 
 ### [test_creator.md](test_creator.md) -- Coverage Gap Closer
 
-Writes minimal, high-signal behavioral tests to close real coverage gaps
-without introducing padding. Focus is on public contracts, determinism, and
-strong assertions.
+Analyzes the coverage report to calculate the most efficient way to close
+coverage gaps with new high-quality tests. Studies per-file and per-line
+coverage data, ranks candidate files by the ratio of coverage gain to test
+effort, and designs the smallest set of tests that produces the largest
+coverage improvement — without introducing padding.
 
 **Key tasks**:
 
-- Identify coverage gaps using `scripts/over_testing/gap_analyzer.py` and
-   `reports/over_testing/gaps.csv`.
-- Check per-module coverage gates with `scripts/quality/check_coverage_gates.py`.
-- Analyze pytest coverage output and prioritize files with 2–20 missed
-   statements for efficient wins.
-- Prioritize targets by estimated coverage gain per test line (Tier 1/2/3).
+- Analyze the pytest coverage report and sort files by missed statements to
+   identify the highest-value gap-closing opportunities.
+- Run gap analysis (`scripts/over_testing/gap_analyzer.py`) and check
+   per-module gates (`scripts/quality/check_coverage_gates.py`) to find
+   targets below threshold.
+- Prioritize targets by **coverage gain per test line** (Tier 1/2/3) — this
+   efficiency ranking is the core output of the analysis.
 - Design concrete test sketches for Tier 1/2 targets (target, strategy,
    estimated gain, pseudocode, constraints).
+- Verify each new test contributes > 0 unique lines via
+   `scripts/over_testing/extract_per_test.py`; revise if redundant.
 - Produce a test-creator proposal with a prioritized target table and
    specific test designs for the top targets.
 

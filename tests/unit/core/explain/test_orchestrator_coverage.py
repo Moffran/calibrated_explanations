@@ -26,32 +26,6 @@ def orchestrator(mock_explainer):
     return ExplanationOrchestrator(mock_explainer)
 
 
-def test_set_discretizer_valid(orchestrator, mock_explainer):
-    with (
-        patch(
-            "calibrated_explanations.core.discretizer_config.instantiate_discretizer"
-        ) as mock_instantiate,
-        patch(
-            "calibrated_explanations.core.discretizer_config.validate_discretizer_choice"
-        ) as mock_validate,
-        patch(
-            "calibrated_explanations.core.discretizer_config.setup_discretized_data"
-        ) as mock_setup,
-    ):
-        mock_validate.return_value = "binaryEntropy"
-
-        # Create a mock discretizer with required attributes
-        mock_discretizer = MagicMock()
-        mock_discretizer.to_discretize = []
-        mock_instantiate.return_value = mock_discretizer
-
-        mock_setup.return_value = ({"f1": {"values": [], "frequencies": []}}, np.array([[1, 2]]))
-
-        orchestrator.set_discretizer("binaryEntropy")
-
-        assert mock_explainer.discretizer == mock_discretizer
-        mock_validate.assert_called_once()
-        mock_instantiate.assert_called_once()
 
 
 def test_infer_mode_alternative(orchestrator, mock_explainer):
@@ -176,9 +150,6 @@ def test_invoke_per_instance_ignore(orchestrator, mock_explainer):
     assert set(request.features_to_ignore) == {0, 1}
 
 
-def test_set_discretizer_invalid_source(orchestrator):
-    with pytest.raises(ValidationError, match="condition_source must be either"):
-        orchestrator.set_discretizer("binaryEntropy", condition_source="invalid")
 
 
 def test_set_discretizer_prediction_source(orchestrator, mock_explainer):
@@ -292,32 +263,10 @@ def test_resolve_plugin_success(orchestrator, mock_explainer):
         assert identifier == "plugin1"
 
 
-def test_check_metadata_valid(orchestrator, mock_explainer):
-    from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-
-    metadata = {
-        "schema_version": EXPLANATION_PROTOCOL_VERSION,
-        "tasks": ("classification",),
-        "modes": ("factual",),
-        "capabilities": ("explain", "explanation:factual", "task:classification"),
-    }
-
-    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
-    assert error is None
 
 
-def test_check_metadata_invalid_version(orchestrator):
-    metadata = {"schema_version": "0.0.0"}
-    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
-    assert "unsupported" in error
 
 
-def test_check_metadata_missing_tasks(orchestrator):
-    from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-
-    metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
-    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
-    assert "missing tasks" in error
 
 
 def test_check_metadata_unsupported_task(orchestrator, mock_explainer):
@@ -329,13 +278,6 @@ def test_check_metadata_unsupported_task(orchestrator, mock_explainer):
     assert "does not support task" in error
 
 
-def test_check_metadata_missing_modes(orchestrator, mock_explainer):
-    from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-
-    mock_explainer.mode = "classification"
-    metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION, "tasks": ("classification",)}
-    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
-    assert "missing modes" in error
 
 
 def test_check_metadata_unsupported_mode(orchestrator, mock_explainer):
@@ -351,92 +293,12 @@ def test_check_metadata_unsupported_mode(orchestrator, mock_explainer):
     assert "does not declare mode" in error
 
 
-def test_check_metadata_missing_capabilities(orchestrator, mock_explainer):
-    from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-
-    mock_explainer.mode = "classification"
-    metadata = {
-        "schema_version": EXPLANATION_PROTOCOL_VERSION,
-        "tasks": ("classification",),
-        "modes": ("factual",),
-        "capabilities": (),
-    }
-    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
-    assert "missing required capabilities" in error
 
 
-def test_resolve_plugin_denied(orchestrator, mock_explainer):
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["plugin1"]}
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=True,
-        ),
-        pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"),
-    ):
-        orchestrator.resolve_plugin("factual")
 
 
-def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["plugin1"]}
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=False,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-            return_value=None,
-        ),
-        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
-    ):
-        # Should raise ConfigurationError because plugin1 is preferred (only one in chain)
-        # Wait, preferred_identifier is None unless override is set.
-        # But if chain has items, it tries them. If all fail, it raises ConfigurationError at the end.
-
-        orchestrator.resolve_plugin("factual")
 
 
-def test_resolve_plugin_missing_supports_mode(orchestrator, mock_explainer):
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["plugin1"]}
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=False,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin"
-        ) as mock_find,
-    ):
-        mock_plugin = MagicMock()
-        del mock_plugin.supports_mode  # Simulate missing method
-        # Actually MagicMock will create it on access unless we spec it.
-        # But orchestrator does `try: supports = plugin.supports_mode except AttributeError`.
-        # So we need to make sure accessing it raises AttributeError.
-        type(mock_plugin).supports_mode = PropertyMock(side_effect=AttributeError)
-
-        mock_find.return_value = mock_plugin
-        orchestrator.instantiate_plugin = MagicMock(return_value=mock_plugin)
-
-        with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
-            orchestrator.resolve_plugin("factual")
 
 
 def test_build_context(orchestrator, mock_explainer):

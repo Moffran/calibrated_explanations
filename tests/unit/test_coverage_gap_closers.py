@@ -23,40 +23,7 @@ from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
 class TestIntervalCalibratorContextPickle:
     """Verify pickle round-trip preserves IntervalCalibratorContext state."""
 
-    def test_pickle_round_trip_with_metadata(self):
-        ctx = IntervalCalibratorContext(
-            learner="dummy",
-            calibration_splits=[1, 2, 3],
-            bins={"a": 1},
-            residuals={"r": 0.1},
-            difficulty={"d": 0.5},
-            metadata={"key": "value", "n": 42},
-            fast_flags={"fast": True},
-        )
-        assert isinstance(ctx.metadata, MappingProxyType)
 
-        restored = pickle.loads(pickle.dumps(ctx))
-
-        assert restored.learner == "dummy"
-        assert restored.calibration_splits == [1, 2, 3]
-        assert restored.metadata["key"] == "value"
-        assert restored.metadata["n"] == 42
-        assert isinstance(restored.metadata, MappingProxyType)
-        assert restored.fast_flags == {"fast": True}
-
-    def test_pickle_round_trip_without_metadata(self):
-        ctx = IntervalCalibratorContext(
-            learner=None,
-            calibration_splits=[],
-            bins={},
-            residuals={},
-            difficulty={},
-            metadata={},
-            fast_flags={},
-        )
-        restored = pickle.loads(pickle.dumps(ctx))
-        assert restored.learner is None
-        assert dict(restored.metadata) == {}
 
     def test_pickle_preserves_plugin_state(self):
         ctx = IntervalCalibratorContext(
@@ -110,10 +77,6 @@ class TestConjunctionStateNormalization:
         state.dedupe_by_feature_only = dedupe_by_feature_only
         return state
 
-    def test_normalization_key_none_values(self):
-        s = self.make_state()
-        key = s.get_normalization_key(0, None)
-        assert isinstance(key, tuple)
 
     def test_normalization_key_list_values(self):
         s = self.make_state()
@@ -121,11 +84,6 @@ class TestConjunctionStateNormalization:
         assert isinstance(key, tuple)
         assert len(key) == 2
 
-    def test_normalization_key_numpy_array_values(self):
-        s = self.make_state()
-        key = s.get_normalization_key(1, np.array([1.5, 2.5]))
-        assert isinstance(key, tuple)
-        assert len(key) == 2
 
     def test_normalization_key_dedupe_by_feature_only(self):
         s = self.make_state(dedupe_by_feature_only=True)

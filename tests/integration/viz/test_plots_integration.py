@@ -13,46 +13,6 @@ from tests.helpers.explainer_utils import FakeExplanation, FakeExplainer
 pytestmark = pytest.mark.viz
 
 
-def testplot_regression_writes_file(tmp_path):
-    """Test that plot_regression saves files to disk.
-
-    Refactored to use pathlib.Path and semantic assertions.
-     Tests that files are created, not exact path strings.
-    """
-    # prepare feature weights as dict with interval arrays
-    n = 4
-    fw = {
-        "predict": np.array([0.1, -0.2, 0.3, 0.0]),
-        "low": np.array([0.05, -0.25, 0.25, -0.05]),
-        "high": np.array([0.15, -0.15, 0.35, 0.05]),
-    }
-    expl = FakeExplanation(mode="regression")
-    outdir = str(tmp_path)
-    title = "reg_test"
-    # call with save_ext to force render+save behavior
-    _plots.plot_regression(
-        explanation=expl,
-        instance=[0, 0, 0, 0],
-        predict={"predict": 0.5, "low": 0.4, "high": 0.6},
-        feature_weights=fw,
-        features_to_plot=list(range(n)),
-        num_to_show=n,
-        column_names=[f"f{i}" for i in range(n)],
-        title=title,
-        path=outdir + os.path.sep,
-        show=False,
-        interval=True,
-        save_ext=[".png"],
-        use_legacy=False,
-    )
-    # Semantic assertion: verify that a PNG file with the title was created
-    # (not an exact path comparison)
-    png_files = list(Path(outdir).glob("*" + title + "*.png"))
-    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
-
-    # Verify file is non-trivial in size
-    for png_file in png_files:
-        assert png_file.stat().st_size > 100, f"PNG file {png_file} is too small"
 
 
 def testplot_alternative_writes_file(tmp_path):
@@ -196,35 +156,6 @@ def testplot_alternative_early_noop_when_not_saving():
     )
 
 
-def testplot_alternative_probabilistic_headless_noop():
-    class ProbabilisticExplanation(FakeExplanation):
-        def __init__(self):
-            super().__init__(mode="classification")
-            self.prediction = {"classes": 1}
-
-        def get_class_labels(self):
-            return ["no", "yes"]
-
-    feature_predict = {
-        "predict": np.array([0.3, 0.7]),
-        "low": np.array([0.2, 0.6]),
-        "high": np.array([0.4, 0.8]),
-    }
-
-    _plots.plot_alternative(
-        explanation=ProbabilisticExplanation(),
-        instance=[0.1, 0.2],
-        predict={"predict": 0.55, "low": 0.4, "high": 0.7},
-        feature_predict=feature_predict,
-        features_to_plot=[0, 1],
-        num_to_show=2,
-        column_names=["a", "b"],
-        title="noop",
-        path=None,
-        show=False,
-        save_ext=None,
-        use_legacy=False,
-    )
 
 
 def testplot_alternative_infers_features_to_plot(tmp_path):

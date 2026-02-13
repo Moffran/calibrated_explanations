@@ -177,46 +177,6 @@ def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):
         compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
 
 
-@pytest.mark.parametrize("instance_idx", [0, 1])
-def test_factual_parity_multiple_instances(binary_dataset, instance_idx):
-    """Test factual parity across multiple test instances."""
-    explainer, x_test = build_explainer(binary_dataset)
-
-    if instance_idx >= len(x_test):
-        pytest.skip("Not enough test instances")
-
-    explanation = explainer.explain_factual(x_test[instance_idx].reshape(1, -1))
-    explanation_legacy = explainer.explain_factual(x_test[instance_idx].reshape(1, -1))
-
-    explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
-
-    for exp in explanation_legacy:
-        add_conjunctions_factual_legacy(exp, n_top_features=5, max_rule_size=2)
-
-    for e1, e2 in zip(explanation, explanation_legacy):
-        compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
-
-
-@pytest.mark.parametrize("instance_idx", [0, 1])
-def test_alternative_parity_multiple_instances(binary_dataset, instance_idx):
-    """Test alternative parity across multiple test instances."""
-    explainer, x_test = build_explainer(binary_dataset)
-
-    if instance_idx >= len(x_test):
-        pytest.skip("Not enough test instances")
-
-    explanation = explainer.explore_alternatives(x_test[instance_idx].reshape(1, -1))
-    explanation_legacy = explainer.explore_alternatives(x_test[instance_idx].reshape(1, -1))
-
-    explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
-
-    for exp in explanation_legacy:
-        add_conjunctions_alternative_legacy(exp, n_top_features=5, max_rule_size=2)
-
-    for e1, e2 in zip(explanation, explanation_legacy):
-        compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
-
-
 def test_calibration_invariant_on_conjunctions(binary_dataset):
     """For every conjunctive rule, assert predict_low <= predict <= predict_high."""
     explainer, x_test = build_explainer(binary_dataset)

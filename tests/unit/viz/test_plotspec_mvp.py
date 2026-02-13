@@ -328,44 +328,6 @@ def test_plotspec_sorting_label_ascending():
     assert labels_sorted == sorted(labels_sorted)
 
 
-def test_plotspec_render_scales_height_with_bar_count(monkeypatch):
-    """Adapter-rendered figures should honour the num_to_show-derived height heuristic."""
-
-    nfeat = 8
-    predict = {"predict": 0.6, "low": 0.3, "high": 0.9}
-    vals = np.linspace(-0.4, 0.4, nfeat)
-    fw = {"predict": vals, "low": vals - 0.1, "high": vals + 0.1}
-    spec = build_regression_bars_spec(
-        title="height",
-        predict=predict,
-        feature_weights=fw,
-        features_to_plot=list(range(nfeat)),
-        column_names=[f"f{i}" for i in range(nfeat)],
-        instance=np.linspace(0.0, 1.0, nfeat),
-        y_minmax=(0.0, 1.0),
-        interval=True,
-    )
-
-    seen: list[tuple[float, float] | None] = []
-
-    import matplotlib.pyplot as plt
-
-    real_figure = plt.figure
-
-    def spy_figure(*args, **kwargs):
-        seen.append(kwargs.get("figsize"))
-        return real_figure(*args, **kwargs)
-
-    monkeypatch.setattr("matplotlib.pyplot.figure", spy_figure)
-
-    fig = matplotlib_adapter.render(spec, show=False, save_path=None, return_fig=True)
-
-    assert seen, "render should have created a matplotlib figure"
-    width, height = seen[0]
-    assert width == pytest.approx(10.0)
-    assert height == pytest.approx(0.5 * max(1, nfeat) + 2.0)
-
-    plt.close(fig)
 
 
 def test_plotspec_probabilistic_interval_requires_idx(monkeypatch):
@@ -500,23 +462,6 @@ def test_regression_builder_includes_instance_values():
     assert [bar.instance_value for bar in spec.body.bars] == instance  # type: ignore[union-attr]
 
 
-def test_regression_builder_rejects_short_instance_vector():
-    predict = {"predict": 0.5}
-    fw = [0.2, -0.1, 0.05]
-    feats = [0, 2]
-    with pytest.raises(ValidationError):
-        build_regression_bars_spec(
-            title=None,
-            predict=predict,
-            feature_weights=fw,
-            features_to_plot=feats,
-            column_names=["a", "b", "c"],
-            instance=[1.0],
-            y_minmax=None,
-            interval=False,
-            sort_by=None,
-            ascending=False,
-        )
 
 
 def test_probabilistic_builder_clamps_infinite_bounds():

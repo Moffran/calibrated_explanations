@@ -22,20 +22,6 @@ class DummySimpleDescriptor:
         self.metadata = metadata or {}
 
 
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        (None, ()),
-        ("", ()),
-        ("plugin", ("plugin",)),
-        (["a", "", 1, None, "b"], ("a", "1", "b")),
-        (42, ()),
-    ],
-)
-def testcoerce_string_tuple_normalizes_values(value, expected):
-    assert cli.coerce_string_tuple(value) == expected
-
-
 def test_emit_explanation_descriptor_reports_fallbacks(monkeypatch, capsys):
     descriptor = DummyDescriptor(
         "demo.explainer",
@@ -144,40 +130,10 @@ def test_cmd_show_for_plot_styles(monkeypatch, capsys):
     assert "Trusted    : yes" in out
 
 
-def test_cmd_trust_uses_renderer_marker(monkeypatch, capsys):
-    descriptor = DummyDescriptor("demo.renderer")
-
-    def mark(identifier: str) -> DummyDescriptor:
-        assert identifier == "demo.renderer"
-        return descriptor
-
-    monkeypatch.setattr(cli, "mark_plot_renderer_trusted", mark)
-    args = SimpleNamespace(identifier="demo.renderer", kind="plot-renderers", action="trust")
-
-    exit_code = cli.cmd_trust(args)
-
-    assert exit_code == 0
-    out = capsys.readouterr().out
-    assert "Marked 'demo.renderer' as trusted" in out
 
 
-def test_main_invalid_arguments_prints_help(capsys):
-    exit_code = cli.main(["--unknown"])
-
-    assert exit_code == 2
-    out = capsys.readouterr().out
-    assert "usage:" in out
 
 
-def test_main_without_command_prints_help(monkeypatch, capsys):
-    exit_code = cli.main([])
-
-    assert exit_code == 0
-    out = capsys.readouterr().out
-    assert "usage:" in out
-
-    # banner should not be printed without a command being executed
-    assert "Optional tooling" not in out
 
 
 def test_main_list_plots_flag(capsys):

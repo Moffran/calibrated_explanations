@@ -176,24 +176,6 @@ def test_instance_minimum_overrides_min_batch(monkeypatch):
     assert executor.metrics.submitted == 10
 
 
-def test_tiny_threshold_override(monkeypatch):
-    config = ParallelConfig(
-        enabled=True,
-        strategy="threads",
-        min_batch_size=1,
-        tiny_workload_threshold=5,
-    )
-    executor = ParallelExecutor(config)
-
-    def fake_strategy(fn, items, **_):
-        return [fn(item) for item in items]
-
-    monkeypatch.setattr(executor, "_resolve_strategy", lambda **_: fake_strategy)
-
-    # 3 < tiny threshold forces sequential path
-    results = executor.map(lambda x: x, [1, 2, 3], work_items=3)
-    assert results == [1, 2, 3]
-    assert executor.metrics.submitted == 0
 
 
 def test_auto_strategy(monkeypatch):

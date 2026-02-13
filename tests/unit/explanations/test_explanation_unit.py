@@ -140,14 +140,6 @@ class TestExplanationUnit:
         expl_tuple = self.create_expl(y_threshold=(0.5, 0.6))
         assert expl_tuple.y_threshold == (0.5, 0.6)
 
-    def test_init_categorical_y_cal(self):
-        """Test y_minmax when y_cal is categorical."""
-        # Must be classification to default to [0, 1] usually
-        self.explainer.mode = "classification"
-        self.explainer.y_cal = pd.Categorical([0, 1, 0], categories=[0, 1], ordered=True)
-        expl = self.create_expl()
-        # Code hardcodes [0, 0] for Categorical
-        assert expl.y_minmax == [0, 0]
 
     def test_filter_rule_sizes_copy_preserves_original(self):
         expl = self.create_expl()

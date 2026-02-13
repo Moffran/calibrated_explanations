@@ -44,37 +44,8 @@ def mock_explainer():
 class TestFastExplanationPluginRegistration:
     """Verify in-tree FAST plugin registration (Step 1)."""
 
-    def test_fast_explanation_plugin_always_registered_when_should_not_exist(self):
-        """Test that core.explanation.fast is registered after ensure_builtins."""
-        from calibrated_explanations.plugins import ensure_builtin_plugins
 
-        ensure_builtin_plugins()
-        descriptor = find_explanation_descriptor("core.explanation.fast")
-        assert descriptor is not None, "core.explanation.fast plugin should be registered"
-        assert descriptor.trusted is True, "FAST plugin should be trusted"
 
-    def test_fast_explanation_plugin_metadata_complete(self):
-        """Test that FAST plugin metadata includes all required fields per ADR-015."""
-        from calibrated_explanations.plugins import ensure_builtin_plugins
-
-        ensure_builtin_plugins()
-        descriptor = find_explanation_descriptor("core.explanation.fast")
-        assert descriptor is not None
-
-        meta = descriptor.metadata
-        assert meta["name"] == "core.explanation.fast"
-        assert "interval_dependency" in meta
-        assert meta["modes"] == ("fast",)
-        assert "task:classification" in meta.get("capabilities", [])
-        assert "task:regression" in meta.get("capabilities", [])
-
-    def test_fast_plugin_without_external_extras(self):
-        """Test that FAST plugin is available without external extras."""
-        from calibrated_explanations.plugins import ensure_builtin_plugins
-
-        ensure_builtin_plugins()
-        plugin = find_explanation_plugin_trusted("core.explanation.fast")
-        assert plugin is not None, "FAST plugin should be available without external extras"
 
 
 # ==============================================================================
@@ -116,30 +87,8 @@ class TestCanonicalCollectionReconstruction:
         )
         return batch
 
-    def test_from_batch_without_template_reconstructs(self, mock_batch_no_template):
-        """Test that from_batch reconstructs when no template is present."""
-        collection = CalibratedExplanations.from_batch(mock_batch_no_template)
-        assert isinstance(collection, CalibratedExplanations)
-        assert len(collection.explanations) == 1
-        assert collection.explanations[0].instance_index == 0
 
-    def test_from_batch_preserves_metadata(self, mock_batch_no_template):
-        """Test that from_batch preserves all metadata fields."""
-        collection = CalibratedExplanations.from_batch(mock_batch_no_template)
-        # Metadata should be stored in batch_metadata
-        batch_meta = getattr(collection, "batch_metadata", {})
-        assert batch_meta.get("mode") == "factual"
-        assert batch_meta.get("interval_dependency") == "core.interval.legacy"
-        assert batch_meta.get("plot_dependency") == "plot_spec.default"
 
-    def test_from_batch_populates_derived_attributes(self, mock_batch_no_template):
-        """Test that from_batch populates derived caches correctly."""
-        collection = CalibratedExplanations.from_batch(mock_batch_no_template)
-        # Collection should have explanations attached
-        assert len(collection.explanations) > 0
-        # Each explanation should reference the parent collection
-        for exp in collection.explanations:
-            assert exp.calibrated_explanations is collection
 
     def test_from_batch_validates_explanation_type(self, mock_explainer):
         """Test that from_batch validates explanation types."""

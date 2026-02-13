@@ -10,17 +10,6 @@ from calibrated_explanations.core.discretizer_config import (
 from calibrated_explanations.utils.exceptions import ValidationError
 
 
-@pytest.mark.parametrize(
-    "mode,expected",
-    [
-        ("regression", "binaryRegressor"),
-        ("classification", "binaryEntropy"),
-    ],
-)
-def test_validate_discretizer_choice__should_default_when_none(mode, expected):
-    assert validate_discretizer_choice(None, mode=mode) == expected
-
-
 def test_validate_discretizer_choice__should_raise_when_invalid_for_regression():
     with pytest.raises(ValidationError, match="discretizer must be"):
         validate_discretizer_choice("entropy", mode="regression")

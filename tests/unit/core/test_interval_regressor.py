@@ -145,33 +145,6 @@ def test_initializer_flattens_calibration_arrays(monkeypatch):
             return base.reshape(-1, 1)
 
 
-def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
-    """Column-vector calibration inputs should be flattened during init."""
-
-    class ColumnExplainer(DummyExplainer):
-        def __init__(self):
-            super().__init__(bins=None)
-            self.y_cal = np.array([[0.1], [0.2], [0.3], [0.4]])
-
-        def predict_calibration(self):  # pragma: no cover - exercised indirectly
-            return self.y_cal + 0.05
-
-        def get_sigma_test(self, x):  # pylint: disable=unused-argument
-            return np.ones((len(x), 1))
-
-    monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
-    monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
-
-    regressor = interval_module.IntervalRegressor(ColumnExplainer())
-
-    assert regressor.y_cal_hat.ndim == 1
-    assert regressor.residual_cal.ndim == 1
-    assert regressor.sigma_cal.ndim == 1
-    assert regressor.bins is None or regressor.bins.ndim == 1
-
-    assert regressor.y_cal_hat_storage.ndim == 1
-    assert regressor.residual_cal_storage.ndim == 1
-    assert regressor.sigma_cal_storage.ndim == 1
 
 
 def test_append_helpers_expand_and_normalize(monkeypatch):
@@ -248,12 +221,6 @@ def test_predict_probability_sequence_threshold(monkeypatch):
     assert extra is None
 
 
-def test_predict_probability_requires_calibration_bins_when_test_bins_provided(monkeypatch):
-    regressor = make_regressor(monkeypatch)
-    x = np.array([[0.2, 0.1]])
-
-    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
-        regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
 def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch):
@@ -471,13 +438,6 @@ def test_predict_proba_handles_interval_threshold(monkeypatch):
     assert np.allclose(proba[:, 0], 0.25)
 
 
-def test_compute_proba_cal_rejects_invalid_threshold(monkeypatch):
-    from calibrated_explanations.utils.exceptions import ValidationError
-
-    regressor = make_regressor(monkeypatch)
-
-    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
-        regressor.compute_proba_cal({"not": "supported"})
 
 
 def test_insert_calibration_updates_predictor_state(monkeypatch):
@@ -551,31 +511,8 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
     assert np.array_equal(regressor.bins_storage[:5], np.array([2, 3, 4, 5, 6]))
 
 
-def test_compute_proba_cal_rejects_unsupported_type(monkeypatch):
-    from calibrated_explanations.utils.exceptions import ValidationError
-
-    regressor = make_regressor(monkeypatch)
-
-    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
-        regressor.compute_proba_cal(object())
 
 
-def test_insert_calibration_updates_with_bins(monkeypatch):
-    base_bins = np.array([0, 1, 0, 1])
-    regressor = make_regressor(monkeypatch, bins=base_bins)
-    xs = np.array([[0.5, 0.5], [0.6, 0.4]])
-    ys = np.array([1.2, 1.5])
-    new_bins = np.array([0, 1])
-
-    regressor.insert_calibration(xs[[0]], ys[[0]], bins=new_bins[[0]])
-    regressor.insert_calibration(xs[[1]], ys[[1]], bins=new_bins[[1]])
-
-    assert np.array_equal(regressor.bins[-2:], new_bins)
-    assert regressor.y_cal_hat.shape[0] == 6
-    assert regressor.residual_cal.shape[0] == 6
-    assert regressor.split["cps"].binned_alphas[1][0][-1] == pytest.approx(0.2)
-    # Second update goes to VA, so CPS bin 1 should not change
-    assert regressor.split["cps"].binned_alphas[1][1][-1] == pytest.approx(-0.05)
 
 
 def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
@@ -673,19 +610,6 @@ def test_ensure_capacity_copies_existing_prefix(monkeypatch):
     assert grown[0] == original[0]
 
 
-def test_insert_calibration_updates_split_parts(monkeypatch):
-    regressor = make_regressor(monkeypatch)
-
-    xs = np.array([[0.2, 0.1], [0.3, 0.2], [0.4, 0.3]])
-    ys = np.array([0.4, 0.5, 0.6])
-
-    before_counts = [len(part) for part in regressor.split["parts"]]
-
-    regressor.insert_calibration(xs, ys)
-
-    after_counts = [len(part) for part in regressor.split["parts"]]
-    assert after_counts[0] == before_counts[0] + 2
-    assert after_counts[1] == before_counts[1] + 1
 
 
 def test_bins_setter_flattens_inputs(monkeypatch):

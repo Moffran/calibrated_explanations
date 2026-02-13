@@ -123,8 +123,6 @@ def test_check_is_fitted_paths(tmp_path):
         helper.check_is_fitted(DummyNeedsFit)
 
 
-def test_is_notebook_returns_false_in_pytest_environment():
-    assert helper.is_notebook() is False
 
 
 def test_transform_to_numeric_with_and_without_mappings():
