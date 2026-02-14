@@ -351,7 +351,7 @@ class TestImportGraphIntegration:
     def test_should_enforce_adr001_boundaries_in_ci(self):
         """Verify that CI can run import graph checks."""
         # This test simply verifies the checking script exists
-        check_script = Path("scripts/check_import_graph.py")
+        check_script = Path("scripts/quality/check_import_graph.py")
         assert check_script.exists(), (
             f"Import graph linting script should exist at {check_script}\n"
             f"This is required for CI enforcement of ADR-001 boundaries."

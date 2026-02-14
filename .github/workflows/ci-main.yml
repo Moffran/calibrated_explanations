@@ -45,7 +45,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
       - name: Run per-module coverage gates
-        run: python scripts/check_coverage_gates.py coverage.xml
+        run: python scripts/quality/check_coverage_gates.py coverage.xml
 
   perf-guard:
     needs: coverage-and-gates
