@@ -190,6 +190,20 @@ python scripts/over_testing/estimator.py \
 
 > **Safety rule**: Never apply removals whose estimated coverage is < 90%.
 
+## Protected tests
+
+Certain integration tests are critical for release gating and regression protection
+and must not be removed or modified as part of routine test cleanup. When
+running the test-quality method or editing `reports/over_testing/*`, ensure these
+files are excluded from automated removals and from blind consolidation:
+
+- `tests/integration/core/test_classification.py`
+- `tests/integration/core/test_wrap_classification.py`
+- `tests/integration/core/test_regression.py`
+- `tests/integration/core/test_wrap_regression.py`
+
+No exception is allowed to this rule. If a protected test is found to be redundant, the redundancy must be resolved by modifying or removing the overlapping test, not the protected one. If a protected test is found to be low-value (0 unique lines), the issue must be resolved by adding compensating tests that cover its unique lines, then safely removing any redundant tests that only hit those lines.
+
 ### Step 5: Act on findings
 
 Apply changes (test removals, consolidations, new behavioral tests) and verify:

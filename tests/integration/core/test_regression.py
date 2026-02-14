@@ -1,6 +1,11 @@
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name
 """
 This module contains tests for regression models using the CalibratedExplainer from the calibrated_explanations package.
+
+IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
+protected integration tests relied on release gating and regression
+protection tooling. See docs/improvement/test-quality-method/README.md.
+
 The tests cover various scenarios including failure cases, probabilistic explanations, conditional explanations,
 and explanations with difficulty estimators. The tests use pytest for testing and include fixtures for generating
 regression datasets.
@@ -153,6 +158,110 @@ def test_set_difficulty_estimator_refits_cps_with_sigmas(regression_dataset, mon
     assert any("sigmas" in call and call.get("sigmas") is not None for call in fit_calls)
 
 
+def test_should_vary_factual_weight_width_by_feature_when_difficulty_depends_on_perturbations(
+    monkeypatch,
+):
+    """Factual rule weight intervals should reflect per-perturbation difficulty.
+
+    Regression factual explanations compute feature weights by evaluating
+    predictions for perturbed samples. When a difficulty estimator depends on
+    the input features, perturbations for different features should generally
+    induce different sigma distributions and therefore different weight interval
+    widths.
+
+    This test uses a deterministic CPS.predict stub where the returned interval
+    width is proportional to the provided `sigmas`, making the expectation
+    robust and independent of upstream crepes internals.
+    """
+
+    from sklearn.tree import DecisionTreeRegressor
+
+    # Arrange: small, deterministic regression setup with two categorical features.
+    x_train = np.array(
+        [
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 1.0],
+        ]
+    )
+    y_train = (x_train[:, 0] + 2.0 * x_train[:, 1]).astype(float)
+
+    model = DecisionTreeRegressor(random_state=0)
+    model.fit(x_train, y_train)
+
+    x_cal = x_train.copy()
+    y_cal = y_train.copy()
+    x_test = np.array([[0.0, 0.0]])
+
+    feature_names = ["x0", "x1"]
+    categorical_features = [0, 1]
+
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        seed=0,
+    )
+
+    class ThresholdDifficulty:
+        def __init__(self, threshold: float = 0.5) -> None:
+            self.threshold = threshold
+            self.fitted = True
+
+        def fit(self, *args, **kwargs):  # noqa: ANN001 - test stub
+            self.fitted = True
+            return self
+
+        def apply(self, x):  # noqa: ANN001 - test stub
+            x = np.asarray(x)
+            # High difficulty whenever feature 0 exceeds the threshold.
+            return np.where(x[:, 0] > self.threshold, 11.0, 1.0)
+
+    cal_exp.set_difficulty_estimator(ThresholdDifficulty(), initialize=True)
+
+    # Patch CPS.predict to return intervals that scale with provided sigmas.
+    interval_learner = cal_exp.interval_learner
+
+    def cps_predict_stub(*args, **kwargs):  # noqa: ANN001 - test stub
+        sigmas = np.asarray(kwargs.get("sigmas")).reshape(-1)
+        n = int(sigmas.shape[0])
+        if kwargs.get("y") is not None:
+            return np.zeros(n)
+        y_hat = np.asarray(kwargs.get("y_hat")).reshape(-1)
+        if y_hat.shape[0] != n:
+            y_hat = np.resize(y_hat, n)
+        interval = np.zeros((n, 4), dtype=float)
+        # crepes-style 4-column interval; CE's IntervalRegressor uses:
+        # - `interval[:, 0]` for low
+        # - `interval[:, 2]` for high
+        # - median = (`interval[:, 1]` + `interval[:, 3]`) / 2
+        interval[:, 0] = y_hat - sigmas
+        interval[:, 1] = y_hat
+        interval[:, 2] = y_hat + sigmas
+        interval[:, 3] = y_hat
+        return interval
+
+    monkeypatch.setattr(interval_learner.cps, "predict", cps_predict_stub, raising=True)
+
+    # Act
+    explanations = cal_exp.explain_factual(x_test)
+    rules = explanations[0].get_rules()
+
+    # Assert: weight interval widths differ between features (x0 perturbations change sigma).
+    feature_ids = [int(f) for f in rules["feature"]]
+    idx0 = feature_ids.index(0)
+    idx1 = feature_ids.index(1)
+
+    width0 = float(rules["weight_high"][idx0] - rules["weight_low"][idx0])
+    width1 = float(rules["weight_high"][idx1] - rules["weight_low"][idx1])
+
+    assert width0 > width1
+
+
 @pytest.mark.viz
 def test_regression_ce(regression_dataset):
     """
@@ -175,26 +284,31 @@ def test_regression_ce(regression_dataset):
     factual_explanation.plot(show=False, filename="test.png")
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(0.1, np.inf)
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(-np.inf, 0.9)
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
@@ -295,12 +409,16 @@ def test_probabilistic_regression_ce(regression_dataset):
     factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
+    factual_explanation.add_conjunctions()
     factual_explanation = cal_exp.explain_factual(x_test, (0.4, 0.6))
+    factual_explanation.add_conjunctions()
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, y_test)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, y_test[0])
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     alternative_explanation.super_explanations()
     alternative_explanation.semi_explanations()
@@ -338,10 +456,12 @@ def test_probabilistic_regression_int_threshold_ce(regression_dataset):
 
     # Tuple of integer thresholds
     factual_explanation = cal_exp.explain_factual(x_test, (0, 1))
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
 
     # Alternatives should also accept int thresholds
     alternative_explanation = cal_exp.explore_alternatives(x_test, 0)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
 
@@ -377,6 +497,7 @@ def test_regression_as_classification_ce(regression_dataset):
     factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
 
@@ -411,6 +532,7 @@ def test_regression_conditional_ce(regression_dataset):
     factual_explanation = cal_exp.explain_factual(
         x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, bin_feature]
     )
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
@@ -418,23 +540,110 @@ def test_regression_conditional_ce(regression_dataset):
     factual_explanation = cal_exp.explain_factual(
         x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, bin_feature]
     )
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, bins=x_test[:, bin_feature])
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, bin_feature]
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, bin_feature]
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     repr(alternative_explanation)
+
+
+@pytest.mark.viz
+def test_probabilistic_regression_conditional_ce(regression_dataset):
+    """
+    Tests probabilistic conditional explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        bins=x_cal[:, 0],
+    )
+
+    cal_exp.initialize_reject_learner(threshold=0.5)
+    cal_exp.predict_reject(x_test, bins=x_test[:, 0])
+
+    factual_explanation = cal_exp.explain_factual(x_test, y_test, bins=x_test[:, 0])
+    factual_explanation.add_conjunctions()
+    factual_explanation.plot(show=False)
+
+    factual_explanation = cal_exp.explain_factual(x_test, y_test[0], bins=x_test[:, 0])
+
+    alternative_explanation = cal_exp.explore_alternatives(x_test, y_test, bins=x_test[:, 0])
+    alternative_explanation.plot(show=False)
+
+    cal_exp.explore_alternatives(x_test, y_test[0], bins=x_test[:, 0])
+
+
+def test_knn_normalized_regression_ce(regression_dataset):
+    """
+    Tests KNN normalized explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, categorical_features, feature_names = (
+        regression_dataset
+    )
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
+    )
+
+    factual_explanation = cal_exp.explain_factual(x_test)
+    factual_explanation.add_conjunctions()
+
+    factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation.add_conjunctions()
+
+    factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test)
+    alt.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
+    alt.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
+    alt.add_conjunctions()
 
 
 def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
@@ -469,10 +678,93 @@ def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
+    factual_explanation.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test, y_test)
+    alt = cal_exp.explore_alternatives(x_test, y_test)
+    alt.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test, y_test[0])
+    alt = cal_exp.explore_alternatives(x_test, y_test[0])
+    alt.add_conjunctions()
+
+
+def test_var_normalized_regression_ce(regression_dataset):
+    """
+    Tests variance normalized explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, categorical_features, feature_names = (
+        regression_dataset
+    )
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
+    )
+
+    factual_explanation = cal_exp.explain_factual(x_test)
+    factual_explanation.add_conjunctions()
+
+    factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation.add_conjunctions()
+
+    factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test)
+    alt.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
+    alt.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
+    alt.add_conjunctions()
+
+
+def test_var_normalized_probabilistic_regression_ce(regression_dataset):
+    """
+    Tests variance normalized probabilistic explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
+    )
+
+    factual_explanation = cal_exp.explain_factual(x_test, y_test)
+    factual_explanation.add_conjunctions()
+
+    factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
+    factual_explanation.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test, y_test)
+    alt.add_conjunctions()
+
+    alt = cal_exp.explore_alternatives(x_test, y_test[0])
+    alt.add_conjunctions()
 
 
 @pytest.mark.viz
@@ -541,9 +833,147 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
     fast_explanation.plot(show=False, uncertainty=True)
 
 
+@pytest.mark.viz
+def test_regression_conditional_fast_ce(regression_dataset):
+    """
+    Tests conditional perturbed explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, categorical_features, feature_names = (
+        regression_dataset
+    )
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        bins=x_cal[:, 0],
+        fast=True,
+    )
+
+    fast_explanation = cal_exp.explain_fast(x_test, bins=x_test[:, 0])
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
+
+    fast_explanation = cal_exp.explain_fast(
+        x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, 0]
+    )
+
+    fast_explanation = cal_exp.explain_fast(
+        x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, 0]
+    )
+
+
+@pytest.mark.viz
+def test_probabilistic_regression_conditional_fast_ce(regression_dataset):
+    """
+    Tests probabilistic conditional perturbed explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        bins=y_cal > y_test[0],
+        fast=True,
+    )
+
+    fast_explanation = cal_exp.explain_fast(x_test, y_test, bins=y_test > y_test[0])
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
+
+    fast_explanation = cal_exp.explain_fast(x_test, y_test[0], bins=y_test > y_test[0])
+
+
 def test_knn_normalized_regression_fast_ce(regression_dataset):
     """
     Tests KNN normalized fast explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, categorical_features, feature_names = (
+        regression_dataset
+    )
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
+        fast=True,
+    )
+
+    fast_explanation = cal_exp.explain_fast(x_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
+
+    fast_explanation = cal_exp.explain_fast(x_test, low_high_percentiles=(0.1, np.inf))
+
+    fast_explanation = cal_exp.explain_fast(x_test, low_high_percentiles=(-np.inf, 0.9))
+
+
+def test_knn_normalized_probabilistic_regression_fast_ce(regression_dataset):
+    """
+    Tests KNN normalized fast probabilistic explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
+        fast=True,
+    )
+
+    fast_explanation = cal_exp.explain_fast(x_test, y_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
+
+    fast_explanation = cal_exp.explain_fast(x_test, y_test[0])
+
+
+def test_var_normalized_regression_fast_ce(regression_dataset):
+    """
+    Tests variance normalized fast explanations for regression models.
     Args:
         regression_dataset (tuple): The regression dataset.
     """
