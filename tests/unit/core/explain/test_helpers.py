@@ -41,7 +41,7 @@ class TestComputeWeightDelta:
     def test_compute_weight_delta_fallback_path_for_object_values(self):
         """Object subtraction should fall back to element-wise scalar extraction."""
 
-        class _UnevenDelta:
+        class UnevenDelta:
             def __init__(self, value: float, width: int) -> None:
                 self.value = value
                 self.width = width
@@ -50,7 +50,7 @@ class TestComputeWeightDelta:
                 return [float(other) - self.value] * self.width
 
         baseline = [4.0, 6.0]
-        perturbed = [_UnevenDelta(1.0, 2), _UnevenDelta(2.0, 1)]
+        perturbed = [UnevenDelta(1.0, 2), UnevenDelta(2.0, 1)]
 
         result = helpers.compute_weight_delta(baseline, perturbed)
 

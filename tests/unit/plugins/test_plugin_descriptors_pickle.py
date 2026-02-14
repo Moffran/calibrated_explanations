@@ -14,13 +14,13 @@ class DummyPlugin:
     pass
 
 
-def _make_dummy_plugin():
+def make_dummy_plugin():
     return DummyPlugin()
 
 
 def test_plugin_descriptors_pickle_roundtrip():
     meta = {"a": 1, "b": [1, 2]}
-    p = _make_dummy_plugin()
+    p = make_dummy_plugin()
     desc = ExplanationPluginDescriptor(identifier="ex1", plugin=p, metadata=meta, trusted=True)
     dumped = pickle.dumps(desc)
     loaded = pickle.loads(dumped)

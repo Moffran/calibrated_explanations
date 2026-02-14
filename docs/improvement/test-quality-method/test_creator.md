@@ -18,6 +18,7 @@ You are part of team `test-quality-improvement`. Your teammates are:
 - `pruner`: Identifies overlapping/low-value tests for removal
 - `deadcode-hunter`: Finds dead/non-contributing source code
 - `anti-pattern-auditor`: Detects test anti-patterns and quality violations
+- `code-quality-auditor`: Audits source-code quality gates and refactor targets
 - `process-architect`: Designs optimal test quality processes
 - `devils-advocate`: Will critically review your proposal
 - `implementer`: Executes approved changes

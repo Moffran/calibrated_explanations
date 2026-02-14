@@ -8,7 +8,7 @@ This directory contains scripts for identifying and analyzing anti-patterns in t
 - `scan_private_usage.py`: Scans the test suite for private member calls and categorizes them using the data from `analyze_private_methods.py`.
 - `summarize_analysis.py`: Provides a high-level summary of the anti-pattern status, highlighting top targets for remediation.
 - `generate_triage_report.py`: Generates a prioritized triage report (`test_only_private_refs.csv` and `triage_next_actions.md`) by combining definition and usage data.
-- `detect_test_anti_patterns.py`: A general-purpose AST-based scanner for various test anti-patterns (private calls, exact path comparisons, etc.).
+- `detect_test_anti_patterns.py`: AST-based scanner for ADR-030 test quality checks (anti-patterns, missing assertions, and determinism risks) with baseline/no-new-violations enforcement (`--check`, `--rebaseline`).
 - `find_shared_helpers.py`: Specifically identifies private test helpers that are defined in multiple files (Pattern 2 candidates).
 
 ## Workflow
@@ -28,6 +28,18 @@ This directory contains scripts for identifying and analyzing anti-patterns in t
 4. Generate the triage report for manual remediation:
    ```bash
    python scripts/anti-pattern-analysis/generate_triage_report.py
+   ```
+5. Run ADR-030 no-new-violations check against the committed baseline:
+   ```bash
+   python scripts/anti-pattern-analysis/detect_test_anti_patterns.py \
+     --check \
+     --baseline .github/test-quality-baseline.json
+   ```
+6. Rebaseline (PR-reviewed) when you intentionally accept/close debt:
+   ```bash
+   python scripts/anti-pattern-analysis/detect_test_anti_patterns.py \
+     --rebaseline \
+     --baseline .github/test-quality-baseline.json
    ```
 
 ## Allow-Listed Private Member Usages

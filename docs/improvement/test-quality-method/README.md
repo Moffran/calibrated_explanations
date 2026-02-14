@@ -1,14 +1,37 @@
-# Test Quality Method
+# Quality Improvement Method (Tests + Code)
 
-A repeatable method for enforcing high-quality tests (ADR-030) while keeping the
-90% coverage gate intact.
+A repeatable method for improving **test quality** (ADR-030) and **code quality**
+(ADR-001/ADR-002/ADR-011), while keeping the 90% coverage gate intact.
 
 This umbrella includes:
 
-- Over-testing analysis using per-test coverage contexts (`--cov-context=test`)
-- Under-testing remediation (targeted behavioral tests that close real gaps)
-- Anti-pattern auditing (private-member usage, assertion-less tests, brittle patterns)
-- Safe pruning (remove or consolidate low-value tests without breaking coverage)
+- Test overlap analysis using per-test coverage contexts (`--cov-context=test`)
+- Coverage gap closure with high-signal behavioral tests (no padding)
+- Anti-pattern auditing in tests (private member usage, brittle coupling, weak assertions)
+- Code-quality gates (exception taxonomy, import boundaries, docstrings, deprecations)
+- Dead-code and deprecation-shim cleanup (conservative, evidence-based)
+- Safe pruning and consolidation (remove redundant tests without breaking coverage)
+
+---
+
+## Choose Your Focus (repeatable options)
+
+Pick one of these per cycle; all three end with the same verification gates.
+
+### Option A: Test-Focused Cycle (coverage + redundancy)
+
+Run the heavy per-test pipeline and use the unique-lines / fingerprint reports
+to prune or consolidate tests safely.
+
+### Option B: Code-Focused Cycle (stability + maintainability)
+
+Skip the expensive per-test pipeline unless you are pruning tests. Run the
+code-quality gate pack, then do targeted refactors and dead-code cleanup.
+
+### Option C: Full Cycle (recommended for large changes)
+
+Run both the test-focused and code-focused passes and reconcile tradeoffs
+(coverage, redundancy, stability, deprecation policy).
 
 ## Prerequisites
 
@@ -23,7 +46,7 @@ per-test context tracking that this method relies on.
 
 ## Quick Start
 
-Run the full pipeline from the repository root:
+If you want the full per-test analysis data, run the pipeline from the repository root:
 
 ```bash
 python scripts/over_testing/run_over_testing_pipeline.py
@@ -44,7 +67,7 @@ All outputs land in `reports/over_testing/`.
 
 ## The Method (Step by Step)
 
-### Step 1: Collect per-test coverage data
+### Step 1 (Test-Focused): Collect per-test coverage data
 
 ```bash
 python scripts/over_testing/run_over_testing_pipeline.py
@@ -68,7 +91,7 @@ tracking was not active).
 | `hotspot_contexts.json`      | For each hotspot: which specific tests hit it                    |
 | `hotspot_contexts.md`        | Human-readable hotspot-to-test mapping                           |
 
-### Step 2: Extract per-test unique line counts and fingerprints
+### Step 2 (Test-Focused): Extract per-test unique line counts and fingerprints
 
 ```bash
 python scripts/over_testing/extract_per_test.py
@@ -118,6 +141,35 @@ Key questions to answer:
 3. **What are the over-testing hotspots?** Read `triage.md` for the top files, lines, and blocks.
 4. **Which tests hit each hotspot?** Read `hotspot_contexts.md`.
 
+### Step 3.5 (Code-Focused): Run the code-quality gate pack
+
+This is the default "code improvement" loop. It is designed to be fast enough
+to run frequently.
+
+```bash
+# ADR-002: exception taxonomy + warnings hygiene
+python scripts/quality/check_adr002_compliance.py
+
+# ADR-001: import boundaries and layering
+python scripts/quality/check_import_graph.py
+
+# Docstrings: keep documentation quality from silently regressing
+python scripts/quality/check_docstring_coverage.py
+```
+
+Deprecation-sensitive spot check (mirrors CI `deprecation-check.yml`):
+
+- bash:
+  - `CE_DEPRECATIONS=error pytest tests/unit -m "not viz" -q --maxfail=1 --no-cov`
+- PowerShell:
+  - `$env:CE_DEPRECATIONS='error'; pytest tests/unit -m "not viz" -q --maxfail=1 --no-cov`
+
+Optional (when touching public API surfaces):
+
+```bash
+python scripts/api_diff.py
+```
+
 ### Step 4: Simulate removals (optional, before acting)
 
 Use the estimator to predict coverage impact before removing any tests:
@@ -163,6 +215,36 @@ perspectives that analyze in parallel and an implementer that consolidates
 their findings and executes the cleanup. Each has a dedicated instruction file
 in this directory. They can be run as AI agents or used as checklists for
 manual analysis.
+
+### [code_quality_auditor.md](code_quality_auditor.md) -- Code Quality Auditor
+
+Audits the library code for maintainability and stability risks and runs the
+code-quality gate pack (ADR-001/ADR-002/ADR-011), producing an actionable
+proposal for refactors and safe removals.
+
+**Key tasks**:
+
+- Run the code-quality gate pack (ADR-002/ADR-001/docstrings)
+- Run the deprecation-sensitive spot check (`CE_DEPRECATIONS=error`)
+- Audit dead/private helpers via `analyze_private_methods.py`
+- Triage structural hotspots (large functions, high branching)
+- (Optional) Check public API drift with `scripts/api_diff.py`
+- Produce a proposal for `devils-advocate` (recommended output: `reports/over_testing/code_quality_auditor_proposal.md`)
+
+**Key files to analyze**:
+
+- `scripts/quality/check_adr002_compliance.py`
+- `scripts/quality/check_import_graph.py`
+- `scripts/quality/check_docstring_coverage.py`
+- `scripts/anti-pattern-analysis/analyze_private_methods.py`
+- `scripts/api_diff.py`
+- `docs/improvement/adrs/`
+
+**Key principles**:
+
+- Evidence-based findings only (include commands + output pointers)
+- Conservative, test-backed recommendations; avoid speculative refactors
+- Keep ADR compliance and the 90% coverage gate intact
 
 ### [pruner.md](pruner.md) -- Test Removal Expert
 
@@ -442,6 +524,15 @@ Designs and improves the test quality workflow and tooling.
 | `analyze_category_a.py`          | Analyze Category A anti-patterns                 | Detailed anti-pattern work   |
 | `update_allowlist.py`            | Update private member allowlist                  | After allowlist changes      |
 
+### Code-quality scripts (`scripts/quality/`)
+
+| Script                         | Purpose                                         | When to use                         |
+| ------------------------------ | ----------------------------------------------- | ----------------------------------- |
+| `check_adr002_compliance.py`   | Exception taxonomy + warnings hygiene (ADR-002) | Every code-focused iteration        |
+| `check_import_graph.py`        | Import boundary enforcement (ADR-001)           | Every code-focused iteration        |
+| `check_docstring_coverage.py`  | Docstring coverage gate                         | Before release / when touching docs |
+| `check_coverage_gates.py`      | Per-module coverage thresholds (Standard-019)   | After test/code changes             |
+
 ---
 
 ## Report Archive (`reports/over_testing/`)
@@ -470,6 +561,7 @@ committed for future reference:
 | `pruner_proposal.md`            | Test removal analysis and recommendations   |
 | `deadcode_hunter_proposal.md`   | Dead code analysis results                  |
 | `process_architect_proposal.md` | Process redesign proposal                   |
+| `code_quality_auditor_proposal.md` | Code-quality gate + hotspot proposal     |
 | `devils_advocate_review.md`     | Consolidated risk assessment                |
 | `final_remedy_plan.md`          | Merged action plan with verified data       |
 
@@ -514,6 +606,11 @@ python scripts/over_testing/run_over_testing_pipeline.py
 
 # 2. Extract per-test unique lines
 python scripts/over_testing/extract_per_test.py
+
+# 2.5 Code-quality gate pack (fast, runnable any time)
+python scripts/quality/check_adr002_compliance.py
+python scripts/quality/check_import_graph.py
+python scripts/quality/check_docstring_coverage.py
 
 # 3. Review triage report
 cat reports/over_testing/triage.md

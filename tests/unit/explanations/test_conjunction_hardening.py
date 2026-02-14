@@ -11,34 +11,6 @@ from calibrated_explanations.explanations.explanation import (
 )
 
 
-def _make_binary_explainer(binary_dataset):
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,
-        _,
-        _,
-        categorical_features,
-        feature_names,
-    ) = binary_dataset
-
-    model = RandomForestClassifier(n_estimators=20, random_state=42)
-    model.fit(x_prop_train, y_prop_train)
-
-    explainer = WrapCalibratedExplainer(model)
-    explainer.calibrate(
-        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
-    )
-    return explainer, x_test
-
-
-
-
-
-
 def test_fallback_to_legacy(monkeypatch):
     f = FactualExplanation.__new__(FactualExplanation)
     f.has_rules = True

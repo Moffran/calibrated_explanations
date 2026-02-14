@@ -135,3 +135,163 @@ One small process/documentation adjustment is recommended:
 - Updated over-testing metrics after this pass:
   - Per-test contexts: **1036**
   - Redundancy report: **18 exact duplicate groups**, **54 subset groups**, **343 potential redundant tests**
+
+## 2026-02-13 Test+Code Quality Extension Analysis
+
+Objective: extend the current test-quality method into a unified **test + source-code anti-pattern method** without adding noisy or low-signal checks.
+
+### Evidence collected (current baseline)
+
+- `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py`
+  - Result: **3 findings** (all private helper calls in tests).
+- `python scripts/anti-pattern-analysis/analyze_private_methods.py src tests --output reports/anti-pattern-analysis/private_method_analysis.csv`
+  - Result: **356 private definitions** analyzed
+  - Patterns:
+    - `Consistent (Internal Only)`: **347**
+    - `Pattern 3 (Completely Dead)`: **5** (all in `src/calibrated_explanations/cache/cache.py` + `src/calibrated_explanations/explanations/reject.py`)
+    - Test-helper patterns: **4**
+- `python scripts/quality/check_adr002_compliance.py`
+  - Result: **PASS** (no ADR-002 violations).
+- Structural hotspot scan (AST-based, local one-off):
+  - Functions over 120 lines: **54**
+  - Functions over 200 lines: **18**
+  - Functions over 8 args: **37**
+  - Largest hotspots:
+    - `src/calibrated_explanations/viz/matplotlib_adapter.py` (`render`, `_render_body`)
+    - `src/calibrated_explanations/core/explain/feature_task.py` (`feature_task`)
+    - `src/calibrated_explanations/core/explain/orchestrator.py` (`invoke`)
+    - `src/calibrated_explanations/plotting.py` (`plot_alternative`, `plot_probabilistic`, `plot_regression`)
+    - `src/calibrated_explanations/plugins/builtins.py` (`explain_batch`, `build`)
+
+### Anti-patterns to identify and remove (recommended)
+
+These are high-signal for this codebase and should be added to the method:
+
+1. **Dead private/library helpers**
+   - Why: pure maintenance burden and cognitive load.
+   - Detector: existing `analyze_private_methods.py` Pattern 3.
+   - Initial targets: `_reconstruct_lru_cache`, `_reconstruct_calibrator_cache`, `_reconstruct_cache_config`, `_reconstruct_cache_metrics`, `_missing_`.
+
+2. **God functions / oversized orchestration methods**
+   - Why: strongest predictor of regressions in this library’s orchestration-heavy modules.
+   - Detector: AST thresholds + per-function branch counts.
+   - Suggested initial thresholds:
+     - warn: >120 LOC
+     - fail gate on touched code: >220 LOC unless allowlisted with rationale.
+
+3. **Long parameter lists and dict-style argument tunneling**
+   - Why: brittle API surfaces and accidental coupling across plugins/wrappers.
+   - Detector: AST arg count (>8 warn, >12 fail on new/changed functions).
+
+4. **Unscoped broad exception handling**
+   - Why: hidden failure modes.
+   - Detector: extend ADR-002 checker:
+     - disallow broad catches unless `adr002_allow` marker present and handler logs/re-raises/falls back explicitly.
+     - disallow silent broad catches on non-optional paths.
+
+5. **Deprecated shim debt past removal window**
+   - Why: compatibility shims become permanent complexity if not expired.
+   - Detector: parse deprecation/removal version text; fail when current version >= declared removal version.
+   - Targets: `perf/*`, `core/calibration/*`, legacy plotting shims.
+
+6. **Duplicate behavior across legacy/new paths**
+   - Why: dual logic drift risk (especially plotting + explain orchestration).
+   - Detector: file-pair triage + shared-coverage fingerprint overlap to identify duplicate behavior that should collapse to adapters.
+
+7. **Import-time side effects outside CLI/plugin bootstrap**
+   - Why: fragile imports and test flakiness.
+   - Detector: AST for top-level execution (I/O, plugin discovery, mutable global initialization) with allowlist for intentional modules.
+
+8. **Weak or missing invariant checks at plugin boundaries**
+   - Why: plugin architecture is a major fault boundary in this repo.
+   - Detector: require explicit schema/metadata validation in registration/dispatch call sites.
+
+9. **Inconsistent exception taxonomy usage**
+   - Why: ADR-002 is a core architectural contract.
+   - Detector: extend `check_adr002_compliance.py` to assert `warnings.warn(..., stacklevel=...)` and reject raw `ValueError/RuntimeError/Exception` in new code paths.
+
+10. **Large untyped high-risk modules**
+   - Why: the largest modules are exactly where regressions cluster.
+   - Detector: staged mypy strictness expansion by module risk rank (hotspot-first).
+
+### Anti-patterns that can be ignored in this library (with rationale)
+
+1. **Use of `print()` in CLI module**
+   - Ignore in `src/calibrated_explanations/plugins/cli.py`; this is expected CLI output, not library logging misuse.
+
+2. **Lazy imports via `__getattr__`**
+   - Keep: this is intentional for optional deps (`viz`, plotting backends) and import-time performance.
+
+3. **Broad catches explicitly marked `adr002_allow` in plugin/optional-dependency boundaries**
+   - Keep with controls: this is a conscious resilience policy for third-party/plugin instability and optional extras.
+
+4. **Backward-compatibility aliases/shims before their planned removal version**
+   - Keep until deadline; track and expire rather than blanket-removing now.
+
+5. **Private helper naming in source**
+   - `_name` itself is not an anti-pattern here; only dead helpers, leaked internals, or test-coupled internals are anti-patterns.
+
+6. **High branch density in rendering modules alone**
+   - Not automatically bad: plotting/render code naturally fans out by mode/task; flag only when paired with low test signal or repeated bug churn.
+
+7. **Docstring examples containing `print(...)`**
+   - Ignore as documentation artifact.
+
+### Method extension (practical pipeline change)
+
+Add a **Step 2.5 Code Anti-Pattern Pass** after per-test extraction:
+
+1. `python scripts/anti-pattern-analysis/analyze_private_methods.py src tests --output reports/anti-pattern-analysis/private_method_analysis.csv`
+2. `python scripts/quality/check_adr002_compliance.py`
+3. `python scripts/anti-pattern-analysis/detect_code_anti_patterns.py` (new script; categories 2/3/5/6/7/8 above)
+4. Emit `reports/anti-pattern-analysis/code_anti_pattern_report.csv` + severity summary.
+5. Gate policy:
+   - Blockers: dead private code in touched modules, non-allowlisted broad catches, expired shims, new oversize functions beyond fail threshold.
+   - Advisory: legacy hotspot complexity in untouched modules.
+
+This keeps the method conservative, auditable, and aligned with existing ADR-002 and CE-first architecture constraints.
+
+## 2026-02-13 Implementer Update (CQ-001 Execution)
+
+- Executed CQ-001 from `reports/over_testing/code_quality_auditor_proposal.md` using devil's-advocate constraints from `reports/over_testing/devils_advocate_review.md`.
+
+Phase 1 (low-risk dead-private test helper removals):
+
+- Removed unused helper `tests/unit/explanations/test_conjunction_hardening.py` -> `_make_binary_explainer`.
+- Removed unused private stub `tests/unit/explanations/test_explanation_more.py` -> `ContainerStub._get_explainer`.
+- Verified targeted tests:
+  - `pytest -q --no-cov tests/unit/explanations/test_explanation_more.py tests/unit/explanations/test_conjunction_hardening.py` -> PASS.
+
+Phase 2 (bounded hotspot refactor):
+
+- Refactored `src/calibrated_explanations/core/explain/feature_task.py` without API/signature changes:
+  - extracted `_build_empty_feature_result(...)` for duplicated early-return payload construction.
+  - extracted `_process_categorical_feature(...)` for categorical branch processing.
+  - kept numeric branch logic in-place per CQ-001 no-go constraints.
+- Verified targeted tests:
+  - `pytest -q --no-cov tests/unit/core/test_calibrated_explainer_additional.py tests/unit/core/test_assign_weight_scalar.py tests/unit/core/test_explain_helpers_and_plugins.py tests/unit/explanations/test_explanation_more.py tests/unit/explanations/test_conjunction_hardening.py` -> PASS.
+
+Verification gate pack (post-change):
+
+- `python scripts/quality/check_adr002_compliance.py` -> PASS.
+- `python scripts/quality/check_import_graph.py` -> PASS.
+- `python scripts/quality/check_docstring_coverage.py` -> PASS (overall 95.09%).
+- PowerShell deprecation-sensitive subset:
+  - `$env:CE_DEPRECATIONS='error'; pytest tests/unit -m "not viz" -q --maxfail=1 --no-cov` -> PASS.
+- Full coverage and module gates:
+  - `pytest --cov-fail-under=90 -q` -> PASS at **90.03%**.
+  - `python scripts/quality/check_coverage_gates.py` -> PASS.
+
+Artifact refresh (post-change):
+
+- `python scripts/anti-pattern-analysis/analyze_private_methods.py src tests --output reports/anti-pattern-analysis/private_method_analysis.csv` -> refreshed.
+- `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --output reports/anti-pattern-analysis/test_anti_pattern_report.csv` -> refreshed.
+- Updated private-method summary after CQ-001:
+  - total rows: **357**
+  - scope: **354 library**, **3 test**
+  - patterns: **349 Consistent (Internal Only)**, **5 Pattern 3 (Completely Dead)**, **3 test-helper patterns**
+
+No-go constraints respected:
+
+- Did **not** remove dynamically referenced source symbols (`_reconstruct_*`, `RejectPolicy._missing_`).
+- Did **not** restructure numeric branch in `feature_task.py` in this batch.

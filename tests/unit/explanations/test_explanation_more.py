@@ -39,9 +39,6 @@ def make_container_and_explainer():
             self.features_to_ignore = []
             self.explanations = []
 
-        def _get_explainer(self):
-            return self.explainer
-
         def get_explainer(self):
             return self.explainer
 

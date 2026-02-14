@@ -1,9 +1,10 @@
 name,def_file,def_line,src_usages,test_usages,pattern,scope
-_get_explainer,unit\explanations\test_explanation_more.py,42,0,0,Pattern 2 (Local Test Helper),test
-_make_binary_explainer,unit\explanations\test_conjunction_hardening.py,14,0,0,Pattern 2 (Local Test Helper),test
+_get_explainer,unit\test_prune_quality_backfill.py,33,0,0,Pattern 2 (Local Test Helper),test
+_broken_signature,unit\test_ce_agent_utils.py,476,0,1,Pattern 2 (Local Test Helper),test
 _check_preconditions,calibrated_explanations\explanations\explanation.py,3685,6,0,Consistent (Internal Only),library
 _is_lesser,calibrated_explanations\explanations\explanation.py,3668,1,0,Consistent (Internal Only),library
 _get_rule_str,calibrated_explanations\explanations\explanation.py,1470,1,0,Consistent (Internal Only),library
+_make_dummy_plugin,unit\plugins\test_plugin_descriptors_pickle.py,17,0,2,Pattern 2 (Shared Test Utility),test
 _emit,calibrated_explanations\parallel\parallel.py,721,36,0,Consistent (Internal Only),library
 _require_ce,calibrated_explanations\ce_agent_utils.py,126,4,0,Consistent (Internal Only),library
 _is_wrapper,calibrated_explanations\ce_agent_utils.py,145,6,0,Consistent (Internal Only),library
@@ -40,19 +41,21 @@ _cfg,calibrated_explanations\core\wrap_explainer.py,137,30,0,Consistent (Interna
 _perf_factory,calibrated_explanations\api\config.py,265,3,0,Consistent (Internal Only),library
 _NONE_SENTINEL,calibrated_explanations\cache\cache.py,187,5,0,Consistent (Internal Only),library
 _hash_part,calibrated_explanations\perf\cache.py,40,3,0,Consistent (Internal Only),library
-_reconstruct_lru_cache,calibrated_explanations\cache\cache.py,711,1,0,Consistent (Internal Only),library
-_reconstruct_calibrator_cache,calibrated_explanations\cache\cache.py,725,1,0,Consistent (Internal Only),library
+_reconstruct_lru_cache,calibrated_explanations\cache\cache.py,793,0,0,Pattern 3 (Completely Dead),library
+_reconstruct_calibrator_cache,calibrated_explanations\cache\cache.py,807,0,0,Pattern 3 (Completely Dead),library
+_reconstruct_cache_config,calibrated_explanations\cache\cache.py,817,0,0,Pattern 3 (Completely Dead),library
+_reconstruct_cache_metrics,calibrated_explanations\cache\cache.py,829,0,0,Pattern 3 (Completely Dead),library
 _HAVE_CACHETOOLS,calibrated_explanations\cache\cache.py,46,2,0,Consistent (Internal Only),library
-_safe_estimate,calibrated_explanations\cache\cache.py,509,3,0,Consistent (Internal Only),library
-_evict_oldest,calibrated_explanations\cache\cache.py,518,1,0,Consistent (Internal Only),library
-_evict_no_lock,calibrated_explanations\cache\cache.py,527,1,0,Consistent (Internal Only),library
-_logger,calibrated_explanations\plugins\manager.py,89,31,0,Consistent (Internal Only),library
-_size_estimator,calibrated_explanations\cache\cache.py,390,2,0,Consistent (Internal Only),library
-_telemetry,calibrated_explanations\cache\cache.py,413,5,0,Consistent (Internal Only),library
-_lock,calibrated_explanations\cache\cache.py,556,8,0,Consistent (Internal Only),library
-_bytes,calibrated_explanations\cache\cache.py,647,7,0,Consistent (Internal Only),library
-_version_lock,calibrated_explanations\cache\cache.py,694,4,0,Consistent (Internal Only),library
-_store,calibrated_explanations\cache\cache.py,399,16,0,Consistent (Internal Only),library
+_safe_estimate,calibrated_explanations\cache\cache.py,548,3,0,Consistent (Internal Only),library
+_evict_oldest,calibrated_explanations\cache\cache.py,557,1,0,Consistent (Internal Only),library
+_evict_no_lock,calibrated_explanations\cache\cache.py,566,1,0,Consistent (Internal Only),library
+_logger,calibrated_explanations\plugins\manager.py,89,33,0,Consistent (Internal Only),library
+_size_estimator,calibrated_explanations\cache\cache.py,624,4,0,Consistent (Internal Only),library
+_telemetry,calibrated_explanations\cache\cache.py,452,5,0,Consistent (Internal Only),library
+_lock,calibrated_explanations\cache\cache.py,618,8,0,Consistent (Internal Only),library
+_bytes,calibrated_explanations\cache\cache.py,720,7,0,Consistent (Internal Only),library
+_version_lock,calibrated_explanations\cache\cache.py,767,4,0,Consistent (Internal Only),library
+_store,calibrated_explanations\cache\cache.py,438,16,0,Consistent (Internal Only),library
 _ttl,calibrated_explanations\cache\cache.py,121,2,0,Consistent (Internal Only),library
 _expiries,calibrated_explanations\cache\cache.py,123,7,0,Consistent (Internal Only),library
 _NAME_TO_MODULE,calibrated_explanations\viz\__init__.py,97,10,0,Consistent (Internal Only),library
@@ -145,10 +148,13 @@ _finalize_fit,calibrated_explanations\core\wrap_explainer.py,955,2,0,Consistent 
 _format_proba_output,calibrated_explanations\core\wrap_explainer.py,971,2,0,Consistent (Internal Only),library
 _auto_encode,calibrated_explanations\core\wrap_explainer.py,200,4,0,Consistent (Internal Only),library
 _preprocessor,calibrated_explanations\core\wrap_explainer.py,199,13,0,Consistent (Internal Only),library
-_convert,calibrated_explanations\core\wrap_explainer.py,1177,6,0,Consistent (Internal Only),library
+_convert,calibrated_explanations\core\wrap_explainer.py,1252,8,0,Consistent (Internal Only),library
 _unseen_category_policy,calibrated_explanations\core\wrap_explainer.py,201,2,0,Consistent (Internal Only),library
 _pre_fitted,calibrated_explanations\core\wrap_explainer.py,929,5,0,Consistent (Internal Only),library
+_imported_preprocessor_mapping,calibrated_explanations\core\wrap_explainer.py,1138,1,0,Consistent (Internal Only),library
 _run_single,calibrated_explanations\core\explain\benchmarks.py,57,2,0,Consistent (Internal Only),library
+_build_empty_feature_result,calibrated_explanations\core\explain\feature_task.py,117,4,0,Consistent (Internal Only),library
+_process_categorical_feature,calibrated_explanations\core\explain\feature_task.py,164,2,0,Consistent (Internal Only),library
 _TELEMETRY_LOGGER,calibrated_explanations\core\explain\orchestrator.py,52,3,0,Consistent (Internal Only),library
 _coerce_ignore_items,calibrated_explanations\core\explain\orchestrator.py,93,2,0,Consistent (Internal Only),library
 _derive_plot_chain,calibrated_explanations\core\explain\orchestrator.py,1278,2,0,Consistent (Internal Only),library

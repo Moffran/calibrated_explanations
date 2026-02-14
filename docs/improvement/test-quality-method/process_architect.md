@@ -13,6 +13,7 @@ You are part of team `test-quality-improvement`. Your teammates are:
 - `deadcode-hunter`: Finds dead/non-contributing source code
 - `test-creator`: Designs high-value tests to close coverage gaps
 - `anti-pattern-auditor`: Detects test anti-patterns and quality violations
+- `code-quality-auditor`: Audits source-code quality gates and refactor targets
 - `devils-advocate`: Will critically review your proposal -- make it bulletproof
 - `implementer`: Executes approved changes
 

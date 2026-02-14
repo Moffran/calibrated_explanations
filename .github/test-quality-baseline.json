@@ -1,0 +1,358 @@
+{
+  "entries": [
+    {
+      "file": "integration/core/test_explanation_coverage.py",
+      "file_hash": "sha256:57ec52882f466362d80fd26fc4e1d4657d995554e05e2e8072721a277effbad3",
+      "id": "sha256:a8cbd2f961abb37806c1cac6d32e0e38ae3a17929f8f715a124f4e33a5e65ebb",
+      "line": 27,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_explanation_plots_smoke():"
+    },
+    {
+      "file": "integration/core/test_framework.py",
+      "file_hash": "sha256:33090b6ceed9eed2fa9ed2abd5adf5b010380ad587693c7b43218dbd578c2cbd",
+      "id": "sha256:ccb0c677259ba91ddfd1b3f6af09038829d56e12d032bfad2356badd066f0878",
+      "line": 41,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_explanation_functions_classification(binary_dataset):"
+    },
+    {
+      "file": "integration/core/test_framework.py",
+      "file_hash": "sha256:33090b6ceed9eed2fa9ed2abd5adf5b010380ad587693c7b43218dbd578c2cbd",
+      "id": "sha256:259d54e024d0add21d2a006e85cdd7564a73c12ca6ad94024c717ae7c1123b24",
+      "line": 84,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_explanation_functions_regression(regression_dataset):"
+    },
+    {
+      "file": "integration/core/test_preprocessor_wiring.py",
+      "file_hash": "sha256:871febe857bf36aa7d802b712b1c5f83ba04e7c35ef2e53c20960d9176c2b9de",
+      "id": "sha256:5edbc4b574af9e43495e2074b2be1d7e447a2728ef43643f6954907d05ee2900",
+      "line": 63,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):"
+    },
+    {
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:b2df95326b0d58582293e7755d025e482d52e6bfaa412677de53f6c6cceccc8d",
+      "id": "sha256:58efe4b9839fdafe18c0f04716447786d1e579a83c7e703f4be57d0751eef919",
+      "line": 265,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_probabilistic_regression_ce(regression_dataset):"
+    },
+    {
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:b2df95326b0d58582293e7755d025e482d52e6bfaa412677de53f6c6cceccc8d",
+      "id": "sha256:3ad4a66cff0fd40e7b0ada3d1a62bab7573b9e336d3139caa6f76c1f1c29d60b",
+      "line": 313,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_probabilistic_regression_int_threshold_ce(regression_dataset):"
+    },
+    {
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:b2df95326b0d58582293e7755d025e482d52e6bfaa412677de53f6c6cceccc8d",
+      "id": "sha256:519e45b91e9e15f9e1d9ed3fdcc3931732a5b18429056580865af7aeebc73e36",
+      "line": 351,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_regression_as_classification_ce(regression_dataset):"
+    },
+    {
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:b2df95326b0d58582293e7755d025e482d52e6bfaa412677de53f6c6cceccc8d",
+      "id": "sha256:66b03df4fd5d8a5ec84f2cef0a79fdedfb2597e7da19d4a2bbcf58780d41c0b7",
+      "line": 444,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_knn_normalized_probabilistic_regression_ce(regression_dataset):"
+    },
+    {
+      "file": "integration/test_initializer_parallel_end_to_end.py",
+      "file_hash": "sha256:9619dbf7c1f0b68f453a78fb8aa0fe08d966a0355267334eef355c613fba3b51",
+      "id": "sha256:c3d84ca5d8d0871e609ad2adaf61700f109a3fe7daf4e8c83ef4a2515c6927fb",
+      "line": 71,
+      "pattern": "time/network usage without patching",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "t0 = time.perf_counter()"
+    },
+    {
+      "file": "integration/test_initializer_parallel_end_to_end.py",
+      "file_hash": "sha256:9619dbf7c1f0b68f453a78fb8aa0fe08d966a0355267334eef355c613fba3b51",
+      "id": "sha256:f2f1d85a21cd5d3bf9e3c5f87e6b3ec489d02dd40873c0131c7c446dddec6854",
+      "line": 86,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_windows_spawn_semantics():"
+    },
+    {
+      "file": "unit/cache/test_cache_fallback.py",
+      "file_hash": "sha256:6247147ff75701ffab7e58efa6b6fdf4be42c27874490cc043b08498a0b531cd",
+      "id": "sha256:cac67ba14e933fc3314a7fcfb192a26d753d105fd3fb5ac53f2b36a77ed27b0a",
+      "line": 55,
+      "pattern": "time/network usage without patching",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "time.sleep(0.2)"
+    },
+    {
+      "file": "unit/core/explain/test_explain_orchestrator.py",
+      "file_hash": "sha256:fec79cb1ccfbafdcd2d9534627f64f39a47230fc775a3dd4d29890ebfbf7ed52",
+      "id": "sha256:53cfe3bff070616e9f8ed8bdf86bb9cb59e369a4e4f1d35bac7ed7e477581d0c",
+      "line": 36,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_initialize_chains(orchestrator, mock_explainer):"
+    },
+    {
+      "file": "unit/core/explain/test_helpers.py",
+      "file_hash": "sha256:1a99e9a7d83aada2c02e3e1f448e3095b12702b47548179f3a0342dbf231825e",
+      "id": "sha256:9df717a35d302f6c6f6274a37c05dc328dae113e252b6d7d4774a62e172fcacb",
+      "line": 41,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_compute_weight_delta_fallback_path_for_object_values(self):"
+    },
+    {
+      "file": "unit/core/explain/test_parallel_runtime.py",
+      "file_hash": "sha256:bbc76e07bc4c3aec930dbd94c84cfd840265cdc3eac97fa95068e72d10c689c1",
+      "id": "sha256:30d5819f2c405b1ac16e0566bdfeb3a77bb779dcc9b4215694ecf9b8a4394d9a",
+      "line": 15,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_cancel_delegates_to_executor(self):"
+    },
+    {
+      "file": "unit/core/prediction/test_interval_registry_coverage.py",
+      "file_hash": "sha256:6c4a945bad3a04ffbfccefc2957358055e94f2e831e081f3a875515d813cc796",
+      "id": "sha256:a3a4e2d2daa6d72c5037324d706e9d237fc206b8e33d13dd719c3805626bfce3",
+      "line": 53,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_update_regression(registry, mock_explainer):"
+    },
+    {
+      "file": "unit/core/prediction/test_orchestrator_coverage.py",
+      "file_hash": "sha256:f0fd8e6c583ddadad7b52d67551171123569cbb1dbc703de1534345303ef6dd1",
+      "id": "sha256:8c5d04fb2590736bc3aafd65a8bbbfad23391cb6b0d0a0c3e59ef43254122e00",
+      "line": 40,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_initialize_chains(orchestrator, mock_explainer):"
+    },
+    {
+      "file": "unit/core/prediction/test_orchestrator_coverage.py",
+      "file_hash": "sha256:f0fd8e6c583ddadad7b52d67551171123569cbb1dbc703de1534345303ef6dd1",
+      "id": "sha256:f068b8443aedd9dc03519ba542d5d10050d7b627ce4345ae740cbec86264e476",
+      "line": 152,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_validate_prediction_result_none(orchestrator):"
+    },
+    {
+      "file": "unit/core/prediction/test_orchestrator_coverage.py",
+      "file_hash": "sha256:f0fd8e6c583ddadad7b52d67551171123569cbb1dbc703de1534345303ef6dd1",
+      "id": "sha256:702b0769e960de1890bfcadf1fec13b3bb7003f1f90830abd9fecd7a4582a465",
+      "line": 158,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_validate_prediction_result_empty(orchestrator):"
+    },
+    {
+      "file": "unit/core/test_calibrated_explainer_coverage.py",
+      "file_hash": "sha256:aa265c4fd0abbe08718bf9c7d1841296ee4ffda18c6638a4a52eb9f223109d45",
+      "id": "sha256:8291999e8faca8baf5e2ca1667b7d542fa45d0518598c0e2a87597ce59bf077f",
+      "line": 116,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_preloads(mock_learner, mock_plugin_manager):"
+    },
+    {
+      "file": "unit/core/test_interval_regressor.py",
+      "file_hash": "sha256:ba426316b1ddf85cbf302cdd29ae2202a598feb4cef4087dbe1fb55f67122a57",
+      "id": "sha256:937fb6a47e04abe2945c04b6d3f67980bfa01fd35778591577c150d81c2ea2cc",
+      "line": 137,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_initializer_flattens_calibration_arrays(monkeypatch):"
+    },
+    {
+      "file": "unit/core/test_reject.py",
+      "file_hash": "sha256:dcc7be9b5a0c18e2487b06c4219f792adee3899bd0ed00804841c74aa644f135",
+      "id": "sha256:86c5a4e59d1a550fcd35b6fe2338cb92cf963a9e21be2447f59057752a258fb9",
+      "line": 195,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_per_call_overrides_explainer_default(self):"
+    },
+    {
+      "file": "unit/core/test_removal_batch_replacements.py",
+      "file_hash": "sha256:57c13717dc0ae31ae9189c07e18038b85e690daed01e76e03e6ddd573cd739b4",
+      "id": "sha256:4fa456ab27a98c43941bea2739d4e1c2721095447501b268c3985ebd8726f0a0",
+      "line": 230,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_validate_interval_calibrator_untrusted_plugin_skips_protocol_checks() -> None:"
+    },
+    {
+      "file": "unit/core/test_validation_unit.py",
+      "file_hash": "sha256:40ee2bf52c3e4fc5eb942393cf81e3802709d79921dde1bc5aa6c15d8bb4d5d2",
+      "id": "sha256:3d7ddbfcfaea95df677cfbabb11a2b8e492a84d16e9759c0e1c7b541319dab6b",
+      "line": 161,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_validate_inputs_adr002_class_labels_parameter():"
+    },
+    {
+      "file": "unit/explanations/test_batched_parity.py",
+      "file_hash": "sha256:3cb8af9b8a77a2b50b60f005d1f55a7cc61aad5ff5070efa4960d1e568499225",
+      "id": "sha256:4dcff1c768388bd7497c68e2bd74611b08e872f3e19256d55174395432ff225b",
+      "line": 39,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_batched_factual_parity(binary_dataset):"
+    },
+    {
+      "file": "unit/explanations/test_batched_parity.py",
+      "file_hash": "sha256:3cb8af9b8a77a2b50b60f005d1f55a7cc61aad5ff5070efa4960d1e568499225",
+      "id": "sha256:7fd19fb96c776cddfad3e954a980636215dc4066318856917384727a963fc5a2",
+      "line": 76,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_batched_alternative_parity(binary_dataset):"
+    },
+    {
+      "file": "unit/explanations/test_conjunction_hardening.py",
+      "file_hash": "sha256:9d1d1025e338c5eff0e7e4bc9ace9c0ad536d52298edec75c43d9d74a54f74d2",
+      "id": "sha256:3e6568cb03613dbf5ff279228543523ba9e3c4f71f0f53e9232668d586098004",
+      "line": 14,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_fallback_to_legacy(monkeypatch):"
+    },
+    {
+      "file": "unit/explanations/test_conjunction_parity.py",
+      "file_hash": "sha256:9a1fa9d82214e821bcfa3cb31be0b46fe72a69b8fe4bda4f2c384c879361a59d",
+      "id": "sha256:9d526b0134e3735d520ef329a88265b051d407898414685490128b0473af1e05",
+      "line": 111,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):"
+    },
+    {
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:becbf69a2f573ca2c4760102b641df7c01c1d9e821e63d32ff273b55536547b2",
+      "id": "sha256:5ff694e1946427674014298eb687a961873765586493e7f600ebfd3e324d1140",
+      "line": 143,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_probabilistic_threshold_and_label_variants(tmp_path):"
+    },
+    {
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:becbf69a2f573ca2c4760102b641df7c01c1d9e821e63d32ff273b55536547b2",
+      "id": "sha256:100bd8348d72e64ff85579c7ecf949648d9408c7be338db038ab0e50e36186a7",
+      "line": 350,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_regression_returns_without_output():"
+    },
+    {
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:becbf69a2f573ca2c4760102b641df7c01c1d9e821e63d32ff273b55536547b2",
+      "id": "sha256:ccd3ce7855cb8bc8bb0e50415b916064322730877966621e7809d51b6cd314fe",
+      "line": 421,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_alternative_returns_without_output():"
+    },
+    {
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:becbf69a2f573ca2c4760102b641df7c01c1d9e821e63d32ff273b55536547b2",
+      "id": "sha256:8d7de4deac0de1f2d956870e1c7581dc0244a093e0b0facc7a947a876e8a804d",
+      "line": 484,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_triangular_returns_without_output():"
+    },
+    {
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:becbf69a2f573ca2c4760102b641df7c01c1d9e821e63d32ff273b55536547b2",
+      "id": "sha256:508b218a5f7b031184ffab4d86cff673dd22bbced07a5a288d7d1cf527c15fb2",
+      "line": 606,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_plot_proba_triangle_helper():"
+    },
+    {
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:becbf69a2f573ca2c4760102b641df7c01c1d9e821e63d32ff273b55536547b2",
+      "id": "sha256:e6efde359a2e2accfa8345b354d4c3e36000ee17c828c3b1d6aebb0bad2f1712",
+      "line": 645,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):"
+    },
+    {
+      "file": "unit/perf/test_cache.py",
+      "file_hash": "sha256:721f984c89b8640a44a84ba598cad921fa2ca7f9d2d02aaaa7cfc119bc215983",
+      "id": "sha256:e4aaf8eb30255ba64ca09e82602452adda5924f52d6fd47995f391127997a5b6",
+      "line": 63,
+      "pattern": "time/network usage without patching",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "time.sleep(0.15)"
+    },
+    {
+      "file": "unit/plugins/test_builtins_coverage.py",
+      "file_hash": "sha256:a36b82d62b6be2b5311c579b1be511c30b2bc428592b6779ba64e8d06b03879f",
+      "id": "sha256:c5c57e653745ab8906bc3fa639639a470648882adb2c07328a219f8b864db267",
+      "line": 74,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_collection_to_batch(self):"
+    },
+    {
+      "file": "unit/test_fallback_enforcement.py",
+      "file_hash": "sha256:e32a022e1e533c30eff61d4a32c2276ef92bb2564aa172e087c5ef1bedf983bf",
+      "id": "sha256:b3f7cbc734242442a0afac2a1d1f16247a56dcef9d2c6bf23cc3586a53eb7fce",
+      "line": 90,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_should_pass_when_no_fallback_warnings(self):"
+    },
+    {
+      "file": "unit/test_fallback_enforcement.py",
+      "file_hash": "sha256:e32a022e1e533c30eff61d4a32c2276ef92bb2564aa172e087c5ef1bedf983bf",
+      "id": "sha256:1cd6aef85357e9f72f6e19b47c0ccc5a3b9a1c8bb3b5936c5f37836c310c5f06",
+      "line": 162,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_should_allow_non_fallback_warnings(self):"
+    },
+    {
+      "file": "unit/test_prune_quality_backfill.py",
+      "file_hash": "sha256:ae99472113d5b2249cb63185308024b1c98767ed833e30ed4b8fe5b0d48aa1ee",
+      "id": "sha256:2606a70098ee035bcbcf52884f10204b93eec6a4b5f056b6f62112b9f93b8afd",
+      "line": 31,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_plot_alternative_resolves_explainer_from_container_paths() -> None:"
+    },
+    {
+      "file": "unit/viz/test_plotspec_schema_and_primitives.py",
+      "file_hash": "sha256:a9c9d9036c9cbe9cb168e358b6180468778ecd870f3fb551b69f66f6e2f349ae",
+      "id": "sha256:63b3e9c3d91fbb22e6f1afc454ee67d6cfb115f342d7be712b51f9c2241d7933",
+      "line": 69,
+      "pattern": "test without assertion",
+      "rationale": "Existing debt accepted during incremental ADR-030 rollout.",
+      "snippet": "def test_example_plotspec_validates():"
+    }
+  ],
+  "generated_at": "2026-02-14T04:17:23+00:00",
+  "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
+  "version": 1
+}

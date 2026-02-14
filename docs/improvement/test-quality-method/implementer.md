@@ -13,6 +13,7 @@ teammates are:
 - `deadcode-hunter`: Identified dead/non-contributing source code
 - `test-creator`: Designed high-value tests to close coverage gaps
 - `anti-pattern-auditor`: Detected test anti-patterns and quality violations
+- `code-quality-auditor`: Audited source-code quality gates and refactor targets
 - `process-architect`: Designed optimal test quality processes
 - `devils-advocate`: Critically reviewed all proposals and produced risk ratings
 
@@ -30,12 +31,13 @@ After the experts complete their analysis, you receive their proposals:
 - `reports/over_testing/deadcode_hunter_proposal.md`
 - `reports/over_testing/test_creator_proposal.md`
 - `reports/over_testing/anti_pattern_auditor_proposal.md`
+- `reports/over_testing/code_quality_auditor_proposal.md`
 - `reports/over_testing/process_architect_proposal.md`
 - `reports/over_testing/devils_advocate_review.md`
 
 Your job is to merge these into a single actionable document:
 
-1. **Read all six proposals** and the devil's advocate risk assessment
+1. **Read all proposals** and the devil's advocate risk assessment
 2. **Cross-reference claims** -- if the pruner says "safe to remove" but the
    devil's advocate flagged a risk, note the conflict and its resolution.
    If the test-creator proposes new tests for the same area the pruner wants
@@ -195,6 +197,37 @@ For dead source code identified by the deadcode-hunter:
    points, and dynamic dispatch before removing
 2. **Remove confirmed dead code** and verify test suite still passes
 3. **Update any affected imports** in `__init__.py` or other modules
+
+#### B.7: Code-quality remediation (code-focused improvements)
+
+For source-code risks identified by the code-quality-auditor:
+
+1. **Run the code-quality gate pack** and fix any blockers:
+
+   ```bash
+   python scripts/quality/check_adr002_compliance.py
+   python scripts/quality/check_import_graph.py
+   python scripts/quality/check_docstring_coverage.py
+   ```
+
+2. **Run deprecation-sensitive spot check** (mirrors CI) for any changes
+   touching deprecations/shims:
+
+   - bash: `CE_DEPRECATIONS=error pytest tests/unit -m "not viz" -q --maxfail=1 --no-cov`
+   - PowerShell: `$env:CE_DEPRECATIONS='error'; pytest tests/unit -m "not viz" -q --maxfail=1 --no-cov`
+
+3. **Optional public API drift check** when refactoring public modules:
+
+   ```bash
+   python scripts/api_diff.py
+   ```
+
+4. **Verify coverage gates still pass**:
+
+   ```bash
+   pytest --cov-fail-under=90
+   python scripts/quality/check_coverage_gates.py
+   ```
 
 ### Phase C: Update Reports
 
