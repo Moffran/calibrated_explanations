@@ -298,7 +298,9 @@ def _process_categorical_feature(
 
     current_bins = np.full(n_instances, -1, dtype=int)
     if value_to_index:
-        current_bins = np.array([value_to_index.get(val, -1) for val in np.asarray(x_column)], dtype=int)
+        current_bins = np.array(
+            [value_to_index.get(val, -1) for val in np.asarray(x_column)], dtype=int
+        )
 
     for inst in unique_instances:
         i = int(inst)

@@ -2,15 +2,12 @@ import pytest
 import numpy as np
 from calibrated_explanations.core.narrative_generator import (
     to_py,
-    first_or_none,
     clean_condition,
     crosses_zero,
-    has_wide_prediction_interval,
     NarrativeGenerator,
 )
 from calibrated_explanations.utils.exceptions import ValidationError
 from unittest.mock import MagicMock
-
 
 
 def test_to_py_variants():
@@ -45,8 +42,6 @@ def test_crosses_zero_fallback():
 def test_crosses_zero_should_handle_array_like_intervals():
     assert crosses_zero({"weight_low": [-0.1, 0.2], "weight_high": [0.1, 0.3]}) is True
     assert crosses_zero({"weight_low": [0.1, 0.2], "weight_high": [0.3, 0.4]}) is False
-
-
 
 
 def test_narrative_generator_validation():
@@ -97,8 +92,6 @@ def test_generate_narrative_template_not_found():
     assert "Template not found" in res
 
 
-
-
 def test_expand_template_feat_name_fallback():
     gen = NarrativeGenerator()
     template = "{feature_name}"
@@ -111,8 +104,6 @@ def test_expand_template_feat_name_fallback():
     pos_features2 = [{"feature_name": None, "rule": "", "weight": 1.0}]
     res2 = gen.expand_template(template, pos_features2, [], [], {}, "beginner")
     assert res2 == ""
-
-
 
 
 def test_generate_narrative_should_not_crash_for_alternative_conjunctive_features():
@@ -248,8 +239,6 @@ def test_expand_template_should_tag_uncertain_for_alternatives_when_interval_cov
     housing_line = next(ln for ln in lines if "housing_median_age" in ln)
     assert "⚠️ direction uncertain" not in housing_line
     assert "⚠️ uncertain" in housing_line
-
-
 
 
 def test_generate_narrative_should_not_split_uncertainty_for_regression():

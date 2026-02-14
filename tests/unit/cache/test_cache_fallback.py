@@ -6,11 +6,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.cache.cache import (
-    CacheConfig,
-    CalibratorCache,
     LRUCache,
-    default_size_estimator,
-    hash_part,
     make_key,
 )
 
@@ -78,8 +74,6 @@ def test_cache_fallback_logic():
         del sys.modules["calibrated_explanations.cache.cache"]
 
 
-
-
 def test_make_key_should_include_namespace_version_and_parts():
     """make_key should compose a deterministic namespaced cache key."""
     parts = [np.array([1.0, 2.0]), {"alpha": 1}]
@@ -89,10 +83,6 @@ def test_make_key_should_include_namespace_version_and_parts():
     assert key_one == key_two
     assert key_one[0] == "ns"
     assert key_one[1] == "v1"
-
-
-
-
 
 
 def test_lru_cache_should_evict_when_exceeding_memory_budget():
@@ -131,7 +121,3 @@ def test_lru_cache_should_skip_oversized_values():
 
     assert cache.get(("big",)) is None
     assert cache.metrics.misses >= 1
-
-
-
-

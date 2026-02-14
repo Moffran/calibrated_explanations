@@ -1,5 +1,3 @@
-import copy
-import pytest
 from unittest.mock import MagicMock
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
@@ -21,10 +19,6 @@ def make_stub_explainer_with_mock_pm():
     pm = MagicMock()
     expl.plugin_manager = pm
     return expl, pm
-
-
-
-
 
 
 def test_property_delegators_to_plugin_manager():
@@ -103,8 +97,6 @@ def test_feature_names_internal_alias():
     assert expl.feature_names_internal == ["a", "b"]
     expl.feature_names_internal = ["c"]
     assert expl.feature_names == ["c"]
-
-
 
 
 def test_other_properties():

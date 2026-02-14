@@ -155,8 +155,6 @@ def test_builtin_feature_filter_exception_path(monkeypatch):
     assert isinstance(batch, builtins.ExplanationBatch)
 
 
-
-
 def test_alternative_plot_triangle_uses_interval_width_for_regression(monkeypatch):
     # Arrange: minimal regression-mode explanation stub
     fake = types.SimpleNamespace()
@@ -209,10 +207,6 @@ def test_alternative_plot_triangle_uses_interval_width_for_regression(monkeypatc
     assert sel_proba == [6.0]
     assert list(sel_unc) == pytest.approx([2.0])
     assert num_to_show == 1
-
-
-
-
 
 
 def test_add_conjunctions_factual_legacy_simple():

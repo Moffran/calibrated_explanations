@@ -1,13 +1,9 @@
-import warnings
-
 import pytest
 
 from calibrated_explanations.explanations.models import Explanation, FeatureRule
 from calibrated_explanations.plugins.plots import PlotRenderContext
 from calibrated_explanations.serialization import to_json
 from calibrated_explanations.utils.exceptions import ValidationError
-
-
 
 
 def test_plot_render_context_getstate_returns_dict():
@@ -46,5 +42,3 @@ def test_serialization_invariant_low_greater_than_high():
 
     with pytest.raises(ValidationError, match="low > high"):
         to_json(explanation)
-
-

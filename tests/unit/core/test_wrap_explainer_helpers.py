@@ -253,8 +253,6 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
     assert getattr(wrapper, "cfg", None) is cfg
 
 
-
-
 def test_explain_lime_invokes_underlying_explainer(
     wrapper: WrapCalibratedExplainer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -280,8 +278,6 @@ def test_explain_lime_invokes_underlying_explainer(
     _, payload = wrapper.explainer.calls[-1]  # type: ignore[union-attr]
     assert payload["custom_flag"] is True
     assert "bins" in payload
-
-
 
 
 def test_predict_proba_threshold_requires_calibration_when_available() -> None:
@@ -396,7 +392,9 @@ def test_pre_fit_preprocess_uses_two_step_transform(wrapper: WrapCalibratedExpla
     assert np.array_equal(transformed, data + 5)
 
 
-def test_export_and_import_preprocessor_mapping_applies_when_possible(wrapper: WrapCalibratedExplainer) -> None:
+def test_export_and_import_preprocessor_mapping_applies_when_possible(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
     pre = RecordingPreprocessor()
     wrapper.preprocessor = pre
 

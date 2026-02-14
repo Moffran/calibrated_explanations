@@ -101,8 +101,6 @@ def testread_pyproject_section_handles_multiple_sources(
     }
 
 
-
-
 def test_read_pyproject_section_handles_load_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
@@ -136,8 +134,6 @@ def test_write_pyproject_section_returns_false_when_missing_file(
     config_helpers.set_toml_modules_for_testing(tomllib=ORIG_TOMLLIB, tomli_w=DummyTomliW)
 
     assert write_pyproject_section(("tool",), {"k": "v"}) is False
-
-
 
 
 def test_write_pyproject_section_rejects_non_mapping_leaf(

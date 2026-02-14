@@ -71,15 +71,11 @@ def make_explanation_context(explainer, predict_bridge, **overrides):
     return ExplanationContext(**context)
 
 
-
-
 def test_derive_threshold_labels_logs_interval_failure(caplog):
     caplog.set_level("DEBUG")
     labels = builtins.derive_threshold_labels(["bad", "value"])
     assert labels == ("Target within threshold", "Outside threshold")
     assert "Failed to parse threshold" in caplog.text
-
-
 
 
 def test_execution_plugin_supports_false_falls_back_to_legacy(monkeypatch):
@@ -207,5 +203,3 @@ def test_legacy_plot_renderer_invokes_global(monkeypatch):
     assert calls["path"] == "out"
     assert calls["save_ext"] == ".png"
     assert result.saved_paths == ()
-
-

@@ -67,52 +67,6 @@ def mock_helpers():
         yield
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def test_preloads(mock_learner, mock_plugin_manager):
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
@@ -125,32 +79,6 @@ def test_preloads(mock_learner, mock_plugin_manager):
     with patch.object(explainer, "shap_helper") as mock_shap:
         explainer.preload_shap(num_test=10)
         mock_shap.preload.assert_called_once_with(num_test=10)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def test_plugin_delegations_and_aliases(mock_learner, mock_plugin_manager):
@@ -258,38 +186,6 @@ def test_explain_mondrian_bins_and_legacy_path(mock_learner, mock_plugin_manager
         result = explainer(x_test, bins=None, _use_plugin=False)
         assert result == "legacy"
         assert mock_legacy.call_args.kwargs["bins"] is explainer.bins
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def test_additional_coverage(mock_learner, mock_plugin_manager):
@@ -600,7 +496,3 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     del explainer.reject_orchestrator
     del explainer.lime_helper
     del explainer.shap_helper
-
-
-
-

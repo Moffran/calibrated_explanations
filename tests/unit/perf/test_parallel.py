@@ -49,8 +49,6 @@ def test_parallel_metrics_snapshot():
     }
 
 
-
-
 def test_parallel_config_from_env_extended_tokens(monkeypatch):
     base = ParallelConfig(enabled=True, min_batch_size=4)
     monkeypatch.setenv(
@@ -79,8 +77,6 @@ def test_map_handles_disabled_and_small_batches():
     assert executor.metrics.submitted == 0
 
 
-
-
 def test_resolve_strategy_variants(monkeypatch):
     config = ParallelConfig(enabled=True, strategy="threads")
     executor = ParallelExecutor(config)
@@ -103,10 +99,6 @@ def test_resolve_strategy_variants(monkeypatch):
     config.strategy = "auto"
     monkeypatch.setattr(executor, "_auto_strategy", lambda **k: "threads")
     assert executor.resolve_strategy().func.__name__ == "thread_strategy"
-
-
-
-
 
 
 def test_auto_strategy(monkeypatch):
@@ -193,8 +185,6 @@ def test_auto_strategy_work_items(monkeypatch):
     )
     executor.config.granularity = "instance"
     assert executor.auto_strategy(work_items=60000) == "processes"
-
-
 
 
 def test_process_strategy(monkeypatch):

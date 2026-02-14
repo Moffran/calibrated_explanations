@@ -6,8 +6,6 @@ from unittest.mock import Mock, patch
 
 from calibrated_explanations.plugins.cli import (
     coerce_string_tuple,
-    emit_header,
-    format_common_metadata,
     cmd_list,
     emit_explanation_descriptor,
     emit_interval_descriptor,
@@ -34,11 +32,7 @@ class TestCliCoverage:
         assert coerce_string_tuple([]) == ()
         assert coerce_string_tuple([" a ", ""]) == ("a",)  # stripped
 
-
-
-
     @patch("calibrated_explanations.plugins.cli.list_plot_renderer_descriptors")
-
     @patch("calibrated_explanations.plugins.registry.find_plot_builder")
     def test_cmd_validate_plot(self, mock_find, capsys):
         """Test validate plot command."""

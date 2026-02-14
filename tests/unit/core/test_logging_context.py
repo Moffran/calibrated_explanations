@@ -1,13 +1,8 @@
-import logging
-
 import pytest
 
 from calibrated_explanations.logging import (
-    LoggingContextFilter,
-    ensure_logging_context_filter,
     get_logging_context,
     logging_context,
-    telemetry_diagnostic_mode,
     update_logging_context,
 )
 
@@ -16,14 +11,6 @@ from calibrated_explanations.logging import (
 def clear_env(monkeypatch):
     monkeypatch.delenv("CE_TELEMETRY_DIAGNOSTIC_MODE", raising=False)
     yield
-
-
-
-
-
-
-
-
 
 
 def test_should_coerce_bool_with_various_inputs(monkeypatch):
@@ -52,18 +39,3 @@ def test_update_logging_context_ignores_unknown_keys_and_context_manager_noop_fo
         assert get_logging_context()["request_id"] == "req-1"
 
     assert get_logging_context()["request_id"] == "req-1"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

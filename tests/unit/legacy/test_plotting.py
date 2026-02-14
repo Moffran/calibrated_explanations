@@ -111,8 +111,6 @@ def disable_show(monkeypatch):
         monkeypatch.setattr(plt, "show", lambda *args, **kwargs: None)
 
 
-
-
 def test_probabilistic_default_save_extensions_use_title(tmp_path):
     explanation = DummyExplanation()
     instance = [0.5, -0.1]
@@ -136,8 +134,6 @@ def test_probabilistic_default_save_extensions_use_title(tmp_path):
     assert len(saved) == 3
     for ext in ("svg", "pdf", "png"):
         assert any(name.startswith(f"auto{ext}") for name in saved), saved
-
-
 
 
 def test_probabilistic_threshold_and_label_variants(tmp_path):
@@ -212,10 +208,6 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
     )
 
 
-
-
-
-
 def testplot_global_requires_scalar_threshold_for_non_probabilistic():
     class ThresholdWrapper:
         def __init__(self):
@@ -248,10 +240,6 @@ def testplot_global_requires_scalar_threshold_for_non_probabilistic():
             threshold=(0.2, 0.8),
             show=False,
         )
-
-
-
-
 
 
 def test_regression_non_interval_branches(tmp_path, disable_show):
@@ -319,8 +307,6 @@ def test_interval_requires_idx_and_two_sided(tmp_path):
             idx=0,
             save_ext=[".png"],
         )
-
-
 
 
 def test_regression_interval_one_sided_error(tmp_path):
@@ -495,8 +481,6 @@ def test_triangular_returns_without_output():
     )
 
 
-
-
 def testplot_global_threshold_branch(monkeypatch):
     class Learner:
         pass
@@ -601,8 +585,6 @@ def testplot_global_headless_short_circuit(monkeypatch):
     plotting.plot_global(explainer, x=np.zeros((1, 1)), show=False)
 
 
-
-
 def test_plot_proba_triangle_helper():
     plotting.plot_proba_triangle()
 
@@ -640,8 +622,6 @@ def test_probabilistic_saves_before_show(monkeypatch, tmp_path):
     assert order[:2] == ["save", "show"]
 
 
-
-
 def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
     """When show/save are disabled the helper should short-circuit without matplotlib."""
     explanation = DummyExplanation()
@@ -666,8 +646,6 @@ def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
         interval=False,
         save_ext=None,
     )
-
-
 
 
 def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
@@ -697,9 +675,3 @@ def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
             idx=0,
             save_ext=[".png"],
         )
-
-
-
-
-
-

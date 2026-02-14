@@ -4,7 +4,6 @@ import pytest
 from unittest.mock import Mock
 from calibrated_explanations.explanations.explanation import CalibratedExplanation
 import numpy as np
-import pandas as pd
 from calibrated_explanations.utils.exceptions import ValidationError
 
 # Alias for convenience
@@ -117,10 +116,6 @@ class TestExplanationUnit:
         expl = ConcreteExplanation(**params)
         return expl
 
-
-
-
-
     def test_filter_rule_sizes_copy_preserves_original(self):
         expl = self.create_expl()
         expl.rules = {
@@ -210,7 +205,6 @@ class TestExplanationUnit:
             match="The alternative explanation is identical to the original explanation",
         ):
             expl.add_new_rule_condition(0, 12.0)
-
 
     def test_add_new_rule_condition_boundary_out_of_bounds_high(self):
         expl = self.create_expl()

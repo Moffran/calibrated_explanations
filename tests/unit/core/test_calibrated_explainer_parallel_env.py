@@ -33,4 +33,3 @@ class TestCalibratedExplainerParallelEnv:
             assert explainer.parallel_executor is not None
             assert explainer.parallel_executor.config.enabled is True
             assert explainer.parallel_executor.config.strategy == "threads"
-

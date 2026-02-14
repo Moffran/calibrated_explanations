@@ -123,8 +123,6 @@ def test_check_is_fitted_paths(tmp_path):
         helper.check_is_fitted(DummyNeedsFit)
 
 
-
-
 def test_transform_to_numeric_with_and_without_mappings():
     df = pd.DataFrame(
         {
@@ -194,8 +192,6 @@ def test_calculate_metrics_behaviour():
 
     with pytest.raises(ValidationError):
         helper.calculate_metrics(uncertainty, prediction, w=2)
-
-
 
 
 def test_concatenate_thresholds_handles_tuples_and_lists():
@@ -273,13 +269,9 @@ def test_is_notebook_propagates_unexpected_exceptions(monkeypatch):
         helper.is_notebook()
 
 
-
-
 def test_calculate_metrics_uses_default_metric_list():
     uncertainty = [0.3]
     prediction = [0.6]
     result = helper.calculate_metrics(uncertainty, prediction, w=0.2)
     expected = (1 - 0.2) * (1 - np.asarray(uncertainty)) + 0.2 * np.asarray(prediction)
     assert np.allclose(result, expected)
-
-

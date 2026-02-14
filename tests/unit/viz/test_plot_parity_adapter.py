@@ -1,5 +1,3 @@
-import pytest
-
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
 from calibrated_explanations.viz import (
     REGRESSION_BAR_COLOR,
@@ -8,27 +6,13 @@ from calibrated_explanations.viz import (
 
 from tests.unit.viz.test_plot_parity_fixtures import (
     factual_probabilistic_no_uncertainty,
-    factual_probabilistic_zero_crossing,
-    factual_regression_interval,
     alternative_probabilistic_cross_05,
-    alternative_regression_interval,
-    alternative_regression_point,
-    alternative_regression_probability_scale,
-    triangular_probabilistic,
     global_probabilistic_multiclass,
 )
 
 
 REG_BAR_COLOR = REGRESSION_BAR_COLOR
 REG_BASE_COLOR = REGRESSION_BASE_COLOR
-
-
-
-
-
-
-
-
 
 
 def test_alternative_probabilistic_cross_primitives():
@@ -42,14 +26,6 @@ def test_alternative_probabilistic_cross_primitives():
     # Base interval should be present (index -1) alongside feature overlays (>=0)
     assert -1 in indices
     assert any(idx is not None and idx >= 0 for idx in indices)
-
-
-
-
-
-
-
-
 
 
 def test_global_probabilistic_multiclass_saved(tmp_path):
@@ -75,14 +51,6 @@ def test_adapter_returns_normalized_and_legacy_for_plotspec():
     assert "plot_spec" in wrapper and "primitives" in wrapper
     # legacy keys like solids/overlays/header should also be present (may be empty)
     assert any(k in wrapper for k in ("solids", "overlays", "header", "base_interval"))
-
-
-
-
-
-
-
-
 
 
 def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):

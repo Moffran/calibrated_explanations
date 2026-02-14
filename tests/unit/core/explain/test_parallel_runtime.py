@@ -1,17 +1,13 @@
 """Unit tests for ExplainParallelRuntime."""
 
-import warnings
 from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from calibrated_explanations.core.explain.parallel_runtime import ExplainParallelRuntime
-from calibrated_explanations.parallel import ParallelExecutor, ParallelConfig
+from calibrated_explanations.parallel import ParallelExecutor
 
 
 class TestExplainParallelRuntime:
-
-
-
     def test_cancel_delegates_to_executor(self):
         executor = MagicMock(spec=ParallelExecutor)
         runtime = ExplainParallelRuntime(
@@ -47,9 +43,6 @@ class TestExplainParallelRuntime:
 
         with pytest.warns(UserWarning, match="Parallel execution fell back to sequential"), runtime:
             pass
-
-
-
 
     def test_worker_init_sets_module_global(self):
         """Test that worker init populates the module-level explain_slice."""
@@ -124,4 +117,3 @@ class TestExplainParallelRuntime:
             # Verify executor was instantiated and called
             mock_seq_cls.assert_called()
             mock_executor_instance.execute.assert_called_once()
-

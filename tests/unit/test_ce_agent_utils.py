@@ -4,7 +4,6 @@ import types
 import pytest
 import numpy as np
 
-from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.ce_agent_utils import (
     add_conjunctions,
     add_conjunctions_to_one,
@@ -15,12 +14,9 @@ from calibrated_explanations.ce_agent_utils import (
     fit_and_calibrate,
     get_calibrated_predictions,
     get_uncalibrated_predictions,
-    policy_as_dict,
     probe_optional_features,
     summarize_explanations,
-    serialize_policy,
     set_telemetry_hook,
-    wrap_and_explain,
 )
 
 from calibrated_explanations.core.exceptions import ValidationError
@@ -50,7 +46,6 @@ def prep_regression():
     return x_train, y_train, x_cal, y_cal, x_test, y_test
 
 
-
 def test_enforce_ce_first_and_execute():
     x_train, y_train, x_cal, y_cal, x_test, _ = prep_classification()
     model = RandomForestClassifier(random_state=0)
@@ -58,7 +53,6 @@ def test_enforce_ce_first_and_execute():
     fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
     result = enforce_ce_first_and_execute(lambda w, x: w.explain_factual(x), wrapper, x_test[:1])
     assert result is not None
-
 
 
 def test_explain_and_narrate_requires_calibration():
@@ -222,8 +216,6 @@ def test_get_uncalibrated_predictions_without_predict_proba():
     assert payload["probability"] is None
 
 
-
-
 def test_ensure_ce_first_wrapper_raises_for_missing_library(monkeypatch):
     ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
 
@@ -344,7 +336,9 @@ def test_get_calibrated_predictions_and_uncalibrated_paths(monkeypatch):
             return [[0.8, 0.2]]
 
     monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
-    out = ce_utils.get_calibrated_predictions(FakeWrapper(), [[0.0]], threshold=0.5, calibrated=True)
+    out = ce_utils.get_calibrated_predictions(
+        FakeWrapper(), [[0.0]], threshold=0.5, calibrated=True
+    )
     assert out["prediction"] == [0.2]
     assert out["probability"] == [[0.8, 0.2]]
 
@@ -352,7 +346,9 @@ def test_get_calibrated_predictions_and_uncalibrated_paths(monkeypatch):
         def predict_proba(self, _x, **_kwargs):
             return [[0.5, 0.5]]
 
-    unc = ce_utils.get_uncalibrated_predictions(types.SimpleNamespace(learner=LearnerNoPredict()), [[1]])
+    unc = ce_utils.get_uncalibrated_predictions(
+        types.SimpleNamespace(learner=LearnerNoPredict()), [[1]]
+    )
     assert unc["prediction"] is None
     assert unc["probability"] == [[0.5, 0.5]]
 
@@ -440,8 +436,6 @@ def test_explain_and_summarize_with_percentiles_and_no_conjunctions(monkeypatch)
     assert payload["summary"]["prediction"]["predict"] == 0.3
 
 
-
-
 def test_wrap_and_explain_plot_failure_is_tolerated(monkeypatch):
     ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
 
@@ -466,8 +460,6 @@ def test_wrap_and_explain_plot_failure_is_tolerated(monkeypatch):
     )
     out = ce_utils.wrap_and_explain("m", [1], [1], [1], [1], [1])
     assert out["plot"] is None
-
-
 
 
 def test_get_calibrated_predictions_tolerates_signature_probe_failures(monkeypatch):
@@ -547,8 +539,6 @@ def test_explain_and_narrate_covers_no_probability_and_fallback_action(monkeypat
 
     _explanations, narrative = ce_utils.explain_and_narrate(FakeWrapper(), [[1.0]], mode="factual")
     assert "Review the most influential features" in narrative
-
-
 
 
 def test_ensure_ce_first_wrapper_rejects_missing_attrs_and_methods(monkeypatch):

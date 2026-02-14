@@ -1,8 +1,4 @@
-import warnings
-
 import pytest
-
-
 
 
 def test_should_resolve_core_lazy_exports_when_accessed() -> None:

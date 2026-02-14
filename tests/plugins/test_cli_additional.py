@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from calibrated_explanations.plugins import cli
 
+
 def test_cmd_list_handles_empty_sections(monkeypatch, capsys):
     args = SimpleNamespace(kind="all", trusted_only=False, verbose=False)
     monkeypatch.setattr(cli, "list_explanation_descriptors", lambda trusted_only: [])
@@ -17,7 +18,3 @@ def test_cmd_list_handles_empty_sections(monkeypatch, capsys):
     assert exit_code == 0
     out = capsys.readouterr().out
     assert out.count("<none>") >= 4
-
-
-
-

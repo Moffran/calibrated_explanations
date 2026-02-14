@@ -13,7 +13,6 @@ from calibrated_explanations.integrations.shap import ShapHelper
 class TestLimeHelper:
     """Tests for LIME integration helper."""
 
-
     def test_should_set_enabled_flag(self):
         """set_enabled() should update the _enabled flag."""
         mock_explainer = MagicMock()
@@ -58,8 +57,6 @@ class TestLimeHelper:
         assert helper.enabled is False
         assert helper.explainer_instance is None
         assert helper.reference_explanation is None
-
-
 
     def test_should_not_preload_when_already_enabled(self):
         """preload() should skip initialization if already enabled."""
@@ -159,7 +156,6 @@ class TestShapHelper:
         assert helper.enabled is False
         assert helper.explainer_instance is None
         assert helper.reference_explanation is None
-
 
     def test_should_expose_cached_explainer_instance(self):
         """explainer_instance property should return cached instance."""

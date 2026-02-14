@@ -99,12 +99,6 @@ def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):
     assert "supports_interactive=yes" in output
 
 
-
-
-
-
-
-
 @pytest.mark.parametrize(
     "kind, finder_name",
     [

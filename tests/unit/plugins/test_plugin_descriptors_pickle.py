@@ -1,5 +1,4 @@
 import pickle
-from types import MappingProxyType
 
 from calibrated_explanations.plugins.registry import (
     ExplanationPluginDescriptor,

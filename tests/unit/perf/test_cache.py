@@ -11,7 +11,6 @@ from calibrated_explanations.cache import (
     LRUCache,
     default_size_estimator,
     hash_part,
-    make_key,
 )
 
 
@@ -68,8 +67,6 @@ def test_cache_respects_ttl() -> None:
     result = cache.get("alpha")
     assert result is None
     assert cache.metrics.misses >= 1
-
-
 
 
 def test_default_size_estimator_prefers_numpy_buffers() -> None:
@@ -200,8 +197,6 @@ def test_lru_cache_updates_existing_and_enforces_limits() -> None:
     assert any(evt.startswith("cache_evict") for evt in events if evt.startswith("cache"))
 
 
-
-
 def test_calibrator_cache_handles_disabled_state() -> None:
     config = CacheConfig(enabled=False)
     cache: CalibratorCache[int] = CalibratorCache(config)
@@ -213,8 +208,6 @@ def test_calibrator_cache_handles_disabled_state() -> None:
     assert cache.compute(stage="predict", parts=[1], fn=lambda: 5) == 5
 
 
-
-
 def test_should_handle_cache_miss_with_none_value() -> None:
     """Cache should distinguish between missing keys and None values."""
     config = CacheConfig(enabled=True, max_items=4)
@@ -224,16 +217,6 @@ def test_should_handle_cache_miss_with_none_value() -> None:
     cache.set(stage="verify", parts=["test"], value=None)
     assert cache.get(stage="verify", parts=["test"]) is None
     assert cache.metrics.snapshot()["hits"] >= 1
-
-
-
-
-
-
-
-
-
-
 
 
 def test_should_handle_lru_eviction_with_size_limit() -> None:
@@ -253,10 +236,6 @@ def test_should_handle_lru_eviction_with_size_limit() -> None:
     assert cache.get(stage="predict", parts=["a"]) == 1
     assert cache.get(stage="predict", parts=["b"]) is None
     assert cache.get(stage="predict", parts=["c"]) == 3
-
-
-
-
 
 
 def test_calibrator_cache_telemetry_events_coverage() -> None:

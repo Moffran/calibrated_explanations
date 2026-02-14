@@ -15,14 +15,6 @@ def boom_size_estimator(_value):
     raise RuntimeError("nope")
 
 
-
-
-
-
-
-
-
-
 def test_cacheconfig_from_env_and_calibrator_cache(monkeypatch, tmp_path):
     cache_mod = fresh_cache_module()
     # Ensure env parsing toggles enabled
@@ -136,8 +128,6 @@ def test_lru_cache_helpers_and_pickle_roundtrip():
     assert restored.get(("k",)) == {"v": 1}
 
 
-
-
 def test_explanation_cache_facade_disabled():
     facade = ExplanationCacheFacade(None)
     assert facade.enabled is False
@@ -189,7 +179,3 @@ def test_explanation_cache_facade_enabled_roundtrip():
 
     facade.reset_version("v2")
     assert cal.version == "v2"
-
-
-
-

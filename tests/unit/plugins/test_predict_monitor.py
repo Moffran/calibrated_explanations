@@ -70,10 +70,6 @@ def test_predict_bridge_monitor_reset_usage():
     assert not monitor.used
 
 
-
-
-
-
 def test_predict_monitor_interval_tuple_validation_warns():
     class IntervalBridge(DummyBridge):
         def predict_interval(self, x, *, task, bins=None):

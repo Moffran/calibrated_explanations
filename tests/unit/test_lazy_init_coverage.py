@@ -1,8 +1,4 @@
-import importlib
-
 import pytest
-
-
 
 
 def test_plotting_deprecation_warning(monkeypatch) -> None:
@@ -15,5 +11,3 @@ def test_plotting_deprecation_warning(monkeypatch) -> None:
     with pytest.warns(DeprecationWarning, match="plotting"):
         # Access the deprecated plotting attribute
         _ = calibrated_explanations.plotting
-
-

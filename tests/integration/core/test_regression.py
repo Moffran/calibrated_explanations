@@ -153,8 +153,6 @@ def test_set_difficulty_estimator_refits_cps_with_sigmas(regression_dataset, mon
     assert any("sigmas" in call and call.get("sigmas") is not None for call in fit_calls)
 
 
-
-
 @pytest.mark.viz
 def test_regression_ce(regression_dataset):
     """
@@ -439,8 +437,6 @@ def test_regression_conditional_ce(regression_dataset):
     repr(alternative_explanation)
 
 
-
-
 def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
     """
     Tests KNN normalized probabilistic explanations for regression models.
@@ -477,10 +473,6 @@ def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
     cal_exp.explore_alternatives(x_test, y_test)
 
     cal_exp.explore_alternatives(x_test, y_test[0])
-
-
-
-
 
 
 @pytest.mark.viz
@@ -549,10 +541,6 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
     fast_explanation.plot(show=False, uncertainty=True)
 
 
-
-
-
-
 def test_knn_normalized_regression_fast_ce(regression_dataset):
     """
     Tests KNN normalized fast explanations for regression models.
@@ -581,8 +569,6 @@ def test_knn_normalized_regression_fast_ce(regression_dataset):
     fast_explanation = cal_exp.explain_fast(x_test, low_high_percentiles=(0.1, np.inf))
 
     fast_explanation = cal_exp.explain_fast(x_test, low_high_percentiles=(-np.inf, 0.9))
-
-
 
 
 def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):

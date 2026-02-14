@@ -36,10 +36,6 @@ def test_probabilistic_spec_clamps_header_bounds():
     assert 0.0 <= bar.interval_low <= bar.interval_high <= 1.0
 
 
-
-
-
-
 def test_build_alternative_probabilistic_spec_interval_dict():
     feature_weights = {
         "predict": np.array([0.2, 0.8]),

@@ -8,22 +8,22 @@ to bring coverage from 89.87% back above the 90% gate.
 from __future__ import annotations
 
 import pickle
-from types import MappingProxyType
 
-import numpy as np
 import pytest
+from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
+from calibrated_explanations.explanations._conjunctions import ConjunctionState
+import calibrated_explanations.schema.validation as schema_mod
+from calibrated_explanations.schema.validation import validate_payload
+from calibrated_explanations.utils.exceptions import ValidationError
 
 # ---------------------------------------------------------------------------
 # 1. IntervalCalibratorContext pickle round-trip  (~13 coverage items)
 #    Covers __getstate__ (line 50) and __setstate__ (lines 60-67)
 # ---------------------------------------------------------------------------
-from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
 
 
 class TestIntervalCalibratorContextPickle:
     """Verify pickle round-trip preserves IntervalCalibratorContext state."""
-
-
 
     def test_pickle_preserves_plugin_state(self):
         ctx = IntervalCalibratorContext(
@@ -45,7 +45,6 @@ class TestIntervalCalibratorContextPickle:
 #    Exercises get_normalization_key which internally calls the
 #    normalize helpers, covering lines 203-213, 220-221.
 # ---------------------------------------------------------------------------
-from calibrated_explanations.explanations._conjunctions import ConjunctionState
 
 
 class TestConjunctionStateNormalization:
@@ -58,14 +57,11 @@ class TestConjunctionStateNormalization:
         state.dedupe_by_feature_only = dedupe_by_feature_only
         return state
 
-
     def test_normalization_key_list_values(self):
         s = self.make_state()
         key = s.get_normalization_key(0, [1.0, 2.0, 3.0])
         assert isinstance(key, tuple)
         assert len(key) == 2
-
-
 
     def test_normalization_key_with_scalar_int_value(self):
         s = self.make_state()
@@ -77,9 +73,6 @@ class TestConjunctionStateNormalization:
 # 3. schema/validation.py edge cases  (~5+ coverage items)
 #    Covers lines 72, 76-79, 109 (validation error paths)
 # ---------------------------------------------------------------------------
-import calibrated_explanations.schema.validation as schema_mod
-from calibrated_explanations.schema.validation import validate_payload
-from calibrated_explanations.utils.exceptions import ValidationError
 
 
 def make_valid_payload(**overrides):
@@ -105,8 +98,6 @@ def make_valid_payload(**overrides):
 class TestSchemaValidationBuiltinFallback:
     """Test built-in structural validation paths (when jsonschema is absent)."""
 
-
-
     def test_non_integer_index_raises(self, monkeypatch):
         monkeypatch.setattr(schema_mod, "jsonschema", None)
         with pytest.raises(ValidationError, match="must be an integer"):
@@ -121,5 +112,3 @@ class TestSchemaValidationBuiltinFallback:
         monkeypatch.setattr(schema_mod, "jsonschema", None)
         with pytest.raises(ValidationError, match="must be an object"):
             validate_payload(make_valid_payload(rules=["not_a_dict"]))
-
-

@@ -25,10 +25,6 @@ def registry(mock_explainer):
     return IntervalRegistry(mock_explainer)
 
 
-
-
-
-
 def test_constant_sigma_scalar(registry):
     # Although type hint says np.ndarray, it handles other types
     sigma = registry.constant_sigma(1)
@@ -68,5 +64,3 @@ def test_update_regression_fast_list_raises(registry, mock_explainer):
 
     with pytest.raises(ConfigurationError, match="Fast explanations are not supported"):
         registry.update(np.array([]), np.array([]))
-
-

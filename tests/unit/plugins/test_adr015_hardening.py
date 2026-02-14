@@ -1,23 +1,16 @@
 """Comprehensive test suite for ADR-015 explanation plugin integration hardening gaps."""
 
 import os
-import pickle
 import pytest
 from unittest.mock import MagicMock, patch
 from types import MappingProxyType
 
 from calibrated_explanations.plugins.explanations import (
     ExplanationContext,
-    ExplainerHandle,
     ExplanationBatch,
 )
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
-from calibrated_explanations.plugins.registry import (
-    find_explanation_descriptor,
-    find_explanation_plugin_trusted,
-    is_identifier_denied,
-)
 
 
 # Helper classes
@@ -43,9 +36,6 @@ def mock_explainer():
 
 class TestFastExplanationPluginRegistration:
     """Verify in-tree FAST plugin registration (Step 1)."""
-
-
-
 
 
 # ==============================================================================
@@ -86,9 +76,6 @@ class TestCanonicalCollectionReconstruction:
             collection_metadata=metadata,
         )
         return batch
-
-
-
 
     def test_from_batch_validates_explanation_type(self, mock_explainer):
         """Test that from_batch validates explanation types."""
@@ -162,7 +149,6 @@ class TestTrustEnforcement:
             with pytest.raises(ConfigurationError, match="untrusted"):
                 orchestrator.resolve_plugin("factual")
 
-
     def test_explicit_instance_override_warns_when_untrusted(self, mock_explainer):
         """Explicit instance overrides should warn when untrusted."""
         from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
@@ -195,7 +181,6 @@ class TestTrustEnforcement:
 
 class TestEnvironmentVariableAlignment:
     """Verify alignment of env vars with ADR-015 (Step 4)."""
-
 
     def test_mode_specific_env_vars_as_fallback(self):
         """Test that mode-specific env vars work as fallbacks."""
@@ -246,7 +231,6 @@ class TestImmutablePluginHandles:
         with pytest.raises(TypeError):
             context.helper_handles["new_key"] = "value"
 
-
     def test_explanation_context_is_frozen(self):
         """Test that ExplanationContext is a frozen dataclass."""
         bridge = MagicMock()
@@ -275,8 +259,6 @@ class TestImmutablePluginHandles:
 
 class TestADR015IntegrationFlow:
     """End-to-end tests for ADR-015 explanation plugin pipeline."""
-
-
 
 
 if __name__ == "__main__":

@@ -44,8 +44,6 @@ class DummyExplainer:
         return False
 
 
-
-
 def test_should_raise_validation_error_when_calibration_set_is_invalid():
     explainer = DummyExplainer()
     orchestrator = RejectOrchestrator(explainer)
@@ -73,8 +71,6 @@ class DummyRejectLearnerMonotonic:
         return out
 
 
-
-
 class DummyRejectLearnerAlwaysEmpty:
     def predict_p(
         self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None
@@ -82,5 +78,3 @@ class DummyRejectLearnerAlwaysEmpty:
         n_rows = len(alphas)
         n_cols = alphas.shape[1] if getattr(alphas, "ndim", 1) == 2 else 2
         return np.zeros((n_rows, n_cols), dtype=float)
-
-

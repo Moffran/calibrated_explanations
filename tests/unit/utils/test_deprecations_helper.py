@@ -39,9 +39,9 @@ class TestShouldRaise:
         with patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}, clear=True):
             assert should_raise() is True
 
+
 class TestDeprecate:
     """Tests for deprecate() function."""
-
 
     def test_should_raise_deprecation_when_set_to_error(self):
         """deprecate() should raise DeprecationWarning when CE_DEPRECATIONS='error'."""
@@ -67,7 +67,6 @@ class TestDeprecate:
                 # permissive assertion to avoid flaky failures in CI/dev shells.
                 assert len(w) >= 0
 
-
     def test_should_emit_per_test_under_pytest(self):
         """deprecate() should emit per-test under pytest."""
         pytest_test_id = "test_unique_pytest_emitpertest"
@@ -86,7 +85,6 @@ class TestDeprecate:
             assert pytest_test_id in per
             assert unique_key in per[pytest_test_id]
 
-
     def test_should_record_key_when_raising_in_ci(self):
         """deprecate() should record key even when raising in CI (non-pytest mode)."""
         # Use environment without PYTEST_CURRENT_TEST to simulate CI runner
@@ -100,4 +98,3 @@ class TestDeprecate:
 
             # Key should be recorded in session-wide dict
             assert unique_key in emitted_keys()
-

@@ -171,22 +171,10 @@ def collection() -> CalibratedExplanations:
     return coll
 
 
-
-
-
-
-
-
-
-
 def test_collection_filter_rule_sizes_delegates(collection: CalibratedExplanations) -> None:
     filtered = collection.filter_rule_sizes(rule_sizes=1, copy=True)
     for exp in filtered.explanations:
         assert ("filter_rule_sizes", 1, None, True) in exp.conjunction_calls
-
-
-
-
 
 
 def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
@@ -197,8 +185,6 @@ def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
     assert collection.get_confidence() == 90.0
     collection.low_high_percentiles = (10.0, 90.0)
     assert collection.get_confidence() == 80.0
-
-
 
 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
@@ -226,10 +212,6 @@ def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -
             collection.get_explanation(len(collection.x_test))
 
 
-
-
-
-
 def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> None:
     alt = AlternativeExplanations(
         collection.calibrated_explainer.explainer,
@@ -244,5 +226,3 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
     alt.ensured_explanations()
     calls = [exp.conjunction_calls for exp in collection.explanations]
     assert all({"super", "semi", "counter", "ensured"}.issubset(set(call)) for call in calls)
-
-

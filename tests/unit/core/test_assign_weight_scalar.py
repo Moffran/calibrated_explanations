@@ -1,10 +1,5 @@
 import numpy as np
-import pytest
 from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
-
-
-
-
 
 
 def test_assign_weight_scalar_empty():
@@ -19,7 +14,3 @@ def test_assign_weight_scalar_object_arrays():
     pred = np.asarray(["1.5"], dtype=object)
     inst = np.asarray(["0.5"], dtype=object)
     assert assign_weight_scalar(inst, pred) == 1.0
-
-
-
-

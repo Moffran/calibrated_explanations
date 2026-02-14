@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import calibrated_explanations.utils as utils_module
 from calibrated_explanations.calibration import interval_regressor as interval_module
 from calibrated_explanations.core import ConfigurationError, DataShapeError
 
@@ -145,12 +144,6 @@ def test_initializer_flattens_calibration_arrays(monkeypatch):
             return base.reshape(-1, 1)
 
 
-
-
-
-
-
-
 def test_bins_setter_flattens_column_vectors(monkeypatch):
     regressor = make_regressor(monkeypatch)
 
@@ -158,8 +151,6 @@ def test_bins_setter_flattens_column_vectors(monkeypatch):
 
     assert regressor.bins_storage.ndim == 1
     assert np.array_equal(regressor.bins, np.array([0, 1, 1, 0]))
-
-
 
 
 def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
@@ -222,8 +213,6 @@ def test_predict_probability_rejects_mismatched_bin_length(monkeypatch):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
-
-
 def test_insert_calibration_requires_bins_when_existing_none(monkeypatch):
     regressor = make_regressor(monkeypatch)
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
@@ -243,14 +232,6 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
 
     with pytest.raises(DataShapeError, match="length of bins"):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
-
-
-
-
-
-
-
-
 
 
 def test_insert_calibration_updates_predictor_state(monkeypatch):
@@ -372,12 +353,6 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
     assert np.array_equal(regressor.bins_storage[:5], np.array([2, 3, 4, 5, 6]))
 
 
-
-
-
-
-
-
 def test_compute_proba_cal_invalid_type(monkeypatch):
     from calibrated_explanations.utils.exceptions import ValidationError
 
@@ -385,8 +360,6 @@ def test_compute_proba_cal_invalid_type(monkeypatch):
 
     with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal([0.1, 0.2])
-
-
 
 
 def test_init_flattens_calibration_arrays(monkeypatch):
@@ -411,8 +384,6 @@ def test_init_flattens_calibration_arrays(monkeypatch):
     assert regressor.sigma_cal_storage.ndim == 1
 
 
-
-
 def test_ensure_capacity_copies_existing_prefix(monkeypatch):
     regressor = make_regressor(monkeypatch)
     original = np.array([5], dtype=float)
@@ -421,7 +392,3 @@ def test_ensure_capacity_copies_existing_prefix(monkeypatch):
 
     assert grown.shape[0] >= 3
     assert grown[0] == original[0]
-
-
-
-

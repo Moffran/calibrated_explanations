@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import importlib
 import sys
 from types import MappingProxyType, ModuleType, SimpleNamespace
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -24,11 +23,8 @@ from calibrated_explanations.plugins.builtins import (
     LegacyPredictBridge,
     PlotSpecDefaultBuilder,
     PlotSpecDefaultRenderer,
-    collection_to_batch,
-    register_builtins,
 )
 from calibrated_explanations.plugins.explanations import (
-    ExplanationBatch,
     ExplanationContext,
     ExplanationRequest,
 )
@@ -144,8 +140,6 @@ def make_local_plot_context(**kwargs: Any) -> PlotRenderContext:
     return PlotRenderContext(**base_kwargs)
 
 
-
-
 def test_legacy_predict_bridge_handles_scalar_predictions():
     class Explainer:
         def predict(self, *args: Any, **kwargs: Any) -> Any:
@@ -156,8 +150,6 @@ def test_legacy_predict_bridge_handles_scalar_predictions():
 
     np.testing.assert_allclose(payload["predict"], [0.42])
     assert "low" not in payload and "classes" not in payload
-
-
 
 
 def test_predict_bridge_interval_and_proba():
@@ -207,16 +199,12 @@ def test_supports_and_explain_methods(monkeypatch: pytest.MonkeyPatch):
             del sys.modules[module_name]
 
 
-
-
 def test_legacy_plot_renderer_creates_result():
     renderer = LegacyPlotRenderer()
     ctx = make_local_plot_context()
     result = renderer.render({"artifact": 1}, context=ctx)
     assert getattr(result, "artifact", None) == {"artifact": 1}
     assert result.saved_paths == ()
-
-
 
 
 def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: pytest.MonkeyPatch):
@@ -257,8 +245,6 @@ def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
-
-
 
 
 def test_explanation_plugin_requires_initialization():
@@ -517,10 +503,6 @@ def test_plot_spec_builder_unsupported_intent():
         builder.build(ctx)
 
 
-
-
-
-
 def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch):
     renderer = PlotSpecDefaultRenderer()
 
@@ -535,5 +517,3 @@ def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch
     ctx = make_local_plot_context(save_ext=[".png"], path="bad", show=False)
     with pytest.raises(ConfigurationError):
         renderer.render({"spec": 1}, context=ctx)
-
-

@@ -58,8 +58,6 @@ class StubModel:
         self.fitted_ = True
 
 
-
-
 def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):
     model = StubModel()
     pre = DummyPreprocessor(factor=3.0)
@@ -88,8 +86,6 @@ def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):
     x_test = np.array([[4.0, 5.0]])
     out = w.explain_factual(x_test)
     np.testing.assert_allclose(out, x_test * 3.0)
-
-
 
 
 def test_preprocessor_metadata_exposed_in_telemetry():

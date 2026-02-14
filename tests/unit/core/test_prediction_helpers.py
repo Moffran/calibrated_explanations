@@ -144,8 +144,6 @@ class StubExplainer:
         return {"rule": "boundaries", "shape": np.asarray(x_perturbed).shape}
 
 
-
-
 def test_validate_and_prepare_input_rejects_wrong_width():
     explainer = StubExplainer(num_features=4)
     matrix = np.ones((2, 3))
@@ -225,10 +223,6 @@ def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch
         )
 
 
-
-
-
-
 def test_predict_internal_delegates_to_underlying_protocol():
     explainer = StubExplainer(multiclass=False)
     x = np.ones((2, explainer.num_features))
@@ -272,8 +266,6 @@ def test_format_regression_prediction_handles_thresholds():
         predict, low, high, threshold=None, uq_interval=True
     )
     assert isinstance(interval_result, tuple)
-
-
 
 
 def test_handle_uncalibrated_regression_prediction():

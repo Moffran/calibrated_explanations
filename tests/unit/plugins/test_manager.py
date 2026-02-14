@@ -11,25 +11,18 @@ from unittest.mock import Mock
 
 from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.manager import PluginManager
-from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 
 
 class TestPluginManagerInitialization:
     """Tests for PluginManager initialization."""
 
 
-
-
 class TestPluginManagerInitializeFromKwargs:
     """Tests for initialize_from_kwargs method."""
 
 
-
-
 class TestCoercePluginOverride:
     """Tests for coerce_plugin_override method."""
-
-
 
     def test_coerce_callable_calls_and_returns_result(self):
         """should_coerce_callable_by_invoking_and_returning_result."""
@@ -57,8 +50,6 @@ class TestCoercePluginOverride:
 class TestBridgeMonitorManagement:
     """Tests for bridge monitor caching."""
 
-
-
     def test_clear_bridge_monitors_empties_cache(self):
         """should_empty_bridge_monitor_cache_on_clear."""
         mock_explainer = Mock()
@@ -73,7 +64,6 @@ class TestBridgeMonitorManagement:
 
 class TestExplanationPluginInstanceManagement:
     """Tests for explanation plugin instance caching."""
-
 
     def test_set_and_get_explanation_plugin_instance(self):
         """should_cache_and_retrieve_explanation_plugin_instance."""
@@ -102,7 +92,6 @@ class TestExplanationPluginInstanceManagement:
 class TestExplanationPluginIdentifierManagement:
     """Tests for explanation plugin identifier caching."""
 
-
     def test_set_and_get_explanation_plugin_identifier(self):
         """should_cache_and_retrieve_explanation_plugin_identifier."""
         mock_explainer = Mock()
@@ -128,7 +117,6 @@ class TestExplanationPluginIdentifierManagement:
 
 class TestIntervalPluginState:
     """Tests for interval plugin state management."""
-
 
 
 class TestPluginManagerDeepCopy:

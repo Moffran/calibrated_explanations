@@ -56,4 +56,3 @@ class TestRejectMixin:
         assert target.policy == RejectPolicy.FLAG
         # Ensure metadata dict preserves static values
         assert target.metadata["extra"] == "persist"
-

@@ -1,5 +1,4 @@
 import sys
-import time
 import types
 import json
 
@@ -14,7 +13,6 @@ from calibrated_explanations.explanations import (
     FrozenCalibratedExplainer,
 )
 from calibrated_explanations.plugins.manager import PluginManager
-from tests.helpers.deprecation import warns_or_raises
 
 
 class DummyDomainMapper:
@@ -392,8 +390,6 @@ class FakeFast(DummyExplanation):
         }
 
 
-
-
 def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
     from calibrated_explanations.core import SerializationError, ValidationError
 
@@ -465,8 +461,6 @@ def test_plot_routing(monkeypatch, calibrated_collection):
         assert any(call[0] == "plot" for call in exp.calls)
 
 
-
-
 def test_conjunction_management(calibrated_collection):
     calibrated_collection.add_conjunctions(n_top_features=2, max_rule_size=3)
     calibrated_collection.reset()
@@ -487,8 +481,6 @@ def test_alternative_specific_filters(calibrated_collection):
             call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}
         ]
         assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
-
-
 
 
 def test_collection_to_json_and_back(calibrated_collection):
@@ -568,8 +560,6 @@ def test_legacy_payload_prefers_available_rules(calibrated_collection):
     exp.rules = None
     generated = calibrated_collection.legacy_payload(exp)
     assert "rule" in generated["rules"]
-
-
 
 
 def test_collection_metadata_includes_runtime(calibrated_collection):

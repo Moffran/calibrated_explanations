@@ -25,7 +25,6 @@ class TestInstanceParallelExecutor:
         assert executor.name == "instance-parallel"
         assert executor.priority == 30
 
-
     def test_should_not_support_when_executor_disabled(self):
         """Executor should not support when executor is disabled."""
         executor = InstanceParallelExplainExecutor()
@@ -89,7 +88,6 @@ class TestInstanceParallelExecutor:
 
         assert executor.supports(request, config) is False
 
-
     def test_should_handle_zero_dim_array_gracefully(self):
         """Executor should handle zero-dimensional arrays gracefully."""
         executor = InstanceParallelExplainExecutor()
@@ -106,7 +104,6 @@ class TestInstanceParallelExecutor:
 
         # Should return False because 0 instances < 2
         assert executor.supports(request, config) is False
-
 
 
 # class TestFeatureParallelExecutor:

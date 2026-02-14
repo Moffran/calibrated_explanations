@@ -53,8 +53,6 @@ def test_explanation_plots_smoke():
     alt_expl.plot(show=False)
     plt.close()
 
-
-
     # expl.metric is not a public property, removed access
 
     # Rank rules logic is implicitly called.

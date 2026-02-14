@@ -7,7 +7,6 @@ verification. See .github/tests-guidance.md for patterns.
 import pytest
 
 from calibrated_explanations.viz import (
-    plotspec_to_dict,
     plotspec_from_dict,
     validate_plotspec,
     global_plotspec_to_dict,
@@ -29,8 +28,6 @@ from calibrated_explanations.viz.serializers import (
     triangular_plotspec_to_dict,
     triangular_plotspec_from_dict,
 )
-
-
 
 
 def test_validate_rejects_bad_payload():
@@ -130,8 +127,6 @@ def test_plotspec_all_fields():
 
     # Domain invariant: interval bounds
     assert spec.header.low <= spec.header.pred <= spec.header.high
-
-
 
 
 def test_plotspec_from_dict_casts_values():

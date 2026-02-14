@@ -142,8 +142,6 @@ def test_narrative_plugin_text_output(classification_explainer, iris_data):
     assert "Instance 1" in result
 
 
-
-
 def test_narrative_generator_emits_caution_and_uncertainty_tags():
     generator = NarrativeGenerator()
     generator.templates = {
@@ -243,7 +241,6 @@ def test_narrative_plugin_html_output(classification_explainer, iris_data):
 # Test error handling
 def test_narrative_plugin_invalid_expertise_level(classification_explainer, iris_data):
     """Test error handling for invalid expertise level."""
-    from calibrated_explanations.utils.exceptions import ValidationError
 
     _, x_test, _, _ = iris_data
     x_test_binary = x_test[iris_data[3] < 2][:1]
@@ -262,7 +259,6 @@ def test_narrative_plugin_invalid_expertise_level(classification_explainer, iris
 
 def test_narrative_plugin_invalid_output_format(classification_explainer, iris_data):
     """Test error handling for invalid output format."""
-    from calibrated_explanations.utils.exceptions import ValidationError
 
     _, x_test, _, _ = iris_data
     x_test_binary = x_test[iris_data[3] < 2][:1]
@@ -312,8 +308,6 @@ def test_narrative_via_explanations_plot(classification_explainer, iris_data):
     assert "factual_explanation_beginner" in result[0]
 
 
-
-
 # Test feature names
 
 
@@ -321,8 +315,6 @@ def test_narrative_via_explanations_plot(classification_explainer, iris_data):
 
 
 # Test edge cases
-
-
 
 
 def test_narrative_plugin_template_fallback(enable_fallbacks, tmp_path, monkeypatch):

@@ -31,8 +31,6 @@ def binary_dataset():
     )
 
 
-
-
 def test_large_conjunctions_alternative(binary_dataset):
     (
         x_prop_train,

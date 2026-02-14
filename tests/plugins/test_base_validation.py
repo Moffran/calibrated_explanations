@@ -62,7 +62,3 @@ def test_trusted_must_be_boolean():
 
     with pytest.raises(ValidationError, match="must be a boolean"):
         validate_plugin_meta(meta)
-
-
-
-

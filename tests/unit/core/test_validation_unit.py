@@ -72,8 +72,6 @@ def test_validate_model_and_fit_state_errors():
     validation.validate_fit_state(Dummy(), require=False)
 
 
-
-
 def test_validate_inputs_matrix_supports_frame_like_objects(monkeypatch):
     class FrameLike:
         def __init__(self, arr):
@@ -100,8 +98,6 @@ def test_validate_inputs_matrix_supports_frame_like_objects(monkeypatch):
     assert recorded["args"] == (x, y, None)
 
 
-
-
 # ============================================================================
 # ADR-002 Contract Tests: validate_inputs() Signature Compliance
 # ============================================================================
@@ -115,12 +111,6 @@ def test_validate_inputs_adr002_signature_requires_2d_x():
     assert "2D" in str(exc_info.value)
     assert exc_info.value.details is not None
     assert exc_info.value.details.get("ndim") == 1
-
-
-
-
-
-
 
 
 def test_validate_inputs_adr002_allow_nan_parameter():
@@ -170,8 +160,6 @@ def test_validate_inputs_adr002_class_labels_parameter():
     validation.validate_inputs(x, y, class_labels=None)
 
 
-
-
 def test_validate_inputs_adr002_signature_details_payload():
     """Verify all exceptions include structured details payload."""
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -193,5 +181,3 @@ def test_validate_inputs_adr002_nan_in_y_with_details():
     assert exc_info.value.details is not None
     assert exc_info.value.details.get("param") == "y"
     assert exc_info.value.details.get("check") == "finitude"
-
-

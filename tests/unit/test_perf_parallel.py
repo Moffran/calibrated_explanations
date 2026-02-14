@@ -30,7 +30,9 @@ class TestParallelConfig:
         """Deprecated perf shim should forward to canonical parallel module."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
-            shim = importlib.reload(importlib.import_module("calibrated_explanations.perf.parallel"))
+            shim = importlib.reload(
+                importlib.import_module("calibrated_explanations.perf.parallel")
+            )
 
         assert shim.ParallelExecutor.__name__ == ParallelExecutor.__name__
         assert shim.ParallelExecutor.__module__ == ParallelExecutor.__module__
@@ -88,7 +90,6 @@ class TestParallelConfig:
 class TestParallelExecutor:
     """Tests for the executor facade."""
 
-
     def test_strategy_auto_selection_joblib(self):
         """Test auto strategy prefers joblib when available and CPUs > 2."""
         cfg = ParallelConfig(enabled=True, strategy="auto")
@@ -116,8 +117,6 @@ class TestParallelExecutor:
                 executor.joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
 
-
-
     def test_metrics_tracking_with_failures(self):
         """Test that metrics track failures correctly when strategy raises."""
         mock_telemetry = MagicMock()
@@ -138,7 +137,6 @@ class TestParallelExecutor:
 
         assert executor.metrics.failures == 1
 
-
     def test_serial_strategy_execution(self):
         """Test serial strategy execution produces correct order."""
         cfg = ParallelConfig(enabled=True, strategy="serial")
@@ -155,6 +153,3 @@ class TestParallelExecutor:
 
         assert results == [2, 4, 6]
         assert call_order == [1, 2, 3]
-
-
-

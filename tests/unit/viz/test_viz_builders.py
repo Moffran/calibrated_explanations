@@ -1,9 +1,7 @@
 import numpy as np
-import pytest
 
 from calibrated_explanations.viz import (
     build_regression_bars_spec,
-    build_probabilistic_bars_spec,
     is_valid_probability_values,
 )
 
@@ -14,8 +12,6 @@ def make_fw(n):
     low = vals - rng.uniform(0.05, 0.15, size=n)
     high = vals + rng.uniform(0.05, 0.25, size=n)
     return {"predict": vals, "low": low, "high": high}
-
-
 
 
 def test_sort_by_value_and_abs_ordering():
@@ -86,13 +82,7 @@ def test_sort_by_width_and_label():
     assert labels == sorted(labels)
 
 
-
-
 # Tests for is_valid_probability_values public API
-
-
-
-
 
 
 def test_is_valid_probability_values_should_reject_non_numeric_strings():
@@ -105,5 +95,3 @@ def test_is_valid_probability_values_should_reject_non_numeric_strings():
 def test_is_valid_probability_values_should_reject_empty_input():
     """Verify is_valid_probability_values requires at least one value."""
     assert not is_valid_probability_values()
-
-

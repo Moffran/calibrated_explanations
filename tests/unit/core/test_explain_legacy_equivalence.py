@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from calibrated_explanations.core.explain._legacy_explain import explain as legacy_explain
@@ -53,10 +52,6 @@ def assert_collection_equal(modern, legacy):
 
         assert modern_exp.bin == legacy_exp.bin
         assert modern_exp.conditions == legacy_exp.conditions
-
-
-
-
 
 
 def test_legacy_explain_categorical_paths_and_ignore():
@@ -165,5 +160,3 @@ def test_legacy_explain_accepts_threshold_tuples_for_regression():
     explanation = legacy.explanations[0]
     np.testing.assert_allclose(explanation.feature_weights["predict"][0], 0.0)
     assert explanation.binned["fractions"][0].size == 0
-
-

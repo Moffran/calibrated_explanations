@@ -7,7 +7,11 @@ import pytest
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.core.exceptions import ConfigurationError, NotFittedError, ValidationError
+from calibrated_explanations.core.exceptions import (
+    ConfigurationError,
+    NotFittedError,
+    ValidationError,
+)
 from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
 
 sklearn = pytest.importorskip("sklearn")
@@ -107,10 +111,6 @@ def test_build_instance_telemetry_payload_delegates_to_explanation_orchestrator(
 
     payload = explainer.build_instance_telemetry_payload([1, 2, 3])
     assert payload == {"count": 3}
-
-
-
-
 
 
 def build_orchestrator_with_stub_explainer() -> PredictionOrchestrator:

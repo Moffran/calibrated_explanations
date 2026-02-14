@@ -8,9 +8,7 @@ from calibrated_explanations.plugins.builtins import (
     compute_filtered_features_to_ignore,
 )
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.plugins import builtins, registry
 from calibrated_explanations.plugins import cli as cli_mod
-from calibrated_explanations.viz import builders
 
 
 def test_feature_filter_missing_weights_and_predict_and_empty():
@@ -67,8 +65,6 @@ def test_orchestrator_reject_policy_parsing(monkeypatch):
     assert isinstance(out, tuple) and len(out) == 4
 
 
-
-
 def test_plot_warnings_on_one_sided_and_empty(monkeypatch):
     from calibrated_explanations.explanations import explanation as expl_mod
 
@@ -120,8 +116,6 @@ def test_plot_warnings_on_one_sided_and_empty(monkeypatch):
         assert True
 
 
-
-
 def test_cli_cmd_explain_interval_branches(monkeypatch, capsys):
     # Branch: descriptor not found
     monkeypatch.setattr(cli_mod, "load_entrypoint_plugins", lambda include_untrusted=True: ())
@@ -152,5 +146,3 @@ def test_cli_cmd_explain_interval_branches(monkeypatch, capsys):
 
 
 # Note: internal wrapper/serialize helpers are exercised via public builders above
-
-

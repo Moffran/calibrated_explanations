@@ -185,5 +185,3 @@ def test_binary_predict_rounds_probabilities():
     calibrated, low, high = interval
     assert calibrated.shape == (2, 2)
     assert low.shape == high.shape == (2,)
-
-

@@ -16,27 +16,12 @@ class TestSliceThreshold:
     """Test behavior of slice_threshold helper function."""
 
 
-
-
-
-
-
-
 class TestSliceBins:
     """Test behavior of slice_bins helper function."""
 
 
-
-
-
-
-
-
 class TestComputeWeightDelta:
     """Test behavior of compute_weight_delta helper function."""
-
-
-
 
     def test_compute_weight_delta_fallback_path_for_object_values(self):
         """Object subtraction should fall back to element-wise scalar extraction."""
@@ -55,9 +40,6 @@ class TestComputeWeightDelta:
         result = helpers.compute_weight_delta(baseline, perturbed)
 
         np.testing.assert_array_almost_equal(result, np.array([3.0, 4.0]))
-
-
-
 
 
 @pytest.mark.parametrize(

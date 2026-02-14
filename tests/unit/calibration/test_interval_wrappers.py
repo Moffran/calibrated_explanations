@@ -7,7 +7,6 @@ import pytest
 
 from calibrated_explanations.calibration.interval_wrappers import (
     FastIntervalCalibrator,
-    is_fast_interval_collection,
 )
 from calibrated_explanations.core.exceptions import CalibratedError
 
@@ -60,7 +59,3 @@ def test_fast_interval_calibrator__should_delegate_to_default_calibrator():
     calibrator1.pre_fit_for_probabilistic.assert_called_once_with(x, y)
     calibrator1.compute_proba_cal.assert_called_once_with(x, y, weights=None)
     calibrator1.insert_calibration.assert_called_once_with(x, y, warm_start=True)
-
-
-
-

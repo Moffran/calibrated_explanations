@@ -252,8 +252,6 @@ def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-
-
 def test_feature_task_categorical_no_values() -> None:
     # categorical feature with zero declared values -> exercise early return
     feature_index = 0
@@ -306,8 +304,6 @@ def test_feature_task_categorical_no_values() -> None:
         result[8],
     )
     assert len(binned_result) == 2
-
-
 
 
 def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -547,8 +543,6 @@ def test_get_calibration_summaries_and_cache(monkeypatch: pytest.MonkeyPatch) ->
     assert all(np.array_equal(num_sorted2[k], v) for k, v in num_sorted.items())
 
 
-
-
 def test_compute_weight_delta_variants_and_merge_feature_result() -> None:
     # compute_weight_delta: scalar baseline vs array perturbed
     scalar_baseline = 1.0
@@ -692,8 +686,6 @@ def test_compute_calibrated_confusion_matrix_single_fold(monkeypatch: pytest.Mon
 
     assert matrix.shape == (2, 2)
     assert [tag for tag, *_ in calls] == ["init", "predict"]
-
-
 
 
 def test_compute_calibrated_confusion_matrix_kfold(monkeypatch: pytest.MonkeyPatch) -> None:

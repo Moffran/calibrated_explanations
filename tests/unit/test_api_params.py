@@ -5,7 +5,6 @@ import pytest
 from calibrated_explanations.api.params import (
     canonicalize_kwargs,
     validate_param_combination,
-    warn_on_aliases,
 )
 from calibrated_explanations.core.exceptions import ConfigurationError
 
@@ -22,5 +21,3 @@ def test_canonicalize_kwargs_maps_alias_without_overwriting() -> None:
 def test_validate_param_combination_rejects_conflict() -> None:
     with pytest.raises(ConfigurationError):
         validate_param_combination({"threshold": 0.5, "confidence_level": 0.95})
-
-

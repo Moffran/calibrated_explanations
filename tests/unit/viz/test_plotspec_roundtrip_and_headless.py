@@ -1,14 +1,12 @@
 import pytest
 
 try:
-    from calibrated_explanations.viz import builders, serializers, matplotlib_adapter
+    from calibrated_explanations.viz import builders, serializers
     from calibrated_explanations.viz.plotspec import SaveBehavior
 except ModuleNotFoundError:
     pytest.skip("viz not available", allow_module_level=True)
 
 pytestmark = pytest.mark.viz
-
-
 
 
 def test_triangular_roundtrip_and_save_behavior():
@@ -57,5 +55,3 @@ def test_global_roundtrip_preserves_entries():
     assert spec2.kind.startswith("global")
     assert spec2.global_entries is not None
     assert len(spec2.global_entries.proba) == 3
-
-

@@ -132,5 +132,3 @@ def test_feature_filter_empty_chain_success_override(explainer):
     pm.initialize_chains.assert_called_once()
     # enforcement shouldn't happen because it returns early (lines 443-444)
     assert pm.clear_explanation_plugin_instances.call_count == 0
-
-

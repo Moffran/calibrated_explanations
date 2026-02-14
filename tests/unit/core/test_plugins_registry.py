@@ -1,9 +1,6 @@
 import importlib
-import hashlib
 import sys
 import types
-import warnings
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -64,12 +61,6 @@ def test_register_and_find_example_plugin(tmp_path, monkeypatch):
     assert plugin not in registry.list_plugins()
 
 
-
-
-
-
-
-
 class DummyPlugin:
     plugin_meta = {
         "schema_version": 1,
@@ -89,8 +80,6 @@ class DummyPlugin:
 
 
 def test_register_and_trust_flow(tmp_path):
-    from calibrated_explanations.utils.exceptions import ValidationError
-
     p = DummyPlugin()
     # ensure clean start
     registry.clear()
@@ -160,8 +149,6 @@ def test_register_explanation_plugin_descriptor():
 
 
 def test_register_explanation_plugin_requires_tasks():
-    from calibrated_explanations.utils.exceptions import ValidationError
-
     registry.clear_explanation_plugins()
 
     class NoTasksExplanationPlugin:
@@ -207,8 +194,6 @@ def test_register_explanation_plugin_translates_aliases():
 
 
 def test_register_explanation_plugin_schema_version_future():
-    from calibrated_explanations.utils.exceptions import ValidationError
-
     registry.clear_explanation_plugins()
 
     class FuturePlugin:
@@ -249,8 +234,6 @@ def make_entry_plugin(name: str = "tests.entry"):
     return EntryPlugin()
 
 
-
-
 class ExampleIntervalPlugin:
     plugin_meta = {
         "schema_version": 1,
@@ -277,8 +260,6 @@ def test_register_interval_plugin_descriptor():
 
 
 def test_register_interval_plugin_requires_modes():
-    from calibrated_explanations.utils.exceptions import ValidationError
-
     registry.clear_interval_plugins()
 
     class BadIntervalPlugin:
@@ -328,8 +309,6 @@ class ExamplePlotRenderer:
         "output_formats": ["png"],
         "supports_interactive": False,
     }
-
-
 
 
 def test_register_plot_plugin_combines_builder_and_renderer():
@@ -382,8 +361,6 @@ def test_register_plot_plugin_combines_builder_and_renderer():
             assert trusted_combined.build(5) == ("build", (5,), {})
     finally:
         registry.clear_plot_plugins()
-
-
 
 
 def test_list_descriptors_and_trust_management(monkeypatch):
@@ -480,12 +457,6 @@ def test_list_descriptors_and_trust_management(monkeypatch):
         registry.clear()
         registry.clear_explanation_plugins()
         registry.clear_interval_plugins()
-
-
-
-
-
-
 
 
 def test_load_entrypoint_plugins_error_branches(monkeypatch):

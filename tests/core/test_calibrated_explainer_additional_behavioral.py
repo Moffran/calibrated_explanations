@@ -14,7 +14,6 @@ from calibrated_explanations.core.explain.feature_task import assign_weight
 from calibrated_explanations.utils.exceptions import (
     DataShapeError,
     NotFittedError,
-    ValidationError,
 )
 
 
@@ -149,7 +148,6 @@ def test_set_difficulty_estimator_enforces_fitted_contract(explainer_factory):
     assert explainer.difficulty_estimator is estimator
     # Verify sigma test uses the estimator's values
     np.testing.assert_array_equal(explainer.get_sigma_test(np.ones((2, 2))), np.full(2, 2.5))
-
 
 
 def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pandas):

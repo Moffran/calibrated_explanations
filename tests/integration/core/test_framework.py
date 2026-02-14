@@ -17,9 +17,8 @@ from unittest.mock import patch
 
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils import is_notebook, make_directory
+from calibrated_explanations.utils import is_notebook
 from crepes.extras import DifficultyEstimator
-from sklearn.ensemble import RandomForestClassifier
 
 from tests.helpers.model_utils import get_classification_model, get_regression_model
 

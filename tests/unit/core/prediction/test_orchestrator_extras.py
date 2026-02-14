@@ -158,7 +158,3 @@ def test_obtain_interval_calibrator_fast_metadata(orchestrator, mock_explainer):
         context_metadata = mock_explainer.plugin_manager.interval_context_metadata["fast"]
         assert "fast_calibrators" in context_metadata
         assert context_metadata["fast_calibrators"] == (mock_calibrator,)
-
-
-
-

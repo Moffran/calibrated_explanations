@@ -24,17 +24,11 @@ def test_explain_exception_with_calibrated_error():
     assert "param" in result
 
 
-
-
 def test_explain_exception_non_calibrated_error():
     """explain_exception should handle standard exceptions."""
     e = ValueError("Standard error")
     result = explain_exception(e)
     assert result == "Standard error"
-
-
-
-
 
 
 def test_validate_helper_different_exception_types():

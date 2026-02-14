@@ -6,9 +6,7 @@ import pytest
 from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.utils.perturbation import (
     categorical_perturbation,
-    gaussian_perturbation,
     perturb_dataset,
-    uniform_perturbation,
 )
 
 
@@ -19,7 +17,9 @@ def test_categorical_perturbation_fallback_warns_and_swaps(monkeypatch: pytest.M
 
     monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", raising=False)
     with pytest.warns(UserWarning, match="deterministic swap"):
-        out = categorical_perturbation(np.asarray([1, 2, 3]), num_permutations=2, rng=DegenerateRng())
+        out = categorical_perturbation(
+            np.asarray([1, 2, 3]), num_permutations=2, rng=DegenerateRng()
+        )
     assert out.tolist() != [1, 2, 3]
 
 
@@ -60,4 +60,3 @@ def test_perturb_dataset_uniform_and_gaussian_paths() -> None:
     )
     assert out_gauss[0].shape == (4, 2)
     assert out_gauss[3] == 2
-

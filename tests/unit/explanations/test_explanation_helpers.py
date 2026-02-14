@@ -511,10 +511,6 @@ def testnormalize_threshold_value_handles_sequences():
     assert explanation.normalize_threshold_value() == pytest.approx(0.75)
 
 
-
-
-
-
 def test_build_instance_uncertainty_for_modes():
     base = make_explanation()
     payload = base.build_instance_uncertainty()
@@ -581,14 +577,6 @@ def test_build_condition_payload_parses_rules(telemetry_explanation):
     )
     assert raw_payload["operator"] == "raw"
     assert raw_payload["value"] == pytest.approx(0.7)
-
-
-
-
-
-
-
-
 
 
 def test_predict_conjunctive_average():

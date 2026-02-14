@@ -355,8 +355,6 @@ class SimpleExplanationPlugin:
         return {}
 
 
-
-
 def test_register_interval_plugin_requires_metadata():
     from calibrated_explanations.utils.exceptions import ValidationError
 
@@ -604,8 +602,6 @@ class EntryPoint:
 
     def load(self):
         return self.plugin_instance
-
-
 
 
 def test_load_entrypoint_plugins_errors(monkeypatch):

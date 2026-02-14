@@ -160,8 +160,6 @@ def testplot_alternative_fallback_on_error(
     mock_legacy.assert_called_once()
 
 
-
-
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy.plot_regression")
@@ -290,8 +288,6 @@ def testplot_triangular(mock_require, mock_render):
     mock_render.assert_called_once()
 
 
-
-
 def test_plot_probabilistic_noop_when_matplotlib_missing(monkeypatch: pytest.MonkeyPatch):
     """Should exit early when matplotlib is unavailable and nothing is shown."""
     monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
@@ -370,8 +366,6 @@ def probabilistic_explanation(
         explanation.is_multiclass = True
     setattr(explanation, "_get_explainer", lambda: explainer)
     return explanation
-
-
 
 
 def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch, enable_fallbacks):

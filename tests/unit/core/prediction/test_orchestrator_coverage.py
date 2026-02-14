@@ -1,14 +1,9 @@
 import pytest
-import warnings
 from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
 from calibrated_explanations.utils.exceptions import (
     DataShapeError,
-    ConfigurationError,
-)
-from calibrated_explanations.plugins.intervals import (
-    IntervalCalibratorContext,
 )
 
 
@@ -35,13 +30,9 @@ def orchestrator(mock_explainer):
         return orchestrator
 
 
-
-
 def test_initialize_chains(orchestrator, mock_explainer):
     orchestrator.initialize_chains()
     mock_explainer.plugin_manager.initialize_chains.assert_called_once()
-
-
 
 
 def test_predict_caching(orchestrator, mock_explainer):
@@ -74,8 +65,6 @@ def test_predict_caching_miss(orchestrator, mock_explainer):
         assert result == mock_impl.return_value
 
 
-
-
 def testpredict_impl_regression_crepes_error(orchestrator, mock_explainer, enable_fallbacks):
     mock_explainer.mode = "regression"
     mock_explainer.is_fast.return_value = False
@@ -92,12 +81,6 @@ def testpredict_impl_regression_crepes_error(orchestrator, mock_explainer, enabl
     assert np.allclose(predict, [0])
     assert np.allclose(low, [0])
     assert np.allclose(high, [0])
-
-
-
-
-
-
 
 
 def testpredict_impl_regression_crepes_error_reraise(orchestrator, mock_explainer):
@@ -147,8 +130,6 @@ def testpredict_impl_regression_probabilistic_crepes_error_reraise(orchestrator,
         orchestrator.predict_impl(x, threshold=0.5)
 
 
-
-
 def test_validate_prediction_result_none(orchestrator):
     result = (None, None, None, None)
     # Should not raise or warn
@@ -160,10 +141,6 @@ def test_validate_prediction_result_empty(orchestrator):
     orchestrator.validate_prediction_result(result)
 
 
-
-
-
-
 def testpredict_impl_unknown_mode(orchestrator, mock_explainer):
     mock_explainer.mode = "unknown"
     mock_explainer.is_fast.return_value = False
@@ -171,9 +148,3 @@ def testpredict_impl_unknown_mode(orchestrator, mock_explainer):
     x = np.array([[1, 2]])
     result = orchestrator.predict_impl(x)
     assert result == (None, None, None, None)
-
-
-
-
-
-

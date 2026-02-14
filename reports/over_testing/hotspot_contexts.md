@@ -354,7 +354,7 @@
 - tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
 ### src\calibrated_explanations\plugins\registry.py:108 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -381,7 +381,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:109 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -408,7 +408,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:110 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -435,7 +435,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:111 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -462,7 +462,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:112 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -489,7 +489,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:114 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -516,7 +516,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:119 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -543,7 +543,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:120 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -570,7 +570,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:72 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -597,7 +597,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:73 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -624,7 +624,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:74 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -651,7 +651,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:76 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -678,7 +678,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:77 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -705,7 +705,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:79 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -732,7 +732,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:75 (test_count=119)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -759,7 +759,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:80 (test_count=119)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1112,7 +1112,7 @@
 - tests/integration/core/test_regression.py::test_regression_reject_learner_custom_calibration|run
 
 ### src\calibrated_explanations\plugins\registry.py:108-112 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1139,7 +1139,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:114-114 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1166,7 +1166,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\plugins\registry.py:119-120 (test_count=122)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1193,7 +1193,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:72-74 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1220,7 +1220,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:76-77 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1247,7 +1247,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:79-79 (test_count=120)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1274,7 +1274,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:75-75 (test_count=119)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run
@@ -1301,7 +1301,7 @@
 - tests/integration/core/test_regression.py::test_set_difficulty_estimator_refits_cps_with_sigmas|run
 
 ### src\calibrated_explanations\logging.py:80-80 (test_count=119)
-- 
+-
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_calibration_setters_handle_dataframe_inputs|run
 - tests/core/test_calibrated_explainer_additional_behavioral.py::test_set_difficulty_estimator_enforces_fitted_contract|run
 - tests/integration/core/test_explanation_coverage.py::test_explanation_plots_smoke|run

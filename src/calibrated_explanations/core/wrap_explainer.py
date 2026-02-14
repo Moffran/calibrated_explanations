@@ -1087,7 +1087,9 @@ class WrapCalibratedExplainer:
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
-                self._logger.warning("Preprocessor.get_mapping_snapshot failed; falling back to mapping_")
+                self._logger.warning(
+                    "Preprocessor.get_mapping_snapshot failed; falling back to mapping_"
+                )
         # Fall back to attribute if present
         mapping_attr = getattr(pre, "mapping_", None)
         if mapping_attr is not None:
@@ -1126,7 +1128,7 @@ class WrapCalibratedExplainer:
             else:
                 # Try to set mapping_ directly when writable
                 try:
-                    setattr(pre, "mapping_", mapping)
+                    pre.mapping_ = mapping
                     applied = True
                 except:  # noqa: E722
                     if not isinstance(sys.exc_info()[1], Exception):

@@ -284,8 +284,9 @@ class CacheMetrics:
         from the canonical module to avoid module identity issues.
         """
         import importlib
+
         mod = importlib.import_module("calibrated_explanations.cache.cache")
-        func = getattr(mod, "_reconstruct_cache_metrics")
+        func = mod._reconstruct_cache_metrics
         state = {
             "hits": self.hits,
             "misses": self.misses,
@@ -386,7 +387,7 @@ class CacheConfig:
             state["size_estimator"] = None
 
         mod = importlib.import_module("calibrated_explanations.cache.cache")
-        func = getattr(mod, "_reconstruct_cache_config")
+        func = mod._reconstruct_cache_config
         return (func, (state,))
 
 
@@ -618,9 +619,10 @@ class LRUCache(Generic[K, V]):
         self._lock = threading.RLock()
 
         estimator = self.__dict__.get("_size_estimator")
-        if estimator in (None, "__default_size_estimator__"):
-            self._size_estimator = default_size_estimator
-        elif estimator == "__dropped_size_estimator__":
+        if (
+            estimator in (None, "__default_size_estimator__")
+            or estimator == "__dropped_size_estimator__"
+        ):
             self._size_estimator = default_size_estimator
 
     def __reduce__(self):
@@ -634,7 +636,7 @@ class LRUCache(Generic[K, V]):
         import importlib
 
         mod = importlib.import_module("calibrated_explanations.cache.cache")
-        func = getattr(mod, "_reconstruct_lru_cache")
+        func = mod._reconstruct_lru_cache
         return (func, (self.__getstate__(),))
 
 
@@ -775,9 +777,8 @@ class CalibratorCache(Generic[V]):
         import importlib
 
         mod = importlib.import_module("calibrated_explanations.cache.cache")
-        func = getattr(mod, "_reconstruct_calibrator_cache")
+        func = mod._reconstruct_calibrator_cache
         return (func, (self.__getstate__(),))
-    
 
 
 __all__ = [

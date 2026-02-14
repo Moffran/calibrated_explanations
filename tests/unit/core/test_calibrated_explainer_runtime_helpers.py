@@ -34,40 +34,6 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
     return explainer
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
     explainer = stub_explainer(explainer_factory)
 
@@ -109,16 +75,6 @@ def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory
     assert explainer.instantiate_plugin(broken) is broken
 
 
-
-
-
-
-
-
-
-
-
-
 class RaisingInterval:
     def predict_uncertainty(self, *_, **__):
         raise RuntimeError("boom")
@@ -155,36 +111,6 @@ def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory)
     assert classes_t is None
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class ListInterval:
     def __init__(self, proba=None, low=None, high=None):
         self.proba = proba
@@ -196,9 +122,3 @@ class ListInterval:
 
     def predict_proba(self, x, *_args, **_kwargs):
         return self.proba, self.low, self.high, None
-
-
-
-
-
-

@@ -1,6 +1,5 @@
 import pytest
-import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
 from calibrated_explanations.plugins.explanations import (
     validate_explanation_batch,
@@ -37,12 +36,7 @@ class TestPredictionOrchestratorInvariants:
         self.orchestrator = PredictionOrchestrator(self.explainer)
 
 
-
-
-
-
 class TestExplanationBatchInvariants:
-
     def test_validate_batch_invalid_low_gt_high(self):
         batch = ExplanationBatch(
             container_cls=DummyContainer,
@@ -52,4 +46,3 @@ class TestExplanationBatchInvariants:
         )
         with pytest.warns(UserWarning, match="low > high"):
             validate_explanation_batch(batch, expected_task="regression", expected_mode="test")
-

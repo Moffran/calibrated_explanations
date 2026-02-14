@@ -15,8 +15,6 @@ def test_merge_ignore_features_union():
     assert set(out.tolist()) == {1, 2, 3, 4}
 
 
-
-
 def make_executor(enabled=True, min_batch_size=1):
     class Config:
         def __init__(self):
@@ -132,10 +130,6 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
     out = plugin.execute(req, cfg, explainer)
     # expect an explanation object
     assert hasattr(out, "explanations")
-
-
-
-
 
 
 def test_sequential_and_feature_parallel_equivalence(monkeypatch):
@@ -299,10 +293,6 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
         seq_w = np.asarray(out_seq.feature_weights["predict"][i])
         par_w = np.asarray(out_par.feature_weights["predict"][i])
         assert np.allclose(seq_w, par_w)
-
-
-
-
 
 
 def test_finalize_explanation_attaches_per_instance_ignore():

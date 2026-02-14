@@ -6,11 +6,7 @@ import pytest
 from calibrated_explanations.utils import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
-    EntropyDiscretizer,
-    RegressorDiscretizer,
 )
-
-
 
 
 def test_binary_entropy_discretizer_requires_labels():
@@ -48,8 +44,6 @@ def test_binary_entropy_discretizer_falls_back_to_median_split():
     assert discretizer.maxs[0][-1] == pytest.approx(0.5)
 
 
-
-
 def test_binary_regressor_discretizer_requires_labels():
     from calibrated_explanations.utils.exceptions import ValidationError
 
@@ -84,7 +78,3 @@ def test_binary_regressor_discretizer_handles_constant_feature():
     assert np.all(transformed == 0)
     assert discretizer.mins[0][0] == pytest.approx(0.25)
     assert discretizer.maxs[0][-1] == pytest.approx(0.25)
-
-
-
-

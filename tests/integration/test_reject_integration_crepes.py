@@ -33,5 +33,3 @@ def test_integration_reject_policy_predict_and_flag_runs_and_returns_envelope():
     assert isinstance(res, RejectCalibratedExplanations)
     assert hasattr(res, "policy")
     assert res.policy is not None
-
-

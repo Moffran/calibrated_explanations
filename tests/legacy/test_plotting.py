@@ -212,8 +212,6 @@ def fake_matplotlib(monkeypatch):
     return fake_plt
 
 
-
-
 def test_require_matplotlib_reports_original_error(monkeypatch):
     from calibrated_explanations.utils.exceptions import ConfigurationError
     import builtins

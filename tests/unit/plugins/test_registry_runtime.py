@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import sys
-import types
 
 import pytest
 
@@ -38,10 +36,6 @@ def make_metadata(name: str, trusted: bool) -> dict[str, object]:
         "trust": {"trusted": trusted},
         "dependencies": (),
     }
-
-
-
-
 
 
 def test_mark_plot_renderer_trusted_untrusted():

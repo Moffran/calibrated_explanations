@@ -66,8 +66,6 @@ def build_explainer(binary_dataset):
     return explainer, x_test
 
 
-
-
 def test_alternative_conjunction_parity_max_rule_size_3(binary_dataset):
     explainer, x_test = build_explainer(binary_dataset)
 
@@ -85,8 +83,6 @@ def test_alternative_conjunction_parity_max_rule_size_3(binary_dataset):
 
 
 # --- Phase 4D: Strengthened parity tests ---
-
-
 
 
 def test_alternative_conjunctions_actually_created(binary_dataset):
@@ -122,5 +118,3 @@ def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):
 
     for e1, e2 in zip(explanation, explanation_legacy):
         compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
-
-

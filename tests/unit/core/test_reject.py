@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core.reject.orchestrator import RejectOrchestrator
-from calibrated_explanations.core.reject.policy import RejectPolicy, is_policy_enabled
+from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectResult
 
 
@@ -118,10 +118,6 @@ class TestPolicyBehavior:
     """Test each RejectPolicy variant produces correct behavior."""
 
 
-
-
-
-
 class TestIsPolicyEnabled:
     """Test the is_policy_enabled helper function."""
 
@@ -134,7 +130,7 @@ class TestIsPolicyEnabled:
 class TestEdgeCases:
     """Test edge cases for reject policy handling."""
 
-        # Empty input should still produce a result envelope
+    # Empty input should still produce a result envelope
 
     def test_all_rejected_scenario_explain_non_rejects_returns_none_explanation(self):
         """When all instances are rejected, EXPLAIN_NON_REJECTS should return None explanation."""
@@ -214,7 +210,6 @@ class TestPolicyInteractions:
         # The per-call policy should take precedence
         # This tests the routing logic, not the full implementation
 
-
     def test_strategy_resolution_error_handling(self, mock_orchestrator):
         """Unknown strategy should raise KeyError."""
         with pytest.raises(KeyError, match="not registered"):
@@ -269,10 +264,6 @@ class TestPolicyInteractions:
 
 class TestMetadataValidation:
     """Test that metadata fields are correctly populated."""
-
-
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -358,4 +349,3 @@ class TestRejectPolicyEnum:
             # Should have emitted 5 deprecation warnings
             dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
             assert len(dep_warnings) == 5
-

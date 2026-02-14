@@ -72,8 +72,6 @@ def test_set_discretizer_prediction_source(orchestrator, mock_explainer):
         assert np.array_equal(kwargs["condition_labels"], np.array([0, 1]))
 
 
-
-
 def test_infer_mode(orchestrator, mock_explainer):
     """Test infer_mode based on discretizer type."""
     from calibrated_explanations.utils import EntropyDiscretizer
@@ -83,8 +81,6 @@ def test_infer_mode(orchestrator, mock_explainer):
 
     mock_explainer.discretizer = MagicMock()  # Not Entropy/Regressor
     assert orchestrator.infer_mode() == "factual"
-
-
 
 
 def test_invoke_plugin_failure(orchestrator):
@@ -155,8 +151,6 @@ def test_invoke_bridge_monitor_failure(orchestrator, mock_explainer):
         )
 
 
-
-
 def testensure_plugin_init_failure(orchestrator, mock_explainer):
     """Test ensure_plugin initialization failure."""
     mock_explainer.plugin_manager.explanation_plugin_instances = {}
@@ -170,12 +164,6 @@ def testensure_plugin_init_failure(orchestrator, mock_explainer):
         pytest.raises(ConfigurationError, match="Explanation plugin initialisation failed"),
     ):
         orchestrator.ensure_plugin("factual")
-
-
-
-
-
-
 
 
 def test_resolve_plugin_fast_missing(orchestrator, mock_explainer):
@@ -207,8 +195,6 @@ def test_resolve_plugin_denied(orchestrator, mock_explainer):
         orchestrator.resolve_plugin("factual")
 
 
-
-
 def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
     """Test _resolve_plugin with metadata error."""
     mock_explainer.plugin_manager.explanation_plugin_overrides = {}
@@ -236,12 +222,6 @@ def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
         pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
     ):
         orchestrator.resolve_plugin("factual")
-
-
-
-
-
-
 
 
 def test_check_metadata_missing_tasks(orchestrator):
@@ -279,10 +259,6 @@ def test_check_metadata_missing_capabilities(orchestrator):
     )
 
 
-
-
-
-
 def test_derive_plot_chain(orchestrator, mock_explainer):
     """Test _derive_plot_chain."""
     mock_explainer.plugin_manager.plot_style_chain = ("base",)
@@ -296,10 +272,6 @@ def test_derive_plot_chain(orchestrator, mock_explainer):
     ):
         chain = orchestrator.derive_plot_chain("factual", "test_plugin")
         assert chain == ("dep", "base")
-
-
-
-
 
 
 @pytest.mark.parametrize("invoker_name", ("invoke_factual", "invoke_alternative"))
@@ -343,5 +315,3 @@ def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
         )
 
     assert captured_request["bins"] == tuple(tuple(row) for row in bins.tolist())
-
-

@@ -27,7 +27,7 @@ These are advisory only; no immediate blocker.
 
 ## Marker / Hygiene Status
 
-No anti-pattern scanner blockers were produced in this run. 
+No anti-pattern scanner blockers were produced in this run.
 Unknown-marker warnings may still appear during pytest execution, but these were not surfaced as anti-pattern violations by the current scanner configuration.
 
 ## Recommendations

@@ -48,7 +48,6 @@ class TestParallelLifecycle:
         assert results1 == [x * x for x in range(5)]
         assert results2 == [x * x for x in range(5, 10)]
 
-
     def test_force_serial_on_failure(self):
         config = ParallelConfig(
             enabled=True,

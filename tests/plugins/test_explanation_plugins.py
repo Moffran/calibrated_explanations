@@ -1,7 +1,6 @@
 import os
 from types import MappingProxyType
 
-import numpy as np
 import pytest
 
 from calibrated_explanations.plugins import (
@@ -27,8 +26,6 @@ def test_core_fast_plugin_registered_and_trusted():
     assert desc.trusted is True, "core.explanation.fast should be trusted in-tree"
     plugin = find_explanation_plugin_trusted("core.explanation.fast")
     assert plugin is not None
-
-
 
 
 def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_untrusted():
@@ -95,8 +92,6 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
     with pytest.warns(UserWarning):
         plugin, ident = orch.resolve_plugin("fast")
         assert ident == identifier
-
-
 
 
 def test_env_var_precedence_for_explanation_selection():

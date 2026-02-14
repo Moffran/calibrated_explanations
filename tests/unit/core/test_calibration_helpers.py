@@ -38,8 +38,6 @@ def test_calibration_helpers_round_trip():
     assert explainer.interval_learner is not None
 
 
-
-
 class BaseStubExplainer:
     """Utility stub exposing the minimal CalibratedExplainer surface for tests."""
 
@@ -167,5 +165,3 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
         # Calling the delegated function should return the fake result
         res = func(object(), 0.5)
         assert res == "ok"
-
-

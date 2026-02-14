@@ -1,7 +1,7 @@
 # Code-Quality Auditor Proposal
 
-Date: 2026-02-13  
-Cycle: Extended code-focused cycle  
+Date: 2026-02-13
+Cycle: Extended code-focused cycle
 Scope: Concrete remediation batch draft (not yet applied)
 
 ## Batch CQ-001 (Concrete)

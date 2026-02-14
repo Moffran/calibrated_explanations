@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import builtins
 
 import numpy as np
@@ -8,9 +7,7 @@ import pytest
 
 from calibrated_explanations.calibration.state import CalibrationState
 from calibrated_explanations.core.explain.sequential import SequentialExplainExecutor
-from calibrated_explanations.core.reject.orchestrator import RejectOrchestrator
-from calibrated_explanations.core.test import JoblibBackend, sequential_map
-from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
+from calibrated_explanations.core.test import JoblibBackend
 
 
 class ExplainerStub:
@@ -48,10 +45,6 @@ class BridgeStub:
     def predict_proba(self, x, bins=None):
         _ = (x, bins)
         return np.asarray([[0.1, 0.9]])
-
-
-
-
 
 
 def test_calibration_state_dict_rows_append_and_getters(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -111,7 +104,3 @@ def test_joblib_backend_falls_back_when_joblib_submodule_import_fails(
 
     result = backend.map(lambda x: x * 2, [2, 3], workers=1)
     assert result == [4, 6]
-
-
-
-

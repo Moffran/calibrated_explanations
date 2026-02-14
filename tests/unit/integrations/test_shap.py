@@ -54,8 +54,6 @@ class FakeShap:
             return FakeExplanation(prediction)
 
 
-
-
 def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """ImportError disables the helper and returns empty result."""
     helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
@@ -68,10 +66,6 @@ def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.Monke
     assert explainer is None
     assert reference is None
     assert helper.enabled is False
-
-
-
-
 
 
 def test_should_build_and_cache_explainer_when_shap_available(

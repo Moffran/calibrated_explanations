@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
-import runpy
 import sys
 import types
-from pathlib import Path
 
 import pytest
 
 from calibrated_explanations.explanations.adapters import domain_to_legacy, legacy_to_domain
-from calibrated_explanations.explanations.models import Explanation
 
 
 def test_api_quick_explain_delegates_to_core(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -47,7 +44,9 @@ def test_api_quick_explain_delegates_to_core(monkeypatch: pytest.MonkeyPatch) ->
     sys.modules.pop("calibrated_explanations.perf.parallel", None)
 
 
-def test_core_quick_explain_drives_fit_calibrate_and_explain(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_core_quick_explain_drives_fit_calibrate_and_explain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     core_quick = importlib.import_module("calibrated_explanations.core.quick")
     calls = {"fit": None, "calibrate": None}
 
@@ -105,10 +104,6 @@ def test_explanations_adapters_roundtrip_shapes() -> None:
     assert out["feature_weights"]["predict"] == [0.3, -0.2]
 
 
-
-
-
-
 def test_utils_module_reload_handles_joblib_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
     utils_mod = importlib.import_module("calibrated_explanations.utils")
     real_import = __import__
@@ -123,7 +118,9 @@ def test_utils_module_reload_handles_joblib_import_error(monkeypatch: pytest.Mon
     assert hasattr(reloaded, "set_rng_seed")
 
 
-def test_utils_module_reload_returns_when_pool_property_exists(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_utils_module_reload_returns_when_pool_property_exists(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     utils_mod = importlib.import_module("calibrated_explanations.utils")
 
     class PoolMixin:

@@ -1,8 +1,4 @@
-import numpy as np
-
-from calibrated_explanations.utils.int_utils import as_int_array, coerce_to_int, collect_ints
-
-
+from calibrated_explanations.utils.int_utils import coerce_to_int, collect_ints
 
 
 def test_collect_ints_processes_iterables_and_bytes() -> None:
@@ -12,8 +8,6 @@ def test_collect_ints_processes_iterables_and_bytes() -> None:
     assert collect_ints(" 5 ") == [5]
     assert collect_ints(b"-6") == [-6]
     assert collect_ints(None) == []
-
-
 
 
 def test_coerce_to_int_handles_whitespace_and_invalid_strings() -> None:

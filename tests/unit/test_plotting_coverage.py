@@ -19,8 +19,6 @@ def test_split_csv_coverage():
     assert plotting.split_csv(" , , ") == ()
 
 
-
-
 @dataclass
 class DummyExplanation:
     mode: str = "classification"
@@ -43,8 +41,6 @@ def capture_builder_kwargs(store: dict[str, Any]) -> Callable[..., dict[str, Any
         return {"plot_spec": {"kind": "dummy"}}
 
     return builder
-
-
 
 
 def test_plot_alternative__should_default_features_to_plot_when_none_and_feature_count(monkeypatch):
@@ -75,8 +71,6 @@ def test_plot_alternative__should_default_features_to_plot_when_none_and_feature
 
     assert captured["features_to_plot"] == [0, 1]
     assert captured["column_names"] == ["0", "1"]
-
-
 
 
 def test_plot_alternative__should_format_xlabel_for_thresholded_regression_tuple(monkeypatch):

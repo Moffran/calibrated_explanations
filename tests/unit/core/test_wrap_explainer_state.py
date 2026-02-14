@@ -1,7 +1,6 @@
 from types import MappingProxyType
 from collections.abc import Mapping
 
-import numpy as np
 
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 

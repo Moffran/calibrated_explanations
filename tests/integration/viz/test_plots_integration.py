@@ -7,14 +7,10 @@ import pytest
 import calibrated_explanations.viz.plots as _plots
 
 
-from tests.helpers.explainer_utils import FakeExplanation, FakeExplainer
+from tests.helpers.explainer_utils import FakeExplanation
 
 
 pytestmark = pytest.mark.viz
-
-
-
-
 
 
 def testplot_alternative_thresholded_writes_file(tmp_path):
@@ -58,14 +54,6 @@ def testplot_alternative_thresholded_writes_file(tmp_path):
     # Semantic assertion: verify that a PNG file with the title was created
     png_files = list(Path(outdir).glob("*" + title + "*.png"))
     assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
-
-
-
-
-
-
-
-
 
 
 def test_plot_regression_legacy_fallback(tmp_path):

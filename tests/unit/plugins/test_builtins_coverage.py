@@ -7,7 +7,6 @@ from calibrated_explanations.plugins.builtins import (
     derive_threshold_labels,
     LegacyPredictBridge,
     ValidationError,
-    collection_to_batch,
     LegacyIntervalCalibratorPlugin,
 )
 from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
@@ -44,7 +43,6 @@ class TestBuiltinsCoverage:
         # Case 3: invalid/string?
         labels = derive_threshold_labels("foo")
         assert labels == ("Target within threshold", "Outside threshold")
-
 
     def test_legacy_predict_bridge_regression_invariants(self):
         """Test invariant checks in LegacyPredictBridge."""
@@ -89,5 +87,3 @@ class TestBuiltinsCoverage:
         # When explainer is None in context.metadata
         with pytest.raises(NotFittedError):
             plugin.create(context)
-
-

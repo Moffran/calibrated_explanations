@@ -7,7 +7,6 @@ These tests verify that:
    DO emit deprecation warnings
 """
 
-import pytest
 import warnings
 import sys
 import contextlib
@@ -79,8 +78,6 @@ class TestDeprecatedExplanationSymbols:
             assert any("AlternativeExplanation" in str(wi.message) for wi in dep_warnings)
             assert "deprecated" in str(dep_warnings[0].message).lower()
 
-
-
     def test_alternative_explanations_deprecated(self):
         """AlternativeExplanations should emit DeprecationWarning."""
         with warnings.catch_warnings(record=True) as w:
@@ -99,13 +96,8 @@ class TestDeprecatedExplanationSymbols:
             assert any("AlternativeExplanations" in str(wi.message) for wi in dep_warnings)
 
 
-
 class TestDeprecatedDiscretizerSymbols:
     """Verify that discretizer classes emit DeprecationWarning."""
-
-
-
-
 
 
 class TestDeprecatedCalibratorSymbols:
@@ -205,7 +197,5 @@ class TestDeprecationMessageFormat:
             assert "v0.11.0" in message
 
 
-
 class TestNonExistentSymbolRaisesAttributeError:
     """Verify that accessing non-existent symbols raises AttributeError."""
-

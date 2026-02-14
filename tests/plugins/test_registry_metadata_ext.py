@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -35,8 +34,6 @@ def base_meta(**extra):
     return meta
 
 
-
-
 def test_update_trust_keys_synchronises_nested_mapping():
     meta = {"trust": {"trusted": False, "other": "value"}}
 
@@ -44,8 +41,6 @@ def test_update_trust_keys_synchronises_nested_mapping():
 
     assert meta["trusted"] is True
     assert meta["trust"]["trusted"] is True
-
-
 
 
 def make_module_helper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, Path]:
@@ -62,8 +57,6 @@ def make_module_helper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple
     return module_name, module_path
 
 
-
-
 def interval_meta(**extra):
     return base_meta(
         capabilities=["interval"],
@@ -75,8 +68,6 @@ def interval_meta(**extra):
         trust=False,
         **extra,
     )
-
-
 
 
 def plot_builder_meta(**extra):
@@ -91,14 +82,10 @@ def plot_builder_meta(**extra):
     )
 
 
-
-
 def test_validate_plot_builder_accepts_default_renderer():
     meta = plot_builder_meta(default_renderer="core.plot.legacy")
     validated = registry.validate_plot_builder_metadata(meta)
     assert validated.get("default_renderer") == "core.plot.legacy"
-
-
 
 
 def test_list_plot_builder_descriptors_respects_trust(monkeypatch):
@@ -151,21 +138,3 @@ def test_register_plot_plugin_registers_all_components():
     assert "combo" in registry.plot_builders()
     assert "combo" in registry.plot_renderers()
     assert "combo" in registry.plot_styles()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

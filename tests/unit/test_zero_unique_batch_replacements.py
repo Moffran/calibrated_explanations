@@ -92,7 +92,9 @@ def test_core_reject_shim_package_import_warns() -> None:
     assert any(isinstance(item.message, DeprecationWarning) for item in caught)
 
 
-def test_plotting_config_helpers_and_style_chain(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_plotting_config_helpers_and_style_chain(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     plotting = importlib.import_module("calibrated_explanations.plotting")
 
     pyproject = tmp_path / "pyproject.toml"
@@ -128,7 +130,9 @@ def test_plotting_config_helpers_and_style_chain(monkeypatch: pytest.MonkeyPatch
     assert chain2[-1] == "legacy"
 
 
-def test_plotting_update_plot_config_writes_normalized_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_plotting_update_plot_config_writes_normalized_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     plotting = importlib.import_module("calibrated_explanations.plotting")
     config_path = tmp_path / "plot_config.ini"
     monkeypatch.setattr(plotting, "_plot_config_path", lambda: config_path)
@@ -158,8 +162,6 @@ def test_base_explain_executor_abstract_method_bodies_are_callable() -> None:
     assert base_mod.BaseExplainExecutor.execute(object(), None, None, None) is None
     assert base_mod.BaseExplainExecutor.name.fget(object()) is None
     assert base_mod.BaseExplainExecutor.priority.fget(object()) is None
-
-
 
 
 def test_core_reject_shim_re_raises_when_absolute_fallback_import_fails(
@@ -199,7 +201,9 @@ def test_plot_probabilistic_resolves_explainer_then_fails_without_matplotlib(
     monkeypatch.setattr("builtins.__import__", guarded_import)
     explanation = SimpleNamespace(
         calibrated_explanations=SimpleNamespace(
-            get_explainer=lambda: SimpleNamespace(last_explanation_mode=None, plot_plugin_fallbacks={})
+            get_explainer=lambda: SimpleNamespace(
+                last_explanation_mode=None, plot_plugin_fallbacks={}
+            )
         )
     )
 
@@ -254,7 +258,9 @@ def test_instantiate_discretizer_label_array_failure_falls_back_to_y_cal(
             self.labels = kwargs["labels"]
 
     monkeypatch.setattr(mod, "EntropyDiscretizer", DummyDiscretizer)
-    monkeypatch.setattr(mod.np, "asarray", lambda _value: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(
+        mod.np, "asarray", lambda _value: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
     out = mod.instantiate_discretizer(
         discretizer_name="entropy",
         x_cal=x_cal,

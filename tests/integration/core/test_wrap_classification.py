@@ -22,7 +22,6 @@ from calibrated_explanations.utils.exceptions import NotFittedError
 from crepes.extras import MondrianCategorizer
 from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
 
 from tests.helpers.explainer_utils import generic_test
 
@@ -273,8 +272,6 @@ def test_calibrate_with_string_labels_oob(binary_dataset):
     # After calibration, predict_proba should work and return valid probabilities
     proba = clf.predict_proba(x_prop_train[:5])
     assert proba.shape == (5, 2)
-
-
 
 
 def test_wrap_multiclass_conditional_ce(multiclass_dataset):

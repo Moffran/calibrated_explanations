@@ -2,9 +2,6 @@ import pytest
 import numpy as np
 import warnings
 from unittest.mock import MagicMock
-from sklearn.ensemble import RandomForestClassifier
-from calibrated_explanations import WrapCalibratedExplainer
-from calibrated_explanations.explanations._conjunctions import ConjunctionState
 from calibrated_explanations.explanations.explanation import (
     FactualExplanation,
     AlternativeExplanation,
@@ -85,8 +82,6 @@ def test_raise_on_predict_error_surfaces_exceptions():
         )
 
 
-
-
 def test_conjunction_diagnostic_includes_predict_errors():
     """When all predictions fail, the warning should include predict_errors."""
     f = FactualExplanation.__new__(FactualExplanation)
@@ -146,8 +141,6 @@ def test_max_rule_size_1_returns_self():
     # predict_conjunctive should never be called with max_rule_size=1
     f.predict_conjunctive.assert_not_called()
     assert result is f
-
-
 
 
 def test_alternative_raise_on_predict_error():

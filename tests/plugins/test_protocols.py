@@ -10,13 +10,11 @@ import pytest
 from calibrated_explanations.utils.exceptions import ValidationError
 
 from calibrated_explanations.plugins import (
-    ClassificationIntervalCalibrator,
     ExplanationBatch,
     ExplanationContext,
     ExplanationPlugin,
     ExplanationRequest,
     IntervalCalibratorContext,
-    IntervalCalibratorPlugin,
     PlotBuilder,
     PlotRenderContext,
     PlotRenderResult,
@@ -57,8 +55,6 @@ def test_explanation_context_is_frozen() -> None:
         ctx.mode = "alternative"  # type: ignore[misc]
     # Verify that the value did not change
     assert ctx.mode == original_mode
-
-
 
 
 def test_explanation_batch_shape() -> None:
@@ -138,8 +134,6 @@ def test_predict_bridge_runtime_check() -> None:
     assert isinstance(DummyPredictBridge(), PredictBridge)
 
 
-
-
 class GoodIntervalPlugin:
     plugin_meta = {
         "name": "interval",
@@ -182,8 +176,6 @@ class BadIntervalPlugin:
         "trusted": False,
         "trust": False,
     }
-
-
 
 
 class RegressionCalibrator:

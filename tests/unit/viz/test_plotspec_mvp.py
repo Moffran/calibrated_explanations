@@ -1,5 +1,3 @@
-import os
-import tempfile
 import types
 from pathlib import Path
 
@@ -17,8 +15,6 @@ from calibrated_explanations.utils.exceptions import ValidationError
 
 pytest.importorskip("matplotlib")
 pytestmark = pytest.mark.viz
-
-
 
 
 def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
@@ -139,10 +135,6 @@ def testplot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
     ), f"Should find indicators for 3 formats, got {found_indicators}"
 
 
-
-
-
-
 def test_plotspec_sorting_abs_means_distance_from_zero():
     # Ensure 'abs' sorts by |value - 0| (distance from zero)
     predict = {"predict": 0.0}
@@ -167,20 +159,6 @@ def test_plotspec_sorting_abs_means_distance_from_zero():
     assert distances == sorted(distances, reverse=True)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def test_probabilistic_builder_rejects_truncated_labels():
     from calibrated_explanations.viz import build_probabilistic_bars_spec
 
@@ -196,8 +174,6 @@ def test_probabilistic_builder_rejects_truncated_labels():
             y_minmax=None,
             interval=False,
         )
-
-
 
 
 def test_matplotlib_adapter_auto_height_tracks_bars():
@@ -268,8 +244,6 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
 
     assert captured["predict"]["low"] == pytest.approx(0.0)
     assert captured["predict"]["high"] == pytest.approx(1.0)
-
-
 
 
 def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):

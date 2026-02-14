@@ -1,7 +1,6 @@
 """Unit tests for predict_conjunction_tuple hardening (Phase 4B)."""
 
 import numpy as np
-import pytest
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -23,10 +22,6 @@ def make_explanation_with_mock_predict(predict_fn_return):
     exp.calibrated_explanations = mock_ce
 
     return exp, mock_predict
-
-
-
-
 
 
 def test_predict_conjunction_tuple_empty_values():
@@ -96,7 +91,3 @@ def test_predict_conjunction_tuple_bins_array():
     call_args = mock_predict.call_args
     batch_bins = call_args[1]["bins"]
     assert len(batch_bins) == 2
-
-
-
-

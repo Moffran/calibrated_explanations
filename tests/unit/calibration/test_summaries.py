@@ -46,8 +46,6 @@ class ExplainerLike:
         self.calibration_summary_shape = None
 
 
-
-
 def test_get_calibration_summaries__should_compute_and_store_when_facade_cache_miss():
     # Arrange
     facade = CacheFacadeFake(cached=None)

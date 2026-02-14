@@ -38,15 +38,15 @@ def test_joblib_backend_uses_explicit_workers(monkeypatch: pytest.MonkeyPatch):
         def __call__(self, tasks):
             return [task() for task in tasks]
 
-    monkeypatch.setitem(sys.modules, "joblib", SimpleNamespace(Parallel=ParallelStub, delayed=delayed))
+    monkeypatch.setitem(
+        sys.modules, "joblib", SimpleNamespace(Parallel=ParallelStub, delayed=delayed)
+    )
     backend = perf_helpers.JoblibBackend()
 
     result = backend.map(lambda x: x + 1, [1, 2, 3], workers=2)
 
     assert calls["n_jobs"] == 2
     assert result == [2, 3, 4]
-
-
 
 
 def test_sequential_map_returns_collection():

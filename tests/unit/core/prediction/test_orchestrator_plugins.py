@@ -38,8 +38,6 @@ def orchestrator(mock_explainer):
         return PredictionOrchestrator(mock_explainer)
 
 
-
-
 @patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
 @patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
 @patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
@@ -79,8 +77,6 @@ def test_resolve_interval_plugin_metadata_error(
 
     with pytest.raises(ConfigurationError, match="Unable to resolve interval plugin"):
         orchestrator.resolve_interval_plugin(fast=False)
-
-
 
 
 def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):

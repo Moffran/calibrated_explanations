@@ -21,8 +21,6 @@ def test_scalar_low_gt_high_raises():
         serialization.to_json(exp)
 
 
-
-
 def test_vector_requires_vector_low_high():
     exp = make_exp({"predict": [1, 2], "low": 0, "high": [0, 2]})
     with pytest.raises(ValidationError):
@@ -71,7 +69,3 @@ def test_valid_vector_prediction_interval_serializes():
     exp = make_exp({"predict": [1.0, 2.0], "low": [0.0, 1.5], "high": [1.5, 2.5]})
     payload = serialization.to_json(exp)
     assert payload["prediction"]["predict"] == [1.0, 2.0]
-
-
-
-

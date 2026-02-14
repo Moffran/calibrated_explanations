@@ -1,8 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
-from calibrated_explanations.utils.exceptions import ValidationError, ConfigurationError
 
 
 @pytest.fixture
@@ -24,12 +23,6 @@ def mock_explainer():
 @pytest.fixture
 def orchestrator(mock_explainer):
     return ExplanationOrchestrator(mock_explainer)
-
-
-
-
-
-
 
 
 def test_invoke_per_instance_ignore(orchestrator, mock_explainer):
@@ -79,16 +72,6 @@ def test_invoke_per_instance_ignore(orchestrator, mock_explainer):
     assert set(request.features_to_ignore) == {0, 1}
 
 
-
-
-
-
-
-
-
-
-
-
 def test_check_metadata_unsupported_task(orchestrator, mock_explainer):
     from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 
@@ -96,8 +79,6 @@ def test_check_metadata_unsupported_task(orchestrator, mock_explainer):
     metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION, "tasks": ("classification",)}
     error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "does not support task" in error
-
-
 
 
 def test_check_metadata_unsupported_mode(orchestrator, mock_explainer):
@@ -111,14 +92,6 @@ def test_check_metadata_unsupported_mode(orchestrator, mock_explainer):
     }
     error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "does not declare mode" in error
-
-
-
-
-
-
-
-
 
 
 def test_build_context(orchestrator, mock_explainer):
@@ -138,7 +111,3 @@ def test_build_context(orchestrator, mock_explainer):
         assert context.interval_settings["dependencies"] == ("dep1",)
         assert context.plot_settings["fallbacks"] == ("legacy",)
         assert context.categorical_labels == {"f1": {0: "a"}}
-
-
-
-

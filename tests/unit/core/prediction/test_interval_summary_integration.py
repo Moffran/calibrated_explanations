@@ -53,5 +53,3 @@ def test_interval_summary_selection_behavior():
 
     # With enough samples, we expect some differences if interval is not zero
     # Just asserting it runs without error and respects logic roughly is enough for integration
-
-

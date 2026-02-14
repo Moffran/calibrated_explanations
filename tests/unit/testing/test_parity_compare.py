@@ -3,8 +3,6 @@ import numpy as np
 from calibrated_explanations.testing import parity_compare
 
 
-
-
 def test_parity_compare_reports_value_mismatch_with_path():
     expected = {"outer": [1, {"inner": 3.0}]}
     actual = {"outer": [1, {"inner": 3.5}]}
