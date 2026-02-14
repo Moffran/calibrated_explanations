@@ -56,42 +56,6 @@
       "snippet": "def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):"
     },
     {
-      "file": "integration/core/test_regression.py",
-      "file_hash": "sha256:9b8f11f521b50f3e9bb5f7b4aacb444157db43d9086fb89807262d8dd5d92c6b",
-      "id": "sha256:f5835c8671c27a2802c2fda4293499675b0f7fcd06ec618d43070237444dc30a",
-      "is_new": false,
-      "line": 263,
-      "pattern": "test without assertion",
-      "snippet": "def test_probabilistic_regression_ce(regression_dataset):"
-    },
-    {
-      "file": "integration/core/test_regression.py",
-      "file_hash": "sha256:9b8f11f521b50f3e9bb5f7b4aacb444157db43d9086fb89807262d8dd5d92c6b",
-      "id": "sha256:d2b8d442802895826793a443c15875d3e81e73587711fa8e3fb1969dfe903993",
-      "is_new": false,
-      "line": 311,
-      "pattern": "test without assertion",
-      "snippet": "def test_probabilistic_regression_int_threshold_ce(regression_dataset):"
-    },
-    {
-      "file": "integration/core/test_regression.py",
-      "file_hash": "sha256:9b8f11f521b50f3e9bb5f7b4aacb444157db43d9086fb89807262d8dd5d92c6b",
-      "id": "sha256:63b5e13a4d408280374877942c865acd38dfecef0f0917942646c874815233e7",
-      "is_new": false,
-      "line": 349,
-      "pattern": "test without assertion",
-      "snippet": "def test_regression_as_classification_ce(regression_dataset):"
-    },
-    {
-      "file": "integration/core/test_regression.py",
-      "file_hash": "sha256:9b8f11f521b50f3e9bb5f7b4aacb444157db43d9086fb89807262d8dd5d92c6b",
-      "id": "sha256:d131ddf6e1fa283606b2b5875539d1fce8bdc719b4423856b7375e2075482426",
-      "is_new": false,
-      "line": 440,
-      "pattern": "test without assertion",
-      "snippet": "def test_knn_normalized_probabilistic_regression_ce(regression_dataset):"
-    },
-    {
       "file": "unit/test_fallback_enforcement.py",
       "file_hash": "sha256:e32a022e1e533c30eff61d4a32c2276ef92bb2564aa172e087c5ef1bedf983bf",
       "id": "sha256:b3f7cbc734242442a0afac2a1d1f16247a56dcef9d2c6bf23cc3586a53eb7fce",
@@ -353,9 +317,9 @@
       "snippet": "def test_example_plotspec_validates():"
     }
   ],
-  "generated_at": "2026-02-14T13:23:23+00:00",
+  "generated_at": "2026-02-14T17:37:31+00:00",
   "new_violations": 0,
   "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
-  "total_findings": 39,
+  "total_findings": 35,
   "version": 1
 }

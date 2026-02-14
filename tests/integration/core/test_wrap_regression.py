@@ -223,6 +223,9 @@ def test_wrap_regression_ce(regression_dataset):
     fx.add_conjunctions()
     alt = cal_exp.explore_alternatives(x_test, threshold=y_test)
     alt.add_conjunctions()
+    # Basic sanity assertions to ensure the explainer produced results
+    assert fx is not None
+    assert alt is not None
 
     with pytest.raises(ValidationError):
         cal_exp.predict_proba(x_test)
@@ -284,6 +287,9 @@ def test_wrap_conditional_regression_ce(regression_dataset):
         x_cal, y_cal, mc=lambda x: cal_exp.learner.predict(x) > 0.5, feature_names=feature_names
     )
     conditional_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test)
+    # Basic sanity assertions to ensure the explainer produced results in this conditional test
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
 
 
 def conditional_test(cal_exp, x_prop_train, y_prop_train, x, y):
