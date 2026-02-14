@@ -11,6 +11,7 @@
 - **Pattern 1 hardening:** Emptied `.github/private_member_allowlist.json` and enforced private-member scanning in CI (`scan_private_usage.py --check`) with current violations remediated.
 
 ### Changed
+- **Project script and report reorganization:** Moved `api_diff.py`, `audit_notebook_api.py`, and `snapshot_public_api.py` to `scripts/quality/` to align with their purpose as quality gates. Archived legacy and debugging scripts (`compare_golden.py`, `migrate_aliases.py`, `run_feature_filter_debug.py`) to `scripts/archived/`. Cleaned up `reports/` by moving historical documentation and benchmark results to `reports/archived/`. Updated documentation and workflow references to reflect new locations.
 - **General test and code quality method:** Adopted a broader ADR-aligned quality method across tests and source code (behavior-first assertions, deterministic AAA structure, reduced implementation-detail coupling, stronger linting/analysis checks, and targeted removal of low-signal redundancy) while preserving regression protection and coverage gates.
 
 ## [v0.10.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.4) - 2026-02-12

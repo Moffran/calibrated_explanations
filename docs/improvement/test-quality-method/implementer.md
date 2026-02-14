@@ -219,7 +219,7 @@ For source-code risks identified by the code-quality-auditor:
 3. **Optional public API drift check** when refactoring public modules:
 
    ```bash
-   python scripts/api_diff.py
+   python scripts/quality/api_diff.py
    ```
 
 4. **Verify coverage gates still pass**:

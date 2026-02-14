@@ -167,7 +167,7 @@ Deprecation-sensitive spot check (mirrors CI `deprecation-check.yml`):
 Optional (when touching public API surfaces):
 
 ```bash
-python scripts/api_diff.py
+python scripts/quality/api_diff.py
 ```
 
 ### Step 4: Simulate removals (optional, before acting)
@@ -228,7 +228,7 @@ proposal for refactors and safe removals.
 - Run the deprecation-sensitive spot check (`CE_DEPRECATIONS=error`)
 - Audit dead/private helpers via `analyze_private_methods.py`
 - Triage structural hotspots (large functions, high branching)
-- (Optional) Check public API drift with `scripts/api_diff.py`
+- (Optional) Check public API drift with `scripts/quality/api_diff.py`
 - Produce a proposal for `devils-advocate` (recommended output: `reports/over_testing/code_quality_auditor_proposal.md`)
 
 **Key files to analyze**:
@@ -237,7 +237,7 @@ proposal for refactors and safe removals.
 - `scripts/quality/check_import_graph.py`
 - `scripts/quality/check_docstring_coverage.py`
 - `scripts/anti-pattern-analysis/analyze_private_methods.py`
-- `scripts/api_diff.py`
+- `scripts/quality/api_diff.py`
 - `docs/improvement/adrs/`
 
 **Key principles**:

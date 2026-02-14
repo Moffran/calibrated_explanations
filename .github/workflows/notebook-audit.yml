@@ -49,7 +49,7 @@ jobs:
             ARGS="$ARGS --check"
           fi
 
-          python scripts/audit_notebook_api.py $ARGS
+          python scripts/quality/audit_notebook_api.py $ARGS
 
       - name: Upload audit report
         uses: actions/upload-artifact@v6

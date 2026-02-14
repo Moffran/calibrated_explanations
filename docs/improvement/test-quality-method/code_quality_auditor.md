@@ -113,7 +113,7 @@ for length, args, file, lineno, name in sorted(rows, reverse=True)[:30]:
 When refactors are proposed in public modules, run:
 
 ```bash
-python scripts/api_diff.py
+python scripts/quality/api_diff.py
 ```
 
 Use it to ensure code-quality work does not accidentally break the API surface.
