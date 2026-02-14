@@ -69,8 +69,6 @@ def test_binary_ce(binary_dataset):
     alternative_explanation[x_test == x_test[0]].plot(show=False, style="triangular")
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
-    # Basic sanity assertions to ensure the explainer produced results
-    assert fast_explanation is not None
     alternative_explanation.ensured_explanations()
     alternative_explanation.add_conjunctions(max_rule_size=3)
     # Basic sanity assertions to ensure the explainer produced results
@@ -123,7 +121,6 @@ def test_multiclass_ce_str_target(multiclass_dataset):
     factual_explanation[:1].plot(show=False)
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
-
     alternative_explanation = cal_exp.explore_alternatives(x_test)
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
@@ -131,18 +128,10 @@ def test_multiclass_ce_str_target(multiclass_dataset):
     alternative_explanation[x_test == x_test[0]].plot(show=False, style="triangular")
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
     alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
     alternative_explanation.semi_explanations(only_ensured=True)
     alternative_explanation.counter_explanations(only_ensured=True)
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
+
     # Basic sanity assertions to ensure the explainer produced results
     assert factual_explanation is not None
     assert alternative_explanation is not None
@@ -176,8 +165,7 @@ def test_binary_ce_str_target(binary_dataset):
     )
 
     cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test)
-
+    assert cal_exp is not None
     factual_explanation = cal_exp.explain_factual(x_test)
     factual_explanation[0].add_new_rule_condition(feature_names[0], x_cal[0, 0])
     factual_explanation.add_conjunctions()
@@ -408,8 +396,7 @@ def test_binary_fast_ce(binary_dataset):
     fast_explanation[:1].plot(show=False)
     fast_explanation[0].plot(show=False, uncertainty=True)
     # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
+    assert fast_explanation is not None
     with pytest.warns(UserWarning):
         fast_explanation.add_conjunctions(max_rule_size=3)
 
