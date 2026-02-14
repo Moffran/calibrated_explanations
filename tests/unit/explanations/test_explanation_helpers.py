@@ -594,6 +594,22 @@ def test_predict_conjunctive_average():
     assert high == pytest.approx(1.5)
 
 
+def test_predict_conjunctive_average_three_features():
+    explanation = make_explanation()
+    perturbed = np.array([0.3, 0.4, 0.5], copy=True)
+    predict, low, high = explanation.predict_conjunctive(
+        [np.array([0.1, 0.2]), np.array([0.3, 0.4]), np.array([0.5, 0.6])],
+        [0, 1, 2],
+        perturbed,
+        threshold=None,
+        predicted_class=explanation.prediction["classes"],
+    )
+    assert predict == pytest.approx(1.0)
+    assert low == pytest.approx(0.5)
+    assert high == pytest.approx(1.5)
+    assert np.allclose(perturbed, np.array([0.3, 0.4, 0.5]))
+
+
 def test_predict_conjunctive_requires_multiple_features():
     from calibrated_explanations.utils.exceptions import ValidationError
 

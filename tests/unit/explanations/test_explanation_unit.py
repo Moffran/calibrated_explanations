@@ -206,6 +206,34 @@ class TestExplanationUnit:
         ):
             expl.add_new_rule_condition(0, 12.0)
 
+    def test_add_new_rule_condition_with_vector_threshold(self):
+        expl = self.create_expl(y_threshold=np.array([0.5]))
+
+        def predict_diff_effect(x, **kwargs):
+            n = len(x)
+            return (np.zeros(n) + 0.7, np.zeros(n) + 0.5, np.zeros(n) + 0.9, None)
+
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
+
+        expl.add_new_rule_condition(0, 8.0)
+        assert len(expl.rules["rule"]) == 1
+
+    def test_add_new_rule_condition_with_tuple_threshold(self):
+        expl = self.create_expl(y_threshold=(0.2, 0.8))
+
+        def predict_diff_effect(x, **kwargs):
+            n = len(x)
+            return (np.zeros(n) + 0.7, np.zeros(n) + 0.5, np.zeros(n) + 0.9, None)
+
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
+
+        expl.add_new_rule_condition(0, 8.0)
+        assert len(expl.rules["rule"]) == 1
+
     def test_add_new_rule_condition_boundary_out_of_bounds_high(self):
         expl = self.create_expl()
         # x_cal max is 15.0.

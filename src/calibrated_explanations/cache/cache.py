@@ -280,8 +280,10 @@ class CacheMetrics:
         }
 
     def __reduce__(self):
-        """Stable reduce for CacheMetrics resolving the reconstruct function
-        from the canonical module to avoid module identity issues.
+        """Stable reduce for CacheMetrics resolving the reconstruct function.
+
+        Resolve the reconstruct function from the canonical module to avoid
+        module identity issues.
         """
         import importlib
 
@@ -369,9 +371,10 @@ class CacheConfig:
         return cfg
 
     def __reduce__(self):
-        """Stable reduce for CacheConfig resolving the reconstruct function
-        from the canonical module to avoid module identity issues during
-        pickling/unpickling.
+        """Stable reduce for CacheConfig resolving the reconstruct function.
+
+        Resolve the reconstruct function from the canonical module to avoid
+        module identity issues during pickling/unpickling.
         """
         import importlib
 
