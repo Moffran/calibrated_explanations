@@ -39,8 +39,10 @@ def test_lru_cache_rejects_invalid_limits() -> None:
         )
 
 
-def test_cache_respects_ttl() -> None:
+def test_cache_respects_ttl(monkeypatch) -> None:
     import time
+    # Avoid real sleep in tests
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
 
     cache = LRUCache[
         str,

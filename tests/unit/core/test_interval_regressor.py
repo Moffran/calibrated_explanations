@@ -143,6 +143,12 @@ def test_initializer_flattens_calibration_arrays(monkeypatch):
             base = super().predict_calibration()
             return base.reshape(-1, 1)
 
+    # Ensure initialization with column vectors does not error and flattens shapes
+    monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
+    monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
+    reg = interval_module.IntervalRegressor(ColumnExplainer())
+    assert reg is not None
+
 
 def test_bins_setter_flattens_column_vectors(monkeypatch):
     regressor = make_regressor(monkeypatch)

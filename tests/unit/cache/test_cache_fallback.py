@@ -11,7 +11,7 @@ from calibrated_explanations.cache.cache import (
 )
 
 
-def test_cache_fallback_logic():
+def test_cache_fallback_logic(monkeypatch):
     # We want to test the fallback classes even if cachetools is installed.
     # They are hidden in the except block and assigned to cachetools shim.
 
@@ -47,6 +47,8 @@ def test_cache_fallback_logic():
             # Test TTLCache fallback
             cache_ttl = fallback_ttl(maxsize=10, ttl=0.1)
             cache_ttl["a"] = 1
+            # Avoid real sleep during tests
+            monkeypatch.setattr(time, "sleep", lambda _s: None)
             assert cache_ttl["a"] == 1
             time.sleep(0.2)
             with pytest.raises(KeyError):
