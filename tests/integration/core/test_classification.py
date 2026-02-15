@@ -22,8 +22,10 @@ Tests:
 """
 
 import pytest
-from tests.helpers.model_utils import get_classification_model
 from tests.helpers.explainer_utils import initiate_explainer
+from tests.helpers.model_utils import get_classification_model
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.viz
@@ -245,10 +247,11 @@ def test_multiclass_ce(multiclass_dataset):
     alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
     alternative_explanation.semi_explanations(only_ensured=True)
     alternative_explanation.counter_explanations(only_ensured=True)
-    
+
     # Basic sanity assertions to ensure the explainer produced results
     assert factual_explanation is not None
     assert alternative_explanation is not None
+
 
 @pytest.mark.viz
 def test_binary_conditional_ce(binary_dataset):

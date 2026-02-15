@@ -1,8 +1,6 @@
-import os
 import pickle
 
 import numpy as np
-import pytest
 
 from calibrated_explanations.cache.cache import (
     CacheConfig,
@@ -13,7 +11,9 @@ from calibrated_explanations.cache.cache import (
 
 
 def test_pickle_and_restore_cache_config_and_metrics():
-    cfg = CacheConfig(enabled=True, namespace="ns", version="v2", max_items=2, max_bytes=1024, ttl_seconds=None)
+    cfg = CacheConfig(
+        enabled=True, namespace="ns", version="v2", max_items=2, max_bytes=1024, ttl_seconds=None
+    )
     # default estimator marker should round-trip via the reduce implementation
     data = pickle.loads(pickle.dumps(cfg))
     # The reconstructed object may come from the module-level helper and
@@ -26,7 +26,14 @@ def test_pickle_and_restore_cache_config_and_metrics():
     m = CacheMetrics(hits=1, misses=2, sets=3, evictions=4, expirations=5, resets=6)
     m2 = pickle.loads(pickle.dumps(m))
     # The same identity caveat applies to CacheMetrics; check field values.
-    assert (getattr(m2, "hits", None), getattr(m2, "misses", None), getattr(m2, "sets", None), getattr(m2, "evictions", None), getattr(m2, "expirations", None), getattr(m2, "resets", None)) == (
+    assert (
+        getattr(m2, "hits", None),
+        getattr(m2, "misses", None),
+        getattr(m2, "sets", None),
+        getattr(m2, "evictions", None),
+        getattr(m2, "expirations", None),
+        getattr(m2, "resets", None),
+    ) == (
         1,
         2,
         3,

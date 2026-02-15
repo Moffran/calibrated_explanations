@@ -7,8 +7,6 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 
 
 def test_serialise_preprocessor_value_various_types():
-    from types import SimpleNamespace
-
     # Provide a minimal 'fitted' learner so wrapper initializer proceeds
     w = WrapCalibratedExplainer(learner=SimpleNamespace(fitted=True))
     assert w.serialise_preprocessor_value(None) is None
@@ -38,7 +36,6 @@ def test_extract_preprocessor_snapshot_and_build_metadata():
         mapping_ = {"x": 1}
 
     pre = Pre()
-    from types import SimpleNamespace
     w = WrapCalibratedExplainer(learner=SimpleNamespace(fitted=True))
     w.auto_encode = True
     w.preprocessor = pre
@@ -50,7 +47,6 @@ def test_extract_preprocessor_snapshot_and_build_metadata():
 
 
 def test_format_proba_output_variants():
-    from types import SimpleNamespace
     w = WrapCalibratedExplainer(learner=SimpleNamespace(fitted=True))
     multiclass = np.ones((2, 3)) * 0.3
     out = w.format_proba_output(multiclass, uq_interval=True)
@@ -62,7 +58,6 @@ def test_format_proba_output_variants():
 
 
 def test_normalize_public_kwargs_and_import_mapping_stash(monkeypatch):
-    from types import SimpleNamespace
     w = WrapCalibratedExplainer(learner=SimpleNamespace(fitted=True))
     with pytest.warns(DeprecationWarning):
         res = w.normalize_public_kwargs({"alpha": 0.1, "foo": 2})

@@ -1,8 +1,6 @@
 import numpy as np
-import types
 from types import SimpleNamespace
 
-import pytest
 
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.utils.discretizers import EntropyDiscretizer
@@ -95,6 +93,11 @@ def test_check_metadata_detects_missing_and_schema_mismatch():
     msg = orch.check_metadata(None, identifier="x", mode="factual")
     assert "plugin metadata unavailable" in msg
 
-    bad_meta = {"schema_version": "0", "tasks": "classification", "modes": "factual", "capabilities": ["explain"]}
+    bad_meta = {
+        "schema_version": "0",
+        "tasks": "classification",
+        "modes": "factual",
+        "capabilities": ["explain"],
+    }
     msg2 = orch.check_metadata(bad_meta, identifier="y", mode="factual")
     assert "unsupported" in msg2 or "schema_version" in msg2

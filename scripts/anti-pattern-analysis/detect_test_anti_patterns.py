@@ -64,6 +64,30 @@ NETWORK_CALLS = {
     ("socket", "create_connection"),
 }
 
+MOCK_CONSTRUCTOR_METHODS = {
+    "Mock",
+    "MagicMock",
+    "AsyncMock",
+    "create_autospec",
+}
+
+MOCK_ASSERTION_METHODS = {
+    "assert_called",
+    "assert_called_once",
+    "assert_called_once_with",
+    "assert_called_with",
+    "assert_not_called",
+    "assert_any_call",
+    "assert_has_calls",
+    "assert_awaited",
+    "assert_awaited_once",
+    "assert_awaited_once_with",
+    "assert_awaited_with",
+    "assert_not_awaited",
+    "assert_any_await",
+    "assert_has_awaits",
+}
+
 BASELINE_RATIONALE = "Existing debt accepted during incremental ADR-030 rollout."
 
 
@@ -123,19 +147,31 @@ class AssertionProbe(ast.NodeVisitor):
 
     def __init__(self) -> None:
         self.has_assertion = False
+        self.has_outcome_assertion = False
 
     def visit_Assert(self, node: ast.Assert) -> None:  # noqa: N802
         self.has_assertion = True
+        if not _is_mock_interaction_expression(node.test):
+            self.has_outcome_assertion = True
         self.generic_visit(node)
 
     def visit_With(self, node: ast.With) -> None:  # noqa: N802
         if any(_is_pytest_assertion_context(item.context_expr) for item in node.items):
             self.has_assertion = True
+            self.has_outcome_assertion = True
         self.generic_visit(node)
 
     def visit_AsyncWith(self, node: ast.AsyncWith) -> None:  # noqa: N802
         if any(_is_pytest_assertion_context(item.context_expr) for item in node.items):
             self.has_assertion = True
+            self.has_outcome_assertion = True
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+        if _is_assertion_call(node):
+            self.has_assertion = True
+            if not _is_mock_assertion_call(node):
+                self.has_outcome_assertion = True
         self.generic_visit(node)
 
 
@@ -153,6 +189,8 @@ class FunctionProbe(ast.NodeVisitor):
         httpx_aliases: set[str],
         urllib_request_aliases: set[str],
         socket_aliases: set[str],
+        mock_modules: set[str],
+        mock_functions: dict[str, str],
     ) -> None:
         self.random_modules = random_modules
         self.random_functions = random_functions
@@ -163,10 +201,13 @@ class FunctionProbe(ast.NodeVisitor):
         self.httpx_aliases = httpx_aliases
         self.urllib_request_aliases = urllib_request_aliases
         self.socket_aliases = socket_aliases
+        self.mock_modules = mock_modules
+        self.mock_functions = mock_functions
         self.random_calls: list[ast.Call] = []
         self.seed_calls: list[ast.Call] = []
         self.time_or_network_calls: list[ast.Call] = []
         self.patch_calls: list[ast.Call] = []
+        self.mock_setup_calls: list[ast.Call] = []
 
     def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         base, attr = _call_name(node)
@@ -179,6 +220,8 @@ class FunctionProbe(ast.NodeVisitor):
             self.time_or_network_calls.append(node)
         if self._is_patch_call(base, attr):
             self.patch_calls.append(node)
+        if self._is_mock_setup_call(base, attr):
+            self.mock_setup_calls.append(node)
         self.generic_visit(node)
 
     def _is_random_call(self, base: str, attr: str) -> bool:
@@ -228,6 +271,20 @@ class FunctionProbe(ast.NodeVisitor):
             return True
         return False
 
+    def _is_mock_setup_call(self, base: str, attr: str) -> bool:
+        if attr in MOCK_CONSTRUCTOR_METHODS and (
+            base in self.mock_modules
+            or (not base and self.mock_functions.get(attr) in MOCK_CONSTRUCTOR_METHODS)
+        ):
+            return True
+        if attr == "patch" and (
+            base in self.mock_modules
+            or (not base and self.mock_functions.get(attr) == "patch")
+            or base == "mocker"
+        ):
+            return True
+        return False
+
 
 class AntiPatternVisitor(ast.NodeVisitor):
     """AST visitor that records anti-pattern findings."""
@@ -246,6 +303,8 @@ class AntiPatternVisitor(ast.NodeVisitor):
         self.httpx_aliases: set[str] = {"httpx"}
         self.urllib_request_aliases: set[str] = {"urllib.request"}
         self.socket_aliases: set[str] = {"socket"}
+        self.mock_modules: set[str] = {"mock", "unittest.mock"}
+        self.mock_functions: dict[str, str] = {}
 
     def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
         for alias in node.names:
@@ -263,6 +322,8 @@ class AntiPatternVisitor(ast.NodeVisitor):
                 self.socket_aliases.add(as_name)
             if name == "urllib.request":
                 self.urllib_request_aliases.add(as_name)
+            if name == "unittest.mock":
+                self.mock_modules.add(as_name)
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
@@ -286,6 +347,11 @@ class AntiPatternVisitor(ast.NodeVisitor):
                 self.socket_aliases.add(as_name)
             if module == "urllib.request":
                 self.urllib_request_aliases.add(as_name)
+            if module == "unittest":
+                if alias.name == "mock":
+                    self.mock_modules.add(as_name)
+            if module == "unittest.mock":
+                self.mock_functions[as_name] = alias.name
         self.generic_visit(node)
 
     def visit_call(self, node: ast.Call) -> None:
@@ -352,6 +418,8 @@ class AntiPatternVisitor(ast.NodeVisitor):
             httpx_aliases=self.httpx_aliases,
             urllib_request_aliases=self.urllib_request_aliases,
             socket_aliases=self.socket_aliases,
+            mock_modules=self.mock_modules,
+            mock_functions=self.mock_functions,
         )
         for stmt in node.body:
             behavior_probe.visit(stmt)
@@ -363,6 +431,15 @@ class AntiPatternVisitor(ast.NodeVisitor):
             self._record(
                 behavior_probe.time_or_network_calls[0],
                 "time/network usage without patching",
+            )
+        if (
+            len(behavior_probe.mock_setup_calls) >= 3
+            and assertion_probe.has_assertion
+            and not assertion_probe.has_outcome_assertion
+        ):
+            self._record(
+                behavior_probe.mock_setup_calls[0],
+                "excessive mocking without outcome assertions",
             )
 
     def _record(self, node: ast.AST, pattern: str) -> None:
@@ -578,6 +655,31 @@ def _is_pytest_assertion_context(node: ast.AST) -> bool:
         return True
     if not base and attr in {"raises", "warns"}:
         return True
+    return False
+
+
+def _is_assertion_call(node: ast.Call) -> bool:
+    base, attr = _call_name(node)
+    if not base and attr in {"raises", "warns"}:
+        return True
+    if base in {"pytest", "py.test"} and attr in {"raises", "warns"}:
+        return True
+    if attr.startswith("assert"):
+        return True
+    return False
+
+
+def _is_mock_assertion_call(node: ast.Call) -> bool:
+    _, attr = _call_name(node)
+    return attr in MOCK_ASSERTION_METHODS
+
+
+def _is_mock_interaction_expression(node: ast.AST) -> bool:
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call) and _is_mock_assertion_call(child):
+            return True
+        if isinstance(child, ast.Attribute) and child.attr in {"called", "call_count", "await_count"}:
+            return True
     return False
 
 

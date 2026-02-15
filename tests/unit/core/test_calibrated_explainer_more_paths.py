@@ -1,5 +1,4 @@
 import logging
-import types
 import numpy as np
 import pytest
 
@@ -25,7 +24,9 @@ def test_predict_skip_reject_internal_returns_prediction():
     ) = dataset
 
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(model, x_cal, y_cal, feature_names, categorical_features, mode="classification")
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
 
     # When _ce_skip_reject is True the legacy calibrated prediction path is used
     res = cal_exp.predict(x_test, _ce_skip_reject=True)
@@ -49,7 +50,9 @@ def test_predict_with_implicit_default_reject_policy_logs(monkeypatch):
     ) = dataset
 
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(model, x_cal, y_cal, feature_names, categorical_features, mode="classification")
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
 
     # Set a non-NONE default to trigger implicit_default_used when no reject_policy provided
     cal_exp.default_reject_policy = RejectPolicy.FLAG
@@ -59,7 +62,9 @@ def test_predict_with_implicit_default_reject_policy_logs(monkeypatch):
     def fake_info(msg, *a, **k):
         records.append(msg)
 
-    monkeypatch.setattr(logging.getLogger("calibrated_explanations.core.calibrated_explainer"), "info", fake_info)
+    monkeypatch.setattr(
+        logging.getLogger("calibrated_explanations.core.calibrated_explainer"), "info", fake_info
+    )
 
     rr = RejectResult(prediction=None, policy=RejectPolicy.FLAG)
     current = cal_exp.reject_orchestrator
@@ -86,7 +91,9 @@ def test_predict_rr_prediction_none_preserved(monkeypatch):
     ) = dataset
 
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(model, x_cal, y_cal, feature_names, categorical_features, mode="classification")
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
 
     rr = RejectResult(prediction=None, policy=RejectPolicy.FLAG)
     current = cal_exp.reject_orchestrator
@@ -113,7 +120,9 @@ def test_predict_proba_uncalibrated_regression_raises_when_threshold():
     ) = dataset
 
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(model, x_cal, y_cal, feature_names, categorical_features, mode="regression")
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
 
     # uncalibrated regression with threshold should raise ValidationError inside helper
     with pytest.raises(Exception):

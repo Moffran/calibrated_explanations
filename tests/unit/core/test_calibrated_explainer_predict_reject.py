@@ -1,5 +1,3 @@
-import types
-import warnings
 import numpy as np
 import pytest
 
@@ -74,7 +72,9 @@ def test_predict_with_reject_regression_formats_prediction(monkeypatch):
     ) = dataset
 
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(model, x_cal, y_cal, feature_names, categorical_features, mode="regression")
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
 
     rr = make_rr_regression()
     current = cal_exp.reject_orchestrator
@@ -114,7 +114,11 @@ def test_predict_reject_formatting_exception_warns(monkeypatch):
     monkeypatch.setattr(current, "apply_policy", lambda *a, **k: rr, raising=False)
 
     # Force formatting to raise so we hit the exception handling path
-    monkeypatch.setattr(prediction_helpers, "format_classification_prediction", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(
+        prediction_helpers,
+        "format_classification_prediction",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
 
     with pytest.warns(UserWarning):
         res = cal_exp.predict(x_test, reject_policy="flag")

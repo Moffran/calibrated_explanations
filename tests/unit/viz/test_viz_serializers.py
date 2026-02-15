@@ -390,7 +390,9 @@ def test_validate_kind_specific_required_sections_and_feature_entry_fields():
     from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError, match="requires 'feature_entries' list"):
-        validate_plotspec({"kind": "factual_regression", "mode": "regression", "header": {"pred": 1}})
+        validate_plotspec(
+            {"kind": "factual_regression", "mode": "regression", "header": {"pred": 1}}
+        )
 
     with pytest.raises(ValidationError, match="missing required fields"):
         validate_plotspec(

@@ -169,3 +169,13 @@ Based on analysis of current test practices (directory-based organization, ~2000
 - 2026-02-09 – Added over-testing density analysis scripts and proposed a ratcheting
   gate based on per-test coverage contexts (pending CI rollout).
 - 2026-02-09 – Completed coverage improvement iteration: added integration tests for plotting style overrides/legacy fallbacks, cache fallback testing, and YAML template loading to increase coverage in low-coverage modules (plotting.py, cache.py, narrative_generator.py).
+- 2026-02-15 – Phase 3 (marker hygiene): added `scripts/quality/check_marker_hygiene.py`
+  with `--check` / `--rebaseline` modes and committed baseline
+  (`.github/marker-hygiene-baseline.json`, 72 existing-debt entries). Wired into
+  `ci-pr.yml` and `ci-main.yml` anti-pattern-audit jobs.
+- 2026-02-15 – Phase 4 (over-testing density): wired `over_testing_report.py` and
+  `detect_redundant_tests.py` into `ci-main.yml` as an advisory
+  (`continue-on-error: true`) job with `--cov-context=test` coverage collection.
+  Reports published as CI artifacts.
+- 2026-02-15 – Anti-pattern audit added to `ci-pr.yml` so PR checks survive
+  `test.yml` compat-wrapper decommission (release task 12).

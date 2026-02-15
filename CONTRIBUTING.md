@@ -98,5 +98,7 @@ Notes
 - If you need to run only viz tests, install the `viz` extras and run
   `pytest -m viz`.
 
+- Local CI parity: the repo provides a local stacked-checks runner `scripts/local_checks.py` and a `make local-checks` Makefile target that mirror CI checks. When adding, removing, or changing CI workflows under `.github/workflows/`, update `scripts/local_checks.py` (and `Makefile` if needed) so contributors can reproduce CI behaviour locally. Mark heavy checks as optional in the local runner to avoid slowing developer loops.
+
 If you add or remove optional dependencies, please update `pyproject.toml`,
 `evaluation/requirements.txt`, and `evaluation/environment.yml` accordingly.

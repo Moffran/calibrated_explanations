@@ -690,7 +690,9 @@ def test_collection_metadata_runtime_telemetry_failure():
         None,
         bins=None,
     )
-    collection.explanations = [DummyExplanation(0, np.array([0.1, 0.2, 0.3]), 0.1, (0.0, 1.0), [1, 2, 3])]
+    collection.explanations = [
+        DummyExplanation(0, np.array([0.1, 0.2, 0.3]), 0.1, (0.0, 1.0), [1, 2, 3])
+    ]
     collection.calibrated_explainer = BrokenFrozen()
     metadata = collection.collection_metadata()
     assert metadata["mode"] == "classification"

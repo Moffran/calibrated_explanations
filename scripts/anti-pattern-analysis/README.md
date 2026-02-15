@@ -8,7 +8,7 @@ This directory contains scripts for identifying and analyzing anti-patterns in t
 - `scan_private_usage.py`: Scans the test suite for private member calls and categorizes them using the data from `analyze_private_methods.py`.
 - `summarize_analysis.py`: Provides a high-level summary of the anti-pattern status, highlighting top targets for remediation.
 - `generate_triage_report.py`: Generates a prioritized triage report (`test_only_private_refs.csv` and `triage_next_actions.md`) by combining definition and usage data.
-- `detect_test_anti_patterns.py`: AST-based scanner for ADR-030 test quality checks (anti-patterns, missing assertions, and determinism risks) with baseline/no-new-violations enforcement (`--check`, `--rebaseline`).
+- `detect_test_anti_patterns.py`: AST-based scanner for ADR-030 test quality checks (anti-patterns, missing assertions, determinism risks, and excessive mocking without outcome assertions) with baseline/no-new-violations enforcement (`--check`, `--rebaseline`).
 - `find_shared_helpers.py`: Specifically identifies private test helpers that are defined in multiple files (Pattern 2 candidates).
 
 ## Workflow

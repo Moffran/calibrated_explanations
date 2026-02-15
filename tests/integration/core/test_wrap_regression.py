@@ -1,4 +1,3 @@
-
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name, duplicate-code, unused-import, too-many-instance-attributes
 """
 Module for testing the WrapCalibratedExplainer class for regression tasks.
@@ -25,6 +24,8 @@ from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 import os
 from tests.helpers.explainer_utils import generic_test
+
+pytestmark = pytest.mark.integration
 
 
 class TestWrapRegressionExplainer:

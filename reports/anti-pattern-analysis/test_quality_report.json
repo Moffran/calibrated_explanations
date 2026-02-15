@@ -3,183 +3,12 @@
   "findings": [
     {
       "file": "integration/test_initializer_parallel_end_to_end.py",
-      "file_hash": "sha256:9619dbf7c1f0b68f453a78fb8aa0fe08d966a0355267334eef355c613fba3b51",
+      "file_hash": "sha256:443145a6d0b5cb8266a2961fc70236585fb50e9c36a3cb98321375656d5f7fc3",
       "id": "sha256:c3d84ca5d8d0871e609ad2adaf61700f109a3fe7daf4e8c83ef4a2515c6927fb",
       "is_new": false,
       "line": 71,
       "pattern": "time/network usage without patching",
       "snippet": "t0 = time.perf_counter()"
-    },
-    {
-      "file": "integration/test_initializer_parallel_end_to_end.py",
-      "file_hash": "sha256:9619dbf7c1f0b68f453a78fb8aa0fe08d966a0355267334eef355c613fba3b51",
-      "id": "sha256:f2f1d85a21cd5d3bf9e3c5f87e6b3ec489d02dd40873c0131c7c446dddec6854",
-      "is_new": false,
-      "line": 86,
-      "pattern": "test without assertion",
-      "snippet": "def test_windows_spawn_semantics():"
-    },
-    {
-      "file": "integration/core/test_explanation_coverage.py",
-      "file_hash": "sha256:e628ed0fb9ce726e2d8269329ac686b460609ce8da41ee2104db32dee107ffdc",
-      "id": "sha256:a8cbd2f961abb37806c1cac6d32e0e38ae3a17929f8f715a124f4e33a5e65ebb",
-      "is_new": false,
-      "line": 27,
-      "pattern": "test without assertion",
-      "snippet": "def test_explanation_plots_smoke():"
-    },
-    {
-      "file": "integration/core/test_framework.py",
-      "file_hash": "sha256:73ebf06281b5cc408486e3e49336a31867aba58202b74bf187e407aa5f71e442",
-      "id": "sha256:41110f6e59dbfc15b320e5e73b47970c600b1fcf04e842a472663ed7038ef82c",
-      "is_new": false,
-      "line": 40,
-      "pattern": "test without assertion",
-      "snippet": "def test_explanation_functions_classification(binary_dataset):"
-    },
-    {
-      "file": "integration/core/test_framework.py",
-      "file_hash": "sha256:73ebf06281b5cc408486e3e49336a31867aba58202b74bf187e407aa5f71e442",
-      "id": "sha256:a55781c985dd74541aef9f3c6a9344769eec55436dd44c1f19108e75dca1e2ec",
-      "is_new": false,
-      "line": 83,
-      "pattern": "test without assertion",
-      "snippet": "def test_explanation_functions_regression(regression_dataset):"
-    },
-    {
-      "file": "integration/core/test_preprocessor_wiring.py",
-      "file_hash": "sha256:61eebe256f98feae8f4702a1b2b6445aae5fb566f2e70de986150e12895f8c66",
-      "id": "sha256:fdd0eff2e0271413e131df5e892e0546924d509ed256bcf0f9640837448b3dfb",
-      "is_new": false,
-      "line": 61,
-      "pattern": "test without assertion",
-      "snippet": "def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):"
-    },
-    {
-      "file": "unit/test_fallback_enforcement.py",
-      "file_hash": "sha256:e32a022e1e533c30eff61d4a32c2276ef92bb2564aa172e087c5ef1bedf983bf",
-      "id": "sha256:b3f7cbc734242442a0afac2a1d1f16247a56dcef9d2c6bf23cc3586a53eb7fce",
-      "is_new": false,
-      "line": 90,
-      "pattern": "test without assertion",
-      "snippet": "def test_should_pass_when_no_fallback_warnings(self):"
-    },
-    {
-      "file": "unit/test_fallback_enforcement.py",
-      "file_hash": "sha256:e32a022e1e533c30eff61d4a32c2276ef92bb2564aa172e087c5ef1bedf983bf",
-      "id": "sha256:1cd6aef85357e9f72f6e19b47c0ccc5a3b9a1c8bb3b5936c5f37836c310c5f06",
-      "is_new": false,
-      "line": 162,
-      "pattern": "test without assertion",
-      "snippet": "def test_should_allow_non_fallback_warnings(self):"
-    },
-    {
-      "file": "unit/test_prune_quality_backfill.py",
-      "file_hash": "sha256:ae99472113d5b2249cb63185308024b1c98767ed833e30ed4b8fe5b0d48aa1ee",
-      "id": "sha256:2606a70098ee035bcbcf52884f10204b93eec6a4b5f056b6f62112b9f93b8afd",
-      "is_new": false,
-      "line": 31,
-      "pattern": "test without assertion",
-      "snippet": "def test_plot_alternative_resolves_explainer_from_container_paths() -> None:"
-    },
-    {
-      "file": "unit/cache/test_cache_fallback.py",
-      "file_hash": "sha256:42b7fa8677408261a95593bb0b4251ac417304b82466d0d935290c650c72cb1c",
-      "id": "sha256:f4d9df853f8edb0a27dd8edb664020c32dd3fd8fb4ca74273c7c9dd64ad1d781",
-      "is_new": false,
-      "line": 51,
-      "pattern": "time/network usage without patching",
-      "snippet": "time.sleep(0.2)"
-    },
-    {
-      "file": "unit/core/test_calibrated_explainer_coverage.py",
-      "file_hash": "sha256:3944f4249cd6e85f128b2ab742ad2bf034a0583e151ddc65c4a90aaf101652b1",
-      "id": "sha256:3aa7054ca56a626c7e35bd1c2b91e377cb70e06704fdc9344d377acf2807bf12",
-      "is_new": false,
-      "line": 70,
-      "pattern": "test without assertion",
-      "snippet": "def test_preloads(mock_learner, mock_plugin_manager):"
-    },
-    {
-      "file": "unit/core/test_interval_regressor.py",
-      "file_hash": "sha256:67e4213f96e05cdd13b272f5e3a1fc478d81315f762a8ff8468eafb76f5d85b0",
-      "id": "sha256:6b72a7537e169e63b1d42e442f62939ad4a309b5333cc5bcaabdb562bff991d3",
-      "is_new": false,
-      "line": 136,
-      "pattern": "test without assertion",
-      "snippet": "def test_initializer_flattens_calibration_arrays(monkeypatch):"
-    },
-    {
-      "file": "unit/core/test_reject.py",
-      "file_hash": "sha256:2ad68604455791f0ebb7669f509d2f3a0bf1782bf744263ffbffa9727b65fd8e",
-      "id": "sha256:f746e900d8b2e6a48c49a074cf363e5a5340a8518db4de4780f863e7afc181f3",
-      "is_new": false,
-      "line": 191,
-      "pattern": "test without assertion",
-      "snippet": "def test_per_call_overrides_explainer_default(self):"
-    },
-    {
-      "file": "unit/core/test_removal_batch_replacements.py",
-      "file_hash": "sha256:fd9578b81c353de9bbff38d8e2ebe8feb96543a3b0c7a7a73089ddcc308d561c",
-      "id": "sha256:4fa456ab27a98c43941bea2739d4e1c2721095447501b268c3985ebd8726f0a0",
-      "is_new": false,
-      "line": 230,
-      "pattern": "test without assertion",
-      "snippet": "def test_validate_interval_calibrator_untrusted_plugin_skips_protocol_checks() -> None:"
-    },
-    {
-      "file": "unit/core/test_validation_unit.py",
-      "file_hash": "sha256:f53b50bf33b747b8eb369fe11ad69fa778c1123673ee34c9b108e062558e392b",
-      "id": "sha256:230d66ac62fd3b24c68c9acc59e4daf5cba8d132b64d9d39c15bec54db4c81c5",
-      "is_new": false,
-      "line": 151,
-      "pattern": "test without assertion",
-      "snippet": "def test_validate_inputs_adr002_class_labels_parameter():"
-    },
-    {
-      "file": "unit/core/explain/test_explain_orchestrator.py",
-      "file_hash": "sha256:59c0cc59c3ddd66de31cad6c5f5aed7dcaae87f4c4102369046f10666bd9d6c9",
-      "id": "sha256:53cfe3bff070616e9f8ed8bdf86bb9cb59e369a4e4f1d35bac7ed7e477581d0c",
-      "is_new": false,
-      "line": 36,
-      "pattern": "test without assertion",
-      "snippet": "def test_initialize_chains(orchestrator, mock_explainer):"
-    },
-    {
-      "file": "unit/core/explain/test_helpers.py",
-      "file_hash": "sha256:b84d7ff7a828a021a727afb884852f828e67d9247b696e8fcb9966107e0f9161",
-      "id": "sha256:3ba7d363074baf869325e43e2a3c2cd86e495d58891e02313a6e1f12908d9f6a",
-      "is_new": false,
-      "line": 26,
-      "pattern": "test without assertion",
-      "snippet": "def test_compute_weight_delta_fallback_path_for_object_values(self):"
-    },
-    {
-      "file": "unit/core/explain/test_parallel_runtime.py",
-      "file_hash": "sha256:13a3dd9a456bc0bdcd9d494caadd039c6c955f460747cca5471a624202c9dd26",
-      "id": "sha256:e669a2f4e602241102e2cd759c298aebf100240253d1fdcbcef1d5e9bb009712",
-      "is_new": false,
-      "line": 11,
-      "pattern": "test without assertion",
-      "snippet": "def test_cancel_delegates_to_executor(self):"
-    },
-    {
-      "file": "unit/core/prediction/test_interval_registry_coverage.py",
-      "file_hash": "sha256:65ddae5631bd0f073e90d72edf071f19e31a424922950fce365cb1161c8b9089",
-      "id": "sha256:1b57ae68271c9f1c74c993f09deb7fe6e1528de306787d91f1a4996ed62ae7bc",
-      "is_new": false,
-      "line": 49,
-      "pattern": "test without assertion",
-      "snippet": "def test_update_regression(registry, mock_explainer):"
-    },
-    {
-      "file": "unit/core/prediction/test_orchestrator_coverage.py",
-      "file_hash": "sha256:847a62019f08f2dd7b4cda2c5824a774e7132eecf1ff2b0ec76e0326e2cdcc02",
-      "id": "sha256:f2c02e47b1b086ba9443e894eba0530392c18e45c07a1a728295fd045bb133c2",
-      "is_new": false,
-      "line": 33,
-      "pattern": "test without assertion",
-      "snippet": "def test_initialize_chains(orchestrator, mock_explainer):"
     },
     {
       "file": "unit/core/prediction/test_orchestrator_coverage.py",
@@ -200,126 +29,18 @@
       "snippet": "def test_validate_prediction_result_empty(orchestrator):"
     },
     {
-      "file": "unit/explanations/test_batched_parity.py",
-      "file_hash": "sha256:3cb8af9b8a77a2b50b60f005d1f55a7cc61aad5ff5070efa4960d1e568499225",
-      "id": "sha256:4dcff1c768388bd7497c68e2bd74611b08e872f3e19256d55174395432ff225b",
-      "is_new": false,
-      "line": 39,
-      "pattern": "test without assertion",
-      "snippet": "def test_batched_factual_parity(binary_dataset):"
-    },
-    {
-      "file": "unit/explanations/test_batched_parity.py",
-      "file_hash": "sha256:3cb8af9b8a77a2b50b60f005d1f55a7cc61aad5ff5070efa4960d1e568499225",
-      "id": "sha256:7fd19fb96c776cddfad3e954a980636215dc4066318856917384727a963fc5a2",
-      "is_new": false,
-      "line": 76,
-      "pattern": "test without assertion",
-      "snippet": "def test_batched_alternative_parity(binary_dataset):"
-    },
-    {
       "file": "unit/explanations/test_conjunction_hardening.py",
       "file_hash": "sha256:c74c5df55168b4f3cb58f9656f8bb29e2dfa88c5215e2341e686abab6f51e8d3",
-      "id": "sha256:6f786b5ead23247f511b3b123fa6dcab744e173546c27889196a3a04abfedd22",
+      "id": "sha256:a37d283cf0e0620f4f7b91968a942eab3e36ca7769237e40f6a5112d449d2771",
       "is_new": false,
-      "line": 11,
-      "pattern": "test without assertion",
-      "snippet": "def test_fallback_to_legacy(monkeypatch):"
-    },
-    {
-      "file": "unit/explanations/test_conjunction_parity.py",
-      "file_hash": "sha256:7df0f21e768445c2d93c1734f05bb00c3307af97b96b96dba826fb190c7475dc",
-      "id": "sha256:0c305965b62c8c312b2395fd4b45618858d4e415708b14b1ccc2e9432a8e4fdb",
-      "is_new": false,
-      "line": 107,
-      "pattern": "test without assertion",
-      "snippet": "def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):"
-    },
-    {
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:b3df92b1972ca9480dc933a0318f710b6ab1f9e1e2a3adc6b7973cc3e73cf1c3",
-      "id": "sha256:5a798cea26cce306836452217f76b8e33d33eae65e7242d9fd6274ea3aa185f4",
-      "is_new": false,
-      "line": 139,
-      "pattern": "test without assertion",
-      "snippet": "def test_probabilistic_threshold_and_label_variants(tmp_path):"
-    },
-    {
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:b3df92b1972ca9480dc933a0318f710b6ab1f9e1e2a3adc6b7973cc3e73cf1c3",
-      "id": "sha256:c71aaa9f95cb85c01ac28f276a6a7034360e099e4f2edac5c8111a1e1ef9f0ce",
-      "is_new": false,
-      "line": 336,
-      "pattern": "test without assertion",
-      "snippet": "def test_regression_returns_without_output():"
-    },
-    {
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:b3df92b1972ca9480dc933a0318f710b6ab1f9e1e2a3adc6b7973cc3e73cf1c3",
-      "id": "sha256:e5c937644848daa17495ac5e409712cd2e2f0f9d6f248e248b79a30b645b36db",
-      "is_new": false,
-      "line": 407,
-      "pattern": "test without assertion",
-      "snippet": "def test_alternative_returns_without_output():"
-    },
-    {
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:b3df92b1972ca9480dc933a0318f710b6ab1f9e1e2a3adc6b7973cc3e73cf1c3",
-      "id": "sha256:0c7d622f3a1278e7de6568520f9bb9051b3bfa10a8b3da8871aaa7698571bda3",
-      "is_new": false,
-      "line": 470,
-      "pattern": "test without assertion",
-      "snippet": "def test_triangular_returns_without_output():"
-    },
-    {
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:b3df92b1972ca9480dc933a0318f710b6ab1f9e1e2a3adc6b7973cc3e73cf1c3",
-      "id": "sha256:252483d667d75014a38fa12c7a68c3f15fde52de5ac4374bf4b66b2126306399",
-      "is_new": false,
-      "line": 588,
-      "pattern": "test without assertion",
-      "snippet": "def test_plot_proba_triangle_helper():"
-    },
-    {
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:b3df92b1972ca9480dc933a0318f710b6ab1f9e1e2a3adc6b7973cc3e73cf1c3",
-      "id": "sha256:95dba631d2550f80e8d8e60957e619fdccdf81929a6bbf7419483c91e4107879",
-      "is_new": false,
-      "line": 625,
-      "pattern": "test without assertion",
-      "snippet": "def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):"
-    },
-    {
-      "file": "unit/perf/test_cache.py",
-      "file_hash": "sha256:ece93fcb95e0eea9398604c690e040b1fc0b79e6a303878bc566eb692214712d",
-      "id": "sha256:f97a891fe90474386043f73ee3dcd0bcc49e2212eebb045f6b34b04c3ac21b41",
-      "is_new": false,
-      "line": 62,
-      "pattern": "time/network usage without patching",
-      "snippet": "time.sleep(0.15)"
-    },
-    {
-      "file": "unit/plugins/test_builtins_coverage.py",
-      "file_hash": "sha256:287dadd21c5b51063abfde34ce704be24a7c8149736e898bc49fe6a019a72055",
-      "id": "sha256:3fd948bc9eb63480406eac6fe17954178dbbbea43ec74fa92d13484cfefb9366",
-      "is_new": false,
-      "line": 72,
-      "pattern": "test without assertion",
-      "snippet": "def test_collection_to_batch(self):"
-    },
-    {
-      "file": "unit/viz/test_plotspec_schema_and_primitives.py",
-      "file_hash": "sha256:a9c9d9036c9cbe9cb168e358b6180468778ecd870f3fb551b69f66f6e2f349ae",
-      "id": "sha256:63b3e9c3d91fbb22e6f1afc454ee67d6cfb115f342d7be712b51f9c2241d7933",
-      "is_new": false,
-      "line": 69,
-      "pattern": "test without assertion",
-      "snippet": "def test_example_plotspec_validates():"
+      "line": 32,
+      "pattern": "excessive mocking without outcome assertions",
+      "snippet": "f.rank_features = MagicMock(return_value=[0, 1])"
     }
   ],
-  "generated_at": "2026-02-14T22:42:12+00:00",
+  "generated_at": "2026-02-15T14:46:16+00:00",
   "new_violations": 0,
   "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
-  "total_findings": 35,
+  "total_findings": 4,
   "version": 1
 }

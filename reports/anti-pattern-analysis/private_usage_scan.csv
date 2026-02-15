@@ -1,2 +1,1 @@
 file,line,name,type,category,pattern,message
-tests\test_quality_fail.py,17,_invalidate_calibration_summaries,attribute,Category A: Internal Logic Testing,Pattern 1 (Internal Logic Fix),Defined in calibrated_explanations\core\calibrated_explainer.py

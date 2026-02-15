@@ -1,7 +1,3 @@
-import os
-
-import pytest
-
 from calibrated_explanations.plugins import registry as reg
 
 

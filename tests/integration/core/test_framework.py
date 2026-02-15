@@ -22,6 +22,8 @@ from crepes.extras import DifficultyEstimator
 
 from tests.helpers.model_utils import get_classification_model, get_regression_model
 
+pytestmark = pytest.mark.integration
+
 
 def test_is_notebook_false():
     """Tests `is_notebook` returns False outside notebooks, with or without IPython installed."""
@@ -63,7 +65,14 @@ def test_explanation_functions_classification(binary_dataset):
         factual_explanations.as_lime()
     # factual_explanations.as_shap() # generates an insane number of warnings
 
-    de = DifficultyEstimator().fit(X=x_prop_train, y=y_prop_train, scaler=True)
+    try:
+        de = DifficultyEstimator().fit(X=x_prop_train, y=y_prop_train, scaler=True)
+    except PermissionError as exc:
+        if getattr(exc, "winerror", None) == 5:
+            pytest.skip(
+                "Skipping DifficultyEstimator multiprocessing path on restricted Windows environment."
+            )
+        raise
     ce = CalibratedExplainer(model, x_cal, y_cal, difficulty_estimator=de, verbose=True)
     ce.predict(x_test)
     ce.predict_proba(x_test)

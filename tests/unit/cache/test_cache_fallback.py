@@ -47,12 +47,16 @@ def test_cache_fallback_logic(monkeypatch):
             # Test TTLCache fallback
             cache_ttl = fallback_ttl(maxsize=10, ttl=0.1)
             cache_ttl["a"] = 1
-            # Avoid real sleep during tests
-            monkeypatch.setattr(time, "sleep", lambda _s: None)
             assert cache_ttl["a"] == 1
-            time.sleep(0.2)
+
+            # Simulate time advancement so TTL expiry is deterministic without real sleep
+            orig_time = time.time
+            base = orig_time()
+            monkeypatch.setattr(time, "time", lambda: base + 0.5)
             with pytest.raises(KeyError):
                 _ = cache_ttl["a"]
+            # Restore real time for subsequent operations
+            monkeypatch.setattr(time, "time", orig_time)
 
             cache_ttl["b"] = 2
             assert cache_ttl.get("b") == 2

@@ -87,3 +87,50 @@ def test_random_unseeded():
     third = run_detector(tmp_path, updated, ["--check"])
     assert third.returncode == 1
     assert "New violations versus baseline" in third.stdout
+
+
+def test_detector_flags_excessive_mocking_without_outcome_assertions(tmp_path: Path) -> None:
+    content = """
+from unittest.mock import patch
+
+def test_over_mocked_only_mock_assertions():
+    with patch("os.getcwd") as getcwd:
+        pass
+    with patch("os.listdir") as listdir:
+        pass
+    with patch("os.path.exists") as exists:
+        pass
+
+    getcwd.assert_not_called()
+    listdir.assert_not_called()
+    exists.assert_not_called()
+"""
+    result = run_detector(tmp_path, content, [])
+    assert result.returncode == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    patterns = [entry["pattern"] for entry in report["findings"]]
+    assert "excessive mocking without outcome assertions" in patterns
+
+
+def test_detector_does_not_flag_excessive_mocking_when_outcome_asserted(tmp_path: Path) -> None:
+    content = """
+from unittest.mock import patch
+
+def test_over_mocked_with_outcome_assertion():
+    with patch("os.getcwd") as getcwd:
+        pass
+    with patch("os.listdir") as listdir:
+        pass
+    with patch("os.path.exists") as exists:
+        pass
+
+    getcwd.assert_not_called()
+    listdir.assert_not_called()
+    exists.assert_not_called()
+    assert True
+"""
+    result = run_detector(tmp_path, content, [])
+    assert result.returncode == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    patterns = [entry["pattern"] for entry in report["findings"]]
+    assert "excessive mocking without outcome assertions" not in patterns
