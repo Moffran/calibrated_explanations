@@ -258,7 +258,7 @@
   {
     "file": "src\\calibrated_explanations\\core\\explain\\_computation.py",
     "lines_covered": 291,
-    "mean_count": 37.729,
+    "mean_count": 37.732,
     "median_count": 55.0,
     "max_count": 58,
     "over_threshold": 204
@@ -306,7 +306,7 @@
   {
     "file": "src\\calibrated_explanations\\core\\explain\\feature_task.py",
     "lines_covered": 473,
-    "mean_count": 29.262,
+    "mean_count": 29.264,
     "median_count": 12.0,
     "max_count": 57,
     "over_threshold": 235
@@ -498,7 +498,7 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\explanation.py",
     "lines_covered": 2059,
-    "mean_count": 17.625,
+    "mean_count": 17.621,
     "median_count": 9.0,
     "max_count": 100,
     "over_threshold": 671

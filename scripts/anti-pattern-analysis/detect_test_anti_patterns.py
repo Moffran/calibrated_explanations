@@ -96,6 +96,7 @@ class Finding:
     """Represents a single anti-pattern finding."""
 
     path: Path
+    stable_file: str
     line: int
     pattern: str
     snippet: str
@@ -104,15 +105,14 @@ class Finding:
     @property
     def finding_id(self) -> str:
         """Return deterministic fingerprint for this finding."""
-        payload = f"{self.path.as_posix()}|{self.line}|{self.pattern}|{self.snippet}"
+        payload = f"{self.stable_file}|{self.line}|{self.pattern}|{self.snippet}"
         return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def to_record(self, root: Path | None = None) -> dict[str, object]:
         """Return a JSON-safe report record."""
-        relative_file = _to_relative(self.path, root)
         return {
             "id": self.finding_id,
-            "file": relative_file,
+            "file": self.stable_file,
             "line": self.line,
             "pattern": self.pattern,
             "snippet": self.snippet,
@@ -289,8 +289,9 @@ class FunctionProbe(ast.NodeVisitor):
 class AntiPatternVisitor(ast.NodeVisitor):
     """AST visitor that records anti-pattern findings."""
 
-    def __init__(self, path: Path, file_hash: str) -> None:
+    def __init__(self, path: Path, stable_file: str, file_hash: str) -> None:
         self.path = path
+        self.stable_file = stable_file
         self.file_hash = file_hash
         self.findings: list[Finding] = []
         self.lines = path.read_text(encoding="utf-8").splitlines()
@@ -445,7 +446,7 @@ class AntiPatternVisitor(ast.NodeVisitor):
     def _record(self, node: ast.AST, pattern: str) -> None:
         lineno = getattr(node, "lineno", 0)
         snippet = self._format_snippet(lineno)
-        self.findings.append(Finding(self.path, lineno, pattern, snippet, self.file_hash))
+        self.findings.append(Finding(self.path, self.stable_file, lineno, pattern, snippet, self.file_hash))
 
     def _format_snippet(self, lineno: int) -> str:
         if 1 <= lineno <= len(self.lines):
@@ -517,8 +518,9 @@ def scan_tests(tree_root: Path) -> list[Finding]:
         if not path.is_relative_to(tree_root):
             continue
         resolved = path.resolve()
+        stable_file = _to_relative(resolved, tree_root)
         file_hash = _hash_file(resolved)
-        visitor = AntiPatternVisitor(resolved, file_hash=file_hash)
+        visitor = AntiPatternVisitor(resolved, stable_file=stable_file, file_hash=file_hash)
         try:
             visitor.visit(ast.parse(resolved.read_text(encoding="utf-8")))
         except SyntaxError as exc:
@@ -570,7 +572,11 @@ def write_json_report(
         "findings": records,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def load_baseline(path: Path) -> dict[str, dict[str, object]]:
@@ -616,7 +622,11 @@ def write_baseline(path: Path, findings: Iterable[Finding], root: Path) -> None:
         "entries": sorted(entries, key=lambda item: (str(item["file"]), int(item["line"]), str(item["pattern"]))),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def print_rebaseline_diff(old: dict[str, dict[str, object]], findings: list[Finding], root: Path) -> None:

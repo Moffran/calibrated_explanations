@@ -50,6 +50,7 @@ class Finding:
     """A single marker hygiene finding."""
 
     path: Path
+    stable_file: str
     line: int
     pattern: str
     detail: str
@@ -58,15 +59,14 @@ class Finding:
     @property
     def finding_id(self) -> str:
         """Return deterministic fingerprint for this finding."""
-        payload = f"{self.path.as_posix()}|{self.line}|{self.pattern}|{self.detail}"
+        payload = f"{self.stable_file}|{self.line}|{self.pattern}|{self.detail}"
         return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def to_record(self, root: Path | None = None) -> dict[str, object]:
         """Return a JSON-safe report record."""
-        relative = _to_relative(self.path, root)
         return {
             "id": self.finding_id,
-            "file": relative,
+            "file": self.stable_file,
             "line": self.line,
             "pattern": self.pattern,
             "detail": self.detail,
@@ -176,6 +176,7 @@ def scan_marker_hygiene(tests_root: Path) -> list[Finding]:
             continue
         resolved = path.resolve()
         file_hash = _hash_file(resolved)
+        stable_file = _to_relative(resolved, tests_root)
         try:
             tree = ast.parse(resolved.read_text(encoding="utf-8"))
         except SyntaxError:
@@ -190,6 +191,7 @@ def scan_marker_hygiene(tests_root: Path) -> list[Finding]:
             findings.append(
                 Finding(
                     resolved,
+                    stable_file,
                     1,
                     "layer-marker-mismatch",
                     "File in unit/ directory but has pytestmark = integration",
@@ -205,6 +207,7 @@ def scan_marker_hygiene(tests_root: Path) -> list[Finding]:
                 findings.append(
                     Finding(
                         resolved,
+                        stable_file,
                         1,
                         "missing-viz-marker",
                         "File imports matplotlib but lacks @pytest.mark.viz or pytestmark",
@@ -227,6 +230,7 @@ def scan_marker_hygiene(tests_root: Path) -> list[Finding]:
                 findings.append(
                     Finding(
                         resolved,
+                        stable_file,
                         node.lineno,
                         "layer-marker-mismatch",
                         f"Test {node.name} in unit/ dir marked @pytest.mark.integration",
@@ -240,6 +244,7 @@ def scan_marker_hygiene(tests_root: Path) -> list[Finding]:
                 findings.append(
                     Finding(
                         resolved,
+                        stable_file,
                         node.lineno,
                         "missing-integration-marker",
                         f"Test {node.name} in integration/ dir lacks "
@@ -297,7 +302,11 @@ def write_baseline(path: Path, findings: list[Finding], root: Path) -> None:
         ),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def write_json_report(
@@ -321,7 +330,11 @@ def write_json_report(
         "findings": records,
     }
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def print_rebaseline_diff(

@@ -181,8 +181,9 @@ def main():
     }
 
     if args.json_report:
-        with open(args.json_report, "w", encoding="utf-8") as f:
+        with open(args.json_report, "w", encoding="utf-8", newline="\n") as f:
             json.dump(report, f, indent=2)
+            f.write("\n")
         print(f"Report written to {args.json_report}")
 
     if args.check and any_violation:

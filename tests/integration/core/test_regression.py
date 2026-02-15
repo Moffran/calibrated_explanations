@@ -40,6 +40,8 @@ from crepes.extras import DifficultyEstimator
 from tests.helpers.model_utils import get_regression_model
 from tests.helpers.explainer_utils import initiate_explainer
 
+pytestmark = pytest.mark.integration
+
 
 def safe_fit_difficulty(x, y, scaler=True):
     """Try to fit the crepes DifficultyEstimator; fall back to a light stub when data is too small.

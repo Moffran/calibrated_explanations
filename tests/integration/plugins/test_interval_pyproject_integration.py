@@ -14,6 +14,10 @@ from calibrated_explanations.plugins import (
     mark_interval_trusted,
 )
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 
 class MockIntervalCalibrator:
     """Mock calibrator implementing ClassificationIntervalCalibrator protocol."""

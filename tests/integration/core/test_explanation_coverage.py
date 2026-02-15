@@ -8,6 +8,9 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from calibrated_explanations import CalibratedExplainer
 
+# Module-level markers: integration tests and visualization
+pytestmark = [pytest.mark.integration, pytest.mark.viz]
+
 
 def setup_classification():
     """Helper to setup a simple classification scenario."""

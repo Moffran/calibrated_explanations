@@ -7,6 +7,7 @@ from calibrated_explanations.explanations.reject import (
 )
 
 # Skip this integration test if heavy deps are not installed
+pytestmark = pytest.mark.integration
 pytest.importorskip("crepes")
 pytest.importorskip("sklearn")
 

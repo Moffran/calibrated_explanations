@@ -17,6 +17,8 @@ import pytest
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
 from calibrated_explanations.core import wrap_explainer as we
 
+pytestmark = pytest.mark.integration
+
 
 class DummyPreprocessor:
     def __init__(self, factor: float = 2.0) -> None:

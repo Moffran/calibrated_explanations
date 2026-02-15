@@ -4,12 +4,16 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import train_test_split
 
+import pytest
+
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import (
     RejectCalibratedExplanations,
     RejectResult,
 )
+
+pytestmark = pytest.mark.integration
 
 
 def train_classification(n_classes=2, seed=0):

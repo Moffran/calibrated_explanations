@@ -4,6 +4,9 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.api.config import ExplainerBuilder
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def test_explain_factual_respects_per_instance_top_k():

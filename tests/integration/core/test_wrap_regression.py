@@ -17,12 +17,13 @@ Functions:
 """
 
 import numpy as np
+import os
 import pytest
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
-import os
+
 from tests.helpers.explainer_utils import generic_test
 
 pytestmark = pytest.mark.integration

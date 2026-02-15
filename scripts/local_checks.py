@@ -28,6 +28,13 @@ def _python_cmd(*args: str) -> list[str]:
     return [sys.executable, *args]
 
 
+def _is_pre_commit_step(step: Step) -> bool:
+    if not step.command:
+        return False
+    head = Path(step.command[0]).name.lower()
+    return head in {"pre-commit", "pre-commit.exe"}
+
+
 def _mypy_targets() -> list[str]:
     candidates = [
         "src/calibrated_explanations/core/exceptions.py",
@@ -43,7 +50,7 @@ def _run_step(step: Step) -> int:
     print(f"$ {cmd_text}")
     env = dict(os.environ)
     env.setdefault("PRE_COMMIT_HOME", str(Path(".cache/pre-commit").resolve()))
-    if step.name == "Pre-commit":
+    if _is_pre_commit_step(step):
         result = subprocess.run(step.command, check=False, env=env, capture_output=True, text=True)
         if result.stdout:
             print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
@@ -53,16 +60,12 @@ def _run_step(step: Step) -> int:
         result = subprocess.run(step.command, check=False, env=env)
     if result.returncode == 0:
         return 0
-    # Pre-commit may fail due to network fetch issues or because hooks modified
-    # files (end-of-file-fixer, formatting hooks). Treat these as non-fatal
-    # for the stacked local runner so users can apply fixes and continue.
-    if step.name == "Pre-commit":
+    # Pre-commit may fail due to network fetch issues in restricted/offline
+    # environments. Keep that case non-fatal so local stacks can still run.
+    if _is_pre_commit_step(step):
         combined = f"{getattr(result, 'stdout', '')}\n{getattr(result, 'stderr', '')}"
         if _is_network_fetch_failure(combined):
             print("Pre-commit could not fetch hook repos (offline/network-restricted). Continuing with stacked checks.")
-            return 0
-        if "files were modified" in combined.lower() or "files were modified by this hook" in combined.lower():
-            print("Pre-commit hooks modified files (auto-fix). Please re-run pre-commit or commit the changes. Continuing with stacked checks.")
             return 0
     if step.optional:
         print(f"Step failed but is advisory/optional: {step.name} (rc={result.returncode})")
@@ -83,7 +86,11 @@ def _run_micro_benchmark() -> int:
         env=env,
     )
     Path("tests/benchmarks").mkdir(parents=True, exist_ok=True)
-    Path("tests/benchmarks/micro_current.json").write_text(output.stdout, encoding="utf-8")
+    Path("tests/benchmarks/micro_current.json").write_text(
+        output.stdout,
+        encoding="utf-8",
+        newline="\n",
+    )
     if output.returncode != 0:
         if output.stderr:
             print(output.stderr)
@@ -346,6 +353,10 @@ def main() -> int:
             return rc
 
     if args.skip_main:
+        final_precommit = Step("Pre-commit (final verification)", ["pre-commit", "run", "--all-files"])
+        rc = _run_step(final_precommit)
+        if rc != 0:
+            return rc
         print("\nLocal checks completed (PR scope).")
         return 0
 
@@ -357,6 +368,11 @@ def main() -> int:
         rc = _run_step(step)
         if rc != 0:
             return rc
+
+    final_precommit = Step("Pre-commit (final verification)", ["pre-commit", "run", "--all-files"])
+    rc = _run_step(final_precommit)
+    if rc != 0:
+        return rc
 
     print("\nLocal checks completed (PR + main scope).")
     return 0

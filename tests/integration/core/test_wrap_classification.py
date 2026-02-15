@@ -31,6 +31,8 @@ from sklearn.linear_model import LogisticRegression
 
 from tests.helpers.explainer_utils import generic_test
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture(autouse=True)
 def setup_teardown():

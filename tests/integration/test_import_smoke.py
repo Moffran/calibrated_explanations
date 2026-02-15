@@ -1,4 +1,7 @@
 import importlib
+import pytest
+
+pytestmark = pytest.mark.integration
 
 
 def test_import_smoke_modules():

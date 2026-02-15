@@ -1,6 +1,6 @@
 import os
-import time
 import pickle
+import time
 import numpy as np
 import pytest
 
@@ -10,6 +10,8 @@ try:
     from sklearn.dummy import DummyClassifier
 except Exception:  # pragma: no cover - sklearn required in test env
     DummyClassifier = None
+
+pytestmark = pytest.mark.integration
 
 
 def make_small_explainer():

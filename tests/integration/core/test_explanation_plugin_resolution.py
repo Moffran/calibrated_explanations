@@ -23,6 +23,8 @@ from tests.helpers.model_utils import (
 )
 from tests.helpers.plugin_utils import cleanup_plugin
 
+pytestmark = pytest.mark.integration
+
 
 class ClassificationOnlyFactualPlugin(LegacyFactualExplanationPlugin):
     """Legacy factual adapter constrained to classification tasks."""

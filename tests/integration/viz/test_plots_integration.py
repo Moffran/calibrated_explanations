@@ -10,7 +10,7 @@ import calibrated_explanations.viz.plots as _plots
 from tests.helpers.explainer_utils import FakeExplanation
 
 
-pytestmark = pytest.mark.viz
+pytestmark = [pytest.mark.integration, pytest.mark.viz]
 
 
 def testplot_alternative_thresholded_writes_file(tmp_path):
