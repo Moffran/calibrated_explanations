@@ -132,13 +132,12 @@ def testpredict_impl_regression_probabilistic_crepes_error_reraise(orchestrator,
 
 def test_validate_prediction_result_none(orchestrator):
     result = (None, None, None, None)
-    # Should not raise or warn
-    orchestrator.validate_prediction_result(result)
+    assert orchestrator.validate_prediction_result(result) is None
 
 
 def test_validate_prediction_result_empty(orchestrator):
     result = (np.array([]), np.array([]), np.array([]), None)
-    orchestrator.validate_prediction_result(result)
+    assert orchestrator.validate_prediction_result(result) is None
 
 
 def testpredict_impl_unknown_mode(orchestrator, mock_explainer):

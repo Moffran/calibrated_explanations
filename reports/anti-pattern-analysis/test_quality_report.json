@@ -1,46 +1,9 @@
 {
   "baseline_path": ".github/test-quality-baseline.json",
-  "findings": [
-    {
-      "file": "integration/test_initializer_parallel_end_to_end.py",
-      "file_hash": "sha256:443145a6d0b5cb8266a2961fc70236585fb50e9c36a3cb98321375656d5f7fc3",
-      "id": "sha256:c3d84ca5d8d0871e609ad2adaf61700f109a3fe7daf4e8c83ef4a2515c6927fb",
-      "is_new": false,
-      "line": 71,
-      "pattern": "time/network usage without patching",
-      "snippet": "t0 = time.perf_counter()"
-    },
-    {
-      "file": "unit/core/prediction/test_orchestrator_coverage.py",
-      "file_hash": "sha256:847a62019f08f2dd7b4cda2c5824a774e7132eecf1ff2b0ec76e0326e2cdcc02",
-      "id": "sha256:6edc0e15d479baa2afc9ba6aefb81c4ca2fc02a5185f8b8eee573c4a8a4b827a",
-      "is_new": false,
-      "line": 133,
-      "pattern": "test without assertion",
-      "snippet": "def test_validate_prediction_result_none(orchestrator):"
-    },
-    {
-      "file": "unit/core/prediction/test_orchestrator_coverage.py",
-      "file_hash": "sha256:847a62019f08f2dd7b4cda2c5824a774e7132eecf1ff2b0ec76e0326e2cdcc02",
-      "id": "sha256:4dff81fa893d057ebafbc6f0441ac3158cdb8d37ddc9db6646f229b9768f3479",
-      "is_new": false,
-      "line": 139,
-      "pattern": "test without assertion",
-      "snippet": "def test_validate_prediction_result_empty(orchestrator):"
-    },
-    {
-      "file": "unit/explanations/test_conjunction_hardening.py",
-      "file_hash": "sha256:c74c5df55168b4f3cb58f9656f8bb29e2dfa88c5215e2341e686abab6f51e8d3",
-      "id": "sha256:a37d283cf0e0620f4f7b91968a942eab3e36ca7769237e40f6a5112d449d2771",
-      "is_new": false,
-      "line": 32,
-      "pattern": "excessive mocking without outcome assertions",
-      "snippet": "f.rank_features = MagicMock(return_value=[0, 1])"
-    }
-  ],
-  "generated_at": "2026-02-15T14:46:16+00:00",
+  "findings": [],
+  "generated_at": "2026-02-15T19:36:17+00:00",
   "new_violations": 0,
   "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
-  "total_findings": 4,
+  "total_findings": 0,
   "version": 1
 }

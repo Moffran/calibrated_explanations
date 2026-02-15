@@ -389,15 +389,6 @@
       "pattern": "missing-integration-marker"
     },
     {
-      "detail": "Test test_windows_spawn_semantics in integration/ dir lacks @pytest.mark.integration (module or function level)",
-      "file": "integration/test_initializer_parallel_end_to_end.py",
-      "file_hash": "sha256:443145a6d0b5cb8266a2961fc70236585fb50e9c36a3cb98321375656d5f7fc3",
-      "id": "sha256:1738a59a055e4cc115fdb5bb4cd08afe722f8425bf408a989e7b1995c0f9c194",
-      "is_new": false,
-      "line": 86,
-      "pattern": "missing-integration-marker"
-    },
-    {
       "detail": "Test test_mass_imports in integration/ dir lacks @pytest.mark.integration (module or function level)",
       "file": "integration/test_mass_imports.py",
       "file_hash": "sha256:611c75d990cf322fa14fca39a7c668db9497b48ee261bfaa5b07a2464bb52139",
@@ -470,9 +461,9 @@
       "pattern": "missing-viz-marker"
     }
   ],
-  "generated_at": "2026-02-15T14:46:17+00:00",
+  "generated_at": "2026-02-15T19:36:19+00:00",
   "new_violations": 0,
   "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
-  "total_findings": 52,
+  "total_findings": 51,
   "version": 1
 }

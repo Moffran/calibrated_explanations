@@ -139,6 +139,8 @@ def main() -> int:
             "ADR-030 anti-pattern detector",
             _python_cmd(
                 "scripts/anti-pattern-analysis/detect_test_anti_patterns.py",
+                "--tests-dir",
+                "tests",
                 "--check",
                 "--output",
                 "reports/anti-pattern-analysis/test_anti_pattern_report.csv",
@@ -171,8 +173,7 @@ def main() -> int:
         )
 
     # Additional PR-scoped CI checks mirrored from workflows
-    pr_steps.extend(
-        [
+    optional_pr_steps: list[Step] = [
             # Deprecation-sensitive tests (treat deprecations as errors)
             Step(
                 "Deprecation-sensitive tests",
@@ -217,14 +218,16 @@ def main() -> int:
                 ["sphinx-build", "-b", "linkcheck", "docs", "docs/_build/linkcheck"],
                 optional=True,
             ),
-            # Examples smoke tests (advisory)
+        ]
+    if Path("tests/examples").exists():
+        optional_pr_steps.append(
             Step(
                 "Examples smoke",
                 ["pytest", "-q", "tests/examples"],
                 optional=True,
-            ),
-        ]
-    )
+            )
+        )
+    pr_steps.extend(optional_pr_steps)
 
     main_steps: list[Step] = [
         # Mirror the dependency audit and docs/notebook checks present on CI
@@ -282,6 +285,8 @@ def main() -> int:
             "ADR-030 anti-pattern detector (main)",
             _python_cmd(
                 "scripts/anti-pattern-analysis/detect_test_anti_patterns.py",
+                "--tests-dir",
+                "tests",
                 "--check",
                 "--output",
                 "reports/anti-pattern-analysis/test_anti_pattern_report.csv",

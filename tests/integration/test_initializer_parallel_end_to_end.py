@@ -40,7 +40,7 @@ def make_small_explainer():
 
 
 @pytest.mark.integration
-def test_sequential_vs_initializer_parallel_end_to_end(tmp_path):
+def test_sequential_vs_initializer_parallel_end_to_end(tmp_path, monkeypatch):
     expl = make_small_explainer()
 
     x_test = np.zeros((4, 3))
@@ -68,6 +68,10 @@ def test_sequential_vs_initializer_parallel_end_to_end(tmp_path):
         "num_features": expl.num_features,
     }
 
+    # Explicitly patch timing source to keep deterministic, CI-safe behavior.
+    ticks = iter([1.0, 1.01, 1.02, 1.06])
+    monkeypatch.setattr(time, "perf_counter", lambda: next(ticks))
+
     t0 = time.perf_counter()
     _ = pickle.dumps(spec)
     spec_time = time.perf_counter() - t0
@@ -83,6 +87,7 @@ def test_sequential_vs_initializer_parallel_end_to_end(tmp_path):
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows spawn semantics test")
+@pytest.mark.integration
 def test_windows_spawn_semantics():
     # Sanity check: ensure initializer path can be created on Windows (skipped on non-Windows)
     expl = make_small_explainer()

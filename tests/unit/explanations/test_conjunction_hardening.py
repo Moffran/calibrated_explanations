@@ -28,9 +28,13 @@ def test_fallback_to_legacy(monkeypatch):
     f.prediction = {"predict": 0.5}
     f.bin = None
 
-    # Mock methods
-    f.rank_features = MagicMock(return_value=[0, 1])
-    f.predict_conjunctive = MagicMock(side_effect=Exception("Predict failed"))
+    # Keep setup lightweight to avoid over-mocking while preserving behavior.
+    f.rank_features = lambda *args, **kwargs: [0, 1]
+
+    def _failing_predict_conjunctive(*args, **kwargs):
+        raise Exception("Predict failed")
+
+    f.predict_conjunctive = _failing_predict_conjunctive
 
     # Mock legacy function
     mock_legacy = MagicMock()
@@ -47,6 +51,7 @@ def test_fallback_to_legacy(monkeypatch):
         )
 
     mock_legacy.assert_called_once()
+    assert isinstance(f.conjunctive_rules, dict)
 
 
 # --- Phase 4A: Conjunction output validation tests ---

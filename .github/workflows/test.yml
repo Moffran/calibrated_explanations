@@ -99,7 +99,7 @@ jobs:
           python scripts/perf/micro_bench_perf.py > tests/benchmarks/micro_current.json
       - name: Compare micro metrics with baseline thresholds
         run: |
-          python scripts/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
+          python scripts/perf/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
 
   anti-pattern-audit:
     name: Anti-pattern Audit
