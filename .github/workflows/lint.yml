@@ -61,7 +61,7 @@ jobs:
           python scripts/quality/check_adr002_compliance.py
       - name: Upload lint artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lint-reports
           path: |

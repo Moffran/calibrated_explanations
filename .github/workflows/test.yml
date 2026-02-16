@@ -122,7 +122,7 @@ jobs:
           if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
             echo "Anti-pattern violations detected:"; cat reports/test_anti_pattern_report.csv; exit 1; fi
       - name: Upload anti-pattern report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: anti-pattern-report
           path: reports/test_anti_pattern_report.csv
