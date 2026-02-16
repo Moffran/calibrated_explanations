@@ -73,12 +73,12 @@ transformers executed:
 ```python
 telemetry = explainer.runtime_telemetry
 pre = telemetry.get("preprocessor", {})
-print(pre.get("identifier"))
-print(pre.get("pipeline"))
+print(pre.get("transformer_id"))
+print(pre.get("mapping_snapshot"))
 ```
 
-Each entry includes the pipeline identifier, fitted attributes (when safe to
-expose), and whether auto-encoding is enabled.
+Each entry includes the transformer identifier, mapping snapshot (when
+available), and whether auto-encoding is enabled.
 
 ## Tips
 

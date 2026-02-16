@@ -37,7 +37,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 **ADR-006 – Plugin Trust Model:** Completed. Trust/deny controls, diagnostics, and governance logging are in place; appendix updated to reflect closure.
 **ADR-007 – PlotSpec Abstraction:** Completed. `PlotSpec` IR, schema/versioning, validation, and headless export support implemented; registry extensions are optional.
 **ADR-008 – Explanation Domain Model:** Domain-model hardening targeted for v0.11.0; ADR clarifies domain/legacy round-trips and remaining structured metadata gaps.
-**ADR-009 – Input Preprocessing and Mapping Policy:** Automation and preprocessing persistence align to v0.11.0; appendix lists outstanding enforcement gaps.
+**ADR-009 – Input Preprocessing and Mapping Policy:** Completed in v0.11.0 with auto-encoding activation, unseen-category policy enforcement, mapping export/import helpers, and telemetry/docs alignment.
 **ADR-010 - Core vs Evaluation Split:** Completed for extras; remaining action is to verify core-only installs do not require matplotlib at import time and align CI accordingly (target v0.11.0).
 **ADR-011 – Deprecation and Migration Policy:** Completed: central `deprecate()` helper and migration guidance implemented; CI gates added for deprecation enforcement.
 **ADR-012 - Documentation & Gallery Build Policy:** Accepted. Notebooks/gallery rendering clarified as advisory on mainline and blocking on release branches; remaining work (executed notebooks + runtime ceilings) targeted for v0.11.0.
@@ -512,10 +512,10 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Automatic encoding pathway unimplemented | 5 | 4 | 20 | `auto_encode='auto'` has no effect; built-in encoder never runs. |
-| 2 | Unseen-category policy ignored | 4 | 3 | 12 | Configuration captures the flag but no enforcement occurs during inference. |
-| 3 | DataFrame/dtype validation incomplete | 3 | 3 | 9 | Validators coerce to NumPy without inspecting categorical columns, missing ADR-required diagnostics. |
-| 4 | Telemetry docs mismatch emitted fields | 2 | 2 | 4 | Documentation references `identifier` while runtime payload exposes `transformer_id`. |
+| 1 | Automatic encoding pathway unimplemented | 0 | 0 | 0 | **COMPLETED (2026-02-16).** `auto_encode='auto'` now activates deterministic built-in encoding when no user preprocessor is supplied. |
+| 2 | Unseen-category policy ignored | 0 | 0 | 0 | **COMPLETED (2026-02-16).** Inference-time unseen categories now enforce `unseen_category_policy` (`error` raises actionable `ValidationError`; `ignore` maps to sentinel output). |
+| 3 | DataFrame/dtype validation incomplete | 0 | 0 | 0 | **COMPLETED (2026-02-16).** Non-numeric inputs without preprocessing now raise actionable diagnostics that direct users to `auto_encode='auto'` or a custom preprocessor. |
+| 4 | Telemetry docs mismatch emitted fields | 0 | 0 | 0 | **COMPLETED (2026-02-16).** Telemetry docs now use `preprocessor.transformer_id` to match runtime payloads. |
 
 ## ADR-010 – Optional Dependency Split
 

@@ -30,7 +30,7 @@ persisting or routing the metadata to other systems:
 | ``plot_fallbacks`` | Ordered tuple of fallbacks when the primary plot style failed. |
 | ``uncertainty`` | Calibrated prediction details (representation, bounds, percentiles, optional threshold metadata). |
 | ``rules`` | Rule payload for each explanation, including per-feature uncertainty. |
-| ``preprocessor`` | Snapshot of preprocessing metadata (identifier, pipeline steps, auto-encoding flags). |
+| ``preprocessor`` | Snapshot of preprocessing metadata (``transformer_id``, mapping snapshot, auto-encoding flags). |
 | ``interval_dependencies`` | Interval plugin hints passed through explanation metadata. |
 
 Additional fields may appear as the schema evolves; always inspect
@@ -44,7 +44,7 @@ ADR-009 preprocessor snapshot:
 ```python
 payload = explainer.runtime_telemetry
 pre = payload.get("preprocessor", {})
-print(pre.get("identifier"))  # e.g. sklearn.compose:ColumnTransformer
+print(pre.get("transformer_id"))  # e.g. sklearn.compose:ColumnTransformer
 print(pre.get("auto_encode"))
 ```
 

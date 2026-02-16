@@ -912,6 +912,19 @@ class WrapCalibratedExplainer:
             return None
         return metadata
 
+    def _raise_non_numeric_without_preprocessor(self, x: Any, stage: str) -> None:
+        """Raise actionable diagnostics for non-numeric inputs when preprocessing is disabled."""
+        auto_encode_flag = self._normalize_auto_encode_flag()
+        if auto_encode_flag in {"auto", "true"}:
+            return
+        x_arr = x.to_numpy() if hasattr(x, "to_numpy") else x
+        dtype = getattr(x_arr, "dtype", None)
+        if dtype is not None and getattr(dtype, "kind", None) not in {"b", "i", "u", "f", "c"}:
+            raise ValidationError(
+                f"Non-numeric input detected during {stage} while preprocessing is disabled. "
+                "Set auto_encode='auto' or provide a preprocessor capable of handling categorical values."
+            )
+
     def _pre_fit_preprocess(self, x: Any) -> Any:
         """Fit the configured preprocessor and return transformed x.
 
@@ -919,7 +932,27 @@ class WrapCalibratedExplainer:
         fit/transform, we use it. No built-in auto encoding is activated here.
         """
         try:
+            # When no preprocessor is provided and auto_encode is enabled,
+            # activate the small deterministic builtin encoder.
             if self._preprocessor is None:
+                # ADR-009 default mode: auto_encode='auto' activates deterministic
+                # built-in encoding when no user preprocessor is provided.
+                if self._normalize_auto_encode_flag() in {"auto", "true"}:
+                    try:
+                        from calibrated_explanations.preprocessing.builtin_encoder import (
+                            BuiltinEncoder,
+                        )
+
+                        encoder = BuiltinEncoder(unseen_policy=self._unseen_category_policy)
+                        x_out = encoder.fit_transform(x)
+                        # attach encoder so export/import helpers can find it
+                        self._preprocessor = encoder
+                        self._pre_fitted = True
+                        return x_out
+                    except Exception as exc:  # pragma: no cover - defensive
+                        self._logger.warning("Builtin encoder failed; bypassing: %s", exc)
+                        return x
+                self._raise_non_numeric_without_preprocessor(x, stage="fit")
                 return x
             if hasattr(self._preprocessor, "fit_transform"):
                 x_out = self._preprocessor.fit_transform(x)
@@ -932,6 +965,8 @@ class WrapCalibratedExplainer:
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             exc = sys.exc_info()[1]
+            if isinstance(exc, ValidationError):
+                raise
             self._logger.warning("Preprocessor failed; proceeding without it: %s", exc)
             return x
 
@@ -939,12 +974,20 @@ class WrapCalibratedExplainer:
         """Transform x with the fitted preprocessor if available."""
         try:
             if self._preprocessor is None or not self._pre_fitted:
+                self._raise_non_numeric_without_preprocessor(x, stage=stage)
                 return x
             return self._preprocessor.transform(x)
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             exc = sys.exc_info()[1]
+            pre = getattr(self, "_preprocessor", None)
+            unseen_policy = str(getattr(pre, "unseen_policy", "")).lower()
+            if isinstance(exc, KeyError) and unseen_policy == "error":
+                raise ValidationError(
+                    f"Unseen category encountered during {stage} preprocessing. "
+                    "Set unseen_category_policy='ignore' or import/export a stable mapping."
+                ) from exc
             self._logger.warning("Preprocessor transform failed at %s; bypassing: %s", stage, exc)
             return x
 

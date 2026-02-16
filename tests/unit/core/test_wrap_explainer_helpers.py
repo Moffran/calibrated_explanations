@@ -365,6 +365,7 @@ def test_pre_fit_preprocess_without_configured_preprocessor(
     wrapper: WrapCalibratedExplainer,
 ) -> None:
     data = np.array([[1, 2]])
+    wrapper.auto_encode = False
     wrapper.preprocessor = None
 
     assert wrapper.pre_fit_preprocess(data) is data
@@ -407,3 +408,65 @@ def test_export_and_import_preprocessor_mapping_applies_when_possible(
     new_map = {"feature": {"a": 42}}
     wrapper.import_preprocessor_mapping(new_map)
     assert pre.mapping_ == new_map
+
+
+def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(wrapper: WrapCalibratedExplainer) -> None:
+    wrapper.preprocessor = None
+    wrapper.auto_encode = "auto"
+    data = np.array([["a"], ["b"], ["a"]], dtype=object)
+
+    transformed = wrapper.pre_fit_preprocess(data)
+
+    assert wrapper.pre_fitted is True
+    assert wrapper.preprocessor is not None
+    assert wrapper.preprocessor.__class__.__name__ == "BuiltinEncoder"
+    assert transformed.shape == (3, 1)
+    assert transformed.dtype.kind == "f"
+
+
+def test_unseen_category_policy_error_raises_validation_error(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    cfg = SimpleNamespace(
+        model=PredictOnlyLearner(),
+        threshold=0.5,
+        low_high_percentiles=(5, 95),
+        preprocessor=None,
+        auto_encode="auto",
+        unseen_category_policy="error",
+    )
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
+    wrapper.pre_fit_preprocess(np.array([["a"], ["b"]], dtype=object))
+
+    with pytest.raises(ValidationError, match="Unseen category encountered"):
+        wrapper.maybe_preprocess_for_inference(np.array([["c"]], dtype=object))
+
+
+def test_unseen_category_policy_ignore_returns_sentinel_value(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    cfg = SimpleNamespace(
+        model=PredictOnlyLearner(),
+        threshold=0.5,
+        low_high_percentiles=(5, 95),
+        preprocessor=None,
+        auto_encode="auto",
+        unseen_category_policy="ignore",
+    )
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
+    wrapper.pre_fit_preprocess(np.array([["a"], ["b"]], dtype=object))
+
+    transformed = wrapper.maybe_preprocess_for_inference(np.array([["c"]], dtype=object))
+
+    assert transformed.shape == (1, 1)
+    assert transformed[0, 0] == -1.0
+
+
+def test_non_numeric_input_without_preprocessing_raises_actionable_error(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    wrapper.preprocessor = None
+    wrapper.auto_encode = False
+
+    with pytest.raises(ValidationError, match="Set auto_encode='auto'"):
+        wrapper.pre_fit_preprocess(np.array([["x"]], dtype=object))

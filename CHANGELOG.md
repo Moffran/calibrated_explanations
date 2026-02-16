@@ -6,7 +6,7 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
 ### Added
-- **Preprocessor mapping persistence helpers:** Added `export_preprocessor_mapping` and `import_preprocessor_mapping` helpers to `WrapCalibratedExplainer` to support ADR-009 mapping export/import, plus unit tests covering export/import and stash fallback behaviour. This provides a best-effort, non-invasive persistence surface for preprocessor mappings and improves telemetry visibility.
+- **ADR-009 task closure:** Completed preprocessing automation and mapping persistence hardening. `auto_encode='auto'` now activates the deterministic built-in encoder, unseen-category enforcement now raises actionable `ValidationError` when policy is `error` (with `ignore` preserving sentinel behavior), non-numeric input without preprocessing now fails with actionable guidance, and mapping export/import helpers remain available with telemetry visibility.
 - **ADR-030 test-quality enforcement upgrade:** Extended `detect_test_anti_patterns.py` with assertion and determinism checks, added baseline support (`--check` / `--rebaseline`), committed `.github/test-quality-baseline.json`, and wired reports into CI artifacts.
 - **Pattern 1 hardening:** Emptied `.github/private_member_allowlist.json` and enforced private-member scanning in CI (`scan_private_usage.py --check`) with current violations remediated.
 
