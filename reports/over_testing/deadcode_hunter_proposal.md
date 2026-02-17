@@ -1,52 +1,19 @@
-# DEADCODE-HUNTER PROPOSAL (Updated 2026-02-13)
+# Deadcode Hunter Proposal (2026-02-17)
 
-## Summary
+## Evidence
+- `python scripts/anti-pattern-analysis/analyze_private_methods.py src tests --output reports/anti-pattern-analysis/private_method_analysis.csv`
+- `python scripts/over_testing/gap_analyzer.py --line-csv reports/over_testing/line_coverage_counts.csv --threshold 10`
 
-No high-confidence dead production code was identified.
+## Findings
+- Private-method patterns:
+  - `Pattern 3 (Completely Dead)`: 1 (`_missing_` in `src/calibrated_explanations/explanations/reject.py`).
+  - `Pattern 1`: 2.
+  - `Pattern 2`: 3.
+- Largest uncovered contiguous blocks include:
+  - `core/wrap_explainer.py:1303-1335` (33)
+  - `parallel/parallel.py:341-370` (30)
+  - `viz/narrative_plugin.py:519-543` (25)
 
-## Private Method Analysis
-
-Source: `reports/anti-pattern-analysis/private_method_analysis.csv`
-
-Pattern counts:
-- `Consistent (Internal Only)`: 348
-- `Pattern 2 (Local Test Helper)`: 2 (both in tests)
-- `Pattern 3 (Completely Dead)`: 1
-
-Pattern 3 symbol:
-- `_missing_` in `src/calibrated_explanations/explanations/reject.py`
-
-Assessment:
-- `_missing_` is an Enum protocol hook and can be invoked by Enum construction semantics.
-- Treat as **not removable** without semantic regression risk.
-
-## Large Gap Review
-
-From `reports/over_testing/gaps.csv`, largest uncovered blocks remain in runtime-heavy modules:
-- `plotting.py` large segments (e.g. 1029-1486)
-- `core/calibrated_explainer.py` large segments
-- `core/explain/orchestrator.py` and helpers
-- `explanations/explanation.py` and `explanations/explanations.py`
-
-Classification:
-- Predominantly **untested or under-tested production behavior**, not dead code.
-- Reachability is supported by active public APIs and plugin paths.
-
-## Lazy/Dynamic Reachability Check
-
-Given active plugin registry usage and lazy imports (`__init__.py`), apparent low-hit branches can still be reachable through:
-- plugin discovery/overrides
-- optional integrations
-- conditional runtime branches
-
-No removal candidates in `src/` are recommended from deadcode perspective this iteration.
-
-## Recommendations
-
-1. Keep dead-code removal scope minimal (none in `src/` this round).
-2. Prioritize behavioral tests for high-miss modules (see test-creator proposal) over source deletion.
-3. If dead-code cleanup is required, only consider symbols with both:
-- zero src usage,
-- and no protocol/dynamic dispatch role.
-
-Current confirmed dead/removable findings in source: **none**.
+## Recommendation
+- Treat only `_missing_` as near-term dead-code candidate.
+- Classify large uncovered blocks as test gaps first, not deletion targets.

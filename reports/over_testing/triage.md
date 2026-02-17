@@ -7,7 +7,7 @@
 - **lines**: reports\over_testing\line_coverage_counts.csv
 - **blocks**: reports\over_testing\block_coverage_counts.csv
 - **coverage_file**: .coverage.over_testing
-- **contexts_detected**: 1037
+- **contexts_detected**: 1125
 - **context_regex**: None
 - **source_root**: src\calibrated_explanations
 - **over_testing_threshold**: 20
@@ -17,91 +17,91 @@
 
 | File | Over ratio | Max count | Over-threshold lines | Lines covered |
 | --- | --- | --- | --- | --- |
-| src\calibrated_explanations\core\explain\sequential.py | 0.8271 | 40 | 110 | 133 |
-| src\calibrated_explanations\core\explain\_computation.py | 0.6564 | 44 | 191 | 291 |
-| src\calibrated_explanations\core\explain\feature_task.py | 0.5501 | 43 | 236 | 429 |
-| src\calibrated_explanations\calibration\summaries.py | 0.5323 | 89 | 33 | 62 |
-| src\calibrated_explanations\core\explain\orchestrator.py | 0.5207 | 107 | 352 | 676 |
-| src\calibrated_explanations\core\explain\_shared.py | 0.4975 | 42 | 99 | 199 |
-| src\calibrated_explanations\core\prediction\validation.py | 0.4828 | 85 | 14 | 29 |
-| src\calibrated_explanations\plugins\base.py | 0.4727 | 37 | 26 | 55 |
-| src\calibrated_explanations\core\prediction\orchestrator.py | 0.4625 | 108 | 222 | 480 |
-| src\calibrated_explanations\plugins\manager.py | 0.4469 | 118 | 202 | 452 |
-| src\calibrated_explanations\core\explain\parallel_runtime.py | 0.3591 | 40 | 65 | 181 |
-| src\calibrated_explanations\core\explain\_helpers.py | 0.3556 | 42 | 48 | 135 |
-| src\calibrated_explanations\explanations\_conjunctions.py | 0.3399 | 50 | 52 | 153 |
-| src\calibrated_explanations\utils\discretizers.py | 0.3376 | 48 | 53 | 157 |
-| src\calibrated_explanations\calibration\state.py | 0.3333 | 98 | 16 | 48 |
+| src\calibrated_explanations\core\explain\sequential.py | 0.8271 | 54 | 110 | 133 |
+| src\calibrated_explanations\core\explain\_computation.py | 0.701 | 58 | 204 | 291 |
+| src\calibrated_explanations\explanations\_conjunctions.py | 0.634 | 64 | 97 | 153 |
+| src\calibrated_explanations\calibration\summaries.py | 0.5806 | 129 | 36 | 62 |
+| src\calibrated_explanations\core\explain\orchestrator.py | 0.5436 | 148 | 368 | 677 |
+| src\calibrated_explanations\core\explain\_shared.py | 0.4975 | 55 | 99 | 199 |
+| src\calibrated_explanations\core\explain\feature_task.py | 0.4968 | 57 | 235 | 473 |
+| src\calibrated_explanations\core\prediction\validation.py | 0.4828 | 125 | 14 | 29 |
+| src\calibrated_explanations\plugins\base.py | 0.4727 | 38 | 26 | 55 |
+| src\calibrated_explanations\core\prediction\orchestrator.py | 0.4683 | 148 | 229 | 489 |
+| src\calibrated_explanations\plugins\manager.py | 0.4469 | 172 | 202 | 452 |
+| src\calibrated_explanations\utils\discretizers.py | 0.4167 | 61 | 65 | 156 |
+| src\calibrated_explanations\core\discretizer_config.py | 0.3663 | 62 | 37 | 101 |
+| src\calibrated_explanations\core\explain\parallel_runtime.py | 0.3591 | 53 | 65 | 181 |
+| src\calibrated_explanations\core\explain\_helpers.py | 0.3556 | 56 | 48 | 135 |
 
 ## Top hotspot lines
 
 | File | Line | Test count |
 | --- | --- | --- |
-| src\calibrated_explanations\utils\exceptions.py | 33 | 191 |
-| src\calibrated_explanations\utils\exceptions.py | 34 | 191 |
-| src\calibrated_explanations\utils\helper.py | 72 | 134 |
-| src\calibrated_explanations\utils\helper.py | 82 | 134 |
-| src\calibrated_explanations\utils\helper.py | 83 | 134 |
-| src\calibrated_explanations\utils\helper.py | 73 | 133 |
-| src\calibrated_explanations\utils\helper.py | 95 | 133 |
-| src\calibrated_explanations\utils\helper.py | 100 | 133 |
-| src\calibrated_explanations\utils\helper.py | 103 | 133 |
-| src\calibrated_explanations\utils\helper.py | 106 | 133 |
-| src\calibrated_explanations\utils\helper.py | 108 | 133 |
-| src\calibrated_explanations\utils\helper.py | 111 | 133 |
-| src\calibrated_explanations\utils\helper.py | 114 | 132 |
-| src\calibrated_explanations\plugins\registry.py | 108 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 109 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 110 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 111 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 112 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 114 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 119 | 122 |
-| src\calibrated_explanations\plugins\registry.py | 120 | 122 |
-| src\calibrated_explanations\logging.py | 72 | 120 |
-| src\calibrated_explanations\logging.py | 73 | 120 |
-| src\calibrated_explanations\logging.py | 74 | 120 |
-| src\calibrated_explanations\logging.py | 76 | 120 |
-| src\calibrated_explanations\logging.py | 77 | 120 |
-| src\calibrated_explanations\logging.py | 79 | 120 |
-| src\calibrated_explanations\logging.py | 75 | 119 |
-| src\calibrated_explanations\logging.py | 80 | 119 |
-| src\calibrated_explanations\plugins\manager.py | 88 | 118 |
+| src\calibrated_explanations\utils\exceptions.py | 34 | 223 |
+| src\calibrated_explanations\utils\exceptions.py | 35 | 223 |
+| src\calibrated_explanations\utils\helper.py | 72 | 192 |
+| src\calibrated_explanations\utils\helper.py | 82 | 192 |
+| src\calibrated_explanations\utils\helper.py | 83 | 192 |
+| src\calibrated_explanations\utils\helper.py | 73 | 191 |
+| src\calibrated_explanations\utils\helper.py | 95 | 191 |
+| src\calibrated_explanations\utils\helper.py | 100 | 191 |
+| src\calibrated_explanations\utils\helper.py | 103 | 191 |
+| src\calibrated_explanations\utils\helper.py | 106 | 191 |
+| src\calibrated_explanations\utils\helper.py | 108 | 191 |
+| src\calibrated_explanations\utils\helper.py | 111 | 191 |
+| src\calibrated_explanations\utils\helper.py | 114 | 191 |
+| src\calibrated_explanations\utils\helper.py | 192 | 177 |
+| src\calibrated_explanations\utils\helper.py | 194 | 177 |
+| src\calibrated_explanations\utils\helper.py | 195 | 177 |
+| src\calibrated_explanations\utils\helper.py | 196 | 177 |
+| src\calibrated_explanations\utils\helper.py | 200 | 177 |
+| src\calibrated_explanations\plugins\manager.py | 88 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 89 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 92 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 93 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 96 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 97 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 98 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 99 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 102 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 103 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 104 | 172 |
+| src\calibrated_explanations\plugins\manager.py | 107 | 172 |
 
 ## Top hotspot blocks
 
 | File | Start | End | Test count | Length |
 | --- | --- | --- | --- | --- |
-| src\calibrated_explanations\utils\exceptions.py | 33 | 34 | 191 | 2 |
-| src\calibrated_explanations\utils\helper.py | 72 | 72 | 134 | 1 |
-| src\calibrated_explanations\utils\helper.py | 82 | 83 | 134 | 2 |
-| src\calibrated_explanations\utils\helper.py | 73 | 73 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 95 | 95 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 100 | 100 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 103 | 103 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 106 | 106 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 108 | 108 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 111 | 111 | 133 | 1 |
-| src\calibrated_explanations\utils\helper.py | 114 | 114 | 132 | 1 |
-| src\calibrated_explanations\plugins\registry.py | 108 | 112 | 122 | 5 |
-| src\calibrated_explanations\plugins\registry.py | 114 | 114 | 122 | 1 |
-| src\calibrated_explanations\plugins\registry.py | 119 | 120 | 122 | 2 |
-| src\calibrated_explanations\logging.py | 72 | 74 | 120 | 3 |
-| src\calibrated_explanations\logging.py | 76 | 77 | 120 | 2 |
-| src\calibrated_explanations\logging.py | 79 | 79 | 120 | 1 |
-| src\calibrated_explanations\logging.py | 75 | 75 | 119 | 1 |
-| src\calibrated_explanations\logging.py | 80 | 80 | 119 | 1 |
-| src\calibrated_explanations\plugins\manager.py | 88 | 89 | 118 | 2 |
-| src\calibrated_explanations\plugins\manager.py | 92 | 93 | 118 | 2 |
-| src\calibrated_explanations\plugins\manager.py | 96 | 99 | 118 | 4 |
-| src\calibrated_explanations\plugins\manager.py | 102 | 104 | 118 | 3 |
-| src\calibrated_explanations\plugins\manager.py | 107 | 110 | 118 | 4 |
-| src\calibrated_explanations\plugins\manager.py | 113 | 115 | 118 | 3 |
-| src\calibrated_explanations\plugins\manager.py | 117 | 119 | 118 | 3 |
-| src\calibrated_explanations\plugins\manager.py | 121 | 123 | 118 | 3 |
-| src\calibrated_explanations\plugins\manager.py | 125 | 128 | 118 | 4 |
-| src\calibrated_explanations\plugins\manager.py | 130 | 132 | 118 | 3 |
-| src\calibrated_explanations\plugins\manager.py | 136 | 136 | 118 | 1 |
+| src\calibrated_explanations\utils\exceptions.py | 34 | 35 | 223 | 2 |
+| src\calibrated_explanations\utils\helper.py | 72 | 72 | 192 | 1 |
+| src\calibrated_explanations\utils\helper.py | 82 | 83 | 192 | 2 |
+| src\calibrated_explanations\utils\helper.py | 73 | 73 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 95 | 95 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 100 | 100 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 103 | 103 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 106 | 106 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 108 | 108 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 111 | 111 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 114 | 114 | 191 | 1 |
+| src\calibrated_explanations\utils\helper.py | 192 | 192 | 177 | 1 |
+| src\calibrated_explanations\utils\helper.py | 194 | 196 | 177 | 3 |
+| src\calibrated_explanations\utils\helper.py | 200 | 200 | 177 | 1 |
+| src\calibrated_explanations\plugins\manager.py | 88 | 89 | 172 | 2 |
+| src\calibrated_explanations\plugins\manager.py | 92 | 93 | 172 | 2 |
+| src\calibrated_explanations\plugins\manager.py | 96 | 99 | 172 | 4 |
+| src\calibrated_explanations\plugins\manager.py | 102 | 104 | 172 | 3 |
+| src\calibrated_explanations\plugins\manager.py | 107 | 110 | 172 | 4 |
+| src\calibrated_explanations\plugins\manager.py | 113 | 115 | 172 | 3 |
+| src\calibrated_explanations\plugins\manager.py | 117 | 119 | 172 | 3 |
+| src\calibrated_explanations\plugins\manager.py | 121 | 123 | 172 | 3 |
+| src\calibrated_explanations\plugins\manager.py | 125 | 128 | 172 | 4 |
+| src\calibrated_explanations\plugins\manager.py | 130 | 132 | 172 | 3 |
+| src\calibrated_explanations\plugins\manager.py | 136 | 136 | 172 | 1 |
+| src\calibrated_explanations\plugins\manager.py | 139 | 144 | 172 | 6 |
+| src\calibrated_explanations\plugins\manager.py | 147 | 149 | 172 | 3 |
+| src\calibrated_explanations\plugins\registry.py | 108 | 112 | 161 | 5 |
+| src\calibrated_explanations\plugins\registry.py | 114 | 114 | 161 | 1 |
+| src\calibrated_explanations\plugins\registry.py | 119 | 120 | 161 | 2 |
 
 ## Suggested process
 
