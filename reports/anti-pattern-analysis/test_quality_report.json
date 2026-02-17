@@ -1,7 +1,7 @@
 {
   "baseline_path": ".github/test-quality-baseline.json",
   "findings": [],
-  "generated_at": "2026-02-15T21:33:14+00:00",
+  "generated_at": "2026-02-17T17:51:02+00:00",
   "new_violations": 0,
   "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
   "total_findings": 0,

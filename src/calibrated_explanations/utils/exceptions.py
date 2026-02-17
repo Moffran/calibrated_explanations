@@ -20,6 +20,7 @@ __all__ = [
     "NotFittedError",
     "ConvergenceError",
     "SerializationError",
+    "IncompatibleStateError",
     "PlotPluginError",
     "explain_exception",
 ]
@@ -65,6 +66,10 @@ class ConvergenceError(CalibratedError):
 
 class SerializationError(CalibratedError):
     """Failed to serialize/deserialize explanation artifacts."""
+
+
+class IncompatibleStateError(SerializationError):
+    """Persisted state could not be loaded due to schema or checksum mismatch."""
 
 
 def explain_exception(e: Exception) -> str:

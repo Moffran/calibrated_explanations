@@ -410,7 +410,9 @@ def test_export_and_import_preprocessor_mapping_applies_when_possible(
     assert pre.mapping_ == new_map
 
 
-def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(wrapper: WrapCalibratedExplainer) -> None:
+def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
     wrapper.preprocessor = None
     wrapper.auto_encode = "auto"
     data = np.array([["a"], ["b"], ["a"]], dtype=object)

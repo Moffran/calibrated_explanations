@@ -1,8 +1,12 @@
+"""Deterministic categorical encoder with JSON-safe mapping snapshots."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
 
 import numpy as np
+
+from ..utils.exceptions import NotFittedError, ValidationError
 
 
 class BuiltinEncoder:
@@ -19,8 +23,9 @@ class BuiltinEncoder:
         self.unseen_policy = unseen_policy
         self.mapping_: Dict[str, List[Any]] | None = None
 
-    def fit(self, X: Any) -> "BuiltinEncoder":
-        arr = self._as_2d(X)
+    def fit(self, x: Any) -> "BuiltinEncoder":
+        """Learn per-column category mappings from input data."""
+        arr = self._as_2d(x)
         mapping: Dict[str, List[Any]] = {}
         for i, col in enumerate(arr.T):
             # numpy will produce object dtype for mixed types; use Python set
@@ -29,14 +34,16 @@ class BuiltinEncoder:
         self.mapping_ = mapping
         return self
 
-    def fit_transform(self, X: Any) -> Any:
-        self.fit(X)
-        return self.transform(X)
+    def fit_transform(self, x: Any) -> Any:
+        """Fit the encoder and return transformed values."""
+        self.fit(x)
+        return self.transform(x)
 
-    def transform(self, X: Any) -> Any:
-        arr = self._as_2d(X)
+    def transform(self, x: Any) -> Any:
+        """Map input categories to learned integer indices."""
+        arr = self._as_2d(x)
         if self.mapping_ is None:
-            raise ValueError("Encoder not fitted")
+            raise NotFittedError("Encoder not fitted")
         out = np.zeros_like(arr, dtype=float)
         for i, col in enumerate(arr.T):
             cats = self.mapping_.get(f"col_{i}", [])
@@ -48,19 +55,23 @@ class BuiltinEncoder:
                     if self.unseen_policy == "ignore":
                         out[j, i] = -1.0
                     else:
-                        raise KeyError(f"Unseen category {v_safe} in column {i}")
+                        raise ValidationError(f"Unseen category {v_safe} in column {i}")
         return out
 
     def get_mapping_snapshot(self) -> Dict[str, Any] | None:
+        """Return a shallow copy of the learned mapping."""
         return dict(self.mapping_) if self.mapping_ is not None else None
 
     def set_mapping(self, mapping: Dict[str, Any]) -> None:
+        """Load a mapping produced by ``get_mapping_snapshot``."""
         # Accepts plain dicts produced by get_mapping_snapshot
-        self.mapping_ = {str(k): list(v) for k, v in mapping.items()} if mapping is not None else None
+        self.mapping_ = (
+            {str(k): list(v) for k, v in mapping.items()} if mapping is not None else None
+        )
 
     @staticmethod
-    def _as_2d(X: Any) -> np.ndarray:
-        arr = np.asarray(X)
+    def _as_2d(x: Any) -> np.ndarray:
+        arr = np.asarray(x)
         if arr.ndim == 1:
             arr = arr.reshape(-1, 1)
         return arr
@@ -74,5 +85,5 @@ class BuiltinEncoder:
             return v
         try:
             return str(v)
-        except Exception:
+        except (TypeError, ValueError):
             return repr(v)
