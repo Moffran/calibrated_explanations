@@ -69,7 +69,6 @@ class TestBuiltinsCoverage:
         with pytest.raises(ValidationError, match="Prediction invariant violated"):
             bridge.predict("X", mode="regression", task="regression")
 
-
     def test_legacy_interval_calibrator_plugin_create_missing_explainer(self):
         """Test LegacyIntervalCalibratorPlugin create method errors."""
         plugin = LegacyIntervalCalibratorPlugin()

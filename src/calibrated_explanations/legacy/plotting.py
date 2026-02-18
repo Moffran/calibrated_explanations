@@ -637,6 +637,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         Only applicable to regression.
     """
     show = kwargs.get("show", True)
+    if y is not None:
+        y = np.asarray(y)
     # If we're not showing and matplotlib is not available, treat as no-op.
     if not show and plt is None:
         return

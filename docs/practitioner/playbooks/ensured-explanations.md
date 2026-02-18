@@ -2,6 +2,20 @@
 
 Ensured explanations actively reduce epistemic uncertainty in alternative explanations, helping you find more reliable intervention recommendations.
 
+> **Audience:** Practitioner
+
+```{admonition} Guarantees & Assumptions
+:class: important
+
+- Ensured explanations are a *filtering and ranking framework* over existing
+    alternative rules.
+- Ensured filtering prefers alternatives with **narrower uncertainty
+    intervals** than the base prediction interval.
+- The calibration guarantees behind uncertainty intervals require that the
+    calibration set and your deployment queries are exchangeable / distribution
+    matched.
+```
+
 ## What are Ensured Explanations?
 
 Standard alternative explanations may have wide uncertainty intervals when the calibration data doesn't cover the proposed scenario well. **Ensured explanations** use strategies to:
@@ -28,45 +42,51 @@ Ensured explanations focus on **reducing epistemic uncertainty** by identifying 
 
 ## Usage Pattern
 
-### Basic Filtering by Interval Width
+### Core filtering API
+
+The ensured framework is exposed directly on the alternative explanation objects.
 
 ```python
-# Generate alternatives with uncertainty
 alternatives = explainer.explore_alternatives(x_test)
+alt0 = alternatives[0]
 
-# Define acceptable uncertainty threshold for your domain
-max_acceptable_width = 0.15  # Example: 15% probability range
+# Ensured: alternatives with narrower uncertainty intervals than the base
+ensured = alt0.ensured_explanations()
 
-# Filter for "ensured" alternatives with narrow uncertainty
-for instance_alts in alternatives:
-    for alt in instance_alts:
-        interval_width = alt.uncertainty_high - alt.uncertainty_low
-        if interval_width < max_acceptable_width:
-            print(f"Ensured alternative: {alt}")
-            print(f"  Uncertainty width: {interval_width:.3f}")
+# Super: alternatives reinforcing the base prediction
+super_alts = alt0.super_explanations()
+
+# Semi/Counter: alternatives opposing the prediction
+semi_alts = alt0.semi_explanations()
+counter_alts = alt0.counter_explanations()
+
+# Pareto: output-envelope frontier over (output, uncertainty width)
+pareto_alts = alt0.pareto_explanations()
+
+# Combine: ensured super-explanations
+ensured_super = alt0.super_explanations(only_ensured=True)
 ```
 
-### Ranking Alternatives by Confidence
+### Ranking controls (rnk_metric / rnk_weight / filter_top)
+
+Triangular plots are commonly used together with ensured ranking:
 
 ```python
-# Sort alternatives by uncertainty (most confident first)
-sorted_alts = sorted(
-    alternatives[0],
-    key=lambda a: a.uncertainty_high - a.uncertainty_low
+# Use ensured-style triangular view (alias for style="triangular")
+alt0.plot(
+    style="ensured",
+    rnk_metric="ensured",
+    rnk_weight=0.7,
+    filter_top=10,
+    show=False,
 )
-
-# Take top-k most confident alternatives
-top_k_ensured = sorted_alts[:3]
 ```
 
-### Using Ensured Ranking in Plots
+Notes:
 
-When plotting alternatives, you can use the "ensured" ranking metric to visualize confidence:
-
-```python
-# If using PlotSpec or direct plotting
-alternatives.plot(rank_by="ensured")
-```
+- ``rnk_metric="ensured"`` combines output and uncertainty interval width.
+- ``rnk_weight`` shifts the trade-off between output and uncertainty.
+- Use ``show=False`` in headless environments.
 
 ## Setting Uncertainty Thresholds
 
@@ -146,3 +166,26 @@ This capability is documented in:
 * {doc}`../../foundations/concepts/alternatives` - Alternative explanations concept
 * {doc}`decision-policies` - Decision policy patterns using uncertainty
 * {doc}`../../citing` - Citation information
+
+## Regression support notes
+
+Ensured explanations support:
+
+- **Classification** (binary/multiclass) via calibrated probabilities.
+- **Probabilistic regression** via calibrated probabilities for events like
+    $\Pr(y \le t)$ (pass ``threshold=...`` to ``explore_alternatives``).
+- **Plain regression** (numeric outputs):
+
+    - ``super_explanations`` keeps higher predicted outputs than the base.
+    - ``semi_explanations`` and ``counter_explanations`` keep lower predicted
+        outputs than the base.
+    - ``ensured_explanations`` and ``pareto_explanations`` work the same way as
+        in classification, filtering by uncertainty interval width and trade-offs.
+
+Use the global plot to sanity-check calibration and uncertainty behaviour over
+a dataset:
+
+```python
+explainer.plot(x_test, y_test, show=False)
+explainer.plot(x_test, y_test, threshold=150.0, show=False)
+```

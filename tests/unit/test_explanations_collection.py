@@ -161,6 +161,10 @@ class DummyExplanation:
         self.calls.append(("ensured", {"include_potential": include_potential, "copy": copy}))
         return self
 
+    def pareto_explanations(self, include_potential=True, copy=True):
+        self.calls.append(("pareto", {"include_potential": include_potential, "copy": copy}))
+        return self
+
     def filter_rule_sizes(self, *, rule_sizes=None, size_range=None, copy=True):
         self.calls.append(
             (
@@ -503,11 +507,14 @@ def test_alternative_specific_filters(calibrated_collection):
     alt.semi_explanations(only_ensured=True, include_potential=False)
     alt.counter_explanations(only_ensured=True, include_potential=False)
     alt.ensured_explanations()
+    alt.pareto_explanations(include_potential=False)
     for exp in alt.explanations:
         actions = [
-            call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}
+            call[0]
+            for call in exp.calls
+            if call[0] in {"super", "semi", "counter", "ensured", "pareto"}
         ]
-        assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
+        assert {"super", "semi", "counter", "ensured", "pareto"}.issubset(set(actions))
 
 
 def test_alternative_specific_filters_inplace(calibrated_collection):
@@ -517,17 +524,20 @@ def test_alternative_specific_filters_inplace(calibrated_collection):
     out_semi = alt.semi_explanations(copy=False)
     out_counter = alt.counter_explanations(copy=False)
     out_ensured = alt.ensured_explanations(copy=False)
+    out_pareto = alt.pareto_explanations(copy=False)
 
     assert out_super is alt
     assert out_semi is alt
     assert out_counter is alt
     assert out_ensured is alt
+    assert out_pareto is alt
     for exp in alt.explanations:
         actions = [call[0] for call in exp.calls]
         assert "super" in actions
         assert "semi" in actions
         assert "counter" in actions
         assert "ensured" in actions
+        assert "pareto" in actions
 
 
 def test_collection_to_json_and_back(calibrated_collection):
