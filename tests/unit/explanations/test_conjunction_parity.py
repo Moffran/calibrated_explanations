@@ -119,4 +119,4 @@ def test_factual_conjunction_parity_max_rule_size_3(binary_dataset):
     for e1, e2 in zip(explanation, explanation_legacy):
         compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
     # Minimal assertion to satisfy test-quality checks
-    assert True
+    assert len(explanation) == len(explanation_legacy)

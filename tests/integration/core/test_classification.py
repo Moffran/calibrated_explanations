@@ -300,21 +300,6 @@ def test_binary_conditional_ce(binary_dataset):
     # Basic sanity assertions to ensure the explainer produced results
     assert factual_explanation is not None
     assert alternative_explanation is not None
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
-    # Basic sanity assertions to ensure the explainer produced results
-    assert factual_explanation is not None
-    assert alternative_explanation is not None
 
 
 @pytest.mark.slow

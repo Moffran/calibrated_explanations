@@ -88,7 +88,7 @@ def test_explanation_functions_classification(binary_dataset):
 
     print(ce)
     # Minimal assertion to satisfy test-quality checks
-    assert True
+    assert len(alternative_explanations) == len(x_test)
 
 
 def test_explanation_functions_regression(regression_dataset):
@@ -121,4 +121,4 @@ def test_explanation_functions_regression(regression_dataset):
 
     print(ce)
     # Minimal assertion to satisfy test-quality checks
-    assert True
+    assert len(alternative_explanations) == len(x_test)

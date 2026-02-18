@@ -11,9 +11,9 @@
       "pattern": "missing-viz-marker"
     }
   ],
-  "generated_at": "2026-02-17T20:42:56+00:00",
+  "generated_at": "2026-02-18T09:04:01+00:00",
   "new_violations": 0,
-  "tests_dir": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/tests",
+  "tests_dir": "tests",
   "total_findings": 1,
   "version": 1
 }

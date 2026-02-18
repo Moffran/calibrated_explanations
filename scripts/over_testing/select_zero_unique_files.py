@@ -20,8 +20,10 @@ with open(csv_path, newline='', encoding='utf-8') as f:
 
 candidates = []
 for path, uniqs in files.items():
+    # normalize path separators so the prefix check works across platforms
+    normalized_path = path.replace('\\', '/')
     # consider only test files under tests/
-    if not path.startswith('tests/'):
+    if not normalized_path.startswith('tests/'):
         continue
     # skip files with no entries
     if len(uniqs) == 0:

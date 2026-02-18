@@ -20,6 +20,7 @@ import argparse
 import ast
 import hashlib
 import json
+import os
 import textwrap
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -85,6 +86,19 @@ def _to_relative(path: Path, root: Path | None = None) -> str:
         return str(path.relative_to(Path.cwd())).replace("\\", "/")
     except ValueError:
         return str(path).replace("\\", "/")
+
+
+def _to_repo_relative(path: Path) -> str:
+    """Best-effort stable relative path for persisted JSON payloads."""
+    resolved = path.resolve()
+    cwd = Path.cwd().resolve()
+    try:
+        return str(resolved.relative_to(cwd)).replace("\\", "/")
+    except ValueError:
+        try:
+            return os.path.relpath(str(resolved), str(cwd)).replace("\\", "/")
+        except ValueError:
+            return resolved.name
 
 
 def _hash_file(path: Path) -> str:
@@ -296,7 +310,7 @@ def write_baseline(path: Path, findings: list[Finding], root: Path) -> None:
     payload = {
         "version": 1,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "tests_dir": str(root).replace("\\", "/"),
+        "tests_dir": _to_repo_relative(root),
         "entries": sorted(
             entries, key=lambda r: (str(r["file"]), int(r["line"]), str(r["pattern"]))
         ),
@@ -323,8 +337,8 @@ def write_json_report(
     payload = {
         "version": 1,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "tests_dir": str(root).replace("\\", "/"),
-        "baseline_path": str(baseline_path).replace("\\", "/"),
+        "tests_dir": _to_repo_relative(root),
+        "baseline_path": _to_repo_relative(baseline_path),
         "total_findings": len(records),
         "new_violations": len(new_ids or set()),
         "findings": records,
