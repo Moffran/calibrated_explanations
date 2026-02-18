@@ -4,10 +4,19 @@
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import base64
+import hashlib
+import json
 import logging as _logging
+import os
+import pickle  # nosec B403 - deserialization is restricted to trusted, checksum-validated state
+import shutil
 import sys
+import tempfile
 import warnings as _warnings
 from contextlib import suppress
+from datetime import datetime, timezone
+from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 
@@ -19,7 +28,12 @@ from calibrated_explanations.api.params import (
     warn_on_aliases,
 )
 from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
-from calibrated_explanations.utils.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import (
+    DataShapeError,
+    IncompatibleStateError,
+    NotFittedError,
+    ValidationError,
+)
 
 from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # circular during split
@@ -41,6 +55,7 @@ class WrapCalibratedExplainer:
     calibrated: bool
     mc: Callable[[Any], Any] | MondrianCategorizer | None
     _logger: _logging.Logger
+    _STATE_SCHEMA_VERSION: int = 1
 
     def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
@@ -912,6 +927,19 @@ class WrapCalibratedExplainer:
             return None
         return metadata
 
+    def _raise_non_numeric_without_preprocessor(self, x: Any, stage: str) -> None:
+        """Raise actionable diagnostics for non-numeric inputs when preprocessing is disabled."""
+        auto_encode_flag = self._normalize_auto_encode_flag()
+        if auto_encode_flag in {"auto", "true"}:
+            return
+        x_arr = x.to_numpy() if hasattr(x, "to_numpy") else x
+        dtype = getattr(x_arr, "dtype", None)
+        if dtype is not None and getattr(dtype, "kind", None) not in {"b", "i", "u", "f", "c"}:
+            raise ValidationError(
+                f"Non-numeric input detected during {stage} while preprocessing is disabled. "
+                "Set auto_encode='auto' or provide a preprocessor capable of handling categorical values."
+            )
+
     def _pre_fit_preprocess(self, x: Any) -> Any:
         """Fit the configured preprocessor and return transformed x.
 
@@ -919,7 +947,32 @@ class WrapCalibratedExplainer:
         fit/transform, we use it. No built-in auto encoding is activated here.
         """
         try:
+            # When no preprocessor is provided and auto_encode is enabled,
+            # activate the small deterministic builtin encoder.
             if self._preprocessor is None:
+                # ADR-009 default mode: auto_encode='auto' activates deterministic
+                # built-in encoding when no user preprocessor is provided.
+                if self._normalize_auto_encode_flag() in {"auto", "true"}:
+                    try:
+                        from calibrated_explanations.preprocessing.builtin_encoder import (
+                            BuiltinEncoder,
+                        )
+
+                        encoder = BuiltinEncoder(unseen_policy=self._unseen_category_policy)
+                        x_out = encoder.fit_transform(x)
+                        # attach encoder so export/import helpers can find it
+                        self._preprocessor = encoder
+                        self._pre_fitted = True
+                        return x_out
+                    except (
+                        ImportError,
+                        TypeError,
+                        ValueError,
+                        AttributeError,
+                    ) as exc:  # pragma: no cover - defensive
+                        self._logger.warning("Builtin encoder failed; bypassing: %s", exc)
+                        return x
+                self._raise_non_numeric_without_preprocessor(x, stage="fit")
                 return x
             if hasattr(self._preprocessor, "fit_transform"):
                 x_out = self._preprocessor.fit_transform(x)
@@ -932,6 +985,8 @@ class WrapCalibratedExplainer:
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             exc = sys.exc_info()[1]
+            if isinstance(exc, ValidationError):
+                raise
             self._logger.warning("Preprocessor failed; proceeding without it: %s", exc)
             return x
 
@@ -939,12 +994,20 @@ class WrapCalibratedExplainer:
         """Transform x with the fitted preprocessor if available."""
         try:
             if self._preprocessor is None or not self._pre_fitted:
+                self._raise_non_numeric_without_preprocessor(x, stage=stage)
                 return x
             return self._preprocessor.transform(x)
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             exc = sys.exc_info()[1]
+            pre = getattr(self, "_preprocessor", None)
+            unseen_policy = str(getattr(pre, "unseen_policy", "")).lower()
+            if isinstance(exc, (KeyError, ValidationError)) and unseen_policy == "error":
+                raise ValidationError(
+                    f"Unseen category encountered during {stage} preprocessing. "
+                    "Set unseen_category_policy='ignore' or import/export a stable mapping."
+                ) from exc
             self._logger.warning("Preprocessor transform failed at %s; bypassing: %s", stage, exc)
             return x
 
@@ -1067,6 +1130,374 @@ class WrapCalibratedExplainer:
         """
         return self._maybe_preprocess_for_inference(X)
 
+    def export_preprocessor_mapping(self) -> dict[str, Any] | None:
+        """Export the current preprocessor mapping snapshot.
+
+        Returns
+        -------
+        dict[str, Any] | None
+            A mapping snapshot suitable for telemetry or round-tripping, or
+            ``None`` when no mapping information is available.
+        """
+        pre = getattr(self, "_preprocessor", None)
+        if pre is None:
+            return None
+        # Prefer a custom getter when available
+        getter = getattr(pre, "get_mapping_snapshot", None)
+        if callable(getter):
+            try:
+                return getter()
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                self._logger.warning(
+                    "Preprocessor.get_mapping_snapshot failed; falling back to mapping_"
+                )
+        # Fall back to attribute if present
+        mapping_attr = getattr(pre, "mapping_", None)
+        if mapping_attr is not None:
+            # Shallow copy to avoid exposing internal objects
+            try:
+                return dict(mapping_attr)
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
+                return None
+        return None
+
+    def import_preprocessor_mapping(self, mapping: Mapping[str, Any]) -> None:
+        """Attempt to apply a mapping snapshot to the configured preprocessor.
+
+        This is a best-effort helper: when an attached preprocessor exposes a
+        setter (``set_mapping``) or a writable ``mapping_`` attribute we will
+        apply the mapping. Otherwise the mapping is stashed on the wrapper as
+        ``_imported_preprocessor_mapping`` for potential downstream use.
+
+        A warning is emitted when the mapping could not be applied to ensure
+        visibility per the fallback policy.
+        """
+        pre = getattr(self, "_preprocessor", None)
+        applied = False
+        if pre is not None:
+            setter = getattr(pre, "set_mapping", None)
+            if callable(setter):
+                try:
+                    setter(mapping)
+                    applied = True
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    self._logger.warning("Preprocessor.set_mapping failed; stashing mapping")
+            else:
+                # Try to set mapping_ directly when writable
+                try:
+                    pre.mapping_ = mapping
+                    applied = True
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    # fall through to stashing below
+                    pass
+        if not applied:
+            # Keep for later application or external tooling
+            self._imported_preprocessor_mapping = dict(mapping) if mapping is not None else None
+            _warnings.warn(
+                "Preprocessor mapping could not be applied directly; mapping stashed on wrapper",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    def _state_path(self, path_or_fileobj: Any) -> Path:
+        """Normalize and validate state path inputs."""
+        if hasattr(path_or_fileobj, "read") or hasattr(path_or_fileobj, "write"):
+            raise ValidationError(
+                "Only filesystem paths are supported for state persistence.",
+                details={"path_or_fileobj_type": type(path_or_fileobj).__name__},
+            )
+        try:
+            return Path(path_or_fileobj)
+        except TypeError as exc:
+            raise ValidationError(
+                "Invalid state path provided to save/load_state.",
+                details={"path_or_fileobj_type": type(path_or_fileobj).__name__},
+            ) from exc
+
+    @staticmethod
+    def _sha256_bytes(payload: bytes) -> str:
+        """Return SHA-256 checksum for raw bytes."""
+        return hashlib.sha256(payload).hexdigest()
+
+    @staticmethod
+    def _sha256_file(path: Path) -> str:
+        """Return SHA-256 checksum for a file."""
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(65536), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _calibrator_to_primitive(self, calibrator: Any) -> dict[str, Any]:
+        """Serialize a single calibrator into the ADR-031 primitive contract."""
+        to_primitive = getattr(calibrator, "to_primitive", None)
+        if callable(to_primitive):
+            primitive = to_primitive()
+            if isinstance(primitive, Mapping):
+                return dict(primitive)
+        payload_bytes = pickle.dumps(calibrator, protocol=pickle.HIGHEST_PROTOCOL)
+        return {
+            "schema_version": self._STATE_SCHEMA_VERSION,
+            "calibrator_type": "python_pickle",
+            "parameters": {
+                "class_name": calibrator.__class__.__name__,
+                "module": calibrator.__class__.__module__,
+            },
+            "checksums": {
+                "sha256": self._sha256_bytes(payload_bytes),
+            },
+            "payload": {
+                "pickle_b64": base64.b64encode(payload_bytes).decode("ascii"),
+            },
+        }
+
+    def _build_calibrator_primitive(self) -> dict[str, Any] | None:
+        """Build calibrator primitive payload from the active explainer, if any."""
+        explainer = getattr(self, "explainer", None)
+        if explainer is None:
+            return None
+        calibrator = getattr(explainer, "interval_learner", None)
+        if calibrator is None:
+            return None
+        if isinstance(calibrator, (list, tuple)):
+            children = [self._calibrator_to_primitive(item) for item in calibrator]
+            payload_bytes = json.dumps(children, sort_keys=True).encode("utf-8")
+            return {
+                "schema_version": self._STATE_SCHEMA_VERSION,
+                "calibrator_type": "fast_collection",
+                "parameters": {"size": len(children)},
+                "checksums": {"sha256": self._sha256_bytes(payload_bytes)},
+                "calibrators": children,
+            }
+        return self._calibrator_to_primitive(calibrator)
+
+    @classmethod
+    def _restore_calibrator_from_primitive(cls, primitive: Mapping[str, Any]) -> Any:
+        """Rehydrate a calibrator object from a persisted primitive payload."""
+        schema_version = primitive.get("schema_version")
+        if schema_version != cls._STATE_SCHEMA_VERSION:
+            raise IncompatibleStateError(
+                "Unsupported calibrator primitive schema_version.",
+                details={
+                    "schema_version": schema_version,
+                    "supported_versions": [cls._STATE_SCHEMA_VERSION],
+                },
+            )
+        calibrator_type = primitive.get("calibrator_type")
+        if calibrator_type == "venn_abers":
+            from ..calibration.venn_abers import VennAbers
+
+            return VennAbers.from_primitive(primitive)
+        if calibrator_type == "interval_regressor":
+            from ..calibration.interval_regressor import IntervalRegressor
+
+            return IntervalRegressor.from_primitive(primitive)
+        if calibrator_type == "fast_collection":
+            children = primitive.get("calibrators")
+            if not isinstance(children, list):
+                raise IncompatibleStateError(
+                    "Invalid fast_collection primitive: expected calibrators list.",
+                    details={"field": "calibrators"},
+                )
+            expected_sha = primitive.get("checksums", {}).get("sha256")
+            child_bytes = json.dumps(children, sort_keys=True).encode("utf-8")
+            actual_sha = cls._sha256_bytes(child_bytes)
+            if not isinstance(expected_sha, str) or expected_sha != actual_sha:
+                raise IncompatibleStateError(
+                    "Calibrator primitive checksum validation failed.",
+                    details={"expected_sha256": expected_sha, "actual_sha256": actual_sha},
+                )
+            return [cls._restore_calibrator_from_primitive(item) for item in children]
+        if calibrator_type == "python_pickle":
+            payload = primitive.get("payload")
+            if not isinstance(payload, Mapping) or not isinstance(payload.get("pickle_b64"), str):
+                raise IncompatibleStateError(
+                    "Invalid python_pickle primitive payload.",
+                    details={"field": "payload.pickle_b64"},
+                )
+            raw = base64.b64decode(payload["pickle_b64"].encode("ascii"))
+            expected_sha = primitive.get("checksums", {}).get("sha256")
+            actual_sha = cls._sha256_bytes(raw)
+            if not isinstance(expected_sha, str) or expected_sha != actual_sha:
+                raise IncompatibleStateError(
+                    "Calibrator primitive checksum validation failed.",
+                    details={"expected_sha256": expected_sha, "actual_sha256": actual_sha},
+                )
+            return pickle.loads(raw)  # noqa: S301  # nosec B301 - trusted, checksum-validated payload
+        raise IncompatibleStateError(
+            "Unsupported calibrator_type in persisted state.",
+            details={"calibrator_type": calibrator_type},
+        )
+
+    def _build_explainer_config_payload(self) -> dict[str, Any]:
+        """Build JSON-safe explainer configuration metadata for persistence."""
+        payload: dict[str, Any] = {}
+        explainer = getattr(self, "explainer", None)
+        if explainer is not None:
+            payload["mode"] = getattr(explainer, "mode", None)
+            payload["seed"] = getattr(explainer, "seed", None)
+            payload["condition_source"] = getattr(explainer, "condition_source", None)
+            payload["interval_summary"] = str(getattr(explainer, "interval_summary", ""))
+            payload["preprocessor_metadata"] = self._serialise_preprocessor_value(
+                getattr(explainer, "_preprocessor_metadata", None)
+            )
+            plugin_manager = getattr(explainer, "_plugin_manager", None)
+            if plugin_manager is not None:
+                payload["plugin_overrides"] = self._serialise_preprocessor_value(
+                    getattr(plugin_manager, "plugin_overrides", None)
+                )
+        return payload
+
+    def save_state(self, path_or_fileobj: Any) -> Path:
+        """Persist wrapper state using an ADR-031 manifest + checksums."""
+        target = self._state_path(path_or_fileobj)
+        target_parent = target.parent
+        target_parent.mkdir(parents=True, exist_ok=True)
+
+        temp_dir_name = f"{target.name}.tmp-{os.getpid()}-{id(self)}"
+        temp_dir = Path(tempfile.mkdtemp(prefix=temp_dir_name, dir=str(target_parent)))
+        checksums: dict[str, str] = {}
+        try:
+            wrapper_bytes = pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
+            wrapper_file = temp_dir / "wrapper.pkl"
+            wrapper_file.write_bytes(wrapper_bytes)
+            checksums["wrapper.pkl"] = self._sha256_bytes(wrapper_bytes)
+
+            calibrator_primitive = self._build_calibrator_primitive()
+            if calibrator_primitive is not None:
+                calibrator_file = temp_dir / "calibrator_primitive.json"
+                calibrator_bytes = json.dumps(
+                    calibrator_primitive, indent=2, sort_keys=True
+                ).encode("utf-8")
+                calibrator_file.write_bytes(calibrator_bytes)
+                checksums["calibrator_primitive.json"] = self._sha256_bytes(calibrator_bytes)
+
+            mapping = self.export_preprocessor_mapping()
+            if mapping is not None:
+                mapping_file = temp_dir / "preprocessing_mapping.json"
+                mapping_bytes = json.dumps(mapping, indent=2, sort_keys=True).encode("utf-8")
+                mapping_file.write_bytes(mapping_bytes)
+                checksums["preprocessing_mapping.json"] = self._sha256_bytes(mapping_bytes)
+
+            config_payload = self._build_explainer_config_payload()
+            config_file = temp_dir / "explainer_config.json"
+            config_bytes = json.dumps(config_payload, indent=2, sort_keys=True).encode("utf-8")
+            config_file.write_bytes(config_bytes)
+            checksums["explainer_config.json"] = self._sha256_bytes(config_bytes)
+
+            manifest = {
+                "schema_version": self._STATE_SCHEMA_VERSION,
+                "created_at_utc": datetime.now(timezone.utc).isoformat(),
+                "artifact_type": "wrap_calibrated_explainer_state",
+                "files": checksums,
+            }
+            manifest_file = temp_dir / "manifest.json"
+            manifest_file.write_text(
+                json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+            )
+
+            backup: Path | None = None
+            if target.exists():
+                backup = target.with_name(f"{target.name}.bak-{os.getpid()}-{id(self)}")
+                os.replace(target, backup)
+            try:
+                os.replace(temp_dir, target)
+            except OSError:
+                if backup is not None and backup.exists() and not target.exists():
+                    os.replace(backup, target)
+                raise
+            if backup is not None and backup.exists():
+                shutil.rmtree(backup)
+            return target
+        except (OSError, TypeError, ValueError, AttributeError) as exc:
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            raise ValidationError(
+                f"Failed to save state to '{target}'.",
+                details={"path": str(target), "reason": str(exc)},
+            ) from exc
+
+    @classmethod
+    def load_state(cls, path_or_fileobj: Any) -> WrapCalibratedExplainer:
+        """Load wrapper state from an ADR-031 persisted artifact."""
+        temp_instance = cls.__new__(cls)
+        path = temp_instance._state_path(path_or_fileobj)
+        manifest_path = path / "manifest.json"
+        if not manifest_path.exists():
+            raise IncompatibleStateError(
+                "State artifact is missing manifest.json.",
+                details={"path": str(path)},
+            )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        schema_version = manifest.get("schema_version")
+        if schema_version != cls._STATE_SCHEMA_VERSION:
+            raise IncompatibleStateError(
+                "Unsupported state schema_version.",
+                details={
+                    "schema_version": schema_version,
+                    "supported_versions": [cls._STATE_SCHEMA_VERSION],
+                },
+            )
+        files = manifest.get("files")
+        if not isinstance(files, Mapping):
+            raise IncompatibleStateError(
+                "Invalid state manifest: files checksum mapping missing.",
+                details={"field": "files"},
+            )
+        for file_name, expected_sha in files.items():
+            if not isinstance(file_name, str) or not isinstance(expected_sha, str):
+                raise IncompatibleStateError(
+                    "Invalid state manifest: malformed checksum entry.",
+                    details={"file": file_name, "checksum": expected_sha},
+                )
+            file_path = path / file_name
+            if not file_path.exists():
+                raise IncompatibleStateError(
+                    "State artifact is incomplete: expected file is missing.",
+                    details={"file": file_name},
+                )
+            actual_sha = cls._sha256_file(file_path)
+            if actual_sha != expected_sha:
+                raise IncompatibleStateError(
+                    "State checksum validation failed.",
+                    details={
+                        "file": file_name,
+                        "expected_sha256": expected_sha,
+                        "actual_sha256": actual_sha,
+                    },
+                )
+
+        wrapper_bytes = (path / "wrapper.pkl").read_bytes()
+        wrapper = pickle.loads(wrapper_bytes)  # noqa: S301  # nosec B301 - trusted, checksum-validated payload
+        if not isinstance(wrapper, cls):
+            raise IncompatibleStateError(
+                "Persisted wrapper payload restored unexpected object type.",
+                details={"restored_type": type(wrapper).__name__},
+            )
+
+        primitive_path = path / "calibrator_primitive.json"
+        if primitive_path.exists():
+            primitive = json.loads(primitive_path.read_text(encoding="utf-8"))
+            restored = cls._restore_calibrator_from_primitive(primitive)
+            if getattr(wrapper, "explainer", None) is not None:
+                wrapper.explainer.interval_learner = restored
+
+        mapping_path = path / "preprocessing_mapping.json"
+        if mapping_path.exists():
+            mapping_payload = json.loads(mapping_path.read_text(encoding="utf-8"))
+            if isinstance(mapping_payload, Mapping):
+                wrapper.import_preprocessor_mapping(mapping_payload)
+
+        return wrapper
+
     @property
     def pre_fitted(self) -> bool:
         """Check if the preprocessor is pre-fitted.
@@ -1176,7 +1607,9 @@ class WrapCalibratedExplainer:
         # dicts recursively so pickle/joblib can serialize them.
         def _convert(obj: Any) -> Any:
             if isinstance(obj, MappingProxyType):
-                return dict(obj)
+                # Recursively convert mappingproxy to plain dict and convert
+                # nested values as well.
+                return _convert(dict(obj))
             if isinstance(obj, dict):
                 return {k: _convert(v) for k, v in obj.items()}
             if isinstance(obj, (list, tuple, set)):

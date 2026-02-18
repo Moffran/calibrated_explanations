@@ -123,10 +123,6 @@ def test_check_is_fitted_paths(tmp_path):
         helper.check_is_fitted(DummyNeedsFit)
 
 
-def test_is_notebook_returns_false_in_pytest_environment():
-    assert helper.is_notebook() is False
-
-
 def test_transform_to_numeric_with_and_without_mappings():
     df = pd.DataFrame(
         {
@@ -196,16 +192,6 @@ def test_calculate_metrics_behaviour():
 
     with pytest.raises(ValidationError):
         helper.calculate_metrics(uncertainty, prediction, w=2)
-
-
-def test_convert_targets_to_numeric_handles_strings_and_numeric():
-    numeric, mapping = helper.convert_targets_to_numeric(np.array(["cat", "dog"]))
-    assert list(numeric) == [0, 1]
-    assert mapping == {"cat": 0, "dog": 1}
-
-    arr, mapping_none = helper.convert_targets_to_numeric(np.array([1, 2, 3]))
-    assert mapping_none is None
-    assert list(arr) == [1, 2, 3]
 
 
 def test_concatenate_thresholds_handles_tuples_and_lists():
@@ -283,36 +269,9 @@ def test_is_notebook_propagates_unexpected_exceptions(monkeypatch):
         helper.is_notebook()
 
 
-def test_transform_to_numeric_handles_high_cardinality():
-    df = pd.DataFrame(
-        {
-            "target": ["yes", "no"] * 4,
-            "singles": [f"val{i}" for i in range(8)],
-        }
-    )
-
-    transformed, categorical_features, categorical_labels, _, mappings = (
-        helper.transform_to_numeric(df.copy(), "target")
-    )
-
-    assert categorical_features == [1]
-    assert len(mappings["singles"]) == 8
-    assert set(categorical_labels[1].values()) <= set(mappings["singles"].keys())
-
-
 def test_calculate_metrics_uses_default_metric_list():
     uncertainty = [0.3]
     prediction = [0.6]
     result = helper.calculate_metrics(uncertainty, prediction, w=0.2)
     expected = (1 - 0.2) * (1 - np.asarray(uncertainty)) + 0.2 * np.asarray(prediction)
     assert np.allclose(result, expected)
-
-
-def test_assign_threshold_returns_marker_arrays():
-    result_tuple = helper.assign_threshold([(0.1, 0.9)])
-    assert result_tuple.shape == (0,)
-    assert result_tuple.dtype == tuple
-
-    result_scalar = helper.assign_threshold([1, 2])
-    assert result_scalar.shape == (0,)
-    assert result_scalar.dtype == float

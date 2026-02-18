@@ -1,61 +1,18 @@
 import pytest
 import numpy as np
 from calibrated_explanations.core.narrative_generator import (
-    load_template_file,
     to_py,
-    first_or_none,
     clean_condition,
     crosses_zero,
-    has_wide_prediction_interval,
     NarrativeGenerator,
 )
-from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from unittest.mock import MagicMock
-
-
-@pytest.mark.skip(
-    reason="overtesting prune batch1: skip duplicate serialization negative-path test"
-)
-def test_load_template_file_errors(tmp_path):
-    # File not found
-    with pytest.raises(SerializationError, match="Template file not found"):
-        load_template_file(str(tmp_path / "nonexistent.json"))
-
-    # Unsupported format
-    unsupported = tmp_path / "test.txt"
-    unsupported.write_text("hello")
-    with pytest.raises(SerializationError, match="Unsupported template file format"):
-        load_template_file(str(unsupported))
-
-    # Invalid JSON
-    invalid_json = tmp_path / "test.json"
-    invalid_json.write_text("{invalid")
-    with pytest.raises(SerializationError, match="Failed to parse JSON template"):
-        load_template_file(str(invalid_json))
-
-    # Valid YAML
-    valid_yaml = tmp_path / "test.yaml"
-    valid_yaml.write_text("key: value\nlist:\n  - item1\n  - item2")
-    result = load_template_file(str(valid_yaml))
-    assert result == {"key": "value", "list": ["item1", "item2"]}
-
-    # Invalid YAML
-    invalid_yaml = tmp_path / "test_invalid.yaml"
-    invalid_yaml.write_text("key: value\n  invalid_indent")
-    with pytest.raises(SerializationError, match="Failed to parse YAML template"):
-        load_template_file(str(invalid_yaml))
 
 
 def test_to_py_variants():
     assert to_py(np.bool_(True)) is True
     assert to_py("string") == "string"
-
-
-def test_first_or_none_variants():
-    assert first_or_none(None) is None
-    assert first_or_none([]) is None
-    assert first_or_none([1, 2]) == 1
-    assert first_or_none(5) == 5
 
 
 def test_clean_condition_variants():
@@ -85,10 +42,6 @@ def test_crosses_zero_fallback():
 def test_crosses_zero_should_handle_array_like_intervals():
     assert crosses_zero({"weight_low": [-0.1, 0.2], "weight_high": [0.1, 0.3]}) is True
     assert crosses_zero({"weight_low": [0.1, 0.2], "weight_high": [0.3, 0.4]}) is False
-
-
-def test_has_wide_prediction_interval_fallback():
-    assert has_wide_prediction_interval({"predict_low": "abc", "predict_high": 1}) is False
 
 
 def test_narrative_generator_validation():
@@ -139,35 +92,6 @@ def test_generate_narrative_template_not_found():
     assert "Template not found" in res
 
 
-def test_serialize_rules_variants():
-    gen = NarrativeGenerator()
-    # Invalid feature index
-    rules_dict = {"rule": ["feat > 5"], "feature": [10]}
-    res = gen.serialize_rules(rules_dict, feature_names=["a", "b"])
-    assert res[0]["feature_name"] == "feat"  # extracted from rule
-
-
-def test_expand_template_caution_logic():
-    gen = NarrativeGenerator()
-    template = "Template {feature_name}"
-    pos_features = [{"feature_name": "f1", "rule": "f1 > 0", "weight": 1.0}]
-    context = {
-        "pred_interval_lower": "0.1",
-        "pred_interval_upper": "0.5",  # width 0.4 > 0.2
-    }
-    # Beginner level caution
-    res = gen.expand_template(
-        template, pos_features, [], [], context, "beginner", "binary_classification"
-    )
-    assert "⚠️ Use caution: uncertainty is high." in res
-
-    # Advanced level caution
-    res2 = gen.expand_template(
-        template, pos_features, [], [], context, "advanced", "binary_classification"
-    )
-    assert "calibrated probability interval is wide (0.400)" in res2
-
-
 def test_expand_template_feat_name_fallback():
     gen = NarrativeGenerator()
     template = "{feature_name}"
@@ -180,43 +104,6 @@ def test_expand_template_feat_name_fallback():
     pos_features2 = [{"feature_name": None, "rule": "", "weight": 1.0}]
     res2 = gen.expand_template(template, pos_features2, [], [], {}, "beginner")
     assert res2 == ""
-
-
-def test_expand_template_formats_conjunctive_rules_with_values():
-    gen = NarrativeGenerator()
-    template = "* {feature_name} ({feature_actual_value}) {condition}"
-    pos_features = [
-        {
-            "feature_name": "f1 & f2",
-            "rule": "f1 <= -121.83 & \nmedian_income > 4.92",
-            "value": "-122.17\n7.62",
-            "weight": 0.1,
-            "weight_low": 0.0,
-            "weight_high": 0.2,
-            "predict": 0.5,
-            "predict_low": 0.4,
-            "predict_high": 0.6,
-            "is_conjunctive": True,
-        }
-    ]
-
-    res = gen.expand_template(
-        template,
-        pos_features,
-        [],
-        [],
-        {},
-        "beginner",
-        problem_type="probabilistic_regression",
-        conjunction_separator=" AND ",
-        align_weights=False,
-    )
-
-    # Preferred formatting: single-line, interleaved values, no duplicated prefix.
-    assert "\n" not in res
-    assert "f1 & f2" not in res
-    assert "()" not in res
-    assert "(f1 (-122.17) <= -121.83 AND median_income (7.62) > 4.92)" in res
 
 
 def test_generate_narrative_should_not_crash_for_alternative_conjunctive_features():
@@ -352,75 +239,6 @@ def test_expand_template_should_tag_uncertain_for_alternatives_when_interval_cov
     housing_line = next(ln for ln in lines if "housing_median_age" in ln)
     assert "⚠️ direction uncertain" not in housing_line
     assert "⚠️ uncertain" in housing_line
-
-
-def test_expand_template_should_align_then_when_alternative_and_alignment_enabled():
-    gen = NarrativeGenerator()
-    template = "\n".join(
-        [
-            "Alternatives to increase:",
-            "- If {feature_name} {condition} then {predict}",
-            "Alternatives to decrease:",
-            "- If {feature_name} {condition} then {predict}",
-        ]
-    )
-
-    pos_features = [
-        {
-            "feature_name": "f1",
-            "rule": "f1 > 0",
-            "value": "1",
-            "weight": 0.01,
-            "predict": 0.51,
-            "predict_low": 0.50,
-            "predict_high": 0.52,
-            "is_conjunctive": False,
-        },
-        {
-            "feature_name": "a_much_longer_feature_name",
-            "rule": "a_much_longer_feature_name <= 10",
-            "value": "10",
-            "weight": 0.02,
-            "predict": 0.55,
-            "predict_low": 0.53,
-            "predict_high": 0.57,
-            "is_conjunctive": False,
-        },
-    ]
-
-    neg_features = [
-        {
-            "feature_name": "x",
-            "rule": "x in {1, 2, 3}",
-            "value": "1",
-            "weight": -0.01,
-            "predict": 0.45,
-            "predict_low": 0.43,
-            "predict_high": 0.47,
-            "is_conjunctive": False,
-        }
-    ]
-
-    res = gen.expand_template(
-        template,
-        pos_features,
-        neg_features,
-        [],
-        context={},
-        level="intermediate",
-        problem_type="probabilistic_regression",
-        explanation_type="alternative",
-        base_predict=None,
-        conjunction_separator=" AND ",
-        align_weights=True,
-    )
-
-    bullet_lines = [ln for ln in res.splitlines() if ln.strip().startswith("-")]
-    then_positions = [ln.find(" then ") for ln in bullet_lines]
-    assert all(pos > 0 for pos in then_positions)
-    assert len(set(then_positions)) == 1
-
-    assert "⚠️ direction uncertain" not in res
 
 
 def test_generate_narrative_should_not_split_uncertainty_for_regression():

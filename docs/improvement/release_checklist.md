@@ -9,11 +9,11 @@ It must be reviewed and completed for every pull request that touches the user-f
   - [ ] No
   - [ ] Yes (requires verification against `docs/improvement/legacy_user_api_contract.md`)
 - **Notebooks audited?**
-  - [ ] Yes (run `python scripts/audit_notebook_api.py notebooks --check`)
+  - [ ] Yes (run `python scripts/quality/audit_notebook_api.py notebooks --check`)
   - [ ] No (only allowed if notebooks are untouched)
 - **API snapshot updated?**
   - [ ] N/A (no public API changes)
-  - [ ] Yes (run `python scripts/snapshot_public_api.py`)
+  - [ ] Yes (run `python scripts/quality/snapshot_public_api.py`)
 
 ## Documentation & Gallery (ADR-012) (run `cd docs && sphinx-build -b html . _build/html`)
 
@@ -22,7 +22,7 @@ It must be reviewed and completed for every pull request that touches the user-f
 - **Gallery examples execute? (within time ceilings)**
   - [ ] Yes
 
-## Test Quality (ADR-030) (run `python scripts/detect_test_anti_patterns.py --check`)
+## Test Quality (ADR-030) (run `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --check --baseline .github/test-quality-baseline.json`)
 
 - **Anti-patterns check**
   - [ ] Passed

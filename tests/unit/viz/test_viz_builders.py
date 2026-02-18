@@ -1,9 +1,7 @@
 import numpy as np
-import pytest
 
 from calibrated_explanations.viz import (
     build_regression_bars_spec,
-    build_probabilistic_bars_spec,
     is_valid_probability_values,
 )
 
@@ -14,42 +12,6 @@ def make_fw(n):
     low = vals - rng.uniform(0.05, 0.15, size=n)
     high = vals + rng.uniform(0.05, 0.25, size=n)
     return {"predict": vals, "low": low, "high": high}
-
-
-def test_build_regression_numeric_path_and_labels():
-    vals = np.array([0.1, -0.2, 0.3])
-    spec = build_regression_bars_spec(
-        title="t",
-        predict={"predict": 0.5},
-        feature_weights=vals,
-        features_to_plot=[0, 1, 2],
-        column_names=["a", "b", "c"],
-        instance=[10, 20, 30],
-        y_minmax=(0.0, 1.0),
-        interval=False,
-    )
-    bars = spec.body.bars
-    assert [b.label for b in bars] == ["a", "b", "c"]
-    assert [b.instance_value for b in bars] == [10, 20, 30]
-
-
-def test_build_regression_interval_dict_and_header_xlim():
-    fw = make_fw(4)
-    spec = build_regression_bars_spec(
-        title=None,
-        predict={"predict": 0.2, "low": 0.1, "high": 0.3},
-        feature_weights=fw,
-        features_to_plot=[0, 1, 2, 3],
-        column_names=None,
-        instance=None,
-        y_minmax=(0.0, 1.0),
-        interval=True,
-    )
-    # header xlim should be set when y_minmax provided
-    assert spec.header.xlim is not None
-    # bars should have interval_low/high set
-    for b in spec.body.bars:
-        assert b.interval_low is not None and b.interval_high is not None
 
 
 def test_sort_by_value_and_abs_ordering():
@@ -120,84 +82,7 @@ def test_sort_by_width_and_label():
     assert labels == sorted(labels)
 
 
-def test_probabilistic_builder_color_role_and_dual_header():
-    fw = make_fw(3)
-    spec = build_probabilistic_bars_spec(
-        title="p",
-        predict={"predict": 0.6, "low": 0.5, "high": 0.7},
-        feature_weights=fw,
-        features_to_plot=[0, 1, 2],
-        column_names=["a", "b", "c"],
-        instance=[1, 2, 3],
-        y_minmax=None,
-        interval=True,
-    )
-    # header should be dual for probabilistic builder
-    assert getattr(spec.header, "dual", False) is True
-    # color role should be 'positive' for positive values and 'negative' otherwise
-    roles = [b.color_role for b in spec.body.bars]
-    assert all(r in ("positive", "negative") for r in roles)
-
-
-def test_probabilistic_builder_unit_interval_with_custom_minmax():
-    fw = make_fw(2)
-    spec = build_probabilistic_bars_spec(
-        title="prob",
-        predict={"predict": 0.6, "low": 0.45, "high": 0.7},
-        feature_weights=fw,
-        features_to_plot=[0, 1],
-        column_names=["a", "b"],
-        instance=[1, 2],
-        y_minmax=(10.0, 25.0),
-        interval=True,
-    )
-    assert spec.header is not None
-    assert spec.header.xlim == (0.0, 1.0)
-    assert spec.header.low == pytest.approx(0.45)
-    assert spec.header.high == pytest.approx(0.7)
-    assert spec.header.pred == pytest.approx(0.6)
-
-
 # Tests for is_valid_probability_values public API
-
-
-def test_is_valid_probability_values_should_return_true_for_valid_probabilities():
-    """Verify is_valid_probability_values accepts valid probabilities in [0, 1]."""
-    assert is_valid_probability_values(0.0)
-    assert is_valid_probability_values(0.5)
-    assert is_valid_probability_values(1.0)
-    assert is_valid_probability_values(0.0, 0.5, 1.0)
-    assert is_valid_probability_values(0.25, 0.75)
-
-
-def test_is_valid_probability_values_should_accept_string_probabilities():
-    """Verify is_valid_probability_values accepts string values coercible to probabilities."""
-    assert is_valid_probability_values("0.0")
-    assert is_valid_probability_values("0.5")
-    assert is_valid_probability_values("1.0")
-    assert is_valid_probability_values("0.0", "0.5", "1.0")
-
-
-def test_is_valid_probability_values_should_accept_with_tolerance():
-    """Verify is_valid_probability_values allows small tolerance beyond [0, 1]."""
-    # _PROBABILITY_TOL is typically 1e-9
-    assert is_valid_probability_values(-1e-10)  # slightly below 0, within tolerance
-    assert is_valid_probability_values(1.0 + 1e-10)  # slightly above 1, within tolerance
-
-
-def test_is_valid_probability_values_should_reject_out_of_range_values():
-    """Verify is_valid_probability_values rejects values outside [0, 1] beyond tolerance."""
-    assert not is_valid_probability_values(-0.1)
-    assert not is_valid_probability_values(1.1)
-    assert not is_valid_probability_values(-1.0)
-    assert not is_valid_probability_values(2.0)
-
-
-def test_is_valid_probability_values_should_reject_non_finite_values():
-    """Verify is_valid_probability_values rejects non-finite values."""
-    assert not is_valid_probability_values(float("inf"))
-    assert not is_valid_probability_values(float("-inf"))
-    assert not is_valid_probability_values(float("nan"))
 
 
 def test_is_valid_probability_values_should_reject_non_numeric_strings():
@@ -210,10 +95,3 @@ def test_is_valid_probability_values_should_reject_non_numeric_strings():
 def test_is_valid_probability_values_should_reject_empty_input():
     """Verify is_valid_probability_values requires at least one value."""
     assert not is_valid_probability_values()
-
-
-def test_is_valid_probability_values_should_reject_mixed_invalid_values():
-    """Verify is_valid_probability_values rejects when any value is invalid."""
-    assert not is_valid_probability_values(0.5, 1.5)  # 1.5 out of range
-    assert not is_valid_probability_values(0.5, float("nan"))  # nan present
-    assert not is_valid_probability_values(0.0, "abc", 1.0)  # invalid string

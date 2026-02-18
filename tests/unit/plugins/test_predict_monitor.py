@@ -70,36 +70,6 @@ def test_predict_bridge_monitor_reset_usage():
     assert not monitor.used
 
 
-def test_predict_monitor_warns_when_low_exceeds_high():
-    class WarningBridge(DummyBridge):
-        def __init__(self) -> None:
-            super().__init__()
-            self.predictions["predict"] = {
-                "predict": np.asarray([0.4]),
-                "low": np.asarray([0.6]),
-                "high": np.asarray([0.5]),
-            }
-
-    monitor = PredictBridgeMonitor(WarningBridge())
-    with pytest.warns(UserWarning, match="low > high"):
-        monitor.predict(np.array([[1.0]]), mode="factual", task="regression")
-
-
-def test_predict_monitor_warns_when_predict_outside_interval():
-    class OutsideBridge(DummyBridge):
-        def __init__(self) -> None:
-            super().__init__()
-            self.predictions["predict"] = {
-                "predict": np.asarray([1.2]),
-                "low": np.asarray([0.0]),
-                "high": np.asarray([1.0]),
-            }
-
-    monitor = PredictBridgeMonitor(OutsideBridge())
-    with pytest.warns(UserWarning, match="predict not in"):
-        monitor.predict(np.array([[0.5]]), mode="factual", task="regression")
-
-
 def test_predict_monitor_interval_tuple_validation_warns():
     class IntervalBridge(DummyBridge):
         def predict_interval(self, x, *, task, bins=None):

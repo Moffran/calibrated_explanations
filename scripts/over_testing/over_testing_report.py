@@ -311,14 +311,16 @@ def _write_summary_json(entries: list[SummaryStats], output: Path) -> None:
         }
         for entry in entries
     ]
-    with output.open("w", encoding="utf-8") as handle:
+    with output.open("w", encoding="utf-8", newline="\n") as handle:
         json.dump(payload, handle, indent=2)
+        handle.write("\n")
 
 
 def _write_metadata_json(metadata: dict[str, object], output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", encoding="utf-8") as handle:
+    with output.open("w", encoding="utf-8", newline="\n") as handle:
         json.dump(metadata, handle, indent=2)
+        handle.write("\n")
 
 
 def main() -> int:

@@ -1,5 +1,8 @@
+import pytest
 import re
 from calibrated_explanations import CalibratedExplainer
+
+pytestmark = pytest.mark.integration
 
 
 def parse_repr_rules(repr_str):

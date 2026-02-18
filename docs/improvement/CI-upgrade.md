@@ -62,5 +62,20 @@ Operational notes
 - Keep `workflow_dispatch` available on heavy jobs to assist debugging.
 - Ensure all reusables emit informative logs and warnings for fallback paths (per the repo's fallback visibility policy).
 
+Local-runner maintenance
+------------------------
+
+The repository includes a local stacked-checks runner at `scripts/local_checks.py` and a Makefile target `make local-checks` which mirror CI workflow steps for fast, reproducible local validation.
+
+Policy: whenever CI workflows or job entrypoints are added, removed, or extended under `.github/workflows/`, the corresponding local runner must be updated to reflect those changes. This ensures contributors can reproduce CI checks locally and prevents drift between local and CI validation paths.
+
+Practical checklist when updating CI:
+- Add a matching Step to `scripts/local_checks.py` for any new CI job that contributors should be able to run locally (mark heavy/scheduled jobs as `optional=True`).
+- Update the `Makefile` targets if the new job should be reachable via `make local-checks` or a new `make` shorthand.
+- Document the change in the PR description and update `CONTRIBUTING.md` and the local-checks script if the change affects contributor workflows.
+- Run `make local-checks` locally to validate parity before merging the CI workflow change.
+
+The local runner is intentionally conservative: heavy jobs (docs build, notebook audit, perf) may be included as advisory optional steps so they don't block fast developer loops but remain available for reproducing CI behaviour.
+
 Contact
 - For questions or to request the validation window be extended, contact the release manager and CI owner listed in `GOVERNANCE.md`.

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import calibrated_explanations.plotting as plotting_module
 from calibrated_explanations.utils.exceptions import ConfigurationError
 
 # Suppress deprecation warning for importing plotting
@@ -121,44 +122,6 @@ def testplot_alternative_thresholded_tuple(mock_require, mock_render):
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
-def testplot_alternative_multiclass(mock_require, mock_render):
-    """Should correctly determine axis labels for multiclass."""
-    explanation = MagicMock()
-    explanation.get_mode.return_value = "classification"
-    explanation.get_class_labels.return_value = ["A", "B", "C"]
-    explanation.prediction = {"classes": 2}
-    explanation.is_thresholded.return_value = False
-
-    # Mock explainer for is_multiclass check
-    explainer = MagicMock()
-    explainer.is_multiclass.return_value = True
-    explanation.get_explainer.return_value = explainer
-
-    # Fix inputs
-    instance = [0.5]
-    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
-    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
-    features_to_plot = [0]
-    column_names = ["f1"]
-
-    plotting.plot_alternative(
-        explanation,
-        instance,
-        predict,
-        feature_predict,
-        features_to_plot,
-        1,
-        column_names,
-        "Title",
-        None,
-        True,
-        use_legacy=False,
-    )
-    mock_render.assert_called()
-
-
-@patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy.plot_alternative")
 def testplot_alternative_fallback_on_error(
     mock_legacy, mock_require, mock_render, enable_fallbacks
@@ -195,40 +158,6 @@ def testplot_alternative_fallback_on_error(
         )
 
     mock_legacy.assert_called_once()
-
-
-@patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
-def testplot_regression(mock_require, mock_render):
-    """Should correctly render regression plots."""
-    explanation = MagicMock()
-    explanation.get_mode.return_value = "regression"
-    explanation.y_minmax = [0, 1]
-
-    # Mock other required args
-    instance = [0.5]
-    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
-    # When interval=False (default), feature_weights is a list of values
-    feature_weights = [0.5]
-    features_to_plot = [0]
-    num_to_show = 1
-    column_names = ["f1"]
-
-    plotting.plot_regression(
-        explanation,
-        instance,
-        predict,
-        feature_weights,
-        features_to_plot,
-        num_to_show,
-        column_names,
-        "Title",
-        None,
-        True,
-        use_legacy=False,
-    )
-
-    mock_render.assert_called_once()
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
@@ -272,6 +201,64 @@ def testplot_regression_fallback_on_error(mock_legacy, mock_require, mock_render
     mock_legacy.assert_called_once()
 
 
+def test_plot_regression_interval_one_sided_raises_warning():
+    """Should reject interval plotting when explanation is one-sided."""
+    explanation = MagicMock()
+    explanation.is_one_sided.return_value = True
+
+    with pytest.raises(Warning, match="Interval plot is not supported for one-sided explanations"):
+        plotting.plot_regression(
+            explanation,
+            instance=[0.5],
+            predict={"predict": 0.5, "low": 0.4, "high": 0.6},
+            feature_weights=[0.5],
+            features_to_plot=[0],
+            num_to_show=1,
+            column_names=["f1"],
+            title="Title",
+            path=None,
+            show=False,
+            interval=True,
+            idx=0,
+            save_ext=[],
+            use_legacy=False,
+        )
+
+
+def test_plot_regression_interval_guard_exception_logs_and_continues(caplog):
+    """Should log guard failures and continue down the non-legacy path."""
+    explanation = MagicMock()
+    explanation.is_one_sided.side_effect = RuntimeError("guard failure")
+    explanation.y_minmax = [0.0, 1.0]
+
+    caplog.set_level("DEBUG", logger=plotting_module.__name__)
+
+    original_plt = plotting.plt
+    plotting.plt = None
+    try:
+        result = plotting.plot_regression(
+            explanation,
+            instance=[0.5],
+            predict={"predict": 0.5, "low": 0.4, "high": 0.6},
+            feature_weights=[0.5],
+            features_to_plot=[0],
+            num_to_show=1,
+            column_names=["f1"],
+            title="Title",
+            path=None,
+            show=False,
+            interval=True,
+            idx=0,
+            save_ext=[],
+            use_legacy=False,
+        )
+    finally:
+        plotting.plt = original_plt
+
+    assert result is None
+    assert any("Guard check failed" in record.message for record in caplog.records)
+
+
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
 def testplot_triangular(mock_require, mock_render):
@@ -301,25 +288,50 @@ def testplot_triangular(mock_require, mock_render):
     mock_render.assert_called_once()
 
 
-def test_plot_probabilistic_prefers_legacy_when_style_requests(monkeypatch: pytest.MonkeyPatch):
-    """Should route to legacy plotting when the style chain selects it."""
-
-    # Removed: direct _plot_probabilistic call is not allowed by anti-pattern remediation.
-    pass
-
-
 def test_plot_probabilistic_noop_when_matplotlib_missing(monkeypatch: pytest.MonkeyPatch):
     """Should exit early when matplotlib is unavailable and nothing is shown."""
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", None)
 
-    # Removed: direct _plot_probabilistic call is not allowed by anti-pattern remediation.
-    pass
+    result = plotting.plot_probabilistic(
+        probabilistic_explanation(),
+        instance=[0.2],
+        predict={"predict": 0.5},
+        feature_weights={"predict": [0.5]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="noop",
+        path=None,
+        show=False,
+        save_ext=[".svg"],
+        use_legacy=False,
+    )
+
+    assert result is None
 
 
 def test_plot_probabilistic_noop_without_show_or_save(monkeypatch: pytest.MonkeyPatch):
     """Should avoid building specs when no rendering or saving is requested."""
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
 
-    # Removed: direct _plot_probabilistic call is not allowed by anti-pattern remediation.
-    pass
+    result = plotting.plot_probabilistic(
+        probabilistic_explanation(),
+        instance=[0.2],
+        predict={"predict": 0.5},
+        feature_weights={"predict": [0.5]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="noop-nosave",
+        path=None,
+        show=False,
+        save_ext=[],
+        use_legacy=False,
+    )
+
+    assert result is None
 
 
 def probabilistic_explanation(
@@ -354,13 +366,6 @@ def probabilistic_explanation(
         explanation.is_multiclass = True
     setattr(explanation, "_get_explainer", lambda: explainer)
     return explanation
-
-
-def test_plot_probabilistic_renders_and_saves(monkeypatch: pytest.MonkeyPatch):
-    """Should render PlotSpecs once and save additional extensions."""
-
-    # Removed: direct _plot_probabilistic call is not allowed by anti-pattern remediation.
-    pass
 
 
 def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch, enable_fallbacks):

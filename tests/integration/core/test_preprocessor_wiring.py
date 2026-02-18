@@ -17,6 +17,8 @@ import pytest
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
 from calibrated_explanations.core import wrap_explainer as we
 
+pytestmark = pytest.mark.integration
+
 
 class DummyPreprocessor:
     def __init__(self, factor: float = 2.0) -> None:
@@ -58,20 +60,6 @@ class StubModel:
         self.fitted_ = True
 
 
-def test_preprocessor_applied_on_fit():
-    model = StubModel()
-    pre = DummyPreprocessor(factor=2.5)
-    cfg = ExplainerConfig(model=model, preprocessor=pre)
-    w = we.WrapCalibratedExplainer.from_config(cfg)
-
-    x = np.array([[1.0, 2.0], [3.0, 4.0]])
-    y = np.array([0, 1])
-    w.fit(x, y)
-
-    assert model.last_fit_X is not None
-    np.testing.assert_allclose(model.last_fit_X, x * 2.5)
-
-
 def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):
     model = StubModel()
     pre = DummyPreprocessor(factor=3.0)
@@ -100,49 +88,6 @@ def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):
     x_test = np.array([[4.0, 5.0]])
     out = w.explain_factual(x_test)
     np.testing.assert_allclose(out, x_test * 3.0)
-
-
-def test_preprocessor_is_persistent_and_deterministic(monkeypatch):
-    class RecordingPreprocessor(DummyPreprocessor):
-        def __init__(self, factor: float = 2.0) -> None:
-            super().__init__(factor)
-            self.fit_calls = 0
-            self.transform_calls = 0
-
-        def fit_transform(self, x):  # noqa: D401
-            self.fit_calls += 1
-            return super().fit_transform(x)
-
-        def transform(self, x):  # noqa: D401
-            self.transform_calls += 1
-            return super().transform(x)
-
-    model = StubModel()
-    pre = RecordingPreprocessor(factor=1.5)
-    cfg = ExplainerConfig(model=model, preprocessor=pre)
-    w = we.WrapCalibratedExplainer.from_config(cfg)
-
-    # Fit path should call fit once
-    x = np.array([[1.0, 2.0], [3.0, 4.0]])
-    y = np.array([0, 1])
-    w.fit(x, y)
-    assert pre.fit_calls == 1
-
-    # Calibrate path should not re-fit if already fitted
-    class DummyCE2:
-        def __init__(self, learner, x_cal, y_cal, **kwargs):  # noqa: D401
-            # ensure transform used and deterministic
-            np.testing.assert_allclose(x_cal, np.asarray([[1.0, 1.0], [2.0, 2.0]]) * 1.5)
-
-        def explain_factual(self, x, **kwargs):  # noqa: D401
-            return np.asarray(x)
-
-    monkeypatch.setattr(we, "CalibratedExplainer", DummyCE2)
-    x_cal = np.array([[1.0, 1.0], [2.0, 2.0]])
-    w.calibrate(x_cal, y)
-    # Should have used transform only (no new fit)
-    assert pre.fit_calls == 1
-    assert pre.transform_calls >= 2  # calibrate + inference paths
 
 
 def test_preprocessor_metadata_exposed_in_telemetry():

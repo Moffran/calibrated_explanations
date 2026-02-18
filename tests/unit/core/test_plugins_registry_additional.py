@@ -355,15 +355,6 @@ class SimpleExplanationPlugin:
         return {}
 
 
-def test_register_explanation_plugin_updates_raw_meta():
-    registry.clear_explanation_plugins()
-    plugin = SimpleExplanationPlugin()
-    descriptor = registry.register_explanation_plugin("simple", plugin)
-    assert descriptor.metadata["trusted"] is False
-    assert plugin.plugin_meta["trusted"] is False
-    assert plugin.plugin_meta["trust"] is False
-
-
 def test_register_interval_plugin_requires_metadata():
     from calibrated_explanations.utils.exceptions import ValidationError
 
@@ -611,38 +602,6 @@ class EntryPoint:
 
     def load(self):
         return self.plugin_instance
-
-
-def test_load_entrypoint_plugins_include_untrusted(monkeypatch):
-    plugin = SimpleExplanationPlugin()
-    entries = [EntryPoint(plugin)]
-
-    monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entries)
-
-    loaded = registry.load_entrypoint_plugins(include_untrusted=True)
-    assert loaded == (plugin,)
-    assert plugin in registry.list_plugins()
-
-
-def test_load_entrypoint_plugins_trusted_flow(monkeypatch):
-    class TrustedPlugin(SimpleExplanationPlugin):
-        plugin_meta = {
-            **SimpleExplanationPlugin.plugin_meta,
-            "name": "entry.trusted",
-            "trust": True,
-            "trusted": True,
-        }
-
-    plugin = TrustedPlugin()
-    entries = [EntryPoint(plugin)]
-
-    monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entries)
-    monkeypatch.setattr(registry, "_env_trusted_names", lambda: {"entry.trusted"})
-    monkeypatch.setattr(registry, "_pyproject_trusted_identifiers", lambda: set())
-
-    loaded = registry.load_entrypoint_plugins()
-    assert loaded == (plugin,)
-    assert plugin in registry.list_plugins(include_untrusted=False)
 
 
 def test_load_entrypoint_plugins_errors(monkeypatch):

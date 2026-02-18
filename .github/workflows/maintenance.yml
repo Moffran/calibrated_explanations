@@ -52,7 +52,7 @@ jobs:
           set -e
           DATE_TAG=$(date -u +%Y%m%d)
           mkdir -p tests/benchmarks
-          python scripts/micro_bench_perf.py --explain-backend legacy > tests/benchmarks/micro_${DATE_TAG}.json
+          python scripts/perf/micro_bench_perf.py --explain-backend legacy > tests/benchmarks/micro_${DATE_TAG}.json
 
           echo "date_tag=$DATE_TAG" >> $GITHUB_OUTPUT
 

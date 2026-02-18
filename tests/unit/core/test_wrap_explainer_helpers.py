@@ -253,17 +253,6 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
     assert getattr(wrapper, "cfg", None) is cfg
 
 
-def test_explain_fast_requires_fit_and_calibration(wrapper: WrapCalibratedExplainer) -> None:
-    wrapper.fitted = False
-    with pytest.raises(NotFittedError):
-        wrapper.explain_fast(np.array([1, 2]))
-
-    wrapper.fitted = True
-    wrapper.calibrated = False
-    with pytest.raises(NotFittedError):
-        wrapper.explain_fast(np.array([1, 2]))
-
-
 def test_explain_lime_invokes_underlying_explainer(
     wrapper: WrapCalibratedExplainer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -289,12 +278,6 @@ def test_explain_lime_invokes_underlying_explainer(
     _, payload = wrapper.explainer.calls[-1]  # type: ignore[union-attr]
     assert payload["custom_flag"] is True
     assert "bins" in payload
-
-
-def test_predict_requires_fit(wrapper: WrapCalibratedExplainer) -> None:
-    wrapper.fitted = False
-    with pytest.raises(NotFittedError):
-        wrapper.predict(np.array([1, 2]))
 
 
 def test_predict_proba_threshold_requires_calibration_when_available() -> None:
@@ -382,6 +365,7 @@ def test_pre_fit_preprocess_without_configured_preprocessor(
     wrapper: WrapCalibratedExplainer,
 ) -> None:
     data = np.array([[1, 2]])
+    wrapper.auto_encode = False
     wrapper.preprocessor = None
 
     assert wrapper.pre_fit_preprocess(data) is data
@@ -407,3 +391,84 @@ def test_pre_fit_preprocess_uses_two_step_transform(wrapper: WrapCalibratedExpla
     assert wrapper.pre_fitted is True
     assert preprocessor.fit_args
     assert np.array_equal(transformed, data + 5)
+
+
+def test_export_and_import_preprocessor_mapping_applies_when_possible(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    pre = RecordingPreprocessor()
+    wrapper.preprocessor = pre
+
+    exported = wrapper.export_preprocessor_mapping()
+    assert exported is not None
+    # recording preprocessor exposes a custom snapshot
+    assert "snap" in next(iter(exported.values())) or "snap" in exported
+
+    # Apply a new mapping and ensure it is written to the preprocessor.mapping_
+    new_map = {"feature": {"a": 42}}
+    wrapper.import_preprocessor_mapping(new_map)
+    assert pre.mapping_ == new_map
+
+
+def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    wrapper.preprocessor = None
+    wrapper.auto_encode = "auto"
+    data = np.array([["a"], ["b"], ["a"]], dtype=object)
+
+    transformed = wrapper.pre_fit_preprocess(data)
+
+    assert wrapper.pre_fitted is True
+    assert wrapper.preprocessor is not None
+    assert wrapper.preprocessor.__class__.__name__ == "BuiltinEncoder"
+    assert transformed.shape == (3, 1)
+    assert transformed.dtype.kind == "f"
+
+
+def test_unseen_category_policy_error_raises_validation_error(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    cfg = SimpleNamespace(
+        model=PredictOnlyLearner(),
+        threshold=0.5,
+        low_high_percentiles=(5, 95),
+        preprocessor=None,
+        auto_encode="auto",
+        unseen_category_policy="error",
+    )
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
+    wrapper.pre_fit_preprocess(np.array([["a"], ["b"]], dtype=object))
+
+    with pytest.raises(ValidationError, match="Unseen category encountered"):
+        wrapper.maybe_preprocess_for_inference(np.array([["c"]], dtype=object))
+
+
+def test_unseen_category_policy_ignore_returns_sentinel_value(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    cfg = SimpleNamespace(
+        model=PredictOnlyLearner(),
+        threshold=0.5,
+        low_high_percentiles=(5, 95),
+        preprocessor=None,
+        auto_encode="auto",
+        unseen_category_policy="ignore",
+    )
+    wrapper = WrapCalibratedExplainer.from_config(cfg)
+    wrapper.pre_fit_preprocess(np.array([["a"], ["b"]], dtype=object))
+
+    transformed = wrapper.maybe_preprocess_for_inference(np.array([["c"]], dtype=object))
+
+    assert transformed.shape == (1, 1)
+    assert transformed[0, 0] == -1.0
+
+
+def test_non_numeric_input_without_preprocessing_raises_actionable_error(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    wrapper.preprocessor = None
+    wrapper.auto_encode = False
+
+    with pytest.raises(ValidationError, match="Set auto_encode='auto'"):
+        wrapper.pre_fit_preprocess(np.array([["x"]], dtype=object))

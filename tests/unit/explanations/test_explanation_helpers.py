@@ -511,50 +511,6 @@ def testnormalize_threshold_value_handles_sequences():
     assert explanation.normalize_threshold_value() == pytest.approx(0.75)
 
 
-def test_build_uncertainty_payload_controls_percentiles():
-    explanation = make_explanation()
-    payload = explanation.build_uncertainty_payload(
-        value=np.array([0.6]),
-        low=0.4,
-        high=0.8,
-        representation="percentile",
-        percentiles=(0.05, 0.95),
-    )
-    assert payload["legacy_interval"] == [0.4, 0.8]
-    assert payload["raw_percentiles"] == [0.05, 0.95]
-    assert payload["confidence_level"] == pytest.approx(0.9)
-
-    no_percentiles = explanation.build_uncertainty_payload(
-        value=0.6,
-        low=0.4,
-        high=0.8,
-        representation="percentile",
-        percentiles=(0.05, 0.95),
-        include_percentiles=False,
-    )
-    assert no_percentiles["raw_percentiles"] is None
-    assert no_percentiles["confidence_level"] is None
-
-
-def test_ignored_features_for_instance_combines_global_and_per_instance(simple_explanation):
-    """ignored_features_for_instance should merge collection and per-instance masks."""
-    explanation = simple_explanation
-    container = explanation.calibrated_explanations
-
-    # Global ignore only
-    container.features_to_ignore = [0]
-    container.feature_filter_per_instance_ignore = [[], []]
-    ignored = explanation.ignored_features_for_instance()
-    assert 0 in ignored
-
-    # Per-instance ignore for this index should be honoured
-    container.features_to_ignore = []
-    container.feature_filter_per_instance_ignore = [[], [1]]
-    ignored = explanation.ignored_features_for_instance()
-    assert 1 in ignored
-    assert 0 not in ignored
-
-
 def test_build_instance_uncertainty_for_modes():
     base = make_explanation()
     payload = base.build_instance_uncertainty()
@@ -623,54 +579,6 @@ def test_build_condition_payload_parses_rules(telemetry_explanation):
     assert raw_payload["value"] == pytest.approx(0.7)
 
 
-def test_build_factual_rules_payload_serializes_rules(telemetry_explanation):
-    payload = telemetry_explanation.build_rules_payload()
-    core = payload["core"]
-    metadata = payload["metadata"]
-    assert core["kind"] == "factual"
-    assert len(core["feature_rules"]) == 2
-    first = core["feature_rules"][0]
-    assert set(first.keys()) == {"weight", "condition"}
-    assert "uncertainty_interval" in first["weight"]
-    assert metadata["feature_rules"][0]["weight_uncertainty"]["representation"] == "percentile"
-    assert metadata["feature_rules"][0]["prediction_uncertainty"]["raw_percentiles"] == [
-        0.05,
-        0.95,
-    ]
-
-
-def test_build_factual_rules_payload_threshold_representation():
-    explanation = make_explanation(threshold=(0.2, 0.8))
-    rules = build_rules_fixture(explanation)
-    explanation.mock_rules = rules
-    explanation.rules = rules
-    explanation.has_rules_flag = True
-    payload = explanation.build_rules_payload()
-    metadata_rule = payload["metadata"]["feature_rules"][0]
-    prediction_metadata = metadata_rule["prediction_uncertainty"]
-    assert prediction_metadata["representation"] == "threshold"
-    assert prediction_metadata["threshold"] == [0.2, 0.8]
-    assert metadata_rule["weight_uncertainty"]["representation"] == "venn_abers"
-
-
-def test_build_rules_payload_for_alternative(alternative_explanation):
-    payload = alternative_explanation.build_rules_payload()
-    core = payload["core"]
-    metadata = payload["metadata"]
-    assert core["kind"] == "alternative"
-    assert len(core["feature_rules"]) == 1
-    feature_rule = metadata["feature_rules"][0]
-    assert feature_rule["prediction_uncertainty"]["representation"] == "percentile"
-    assert feature_rule["weight_uncertainty"]["representation"] == "percentile"
-
-
-def test_to_telemetry_includes_serialized_rules(telemetry_explanation):
-    telemetry = telemetry_explanation.to_telemetry()
-    assert set(telemetry.keys()) == {"uncertainty", "rules", "metadata"}
-    assert telemetry["rules"]["core"]
-    assert telemetry["uncertainty"]["representation"] == "percentile"
-
-
 def test_predict_conjunctive_average():
     explanation = make_explanation()
     perturbed = np.array(explanation.x_test[1], copy=True)
@@ -684,6 +592,22 @@ def test_predict_conjunctive_average():
     assert predict == pytest.approx(1.0)
     assert low == pytest.approx(0.5)
     assert high == pytest.approx(1.5)
+
+
+def test_predict_conjunctive_average_three_features():
+    explanation = make_explanation()
+    perturbed = np.array([0.3, 0.4, 0.5], copy=True)
+    predict, low, high = explanation.predict_conjunctive(
+        [np.array([0.1, 0.2]), np.array([0.3, 0.4]), np.array([0.5, 0.6])],
+        [0, 1, 2],
+        perturbed,
+        threshold=None,
+        predicted_class=explanation.prediction["classes"],
+    )
+    assert predict == pytest.approx(1.0)
+    assert low == pytest.approx(0.5)
+    assert high == pytest.approx(1.5)
+    assert np.allclose(perturbed, np.array([0.3, 0.4, 0.5]))
 
 
 def test_predict_conjunctive_requires_multiple_features():

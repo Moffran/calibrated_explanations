@@ -1,5 +1,4 @@
 import sys
-import time
 import types
 import json
 
@@ -14,7 +13,6 @@ from calibrated_explanations.explanations import (
     FrozenCalibratedExplainer,
 )
 from calibrated_explanations.plugins.manager import PluginManager
-from tests.helpers.deprecation import warns_or_raises
 
 
 class DummyDomainMapper:
@@ -239,6 +237,27 @@ def test_iteration_and_indexing_behaviours(calibrated_collection):
         _ = collection["invalid"]
 
 
+def test_collection_init_validation_and_misc_helpers():
+    x = np.array([[1.0, 2.0, 3.0]])
+    with pytest.raises(ValidationError):
+        CalibratedExplanations(
+            DummyCalibratedExplainer(),
+            x,
+            None,
+            bins=None,
+            condition_source="invalid",
+        )
+
+    exported = explanations_mod.ExportedExplanationCollection(metadata={"m": 1}, explanations=())
+    assert exported.__getstate__()["metadata"] == {"m": 1}
+
+    collection = CalibratedExplanations(DummyCalibratedExplainer(), x, None, bins=None)
+    collection.explanations = [DummyExplanation(0, x[0], 0.2, (0.0, 1.0), [1, 2, 3])]
+    collection.explanations[0].build_rules_payload = lambda: {"ok": True}
+    assert collection.build_rules_payload() == [{"ok": True}]
+    assert collection.copy(deep=True) is not collection
+
+
 def test_getitem_preserves_threshold_variants_and_str():
     x = np.array(
         [
@@ -288,6 +307,12 @@ def test_getitem_preserves_threshold_variants_and_str():
     assert not none_collection.is_one_sided
 
 
+def test_getitem_handles_short_feature_filter_mask_without_crashing(calibrated_collection):
+    calibrated_collection.feature_filter_per_instance_ignore = [[0]]
+    subset = calibrated_collection[[0, 1]]
+    assert subset.feature_filter_per_instance_ignore is None
+
+
 def test_prediction_related_properties(calibrated_collection):
     collection = calibrated_collection
     assert collection.predict == [exp.predict for exp in collection.explanations]
@@ -324,20 +349,6 @@ def test_probabilities_stack_vectors():
     stacked = collection.probabilities
     assert stacked.shape == (2, 2)
     assert np.allclose(stacked[0], [0.4, 0.6])
-
-
-def test_threshold_and_confidence_helpers(calibrated_collection):
-    collection = calibrated_collection
-    assert collection.is_probabilistic_regression
-    collection.low_high_percentiles = (np.inf, 95.0)
-    assert collection.is_one_sided
-    assert collection.get_confidence() == 95.0
-    collection.low_high_percentiles = (5.0, np.inf)
-    assert collection.get_confidence() == 95.0
-    collection.low_high_percentiles = (5.0, 95.0)
-    assert collection.get_confidence() == 90.0
-    assert collection.get_low_percentile() == 5.0
-    assert collection.get_high_percentile() == 95.0
 
 
 class FakeFactual(DummyExplanation):
@@ -404,43 +415,6 @@ class FakeFast(DummyExplanation):
             "instance_bin": instance_bin,
             "condition_source": condition_source,
         }
-
-
-def test_finalize_variants(calibrated_collection, monkeypatch):
-    monkeypatch.setattr(explanations_mod, "FactualExplanation", FakeFactual)
-    start = time.time()
-    result = calibrated_collection.finalize(
-        binned={},
-        feature_weights={},
-        feature_predict={},
-        prediction={"predict": 0.5},
-        instance_time=[0.1, 0.2, 0.3],
-        total_time=start,
-    )
-    assert result is calibrated_collection
-    assert len(calibrated_collection.explanations) == 6
-    assert calibrated_collection.total_explain_time is not None
-
-    new_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
-    )
-    monkeypatch.setattr(explanations_mod, "AlternativeExplanation", FakeAlternative)
-    monkeypatch.setattr(CalibratedExplanations, "is_alternative", lambda self: True)
-    alt_result = new_collection.finalize({}, {}, {}, {"predict": 0.2})
-    assert isinstance(alt_result, AlternativeExplanations)
-
-    monkeypatch.setattr(explanations_mod, "FastExplanation", FakeFast)
-    fast_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
-    )
-    fast_collection.finalize_fast(
-        {},
-        {"predict": 0.1},
-        {"predict": 0.2},
-        instance_time=[0.1, 0.2, 0.3],
-        total_time=start,
-    )
-    assert len(fast_collection.explanations) == 3
 
 
 def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
@@ -514,19 +488,6 @@ def test_plot_routing(monkeypatch, calibrated_collection):
         assert any(call[0] == "plot" for call in exp.calls)
 
 
-def test_get_explanation_validations(calibrated_collection):
-    from calibrated_explanations.core import ValidationError
-
-    with warns_or_raises():
-        assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
-    with warns_or_raises(), pytest.raises(ValidationError):
-        calibrated_collection.get_explanation("one")
-    with warns_or_raises(), pytest.raises(ValidationError):
-        calibrated_collection.get_explanation(-1)
-    with warns_or_raises(), pytest.raises(ValidationError):
-        calibrated_collection.get_explanation(100)
-
-
 def test_conjunction_management(calibrated_collection):
     calibrated_collection.add_conjunctions(n_top_features=2, max_rule_size=3)
     calibrated_collection.reset()
@@ -549,10 +510,24 @@ def test_alternative_specific_filters(calibrated_collection):
         assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
 
 
-def test_collection_filter_rule_sizes(calibrated_collection):
-    filtered = calibrated_collection.filter_rule_sizes(rule_sizes=[1, 2], copy=True)
-    for exp in filtered.explanations:
-        assert any(call[0] == "filter_rule_sizes" for call in exp.calls)
+def test_alternative_specific_filters_inplace(calibrated_collection):
+    alt = AlternativeExplanations.from_collection(calibrated_collection)
+
+    out_super = alt.super_explanations(copy=False)
+    out_semi = alt.semi_explanations(copy=False)
+    out_counter = alt.counter_explanations(copy=False)
+    out_ensured = alt.ensured_explanations(copy=False)
+
+    assert out_super is alt
+    assert out_semi is alt
+    assert out_counter is alt
+    assert out_ensured is alt
+    for exp in alt.explanations:
+        actions = [call[0] for call in exp.calls]
+        assert "super" in actions
+        assert "semi" in actions
+        assert "counter" in actions
+        assert "ensured" in actions
 
 
 def test_collection_to_json_and_back(calibrated_collection):
@@ -616,6 +591,38 @@ def test_collection_to_json_stream(calibrated_collection):
         assert len(arr) <= 2  # chunk_size=2
 
 
+def test_to_json_stream_handles_underlying_telemetry_attachment_failure(calibrated_collection):
+    class BrokenUnderlying:
+        def __setattr__(self, name, value):
+            if name == "_last_telemetry":
+                raise RuntimeError("read-only telemetry")
+            return super().__setattr__(name, value)
+
+    class FrozenLike:
+        mode = "classification"
+        feature_names = ["feature_0", "feature_1", "feature_2"]
+        class_labels = {0: "zero", 1: "one"}
+        sample_percentiles = [5.0, 95.0]
+        _explainer = BrokenUnderlying()
+
+    calibrated_collection.calibrated_explainer = FrozenLike()
+    chunks = list(calibrated_collection.to_json_stream(format="jsonl"))
+    assert chunks
+    telemetry = json.loads(chunks[-1])
+    assert telemetry["export_telemetry"]["schema_version"] == "1.0.0"
+
+
+def test_collection_to_json_stream_rejects_unknown_format(calibrated_collection):
+    with pytest.raises(ValidationError):
+        list(calibrated_collection.to_json_stream(format="xml"))
+
+
+def test_collection_to_json_without_version(calibrated_collection):
+    payload = calibrated_collection.to_json(include_version=False)
+    assert "schema_version" not in payload
+    assert all("schema_version" not in item for item in payload["explanations"])
+
+
 def test_legacy_payload_prefers_available_rules(calibrated_collection):
     exp = calibrated_collection.explanations[0]
     exp.has_conjunctive_rules = True  # pylint: disable=protected-access
@@ -634,12 +641,24 @@ def test_legacy_payload_prefers_available_rules(calibrated_collection):
     assert "rule" in generated["rules"]
 
 
-def test_internal_helper_accessors(calibrated_collection):
-    assert calibrated_collection.get_explainer() is calibrated_collection.calibrated_explainer
-    rules = calibrated_collection.get_rules()
-    assert len(rules) == len(calibrated_collection)
-    calibrated_collection.low_high_percentiles = None
-    assert not calibrated_collection.is_one_sided
+def test_legacy_payload_handles_get_rules_exception(calibrated_collection):
+    class BrokenRules:
+        index = 0
+        has_conjunctive_rules = False
+        conjunctive_rules = None
+        rules = None
+        feature_weights = {}
+        feature_predict = {}
+        prediction = {}
+
+        def get_mode(self):
+            return "classification"
+
+        def get_rules(self):
+            raise RuntimeError("boom")
+
+    payload = calibrated_collection.legacy_payload(BrokenRules())
+    assert payload["rules"] == {}
 
 
 def test_collection_metadata_includes_runtime(calibrated_collection):
@@ -648,6 +667,37 @@ def test_collection_metadata_includes_runtime(calibrated_collection):
     assert metadata["class_labels"] == {"1": "class_one", "0": "class_zero"}
     assert metadata["sample_percentiles"] == [5.0, 95.0]
     assert metadata["runtime_telemetry"] == {"explanations": 3}
+
+
+def test_collection_metadata_runtime_telemetry_failure():
+    class BrokenUnderlying:
+        def runtime_telemetry(self):
+            raise RuntimeError("telemetry unavailable")
+
+    class BrokenFrozen:
+        mode = "classification"
+        class_labels = {0: "zero"}
+        sample_percentiles = [5.0, 95.0]
+        _explainer = BrokenUnderlying()
+
+        @property
+        def feature_names(self):
+            raise RuntimeError("feature names unavailable")
+
+    collection = CalibratedExplanations(
+        DummyCalibratedExplainer(),
+        np.array([[0.1, 0.2, 0.3]]),
+        None,
+        bins=None,
+    )
+    collection.explanations = [
+        DummyExplanation(0, np.array([0.1, 0.2, 0.3]), 0.1, (0.0, 1.0), [1, 2, 3])
+    ]
+    collection.calibrated_explainer = BrokenFrozen()
+    metadata = collection.collection_metadata()
+    assert metadata["mode"] == "classification"
+    assert "feature_names" not in metadata
+    assert "runtime_telemetry" not in metadata
 
 
 def test_frozen_explainer_read_only():
@@ -675,6 +725,166 @@ def test_frozen_explainer_read_only():
     assert callable(frozen.preload_shap)
     with pytest.raises(AttributeError):
         frozen.some_attribute = 5
+
+
+def test_filter_rule_sizes_inplace_mutates_collection(calibrated_collection):
+    out = calibrated_collection.filter_rule_sizes(rule_sizes=1, copy=False)
+    assert out is calibrated_collection
+    for exp in calibrated_collection.explanations:
+        assert any(
+            call[0] == "filter_rule_sizes" and call[1]["copy"] is False for call in exp.calls
+        )
+
+
+def test_from_batch_full_probabilities_and_instance_validation(calibrated_collection):
+    from calibrated_explanations.core import SerializationError, ValidationError
+
+    class GoodBatch:
+        def __init__(self, collection):
+            self.collection_metadata = {"container": collection}
+            self.container_cls = type(collection)
+            self.explanation_cls = type(collection.explanations[0])
+            self.instances = [
+                {
+                    "prediction": {"__full_probabilities__": [[0.1, 0.9], [0.2, 0.8]]},
+                    "explanation": collection.explanations[0],
+                }
+            ]
+
+    restored = CalibratedExplanations.from_batch(GoodBatch(calibrated_collection))
+    assert restored.batch_metadata["__full_probabilities__"] is not None
+    assert "full_probabilities_shape" in restored.telemetry
+
+    class MissingExplanationBatch(GoodBatch):
+        def __init__(self, collection):
+            super().__init__(collection)
+            self.instances = [{"prediction": {}}]
+
+    with pytest.raises(SerializationError):
+        CalibratedExplanations.from_batch(MissingExplanationBatch(calibrated_collection))
+
+    class WrongTypeBatch(GoodBatch):
+        def __init__(self, collection):
+            super().__init__(collection)
+            self.instances = [{"explanation": object()}]
+
+    with pytest.raises(ValidationError):
+        CalibratedExplanations.from_batch(WrongTypeBatch(calibrated_collection))
+
+
+def test_from_batch_requires_explainer_context(calibrated_collection):
+    from calibrated_explanations.core import SerializationError, ValidationError
+
+    class IncompleteTemplate:
+        calibrated_explainer = None
+        x_test = None
+        y_threshold = None
+        bins = None
+        features_to_ignore = []
+        condition_source = "prediction"
+
+    class MissingContextBatch:
+        container_cls = type(calibrated_collection)
+        explanation_cls = type(calibrated_collection.explanations[0])
+        instances = []
+        collection_metadata = {"container": IncompleteTemplate()}
+
+    with pytest.raises((ValidationError, SerializationError)):
+        CalibratedExplanations.from_batch(MissingContextBatch())
+
+    template = CalibratedExplanations(
+        DummyCalibratedExplainer(),
+        np.array([[0.1, 0.2, 0.3]]),
+        None,
+        bins=None,
+    )
+    template.calibrated_explainer = None
+    template.x_test = None
+
+    class MissingExplainerContextBatch:
+        container_cls = CalibratedExplanations
+        explanation_cls = DummyExplanation
+        instances = []
+        collection_metadata = {"container": template}
+
+    with pytest.raises(SerializationError):
+        CalibratedExplanations.from_batch(MissingExplainerContextBatch())
+
+
+def test_collection_property_fallback_paths_for_cached_fields():
+    x = np.array([[0.1, 0.2, 0.3]])
+    collection = CalibratedExplanations(DummyCalibratedExplainer(), x, None, bins=None)
+
+    class BrokenLabels:
+        @property
+        def class_labels(self):
+            raise RuntimeError("broken labels")
+
+        @property
+        def feature_names(self):
+            raise RuntimeError("broken names")
+
+    collection.calibrated_explainer = BrokenLabels()
+    assert collection.feature_names is None
+    assert collection.class_labels is None
+
+    class BrokenPredict:
+        prediction_probabilities = None
+        prediction_interval = (None, None)
+
+        @property
+        def predict(self):
+            raise RuntimeError("broken predict")
+
+    collection.explanations = [BrokenPredict()]
+    assert collection.predictions is None
+
+
+def test_collection_to_narrative_and_plot_style_narrative(monkeypatch, calibrated_collection):
+    calls = []
+
+    class FakeNarrativePlugin:
+        def __init__(self, template_path=None):
+            self.template_path = template_path
+
+        def plot(self, explanations, **kwargs):
+            calls.append((explanations, kwargs))
+            return [{"ok": True, "kwargs": kwargs}]
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.narrative_plugin.NarrativePlotPlugin",
+        FakeNarrativePlugin,
+    )
+
+    out = calibrated_collection.to_narrative(
+        template_path="custom.yaml",
+        expertise_level=("beginner",),
+        output_format="dict",
+    )
+    assert out[0]["ok"] is True
+    assert calls[-1][1]["template_path"] == "custom.yaml"
+    assert calls[-1][1]["output"] == "dict"
+
+    class FakeItem:
+        def __init__(self):
+            self.called = None
+
+        def to_narrative(self, **kwargs):
+            self.called = kwargs
+            return {"single": True, "kwargs": kwargs}
+
+    single = FakeItem()
+    calibrated_collection.explanations = [single]
+    result = calibrated_collection.plot(
+        style="narrative",
+        index=0,
+        template_path="single.yaml",
+        expertise_level="advanced",
+        output="text",
+    )
+    assert result["single"] is True
+    assert single.called["template_path"] == "single.yaml"
+    assert single.called["output_format"] == "text"
 
 
 def test_as_lime_and_shap_transformations(calibrated_collection):

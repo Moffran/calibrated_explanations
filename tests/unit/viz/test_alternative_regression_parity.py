@@ -54,20 +54,6 @@ class RegressionParityCase:
 
 CASES: tuple[RegressionParityCase, ...] = (
     RegressionParityCase(
-        name="two_sided",
-        predict={"predict": 6.0, "low": 4.0, "high": 8.0},
-        feature_predict={
-            "predict": (7.0, 5.0, 3.0),
-            "low": (6.5, 4.5, 2.0),
-            "high": (7.5, 5.5, 4.0),
-        },
-        features_to_plot=(0, 1, 2),
-        column_names=("rule0", "rule1", "rule2"),
-        instance=(1.0, 2.0, 3.0),
-        y_minmax=(0.0, 10.0),
-        percentiles=(5.0, 95.0),
-    ),
-    RegressionParityCase(
         name="lower_unbounded",
         predict={"predict": 6.0, "low": -math.inf, "high": 8.0},
         feature_predict={

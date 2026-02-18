@@ -1,0 +1,467 @@
+{
+  "entries": [
+    {
+      "detail": "File imports matplotlib but lacks @pytest.mark.viz or pytestmark",
+      "file": "integration/core/test_explanation_coverage.py",
+      "file_hash": "sha256:4fba90fdf63116ee9fc3f5d4f597b3e9c7ff62c8c5ffa1824ee4c2efa976c4ab",
+      "id": "sha256:e05c9d9be87260738c972f29ae3921e01f2a4db412f5783d5ce9f3c4d9f4678d",
+      "line": 1,
+      "pattern": "missing-viz-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_explanation_plots_smoke in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_explanation_coverage.py",
+      "file_hash": "sha256:4fba90fdf63116ee9fc3f5d4f597b3e9c7ff62c8c5ffa1824ee4c2efa976c4ab",
+      "id": "sha256:00dfa65f96e0848b4656706136220465bf6c3fa895ceda6820851ebe9860ae35",
+      "line": 27,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_threshold_explanation in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_explanation_coverage.py",
+      "file_hash": "sha256:4fba90fdf63116ee9fc3f5d4f597b3e9c7ff62c8c5ffa1824ee4c2efa976c4ab",
+      "id": "sha256:80a771851d51cf22882087c377f07b095154fdfc22b4543db727810a74eb5b5d",
+      "line": 63,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_semifactual_counterfactual_flags in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_explanation_coverage.py",
+      "file_hash": "sha256:4fba90fdf63116ee9fc3f5d4f597b3e9c7ff62c8c5ffa1824ee4c2efa976c4ab",
+      "id": "sha256:e3b8678e3e0c3de246e6b2ba6a617f159ea0a88a8f6cb90deb23c2ce26ab9e07",
+      "line": 87,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_dependency_metadata_populates_context in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_explanation_plugin_resolution.py",
+      "file_hash": "sha256:c866249bd2a67f799b9838b6bd7aff504effd281c12fbc4a4904428ca8c98310",
+      "id": "sha256:4c266317c3ec570a3f2b7deda574a2fe91bb444096f01b4afc824bbd17692900",
+      "line": 140,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_future_schema_plugin_rejected in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_explanation_plugin_resolution.py",
+      "file_hash": "sha256:c866249bd2a67f799b9838b6bd7aff504effd281c12fbc4a4904428ca8c98310",
+      "id": "sha256:863dd15aca46cbb935bbbe811770db41c998f4dbbe3b3b3306d927049c517b59",
+      "line": 194,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_unknown_plugin_identifier_raises in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_explanation_plugin_resolution.py",
+      "file_hash": "sha256:c866249bd2a67f799b9838b6bd7aff504effd281c12fbc4a4904428ca8c98310",
+      "id": "sha256:4fc6fe43880565063e12e180d85a0ae553ca5186f8eee7fc6e54f2422e69b998",
+      "line": 227,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_preprocessor_applied_on_calibrate_and_inference in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_preprocessor_wiring.py",
+      "file_hash": "sha256:61eebe256f98feae8f4702a1b2b6445aae5fb566f2e70de986150e12895f8c66",
+      "id": "sha256:4fadf8743ca7eb9331745ddb6f9ba1065fc7183f6fcaa8c00547c7cecca4b653",
+      "line": 61,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_preprocessor_metadata_exposed_in_telemetry in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_preprocessor_wiring.py",
+      "file_hash": "sha256:61eebe256f98feae8f4702a1b2b6445aae5fb566f2e70de986150e12895f8c66",
+      "id": "sha256:156902bb6ce3ecfd271a888dec4130830ff97216de0cae664d28516c29195fe2",
+      "line": 91,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_safe_fit_difficulty_fallback in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:217fe9692e15b2990e0b57a0810463847eca04e720a6a8e76c74f267774750b7",
+      "line": 79,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_failure_regression in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:90dedd5009a2fa6a14e6da7f88c3deb1bf603a6068d1266f772501bfab270b7a",
+      "line": 94,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_set_difficulty_estimator_refits_cps_with_sigmas in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:b92df768c127123dc1574e63f03ec7186b8b52c8475ba46d44e185f4d20afaa6",
+      "line": 113,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_should_vary_factual_weight_width_by_feature_when_difficulty_depends_on_perturbations in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:558f057806de3de309b38f376eff3da865b36b0879f63d2c03cdb3857f93e5e8",
+      "line": 161,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:7e85c56bb20834268b77dbe92b1ded5374e11dd9f07a9b2619b4889a075ba85c",
+      "line": 266,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_predict_reject_requires_threshold in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:d8edfda12d5575c15d25b67ffc4101b583a931bcb7bc37c413af59ed8377df43",
+      "line": 320,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_reject_learner_custom_calibration in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:77c3ee9b284b18e51e6584ac7dcd0dd30a3b106860f7e6c431000044651aee7b",
+      "line": 346,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_probabilistic_regression_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:7a119e4806233283e6390fdec5d6aba5cfba32af0fbedb34aaac62a6bbe59306",
+      "line": 380,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_probabilistic_regression_int_threshold_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:e572c27ed379ea7e217c503c7a9c981c214644285974e92fe41464c2bec21d53",
+      "line": 438,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_as_classification_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:d1a9dff876b3f8f414d334f919b23fc50daa252f3b7d281843f32a7d54b54d14",
+      "line": 481,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_conditional_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:cebfded08580fc01f5a6a92dba4608fcc82027eca10b3c6ae2895efbdd36212b",
+      "line": 520,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_probabilistic_regression_conditional_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:b5fa5cd78da5eba08e563ab0c984dfee918ddbeb5c6af61e629199a7657f23ed",
+      "line": 585,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_knn_normalized_regression_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:b8b5acc504955648a573fb024d7f3b8f122501b2330536fde579de5334ea5503",
+      "line": 634,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_knn_normalized_probabilistic_regression_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:fce43f1b1d102329216e4b2fdbec2d690acc19088b421822ff28bb87d7883ac7",
+      "line": 677,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_var_normalized_regression_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:280c74b216edf48c7a93754ea9c78f42f45deb583b8126055dbfd6b35d08b9c2",
+      "line": 719,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_var_normalized_probabilistic_regression_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:dfbafca93109a34158a248eaced900b32fd3c90ca27c553a3e34bd007bad47bd",
+      "line": 759,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:25e9639f51571604502b8078d10b516acdae98aa701502f0c6f81638756e0199",
+      "line": 802,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_probabilistic_regression_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:60da45edb2d26af7d99a2158f8a64bed227ef472b3798136cb316133dd6419d6",
+      "line": 834,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_conditional_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:4c30f06aff7e0e5703003b01d8938c32a3c1a59af85529c10df685380f04b3fa",
+      "line": 868,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_probabilistic_regression_conditional_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:d434ac483c75c7178ec4396679a443127b31d0e533c8cd6158ca921268bfe379",
+      "line": 903,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_knn_normalized_regression_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:9ae5a1c931ee86c6d5d86ad1af36e182715f1b9d1d31286d422b94f553733077",
+      "line": 939,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_knn_normalized_probabilistic_regression_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:dd672eeb5f09d371bdc666df4c45040c1713a72b4204d90c7e989932cfaa48e7",
+      "line": 969,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_var_normalized_regression_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:a4224a77c5d8082b586ef33a80be16c8d6217c23d69e3480e5af41e503654e08",
+      "line": 1005,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_var_normalized_probabilistic_regression_fast_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_regression.py",
+      "file_hash": "sha256:ab0d798349063e48e63a05900200939959e0dfc1ceb86d08559d9b7018bf75d2",
+      "id": "sha256:faf37a6ecf3409c91a0bb2b2e612cefdc7e0182cde52ac42a4dc17f93deb482d",
+      "line": 1035,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_invalid_inputs in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:aac670887529a3ba058edeb757a1b4e6f55cada6ef76d077e230f70285afbfc0",
+      "line": 61,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_wrap_binary_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:c6fcf48c50681f4a55e5d79c1125b0cb1c0ceb7d7d3f329a3f35146be8d225c6",
+      "line": 71,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_wrap_multiclass_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:ace5b925c13d19e567aa54711437d8e52b96a22a5773fccf38ce287762bb6c3e",
+      "line": 211,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_calibrate_with_string_labels_oob in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:8a3cf48c74825017422df019f332ab9cca795c392b8b15f877a671c7c5299c37",
+      "line": 273,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_wrap_binary_conditional_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:13b6a922a3a2386e2fd2eace84d856a081f4eff9e8fa488d2cd5b58ad96bf432",
+      "line": 307,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_wrap_multiclass_conditional_ce in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:407c8f97ba929938631d0cd14bb7dd0c327b6461bcd7479f1193bfaa5e35cb36",
+      "line": 378,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_missing_values in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/core/test_wrap_classification.py",
+      "file_hash": "sha256:173757f45da2a21da7e0f25d879fde8fad36c337d575506cf0ecfd286a6a1dd8",
+      "id": "sha256:3188309730058440f32c0189af869f558fad8eb626107f1d1900e2f1d3a75212",
+      "line": 473,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_pyproject_interval_override_resolves_plugin in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/plugins/test_interval_pyproject_integration.py",
+      "file_hash": "sha256:28504f8fe625458da405aee5d26243aa961633536bd28af2eb7e9da8d40c5bc7",
+      "id": "sha256:d185461fd9bb84952f17c46951d6215688e0d13174eae9a4cf7cd3d1c2d54f7e",
+      "line": 69,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_explain_factual_respects_per_instance_top_k in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_feature_filter_integration.py",
+      "file_hash": "sha256:cc59f2bf63ca053a39a8e1ff1ec50df50e835469142456ae464f3d8288c25e6e",
+      "id": "sha256:68a921d678f9a9580b8c0801aab796d1fb890a10aecb9efa2848dddff5a4db6b",
+      "line": 9,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_import_smoke_modules in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_import_smoke.py",
+      "file_hash": "sha256:1f051a28ff551a495134c51131db900f9b18d689dc04f212afcf6174ea0a251a",
+      "id": "sha256:e527896d3e7d321e7101fb0f8f23e4aa716d3d2cab7e27f6a73c9d1e2321ed2b",
+      "line": 4,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_mass_imports in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_mass_imports.py",
+      "file_hash": "sha256:611c75d990cf322fa14fca39a7c668db9497b48ee261bfaa5b07a2464bb52139",
+      "id": "sha256:54f9d55f6297ccf76cf1476b43ec165a82e1e6e49bbf0bbeae8f6c547f2757f0",
+      "line": 1,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_invariant_plot_repr_consistency in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_plot_repr_consistency.py",
+      "file_hash": "sha256:d65556d4a67942678c811bd66ee51bdfe6e0d79d7028e358b12c5945a7411c40",
+      "id": "sha256:5aff87ab3f3fcbbe9132c04c3a85d47b09d4b11b3e34b2d79b1e6d9f4f4fe9cc",
+      "line": 38,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_classification_predict_and_explain_envelope_binary in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_reject_envelope_integration.py",
+      "file_hash": "sha256:523e4849d243029ce1468335d4eb6d61b23119867e04a9e5993b53191bd71354",
+      "id": "sha256:09343dd80e9a458f53170dd5058e24f5d35d960daf0d3cf4f59534e3d1feb363",
+      "line": 43,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_multiclass_predict_proba_envelope in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_reject_envelope_integration.py",
+      "file_hash": "sha256:523e4849d243029ce1468335d4eb6d61b23119867e04a9e5993b53191bd71354",
+      "id": "sha256:c857c5d8d81c3ee86756b21d44b9c90b210b56b600998aafc1fa1a2d6e80002c",
+      "line": 55,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_regression_predict_uq_envelope in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_reject_envelope_integration.py",
+      "file_hash": "sha256:523e4849d243029ce1468335d4eb6d61b23119867e04a9e5993b53191bd71354",
+      "id": "sha256:f44c3e9390c0b2a9bbb9e2bf7901ff66b80d763f83893667b7f4606fe3a3ace6",
+      "line": 63,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_integration_reject_policy_predict_and_flag_runs_and_returns_envelope in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/test_reject_integration_crepes.py",
+      "file_hash": "sha256:fb6463504f59790745f81f332f19649fbf6dcc248aed6ecb4115495c75ddc97e",
+      "id": "sha256:ec53392c514f3447bd446f8245d088e5fab6c1fba916b4a05accd1c1ceb560df",
+      "line": 14,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "Test test_plot_regression_legacy_fallback in integration/ dir lacks @pytest.mark.integration (module or function level)",
+      "file": "integration/viz/test_plots_integration.py",
+      "file_hash": "sha256:2405afe89969df93014f88328346baef07e5cc11f1132a1a1fb467365af93daf",
+      "id": "sha256:b56c1697a833c22a556196c2e4474d5e708dbe03c118bb6b1b24fbd77c5efd1c",
+      "line": 59,
+      "pattern": "missing-integration-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    },
+    {
+      "detail": "File imports matplotlib but lacks @pytest.mark.viz or pytestmark",
+      "file": "unit/legacy/test_plotting.py",
+      "file_hash": "sha256:5380a538ef69ea6a1dea2bc953bd01580ecaebb824535759c98675550d75509b",
+      "id": "sha256:ba9aaac4e4b7eebc9b7f4e778de1e0a1fb8aeeda012aaf9a3f3c3e4aa8368569",
+      "line": 1,
+      "pattern": "missing-viz-marker",
+      "rationale": "Existing debt accepted during ADR-030 Phase 3 rollout."
+    }
+  ],
+  "generated_at": "2026-02-15T20:25:07+00:00",
+  "tests_dir": "tests",
+  "version": 1
+}
+

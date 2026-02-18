@@ -10,15 +10,12 @@ on:
   pull_request:
     paths:
       - 'examples/**'
-      - 'EXAMPLES_INDEX.json'
       - 'METADATA.json'
-      - 'tests/test_examples.py'
       - '.ai/**'
   push:
     branches: [ main ]
     paths:
       - 'examples/**'
-      - 'EXAMPLES_INDEX.json'
       - 'METADATA.json'
       - '.ai/**'
 
@@ -37,10 +34,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Cache pip
-        uses: actions/cache@v5
-        with:
-          python-version: '3.11'
           cache: pip
           cache-dependency-path: |
             requirements.txt
@@ -63,12 +56,12 @@ jobs:
           assert "WrapCalibratedExplainer" in metadata.get("public_api", [])
           assert metadata.get("required_calibration", False) is True
 
-          examples_index = json.loads(Path("EXAMPLES_INDEX.json").read_text())
-          assert isinstance(examples_index, list)
+          example_files = sorted(Path("examples/use_cases").glob("*.py"))
+          assert example_files, "No example scripts found in examples/use_cases"
           tool = yaml.safe_load(Path(".ai/tool_description.yaml").read_text())
           assert tool.get("tool_name") == "calibrated_explanations"
           assert tool.get("required_calibration") is True
-          print("Metadata/tool description OK")
+          print("Metadata/tool description OK; found", len(example_files), "example scripts")
           PY
       - name: Install package and dependencies
         run: |
@@ -76,10 +69,30 @@ jobs:
           pip install -r requirements.txt -c constraints.txt
           pip install -e . -c constraints.txt
           pip install scikit-learn pytest pytest-cov -c constraints.txt
-      - name: Run example tests
+      - name: Run example smoke checks
         run: |
-          python -m pytest --no-cov tests/test_examples.py::test_minimal_quickstart \
-            tests/test_examples.py::test_metadata_json_schema \
-            tests/test_examples.py::test_examples_index_entries \
-            tests/test_examples.py::test_tool_description_yaml \
-            tests/test_examples.py::test_quick_api_mentions_wrap
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          scripts = sorted(Path("examples/use_cases").glob("*.py"))
+          assert scripts, "No example scripts found in examples/use_cases"
+
+          for script in scripts:
+              source = script.read_text(encoding="utf-8")
+              compile(source, str(script), "exec")
+          print(f"Syntax check passed for {len(scripts)} scripts")
+
+          result = subprocess.run(
+              [sys.executable, "examples/use_cases/minimal_quickstart.py"],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          payload = json.loads(result.stdout.strip().splitlines()[-1])
+          assert payload.get("scenario") == "minimal_quickstart"
+          assert "probability_interval" in payload
+          print("minimal_quickstart smoke OK")
+          PY

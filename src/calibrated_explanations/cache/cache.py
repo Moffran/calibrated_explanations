@@ -279,6 +279,26 @@ class CacheMetrics:
             "resets": self.resets,
         }
 
+    def __reduce__(self):
+        """Stable reduce for CacheMetrics resolving the reconstruct function.
+
+        Resolve the reconstruct function from the canonical module to avoid
+        module identity issues.
+        """
+        import importlib
+
+        mod = importlib.import_module("calibrated_explanations.cache.cache")
+        func = mod._reconstruct_cache_metrics
+        state = {
+            "hits": self.hits,
+            "misses": self.misses,
+            "sets": self.sets,
+            "evictions": self.evictions,
+            "expirations": self.expirations,
+            "resets": self.resets,
+        }
+        return (func, (state,))
+
 
 @dataclass
 class CacheConfig:
@@ -349,6 +369,29 @@ class CacheConfig:
             if token in enabled_labels:  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
         return cfg
+
+    def __reduce__(self):
+        """Stable reduce for CacheConfig resolving the reconstruct function.
+
+        Resolve the reconstruct function from the canonical module to avoid
+        module identity issues during pickling/unpickling.
+        """
+        import importlib
+
+        # Create a sanitized copy of the state to avoid pickling unpicklable
+        # callables that may suffer module identity mismatch across imports.
+        state = dict(self.__dict__)
+        se = state.get("size_estimator")
+        # If the size_estimator is the module default, store a marker; else
+        # drop it (None) to keep the pickled state simple and robust.
+        if se is default_size_estimator:
+            state["size_estimator"] = "__default_size_estimator__"
+        else:
+            state["size_estimator"] = None
+
+        mod = importlib.import_module("calibrated_explanations.cache.cache")
+        func = mod._reconstruct_cache_config
+        return (func, (state,))
 
 
 class LRUCache(Generic[K, V]):
@@ -545,15 +588,45 @@ class LRUCache(Generic[K, V]):
             logger.debug("Telemetry callback failed for %s: %s", event, sys.exc_info()[1])
 
     def __getstate__(self) -> dict:
-        """Support pickling by excluding the unpicklable RLock."""
+        """Support pickling by excluding unpicklable/transient fields.
+
+        Notes
+        -----
+        Pickling callables is fragile when this module is imported under
+        multiple paths (e.g., editable installs + src layouts). In particular,
+        the module-level ``default_size_estimator`` may fail pickle's identity
+        check. Persist a stable marker instead and restore the callable during
+        ``__setstate__``.
+        """
         state = self.__dict__.copy()
         state.pop("_lock", None)
+
+        estimator = state.get("_size_estimator")
+        if estimator is default_size_estimator:
+            state["_size_estimator"] = "__default_size_estimator__"
+        elif callable(estimator):
+            logger.info(
+                "Dropping non-default size_estimator during pickle to keep cache state portable"
+            )
+            warnings.warn(
+                "Cache pickle fallback: non-default size_estimator is not preserved; restored to default_size_estimator on unpickle",
+                UserWarning,
+                stacklevel=2,
+            )
+            state["_size_estimator"] = "__dropped_size_estimator__"
         return state
 
     def __setstate__(self, state: dict) -> None:
         """Restore state and recreate the unpicklable RLock."""
         self.__dict__.update(state)
         self._lock = threading.RLock()
+
+        estimator = self.__dict__.get("_size_estimator")
+        if (
+            estimator in (None, "__default_size_estimator__")
+            or estimator == "__dropped_size_estimator__"
+        ):
+            self._size_estimator = default_size_estimator
 
     def __reduce__(self):
         """Provide a stable reduce implementation.
@@ -562,7 +635,12 @@ class LRUCache(Generic[K, V]):
         multiple import paths. Returns a top-level reconstruct function plus the
         pickled state.
         """
-        return (_reconstruct_lru_cache, (self.__getstate__(),))
+        # Resolve the reconstruct function from the canonical module object
+        import importlib
+
+        mod = importlib.import_module("calibrated_explanations.cache.cache")
+        func = mod._reconstruct_lru_cache
+        return (func, (self.__getstate__(),))
 
 
 @dataclass
@@ -694,8 +772,16 @@ class CalibratorCache(Generic[V]):
         self._version_lock = threading.RLock()
 
     def __reduce__(self):
-        """Stable reduce implementation for `CalibratorCache` similar to `LRUCache`."""
-        return (_reconstruct_calibrator_cache, (self.__getstate__(),))
+        """Stable reduce implementation for `CalibratorCache`.
+
+        Resolve the reconstruct function via importlib to ensure the callable
+        originates from the canonical module object visible to pickle.
+        """
+        import importlib
+
+        mod = importlib.import_module("calibrated_explanations.cache.cache")
+        func = mod._reconstruct_calibrator_cache
+        return (func, (self.__getstate__(),))
 
 
 __all__ = [
@@ -729,4 +815,29 @@ def _reconstruct_calibrator_cache(state: dict):
     """
     obj = object.__new__(CalibratorCache)
     CalibratorCache.__setstate__(obj, state)
+    return obj
+
+
+def _reconstruct_cache_config(state: dict):
+    """Top-level helper to recreate a `CacheConfig` instance during unpickle."""
+    obj = object.__new__(CacheConfig)
+    # populate attributes
+    # Restore size_estimator marker to the actual callable when present
+    se = state.get("size_estimator")
+    if se == "__default_size_estimator__":
+        state["size_estimator"] = default_size_estimator
+    obj.__dict__.update(state)
+    return obj
+
+
+def _reconstruct_cache_metrics(state: dict):
+    """Top-level helper to recreate a `CacheMetrics` instance during unpickle."""
+    obj = object.__new__(CacheMetrics)
+    # CacheMetrics is a slotted dataclass, assign fields individually
+    obj.hits = state.get("hits", 0)
+    obj.misses = state.get("misses", 0)
+    obj.sets = state.get("sets", 0)
+    obj.evictions = state.get("evictions", 0)
+    obj.expirations = state.get("expirations", 0)
+    obj.resets = state.get("resets", 0)
     return obj

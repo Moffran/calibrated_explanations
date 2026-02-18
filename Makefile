@@ -48,3 +48,13 @@ ci-local-new:
 .PHONY: check-private-members
 check-private-members:
 	python scripts/anti-pattern-analysis/scan_private_usage.py --check
+
+# Run stacked CI-equivalent checks in the current Python environment,
+# including `pre-commit run --all-files` (no install/bootstrap steps).
+.PHONY: local-checks local-checks-pr
+local-checks:
+	python scripts/local_checks.py
+
+# PR-scope only: lint/type/core-tests + policy scanners.
+local-checks-pr:
+	python scripts/local_checks.py --skip-main

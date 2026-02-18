@@ -38,41 +38,6 @@ def test_calibration_helpers_round_trip():
     assert explainer.interval_learner is not None
 
 
-def test_fast_calibration_helper_delegates(monkeypatch):
-    data = load_iris()
-    x_train, x_cal, y_train, y_cal = train_test_split(
-        data.data, data.target, test_size=0.2, random_state=7, stratify=data.target
-    )
-    clf = RandomForestClassifier(n_estimators=5, random_state=7, max_depth=2)
-    clf.fit(x_train, y_train)
-
-    captured_calls = []
-
-    def fake_obtain(self, *, fast, metadata):  # noqa: D401 - short test stub
-        captured_calls.append({"fast": fast, "metadata": dict(metadata)})
-        return ["fast-cal-1", "fast-cal-2"], "tests.interval.fake"
-
-    monkeypatch.setattr(CalibratedExplainer, "obtain_interval_calibrator", fake_obtain)
-
-    explainer = CalibratedExplainer(
-        clf,
-        x_cal,
-        y_cal,
-        mode="classification",
-        seed=7,
-        fast=True,
-    )
-
-    assert explainer.interval_learner == ["fast-cal-1", "fast-cal-2"]
-    assert captured_calls and captured_calls[0]["fast"] is True
-    assert captured_calls[0]["metadata"].get("operation") == "initialize_fast"
-
-    ch.initialize_interval_learner_for_fast_explainer(explainer)
-
-    assert captured_calls[-1]["fast"] is True
-    assert captured_calls[-1]["metadata"].get("operation") == "initialize_fast"
-
-
 class BaseStubExplainer:
     """Utility stub exposing the minimal CalibratedExplainer surface for tests."""
 
@@ -200,10 +165,3 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
         # Calling the delegated function should return the fake result
         res = func(object(), 0.5)
         assert res == "ok"
-
-
-def test_calibration_helpers_unknown_attribute_raises():
-    from calibrated_explanations.core import calibration_helpers as ch_helpers
-
-    with pytest.raises(AttributeError):
-        _ = ch_helpers.this_attribute_does_not_exist

@@ -7,9 +7,13 @@ and Venn-Abers scaling to deliver calibrated probabilities and intervals.
 Part of ADR-001: Core Decomposition Boundaries (Stage 1a).
 """
 
+import base64
+import hashlib
 import inspect
 import numbers
+import pickle  # nosec B403 - deserialization is restricted to trusted, checksum-validated state
 from functools import singledispatchmethod
+from typing import Any, Mapping
 
 import crepes
 import numpy as np
@@ -624,3 +628,70 @@ class IntervalRegressor:
     def ensure_capacity(self, storage, current_size, required_size):
         """Ensure storage has capacity for required size."""
         return self._ensure_capacity(storage, current_size, required_size)
+
+    def to_primitive(self) -> dict[str, Any]:
+        """Serialize the calibrator into a JSON-safe primitive payload."""
+        payload_bytes = pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
+        payload_b64 = base64.b64encode(payload_bytes).decode("ascii")
+        return {
+            "schema_version": 1,
+            "calibrator_type": "interval_regressor",
+            "parameters": {
+                "has_bins": bool(self.bins is not None),
+            },
+            "checksums": {
+                "sha256": hashlib.sha256(payload_bytes).hexdigest(),
+            },
+            "payload": {
+                "pickle_b64": payload_b64,
+            },
+        }
+
+    @classmethod
+    def from_primitive(cls, payload: Mapping[str, object]) -> "IntervalRegressor":
+        """Rehydrate a calibrator from a primitive payload."""
+        schema_version = payload.get("schema_version")
+        if schema_version != 1:
+            raise ConfigurationError(
+                "Unsupported IntervalRegressor schema_version. Supported versions: [1].",
+                details={"schema_version": schema_version, "supported_versions": [1]},
+            )
+        calibrator_type = payload.get("calibrator_type")
+        if calibrator_type != "interval_regressor":
+            raise ConfigurationError(
+                "Invalid calibrator_type for IntervalRegressor payload.",
+                details={"calibrator_type": calibrator_type, "expected": "interval_regressor"},
+            )
+        payload_section = payload.get("payload")
+        if not isinstance(payload_section, Mapping):
+            raise ConfigurationError(
+                "IntervalRegressor primitive payload is missing 'payload' mapping.",
+                details={"field": "payload"},
+            )
+        pickle_b64 = payload_section.get("pickle_b64")
+        if not isinstance(pickle_b64, str):
+            raise ConfigurationError(
+                "IntervalRegressor primitive payload is missing 'pickle_b64'.",
+                details={"field": "payload.pickle_b64"},
+            )
+        payload_bytes = base64.b64decode(pickle_b64.encode("ascii"))
+        checksums = payload.get("checksums")
+        if not isinstance(checksums, Mapping):
+            raise ConfigurationError(
+                "IntervalRegressor primitive payload is missing checksum metadata.",
+                details={"field": "checksums"},
+            )
+        expected_sha = checksums.get("sha256")
+        actual_sha = hashlib.sha256(payload_bytes).hexdigest()
+        if not isinstance(expected_sha, str) or expected_sha != actual_sha:
+            raise ConfigurationError(
+                "IntervalRegressor primitive checksum validation failed.",
+                details={"expected_sha256": expected_sha, "actual_sha256": actual_sha},
+            )
+        restored = pickle.loads(payload_bytes)  # noqa: S301  # nosec B301 - trusted, checksum-validated payload
+        if not isinstance(restored, cls):
+            raise ConfigurationError(
+                "IntervalRegressor primitive payload restored unexpected object type.",
+                details={"restored_type": type(restored).__name__},
+            )
+        return restored

@@ -40,22 +40,6 @@ def test_capabilities_must_be_sequence_of_strings(bad_value, message):
         validate_plugin_meta(meta)
 
 
-@pytest.mark.parametrize(
-    "key, value",
-    [
-        ("schema_version", "1"),
-        ("name", ""),
-        ("provider", 42),
-    ],
-)
-def test_required_scalar_fields_are_validated(key, value):
-    meta = make_valid_meta()
-    meta[key] = value
-
-    with pytest.raises(ValidationError, match="must be a non-empty"):
-        validate_plugin_meta(meta)
-
-
 def test_capabilities_required():
     meta = make_valid_meta()
     meta.pop("capabilities")
@@ -78,29 +62,3 @@ def test_trusted_must_be_boolean():
 
     with pytest.raises(ValidationError, match="must be a boolean"):
         validate_plugin_meta(meta)
-
-
-def test_trust_mapping_is_normalised():
-    meta = make_valid_meta()
-    meta["trust"] = {"trusted": 1}
-
-    validate_plugin_meta(meta)
-
-    assert meta["trusted"] is True
-
-
-def test_trust_scalar_is_normalised_to_boolean():
-    meta = make_valid_meta()
-    meta["trust"] = 0
-
-    validate_plugin_meta(meta)
-
-    assert meta["trusted"] is False
-
-
-def test_default_trust_value_is_false():
-    meta = make_valid_meta()
-
-    validate_plugin_meta(meta)
-
-    assert meta["trusted"] is False

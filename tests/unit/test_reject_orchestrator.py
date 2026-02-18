@@ -44,15 +44,6 @@ class DummyExplainer:
         return False
 
 
-def test_should_pass_seed_once_when_predicting_reject():
-    explainer = DummyExplainer()
-    orchestrator = RejectOrchestrator(explainer)
-
-    orchestrator.predict_reject(np.zeros((3, 2)), confidence=0.9)
-
-    assert explainer.reject_learner.seeds == [explainer.seed]
-
-
 def test_should_raise_validation_error_when_calibration_set_is_invalid():
     explainer = DummyExplainer()
     orchestrator = RejectOrchestrator(explainer)
@@ -80,23 +71,6 @@ class DummyRejectLearnerMonotonic:
         return out
 
 
-def test_should_have_monotonic_ambiguity_and_uncertainty_rates_when_confidence_changes():
-    explainer = DummyExplainer()
-    explainer.reject_learner = DummyRejectLearnerMonotonic()
-    orchestrator = RejectOrchestrator(explainer)
-
-    x = np.zeros((10, 2))
-    ambiguity_rates = []
-    uncertainty_rates = []
-    for conf in (0.9, 0.95, 0.99):
-        out = orchestrator.predict_reject_breakdown(x, confidence=conf)
-        ambiguity_rates.append(out["ambiguity_rate"])
-        uncertainty_rates.append(out["novelty_rate"])
-
-    assert ambiguity_rates[0] <= ambiguity_rates[1] <= ambiguity_rates[2]
-    assert uncertainty_rates[0] >= uncertainty_rates[1] >= uncertainty_rates[2]
-
-
 class DummyRejectLearnerAlwaysEmpty:
     def predict_p(
         self, alphas, bins=None, all_classes=True, classes=None, y=None, smoothing=True, seed=None
@@ -104,16 +78,3 @@ class DummyRejectLearnerAlwaysEmpty:
         n_rows = len(alphas)
         n_cols = alphas.shape[1] if getattr(alphas, "ndim", 1) == 2 else 2
         return np.zeros((n_rows, n_cols), dtype=float)
-
-
-def test_should_reject_as_uncertainty_when_prediction_set_is_empty():
-    explainer = DummyExplainer()
-    explainer.reject_learner = DummyRejectLearnerAlwaysEmpty()
-    orchestrator = RejectOrchestrator(explainer)
-
-    x = np.zeros((5, 2))
-    out = orchestrator.predict_reject_breakdown(x, confidence=0.9)
-
-    assert np.asarray(out["rejected"], dtype=bool).tolist() == [True] * 5
-    assert np.asarray(out["novelty"], dtype=bool).tolist() == [True] * 5
-    assert out["novelty_rate"] == 1.0

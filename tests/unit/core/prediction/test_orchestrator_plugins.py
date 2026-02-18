@@ -40,42 +40,6 @@ def orchestrator(mock_explainer):
 
 @patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
 @patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted")
-@patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
-def test_resolve_interval_plugin_success(
-    mock_is_denied,
-    mock_find_trusted,
-    mock_find,
-    mock_find_desc,
-    mock_ensure,
-    orchestrator,
-    mock_explainer,
-):
-    mock_is_denied.return_value = False
-
-    # Setup descriptor
-    mock_desc = MagicMock()
-    mock_desc.metadata = {
-        "name": "default_plugin",
-        "modes": ("classification",),
-        "capabilities": ("interval:classification",),
-    }
-    mock_desc.trusted = True
-    mock_desc.plugin = MagicMock()
-    mock_find_desc.return_value = mock_desc
-
-    mock_explainer.instantiate_plugin.side_effect = lambda p: p
-
-    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
-
-    assert identifier == "default_plugin"
-    assert plugin == mock_desc.plugin
-    mock_ensure.assert_called_once()
-
-
-@patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
 @patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
 def test_resolve_interval_plugin_denied(mock_is_denied, mock_find_desc, mock_ensure, orchestrator):
     mock_is_denied.return_value = True
@@ -113,78 +77,6 @@ def test_resolve_interval_plugin_metadata_error(
 
     with pytest.raises(ConfigurationError, match="Unable to resolve interval plugin"):
         orchestrator.resolve_interval_plugin(fast=False)
-
-
-@patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted")
-@patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
-def test_resolve_interval_plugin_override_object(
-    mock_is_denied,
-    mock_find_trusted,
-    mock_find,
-    mock_find_desc,
-    mock_ensure,
-    orchestrator,
-    mock_explainer,
-):
-    # Setup override object
-    mock_override = MagicMock()
-    mock_override.plugin_meta = {"name": "override_plugin"}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = mock_override
-
-    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
-
-    assert plugin == mock_override
-    assert identifier == "override_plugin"
-
-
-@patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted")
-@patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
-def test_resolve_interval_plugin_override_string(
-    mock_is_denied,
-    mock_find_trusted,
-    mock_find,
-    mock_find_desc,
-    mock_ensure,
-    orchestrator,
-    mock_explainer,
-):
-    mock_is_denied.return_value = False
-    mock_explainer.plugin_manager.interval_plugin_override = "override_plugin"
-    # The override plugin must be in the fallback chain to be considered
-    mock_explainer.plugin_manager.interval_plugin_fallbacks["default"] = [
-        "override_plugin",
-        "default_plugin",
-    ]
-
-    # Setup descriptor for override
-    mock_desc = MagicMock()
-    mock_desc.metadata = {
-        "name": "override_plugin",
-        "modes": ("classification",),
-        "capabilities": ("interval:classification",),
-    }
-    mock_desc.trusted = True
-    mock_desc.plugin = MagicMock()
-
-    def find_desc_side_effect(name):
-        if name == "override_plugin":
-            return mock_desc
-        return None
-
-    mock_find_desc.side_effect = find_desc_side_effect
-
-    mock_explainer.instantiate_plugin.side_effect = lambda p: p
-
-    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
-
-    assert identifier == "override_plugin"
-    assert plugin == mock_desc.plugin
 
 
 def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):

@@ -1,6 +1,11 @@
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name, duplicate-code
 """
 This module contains unit tests for the `WrapCalibratedExplainer` class from the `calibrated_explanations` package.
+
+IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
+protected integration tests relied on release gating and regression
+protection tooling. See docs/improvement/test-quality-method/README.md.
+
 The tests cover both binary and multiclass classification scenarios.
 Fixtures:
     binary_dataset: Prepares a binary classification dataset for testing.
@@ -25,6 +30,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
 from tests.helpers.explainer_utils import generic_test
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture(autouse=True)
@@ -66,6 +73,9 @@ def test_invalid_inputs(binary_dataset, invalid_x):
 def test_wrap_binary_ce(binary_dataset):
     """
     Test the WrapCalibratedExplainer class for binary classification.
+
+    IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+
     This test function performs the following steps:
     1. Initializes the WrapCalibratedExplainer with a RandomForestClassifier.
     2. Checks that the explainer is neither fitted nor calibrated initially.
@@ -203,6 +213,9 @@ def test_wrap_binary_ce(binary_dataset):
 def test_wrap_multiclass_ce(multiclass_dataset):
     """
     Test the WrapCalibratedExplainer class for a multiclass classification problem.
+
+    IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+
     This test performs the following steps:
     1. Initializes the WrapCalibratedExplainer with a RandomForestClassifier.
     2. Checks that the explainer is neither fitted nor calibrated initially.

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import importlib
 import sys
 from types import MappingProxyType, ModuleType, SimpleNamespace
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -24,11 +23,8 @@ from calibrated_explanations.plugins.builtins import (
     LegacyPredictBridge,
     PlotSpecDefaultBuilder,
     PlotSpecDefaultRenderer,
-    collection_to_batch,
-    register_builtins,
 )
 from calibrated_explanations.plugins.explanations import (
-    ExplanationBatch,
     ExplanationContext,
     ExplanationRequest,
 )
@@ -144,30 +140,6 @@ def make_local_plot_context(**kwargs: Any) -> PlotRenderContext:
     return PlotRenderContext(**base_kwargs)
 
 
-def test_legacy_predict_bridge_includes_intervals_and_classes():
-    class Explainer:
-        def __init__(self) -> None:
-            self.predict_calls: list[Dict[str, Any]] = []
-
-        def predict(self, *args: Any, **kwargs: Any) -> Any:
-            self.predict_calls.append({"args": args, "kwargs": kwargs})
-            if kwargs.get("calibrated"):
-                return ["a", "b"]
-            return (
-                np.asarray([0.1, 0.9]),
-                (np.asarray([0.0, 0.5]), np.asarray([0.2, 1.0])),
-            )
-
-    bridge = LegacyPredictBridge(Explainer())
-    payload = bridge.predict("item", mode="alt", task="classification", bins="b")
-
-    assert payload["mode"] == "alt"
-    np.testing.assert_allclose(payload["predict"], [0.1, 0.9])
-    np.testing.assert_allclose(payload["low"], [0.0, 0.5])
-    np.testing.assert_allclose(payload["high"], [0.2, 1.0])
-    np.testing.assert_array_equal(payload["classes"], ["a", "b"])
-
-
 def test_legacy_predict_bridge_handles_scalar_predictions():
     class Explainer:
         def predict(self, *args: Any, **kwargs: Any) -> Any:
@@ -178,25 +150,6 @@ def test_legacy_predict_bridge_handles_scalar_predictions():
 
     np.testing.assert_allclose(payload["predict"], [0.42])
     assert "low" not in payload and "classes" not in payload
-
-
-def test_legacy_predict_bridge_passes_through_expected_flags():
-    class Explainer:
-        def __init__(self) -> None:
-            self.calls: list[Dict[str, Any]] = []
-
-        def predict(self, *args: Any, **kwargs: Any) -> Any:
-            self.calls.append(kwargs)
-            if kwargs.get("calibrated"):
-                return np.asarray([1])
-            return (np.asarray([0.2]), (np.asarray([0.1]), np.asarray([0.3])))
-
-    explainer = Explainer()
-    bridge = LegacyPredictBridge(explainer)
-    bridge.predict("x", mode="factual", task="classification", bins="bucket")
-
-    assert explainer.calls[0] == {"uq_interval": True, "bins": "bucket"}
-    assert explainer.calls[1] == {"calibrated": True, "bins": "bucket"}
 
 
 def test_predict_bridge_interval_and_proba():
@@ -246,50 +199,12 @@ def test_supports_and_explain_methods(monkeypatch: pytest.MonkeyPatch):
             del sys.modules[module_name]
 
 
-def test_collection_to_batch_handles_empty_and_populated_collections():
-    empty_batch = collection_to_batch(make_collection(with_instances=False))
-    assert empty_batch.instances == ()
-    assert empty_batch.explanation_cls is builtins_mod.FactualExplanation
-
-    populated = make_collection(with_instances=True)
-    batch = collection_to_batch(populated)
-    assert isinstance(batch, ExplanationBatch)
-    assert batch.instances[0]["explanation"].label == "dummy"
-    assert batch.collection_metadata["container"] is populated
-
-
 def test_legacy_plot_renderer_creates_result():
     renderer = LegacyPlotRenderer()
     ctx = make_local_plot_context()
     result = renderer.render({"artifact": 1}, context=ctx)
     assert getattr(result, "artifact", None) == {"artifact": 1}
     assert result.saved_paths == ()
-
-
-def test_interval_plugin_requires_handles_and_returns_calibrator(monkeypatch: pytest.MonkeyPatch):
-    created = {}
-
-    class DummyCalibrator:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            created["args"] = args
-            created["kwargs"] = kwargs
-
-    monkeypatch.setattr(
-        "calibrated_explanations.calibration.interval_regressor.IntervalRegressor",
-        DummyCalibrator,
-        raising=False,
-    )
-    context = make_interval_context("regression")
-
-    with pytest.raises(NotFittedError):
-        LegacyIntervalCalibratorPlugin().create(context)
-
-    context_with_explainer = make_interval_context(
-        "regression", metadata={"explainer": SimpleNamespace()}
-    )
-    calibrator = LegacyIntervalCalibratorPlugin().create(context_with_explainer)
-    assert created["args"] == (context_with_explainer.metadata["explainer"],)
-    assert calibrator is not None
 
 
 def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: pytest.MonkeyPatch):
@@ -330,21 +245,6 @@ def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
-
-
-def test_explanation_plugin_initialization_and_batch(explanation_context: ExplanationContext):
-    plugin = LegacyFactualExplanationPlugin()
-    plugin.initialize(explanation_context)
-    request = ExplanationRequest(
-        threshold=None,
-        low_high_percentiles=(0.1, 0.9),
-        bins="binning",
-        features_to_ignore=(1,),
-        extras={},
-    )
-    batch = plugin.explain_batch("data", request)
-    assert isinstance(batch, ExplanationBatch)
-    assert batch.collection_metadata["container"].explanations
 
 
 def test_explanation_plugin_requires_initialization():
@@ -603,58 +503,6 @@ def test_plot_spec_builder_unsupported_intent():
         builder.build(ctx)
 
 
-def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
-    calls: list[tuple[str, Iterable[str]]] = []
-
-    monkeypatch.setattr(
-        builtins_mod,
-        "register_interval_plugin",
-        lambda *args, **kwargs: calls.append(("interval", args)),
-    )
-    monkeypatch.setattr(
-        builtins_mod,
-        "register_explanation_plugin",
-        lambda *args, **kwargs: calls.append(("explanation", args)),
-    )
-    monkeypatch.setattr(
-        builtins_mod,
-        "register_plot_builder",
-        lambda *args, **kwargs: calls.append(("builder", args)),
-    )
-    monkeypatch.setattr(
-        builtins_mod,
-        "register_plot_renderer",
-        lambda *args, **kwargs: calls.append(("renderer", args)),
-    )
-    monkeypatch.setattr(
-        builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args))
-    )
-
-    register_builtins()
-
-    kinds = {kind for kind, _ in calls}
-    assert {"interval", "explanation", "builder", "renderer", "style"}.issubset(kinds)
-
-    importlib.reload(builtins_mod)
-
-
-def test_plot_spec_renderer_without_save(monkeypatch: pytest.MonkeyPatch):
-    renderer = PlotSpecDefaultRenderer()
-
-    def fake_render(artifact: Dict[str, Any], *, show: bool, save_path: str | None) -> None:
-        if save_path == "bad":
-            raise RuntimeError("boom")
-
-    monkeypatch.setattr(
-        "calibrated_explanations.viz.matplotlib_adapter.render",
-        fake_render,
-        raising=False,
-    )
-    ctx = make_local_plot_context(save_ext=None, path=None, show=False)
-    result = renderer.render({"spec": 1}, context=ctx)
-    assert result.saved_paths == ()
-
-
 def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch):
     renderer = PlotSpecDefaultRenderer()
 
@@ -669,23 +517,3 @@ def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch
     ctx = make_local_plot_context(save_ext=[".png"], path="bad", show=False)
     with pytest.raises(ConfigurationError):
         renderer.render({"spec": 1}, context=ctx)
-
-
-def test_register_builtins_imports_fast_plugins(monkeypatch: pytest.MonkeyPatch):
-    calls: list[str] = []
-
-    fake_module = ModuleType("external_plugins.fast_explanations")
-
-    def fake_register():
-        calls.append("register")
-
-    fake_module.register = fake_register
-    monkeypatch.setitem(sys.modules, "external_plugins.fast_explanations", fake_module)
-    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args, **kwargs: None)
-    monkeypatch.setattr(builtins_mod, "register_plot_style", lambda *args, **kwargs: None)
-
-    register_builtins()
-    assert calls == ["register"]

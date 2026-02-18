@@ -27,7 +27,7 @@ primary quality criteria (beyond coverage) and define how they are enforced in C
   `scripts/check_coverage_gates.py`, plus the PR checklist and contributor guidance.
 - Private-member usage in tests is blocked by the `scan-private-members` workflow
   (`scripts/anti-pattern-analysis/scan_private_usage.py --check`).
-- A test anti-pattern report is generated in CI (`scripts/detect_test_anti_patterns.py`).
+- A test anti-pattern report is generated in CI (`scripts/anti-pattern-analysis/detect_test_anti_patterns.py`).
 - The test guidance explicitly requires behavior-first pytest tests, determinism,
   and avoiding private helpers, plus explicit fallback-chain opt-in.
 
@@ -76,6 +76,16 @@ criteria that measure reliability and behavioral correctness. The primary criter
    - **Pytest fit:** strong fit due to fixture scoping, parametrization, and local
      helpers in conftest files.
 
+6. **Semantic efficiency (avoid meaningful over-testing)**
+   - **Definition:** Every test must provide a unique contribution to the suite's
+     confidence. A test is considered **redundant** if it has 0 unique lines unless it
+     provides a unique parameter combination, return-value assertion, or side-effect check
+     that is not covered by any other test.
+   - **Pros:** Reduces suite runtime, maintenance burden, and "false confidence" from high test counts.
+   - **Cons:** Requires careful design of parameterized tests; may flag valid regression tests if not marked.
+   - **Pytest fit:** `pytest.mark.parametrize` is the preferred pattern for variations;
+     copy-pasted tests are explicitly discouraged.
+
 ## Enforcement
 
 The quality criteria above are enforced through a combination of CI gates and
@@ -86,14 +96,16 @@ static audits. Specifically:
   - Private-member usage scan in tests (fail on non-allowlisted usage).
   - Fallback-chain restrictions (tests must opt in when validating fallbacks).
 
-- **Over-testing density gate (advisory → enforced)**:
-  - Use per-test coverage contexts (`pytest --cov-context=test`) to compute per-line
-    test-count density with `scripts/over_testing/over_testing_report.py` and
-    `scripts/over_testing/over_testing_triage.py`.
-  - Gate on an **over-testing ratio** (share of covered lines above a test-count
-    threshold) with a ratcheting baseline, similar to the coverage fail-under model.
-  - Allowlist exceptions only with justification and a planned sunset; keep outputs
-    checked in under `reports/over_testing/` for visibility.
+- **Redundant test strictness (zero unique lines)**:
+  - **Metric:** `Unique Lines` per test (calculated via `pytest --cov-context=test`).
+  - **Requirement:** **0 tests with 0 unique lines**, unless:
+    1.  The test is a `pytest.mark.parametrize` case where the variation is meaningful (input/output).
+    2.  The test is explicitly marked as a regression test for an issue (`@pytest.mark.issue`).
+  - **Stronger Goal (Behavioral Uniqueness):** No two non-parameterized tests shall have
+    **identical coverage fingerprints** (set of all lines hit). Identical fingerprints
+    indicate a purely redundant test that should be deleted or parameterized.
+  - **Mechanism:** `scripts/over_testing/over_testing_report.py` computes unique lines and
+    fingerprints. CI will warn (advisory) and eventually block (enforced) on violations.
 
 - **Expand test anti-pattern checks** (incremental, non-breaking rollout):
   - Extend the existing anti-pattern detector to flag:
@@ -157,3 +169,13 @@ Based on analysis of current test practices (directory-based organization, ~2000
 - 2026-02-09 – Added over-testing density analysis scripts and proposed a ratcheting
   gate based on per-test coverage contexts (pending CI rollout).
 - 2026-02-09 – Completed coverage improvement iteration: added integration tests for plotting style overrides/legacy fallbacks, cache fallback testing, and YAML template loading to increase coverage in low-coverage modules (plotting.py, cache.py, narrative_generator.py).
+- 2026-02-15 – Phase 3 (marker hygiene): added `scripts/quality/check_marker_hygiene.py`
+  with `--check` / `--rebaseline` modes and committed baseline
+  (`.github/marker-hygiene-baseline.json`, 72 existing-debt entries). Wired into
+  `ci-pr.yml` and `ci-main.yml` anti-pattern-audit jobs.
+- 2026-02-15 – Phase 4 (over-testing density): wired `over_testing_report.py` and
+  `detect_redundant_tests.py` into `ci-main.yml` as an advisory
+  (`continue-on-error: true`) job with `--cov-context=test` coverage collection.
+  Reports published as CI artifacts.
+- 2026-02-15 – Anti-pattern audit added to `ci-pr.yml` so PR checks survive
+  `test.yml` compat-wrapper decommission (release task 12).

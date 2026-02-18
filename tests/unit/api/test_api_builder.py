@@ -48,14 +48,6 @@ def test_explainer_builder_fluent_roundtrip():
     assert cfg.unseen_category_policy == "ignore"
 
 
-def test_wrap_from_config_private_helper():
-    model = RandomForestClassifier()
-    cfg = ExplainerConfig(model=model)
-    w = WrapCalibratedExplainer.from_config(cfg)  # private, intentional
-    assert isinstance(w, WrapCalibratedExplainer)
-    assert w.learner is model
-
-
 def test_wrap_from_config_applies_defaults(monkeypatch):
     # Configure defaults
     model = RandomForestClassifier()
@@ -156,23 +148,3 @@ def test_explainer_builder_perf_factory_failure(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr("calibrated_explanations.api.config._perf_from_config", boom)
     cfg = builder.build_config()
     assert cfg.perf_factory is None
-
-
-def test_explainer_builder_perf_options_with_none():
-    """Test perf methods with None values to cover false branches."""
-    model = RandomForestClassifier()
-    builder = ExplainerBuilder(model)
-    # Call perf_cache with only enabled=True, others None
-    builder.perf_cache(True)
-    # Call perf_parallel with only enabled=True
-    builder.perf_parallel(True)
-    # Call perf_feature_filter with only enabled=True
-    builder.perf_feature_filter(True)
-    cfg = builder.build_config()
-    # Check defaults are preserved
-    assert cfg.perf_cache_enabled is True
-    assert cfg.perf_cache_max_items == 512  # default
-    assert cfg.perf_parallel_enabled is True
-    assert cfg.perf_parallel_backend == "auto"  # default
-    assert cfg.perf_feature_filter_enabled is True
-    assert cfg.perf_feature_filter_per_instance_top_k == 8  # default

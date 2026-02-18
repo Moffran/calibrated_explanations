@@ -37,7 +37,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 **ADR-006 – Plugin Trust Model:** Completed. Trust/deny controls, diagnostics, and governance logging are in place; appendix updated to reflect closure.
 **ADR-007 – PlotSpec Abstraction:** Completed. `PlotSpec` IR, schema/versioning, validation, and headless export support implemented; registry extensions are optional.
 **ADR-008 – Explanation Domain Model:** Domain-model hardening targeted for v0.11.0; ADR clarifies domain/legacy round-trips and remaining structured metadata gaps.
-**ADR-009 – Input Preprocessing and Mapping Policy:** Automation and preprocessing persistence align to v0.11.0; appendix lists outstanding enforcement gaps.
+**ADR-009 – Input Preprocessing and Mapping Policy:** Completed in v0.11.0 with auto-encoding activation, unseen-category policy enforcement, mapping export/import helpers, and telemetry/docs alignment.
 **ADR-010 - Core vs Evaluation Split:** Completed for extras; remaining action is to verify core-only installs do not require matplotlib at import time and align CI accordingly (target v0.11.0).
 **ADR-011 – Deprecation and Migration Policy:** Completed: central `deprecate()` helper and migration guidance implemented; CI gates added for deprecation enforcement.
 **ADR-012 - Documentation & Gallery Build Policy:** Accepted. Notebooks/gallery rendering clarified as advisory on mainline and blocking on release branches; remaining work (executed notebooks + runtime ceilings) targeted for v0.11.0.
@@ -104,7 +104,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
    - 2025-10-07 – Harmonised `core.validation` docstring spacing with numpy-style guardrails to satisfy Standard-002 pydocstyle checks.
 6. Implement Standard-003 phase 1 changes: ship shared `.coveragerc`, enable
    `--cov-fail-under=80` in CI, and document waiver workflow in contributor
-   templates.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/coverage_uplift_plan.md†L9-L33】
+   templates.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/archived/coverage_uplift_plan.md†L9-L33】
 
 Release gate: parity tests green for factual/alternative/fast, interval override
 coverage exercised, CLI packaging verified, and nomenclature/doc lint warnings
@@ -141,7 +141,7 @@ live in CI with coverage thresholds enforcing ≥90% package-level coverage.
 8. Extend Standard-003 enforcement to critical-path modules (≥95% coverage) and
    enable Codecov patch gating at ≥85% for PRs touching runtime/calibration
    logic, enable
-   `--cov-fail-under=85` in CI.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/coverage_uplift_plan.md†L24-L33】
+   `--cov-fail-under=85` in CI.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/archived/coverage_uplift_plan.md†L24-L33】
 9. **Completed 2025-01-14:** Adopted ADR-023 to exempt `src/calibrated_explanations/viz/matplotlib_adapter.py` from coverage due to matplotlib 3.8.4 lazy loading conflicts with pytest-cov instrumentation. All 639 tests now pass with coverage enabled. Package-wide coverage maintained at 85%+.【F:docs/improvement/adrs/ADR-023-matplotlib-coverage-exemption.md†L1-L100】
 
 Release gate: PlotSpec default route parity, telemetry docs/tests in place,
@@ -166,7 +166,7 @@ achieved via ADR-023 exemption.
      coverage threshold to the lint workflow, making Standard-002's tooling fully
      blocking for documentation CI.
 9. **Advance Standard-001 naming cleanup.** Prune deprecated shims scheduled for removal and ensure naming lint rules stay green on the release branch.【F:docs/improvement/Standard-001_nomenclature_remediation.md†L40-L44】【F:docs/standards/STD-001-nomenclature-standardization.md†L28-L37】
-10. **Sustain Standard-003 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, enable `--cov-fail-under=88` in CI, and execute the module-level remediation efforts for interval regressors, registry/CLI, plotting, and explanation caching per the dedicated gap plan.【F:docs/improvement/coverage_uplift_plan.md†L34-L111】
+10. **Sustain Standard-003 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, enable `--cov-fail-under=88` in CI, and execute the module-level remediation efforts for interval regressors, registry/CLI, plotting, and explanation caching per the dedicated gap plan.【F:docs/improvement/archived/coverage_uplift_plan.md†L34-L111】
 11. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】 See the ADR-004 phase table above for task breakdown and ownership.
 
       - 2025-11-04 – Implemented opt-in calibrator cache with LRU eviction, multiprocessing toggle via ParallelExecutor facade, and vectorized perturbation handling. Added performance guidance for plugin authors in docs/contributor/plugin-contract.md. Cache and parallel primitives integrated into explain pipeline without altering calibration semantics.
@@ -205,8 +205,8 @@ Release gate: Deprecation dashboard live, docs CI runs with notebook execution, 
 7. Remove deprecated backward-compatibility alias `_is_thresholded()` from `CalibratedExplanations` class (superseded by `_is_probabilistic_regression()` in v0.9.0). Update any remaining external code or documentation that may reference the old method name. This completes the terminology standardization cycle from ADR-021.【F:docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md†L119-L159】【F:docs/foundations/concepts/terminology_thresholded_vs_probabilistic_regression.md†L1-L24】
 8. Condition source and discretizer branching: introduce `condition_source` configuration and thread it through `CalibratedExplainer`, `CalibratedExplanations`, orchestrators, and explanation instances so condition labels can be derived from either observed labels or calibrated predictions. Update discretizer construction to branch between observed-label and prediction-based label building and propagate the choice into `instantiate_discretizer` with validated defaults. Extend runtime helper tests to exercise both observed- and prediction-based condition sources and update discretizer interface stubs accordingly. Plan the user-visible default change (`condition_source="prediction"`) to land in v0.11.0 (or at latest in `v1.0.0-rc`) with an explicit upgrade note and migration guidance for any callers that relied on the historical observed-label behaviour.
 9. Update the Docs with a comprehensive API reference for the public API of `CalibratedExplainer`, `WrapCalibratedExplainer`, `CalibratedExplanations`, `CalibratedExplanation`, `FactualExplanation`, and `AlternativeExplanation` including detailed descriptions of methods, parameters, return types, and usage examples. This will help users understand how to effectively utilize the library's capabilities.【F:docs/api_reference/calibrated_explainer.md†L1-L150】
-10. **Anti-Pattern Remediation Phase 1:** Triage and categorize private member usage in tests. Rename and move test utilities (Category B) to public helpers to decouple tests from implementation details. See `docs/improvement/ANTI_PATTERN_REMEDIATION_PLAN.md`.
-11. **Close Standard-003 Phase 2 gates.** Execute the coverage uplift roadmap for this milestone: (a) complete the waiver audit with expiry metadata and refresh `.coveragerc`/`[tool.coverage.paths]` so Windows/WSL reports collapse to a single source of truth, (b) raise local + CI invocations (pytest + `make test-cov`) to `--cov-fail-under=90` while enabling the Codecov ≥88 % patch gate, and (c) deliver Iteration 3 remediation from the uplift plan—drive deterministic tests for `plugins/registry.py`, `plugins/builtins.py`, `plugins/cli.py`, and legacy plotting save-routing so trust toggles, CLI error paths, and renderer parity are all exercised before we cut the v0.10.0 branch.【F:docs/improvement/coverage_uplift_plan.md†L24-L119】
+10. **Anti-Pattern Remediation Phase 1:** Triage and categorize private member usage in tests. Rename and move test utilities (Category B) to public helpers to decouple tests from implementation details. See `docs/improvement/archived/ANTI_PATTERN_REMEDIATION_PLAN.md`.
+11. **Close Standard-003 Phase 2 gates.** Execute the coverage uplift roadmap for this milestone: (a) complete the waiver audit with expiry metadata and refresh `.coveragerc`/`[tool.coverage.paths]` so Windows/WSL reports collapse to a single source of truth, (b) raise local + CI invocations (pytest + `make test-cov`) to `--cov-fail-under=90` while enabling the Codecov ≥88 % patch gate, and (c) deliver Iteration 3 remediation from the uplift plan—drive deterministic tests for `plugins/registry.py`, `plugins/builtins.py`, `plugins/cli.py`, and legacy plotting save-routing so trust toggles, CLI error paths, and renderer parity are all exercised before we cut the v0.10.0 branch.【F:docs/improvement/archived/coverage_uplift_plan.md†L24-L119】
 
 Release gate: Package boundaries, validation/caching/parallel tests, interval invariants, terminology cleanup, and updated ADR status notes all green with telemetry dashboards verifying the new signals (see ADR status appendix in this document).
 
@@ -218,7 +218,7 @@ Release gate: Package boundaries, validation/caching/parallel tests, interval in
 4. Maintain legacy plotting in the maintenance reference — ensure `docs/maintenance/legacy-plotting-reference.md` is authoritative for legacy behavior; avoid treating ADR-024/ADR-025 as active design gates (see ADR status appendix).
 5. Document dynamically generated visualization classes to close the remaining Standard-002 docstring gap tied to plugin guides (see ADR status appendix in this document).
 6. Prototype streaming-friendly explanation delivery (opt-in) — implement an opt-in, non-breaking generator API for large exports (e.g., `CalibratedExplanations.to_json_stream(chunk_size=256)` or `to_json(stream=True)`) that yields JSON Lines or safe chunked JSON pieces. Collect minimal export telemetry (`export_rows`, `chunk_size`, `mode` (`batch`|`stream`), `peak_memory_mb`, `elapsed_seconds`, `schema_version`, `feature_branch`) and validate the memory profile (reference target: 10k rows < 200 MB at `chunk_size=256`). Mark streaming as experimental until prototype validation completes and record follow-up actions in the release notes.
-7. **Anti-Pattern Remediation Phase 2:** Refactor core internal tests (Category A) to use public APIs and remove dead code. This reduces brittleness and improves maintainability. See `docs/improvement/ANTI_PATTERN_REMEDIATION_PLAN.md`.
+7. **Anti-Pattern Remediation Phase 2:** Refactor core internal tests (Category A) to use public APIs and remove dead code. This reduces brittleness and improves maintainability. See `docs/improvement/archived/ANTI_PATTERN_REMEDIATION_PLAN.md`.
 8. **Open-source readiness plan (v0.10.1 → v1.0.0-rc):** add the following workstream tasks here and track them through the remaining milestones so everything lands before the v1.0.0-rc freeze.
    - **Repository structure & metadata:** add top-level community health files (`CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`/`MAINTAINERS.md`), link them from the README, and document the maintainer/decision-making model in a lightweight, discoverable format.
    - **Documentation:** expand the API reference coverage beyond `CalibratedExplainer` to include CLI entry points, plugin registry contracts, serialization schema, and visualization APIs; add a README "documentation map" that links to API, architecture, contributor, and changelog pages.
@@ -235,7 +235,7 @@ Release gate: Payload round-trips verified, PlotSpec/visualization plugin regist
 3. Finish ADR-015 integration work: ship an in-tree FAST plugin, rebuild explanation collections with canonical metadata, tighten trust enforcement, align environment variables, and provide immutable plugin handles (see ADR status appendix in this document).
 4. Deliver ADR-010 optional-dependency splits by trimming core dependencies, completing extras/lockfiles, auto-skipping viz tests without extras, updating docs, and extending contributor guidance (see ADR status appendix in this document).
 5. Extend ADR-021/ADR-026 telemetry by surfacing FAST probability cubes, interval dependency hints, and frozen bin metadata in runtime payloads (see ADR status appendix in this document).
-6. **Anti-Pattern Remediation Phase 3:** Enforce zero private member usage in tests via CI/Linting to prevent regression. See `docs/improvement/ANTI_PATTERN_REMEDIATION_PLAN.md`.
+6. **Anti-Pattern Remediation Phase 3:** Enforce zero private member usage in tests via CI/Linting to prevent regression. See `docs/improvement/archived/ANTI_PATTERN_REMEDIATION_PLAN.md`.
 7. Finalize ADR-027 implementation: align runtime logging with the observability policy (debug by default; warnings only in strict mode), document metadata exposure for per-instance ignore masks, and provide examples in performance tuning documentation (see ADR-027 status appendix).
 8. Adopt ADR-028 logging and governance observability architecture and enforce Standard-005 logging and observability rules across core, plugins, and governance surfaces for v0.10.2-touched code paths, including domain-based logger usage, context propagation, and data minimisation (see ADR-028 status appendix and Standard-005).
 9. Publish {doc}`adrs/ADR-029-reject-integration-strategy` (Reject Integration Strategy) decisions and open questions, and record the deferred strategy/visualization decisions with follow-up tasks in the v0.10.2 plan.
@@ -306,7 +306,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
    utilisation metrics for release sign-off.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】
 6. Institutionalise Standard-003 by baking coverage checks into release branch
    policies, publishing a health dashboard (Codecov badge + waiver log), and
-   enforcing `--cov-fail-under=90` in CI.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/coverage_uplift_plan.md†L24-L33】
+   enforcing `--cov-fail-under=90` in CI.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/archived/coverage_uplift_plan.md†L24-L33】
 7. Promote ADR-026 from Draft to Accepted with implementation summaries so plugin semantics remain authoritative before the freeze; ADR-024 and ADR-025 are deprecated and their legacy parity guidance moved to the maintenance reference (see ADR status appendix).
 8. Launch the versioned documentation preview and public doc-quality dashboards
    (coverage badge, doc lint, notebook lint) described in the information
@@ -357,16 +357,16 @@ maintenance cadences scheduled.
 
 - **Scope alignment:** The release milestones already emphasise testing and
   documentation maturity; Standard-003 adds explicit quantitative coverage gates that
-  complement Standard-001/Standard-002 quality goals without altering plugin-focused
-  scope.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】
+   complement Standard-001/Standard-002 quality goals without altering plugin-focused
+   scope.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】
 - **Milestone sequencing:** Early v0.6.x tasks capture baseline metrics and
-  prepare `.coveragerc`, v0.7.0 introduces CI thresholds, v0.8.0 widens
-  enforcement to critical paths and patch checks, and v0.9.0 retires waivers
-  ahead of the release candidate. This staging keeps debt burn-down parallel to
-  existing plugin/doc improvements.【F:docs/improvement/coverage_uplift_plan.md†L11-L48】
+   prepare `.coveragerc`, v0.7.0 introduces CI thresholds, v0.8.0 widens
+   enforcement to critical paths and patch checks, and v0.9.0 retires waivers
+   ahead of the release candidate. This staging keeps debt burn-down parallel to
+   existing plugin/doc improvements.【F:docs/improvement/archived/coverage_uplift_plan.md†L11-L48】
 - **Release readiness:** By v1.0.0, coverage gating is embedded in branch
-  policies and telemetry/documentation communications, ensuring Standard-003 remains
-  sustainable beyond the initial rollout.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/coverage_uplift_plan.md†L11-L48】
+   policies and telemetry/documentation communications, ensuring Standard-003 remains
+   sustainable beyond the initial rollout.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/archived/coverage_uplift_plan.md†L11-L48】
 
 ## Post-1.0 considerations
 
@@ -512,10 +512,10 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Automatic encoding pathway unimplemented | 5 | 4 | 20 | `auto_encode='auto'` has no effect; built-in encoder never runs. |
-| 2 | Unseen-category policy ignored | 4 | 3 | 12 | Configuration captures the flag but no enforcement occurs during inference. |
-| 3 | DataFrame/dtype validation incomplete | 3 | 3 | 9 | Validators coerce to NumPy without inspecting categorical columns, missing ADR-required diagnostics. |
-| 4 | Telemetry docs mismatch emitted fields | 2 | 2 | 4 | Documentation references `identifier` while runtime payload exposes `transformer_id`. |
+| 1 | Automatic encoding pathway unimplemented | 0 | 0 | 0 | **COMPLETED (2026-02-16).** `auto_encode='auto'` now activates deterministic built-in encoding when no user preprocessor is supplied. |
+| 2 | Unseen-category policy ignored | 0 | 0 | 0 | **COMPLETED (2026-02-16).** Inference-time unseen categories now enforce `unseen_category_policy` (`error` raises actionable `ValidationError`; `ignore` maps to sentinel output). |
+| 3 | DataFrame/dtype validation incomplete | 0 | 0 | 0 | **COMPLETED (2026-02-16).** Non-numeric inputs without preprocessing now raise actionable diagnostics that direct users to `auto_encode='auto'` or a custom preprocessor. |
+| 4 | Telemetry docs mismatch emitted fields | 0 | 0 | 0 | **COMPLETED (2026-02-16).** Telemetry docs now use `preprocessor.transformer_id` to match runtime payloads. |
 
 ## ADR-010 – Optional Dependency Split
 

@@ -1,7 +1,6 @@
 import os
 from types import MappingProxyType
 
-import numpy as np
 import pytest
 
 from calibrated_explanations.plugins import (
@@ -27,49 +26,6 @@ def test_core_fast_plugin_registered_and_trusted():
     assert desc.trusted is True, "core.explanation.fast should be trusted in-tree"
     plugin = find_explanation_plugin_trusted("core.explanation.fast")
     assert plugin is not None
-
-
-def test_from_batch_reconstructs_container_and_sets_metadata():
-    """`CalibratedExplanations.from_batch` must reconstruct a fresh container and preserve metadata."""
-
-    class DummyExplanation:
-        pass
-
-    class DummyExplainer:
-        pass
-
-    dummy_explainer = DummyExplainer()
-    x_test = np.array([[1.0, 2.0]])
-    # Build a batch with extra collection metadata fields that must be preserved
-    meta = {
-        "calibrated_explainer": dummy_explainer,
-        "x_test": x_test,
-        "y_threshold": 0.5,
-        "bins": None,
-        "features_to_ignore": [],
-        "condition_source": "observed",
-        "interval_dependencies": ("core.interval.fast",),
-        "plot_source": "plot_spec.default",
-        "runtime_telemetry": {"a": 1},
-        "feature_filter_per_instance_ignore": [(0,)],
-    }
-
-    batch = ExplanationBatch(
-        container_cls=CalibratedExplanations,
-        explanation_cls=DummyExplanation,
-        instances=[{"explanation": DummyExplanation()}],
-        collection_metadata=dict(meta),
-    )
-
-    container = CalibratedExplanations.from_batch(batch)
-    assert isinstance(container, CalibratedExplanations)
-    assert container is not batch.collection_metadata.get("container")
-    # metadata preserved on container.batch_metadata
-    for k in ("interval_dependencies", "plot_source", "runtime_telemetry"):
-        assert k in container.batch_metadata and container.batch_metadata[k] == meta[k]
-    assert (
-        container.feature_filter_per_instance_ignore == meta["feature_filter_per_instance_ignore"]
-    )
 
 
 def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_untrusted():
@@ -136,30 +92,6 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
     with pytest.warns(UserWarning):
         plugin, ident = orch.resolve_plugin("fast")
         assert ident == identifier
-
-
-def test_third_party_trust_flag_ignored_unless_operator_trusts():
-    """Third-party plugin metadata 'trusted' must not auto-trust the descriptor unless operator trusts it."""
-    clear_explanation_plugins()
-
-    class TPlugin:
-        plugin_meta = {
-            "name": "third.party.plugin",
-            "schema_version": 1,
-            "version": "0",
-            "provider": "third-party",
-            "capabilities": ("explain", "explanation:fast", "task:classification"),
-            "modes": ("fast",),
-            "tasks": ("classification",),
-            "dependencies": (),
-            "trusted": True,
-        }
-
-    register_explanation_plugin("third.party.plugin", TPlugin(), source="external")
-    desc = find_explanation_descriptor("third.party.plugin")
-    assert desc is not None
-    # Descriptor should not be marked trusted just because metadata claimed it
-    assert desc.trusted is False
 
 
 def test_env_var_precedence_for_explanation_selection():

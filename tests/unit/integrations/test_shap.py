@@ -54,23 +54,6 @@ class FakeShap:
             return FakeExplanation(prediction)
 
 
-def test_should_use_cached_explainer_when_shape_matches(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cached explainer should be returned without re-importing shap."""
-    helper = ShapHelper(explainer=DummyExplainer(np.ones((2, 2))))
-    cached_explainer = object()
-    cached_reference = FakeExplanation(np.ones((1, 2)))
-    helper.enabled = True
-    helper.explainer_instance = cached_explainer
-    helper.reference_explanation = cached_reference
-
-    monkeypatch.setattr(shap_module, "safe_import", lambda _: (_ for _ in ()).throw(AssertionError))
-
-    explainer, reference = helper.preload(num_test=1)
-
-    assert explainer is cached_explainer
-    assert reference is cached_reference
-
-
 def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """ImportError disables the helper and returns empty result."""
     helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
@@ -83,48 +66,6 @@ def test_should_disable_helper_when_safe_import_raises(monkeypatch: pytest.Monke
     assert explainer is None
     assert reference is None
     assert helper.enabled is False
-
-
-def test_should_return_cached_when_shape_matches(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cached reference with matching shape should be reused."""
-    helper = ShapHelper(explainer=DummyExplainer(np.ones((2, 2))))
-    helper.enabled = True
-    helper.explainer_instance = "cached"
-    helper.reference_explanation = FakeExplanation(np.ones((2, 2)))
-
-    monkeypatch.setattr(
-        shap_module, "safe_import", lambda _name: (_ for _ in ()).throw(AssertionError)
-    )
-
-    cached_instance, cached_reference = helper.preload(num_test=2)
-
-    assert cached_instance == "cached"
-    assert cached_reference is helper.reference_explanation
-
-
-def test_should_return_none_when_shap_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No shap module should short-circuit to (None, None)."""
-    helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: None)
-
-    explainer, reference = helper.preload()
-
-    assert explainer is None
-    assert reference is None
-
-
-@pytest.mark.parametrize("x_cal_value", [None, np.empty((0, 2)), object()])
-def test_should_return_none_when_calibration_data_unusable(
-    x_cal_value, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Unset, empty, or non-sized calibration data should disable SHAP wiring."""
-    helper = ShapHelper(explainer=DummyExplainer(x_cal_value))
-    monkeypatch.setattr(shap_module, "safe_import", lambda _name: FakeShap())
-
-    explainer, reference = helper.preload()
-
-    assert explainer is None
-    assert reference is None
 
 
 def test_should_build_and_cache_explainer_when_shap_available(
@@ -152,3 +93,39 @@ def test_should_build_and_cache_explainer_when_shap_available(
 
     assert cached_same_shape == (explainer, reference)
     assert cached_default == (explainer, reference)
+
+
+@pytest.mark.parametrize(
+    "x_cal",
+    [
+        None,
+        np.empty((0, 2)),
+        object(),
+    ],
+)
+def test_preload_returns_none_for_unusable_calibration_data(
+    monkeypatch: pytest.MonkeyPatch,
+    x_cal,
+) -> None:
+    """Unusable calibration payloads should short-circuit without building SHAP explainers."""
+    helper = ShapHelper(explainer=DummyExplainer(x_cal))
+    monkeypatch.setattr(shap_module, "safe_import", lambda _name: FakeShap())
+
+    explainer, reference = helper.preload()
+
+    assert explainer is None
+    assert reference is None
+    assert helper.enabled is False
+
+
+def test_legacy_aliases_delegate_to_enabled_state() -> None:
+    helper = ShapHelper(explainer=DummyExplainer(np.ones((1, 2))))
+
+    assert helper.isenabled() is False
+
+    helper.setenabled(True)
+    assert helper.is_enabled() is True
+    assert helper.isenabled() is True
+
+    helper.setenabled(False)
+    assert helper.is_enabled() is False

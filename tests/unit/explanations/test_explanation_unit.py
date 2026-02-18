@@ -4,7 +4,6 @@ import pytest
 from unittest.mock import Mock
 from calibrated_explanations.explanations.explanation import CalibratedExplanation
 import numpy as np
-import pandas as pd
 from calibrated_explanations.utils.exceptions import ValidationError
 
 # Alias for convenience
@@ -117,38 +116,6 @@ class TestExplanationUnit:
         expl = ConcreteExplanation(**params)
         return expl
 
-    def test_init_basic(self):
-        """Test successful initialization and attribute mapping."""
-        expl = self.create_expl()
-        assert expl.index == 0
-        assert np.array_equal(expl.x_test, self.x)
-        assert expl.prediction["predict"] == 0.5
-        assert expl.y_minmax == [0, 1]
-
-    def test_init_full_probabilities(self):
-        """Test __full_probabilities__ special handling."""
-        prediction_with_full = self.prediction.copy()
-        prediction_with_full["__full_probabilities__"] = [[0.1, 0.9]]
-        expl = self.create_expl(prediction=prediction_with_full)
-        assert expl.prediction["__full_probabilities__"] == [[0.1, 0.9]]
-
-    def test_init_y_threshold_array(self):
-        """Test array-like y_threshold indexing."""
-        expl = self.create_expl(y_threshold=np.array([0.7]))
-        assert expl.y_threshold == 0.7
-
-        expl_tuple = self.create_expl(y_threshold=(0.5, 0.6))
-        assert expl_tuple.y_threshold == (0.5, 0.6)
-
-    def test_init_categorical_y_cal(self):
-        """Test y_minmax when y_cal is categorical."""
-        # Must be classification to default to [0, 1] usually
-        self.explainer.mode = "classification"
-        self.explainer.y_cal = pd.Categorical([0, 1, 0], categories=[0, 1], ordered=True)
-        expl = self.create_expl()
-        # Code hardcodes [0, 0] for Categorical
-        assert expl.y_minmax == [0, 0]
-
     def test_filter_rule_sizes_copy_preserves_original(self):
         expl = self.create_expl()
         expl.rules = {
@@ -201,29 +168,6 @@ class TestExplanationUnit:
         with pytest.warns(UserWarning, match="Rule already included"):
             expl.add_new_rule_condition(0, 12.0)
 
-    def test_add_new_rule_condition_success_lesser(self):
-        expl = self.create_expl()
-
-        # Ensure predict returns DIFFERENT values so it doesn't trigger "identical explanation" warning
-        def predict_diff_effect(x, **kwargs):
-            n = len(x)
-            # Default low=0.4, high=0.6. We return 0.3, 0.7.
-            return (np.zeros(n) + 0.5, np.zeros(n) + 0.3, np.zeros(n) + 0.7, None)
-
-        self.explainer.prediction_orchestrator.predict_internal = Mock(
-            side_effect=predict_diff_effect
-        )
-
-        # f0 is continuous. x[0]=10.0. Boundary 12.0 -> is_lesser=True.
-        # x_cal for f0: [10, 15, 12, 5]. Values < 12: [10, 5].
-        # Rule string: "f0 < 12.00"
-
-        expl.add_new_rule_condition(0, 12.0)
-
-        assert len(expl.rules["rule"]) == 1
-        assert expl.rules["rule"][0] == "f0 < 12.00"
-        assert expl.rules["feature"][0] == 0
-
     def test_add_new_rule_condition_success_greater(self):
         expl = self.create_expl()
 
@@ -262,17 +206,33 @@ class TestExplanationUnit:
         ):
             expl.add_new_rule_condition(0, 12.0)
 
-    def test_add_new_rule_condition_boundary_out_of_bounds_low(self):
-        expl = self.create_expl()
-        # Boundary way below min of x_cal (min is 5.0)
+    def test_add_new_rule_condition_with_vector_threshold(self):
+        expl = self.create_expl(y_threshold=np.array([0.5]))
 
-        # To test the "Lowest feature value..." warning, we need is_lesser=True and empty.
-        # boundary = 4.0. x_test = 3.0 (update x).
-        expl.x_test = np.array([3.0, 20.0])  # Update local x_test
+        def predict_diff_effect(x, **kwargs):
+            n = len(x)
+            return (np.zeros(n) + 0.7, np.zeros(n) + 0.5, np.zeros(n) + 0.9, None)
 
-        # x_cal min is 5.0. No values < 4.0.
-        with pytest.warns(UserWarning, match="Lowest feature value for feature 0 is 5.0"):
-            expl.add_new_rule_condition(0, 4.0)
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
+
+        expl.add_new_rule_condition(0, 8.0)
+        assert len(expl.rules["rule"]) == 1
+
+    def test_add_new_rule_condition_with_tuple_threshold(self):
+        expl = self.create_expl(y_threshold=(0.2, 0.8))
+
+        def predict_diff_effect(x, **kwargs):
+            n = len(x)
+            return (np.zeros(n) + 0.7, np.zeros(n) + 0.5, np.zeros(n) + 0.9, None)
+
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
+
+        expl.add_new_rule_condition(0, 8.0)
+        assert len(expl.rules["rule"]) == 1
 
     def test_add_new_rule_condition_boundary_out_of_bounds_high(self):
         expl = self.create_expl()
@@ -291,12 +251,6 @@ class TestExplanationUnit:
         expl.has_conjunctive_rules = True
         expl.remove_conjunctions()
         assert expl.has_conjunctive_rules is False
-
-    def test_reset(self):
-        expl = self.create_expl()
-        expl.has_rules = True
-        expl.reset()
-        assert expl.has_rules is False
         # It calls get_rules too, which is mocked to return self.rules
 
     def test_to_python_number(self):

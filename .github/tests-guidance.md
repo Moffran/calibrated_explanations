@@ -30,6 +30,11 @@ This repository uses a single source of truth for all test-related instructions.
 - Lint/mypy requirements still apply to any touched modules; update docs when behavior changes.
 - For deep domain context, see the "Detailed Guidelines & Patterns" section below.
 
+Local CI parity requirement
+--------------------------
+
+When CI workflows are extended or new checks are added under `.github/workflows/`, update `scripts/local_checks.py` and the `make local-checks` target so contributors can reproduce CI checks locally. Mark heavy or scheduled checks as advisory/optional in the local runner to avoid slowing common developer loops.
+
 ## Fallback Chain Enforcement (MANDATORY)
 
 **Policy:** Tests MUST NOT trigger fallback chains unless the test is explicitly validating fallback behavior.

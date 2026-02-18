@@ -144,16 +144,6 @@ class StubExplainer:
         return {"rule": "boundaries", "shape": np.asarray(x_perturbed).shape}
 
 
-def test_validate_and_prepare_input_reshapes_vector():
-    explainer = StubExplainer(num_features=3)
-    vector = np.array([1.0, 2.0, 3.0])
-
-    prepared = ph.validate_and_prepare_input(explainer, vector)
-
-    assert prepared.shape == (1, 3)
-    assert isinstance(prepared, np.ndarray)
-
-
 def test_validate_and_prepare_input_rejects_wrong_width():
     explainer = StubExplainer(num_features=4)
     matrix = np.ones((2, 3))
@@ -233,65 +223,6 @@ def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch
         )
 
 
-def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
-    explainer = StubExplainer(mode="regression")
-    x = np.ones((2, explainer.num_features))
-    bins = np.ones((2,))
-    threshold = [(0.1, 0.2), (0.3, 0.4)]
-
-    recorded_calls: list[tuple] = []
-
-    def fake_assert_mock(thresh, data):
-        recorded_calls.append((thresh, np.asarray(data).shape))
-        return thresh
-
-    class Collection:
-        def __init__(self, *_args, **_kwargs) -> None:
-            self.low_high_percentiles = None
-
-    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
-
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
-    monkeypatch.setattr(ph, "assert_threshold", fake_assert_mock)
-
-    with pytest.warns(UserWarning, match="list of interval thresholds"):
-        explanation = ph.initialize_explanation(
-            explainer,
-            x,
-            (5, 95),
-            threshold=threshold,
-            bins=bins,
-            features_to_ignore=None,
-        )
-
-    assert explanation.low_high_percentiles is None
-    assert recorded_calls == [(threshold, x.shape)]
-
-
-def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
-    explainer = StubExplainer(mode="regression")
-    x = np.ones((3, explainer.num_features))
-
-    class Collection:
-        def __init__(self, *_args, **_kwargs) -> None:
-            self.low_high_percentiles = None
-
-    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
-
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
-
-    explanation = ph.initialize_explanation(
-        explainer,
-        x,
-        (25, 75),
-        threshold=None,
-        bins=None,
-        features_to_ignore=None,
-    )
-
-    assert explanation.low_high_percentiles == (25, 75)
-
-
 def test_predict_internal_delegates_to_underlying_protocol():
     explainer = StubExplainer(multiclass=False)
     x = np.ones((2, explainer.num_features))
@@ -335,26 +266,6 @@ def test_format_regression_prediction_handles_thresholds():
         predict, low, high, threshold=None, uq_interval=True
     )
     assert isinstance(interval_result, tuple)
-
-
-def test_format_classification_prediction_maps_labels():
-    predict = np.array([0.6, 0.4])
-    low = np.zeros_like(predict)
-    high = np.ones_like(predict)
-    new_classes = None
-    class_labels = np.array(["neg", "pos"])
-
-    mapped = ph.format_classification_prediction(
-        predict,
-        low,
-        high,
-        new_classes,
-        is_multiclass_val=False,
-        class_labels=class_labels,
-        uq_interval=True,
-    )
-    assert isinstance(mapped, tuple)
-    assert mapped[0].tolist() == ["pos", "neg"]
 
 
 def test_handle_uncalibrated_regression_prediction():

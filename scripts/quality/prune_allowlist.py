@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-path = Path(r"c:\Users\loftuw\Documents\Github\kristinebergs-calibrated_explanations\.github\private_member_allowlist.json")
+# Use project root relative path
+path = Path(__file__).parent.parent.parent / ".github" / "private_member_allowlist.json"
 data = json.loads(path.read_text(encoding="utf-8"))
 original_count = len(data["allowlist"])
 

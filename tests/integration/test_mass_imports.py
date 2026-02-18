@@ -1,3 +1,8 @@
+import pytest
+
+pytestmark = pytest.mark.integration
+
+
 def test_mass_imports():
     # Import a broad set of modules to execute module-level code and increase coverage.
     import importlib

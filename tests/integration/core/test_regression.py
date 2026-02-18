@@ -1,6 +1,11 @@
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name
 """
 This module contains tests for regression models using the CalibratedExplainer from the calibrated_explanations package.
+
+IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
+protected integration tests relied on release gating and regression
+protection tooling. See docs/improvement/test-quality-method/README.md.
+
 The tests cover various scenarios including failure cases, probabilistic explanations, conditional explanations,
 and explanations with difficulty estimators. The tests use pytest for testing and include fixtures for generating
 regression datasets.
@@ -34,6 +39,8 @@ from crepes.extras import DifficultyEstimator
 
 from tests.helpers.model_utils import get_regression_model
 from tests.helpers.explainer_utils import initiate_explainer
+
+pytestmark = pytest.mark.integration
 
 
 def safe_fit_difficulty(x, y, scaler=True):
@@ -279,29 +286,37 @@ def test_regression_ce(regression_dataset):
     factual_explanation.plot(show=False, filename="test.png")
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(0.1, np.inf)
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(-np.inf, 0.9)
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alternative_explanation is not None
 
 
 def test_regression_predict_reject_requires_threshold(regression_dataset):
@@ -399,16 +414,26 @@ def test_probabilistic_regression_ce(regression_dataset):
     factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
+    factual_explanation.add_conjunctions()
     factual_explanation = cal_exp.explain_factual(x_test, (0.4, 0.6))
+    factual_explanation.add_conjunctions()
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, y_test)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alternative_explanation is not None
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, y_test[0])
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     alternative_explanation.super_explanations()
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alternative_explanation is not None
 
 
 @pytest.mark.viz
@@ -442,11 +467,16 @@ def test_probabilistic_regression_int_threshold_ce(regression_dataset):
 
     # Tuple of integer thresholds
     factual_explanation = cal_exp.explain_factual(x_test, (0, 1))
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
 
     # Alternatives should also accept int thresholds
     alternative_explanation = cal_exp.explore_alternatives(x_test, 0)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alternative_explanation is not None
 
 
 @pytest.mark.viz
@@ -481,7 +511,11 @@ def test_regression_as_classification_ce(regression_dataset):
     factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test)
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alternative_explanation is not None
 
 
 @pytest.mark.viz
@@ -515,6 +549,7 @@ def test_regression_conditional_ce(regression_dataset):
     factual_explanation = cal_exp.explain_factual(
         x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, bin_feature]
     )
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
@@ -522,23 +557,30 @@ def test_regression_conditional_ce(regression_dataset):
     factual_explanation = cal_exp.explain_factual(
         x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, bin_feature]
     )
+    factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, bins=x_test[:, bin_feature])
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, bin_feature]
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
         x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, bin_feature]
     )
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     repr(alternative_explanation)
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alternative_explanation is not None
 
 
 @pytest.mark.viz
@@ -578,11 +620,17 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
     factual_explanation.plot(show=False)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test[0], bins=x_test[:, 0])
+    factual_explanation.add_conjunctions()
 
     alternative_explanation = cal_exp.explore_alternatives(x_test, y_test, bins=x_test[:, 0])
+    alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
-    cal_exp.explore_alternatives(x_test, y_test[0], bins=x_test[:, 0])
+    alt = cal_exp.explore_alternatives(x_test, y_test[0], bins=x_test[:, 0])
+    alt.add_conjunctions()
+    # Basic sanity assertions to ensure the explainer produced results
+    assert factual_explanation is not None
+    assert alt is not None
 
 
 def test_knn_normalized_regression_ce(regression_dataset):
@@ -609,14 +657,23 @@ def test_knn_normalized_regression_ce(regression_dataset):
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test)
+    alt = cal_exp.explore_alternatives(x_test)
+    alt.add_conjunctions()
+    assert alt is not None
 
-    cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
+    alt.add_conjunctions()
+    assert alt is not None
 
-    cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
+    alt.add_conjunctions()
+    assert alt is not None
+    assert alt is not None
 
 
 def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
@@ -651,10 +708,14 @@ def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
+    factual_explanation.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test, y_test)
+    alt = cal_exp.explore_alternatives(x_test, y_test)
+    alt.add_conjunctions()
+    assert alt is not None
 
-    cal_exp.explore_alternatives(x_test, y_test[0])
+    alt = cal_exp.explore_alternatives(x_test, y_test[0])
+    alt.add_conjunctions()
 
 
 def test_var_normalized_regression_ce(regression_dataset):
@@ -681,14 +742,20 @@ def test_var_normalized_regression_ce(regression_dataset):
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test)
+    alt = cal_exp.explore_alternatives(x_test)
+    alt.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf))
+    alt.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
+    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9))
+    alt.add_conjunctions()
+    assert alt is not None
 
 
 def test_var_normalized_probabilistic_regression_ce(regression_dataset):
@@ -723,10 +790,14 @@ def test_var_normalized_probabilistic_regression_ce(regression_dataset):
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test[0])
+    factual_explanation.add_conjunctions()
 
-    cal_exp.explore_alternatives(x_test, y_test)
+    alt = cal_exp.explore_alternatives(x_test, y_test)
+    alt.add_conjunctions()
+    assert alt is not None
 
-    cal_exp.explore_alternatives(x_test, y_test[0])
+    alt = cal_exp.explore_alternatives(x_test, y_test[0])
+    alt.add_conjunctions()
 
 
 @pytest.mark.viz

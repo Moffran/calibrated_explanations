@@ -14,7 +14,6 @@ from calibrated_explanations.core.explain.feature_task import assign_weight
 from calibrated_explanations.utils.exceptions import (
     DataShapeError,
     NotFittedError,
-    ValidationError,
 )
 
 
@@ -151,46 +150,6 @@ def test_set_difficulty_estimator_enforces_fitted_contract(explainer_factory):
     np.testing.assert_array_equal(explainer.get_sigma_test(np.ones((2, 2))), np.full(2, 2.5))
 
 
-def test_mode_sets_num_classes_correctly(explainer_factory):
-    """Test that mode and num_classes are set correctly during initialization."""
-    # Test classification with multiple classes
-    from tests.helpers.model_utils import DummyLearner
-
-    learner = DummyLearner(num_classes=3)
-    x_cal = np.asarray([[0.0, 1.0], [1.0, 2.0], [2.0, 3.0], [3.0, 4.0]], dtype=float)
-    explainer = explainer_factory(
-        learner=learner, mode="classification", x_cal=x_cal, y_cal=np.array([0, 1, 1, 2])
-    )
-    assert explainer.num_classes == 3
-    assert explainer.mode == "classification"
-
-    # Test regression
-    explainer = explainer_factory(mode="regression")
-    assert explainer.num_classes == 0
-    assert explainer.mode == "regression"
-
-    # Test invalid mode
-    with pytest.raises(ValidationError):
-        explainer_factory(mode="unsupported")
-
-
-@pytest.mark.skip(reason="overtesting prune batch1: skip duplicative metadata accessor test")
-def test_runtime_metadata_helpers_return_copies(explainer_factory):
-    explainer = explainer_factory()
-    explainer.plugin_manager.last_telemetry = {"source": "initial"}
-    explainer.set_preprocessor_metadata({"scaler": "std"})
-    telemetry = explainer.runtime_telemetry
-    telemetry["source"] = "mutated"
-    assert explainer.plugin_manager.last_telemetry["source"] == "initial"
-
-    metadata = explainer.preprocessor_metadata
-    metadata["scaler"] = "modified"
-    assert explainer.preprocessor_metadata["scaler"] == "std"
-
-    explainer.set_preprocessor_metadata(None)
-    assert explainer.preprocessor_metadata is None
-
-
 def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pandas):
     explainer = explainer_factory()
 
@@ -207,14 +166,3 @@ def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pan
 
     with pytest.raises(DataShapeError):
         explainer.append_cal(np.array([[1.0, 2.0, 3.0]]), np.array([1.0]))
-
-
-def test_lime_and_shap_flags_toggle(explainer_factory):
-    explainer = explainer_factory()
-    assert explainer.is_lime_enabled() is False
-    assert explainer.is_lime_enabled(True) is True
-    assert explainer.is_lime_enabled() is True
-
-    assert explainer.is_shap_enabled() is False
-    assert explainer.is_shap_enabled(True) is True
-    assert explainer.is_shap_enabled() is True

@@ -96,10 +96,10 @@ jobs:
           pip install . psutil -c constraints.txt
       - name: Run micro benchmark
         run: |
-          python scripts/micro_bench_perf.py > tests/benchmarks/micro_current.json
+          python scripts/perf/micro_bench_perf.py > tests/benchmarks/micro_current.json
       - name: Compare micro metrics with baseline thresholds
         run: |
-          python scripts/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
+          python scripts/perf/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
 
   anti-pattern-audit:
     name: Anti-pattern Audit
@@ -118,11 +118,15 @@ jobs:
             pyproject.toml
       - name: Run anti-pattern detector
         run: |
-          python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
-          if [ -s reports/test_anti_pattern_report.csv ] && [ $(wc -l < reports/test_anti_pattern_report.csv) -gt 1 ]; then
-            echo "Anti-pattern violations detected:"; cat reports/test_anti_pattern_report.csv; exit 1; fi
+          python scripts/anti-pattern-analysis/detect_test_anti_patterns.py \
+            --check \
+            --output reports/anti-pattern-analysis/test_anti_pattern_report.csv \
+            --report reports/anti-pattern-analysis/test_quality_report.json \
+            --baseline .github/test-quality-baseline.json
       - name: Upload anti-pattern report
         uses: actions/upload-artifact@v4
         with:
           name: anti-pattern-report
-          path: reports/test_anti_pattern_report.csv
+          path: |
+            reports/anti-pattern-analysis/test_anti_pattern_report.csv
+            reports/anti-pattern-analysis/test_quality_report.json

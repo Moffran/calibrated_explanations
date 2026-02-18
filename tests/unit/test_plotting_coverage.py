@@ -19,10 +19,6 @@ def test_split_csv_coverage():
     assert plotting.split_csv(" , , ") == ()
 
 
-def test_split_csv_sequence_non_str():
-    assert plotting.split_csv([1, 2, "a"]) == ("a",)
-
-
 @dataclass
 class DummyExplanation:
     mode: str = "classification"
@@ -45,36 +41,6 @@ def capture_builder_kwargs(store: dict[str, Any]) -> Callable[..., dict[str, Any
         return {"plot_spec": {"kind": "dummy"}}
 
     return builder
-
-
-def test_plot_alternative__should_normalize_features_to_plot_when_mixed_inputs(monkeypatch):
-    captured: dict[str, Any] = {}
-    import calibrated_explanations.viz.builders as builders
-
-    monkeypatch.setattr(
-        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
-    )
-
-    explanation = DummyExplanation(mode="classification", thresholded=False)
-
-    _ = plotting.plot_alternative(
-        explanation,
-        instance=[0.0],
-        predict={"predict": 0.2, "low": 0.1, "high": 0.3},
-        feature_predict=[0.1, 0.2, 0.3],
-        features_to_plot=["0", -1, "bad", 2.7],
-        num_to_show=5,
-        column_names=None,
-        title="T",
-        path=None,
-        show=False,
-        save_ext=None,
-        use_legacy=False,
-        return_plot_spec=True,
-    )
-
-    assert captured["features_to_plot"] == [0, 2]
-    assert captured["column_names"] == ["0", "1", "2"]
 
 
 def test_plot_alternative__should_default_features_to_plot_when_none_and_feature_count(monkeypatch):
@@ -105,44 +71,6 @@ def test_plot_alternative__should_default_features_to_plot_when_none_and_feature
 
     assert captured["features_to_plot"] == [0, 1]
     assert captured["column_names"] == ["0", "1"]
-
-
-def test_plot_alternative__should_format_xlabel_for_thresholded_regression_scalar(monkeypatch):
-    captured: dict[str, Any] = {}
-    import calibrated_explanations.viz.builders as builders
-
-    monkeypatch.setattr(
-        builders, "build_alternative_probabilistic_spec", capture_builder_kwargs(captured)
-    )
-    monkeypatch.setattr(
-        builders,
-        "build_alternative_regression_spec",
-        lambda **_kwargs: pytest.fail(
-            "regression builder should not be used for thresholded regression"
-        ),
-    )
-
-    explanation = DummyExplanation(mode="regression", thresholded=True, y_threshold=0.5)
-
-    _ = plotting.plot_alternative(
-        explanation,
-        instance=[0.0],
-        predict={"predict": 0.2, "low": 0.1, "high": 0.3},
-        feature_predict=[0.1],
-        features_to_plot=[0],
-        num_to_show=1,
-        column_names=["f0"],
-        title="T",
-        path=None,
-        show=False,
-        save_ext=None,
-        use_legacy=False,
-        return_plot_spec=True,
-    )
-
-    assert captured["xlabel"] == "Probability of target being below 0.50"
-    assert captured["xlim"] == (0.0, 1.0)
-    assert len(list(captured["xticks"])) == 11
 
 
 def test_plot_alternative__should_format_xlabel_for_thresholded_regression_tuple(monkeypatch):

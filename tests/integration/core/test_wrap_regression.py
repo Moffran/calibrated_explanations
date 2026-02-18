@@ -1,6 +1,11 @@
 # pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name, duplicate-code, unused-import, too-many-instance-attributes
 """
 Module for testing the WrapCalibratedExplainer class for regression tasks.
+
+IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
+protected integration tests relied on by release gating and regression
+protection tooling. See docs/improvement/test-quality-method/README.md.
+
 This module contains test functions that verify the functionality of the WrapCalibratedExplainer class
 using a RandomForestRegressor. The tests cover various aspects including fitting, calibration, prediction,
 and explanation capabilities of the explainer.
@@ -12,13 +17,16 @@ Functions:
 """
 
 import numpy as np
+import os
 import pytest
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
-import os
+
 from tests.helpers.explainer_utils import generic_test
+
+pytestmark = pytest.mark.integration
 
 
 class TestWrapRegressionExplainer:
@@ -51,7 +59,10 @@ class TestWrapRegressionExplainer:
         self.explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=42))
 
     def test_initial_state(self):
-        """Test initial unfitted state"""
+        """Test initial unfitted state
+
+        IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+        """
         assert not self.explainer.fitted, "Should not be fitted initially"
         assert not self.explainer.calibrated, "Should not be calibrated initially"
         with pytest.raises(NotFittedError, match="must be fitted"):
@@ -69,7 +80,10 @@ class TestWrapRegressionExplainer:
         ],
     )
     def test_prediction_with_thresholds(self, threshold):
-        """Test predictions with different threshold values"""
+        """Test predictions with different threshold values
+
+        IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+        """
         self.explainer.fit(self.x_train, self.y_train)
         self.explainer.calibrate(self.x_cal, self.y_cal)
 
@@ -78,7 +92,10 @@ class TestWrapRegressionExplainer:
             assert len(y_pred) == len(self.x_test)
 
     def test_edge_cases(self):
-        """Test edge cases and error conditions"""
+        """Test edge cases and error conditions
+
+        IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+        """
         self.explainer.fit(self.x_train, self.y_train)
 
         # Test empty input
@@ -105,6 +122,9 @@ class TestWrapRegressionExplainer:
 def test_wrap_regression_ce(regression_dataset):
     """
     Test the WrapCalibratedExplainer class for regression.
+
+    IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+
     This test function performs the following steps:
     1. Initializes the WrapCalibratedExplainer with a RandomForestRegressor.
     2. Checks that the explainer is neither fitted nor calibrated initially.
@@ -197,10 +217,17 @@ def test_wrap_regression_ce(regression_dataset):
     y_test_hat1 = cal_exp.predict(x_test, threshold=y_test)
     y_test_hat2, (low, high) = cal_exp.predict(x_test, uq_interval=True, threshold=y_test)
 
-    cal_exp.explain_factual(x_test)
-    cal_exp.explore_alternatives(x_test)
-    cal_exp.explain_factual(x_test, threshold=y_test)
-    cal_exp.explore_alternatives(x_test, threshold=y_test)
+    fx = cal_exp.explain_factual(x_test)
+    fx.add_conjunctions()
+    alt = cal_exp.explore_alternatives(x_test)
+    alt.add_conjunctions()
+    fx = cal_exp.explain_factual(x_test, threshold=y_test)
+    fx.add_conjunctions()
+    alt = cal_exp.explore_alternatives(x_test, threshold=y_test)
+    alt.add_conjunctions()
+    # Basic sanity assertions to ensure the explainer produced results
+    assert fx is not None
+    assert alt is not None
 
     with pytest.raises(ValidationError):
         cal_exp.predict_proba(x_test)
@@ -226,6 +253,9 @@ def test_wrap_regression_ce(regression_dataset):
 def test_wrap_conditional_regression_ce(regression_dataset):
     """
     Test the WrapCalibratedExplainer class for conditional regression.
+
+    IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+
     This test function performs the following steps:
     1. Initializes the WrapCalibratedExplainer with a RandomForestRegressor.
     2. Fits the explainer and verifies it is fitted but not calibrated.
@@ -259,6 +289,9 @@ def test_wrap_conditional_regression_ce(regression_dataset):
         x_cal, y_cal, mc=lambda x: cal_exp.learner.predict(x) > 0.5, feature_names=feature_names
     )
     conditional_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test)
+    # Basic sanity assertions to ensure the explainer produced results in this conditional test
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
 
 
 def conditional_test(cal_exp, x_prop_train, y_prop_train, x, y):
@@ -292,10 +325,14 @@ def conditional_test(cal_exp, x_prop_train, y_prop_train, x, y):
     y_test_hat1 = cal_exp.predict(x, threshold=y)
     y_test_hat2, (low, high) = cal_exp.predict(x, uq_interval=True, threshold=y)
 
-    cal_exp.explain_factual(x)
-    cal_exp.explore_alternatives(x)
-    cal_exp.explain_factual(x, threshold=y)
-    cal_exp.explore_alternatives(x, threshold=y)
+    fx = cal_exp.explain_factual(x)
+    fx.add_conjunctions()
+    alt = cal_exp.explore_alternatives(x)
+    alt.add_conjunctions()
+    fx = cal_exp.explain_factual(x, threshold=y)
+    fx.add_conjunctions()
+    alt = cal_exp.explore_alternatives(x, threshold=y)
+    alt.add_conjunctions()
 
     with pytest.raises(ValidationError):
         cal_exp.predict_proba(x)
@@ -310,7 +347,10 @@ def conditional_test(cal_exp, x_prop_train, y_prop_train, x, y):
 
 @pytest.mark.viz
 def test_wrap_regression_accepts_int_threshold(regression_dataset):
-    """WrapCalibratedExplainer should accept integer thresholds without errors."""
+    """WrapCalibratedExplainer should accept integer thresholds without errors.
+
+    IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+    """
     x_prop_train, y_prop_train, x_cal, y_cal, x_test, _y_test, _, _, feature_names = (
         regression_dataset
     )
@@ -329,14 +369,19 @@ def test_wrap_regression_accepts_int_threshold(regression_dataset):
 
     # Explanations with integer threshold
     fx = cal_exp.explain_factual(x_test, threshold=0)
+    fx.add_conjunctions()
     fx.plot(show=False)
     ax = cal_exp.explore_alternatives(x_test, threshold=0)
+    ax.add_conjunctions()
     ax.plot(show=False)
 
 
 def test_wrap_regression_fast_ce(regression_dataset):
     """
     Test the WrapCalibratedExplainer class for fast regression.
+
+    IMPORTANT: THIS TEST MUST NOT BE REMOVED.
+
     This test function performs the following steps:
     1. Initializes the WrapCalibratedExplainer with a RandomForestRegressor.
     2. Fits the explainer and verifies it is fitted but not calibrated.
@@ -367,10 +412,14 @@ def test_wrap_regression_fast_ce(regression_dataset):
     y_test_hat1 = cal_exp.predict(x_test, threshold=y_test)
     y_test_hat2, (low, high) = cal_exp.predict(x_test, uq_interval=True, threshold=y_test)
 
-    cal_exp.explain_factual(x_test)
-    cal_exp.explore_alternatives(x_test)
-    cal_exp.explain_factual(x_test, threshold=y_test)
-    cal_exp.explore_alternatives(x_test, threshold=y_test)
+    fx = cal_exp.explain_factual(x_test)
+    fx.add_conjunctions()
+    alt = cal_exp.explore_alternatives(x_test)
+    alt.add_conjunctions()
+    fx = cal_exp.explain_factual(x_test, threshold=y_test)
+    fx.add_conjunctions()
+    alt = cal_exp.explore_alternatives(x_test, threshold=y_test)
+    alt.add_conjunctions()
     cal_exp.explain_fast(x_test)
     cal_exp.explain_fast(x_test, threshold=y_test)
 

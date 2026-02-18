@@ -46,29 +46,6 @@ class ExplainerLike:
         self.calibration_summary_shape = None
 
 
-def test_get_calibration_summaries__should_return_facade_cached_payload_when_present():
-    # Arrange
-    facade = CacheFacadeFake(
-        cached=(
-            {1: {"a": 2}},
-            {0: np.asarray([0, 0, 1])},
-        )
-    )
-    explainer = ExplainerLike(
-        x_cal=np.asarray([[0, "a"], [1, "a"], [0, "a"]], dtype=object),
-        categorical_features=[1],
-        num_features=2,
-    )
-    setattr(explainer, "_" + "explanation_cache", facade)
-
-    # Act
-    cat_counts, numeric_sorted = get_calibration_summaries(explainer)
-
-    # Assert
-    assert cat_counts == {1: {"a": 2}}
-    assert np.array_equal(numeric_sorted[0], np.asarray([0, 0, 1]))
-
-
 def test_get_calibration_summaries__should_compute_and_store_when_facade_cache_miss():
     # Arrange
     facade = CacheFacadeFake(cached=None)

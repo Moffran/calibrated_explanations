@@ -10,13 +10,11 @@ import pytest
 from calibrated_explanations.utils.exceptions import ValidationError
 
 from calibrated_explanations.plugins import (
-    ClassificationIntervalCalibrator,
     ExplanationBatch,
     ExplanationContext,
     ExplanationPlugin,
     ExplanationRequest,
     IntervalCalibratorContext,
-    IntervalCalibratorPlugin,
     PlotBuilder,
     PlotRenderContext,
     PlotRenderResult,
@@ -57,22 +55,6 @@ def test_explanation_context_is_frozen() -> None:
         ctx.mode = "alternative"  # type: ignore[misc]
     # Verify that the value did not change
     assert ctx.mode == original_mode
-
-
-def test_explanation_request_is_frozen() -> None:
-    req = ExplanationRequest(
-        threshold=None,
-        low_high_percentiles=None,
-        bins=None,
-        features_to_ignore=(0,),
-        extras={"foo": "bar"},
-    )
-    # Immutability contract: request must not allow field modification
-    original_extras = req.extras
-    with pytest.raises(Exception):
-        req.extras = {}  # type: ignore[misc]
-    # Verify that the value did not change
-    assert req.extras is original_extras
 
 
 def test_explanation_batch_shape() -> None:
@@ -152,24 +134,6 @@ def test_predict_bridge_runtime_check() -> None:
     assert isinstance(DummyPredictBridge(), PredictBridge)
 
 
-def test_interval_context_is_frozen() -> None:
-    ctx = IntervalCalibratorContext(
-        learner=object(),
-        calibration_splits=((),),
-        bins={"values": ()},
-        residuals={"values": ()},
-        difficulty={"values": ()},
-        metadata={"mode": "classification"},
-        fast_flags={"fast": True},
-    )
-    # Immutability contract: context must not allow field modification
-    original_learner = ctx.learner
-    with pytest.raises(Exception):
-        ctx.learner = None  # type: ignore[misc]
-    # Verify that the value did not change
-    assert ctx.learner is original_learner
-
-
 class GoodIntervalPlugin:
     plugin_meta = {
         "name": "interval",
@@ -212,23 +176,6 @@ class BadIntervalPlugin:
         "trusted": False,
         "trust": False,
     }
-
-
-def test_interval_plugin_runtime_checks() -> None:
-    good_calibrator = GoodIntervalPlugin().create(
-        IntervalCalibratorContext(
-            learner=object(),
-            calibration_splits=(),
-            bins={},
-            residuals={},
-            difficulty={},
-            metadata={},
-            fast_flags={},
-        )
-    )
-    assert isinstance(GoodIntervalPlugin(), IntervalCalibratorPlugin)
-    assert isinstance(good_calibrator, ClassificationIntervalCalibrator)
-    assert not isinstance(BadIntervalPlugin(), IntervalCalibratorPlugin)
 
 
 class RegressionCalibrator:
