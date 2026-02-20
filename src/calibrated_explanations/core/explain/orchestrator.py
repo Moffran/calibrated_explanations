@@ -764,6 +764,23 @@ class ExplanationOrchestrator:
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
 
+        multi_lables_explanation =kwargs.get("multi_lables_explanation",None)
+        if multi_lables_explanation is not None:
+            from ._legacy_explain import (
+                explain as legacy_explain,  # pylint: disable=import-outside-toplevel
+            )
+            from ...explanations.explanations import MultiClassCalibratedExplanations
+            multi_label_explanations = [{} for _ in range(len(x))]
+            classes = np.unique(self.explainer.y_cal)
+            if self.explainer.class_labels is not None and len(self.explainer.class_labels) > len(classes):
+                classes = np.array([i for i in range(len(self.explainer.class_labels))])
+            for cls in classes:
+                labels = [cls for _ in range(len(x))]
+                explanations = legacy_explain(self.explainer,x, threshold, low_high_percentiles, bins, labels=labels)
+                for i, explanation in enumerate(explanations):
+                    multi_label_explanations[i][cls]=explanation
+            return MultiClassCalibratedExplanations(self.explainer, x, bins, len(classes), multi_label_explanations)
+
         # When _use_plugin=False, bypass plugin system and use legacy path directly
         if not _use_plugin:
             from ._legacy_explain import (
