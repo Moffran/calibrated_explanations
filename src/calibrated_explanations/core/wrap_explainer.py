@@ -22,13 +22,13 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 
 from crepes.extras import MondrianCategorizer
 
-from calibrated_explanations.api.params import (
+from src.calibrated_explanations.api.params import (
     ALIAS_MAP,
     validate_param_combination,
     warn_on_aliases,
 )
-from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
-from calibrated_explanations.utils.exceptions import (
+from src.calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
+from src.calibrated_explanations.utils.exceptions import (
     DataShapeError,
     IncompatibleStateError,
     NotFittedError,
