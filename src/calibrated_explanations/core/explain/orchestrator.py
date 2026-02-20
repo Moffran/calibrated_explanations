@@ -865,10 +865,10 @@ class ExplanationOrchestrator:
     def invoke_guarded_factual(  # pylint: disable=invalid-name
         self,
         x: Any,  # pylint: disable=invalid-name
-        threshold: Any = None,
-        low_high_percentiles: Tuple[float, float] | None = (5, 95),
-        bins: Any = None,
-        features_to_ignore: Any = None,
+        threshold: Any,
+        low_high_percentiles: Tuple[float, float] | None,
+        bins: Any,
+        features_to_ignore: Any,
         significance: float = 0.1,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
@@ -935,10 +935,10 @@ class ExplanationOrchestrator:
     def invoke_guarded_alternative(  # pylint: disable=invalid-name
         self,
         x: Any,  # pylint: disable=invalid-name
-        threshold: Any = None,
-        low_high_percentiles: Tuple[float, float] | None = (5, 95),
-        bins: Any = None,
-        features_to_ignore: Any = None,
+        threshold: Any,
+        low_high_percentiles: Tuple[float, float] | None,
+        bins: Any,
+        features_to_ignore: Any,
         significance: float = 0.1,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,

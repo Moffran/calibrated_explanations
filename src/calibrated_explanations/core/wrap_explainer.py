@@ -468,6 +468,7 @@ class WrapCalibratedExplainer:
             kwargs.setdefault("threshold", cfg.threshold)
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
         validate_inputs_matrix(x_local, allow_nan=True)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         assert self.explainer is not None
         return self.explainer.explain_guarded_factual(x_local, **kwargs)
@@ -498,6 +499,7 @@ class WrapCalibratedExplainer:
             kwargs.setdefault("threshold", cfg.threshold)
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
         validate_inputs_matrix(x_local, allow_nan=True)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         assert self.explainer is not None
         return self.explainer.explore_guarded_alternatives(x_local, **kwargs)

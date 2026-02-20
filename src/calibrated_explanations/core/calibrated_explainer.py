@@ -1872,6 +1872,7 @@ class CalibratedExplainer:
             bins = self.bins
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
+            kwargs.pop("reject_policy", None)  # absorbed for API compatibility; guarded explanations do not apply reject policies
             return self.explanation_orchestrator.invoke_guarded_factual(
                 x=x,
                 threshold=threshold,
@@ -1883,7 +1884,6 @@ class CalibratedExplainer:
                 n_neighbors=n_neighbors,
                 leaf_strategy=leaf_strategy,
                 normalize_guard=normalize_guard,
-                **kwargs,
             )
 
     def explore_guarded_alternatives(
@@ -1956,6 +1956,7 @@ class CalibratedExplainer:
             bins = self.bins
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
+            kwargs.pop("reject_policy", None)  # absorbed for API compatibility; guarded explanations do not apply reject policies
             return self.explanation_orchestrator.invoke_guarded_alternative(
                 x=x,
                 threshold=threshold,
@@ -1967,7 +1968,6 @@ class CalibratedExplainer:
                 n_neighbors=n_neighbors,
                 leaf_strategy=leaf_strategy,
                 normalize_guard=normalize_guard,
-                **kwargs,
             )
 
     def __call__(
