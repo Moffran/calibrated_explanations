@@ -25,7 +25,7 @@ import numpy as np
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 if TYPE_CHECKING:
-    from ..explanations import AlternativeExplanations, CalibratedExplanations
+    from ..explanations import AlternativeExplanations, CalibratedExplanations, MultiClassCalibratedExplanations
     from ..plugins.manager import PluginManager
 
 try:
@@ -1661,6 +1661,29 @@ class CalibratedExplainer:
         """Return the interval calibrator from the prediction orchestrator."""
         return self.prediction_orchestrator.obtain_interval_calibrator(fast=fast, metadata=metadata)
 
+    def predict_calibrated(
+        self,
+        x: Any,
+        threshold: float | None = None,
+        low_high_percentiles: tuple[float, float] = (5, 95),
+        classes: Any = None,
+        bins: Any = None,
+        feature: int | None = None,
+        interval_summary: Any | None = None,
+        **kwargs,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
+        """Predict calibrated values and intervals."""
+        return self._predict(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            classes=classes,
+            bins=bins,
+            feature=feature,
+            interval_summary=interval_summary,
+            **kwargs,
+        )
+
     def preload_lime(self, x_cal=None):
         """Materialize LIME explainer artifacts.
 
@@ -1690,6 +1713,124 @@ class CalibratedExplainer:
             The SHAP explainer and reference explanation.
         """
         return self._shap_helper.preload(num_test=num_test)
+
+    def _predict(self, *args, **kwargs) -> Any:
+        """Delegate to predict_internal."""
+        return self.predict_internal(*args, **kwargs)
+
+    def predict_internal(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        classes=None,
+        bins=None,
+        feature=None,
+        interval_summary=None,
+        **kwargs,
+    ):
+        """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
+        # Internal skip flag: when True, bypass reject orchestration. This is
+        # used by internal callers (e.g., RejectOrchestrator) to obtain a raw
+        # prediction without re-entering the reject flow.
+        if "_ce_skip_reject" in kwargs:
+            # consume internal-only flag and proceed without reject handling
+            kwargs.pop("_ce_skip_reject")
+            orchestrator = self.prediction_orchestrator
+            if hasattr(orchestrator, "predict_internal"):
+                return orchestrator.predict_internal(
+                    x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    classes=classes,
+                    bins=bins,
+                    feature=feature,
+                    interval_summary=interval_summary,
+                    **kwargs,
+                )
+            return orchestrator.predict(
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=classes,
+                bins=bins,
+                feature=feature,
+                interval_summary=interval_summary,
+                **kwargs,
+            )
+
+        # Support per-call reject policy selection. When a non-NONE policy is
+        # selected, delegate to the RejectOrchestrator and return a RejectResult
+        # envelope. Per-call policy overrides the explainer-level default.
+
+        # Pop per-call policy if provided so downstream orchestrators don't
+        # receive unexpected kwargs. Only an explicit per-call policy will
+        # trigger reject orchestration here. Explainer-level defaults are
+        # handled at the top-level explanation APIs (e.g., `explain_factual`).
+        per_call_policy = None
+        if "reject_policy" in kwargs:
+            per_call_policy = kwargs.pop("reject_policy")
+
+        if per_call_policy is None:
+            effective_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
+        else:
+            try:
+                effective_policy = RejectPolicy(per_call_policy)
+            except Exception:  # adr002_allow
+                effective_policy = RejectPolicy.NONE
+
+        if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
+            # Ensure reject orchestrator is available (implicit enable)
+            try:
+                _ = self.reject_orchestrator
+            except Exception:  # adr002_allow
+                with contextlib.suppress(Exception):
+                    self.plugin_manager.initialize_orchestrators()
+
+            orchestrator = self.prediction_orchestrator
+
+            def _predict_fn(x_subset, **kw):
+                # Call the lower-level orchestrator implementation to avoid
+                # recursing back into CalibratedExplainer.predict.
+                if hasattr(orchestrator, "predict_internal"):
+                    return orchestrator.predict_internal(x_subset, **kw)
+                return orchestrator.predict(x_subset, **kw)
+
+            return self.reject_orchestrator.apply_policy(
+                effective_policy,
+                x,
+                explain_fn=_predict_fn,
+                bins=bins,
+                interval_summary=interval_summary,
+                **kwargs,
+            )
+        # Delegate directly to the orchestrator implementation method so
+        # tests that inject a minimal/mock PluginManager (with a
+        # `_prediction_orchestrator` stub) can set `_predict_impl.return_value`.
+        # The public `.predict` may be a MagicMock in tests; calling the
+        # implementation ensures the intended behavior is exercised.
+        orchestrator = self.prediction_orchestrator
+        if hasattr(orchestrator, "predict_internal"):
+            return orchestrator.predict_internal(
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=classes,
+                bins=bins,
+                feature=feature,
+                interval_summary=interval_summary,
+                **kwargs,
+            )
+        return orchestrator.predict(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            classes=classes,
+            bins=bins,
+            feature=feature,
+            interval_summary=interval_summary,
+            **kwargs,
+        )
 
     def explain_factual(
         self,
