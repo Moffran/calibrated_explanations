@@ -195,12 +195,13 @@ class CalibratedExplainer:
             logging.getLogger(__name__).info(
                 "condition_source not provided; defaulting to 'prediction' (v0.10.3)"
             )
-            warnings.warn(
-                "condition_source not provided; defaulting to 'prediction' in v0.10.3. "
-                "Pass condition_source='observed' to retain previous behaviour.",
-                UserWarning,
-                stacklevel=2,
-            )
+            if self.verbose:
+                warnings.warn(
+                    "condition_source not provided; defaulting to 'prediction' in v0.10.3. "
+                    "Pass condition_source='observed' to retain previous behaviour.",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         if self.condition_source not in {"observed", "prediction"}:
             raise ValidationError(

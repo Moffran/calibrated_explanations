@@ -204,3 +204,5 @@ reports/over_testing/backup_removed_tests/*
 notebooks/archived/
 scripts/archived/
 reports/archived/
+evaluation/ensure/paper.tex
+evaluation/ensure/*tables/*
