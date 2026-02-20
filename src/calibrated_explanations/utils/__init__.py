@@ -7,6 +7,7 @@ individual helper modules.
 
 from .deprecation import deprecate_public_api_symbol
 from .deprecations import _EMITTED, _EMITTED_PER_TEST, _should_raise, deprecate, deprecate_alias
+from .distribution_guard import InDistributionGuard
 from .discretizers import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
@@ -62,6 +63,7 @@ _ensure_joblib_pool_attribute()
 __all__ = [
     "assert_threshold",
     "BinaryEntropyDiscretizer",
+    "InDistributionGuard",
     "BinaryRegressorDiscretizer",
     "calculate_metrics",
     "categorical_perturbation",
