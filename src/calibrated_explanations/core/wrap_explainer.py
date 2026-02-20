@@ -457,10 +457,6 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        from calibrated_explanations.core.validation import (  # pylint: disable=import-outside-toplevel
-            validate_inputs_matrix,
-        )
-
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
@@ -470,7 +466,6 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
         return self.explainer.explain_guarded_factual(x_local, **kwargs)
 
     def explore_guarded_alternatives(self, x: Any, **kwargs: Any) -> Any:
@@ -488,10 +483,6 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        from calibrated_explanations.core.validation import (  # pylint: disable=import-outside-toplevel
-            validate_inputs_matrix,
-        )
-
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
@@ -501,7 +492,6 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
         return self.explainer.explore_guarded_alternatives(x_local, **kwargs)
 
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
