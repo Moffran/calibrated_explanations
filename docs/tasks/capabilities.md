@@ -26,7 +26,7 @@ See the ADR-021 formal semantics on GitHub:
 | 4 | [Probabilistic regression](#probabilistic-regression) | Regression | Practitioner | {doc}`../foundations/concepts/probabilistic_regression` |
 | 5 | [Factual explanations](#factual-explanations) | All | Practitioner | {doc}`../foundations/how-to/interpret_explanations` |
 | 6 | [Alternative explanations](#alternative-explanations) | All | Practitioner | {doc}`../foundations/concepts/alternatives` |
-| 7 | [Ensured explanations](#ensured-explanations) | All | Researcher | {doc}`../practitioner/playbooks/ensured-explanations` |
+| 7 | [Ensured explanations](#ensured-explanations) | All | Practitioner | {doc}`../practitioner/playbooks/ensured-explanations` |
 | 8 | [Mondrian/conditional calibration](#mondrian-conditional-calibration) | All | Practitioner | {doc}`../practitioner/playbooks/mondrian-calibration` |
 | 9 | [Fast explanations](#fast-explanations) | All | Advanced | {doc}`../practitioner/advanced/use_plugins` |
 | 10 | [Normalization/difficulty estimation](#normalization-difficulty-estimation) | Regression | Advanced | {doc}`../practitioner/advanced/normalization-guide` |
@@ -100,9 +100,17 @@ See the ADR-021 formal semantics on GitHub:
 
 ### Ensured Explanations
 
-**What it is**: A strategy to reduce epistemic uncertainty in alternative explanations by prioritizing alternatives with narrower uncertainty intervals.
+**What it is**: A strategy to reduce epistemic uncertainty in alternative explanations by filtering and ranking alternatives based on uncertainty interval width.
 
-**API**: Filter alternatives by interval width or use ensured ranking metrics in plots
+**API**: Five filters on alternatives, supported for classification, probabilistic regression, and plain regression:
+
+- ``super_explanations()``
+- ``semi_explanations()``
+- ``counter_explanations()``
+- ``ensured_explanations()``
+- ``pareto_explanations()``
+
+Plotting supports the ensured/triangular view via ``style="ensured"`` (alias for ``style="triangular"``) and ranking controls such as ``rnk_metric="ensured"`` and ``rnk_weight``.
 
 **What it is NOT**: Guaranteed low-uncertainty. Ensured explanations help identify more reliable alternatives but cannot eliminate uncertainty.
 

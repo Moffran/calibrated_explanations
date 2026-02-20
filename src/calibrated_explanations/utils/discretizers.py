@@ -124,6 +124,56 @@ class BaseDiscretizer:
                 ret[:, feature] = np.searchsorted(qts, ret[:, feature]).astype(int)
         return ret
 
+    def get_bins_with_cal_indices(self, feature: int, x_cal: np.ndarray) -> list:
+        """Return bin metadata together with calibration-set membership indices.
+
+        For each bin of a numerical feature, returns the lower/upper interval
+        bounds and the row indices of *x_cal* whose values fall into that bin.
+        This information is consumed by
+        :class:`~calibrated_explanations.utils.distribution_guard.InDistributionGuard`
+        when testing whether perturbations drawn from a leaf are in-distribution.
+
+        Parameters
+        ----------
+        feature : int
+            Index of the numerical feature to query.  Categorical features
+            (those *not* in ``self.to_discretize``) return an empty list.
+        x_cal : np.ndarray of shape (n_cal, n_features)
+            Calibration feature matrix.
+
+        Returns
+        -------
+        bins : list of (lower, upper, cal_indices)
+            Each element is a 3-tuple where:
+
+            * ``lower`` – lower bound of the half-open interval ``(lower, upper]``.
+              Set to ``-np.inf`` for the first (leftmost) bin.
+            * ``upper`` – upper bound.
+              Set to ``+np.inf`` for the last (rightmost) bin.
+            * ``cal_indices`` – ``np.ndarray`` of integer row indices into
+              *x_cal* whose values fall in this bin.
+
+            Empty bins (no calibration samples) are *included* but have an
+            empty ``cal_indices`` array; callers may skip them.
+        """
+        if feature not in self.bin_edges:
+            return []
+
+        qts = self.bin_edges[feature]  # sorted split thresholds
+        n_bins = len(qts) + 1
+
+        feat_vals = x_cal[:, feature]
+        # searchsorted gives bin index 0 … n_bins-1 for each calibration point
+        bin_assignments = np.searchsorted(qts, feat_vals)
+
+        result = []
+        for b in range(n_bins):
+            lo = -np.inf if b == 0 else float(qts[b - 1])
+            hi = np.inf if b == n_bins - 1 else float(qts[b])
+            cal_indices = np.where(bin_assignments == b)[0]
+            result.append((lo, hi, cal_indices))
+        return result
+
 
 class EntropyDiscretizer(BaseDiscretizer):
     """A dynamic entropy discretizer for the CalibratedExplainer.

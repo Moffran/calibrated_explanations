@@ -24,6 +24,12 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         CalibratedExplanations,
         FrozenCalibratedExplainer,
     )
+    from .guarded_explanation import (
+        GuardedBin,
+        GuardedExplanation,
+        GuardedExplanations,
+        GuardedFeatureExplanation,
+    )
     from .models import Explanation, FeatureRule, from_legacy_dict
 
 
@@ -35,6 +41,10 @@ __all__ = (
     "FactualExplanation",
     "AlternativeExplanation",
     "FastExplanation",
+    "GuardedBin",
+    "GuardedExplanation",
+    "GuardedExplanations",
+    "GuardedFeatureExplanation",
     "Explanation",
     "FeatureRule",
     "from_legacy_dict",
@@ -50,6 +60,10 @@ _NAME_TO_MODULE = {
     "FactualExplanation": ("explanation", "FactualExplanation"),
     "AlternativeExplanation": ("explanation", "AlternativeExplanation"),
     "FastExplanation": ("explanation", "FastExplanation"),
+    "GuardedBin": ("guarded_explanation", "GuardedBin"),
+    "GuardedExplanation": ("guarded_explanation", "GuardedExplanation"),
+    "GuardedExplanations": ("guarded_explanation", "GuardedExplanations"),
+    "GuardedFeatureExplanation": ("guarded_explanation", "GuardedFeatureExplanation"),
     "Explanation": ("models", "Explanation"),
     "FeatureRule": ("models", "FeatureRule"),
     "from_legacy_dict": ("models", "from_legacy_dict"),

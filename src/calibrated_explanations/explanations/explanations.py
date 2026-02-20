@@ -1157,8 +1157,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         uncertainty : bool, default=False
             Determines whether to include uncertainty information in the plots.
         style : str, default='regular'
-            The style of the plot. Supported styles are 'regular' and 'triangular'
-            (experimental).
+            The style of the plot. Supported styles are 'regular' and 'triangular'.
+            Use ``style='ensured'`` as an alias for ``style='triangular'``.
         rnk_metric : str, default=None
             The metric used to rank the features. Supported metrics are 'ensured',
             'feature_weight', and 'uncertainty'. If None, the default from the explanation
@@ -1183,6 +1183,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             Refer to the docstring for plot in FastExplanation for details on default ranking
             ('feature_weight').
         """
+        if style == "ensured":
+            style = "triangular"
+
         if style == "narrative":
             from ..viz.narrative_plugin import NarrativePlotPlugin
 
@@ -1560,7 +1563,7 @@ class AlternativeExplanations(CalibratedExplanations):
         """
         Return a copy with only ensured explanations.
 
-        Ensured explanations are individual rules that have a smaller confidence interval.
+        Ensured explanations are individual rules that have a narrower uncertainty interval.
 
         Parameters
         ----------
@@ -1583,6 +1586,35 @@ class AlternativeExplanations(CalibratedExplanations):
             return new_obj
         for explanation in self.explanations:
             explanation.ensured_explanations(include_potential=include_potential, copy=False)
+        return self
+
+    def pareto_explanations(self, include_potential=True, copy=True):
+        """Return a copy with only output-envelope Pareto alternatives.
+
+        Parameters
+        ----------
+        include_potential : bool, default=True
+            Determines whether to include potential explanations before
+            extracting the Pareto frontier.
+        copy : bool, default=True
+            Determines whether to return a copy of the explanations or modify
+            them in place.
+
+        Returns
+        -------
+        AlternativeExplanations
+            A new ``AlternativeExplanations`` object containing Pareto-front
+            alternatives.
+        """
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.pareto_explanations(include_potential=include_potential, copy=True)
+                for explanation in self.explanations
+            ]
+            return new_obj
+        for explanation in self.explanations:
+            explanation.pareto_explanations(include_potential=include_potential, copy=False)
         return self
 
 
