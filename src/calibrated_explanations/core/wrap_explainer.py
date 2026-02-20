@@ -442,6 +442,66 @@ class WrapCalibratedExplainer:
         """Alias for explore_alternatives (legacy API)."""
         return self.explore_alternatives(x, **kwargs)
 
+    def explain_guarded_factual(self, x: Any, **kwargs: Any) -> Any:
+        """Generate guarded factual explanations that only use in-distribution perturbations.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.explain_guarded_factual` : Refer to the docstring for full parameter documentation.
+        """
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
+            .explainer
+            is not None
+        )
+        from calibrated_explanations.core.validation import (  # pylint: disable=import-outside-toplevel
+            validate_inputs_matrix,
+        )
+
+        x_local = self._maybe_preprocess_for_inference(x)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            kwargs.setdefault("threshold", cfg.threshold)
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
+        validate_inputs_matrix(x_local, allow_nan=True)
+        kwargs["bins"] = self._get_bins(x_local, **kwargs)
+        assert self.explainer is not None
+        return self.explainer.explain_guarded_factual(x_local, **kwargs)
+
+    def explore_guarded_alternatives(self, x: Any, **kwargs: Any) -> Any:
+        """Generate guarded alternative explanations that only use in-distribution perturbations.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.explore_guarded_alternatives` : Refer to the docstring for full parameter documentation.
+        """
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
+            .explainer
+            is not None
+        )
+        from calibrated_explanations.core.validation import (  # pylint: disable=import-outside-toplevel
+            validate_inputs_matrix,
+        )
+
+        x_local = self._maybe_preprocess_for_inference(x)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            kwargs.setdefault("threshold", cfg.threshold)
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
+        validate_inputs_matrix(x_local, allow_nan=True)
+        kwargs["bins"] = self._get_bins(x_local, **kwargs)
+        assert self.explainer is not None
+        return self.explainer.explore_guarded_alternatives(x_local, **kwargs)
+
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.
 

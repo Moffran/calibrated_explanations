@@ -862,6 +862,147 @@ class ExplanationOrchestrator:
             **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
+    def invoke_guarded_factual(  # pylint: disable=invalid-name
+        self,
+        x: Any,  # pylint: disable=invalid-name
+        threshold: Any = None,
+        low_high_percentiles: Tuple[float, float] | None = (5, 95),
+        bins: Any = None,
+        features_to_ignore: Any = None,
+        significance: float = 0.1,
+        merge_adjacent: bool = False,
+        n_neighbors: int = 5,
+        leaf_strategy: str = "median",
+        normalize_guard: bool = True,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute guarded factual explanation.
+
+        Uses a multi-bin discretiser (``max_depth=3``) and prunes
+        out-of-distribution leaves via KNN-based conformity testing.
+        Returns a :class:`~...explanations.guarded_explanation.GuardedExplanations`
+        object in ``'factual'`` mode.
+
+        Parameters
+        ----------
+        x : array-like
+            Test instances to explain.
+        threshold : Any
+            Threshold for probabilistic explanations.
+        low_high_percentiles : tuple or None
+            Low and high percentiles for calibrated intervals.
+        bins : array-like or None
+            Mondrian categories.
+        features_to_ignore : sequence or None
+            Feature indices to exclude.
+        significance : float, default=0.1
+            Conformity significance level.
+        merge_adjacent : bool, default=False
+            Merge adjacent conforming bins into wider intervals.
+        n_neighbors : int, default=5
+            KNN neighbour count for the in-distribution guard.
+        leaf_strategy : {'median', 'percentiles'}, default='median'
+            Sampling strategy for representative leaf values.
+        normalize_guard : bool, default=True
+            Apply per-feature normalisation in the guard.
+        **kwargs : Any
+            Currently unused; reserved for future parameters.
+
+        Returns
+        -------
+        GuardedExplanations (mode='factual')
+        """
+        from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
+
+        import numpy as np  # pylint: disable=import-outside-toplevel
+
+        x_arr = np.atleast_2d(np.asarray(x))
+        return guarded_explain(
+            self.explainer,
+            x_arr,
+            mode="factual",
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles if low_high_percentiles is not None else (5, 95),
+            mondrian_bins=bins,
+            features_to_ignore=features_to_ignore,
+            significance=significance,
+            merge_adjacent=merge_adjacent,
+            n_neighbors=n_neighbors,
+            leaf_strategy=leaf_strategy,
+            normalize_guard=normalize_guard,
+        )
+
+    def invoke_guarded_alternative(  # pylint: disable=invalid-name
+        self,
+        x: Any,  # pylint: disable=invalid-name
+        threshold: Any = None,
+        low_high_percentiles: Tuple[float, float] | None = (5, 95),
+        bins: Any = None,
+        features_to_ignore: Any = None,
+        significance: float = 0.1,
+        merge_adjacent: bool = False,
+        n_neighbors: int = 5,
+        leaf_strategy: str = "median",
+        normalize_guard: bool = True,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute guarded alternative explanation.
+
+        Uses a multi-bin discretiser (``max_depth=3``) and prunes
+        out-of-distribution leaves via KNN-based conformity testing.
+        Returns a :class:`~...explanations.guarded_explanation.GuardedExplanations`
+        object in ``'alternative'`` mode.  Only conforming non-factual bins are
+        exposed as alternatives.
+
+        Parameters
+        ----------
+        x : array-like
+            Test instances to explain.
+        threshold : Any
+            Threshold for probabilistic explanations.
+        low_high_percentiles : tuple or None
+            Low and high percentiles for calibrated intervals.
+        bins : array-like or None
+            Mondrian categories.
+        features_to_ignore : sequence or None
+            Feature indices to exclude.
+        significance : float, default=0.1
+            Conformity significance level.
+        merge_adjacent : bool, default=False
+            Merge adjacent conforming bins into wider intervals.
+        n_neighbors : int, default=5
+            KNN neighbour count for the in-distribution guard.
+        leaf_strategy : {'median', 'percentiles'}, default='median'
+            Sampling strategy for representative leaf values.
+        normalize_guard : bool, default=True
+            Apply per-feature normalisation in the guard.
+        **kwargs : Any
+            Currently unused; reserved for future parameters.
+
+        Returns
+        -------
+        GuardedExplanations (mode='alternative')
+        """
+        from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
+
+        import numpy as np  # pylint: disable=import-outside-toplevel
+
+        x_arr = np.atleast_2d(np.asarray(x))
+        return guarded_explain(
+            self.explainer,
+            x_arr,
+            mode="alternative",
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles if low_high_percentiles is not None else (5, 95),
+            mondrian_bins=bins,
+            features_to_ignore=features_to_ignore,
+            significance=significance,
+            merge_adjacent=merge_adjacent,
+            n_neighbors=n_neighbors,
+            leaf_strategy=leaf_strategy,
+            normalize_guard=normalize_guard,
+        )
+
     def ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Return the plugin instance for *mode*, initialising on demand.
 

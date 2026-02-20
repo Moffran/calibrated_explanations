@@ -1801,6 +1801,175 @@ class CalibratedExplainer:
                 invoke_kwargs["reject_policy"] = reject_policy
             return self.explanation_orchestrator.invoke_alternative(**invoke_kwargs)  # type: ignore[return-value]
 
+    def explain_guarded_factual(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        bins=None,
+        features_to_ignore=None,
+        *,
+        significance: float = 0.1,
+        merge_adjacent: bool = False,
+        n_neighbors: int = 5,
+        leaf_strategy: str = "median",
+        normalize_guard: bool = True,
+        **kwargs,
+    ):
+        """Create guarded factual explanations that only use in-distribution perturbations.
+
+        Unlike :meth:`explain_factual`, which uses a binary (``max_depth=1``)
+        discretiser, this method uses the same multi-bin (``max_depth=3``)
+        discretiser as :meth:`explore_alternatives`.  For each leaf an
+        in-distribution guard tests whether the representative perturbation
+        is conforming to the calibration distribution; leaves that fail the
+        test are filtered out.
+
+        Rule conditions are **intervals** such as ``"30 < age <= 50"`` rather
+        than simple threshold splits.  Adjacent conforming bins can optionally
+        be merged into wider intervals (``merge_adjacent=True``).
+
+        Parameters
+        ----------
+        x : array-like
+            A set with n_samples of test objects to explain.
+        threshold : float, int or array-like, optional
+            Values for which p-values should be returned.  Only used for
+            probabilistic regression.
+        low_high_percentiles : tuple of float, default=(5, 95)
+            The low and high percentile used to calculate the interval.
+        bins : array-like of shape (n_samples,), optional
+            Mondrian categories.
+        features_to_ignore : sequence of int or str, optional
+            Features to exclude from explanations.
+        significance : float, default=0.1
+            Conformity significance level.  Bins with p-value < significance
+            are considered out-of-distribution and are not included.
+        merge_adjacent : bool, default=False
+            When ``True``, merge adjacent conforming bins into a single wider
+            interval condition.
+        n_neighbors : int, default=5
+            Number of nearest calibration neighbours used by the in-distribution
+            guard for computing non-conformity scores.
+        leaf_strategy : {'median', 'percentiles'}, default='median'
+            How to pick representative values from a discretiser leaf.
+            ``'median'`` is fastest; ``'percentiles'`` tests three quantiles.
+        normalize_guard : bool, default=True
+            Apply per-feature min-max normalisation before computing KNN
+            distances inside the guard.
+        **kwargs : dict
+            Additional arguments (reserved for future use).
+
+        Returns
+        -------
+        GuardedExplanations
+            A :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanations`
+            object in ``'factual'`` mode containing one
+            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanation`
+            per instance.
+        """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self.explanation_orchestrator.invoke_guarded_factual(
+                x=x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins,
+                features_to_ignore=features_to_ignore,
+                significance=significance,
+                merge_adjacent=merge_adjacent,
+                n_neighbors=n_neighbors,
+                leaf_strategy=leaf_strategy,
+                normalize_guard=normalize_guard,
+                **kwargs,
+            )
+
+    def explore_guarded_alternatives(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        bins=None,
+        features_to_ignore=None,
+        *,
+        significance: float = 0.1,
+        merge_adjacent: bool = False,
+        n_neighbors: int = 5,
+        leaf_strategy: str = "median",
+        normalize_guard: bool = True,
+        **kwargs,
+    ):
+        """Create guarded alternative explanations that only use in-distribution perturbations.
+
+        This method extends :meth:`explore_alternatives` with an in-distribution
+        guard: for each leaf of the multi-bin discretiser, it tests whether
+        perturbing the feature to the leaf's representative value (while keeping
+        all other features at their original level) produces an instance that is
+        conforming to the calibration distribution.  Non-conforming leaves are
+        excluded from the alternatives.
+
+        Rule conditions are **intervals** such as ``"30 < age <= 50"``; for the
+        current (factual) bin a factual rule is also stored (``is_factual=True``).
+        Adjacent conforming bins can optionally be merged (``merge_adjacent=True``).
+
+        Parameters
+        ----------
+        x : array-like
+            A set with n_samples of test objects to explain.
+        threshold : float, int or array-like, optional
+            Values for which p-values should be returned.  Only used for
+            probabilistic regression.
+        low_high_percentiles : tuple of float, default=(5, 95)
+            The low and high percentile used to calculate the interval.
+        bins : array-like of shape (n_samples,), optional
+            Mondrian categories.
+        features_to_ignore : sequence of int or str, optional
+            Features to exclude from explanations.
+        significance : float, default=0.1
+            Conformity significance level.  Bins with p-value < significance
+            are considered out-of-distribution and are not included as alternatives.
+        merge_adjacent : bool, default=False
+            When ``True``, merge adjacent conforming bins into a single wider
+            interval condition.
+        n_neighbors : int, default=5
+            Number of nearest calibration neighbours used by the in-distribution
+            guard for computing non-conformity scores.
+        leaf_strategy : {'median', 'percentiles'}, default='median'
+            How to pick representative values from a discretiser leaf.
+        normalize_guard : bool, default=True
+            Apply per-feature min-max normalisation before computing KNN
+            distances inside the guard.
+        **kwargs : dict
+            Additional arguments (reserved for future use).
+
+        Returns
+        -------
+        GuardedExplanations
+            A :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanations`
+            object in ``'alternative'`` mode containing one
+            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanation`
+            per instance.
+        """
+        if bins is None and self.is_mondrian():
+            bins = self.bins
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self.explanation_orchestrator.invoke_guarded_alternative(
+                x=x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins,
+                features_to_ignore=features_to_ignore,
+                significance=significance,
+                merge_adjacent=merge_adjacent,
+                n_neighbors=n_neighbors,
+                leaf_strategy=leaf_strategy,
+                normalize_guard=normalize_guard,
+                **kwargs,
+            )
+
     def __call__(
         self,
         x,
