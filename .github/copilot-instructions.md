@@ -1,6 +1,8 @@
 # GitHub Copilot Instructions for `calibrated_explanations`
 
 > **Scope:** Repository-wide defaults for Copilot. **Always** pair these notes with `.github/tests-guidance.md` and `docs/improvement/adrs/` for authoritative rules.
+> **Setup guide:** `docs/get-started/copilot-setup.md` — how to configure VS Code, use prompt files, and keep this context up to date.
+> **Feedback log:** `.github/copilot-feedback-log.md` — dated record of corrections; run `/refresh-ce-context feedback="…"` to add an entry.
 
 ## 1. Project Context & Architecture
 - **Core Purpose:** Extract calibrated explanations (factual rules, alternatives, prediction intervals) from scikit-learn compatible models.
