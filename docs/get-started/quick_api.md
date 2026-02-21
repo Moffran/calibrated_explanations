@@ -46,6 +46,12 @@ factual = explainer.explain_factual(x_test[:1])
 print(factual[0])
 ```
 
+For a true multiclass explanation (one explanation per class), enable multi-label mode:
+
+```python
+multi = explainer.explain_factual(x_test[:1], multi_labels_enabled=True)
+```
+
 ### Calibrated probability + interval
 
 ```python

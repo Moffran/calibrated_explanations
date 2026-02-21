@@ -506,24 +506,24 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\explanation.py",
     "lines_covered": 2153,
-    "mean_count": 24.461,
+    "mean_count": 24.463,
     "median_count": 12.0,
     "max_count": 172,
     "over_threshold": 978
   },
   {
     "file": "src\\calibrated_explanations\\explanations\\explanations.py",
-    "lines_covered": 1218,
-    "mean_count": 14.21,
+    "lines_covered": 1227,
+    "mean_count": 14.125,
     "median_count": 3.0,
     "max_count": 172,
     "over_threshold": 211
   },
   {
     "file": "src\\calibrated_explanations\\explanations\\guarded_explanation.py",
-    "lines_covered": 355,
-    "mean_count": 15.997,
-    "median_count": 12.0,
+    "lines_covered": 356,
+    "mean_count": 16.287,
+    "median_count": 14.0,
     "max_count": 48,
     "over_threshold": 123
   },
@@ -585,10 +585,10 @@
   },
   {
     "file": "src\\calibrated_explanations\\legacy\\plotting.py",
-    "lines_covered": 548,
-    "mean_count": 9.595,
+    "lines_covered": 543,
+    "mean_count": 9.602,
     "median_count": 7.0,
-    "max_count": 50,
+    "max_count": 49,
     "over_threshold": 83
   },
   {
@@ -609,8 +609,8 @@
   },
   {
     "file": "src\\calibrated_explanations\\parallel\\parallel.py",
-    "lines_covered": 443,
-    "mean_count": 10.305,
+    "lines_covered": 441,
+    "mean_count": 10.338,
     "median_count": 1.0,
     "max_count": 210,
     "over_threshold": 53
@@ -642,7 +642,7 @@
   {
     "file": "src\\calibrated_explanations\\plotting.py",
     "lines_covered": 1205,
-    "mean_count": 4.848,
+    "mean_count": 4.855,
     "median_count": 3.0,
     "max_count": 56,
     "over_threshold": 34
@@ -834,17 +834,17 @@
   {
     "file": "src\\calibrated_explanations\\utils\\exceptions.py",
     "lines_covered": 35,
-    "mean_count": 14.171,
+    "mean_count": 14.514,
     "median_count": 1.0,
-    "max_count": 231,
+    "max_count": 237,
     "over_threshold": 2
   },
   {
     "file": "src\\calibrated_explanations\\utils\\helper.py",
     "lines_covered": 290,
-    "mean_count": 31.593,
+    "mean_count": 31.821,
     "median_count": 2.0,
-    "max_count": 259,
+    "max_count": 265,
     "over_threshold": 73
   },
   {
