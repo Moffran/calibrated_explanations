@@ -13,6 +13,7 @@ from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
 )
+from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
@@ -226,3 +227,215 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
     alt.ensured_explanations()
     calls = [exp.conjunction_calls for exp in collection.explanations]
     assert all({"super", "semi", "counter", "ensured"}.issubset(set(call)) for call in calls)
+
+
+def test_multiclass_getitem_string_label_nonzero_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    from calibrated_explanations.explanations import explanations as explanations_module
+
+    class FakeFactual:
+        def get_class_labels(self):
+            return {2: "two", 5: "five"}
+
+    monkeypatch.setattr(explanations_module, "FactualExplanation", FakeFactual)
+
+    explainer = DummyOriginalExplainer(feature_names=("f0",), class_labels={2: "two", 5: "five"})
+    x = np.array([[1.0]])
+    exp_two = FakeFactual()
+    exp_five = FakeFactual()
+    coll = MultiClassCalibratedExplanations(
+        explainer, x, bins=None, num_classes=2, explanations=[{2: exp_two, 5: exp_five}]
+    )
+
+    assert coll[(0, "five")] is coll.explanations[0][5]
+    with pytest.raises(KeyError, match="Unknown class label"):
+        _ = coll[(0, "unknown")]
+
+
+def test_multiclass_getitem_int_returns_single_instance_collection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from calibrated_explanations.explanations import explanations as explanations_module
+
+    class FakeFactual:
+        def get_class_labels(self):
+            return {2: "two", 5: "five"}
+
+    monkeypatch.setattr(explanations_module, "FactualExplanation", FakeFactual)
+
+    explainer = DummyOriginalExplainer(feature_names=("f0",), class_labels={2: "two", 5: "five"})
+    x = np.array([[1.0]])
+    exp_two = FakeFactual()
+    exp_five = FakeFactual()
+    coll = MultiClassCalibratedExplanations(
+        explainer,
+        x,
+        bins=None,
+        num_classes=2,
+        explanations=[{2: exp_two, 5: exp_five}],
+    )
+
+    sliced = coll[0]
+
+    assert isinstance(sliced, MultiClassCalibratedExplanations)
+    assert len(sliced) == 1
+    assert len(sliced.explanations) == 1
+    assert set(sliced.explanations[0].keys()) == {2, 5}
+
+
+def test_multiclass_interface_parity_slice_list_and_get_explanation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from calibrated_explanations.explanations import explanations as explanations_module
+
+    class FakeFactual:
+        def get_class_labels(self):
+            return {2: "two", 5: "five"}
+
+    monkeypatch.setattr(explanations_module, "FactualExplanation", FakeFactual)
+
+    explainer = DummyOriginalExplainer(feature_names=("f0",), class_labels={2: "two", 5: "five"})
+    x = np.array([[1.0], [2.0], [3.0]])
+    coll = MultiClassCalibratedExplanations(
+        explainer,
+        x,
+        bins=None,
+        num_classes=2,
+        explanations=[
+            {2: FakeFactual(), 5: FakeFactual()},
+            {2: FakeFactual(), 5: FakeFactual()},
+            {2: FakeFactual(), 5: FakeFactual()},
+        ],
+    )
+
+    sliced = coll[:2]
+    subset = coll[[0, 2]]
+    masked = coll[np.array([True, False, True])]
+
+    assert isinstance(sliced, MultiClassCalibratedExplanations)
+    assert isinstance(subset, MultiClassCalibratedExplanations)
+    assert isinstance(masked, MultiClassCalibratedExplanations)
+    assert len(sliced) == 2
+    assert len(subset) == 2
+    assert len(masked) == 2
+    assert coll.X_test.shape == coll.x_test.shape
+    assert coll.get_explanation(0, 2) is coll.explanations[0][2]
+
+
+def test_multiclass_plot_factual_dispatches_dict_path_for_nonzero_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from calibrated_explanations.explanations import explanations as explanations_module
+
+    class FakeFactual:
+        def __init__(self, klass: int):
+            self.prediction = {"predict": 0.6, "low": 0.5, "high": 0.7, "classes": klass}
+
+        def get_class_labels(self):
+            return {2: "two", 5: "five"}
+
+        def _check_preconditions(self):
+            return None
+
+        def rank_features(self, feature_weights=None, width=None, num_to_show=None):
+            return [0]
+
+        def get_rules(self):
+            return {
+                "base_predict": [0.6],
+                "base_predict_low": [0.5],
+                "base_predict_high": [0.7],
+                "predict": [0.62],
+                "predict_low": [0.52],
+                "predict_high": [0.72],
+                "weight": [0.1],
+                "weight_low": [0.05],
+                "weight_high": [0.15],
+                "value": ["v"],
+                "rule": ["r"],
+                "feature": ["f"],
+                "feature_value": ["fv"],
+                "is_conjunctive": [False],
+                "classes": [2],
+            }
+
+    monkeypatch.setattr(explanations_module, "FactualExplanation", FakeFactual)
+
+    calls = {"count": 0}
+
+    def _record(*_args, **_kwargs):
+        calls["count"] += 1
+
+    monkeypatch.setattr(explanations_module, "_plot_probabilistic_dict", _record)
+
+    explainer = DummyOriginalExplainer(feature_names=("f0",), class_labels={2: "two", 5: "five"})
+    x = np.array([[1.0]])
+    coll = MultiClassCalibratedExplanations(
+        explainer,
+        x,
+        bins=None,
+        num_classes=2,
+        explanations=[{2: FakeFactual(2), 5: FakeFactual(5)}],
+    )
+
+    coll.plot_factual(show=False)
+
+    assert calls["count"] == 1
+
+
+def test_multiclass_plot_alternative_dispatches_dict_path_for_nonzero_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from calibrated_explanations.explanations import explanations as explanations_module
+
+    class FakeAlternative:
+        def __init__(self, klass: int):
+            self.prediction = {"predict": 0.6, "low": 0.5, "high": 0.7, "classes": klass}
+
+        def _check_preconditions(self):
+            return None
+
+        def _rank_features(self, feature_weights=None, width=None, num_to_show=None):
+            return [0]
+
+        def _get_rules(self):
+            return {
+                "base_predict": [0.6],
+                "base_predict_low": [0.5],
+                "base_predict_high": [0.7],
+                "predict": [0.62],
+                "predict_low": [0.52],
+                "predict_high": [0.72],
+                "weight": [0.1],
+                "weight_low": [0.05],
+                "weight_high": [0.15],
+                "value": ["v"],
+                "rule": ["r"],
+                "feature": ["f"],
+                "feature_value": ["fv"],
+                "is_conjunctive": [False],
+                "classes": [2],
+            }
+
+    monkeypatch.setattr(explanations_module, "AlternativeExplanation", FakeAlternative)
+
+    calls = {"count": 0}
+
+    def _record(*_args, **_kwargs):
+        calls["count"] += 1
+
+    monkeypatch.setattr(explanations_module, "_plot_alternative_dict", _record)
+
+    explainer = DummyOriginalExplainer(feature_names=("f0",), class_labels={2: "two", 5: "five"})
+    x = np.array([[1.0]])
+    coll = MultiClassCalibratedExplanations(
+        explainer,
+        x,
+        bins=None,
+        num_classes=2,
+        explanations=[{2: FakeAlternative(2), 5: FakeAlternative(5)}],
+    )
+    monkeypatch.setattr(coll, "sort_factuals_by_rule", lambda factuals: factuals)
+
+    coll.plot_alternative(show=False)
+
+    assert calls["count"] == 1

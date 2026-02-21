@@ -254,6 +254,62 @@ def test_multiclass_ce(multiclass_dataset):
 
 
 @pytest.mark.viz
+def test_multiclass_ce_multi_labels_enabled(multiclass_dataset):
+    """Exercise multiclass multi-label mode (one explanation per class).
+
+    This targets the `multi_labels_enabled=True` branch in the factual/alternative
+    orchestrator and the multiclass dict-plot helpers.
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _,
+        _,
+        _,
+        _,
+        categorical_labels,
+        target_labels,
+        feature_names,
+    ) = multiclass_dataset
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_labels,
+        mode="classification",
+        class_labels=target_labels,
+        verbose=True,
+    )
+
+    x_subset = x_test[:2]
+
+    multi_factual = cal_exp.explain_factual(x_subset, multi_labels_enabled=True)
+    multi_alternative = cal_exp.explore_alternatives(x_subset, multi_labels_enabled=True)
+
+    # Public indexing contract: (instance_idx, class_idx) returns a per-class explanation
+    first_class_factual = multi_factual.get_explanation(0, 0)
+    first_class_alternative = multi_alternative.get_explanation(0, 0)
+    assert first_class_factual is not None
+    assert first_class_alternative is not None
+
+    # Exercise multiclass "dict plot" paths (all-classes view). These are the
+    # more complex/unusual plotting branches and were previously uncovered.
+    multi_factual.plot(show=False, uncertainty=True)
+    multi_alternative.plot(show=False)
+
+    # Ensure the containers were created for every instance and class
+    assert len(multi_factual.explanations) == len(x_subset)
+    assert len(multi_alternative.explanations) == len(x_subset)
+    assert set(multi_factual.explanations[0].keys())
+    assert set(multi_alternative.explanations[0].keys())
+
+
+@pytest.mark.viz
 def test_binary_conditional_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset and conditional bins.

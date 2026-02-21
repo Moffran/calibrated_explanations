@@ -485,9 +485,7 @@ def format_guarded_audit_table(
         hi = _fmt_num(upper, decimals=bound_decimals)
         return f"({lo}, {hi}]"
 
-    header = (
-        "inst feat name                interval                  p      conf emit reason"
-    )
+    header = "inst feat name                interval                  p      conf emit reason"
     divider = "-" * len(header)
     lines = [
         "Guarded Audit Summary",
@@ -507,11 +505,7 @@ def format_guarded_audit_table(
         name = str(rec.get("feature_name", ""))[:18]
         interval = _fmt_interval(rec.get("lower"), rec.get("upper"))[:24]
         p_val = rec.get("p_value", "")
-        p_str = (
-            _fmt_num(p_val, decimals=pvalue_decimals)
-            if p_val not in ("", None)
-            else ""
-        )
+        p_str = _fmt_num(p_val, decimals=pvalue_decimals) if p_val not in ("", None) else ""
         conf = "Y" if rec.get("conforming") else "N"
         emit = "Y" if rec.get("emitted") else "N"
         reason = str(rec.get("emission_reason", ""))[:18]

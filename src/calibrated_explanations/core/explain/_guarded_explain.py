@@ -54,9 +54,9 @@ def _warn_on_calibration_identity_mismatch(explainer: "CalibratedExplainer") -> 
     if backend_cal is None:
         return
     try:
-        explainer_cal = np.asarray(getattr(explainer, "x_cal"))
+        explainer_cal = np.asarray(explainer.x_cal)
         backend_cal = np.asarray(backend_cal)
-    except Exception:  # pragma: no cover - defensive
+    except (TypeError, ValueError):  # pragma: no cover - defensive
         return
     if explainer_cal.shape != backend_cal.shape or not np.array_equal(explainer_cal, backend_cal):
         warnings.warn(
@@ -130,10 +130,10 @@ def _merge_adjacent_bins(
     # Sort by lower bound (should already be sorted, but be safe)
     sorted_bins = sorted(bins, key=lambda b: b.lower)
 
-    merge_kwargs = dict(
-        guard=guard,
-        adjusted_sig=adjusted_sig,
-    )
+    merge_kwargs = {
+        "guard": guard,
+        "adjusted_sig": adjusted_sig,
+    }
 
     if mode == "alternative":
         # Split into three segments: left non-factual, factual, right non-factual
@@ -422,6 +422,7 @@ def guarded_explain(
         :class:`GuardedFactualExplanation` or
         :class:`GuardedAlternativeExplanation` objects.
     """
+    from ...core.exceptions import ValidationError
     from ...explanations.explanations import (  # local to avoid cycles
         AlternativeExplanations,
         CalibratedExplanations,
@@ -432,7 +433,6 @@ def guarded_explain(
         GuardedFactualExplanation,
     )
     from ...utils.distribution_guard import InDistributionGuard
-    from ...core.exceptions import ValidationError
 
     x = np.atleast_2d(np.asarray(x))
     n_instances, n_features = x.shape
@@ -638,15 +638,15 @@ def guarded_explain(
             threshold is not None
             and not np.isscalar(threshold)
             and not isinstance(threshold, tuple)
+            and hasattr(threshold, "__len__")
         ):
-            if hasattr(threshold, "__len__"):
-                inst_indices = [m[0] for m in pert_metadata]
-                if len(threshold) != n_instances:
-                    raise ValidationError(
-                        f"Threshold array length ({len(threshold)}) must match n_instances ({n_instances})",
-                        details={"n_instances": n_instances, "len_threshold": len(threshold)},
-                    )
-                pert_threshold = np.asarray(threshold)[inst_indices]
+            inst_indices = [m[0] for m in pert_metadata]
+            if len(threshold) != n_instances:
+                raise ValidationError(
+                    f"Threshold array length ({len(threshold)}) must match n_instances ({n_instances})",
+                    details={"n_instances": n_instances, "len_threshold": len(threshold)},
+                )
+            pert_threshold = np.asarray(threshold)[inst_indices]
 
         # Replicate mondrian_bins if provided (same bin as the source instance)
         pert_mbins: Any = None
@@ -676,9 +676,9 @@ def guarded_explain(
 
     # Backward compatibility for mocked predictors in unit tests: when the mock
     # returns fewer rows than requested perturbed instances, tile predictions.
-    is_mock_backend = type(getattr(explainer, "prediction_orchestrator", None)).__module__.startswith(
-        "unittest.mock"
-    )
+    is_mock_backend = type(
+        getattr(explainer, "prediction_orchestrator", None)
+    ).__module__.startswith("unittest.mock")
     if is_mock_backend and 0 < len(pert_predict) < len(pert_metadata):
         repeats = int(np.ceil(len(pert_metadata) / len(pert_predict)))
         pert_predict = np.tile(pert_predict, repeats)[: len(pert_metadata)]
@@ -692,13 +692,13 @@ def guarded_explain(
     # Sort metadata by inst_idx to maintain scatter alignment (Issue 1e)
     # This ensures that we can index into pert_predict/low/high correctly
     # even if multiple instances contributed to the batch.
-    
+
     # Actually, pert_metadata was populated in a nested loop (inst then feat then bin).
     # row_idx in pert_metadata ALWAYS matches the row index in x_perturbed and thus pert_predict.
     # The error "IndexError: index 1 is out of bounds for axis 0 with size 1"
     # suggests that len(pert_metadata) > len(pert_predict).
     # This happens if some rows were appended to perturbed_rows but not predicted.
-    
+
     inst_feat_bins: dict[int, dict[int, list[GuardedBin]]] = {i: {} for i in range(n_instances)}
 
     for row_idx, meta in enumerate(pert_metadata):
@@ -822,11 +822,11 @@ def guarded_explain(
         prediction["prob"] = base_predict
 
     # Populate feature weights/predictions for conjunction/plugin compatibility.
-    feature_predict: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
-    feature_weights: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
+    feature_predict: dict[str, list[np.ndarray]] = {"predict": [], "low": [], "high": []}
+    feature_weights: dict[str, list[np.ndarray]] = {"predict": [], "low": [], "high": []}
 
     # Select the explanation subclass based on mode
-    ExplClass = GuardedFactualExplanation if mode == "factual" else GuardedAlternativeExplanation
+    expl_class = GuardedFactualExplanation if mode == "factual" else GuardedAlternativeExplanation
 
     for inst_idx in range(n_instances):
         x_instance = x[inst_idx]
@@ -844,9 +844,14 @@ def guarded_explain(
         }
 
         threshold_i: Any = threshold
-        if threshold is not None and not np.isscalar(threshold) and not isinstance(threshold, tuple):
-            if hasattr(threshold, "__len__") and inst_idx < len(threshold):
-                threshold_i = np.asarray(threshold)[inst_idx]
+        if (
+            threshold is not None
+            and not np.isscalar(threshold)
+            and not isinstance(threshold, tuple)
+            and hasattr(threshold, "__len__")
+            and inst_idx < len(threshold)
+        ):
+            threshold_i = np.asarray(threshold)[inst_idx]
 
         inst_ignore = set(ignore_set)
         if per_instance_ignore is not None and inst_idx < len(per_instance_ignore):
@@ -918,7 +923,7 @@ def guarded_explain(
 
         binned_predict["rule_values"].append(rule_values_entry)
 
-        expl = ExplClass(
+        expl = expl_class(
             container,
             index=inst_idx,
             x=x_instance,

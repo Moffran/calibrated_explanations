@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .exceptions import ValidationError
+
 
 class InDistributionGuard:
     """Test whether perturbed instances conform to the calibration distribution.
@@ -63,14 +65,12 @@ class InDistributionGuard:
     ) -> None:
         self.x_cal = np.asarray(x_cal)
         if int(n_neighbors) < 1:
-            raise ValueError("n_neighbors must be >= 1")
+            raise ValidationError("n_neighbors must be >= 1")
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.normalize = normalize
         requested_categorical = (
-            tuple(int(v) for v in categorical_features)
-            if categorical_features is not None
-            else tuple()
+            tuple(int(v) for v in categorical_features) if categorical_features is not None else ()
         )
         n_features = int(self.x_cal.shape[1])
         cat = sorted({i for i in requested_categorical if 0 <= i < n_features})
@@ -108,9 +108,9 @@ class InDistributionGuard:
         """Preprocess data into numeric vectors suitable for distance computations."""
         x_arr = np.asarray(x)
         if x_arr.ndim != 2:
-            raise ValueError("x must be a 2D array")
+            raise ValidationError("x must be a 2D array")
         if x_arr.shape[1] != self.x_cal.shape[1]:
-            raise ValueError(
+            raise ValidationError(
                 "x must have the same number of features as x_cal "
                 f"(got {x_arr.shape[1]} vs {self.x_cal.shape[1]})"
             )
@@ -221,5 +221,5 @@ class InDistributionGuard:
         conforming : np.ndarray of bool, shape (n_samples,)
         """
         if not 0 < float(significance) < 1:
-            raise ValueError("significance must be strictly between 0 and 1")
+            raise ValidationError("significance must be strictly between 0 and 1")
         return self.p_values(x_test) >= significance

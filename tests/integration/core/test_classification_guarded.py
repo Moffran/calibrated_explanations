@@ -254,6 +254,57 @@ def test_multiclass_ce(multiclass_dataset):
 
 
 @pytest.mark.viz
+def test_multiclass_ce_multi_labels_enabled_guarded_compat(multiclass_dataset):
+    """Ensure multiclass multi-label mode remains compatible with guarded flows.
+
+    - Verifies `multi_labels_enabled=True` works end-to-end for multiclass.
+    - Ensures guarded explanation entrypoints accept the same flag without
+      crashing (even if they currently ignore it).
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _,
+        _,
+        _,
+        _,
+        categorical_labels,
+        target_labels,
+        feature_names,
+    ) = multiclass_dataset
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_labels,
+        mode="classification",
+        class_labels=target_labels,
+        verbose=True,
+    )
+
+    x_subset = x_test[:2]
+
+    # Multi-label (per-class) explanations: exercise dict-plot branches
+    multi_factual = cal_exp.explain_factual(x_subset, multi_labels_enabled=True)
+    multi_alternative = cal_exp.explore_alternatives(x_subset, multi_labels_enabled=True)
+    assert multi_factual.get_explanation(0, 0) is not None
+    assert multi_alternative.get_explanation(0, 0) is not None
+    multi_factual.plot(show=False, uncertainty=True)
+    multi_alternative.plot(show=False)
+
+    # Guarded entrypoints should remain compatible with the same flag.
+    guarded_factual = cal_exp.explain_guarded_factual(x_subset, multi_labels_enabled=True)
+    guarded_alternative = cal_exp.explore_guarded_alternatives(x_subset, multi_labels_enabled=True)
+    assert guarded_factual is not None
+    assert guarded_alternative is not None
+
+
+@pytest.mark.viz
 def test_binary_conditional_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset and conditional bins.

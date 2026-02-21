@@ -126,7 +126,9 @@ def _sorted_guarded_bins(guarded_bins: Dict[int, List[GuardedBin]]) -> list[tupl
             key=lambda b: (
                 float(b.lower) if b.lower != -np.inf else float("-inf"),
                 float(b.upper) if b.upper != np.inf else float("inf"),
-                float(b.representative) if isinstance(b.representative, (int, float, np.number)) else 0.0,
+                float(b.representative)
+                if isinstance(b.representative, (int, float, np.number))
+                else 0.0,
             ),
         )
         for gbin in bins:
@@ -363,7 +365,13 @@ class GuardedFactualExplanation(FactualExplanation):
             "intervals_removed_guard": int(removed_guard),
             "intervals_emitted": int(sum(1 for rec in intervals if rec["emitted"])),
             "features_with_any_removed_guard": int(
-                len({rec["feature"] for rec in intervals if rec["emission_reason"] == "removed_guard"})
+                len(
+                    {
+                        rec["feature"]
+                        for rec in intervals
+                        if rec["emission_reason"] == "removed_guard"
+                    }
+                )
             ),
         }
 
@@ -575,7 +583,13 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
             "intervals_removed_guard": int(removed_guard),
             "intervals_emitted": int(sum(1 for rec in intervals if rec["emitted"])),
             "features_with_any_removed_guard": int(
-                len({rec["feature"] for rec in intervals if rec["emission_reason"] == "removed_guard"})
+                len(
+                    {
+                        rec["feature"]
+                        for rec in intervals
+                        if rec["emission_reason"] == "removed_guard"
+                    }
+                )
             ),
         }
 

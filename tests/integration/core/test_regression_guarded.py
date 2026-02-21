@@ -285,13 +285,17 @@ def test_regression_ce(regression_dataset):
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.plot(show=False, filename="test.png")
 
-    factual_explanation = cal_exp.explain_guarded_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation = cal_exp.explain_guarded_factual(
+        x_test, low_high_percentiles=(0.1, np.inf)
+    )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
-    factual_explanation = cal_exp.explain_guarded_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation = cal_exp.explain_guarded_factual(
+        x_test, low_high_percentiles=(-np.inf, 0.9)
+    )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
@@ -562,7 +566,9 @@ def test_regression_conditional_ce(regression_dataset):
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
-    alternative_explanation = cal_exp.explore_guarded_alternatives(x_test, bins=x_test[:, bin_feature])
+    alternative_explanation = cal_exp.explore_guarded_alternatives(
+        x_test, bins=x_test[:, bin_feature]
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
@@ -622,7 +628,9 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
     factual_explanation = cal_exp.explain_guarded_factual(x_test, y_test[0], bins=x_test[:, 0])
     factual_explanation.add_conjunctions()
 
-    alternative_explanation = cal_exp.explore_guarded_alternatives(x_test, y_test, bins=x_test[:, 0])
+    alternative_explanation = cal_exp.explore_guarded_alternatives(
+        x_test, y_test, bins=x_test[:, 0]
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
@@ -656,10 +664,14 @@ def test_knn_normalized_regression_ce(regression_dataset):
     factual_explanation = cal_exp.explain_guarded_factual(x_test)
     factual_explanation.add_conjunctions()
 
-    factual_explanation = cal_exp.explain_guarded_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation = cal_exp.explain_guarded_factual(
+        x_test, low_high_percentiles=(0.1, np.inf)
+    )
     factual_explanation.add_conjunctions()
 
-    factual_explanation = cal_exp.explain_guarded_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation = cal_exp.explain_guarded_factual(
+        x_test, low_high_percentiles=(-np.inf, 0.9)
+    )
     factual_explanation.add_conjunctions()
 
     alt = cal_exp.explore_guarded_alternatives(x_test)
@@ -741,10 +753,14 @@ def test_var_normalized_regression_ce(regression_dataset):
     factual_explanation = cal_exp.explain_guarded_factual(x_test)
     factual_explanation.add_conjunctions()
 
-    factual_explanation = cal_exp.explain_guarded_factual(x_test, low_high_percentiles=(0.1, np.inf))
+    factual_explanation = cal_exp.explain_guarded_factual(
+        x_test, low_high_percentiles=(0.1, np.inf)
+    )
     factual_explanation.add_conjunctions()
 
-    factual_explanation = cal_exp.explain_guarded_factual(x_test, low_high_percentiles=(-np.inf, 0.9))
+    factual_explanation = cal_exp.explain_guarded_factual(
+        x_test, low_high_percentiles=(-np.inf, 0.9)
+    )
     factual_explanation.add_conjunctions()
 
     alt = cal_exp.explore_guarded_alternatives(x_test)

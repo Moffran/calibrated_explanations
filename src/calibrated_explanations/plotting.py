@@ -1725,7 +1725,6 @@ def _plot_alternative_dict(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-
     # Set default values
     config = __setup_plot_style(style_override)
 
@@ -1746,10 +1745,8 @@ def _plot_alternative_dict(
         len(column_names_list) + 1, 1
     )  # len(explanations)//2+1, height_ratios=[2, len(explanations)//2+1, num_to_show*2+2]
 
-    labels = []
     main_column_names = []
     main_twin_column_names = []
-    counter = 0
     for i, (
         explanation,
         instance,
@@ -1779,7 +1776,6 @@ def _plot_alternative_dict(
 
         alpha_val = float(config["colors"]["alpha"])
         pos_color = colors[i]
-        neg_color = colors[i]
         ax_main = subfigures[i].add_subplot(111)
         # Plot the base prediction in black/grey
         if num_to_show > 0:
@@ -1807,7 +1803,7 @@ def _plot_alternative_dict(
 
             else:
                 venn_abers["predict"] = pred_low
-                color = __get_fill_color(venn_abers, 0.15)
+                color = pos_color
                 ax_main.fill_betweenx(
                     x,
                     [pred_low] * (num_to_show),
@@ -1823,7 +1819,7 @@ def _plot_alternative_dict(
                     xh, [pred_low] * (2), [0.5] * (2), color=color, alpha=alpha_val
                 )
                 venn_abers["predict"] = pred_high
-                color = __get_fill_color(venn_abers, 0.15)
+                color = pos_color
                 ax_main.fill_betweenx(
                     x,
                     [0.5] * (num_to_show),
@@ -1896,11 +1892,11 @@ def _plot_alternative_dict(
     ax_main_twin.set_ylabel("Instance values")
 
     if explanation.get_class_labels() is None:
-        if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+        if explanation.get_explainer().is_multiclass():
             ax_main.set_xlabel(f'Probability for class \'{explanation.prediction["classes"]}\'')
         else:
             ax_main.set_xlabel("Probability for the positive class")
-    elif explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
+    elif explanation.get_explainer().is_multiclass():
         # pylint: disable=line-too-long
         ax_main.set_xlabel(
             f'Probability for class \'{explanation.get_class_labels()[explanation.prediction["classes"]]}\''
@@ -1921,6 +1917,7 @@ def _plot_alternative_dict(
 
 
 def get_multiclass_config():
+    """Return default plotting style configuration for multiclass figures."""
     config = {}
 
     config["fonts"] = {
@@ -2033,7 +2030,7 @@ def _plot_probabilistic_dict(
             ax_positive.fill_betweenx(xj, pred, pred, color=color)
             ax_positive.fill_betweenx(xj, 0, pred, color=color)
 
-    for i, (instance, feature_weights, features_to_plot, column_names, num_to_show) in enumerate(
+    for i, (instance, feature_weights, features_to_plot, _column_names, num_to_show) in enumerate(
         zip(
             instances,
             feature_weights_list,
