@@ -97,10 +97,8 @@ def test_guarded_explain__raises_validation_error_on_predict_out_of_bounds():
     x_test = np.array([[0.5, 0.5]])
 
     result = guarded_explain(explainer, x_test, significance=0.1)
-    expl = result.explanations[0]
-    gbins = getattr(expl, "_guarded_bins", {})
-    gbin = gbins[0][0]
-    assert gbin.predict == 0.6
+    audit = result.explanations[0].get_guarded_audit()
+    assert any(np.isclose(rec["predict"], 0.6) for rec in audit["intervals"])
 
 
 def test_guarded_explain__handles_string_categorical_representatives():
@@ -128,10 +126,8 @@ def test_guarded_explain__handles_string_categorical_representatives():
     x_test = np.array([["red", 0.5]], dtype=object)
 
     result = guarded_explain(explainer, x_test, significance=0.1)
-    expl = result.explanations[0]
-    gbins = getattr(expl, "_guarded_bins", {})
-    bins = gbins[0]
-    reps = [b.representative for b in bins]
+    audit = result.explanations[0].get_guarded_audit()
+    reps = [rec["representative"] for rec in audit["intervals"] if rec["feature"] == 0]
     assert "red" in reps
     assert "blue" in reps
 
