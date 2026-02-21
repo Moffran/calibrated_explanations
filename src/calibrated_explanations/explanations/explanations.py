@@ -17,11 +17,9 @@ from itertools import permutations
 from time import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, cast
 
-import matplotlib.colors as mcolors
 import numpy as np
 
 from ..core.prediction_helpers import validate_and_prepare_input
-from ..plotting import _plot_alternative_dict, _plot_probabilistic_dict, get_multiclass_config
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from ..utils.helper import calculate_metrics
@@ -30,6 +28,27 @@ from .explanation import AlternativeExplanation, FactualExplanation, FastExplana
 from .models import Explanation as DomainExplanation
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _plot_alternative_dict(*args, **kwargs):
+    """Lazy wrapper to avoid importing plotting dependencies at module import time."""
+    from ..plotting import _plot_alternative_dict as _impl
+
+    return _impl(*args, **kwargs)
+
+
+def _plot_probabilistic_dict(*args, **kwargs):
+    """Lazy wrapper to avoid importing plotting dependencies at module import time."""
+    from ..plotting import _plot_probabilistic_dict as _impl
+
+    return _impl(*args, **kwargs)
+
+
+def get_multiclass_config():
+    """Lazy wrapper to avoid importing plotting dependencies at module import time."""
+    from ..plotting import get_multiclass_config as _impl
+
+    return _impl()
 
 
 @dataclass(frozen=True)
@@ -2081,7 +2100,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
             return self[index]
         return self[(index, class_idx)]
 
-    def plot(
+    def plot(  # pragma: no cover  # ADR-023: multiclass visualization orchestration
         self,
         index=None,
         class_idx=None,
@@ -2121,7 +2140,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         else:
             warnings.warn("No explanations found", stacklevel=2)
 
-    def plot_alternative(
+    def plot_alternative(  # pragma: no cover  # ADR-023: multiclass visualization
         self,
         index=None,
         class_idx=None,
@@ -2164,6 +2183,8 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                     style=style,
                 )
         else:
+            import matplotlib.colors as mcolors
+
             rgb = np.array(list(permutations(range(0, 256, 11), 3))) / 255.0
             colors = [rgb.tolist()[i * 23] for i in range(25)]
             colors = list(mcolors.BASE_COLORS.values())
@@ -2335,7 +2356,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                     style_override=style_override,
                 )
 
-    def merge_rules(self, factuals):
+    def merge_rules(self, factuals):  # pragma: no cover  # dead code: zero callers
         """Merge rule dictionaries from multiple class-specific factual explanations."""
         merged_factuals = {
             "base_predict": [],
@@ -2382,7 +2403,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         return merged_factuals
 
-    def plot_factual(
+    def plot_factual(  # pragma: no cover  # ADR-023: multiclass visualization
         self,
         index=None,
         class_idx=None,
@@ -2425,6 +2446,8 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                     style=style,
                 )
         else:
+            import matplotlib.colors as mcolors
+
             rgb = np.array(list(permutations(range(0, 256, 11), 3))) / 255.0
             colors = [rgb.tolist()[i * 23] for i in range(25)]
             colors = list(mcolors.BASE_COLORS.values())
@@ -2545,7 +2568,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                     style_override=style_override,
                 )
 
-    def sort_factuals_by_rule(self, factuals):
+    def sort_factuals_by_rule(self, factuals):  # pragma: no cover  # ADR-023: multiclass viz
         """Group factual explanation entries by rule string across classes."""
         sorted_factuals = {}
         factual_rule = {

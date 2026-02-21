@@ -1676,7 +1676,7 @@ def plot_proba_triangle():
 # pylint: disable=invalid-name
 
 
-def _plot_alternative_dict(
+def _plot_alternative_dict(  # pragma: no cover  # ADR-023: multiclass visualization
     explanations,
     alternatives_values,
     predicts,
@@ -1916,7 +1916,7 @@ def _plot_alternative_dict(
         plt.close(fig)
 
 
-def get_multiclass_config():
+def get_multiclass_config():  # pragma: no cover  # ADR-023: multiclass visualization
     """Return default plotting style configuration for multiclass figures."""
     config = {}
 
@@ -1939,7 +1939,7 @@ def get_multiclass_config():
     return config
 
 
-def _plot_probabilistic_dict(
+def _plot_probabilistic_dict(  # pragma: no cover  # ADR-023: multiclass visualization
     explanations,
     instances,
     predicts,

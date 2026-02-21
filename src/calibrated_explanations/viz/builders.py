@@ -430,7 +430,7 @@ def build_factual_regression_spec(**kwargs) -> PlotSpec:
     return build_regression_bars_spec(**kwargs)
 
 
-def build_alternative_probabilistic_spec(
+def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz builder
     *,
     title: str | None,
     predict: dict[str, float],
@@ -685,7 +685,7 @@ def build_alternative_probabilistic_spec(
     return spec
 
 
-def build_alternative_regression_spec(
+def build_alternative_regression_spec(  # pragma: no cover  # ADR-023: viz builder
     *,
     title: str | None,
     predict: dict[str, float],
