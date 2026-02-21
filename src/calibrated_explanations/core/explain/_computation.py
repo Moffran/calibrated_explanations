@@ -327,7 +327,7 @@ def explain_predict_step(
     *,
     interval_summary: Any | None = None,
     feature_filter_per_instance_ignore: Any | None = None,
-    labels=None
+    labels=None,
 ) -> ExplainPredictStepResult:
     """Execute the baseline prediction and perturbation planning step.
 
@@ -411,8 +411,8 @@ def explain_predict_step(
         "high": base_high,
         "classes": (predicted_class if is_mc_property else np.ones(base_predict.shape)),
     }
-    if labels is not None : # Added to soppurt a specific classs label explain of multi-class
-        prediction['classes']= np.array( labels)
+    if labels is not None:  # Added to soppurt a specific classs label explain of multi-class
+        prediction["classes"] = np.array(labels)
     if explainer.mode == "classification":  # store full calibrated probability matrix
         is_mc = (
             explainer.is_multiclass()

@@ -4,9 +4,9 @@ Follow these curated paths to run calibrated explanations without any optional
 telemetry or plugin prerequisites. Each quickstart mirrors the README flow and
 links directly to the companion notebook.
 
-| Binary & multiclass classification | Probabilistic regression |
-| --- | --- |
-| [Classification quickstart](quickstart_classification.md)<br>[Demo notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_binary_classification.ipynb) | [Regression quickstart](quickstart_regression.md)<br>[Probabilistic regression notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_probabilistic_regression.ipynb) |
+| Binary & multiclass classification | Probabilistic regression | Guarded (in-distribution) |
+| --- | --- | --- |
+| [Classification quickstart](quickstart_classification.md)<br>[Demo notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_binary_classification.ipynb) | [Regression quickstart](quickstart_regression.md)<br>[Probabilistic regression notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_probabilistic_regression.ipynb) | [Guarded quickstart](quickstart_guarded.md)<br>In-distribution filtering for trustworthy rules |
 
 > 📈 **Interval regression signpost:** The regression quickstart highlights how
 > calibrated interval outputs complement probabilistic thresholds, with links to
@@ -47,6 +47,7 @@ installation
 quick_api
 quickstart_classification
 quickstart_regression
+quickstart_guarded
 ../getting_started_60s
 ce_first_agent_guide
 troubleshooting

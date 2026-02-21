@@ -1,0 +1,451 @@
+"""Unit tests for guarded explanation APIs and guard utilities."""
+
+import numpy as np
+import pytest
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.explanations import (
+    AlternativeExplanations,
+    CalibratedExplanations,
+)
+from calibrated_explanations.explanations.guarded_explanation import (
+    GuardedAlternativeExplanation,
+    GuardedBin,
+    GuardedFactualExplanation,
+)
+from calibrated_explanations.utils.distribution_guard import InDistributionGuard
+
+
+def _make_classification_explainer(*, seed: int = 0) -> tuple[CalibratedExplainer, np.ndarray]:
+    data = load_iris()
+    x_train, x_cal, y_train, y_cal = train_test_split(
+        data.data,
+        data.target,
+        test_size=0.2,
+        random_state=seed,
+        stratify=data.target,
+    )
+
+    model = RandomForestClassifier(n_estimators=15, random_state=seed, max_depth=3)
+    model.fit(x_train, y_train)
+
+    explainer = CalibratedExplainer(model, x_cal, y_cal, mode="classification", seed=seed)
+    return explainer, x_cal
+
+
+# ---------------------------------------------------------------------------
+# Factual guarded explanations
+# ---------------------------------------------------------------------------
+
+
+def test_explain_guarded_factual__returns_calibrated_explanations_container():
+    """Guarded factual explain returns container + guarded explanation type."""
+    explainer, x_cal = _make_classification_explainer(seed=1)
+
+    result = explainer.explain_guarded_factual(
+        x_cal[:2],
+        significance=0.2,
+        merge_adjacent=True,
+        n_neighbors=3,
+        normalize_guard=True,
+    )
+
+    assert isinstance(result, CalibratedExplanations)
+    assert len(result) == 2
+
+    for expl in result.explanations:
+        assert isinstance(expl, GuardedFactualExplanation)
+        assert hasattr(expl, "rules")
+        assert expl.has_rules
+
+
+def test_explain_guarded_factual__get_rules_returns_dict():
+    """Guarded factual explanation exposes a rules dict."""
+    explainer, x_cal = _make_classification_explainer(seed=3)
+
+    result = explainer.explain_guarded_factual(
+        x_cal[:1],
+        significance=0.3,
+        n_neighbors=3,
+    )
+
+    expl = result.explanations[0]
+    rules = expl.get_rules()
+    assert isinstance(rules, dict)
+    assert "rule" in rules
+    assert "predict" in rules
+    assert "weight" in rules
+
+
+def test_explain_guarded_factual__defaults_use_bonferroni_to_false(monkeypatch):
+    """Guarded factual should pass use_bonferroni=False by default."""
+    explainer, x_cal = _make_classification_explainer(seed=13)
+    captured: dict[str, object] = {}
+
+    def _fake_invoke(**kwargs):
+        captured.update(kwargs)
+        return "ok"
+
+    monkeypatch.setattr(explainer.explanation_orchestrator, "invoke_guarded_factual", _fake_invoke)
+
+    result = explainer.explain_guarded_factual(x_cal[:1], significance=0.2)
+
+    assert result == "ok"
+    assert captured["use_bonferroni"] is False
+
+
+def test_explore_guarded_alternatives__allows_enabling_bonferroni(monkeypatch):
+    """Guarded alternatives should pass through explicit Bonferroni opt-in."""
+    explainer, x_cal = _make_classification_explainer(seed=14)
+    captured: dict[str, object] = {}
+
+    def _fake_invoke(**kwargs):
+        captured.update(kwargs)
+        return "ok"
+
+    monkeypatch.setattr(
+        explainer.explanation_orchestrator,
+        "invoke_guarded_alternative",
+        _fake_invoke,
+    )
+
+    result = explainer.explore_guarded_alternatives(
+        x_cal[:1], significance=0.2, use_bonferroni=True
+    )
+
+    assert result == "ok"
+    assert captured["use_bonferroni"] is True
+
+
+# ---------------------------------------------------------------------------
+# Alternative guarded explanations
+# ---------------------------------------------------------------------------
+
+
+def test_explore_guarded_alternatives__returns_alternative_explanations_container():
+    """Guarded alternatives returns alternative container + guarded type."""
+    explainer, x_cal = _make_classification_explainer(seed=2)
+
+    result = explainer.explore_guarded_alternatives(
+        x_cal[:1],
+        significance=0.2,
+        merge_adjacent=False,
+        n_neighbors=3,
+        normalize_guard=True,
+    )
+
+    assert isinstance(result, AlternativeExplanations)
+    assert len(result) == 1
+
+    for expl in result.explanations:
+        assert isinstance(expl, GuardedAlternativeExplanation)
+        assert hasattr(expl, "rules")
+        assert expl.has_rules
+
+
+def test_explore_guarded_alternatives__get_rules_returns_dict():
+    """Guarded alternative explanation exposes a rules dict."""
+    explainer, x_cal = _make_classification_explainer(seed=4)
+
+    result = explainer.explore_guarded_alternatives(
+        x_cal[:1],
+        significance=0.3,
+        n_neighbors=3,
+    )
+
+    expl = result.explanations[0]
+    rules = expl.get_rules()
+    assert isinstance(rules, dict)
+    assert "rule" in rules
+    assert "predict" in rules
+
+
+def test_explore_guarded_alternatives__should_run_merge_adjacent_branch_in_alternative_mode():
+    """Alternative guarded explain executes merge-adjacent branching."""
+    explainer, x_cal = _make_classification_explainer(seed=7)
+
+    result = explainer.explore_guarded_alternatives(
+        x_cal[:1],
+        significance=0.2,
+        merge_adjacent=True,
+        n_neighbors=3,
+        normalize_guard=True,
+    )
+
+    assert isinstance(result, AlternativeExplanations)
+    assert len(result) == 1
+
+
+# ---------------------------------------------------------------------------
+# InDistributionGuard
+# ---------------------------------------------------------------------------
+
+
+def test_in_distribution_guard__should_compute_scores_and_p_values():
+    """InDistributionGuard returns scores, p-values, and mask."""
+    x_cal = np.array(
+        [
+            [0.0, 0.0],
+            [1.0, 1.0],
+            [2.0, 2.0],
+            [3.0, 3.0],
+        ]
+    )
+    guard = InDistributionGuard(x_cal, n_neighbors=2, normalize=False)
+
+    x_test = np.array([[0.0, 0.0], [10.0, 10.0]])
+    scores = guard.nonconformity_scores(x_test)
+    p_vals = guard.p_values(x_test)
+    conforming = guard.is_conforming(x_test, significance=0.25)
+
+    assert scores.shape == (2,)
+    assert p_vals.shape == (2,)
+    assert np.all((p_vals >= 0.0) & (p_vals <= 1.0))
+    assert conforming.dtype == bool
+
+
+def test_in_distribution_guard__larger_significance_is_stricter():
+    """Verify that larger significance = stricter (fewer accepted)."""
+    x_cal = np.array(
+        [
+            [0.0, 0.0],
+            [1.0, 1.0],
+            [2.0, 2.0],
+            [3.0, 3.0],
+            [4.0, 4.0],
+        ]
+    )
+    guard = InDistributionGuard(x_cal, n_neighbors=2, normalize=False)
+
+    x_test = np.array([[1.5, 1.5], [10.0, 10.0]])
+
+    # Lenient: significance=0.05 -> threshold = 0.05
+    conforming_lenient = guard.is_conforming(x_test, significance=0.05)
+    # Strict: significance=0.5 -> threshold = 0.5
+    conforming_strict = guard.is_conforming(x_test, significance=0.5)
+
+    # Strict should accept fewer or equal instances
+    assert conforming_strict.sum() <= conforming_lenient.sum()
+
+
+# ---------------------------------------------------------------------------
+# _use_plugin warning
+# ---------------------------------------------------------------------------
+
+
+def test_use_plugin_false__emits_warning_for_guarded_factual():
+    """Guarded factual warns when _use_plugin is passed."""
+    explainer, x_cal = _make_classification_explainer(seed=5)
+
+    with pytest.warns(UserWarning, match="_use_plugin has no effect"):
+        explainer.explain_guarded_factual(
+            x_cal[:1],
+            _use_plugin=False,
+            verbose=True,
+            significance=0.3,
+            n_neighbors=3,
+        )
+
+
+def test_use_plugin_false__emits_warning_for_guarded_alternatives():
+    """Guarded alternatives warns when _use_plugin is passed."""
+    explainer, x_cal = _make_classification_explainer(seed=6)
+
+    with pytest.warns(UserWarning, match="_use_plugin has no effect"):
+        explainer.explore_guarded_alternatives(
+            x_cal[:1],
+            _use_plugin=False,
+            verbose=True,
+            significance=0.3,
+            n_neighbors=3,
+        )
+
+
+class _DummyExplainer:
+    def __init__(self) -> None:
+        self.y_cal = np.array([0, 1])
+        self.mode = "classification"
+        self.feature_names = ["f0", "f1"]
+        self.class_labels = [0, 1]
+
+    def is_multiclass(self) -> bool:
+        """Return whether the dummy explainer represents multiclass."""
+        return False
+
+
+class _DummyCalibratedExplanations:
+    def __init__(self, explainer: _DummyExplainer) -> None:
+        self.explainer = explainer
+        self.low_high_percentiles = None
+
+    def get_explainer(self) -> _DummyExplainer:
+        """Return the underlying explainer (compat with explanation base class)."""
+        return self.explainer
+
+
+def test_guarded_factual_explanation__should_build_conditions_and_warn_when_nonconforming():
+    """Guarded factual builds interval conditions and warns if non-conforming."""
+    calibrated_explanations = _DummyCalibratedExplanations(_DummyExplainer())
+    x_instance = np.array([0.5, 2.0])
+
+    guarded_bins = {
+        0: [
+            GuardedBin(
+                lower=-np.inf,
+                upper=1.0,
+                representative=0.25,
+                predict=0.6,
+                low=0.55,
+                high=0.65,
+                conforming=False,
+                p_value=0.01,
+                is_factual=True,
+            )
+        ],
+        1: [
+            GuardedBin(
+                lower=1.0,
+                upper=np.inf,
+                representative=2.0,
+                predict=0.8,
+                low=0.75,
+                high=0.85,
+                conforming=True,
+                p_value=0.9,
+                is_factual=True,
+            )
+        ],
+    }
+
+    with pytest.warns(UserWarning, match="Dropping non-conforming factual bin"):
+        explanation = GuardedFactualExplanation(
+            calibrated_explanations,
+            0,
+            x_instance,
+            binned={},
+            feature_weights={
+                "predict": np.array([[0.0, 0.0]]),
+                "low": np.array([[0.0, 0.0]]),
+                "high": np.array([[0.0, 0.0]]),
+            },
+            feature_predict={
+                "predict": np.array([[0.8, 0.7]]),
+                "low": np.array([[0.7, 0.65]]),
+                "high": np.array([[0.9, 0.75]]),
+            },
+            prediction={
+                "predict": np.array([0.8]),
+                "low": np.array([0.7]),
+                "high": np.array([0.9]),
+            },
+            guarded_bins=guarded_bins,
+            feature_names=["f0", "f1"],
+            categorical_features={1},
+            verbose=True,
+        )
+
+    conditions = explanation.define_conditions()
+    assert conditions[0].startswith("f0 <=")
+    assert conditions[1] == "f1 = 2.0"
+
+    rules = explanation.get_rules()
+    assert rules["base_predict"] == [0.8]
+    assert len(rules["rule"]) == 1
+
+
+def test_guarded_factual_explanation__should_keep_base_prediction_when_no_rules():
+    """Guarded factual with zero accepted rules should still keep CE baseline payload."""
+    calibrated_explanations = _DummyCalibratedExplanations(_DummyExplainer())
+    x_instance = np.array([0.5, 2.0])
+
+    explanation = GuardedFactualExplanation(
+        calibrated_explanations,
+        0,
+        x_instance,
+        binned={},
+        feature_weights={
+            "predict": np.array([0.8, 0.8]),
+            "low": np.array([0.7, 0.7]),
+            "high": np.array([0.9, 0.9]),
+        },
+        feature_predict={
+            "predict": np.array([0.8, 0.8]),
+            "low": np.array([0.7, 0.7]),
+            "high": np.array([0.9, 0.9]),
+        },
+        prediction={
+            "predict": np.array([0.8]),
+            "low": np.array([0.7]),
+            "high": np.array([0.9]),
+            "classes": np.array([1.0]),
+        },
+        guarded_bins={},
+        feature_names=["f0", "f1"],
+    )
+
+    rules = explanation.get_rules()
+    assert rules["rule"] == []
+    assert rules["base_predict"] == [0.8]
+    assert rules["base_predict_low"] == [0.7]
+    assert rules["base_predict_high"] == [0.9]
+
+
+def test_guarded_alternative_explanation__should_join_conditions_and_skip_baseline_duplicate_bins():
+    """Guarded alternatives join conditions and skip baseline-equal bins."""
+    calibrated_explanations = _DummyCalibratedExplanations(_DummyExplainer())
+    x_instance = np.array([0.5, 2.0])
+
+    guarded_bins = {
+        0: [
+            GuardedBin(
+                lower=-np.inf,
+                upper=1.0,
+                representative=0.25,
+                predict=0.8,
+                low=0.7,
+                high=0.9,
+                conforming=True,
+                p_value=0.9,
+                is_factual=False,
+            ),
+            GuardedBin(
+                lower=1.0,
+                upper=np.inf,
+                representative=1.5,
+                predict=0.9,
+                low=0.85,
+                high=0.95,
+                conforming=True,
+                p_value=0.9,
+                is_factual=False,
+            ),
+        ]
+    }
+
+    explanation = GuardedAlternativeExplanation(
+        calibrated_explanations,
+        0,
+        x_instance,
+        binned={},
+        feature_weights={},
+        feature_predict={},
+        prediction={
+            "predict": np.array([0.8]),
+            "low": np.array([0.7]),
+            "high": np.array([0.9]),
+        },
+        guarded_bins=guarded_bins,
+        feature_names=["f0", "f1"],
+    )
+
+    conditions = explanation.define_conditions()
+    assert "|" in conditions[0]
+    assert conditions[0].startswith("f0 <=")
+    assert conditions[1] == ""
+
+    rules = explanation.get_rules()
+    assert rules["base_predict"] == [0.8]
+    assert len(rules["rule"]) == 1

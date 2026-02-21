@@ -13,6 +13,7 @@ The guard implements the standard conformal anomaly detection framework
     p_value(x) = |{cal_i : alpha(cal_i) >= alpha(x)}| / n_cal
 
 An instance is considered *conforming* when ``p_value(x) >= significance``.
+A larger ``significance`` yields a stricter test (fewer instances accepted).
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ class InDistributionGuard:
     A conformal p-value is then derived by comparing that score against the
     empirical distribution of calibration scores (leave-one-out on the cal
     set).  Instances with ``p_value < significance`` are flagged as OOD.
+    A larger ``significance`` yields a stricter test (fewer instances accepted).
 
     Parameters
     ----------
@@ -37,17 +39,12 @@ class InDistributionGuard:
         Number of nearest neighbours used for the non-conformity measure.
     metric : str or callable, default='euclidean'
         Distance metric passed to ``sklearn.neighbors.NearestNeighbors``.
-    leaf_strategy : {'median', 'percentiles'}, default='median'
-        How to pick representative values from a discretiser leaf when
-        testing conformity of an entire bin.
+    categorical_features : sequence of int, optional
+        Column indices that should be treated as categorical.
 
-        ``'median'``
-            Use only the median of the calibration samples in the leaf.
-            Fastest; recommended for production use.
-
-        ``'percentiles'``
-            Use the 25th, 50th, and 75th percentile values.
-            More thorough but ~3× slower per leaf.
+        These columns are one-hot encoded before computing KNN distances.
+        This avoids imposing an arbitrary geometry on integer-encoded
+        category IDs.
 
     normalize : bool, default=True
         Apply per-feature min-max normalisation before computing distances
@@ -61,16 +58,28 @@ class InDistributionGuard:
         *,
         n_neighbors: int = 5,
         metric: str = "euclidean",
-        leaf_strategy: str = "median",
         normalize: bool = True,
+        categorical_features: np.ndarray | list[int] | tuple[int, ...] | None = None,
     ) -> None:
-        self.x_cal = np.asarray(x_cal, dtype=float)
+        self.x_cal = np.asarray(x_cal)
+        if int(n_neighbors) < 1:
+            raise ValueError("n_neighbors must be >= 1")
         self.n_neighbors = n_neighbors
         self.metric = metric
-        self.leaf_strategy = leaf_strategy
         self.normalize = normalize
+        requested_categorical = (
+            tuple(int(v) for v in categorical_features)
+            if categorical_features is not None
+            else tuple()
+        )
+        n_features = int(self.x_cal.shape[1])
+        cat = sorted({i for i in requested_categorical if 0 <= i < n_features})
+        self.categorical_features = tuple(cat)
+        cat_set = set(cat)
+        self._numeric_features = tuple(i for i in range(n_features) if i not in cat_set)
         self._scale_min: np.ndarray | None = None
         self._scale_range: np.ndarray | None = None
+        self._ohe = None
         self._fit()
 
     # ------------------------------------------------------------------
@@ -81,7 +90,7 @@ class InDistributionGuard:
         """Fit KNN on calibration set and precompute per-point scores."""
         from sklearn.neighbors import NearestNeighbors  # local to avoid import at module level
 
-        x = self._scale(self.x_cal)
+        x = self._preprocess(self.x_cal)
         n_cal = x.shape[0]
         # k+1 so the point itself (distance 0) can be excluded from the k-th neighbour
         k_actual = min(self.n_neighbors + 1, n_cal)
@@ -95,15 +104,65 @@ class InDistributionGuard:
         score_col = min(self.n_neighbors, k_actual - 1)
         self._cal_scores = dists[:, score_col]
 
+    def _preprocess(self, x: np.ndarray) -> np.ndarray:
+        """Preprocess data into numeric vectors suitable for distance computations."""
+        x_arr = np.asarray(x)
+        if x_arr.ndim != 2:
+            raise ValueError("x must be a 2D array")
+        if x_arr.shape[1] != self.x_cal.shape[1]:
+            raise ValueError(
+                "x must have the same number of features as x_cal "
+                f"(got {x_arr.shape[1]} vs {self.x_cal.shape[1]})"
+            )
+
+        if not self.categorical_features:
+            return self._scale(np.asarray(x_arr, dtype=float))
+
+        num = list(self._numeric_features)
+        cat = list(self.categorical_features)
+
+        if num:
+            x_num = self._scale(np.asarray(x_arr[:, num], dtype=float))
+        else:
+            x_num = np.zeros((x_arr.shape[0], 0), dtype=float)
+
+        if cat:
+            from sklearn.preprocessing import OneHotEncoder  # local import
+
+            x_cat_raw = np.asarray(x_arr[:, cat], dtype=object)
+            if self._ohe is None:
+                try:
+                    self._ohe = OneHotEncoder(
+                        handle_unknown="ignore",
+                        sparse_output=False,
+                        dtype=float,
+                    )
+                except TypeError:  # pragma: no cover
+                    self._ohe = OneHotEncoder(
+                        handle_unknown="ignore",
+                        sparse=False,
+                        dtype=float,
+                    )
+                self._ohe.fit(x_cat_raw)
+            x_cat = self._ohe.transform(x_cat_raw)
+        else:
+            x_cat = np.zeros((x_arr.shape[0], 0), dtype=float)
+
+        return np.hstack([x_num, x_cat])
+
     def _scale(self, x: np.ndarray) -> np.ndarray:
         """Return (optionally) min-max normalised version of *x*."""
         if not self.normalize:
             return x
+        if x.size == 0:
+            return x
         if self._scale_min is None:
-            self._scale_min = self.x_cal.min(axis=0)
-            self._scale_range = np.clip(
-                self.x_cal.max(axis=0) - self._scale_min, 1e-12, None
-            )
+            if self._numeric_features:
+                x_cal = np.asarray(self.x_cal[:, self._numeric_features], dtype=float)
+            else:
+                x_cal = np.asarray(self.x_cal, dtype=float)
+            self._scale_min = x_cal.min(axis=0)
+            self._scale_range = np.clip(x_cal.max(axis=0) - self._scale_min, 1e-12, None)
         return (x - self._scale_min) / self._scale_range
 
     # ------------------------------------------------------------------
@@ -122,7 +181,7 @@ class InDistributionGuard:
         scores : np.ndarray of shape (n_samples,)
             Distance to the k-th nearest calibration neighbour.
         """
-        x = self._scale(np.asarray(x_test, dtype=float))
+        x = self._preprocess(x_test)
         k_actual = self._knn.n_neighbors
         # For test instances, we do NOT skip the zeroth column (no self-neighbour)
         score_col = min(self.n_neighbors - 1, k_actual - 1)
@@ -142,85 +201,25 @@ class InDistributionGuard:
         -------
         p_vals : np.ndarray of shape (n_samples,)
         """
-        test_scores = self.nonconformity_scores(np.asarray(x_test, dtype=float))
+        test_scores = self.nonconformity_scores(x_test)
         # Vectorised comparison: (n_cal, 1) >= (1, n_test) -> (n_cal, n_test)
-        return np.mean(
-            self._cal_scores[:, np.newaxis] >= test_scores[np.newaxis, :], axis=0
-        )
+        return np.mean(self._cal_scores[:, np.newaxis] >= test_scores[np.newaxis, :], axis=0)
 
-    def is_conforming(
-        self, x_test: np.ndarray, significance: float = 0.1
-    ) -> np.ndarray:
+    def is_conforming(self, x_test: np.ndarray, significance: float = 0.1) -> np.ndarray:
         """Return a boolean mask indicating which test instances are in-distribution.
 
         Parameters
         ----------
         x_test : array-like of shape (n_samples, n_features)
         significance : float, default=0.1
-            Instances with ``p_value < significance`` are flagged as OOD.
+            Acceptable false-OOD rate.  Instances with
+            ``p_value < significance`` are flagged as OOD.  A larger
+            value yields a stricter test (fewer instances accepted).
 
         Returns
         -------
         conforming : np.ndarray of bool, shape (n_samples,)
         """
-        return self.p_values(np.asarray(x_test, dtype=float)) >= significance
-
-    def leaf_conforming_fraction(
-        self,
-        feature_idx: int,
-        lower: float,
-        upper: float,
-        x_instance: np.ndarray,
-        significance: float = 0.1,
-    ) -> tuple[float, np.ndarray]:
-        """Test a single discretiser leaf for in-distribution conformity.
-
-        Picks representative feature values from the calibration samples that
-        fall inside the leaf ``(lower, upper]``, builds perturbed instances by
-        swapping only ``feature_idx`` while keeping all other features at their
-        original values, then tests conformity.
-
-        Parameters
-        ----------
-        feature_idx : int
-            Feature being varied.
-        lower : float
-            Lower bound of the leaf (may be ``-np.inf``).
-        upper : float
-            Upper bound of the leaf (may be ``np.inf``).
-        x_instance : np.ndarray of shape (n_features,)
-            Original instance; all features except *feature_idx* stay fixed.
-        significance : float
-
-        Returns
-        -------
-        fraction : float
-            Fraction of representative values whose perturbed instances are
-            conforming.  ``0.0`` when the leaf has no calibration samples.
-        representative_values : np.ndarray
-            The candidate values sampled from the leaf.
-        """
-        feat_vals = self.x_cal[:, feature_idx]
-
-        if lower == -np.inf and upper == np.inf:
-            in_leaf = np.ones(len(feat_vals), dtype=bool)
-        elif lower == -np.inf:
-            in_leaf = feat_vals <= upper
-        elif upper == np.inf:
-            in_leaf = feat_vals > lower
-        else:
-            in_leaf = (feat_vals > lower) & (feat_vals <= upper)
-
-        cal_in_leaf = feat_vals[in_leaf]
-        if cal_in_leaf.size == 0:
-            return 0.0, np.array([])
-
-        if self.leaf_strategy == "median":
-            candidates = np.array([np.median(cal_in_leaf)])
-        else:  # percentiles
-            candidates = np.unique(np.percentile(cal_in_leaf, [25, 50, 75]))
-
-        x_pert = np.tile(x_instance, (len(candidates), 1))
-        x_pert[:, feature_idx] = candidates
-        conforming_mask = self.is_conforming(x_pert, significance)
-        return float(conforming_mask.mean()), candidates
+        if not 0 < float(significance) < 1:
+            raise ValueError("significance must be strictly between 0 and 1")
+        return self.p_values(x_test) >= significance

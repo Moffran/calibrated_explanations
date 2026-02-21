@@ -177,7 +177,7 @@ def _run_one_setting(
 
 def run_dataset(dataset_name: str, *, config: EnsureRunConfig) -> dict:
     ds = load_regression_dataset_from_txt(dataset_name)
-    
+
     ok, reason = can_run_dataset(n_samples=int(ds.X.shape[0]), task="regression", config=config)
     if not ok:
         return {"meta": {"name": ds.name, "skipped": True, "reason": reason}, "plain": {}, "probabilistic": {}}
