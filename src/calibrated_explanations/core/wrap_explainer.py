@@ -22,21 +22,20 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 
 from crepes.extras import MondrianCategorizer
 
-from src.calibrated_explanations.api.params import (
+from ..api.params import (
     ALIAS_MAP,
     validate_param_combination,
     warn_on_aliases,
 )
-from src.calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
-from src.calibrated_explanations.utils.exceptions import (
+from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
+from ..utils.exceptions import (
     DataShapeError,
     IncompatibleStateError,
     NotFittedError,
     ValidationError,
 )
-
-from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # circular during split
+from .validation import validate_inputs_matrix, validate_model
 
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking
     from calibrated_explanations.api.config import ExplainerConfig

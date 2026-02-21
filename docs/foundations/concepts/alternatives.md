@@ -140,8 +140,20 @@ explainer.plot(X_test, y_test, show=False)
 explainer.plot(X_test, y_test, threshold=150.0, show=False)
 ```
 
+## See also
+
+```{admonition} Guarded alternatives
+:class: seealso
+
+For an in-distribution-aware variant that filters out implausible perturbations
+before generating alternatives, see {doc}`guarded_explanations`. Guarded
+alternatives use conformal anomaly detection to ensure every suggested
+intervention is plausible given the calibration data.
+```
+
 ## Cross-references
 
 - Playbook: {doc}`../../practitioner/playbooks/ensured-explanations`
 - Interpretation guide: {doc}`../how-to/interpret_explanations`
 - Capability manifest: {doc}`../../tasks/capabilities`
+- Guarded explanations: {doc}`guarded_explanations`

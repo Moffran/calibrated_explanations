@@ -25,7 +25,7 @@ import numpy as np
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 if TYPE_CHECKING:
-    from ..explanations import AlternativeExplanations, CalibratedExplanations, MultiClassCalibratedExplanations
+    from ..explanations import AlternativeExplanations, CalibratedExplanations
     from ..plugins.manager import PluginManager
 
 try:
@@ -195,12 +195,13 @@ class CalibratedExplainer:
             logging.getLogger(__name__).info(
                 "condition_source not provided; defaulting to 'prediction' (v0.10.3)"
             )
-            warnings.warn(
-                "condition_source not provided; defaulting to 'prediction' in v0.10.3. "
-                "Pass condition_source='observed' to retain previous behaviour.",
-                UserWarning,
-                stacklevel=2,
-            )
+            if self.verbose:
+                warnings.warn(
+                    "condition_source not provided; defaulting to 'prediction' in v0.10.3. "
+                    "Pass condition_source='observed' to retain previous behaviour.",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         if self.condition_source not in {"observed", "prediction"}:
             raise ValidationError(
@@ -1661,29 +1662,6 @@ class CalibratedExplainer:
         """Return the interval calibrator from the prediction orchestrator."""
         return self.prediction_orchestrator.obtain_interval_calibrator(fast=fast, metadata=metadata)
 
-    def predict_calibrated(
-        self,
-        x: Any,
-        threshold: float | None = None,
-        low_high_percentiles: tuple[float, float] = (5, 95),
-        classes: Any = None,
-        bins: Any = None,
-        feature: int | None = None,
-        interval_summary: Any | None = None,
-        **kwargs,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
-        """Predict calibrated values and intervals."""
-        return self._predict(
-            x,
-            threshold=threshold,
-            low_high_percentiles=low_high_percentiles,
-            classes=classes,
-            bins=bins,
-            feature=feature,
-            interval_summary=interval_summary,
-            **kwargs,
-        )
-
     def preload_lime(self, x_cal=None):
         """Materialize LIME explainer artifacts.
 
@@ -1713,124 +1691,6 @@ class CalibratedExplainer:
             The SHAP explainer and reference explanation.
         """
         return self._shap_helper.preload(num_test=num_test)
-
-    def _predict(self, *args, **kwargs) -> Any:
-        """Delegate to predict_internal."""
-        return self.predict_internal(*args, **kwargs)
-
-    def predict_internal(
-        self,
-        x,
-        threshold=None,
-        low_high_percentiles=(5, 95),
-        classes=None,
-        bins=None,
-        feature=None,
-        interval_summary=None,
-        **kwargs,
-    ):
-        """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
-        # Internal skip flag: when True, bypass reject orchestration. This is
-        # used by internal callers (e.g., RejectOrchestrator) to obtain a raw
-        # prediction without re-entering the reject flow.
-        if "_ce_skip_reject" in kwargs:
-            # consume internal-only flag and proceed without reject handling
-            kwargs.pop("_ce_skip_reject")
-            orchestrator = self.prediction_orchestrator
-            if hasattr(orchestrator, "predict_internal"):
-                return orchestrator.predict_internal(
-                    x,
-                    threshold=threshold,
-                    low_high_percentiles=low_high_percentiles,
-                    classes=classes,
-                    bins=bins,
-                    feature=feature,
-                    interval_summary=interval_summary,
-                    **kwargs,
-                )
-            return orchestrator.predict(
-                x,
-                threshold=threshold,
-                low_high_percentiles=low_high_percentiles,
-                classes=classes,
-                bins=bins,
-                feature=feature,
-                interval_summary=interval_summary,
-                **kwargs,
-            )
-
-        # Support per-call reject policy selection. When a non-NONE policy is
-        # selected, delegate to the RejectOrchestrator and return a RejectResult
-        # envelope. Per-call policy overrides the explainer-level default.
-
-        # Pop per-call policy if provided so downstream orchestrators don't
-        # receive unexpected kwargs. Only an explicit per-call policy will
-        # trigger reject orchestration here. Explainer-level defaults are
-        # handled at the top-level explanation APIs (e.g., `explain_factual`).
-        per_call_policy = None
-        if "reject_policy" in kwargs:
-            per_call_policy = kwargs.pop("reject_policy")
-
-        if per_call_policy is None:
-            effective_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
-        else:
-            try:
-                effective_policy = RejectPolicy(per_call_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
-
-        if effective_policy is not None and effective_policy is not RejectPolicy.NONE:
-            # Ensure reject orchestrator is available (implicit enable)
-            try:
-                _ = self.reject_orchestrator
-            except Exception:  # adr002_allow
-                with contextlib.suppress(Exception):
-                    self.plugin_manager.initialize_orchestrators()
-
-            orchestrator = self.prediction_orchestrator
-
-            def _predict_fn(x_subset, **kw):
-                # Call the lower-level orchestrator implementation to avoid
-                # recursing back into CalibratedExplainer.predict.
-                if hasattr(orchestrator, "predict_internal"):
-                    return orchestrator.predict_internal(x_subset, **kw)
-                return orchestrator.predict(x_subset, **kw)
-
-            return self.reject_orchestrator.apply_policy(
-                effective_policy,
-                x,
-                explain_fn=_predict_fn,
-                bins=bins,
-                interval_summary=interval_summary,
-                **kwargs,
-            )
-        # Delegate directly to the orchestrator implementation method so
-        # tests that inject a minimal/mock PluginManager (with a
-        # `_prediction_orchestrator` stub) can set `_predict_impl.return_value`.
-        # The public `.predict` may be a MagicMock in tests; calling the
-        # implementation ensures the intended behavior is exercised.
-        orchestrator = self.prediction_orchestrator
-        if hasattr(orchestrator, "predict_internal"):
-            return orchestrator.predict_internal(
-                x,
-                threshold=threshold,
-                low_high_percentiles=low_high_percentiles,
-                classes=classes,
-                bins=bins,
-                feature=feature,
-                interval_summary=interval_summary,
-                **kwargs,
-            )
-        return orchestrator.predict(
-            x,
-            threshold=threshold,
-            low_high_percentiles=low_high_percentiles,
-            classes=classes,
-            bins=bins,
-            feature=feature,
-            interval_summary=interval_summary,
-            **kwargs,
-        )
 
     def explain_factual(
         self,
@@ -1952,10 +1812,11 @@ class CalibratedExplainer:
         *,
         _use_plugin: bool = True,
         significance: float = 0.1,
+        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
-        leaf_strategy: str = "median",
         normalize_guard: bool = True,
+        verbose: bool = False,
         **kwargs,
     ):
         """Create guarded factual explanations that only use in-distribution perturbations.
@@ -1985,47 +1846,58 @@ class CalibratedExplainer:
         features_to_ignore : sequence of int or str, optional
             Features to exclude from explanations.
         significance : float, default=0.1
-            Conformity significance level.  Bins with p-value < significance
-            are considered out-of-distribution and are not included.
+            Acceptable false-OOD rate. Bins are considered conforming when
+            ``p_value >= significance``; bins below that threshold are
+            treated as out-of-distribution and not included.
+        use_bonferroni : bool, default=False
+            When ``True``, apply per-feature Bonferroni correction and test
+            each bin of feature ``f`` at ``significance / n_bins(f)``.
         merge_adjacent : bool, default=False
             When ``True``, merge adjacent conforming bins into a single wider
             interval condition.
         n_neighbors : int, default=5
             Number of nearest calibration neighbours used by the in-distribution
             guard for computing non-conformity scores.
-        leaf_strategy : {'median', 'percentiles'}, default='median'
-            How to pick representative values from a discretiser leaf.
-            ``'median'`` is fastest; ``'percentiles'`` tests three quantiles.
         normalize_guard : bool, default=True
             Apply per-feature min-max normalisation before computing KNN
             distances inside the guard.
+        verbose : bool, default=False
+            When True, emit UserWarnings for guarded-explanation diagnostics.
         **kwargs : dict
             Additional arguments (reserved for future use).
 
         Returns
         -------
-        GuardedExplanations
-            A :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanations`
-            object in ``'factual'`` mode containing one
-            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanation`
-            per instance.
+        CalibratedExplanations
+            A :class:`~calibrated_explanations.CalibratedExplanations` container
+            whose individual explanations are
+            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`
+            instances.
         """
+        if not _use_plugin and verbose:
+            warnings.warn(
+                "_use_plugin has no effect on guarded explanation methods",
+                UserWarning,
+                stacklevel=2,
+            )
         if bins is None and self.is_mondrian():
             bins = self.bins
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
-            kwargs.pop("reject_policy", None)  # absorbed for API compatibility; guarded explanations do not apply reject policies
+            reject_policy = kwargs.pop("reject_policy", None)
             return self.explanation_orchestrator.invoke_guarded_factual(
                 x=x,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
+                reject_policy=reject_policy,
                 significance=significance,
+                use_bonferroni=use_bonferroni,
                 merge_adjacent=merge_adjacent,
                 n_neighbors=n_neighbors,
-                leaf_strategy=leaf_strategy,
                 normalize_guard=normalize_guard,
+                verbose=verbose,
             )
 
     def explore_guarded_alternatives(
@@ -2038,10 +1910,11 @@ class CalibratedExplainer:
         *,
         _use_plugin: bool = True,
         significance: float = 0.1,
+        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
-        leaf_strategy: str = "median",
         normalize_guard: bool = True,
+        verbose: bool = False,
         **kwargs,
     ):
         """Create guarded alternative explanations that only use in-distribution perturbations.
@@ -2071,46 +1944,58 @@ class CalibratedExplainer:
         features_to_ignore : sequence of int or str, optional
             Features to exclude from explanations.
         significance : float, default=0.1
-            Conformity significance level.  Bins with p-value < significance
-            are considered out-of-distribution and are not included as alternatives.
+            Acceptable false-OOD rate. Bins are considered conforming when
+            ``p_value >= significance``; bins below that threshold are
+            treated as out-of-distribution and not included as alternatives.
+        use_bonferroni : bool, default=False
+            When ``True``, apply per-feature Bonferroni correction and test
+            each bin of feature ``f`` at ``significance / n_bins(f)``.
         merge_adjacent : bool, default=False
             When ``True``, merge adjacent conforming bins into a single wider
             interval condition.
         n_neighbors : int, default=5
             Number of nearest calibration neighbours used by the in-distribution
             guard for computing non-conformity scores.
-        leaf_strategy : {'median', 'percentiles'}, default='median'
-            How to pick representative values from a discretiser leaf.
         normalize_guard : bool, default=True
             Apply per-feature min-max normalisation before computing KNN
             distances inside the guard.
+        verbose : bool, default=False
+            When True, emit UserWarnings for guarded-explanation diagnostics.
         **kwargs : dict
             Additional arguments (reserved for future use).
 
         Returns
         -------
-        GuardedExplanations
-            A :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanations`
-            object in ``'alternative'`` mode containing one
-            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedExplanation`
-            per instance.
+        AlternativeExplanations
+            An :class:`~calibrated_explanations.AlternativeExplanations` container
+            whose individual explanations are
+            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedAlternativeExplanation`
+            instances.
         """
+        if not _use_plugin and verbose:
+            warnings.warn(
+                "_use_plugin has no effect on guarded explanation methods",
+                UserWarning,
+                stacklevel=2,
+            )
         if bins is None and self.is_mondrian():
             bins = self.bins
         ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
         with ctx:
-            kwargs.pop("reject_policy", None)  # absorbed for API compatibility; guarded explanations do not apply reject policies
+            reject_policy = kwargs.pop("reject_policy", None)
             return self.explanation_orchestrator.invoke_guarded_alternative(
                 x=x,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 features_to_ignore=features_to_ignore,
+                reject_policy=reject_policy,
                 significance=significance,
+                use_bonferroni=use_bonferroni,
                 merge_adjacent=merge_adjacent,
                 n_neighbors=n_neighbors,
-                leaf_strategy=leaf_strategy,
                 normalize_guard=normalize_guard,
+                verbose=verbose,
             )
 
     def __call__(

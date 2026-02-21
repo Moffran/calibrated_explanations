@@ -67,6 +67,12 @@ explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 factual = explainer.explain_factual(x_test[:5])
 ```
 
+For a true multiclass explanation (all classes instead of predicted-class-only), call:
+
+```python
+multi_factual = explainer.explain_factual(x_test[:5], multi_labels_enabled=True)
+```
+
 ```{admonition} Sample output (truncated)
 :class: hint
 

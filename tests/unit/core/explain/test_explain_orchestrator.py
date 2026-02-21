@@ -151,6 +151,102 @@ def test_invoke_bridge_monitor_failure(orchestrator, mock_explainer):
         )
 
 
+def test_invoke_factual_multiclass_all_classes_enabled(
+    orchestrator,
+    mock_explainer,
+):
+    """Ensure multiclass all-class branch is reachable via multi_labels_enabled."""
+    mock_explainer.class_labels = None
+    expected = object()
+
+    with (
+        patch(
+            "calibrated_explanations.core.explain._legacy_explain.explain",
+            return_value=["legacy-explanation"],
+        ) as legacy_explain,
+        patch(
+            "calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations",
+            return_value=expected,
+        ) as multi_cls,
+    ):
+        result = orchestrator.invoke_factual(
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=(5, 95),
+            bins=None,
+            features_to_ignore=None,
+            multi_labels_enabled=True,
+        )
+
+    assert result is expected
+    assert legacy_explain.call_count == len(np.unique(mock_explainer.y_cal))
+    multi_cls.assert_called_once()
+
+
+def test_invoke_factual_multiclass_all_classes_disabled(
+    orchestrator,
+    mock_explainer,
+):
+    """Ensure multi-label branch is not entered when multi_labels_enabled is False."""
+    mock_explainer.class_labels = None
+
+    with (
+        patch(
+            "calibrated_explanations.core.explain._legacy_explain.explain",
+            return_value=["legacy-explanation"],
+        ) as legacy_explain,
+        patch(
+            "calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations"
+        ) as multi_cls,
+        patch.object(orchestrator, "invoke", return_value="plugin-path") as invoke_mock,
+    ):
+        result = orchestrator.invoke_factual(
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=(5, 95),
+            bins=None,
+            features_to_ignore=None,
+            multi_labels_enabled=False,
+        )
+
+    assert result == "plugin-path"
+    legacy_explain.assert_not_called()
+    multi_cls.assert_not_called()
+    invoke_mock.assert_called_once()
+
+
+def test_invoke_alternative_multiclass_all_classes_enabled(
+    orchestrator,
+    mock_explainer,
+):
+    """Ensure alternative mode supports multi-label aggregation."""
+    mock_explainer.class_labels = None
+    expected = object()
+
+    with (
+        patch(
+            "calibrated_explanations.core.explain._legacy_explain.explain",
+            return_value=["legacy-explanation"],
+        ) as legacy_explain,
+        patch(
+            "calibrated_explanations.explanations.explanations.MultiClassCalibratedExplanations",
+            return_value=expected,
+        ) as multi_cls,
+    ):
+        result = orchestrator.invoke_alternative(
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=(5, 95),
+            bins=None,
+            features_to_ignore=None,
+            multi_labels_enabled=True,
+        )
+
+    assert result is expected
+    assert legacy_explain.call_count == len(np.unique(mock_explainer.y_cal))
+    multi_cls.assert_called_once()
+
+
 def testensure_plugin_init_failure(orchestrator, mock_explainer):
     """Test ensure_plugin initialization failure."""
     mock_explainer.plugin_manager.explanation_plugin_instances = {}

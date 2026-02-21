@@ -1675,22 +1675,24 @@ def plot_proba_triangle():
 
 # pylint: disable=invalid-name
 
-def _plot_alternative_dict( explanations,      
-                alternatives_values,
-                predicts,
-                feature_predicts,
-                features_list_to_plot,
-                num_to_show_list,
-                colors,
-                column_names_list,
-                title, 
-                path, 
-                show, 
-                interval=False,
-                idx=None,
-                save_ext=None, 
-                style_override=None):
-                        
+
+def _plot_alternative_dict(  # pragma: no cover  # ADR-023: multiclass visualization
+    explanations,
+    alternatives_values,
+    predicts,
+    feature_predicts,
+    features_list_to_plot,
+    num_to_show_list,
+    colors,
+    column_names_list,
+    title,
+    path,
+    show,
+    interval=False,
+    idx=None,
+    save_ext=None,
+    style_override=None,
+):
     """
     Plot regular and uncertainty explanations.
 
@@ -1723,203 +1725,237 @@ def _plot_alternative_dict( explanations,
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-
-    
-
-
-
-
-
     # Set default values
     config = __setup_plot_style(style_override)
 
     if save_ext is None:
-        save_ext=['svg','pdf','png']
+        save_ext = ["svg", "pdf", "png"]
     # Get figure width from config, with fallback to default value
-    fig_width = float(config['figure'].get('width', 10))
-    
+    fig_width = float(config["figure"].get("width", 10))
+
     sum_of_num_to_show_list = sum(num_to_show_list)
-    dig_length = sum_of_num_to_show_list*.5
+    dig_length = sum_of_num_to_show_list * 0.5
     fig = plt.figure(figsize=(fig_width, dig_length))
 
     ax_main = fig.add_subplot(111)
     num_of_labels = len(explanations)
-    labels_yax_locs = np.linspace(0, num_of_labels-1, num_of_labels)
+    labels_yax_locs = np.linspace(0, num_of_labels - 1, num_of_labels)
 
-    subfigures = fig.subfigures(len(column_names_list)+1, 1) # len(explanations)//2+1, height_ratios=[2, len(explanations)//2+1, num_to_show*2+2]
-        
-    labels = []
-    main_column_names =[]
-    main_twin_column_names=[]
-    counter = 0
-    for i, (explanation, instance, predict, feature_predict, features_to_plot, column_names,num_to_show) in enumerate(zip(explanations,                
-                                                                                                             alternatives_values,
-                                                                                                            predicts,
-                                                                                                            feature_predicts,
-                                                                                                            features_list_to_plot,
-                                                                                                            column_names_list,
-                                                                                                            num_to_show_list)):
+    subfigures = fig.subfigures(
+        len(column_names_list) + 1, 1
+    )  # len(explanations)//2+1, height_ratios=[2, len(explanations)//2+1, num_to_show*2+2]
 
-
+    main_column_names = []
+    main_twin_column_names = []
+    for i, (
+        explanation,
+        instance,
+        predict,
+        feature_predict,
+        features_to_plot,
+        column_names,
+        num_to_show,
+    ) in enumerate(
+        zip(
+            explanations,
+            alternatives_values,
+            predicts,
+            feature_predicts,
+            features_list_to_plot,
+            column_names_list,
+            num_to_show_list,
+            strict=False,
+        )
+    ):
         # plot the probabilities at the top
-        xj = np.linspace(labels_yax_locs[i]-0.2, labels_yax_locs[i]+0.2,2)
-        pred = predict['predict']
-        pred_low = predict['low'] if predict['low'] != -np.inf else explanation.y_minmax[0]
-        pred_high = predict['high'] if predict['high'] != np.inf else explanation.y_minmax[1]
-        venn_abers={'low_high': [pred_low,pred_high],'predict':pred}
+        xj = np.linspace(labels_yax_locs[i] - 0.2, labels_yax_locs[i] + 0.2, 2)
+        pred = predict["predict"]
+        pred_low = predict["low"] if predict["low"] != -np.inf else explanation.y_minmax[0]
+        pred_high = predict["high"] if predict["high"] != np.inf else explanation.y_minmax[1]
+        venn_abers = {"low_high": [pred_low, pred_high], "predict": pred}
 
-        alpha_val = float(config['colors']['alpha'])
+        alpha_val = float(config["colors"]["alpha"])
         pos_color = colors[i]
-        neg_color = colors[i]
         ax_main = subfigures[i].add_subplot(111)
         # Plot the base prediction in black/grey
         if num_to_show > 0:
-                # Fill original Venn Abers interval
-            x = np.linspace(0, num_to_show-1, num_to_show)
+            # Fill original Venn Abers interval
+            x = np.linspace(0, num_to_show - 1, num_to_show)
             xl = np.linspace(-0.5, x[0], 2) if len(x) > 0 else np.linspace(-0.5, 0, 2)
-            xh = np.linspace(x[-1], x[-1]+0.5, 2) if len(x) > 0 else np.linspace(0, 0.5, 2)
-
+            xh = np.linspace(x[-1], x[-1] + 0.5, 2) if len(x) > 0 else np.linspace(0, 0.5, 2)
 
             if (pred_low < 0.5 and pred_high < 0.5) or (pred_low > 0.5 and pred_high > 0.5):
-                color = pos_color#__get_fill_color(venn_abers,0.15)
-                ax_main.fill_betweenx(x, [pred_low]*(num_to_show), [pred_high]*(num_to_show),color=color, alpha=alpha_val)
+                color = pos_color  # __get_fill_color(venn_abers,0.15)
+                ax_main.fill_betweenx(
+                    x,
+                    [pred_low] * (num_to_show),
+                    [pred_high] * (num_to_show),
+                    color=color,
+                    alpha=alpha_val,
+                )
                 # Fill up to the edges
-                ax_main.fill_betweenx(xl, [pred_low]*(2), [pred_high]*(2),color=color, alpha=alpha_val)
-                ax_main.fill_betweenx(xh, [pred_low]*(2), [pred_high]*(2),color=color, alpha=alpha_val)
+                ax_main.fill_betweenx(
+                    xl, [pred_low] * (2), [pred_high] * (2), color=color, alpha=alpha_val
+                )
+                ax_main.fill_betweenx(
+                    xh, [pred_low] * (2), [pred_high] * (2), color=color, alpha=alpha_val
+                )
 
             else:
-                venn_abers['predict'] = pred_low
-                color = __get_fill_color(venn_abers, 0.15)
-                ax_main.fill_betweenx(x, [pred_low]*(num_to_show), [0.5]*(num_to_show),color=color, alpha=alpha_val)
+                venn_abers["predict"] = pred_low
+                color = pos_color
+                ax_main.fill_betweenx(
+                    x,
+                    [pred_low] * (num_to_show),
+                    [0.5] * (num_to_show),
+                    color=color,
+                    alpha=alpha_val,
+                )
                 # Fill up to the edges
-                ax_main.fill_betweenx(xl, [pred_low]*(2), [0.5]*(2),color=color, alpha=alpha_val)
-                ax_main.fill_betweenx(xh, [pred_low]*(2), [0.5]*(2),color=color, alpha=alpha_val)
-                venn_abers['predict'] = pred_high
-                color = __get_fill_color(venn_abers, 0.15)
-                ax_main.fill_betweenx(x, [0.5]*(num_to_show), [pred_high]*(num_to_show),color=color,alpha=alpha_val)
+                ax_main.fill_betweenx(
+                    xl, [pred_low] * (2), [0.5] * (2), color=color, alpha=alpha_val
+                )
+                ax_main.fill_betweenx(
+                    xh, [pred_low] * (2), [0.5] * (2), color=color, alpha=alpha_val
+                )
+                venn_abers["predict"] = pred_high
+                color = pos_color
+                ax_main.fill_betweenx(
+                    x,
+                    [0.5] * (num_to_show),
+                    [pred_high] * (num_to_show),
+                    color=color,
+                    alpha=alpha_val,
+                )
                 # Fill up to the edges
-                ax_main.fill_betweenx(xl, [0.5]*(2), [pred_high]*(2),color=color,alpha=alpha_val)
-                ax_main.fill_betweenx(xh, [0.5]*(2), [pred_high]*(2),color=color,alpha=alpha_val)
-
+                ax_main.fill_betweenx(
+                    xl, [0.5] * (2), [pred_high] * (2), color=color, alpha=alpha_val
+                )
+                ax_main.fill_betweenx(
+                    xh, [0.5] * (2), [pred_high] * (2), color=color, alpha=alpha_val
+                )
 
             for jx, j in enumerate(features_to_plot):
-                pred_low = feature_predict['low'][j] if feature_predict['low'][j] != -np.inf \
-                                                    else explanation.y_minmax[0]
-                pred_high = feature_predict['high'][j] if feature_predict['high'][j] != np.inf \
-                                                    else explanation.y_minmax[1]
-                pred = feature_predict['predict'][j]
-                xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
-                venn_abers={'low_high': [pred_low,pred_high],'predict':pred}
+                pred_low = (
+                    feature_predict["low"][j]
+                    if feature_predict["low"][j] != -np.inf
+                    else explanation.y_minmax[0]
+                )
+                pred_high = (
+                    feature_predict["high"][j]
+                    if feature_predict["high"][j] != np.inf
+                    else explanation.y_minmax[1]
+                )
+                pred = feature_predict["predict"][j]
+                xj = np.linspace(x[jx] - 0.2, x[jx] + 0.2, 2)
+                venn_abers = {"low_high": [pred_low, pred_high], "predict": pred}
                 # Fill each feature impact
 
-                if (pred_low < 0.5 and pred_high < 0.5) or (pred_low > 0.5 and pred_high > 0.5) :
-                    ax_main.fill_betweenx(xj, pred_low,pred_high,color=pos_color)
+                if (pred_low < 0.5 and pred_high < 0.5) or (pred_low > 0.5 and pred_high > 0.5):
+                    ax_main.fill_betweenx(xj, pred_low, pred_high, color=pos_color)
                 else:
-                    venn_abers['predict'] = pred_low
-                    ax_main.fill_betweenx(xj, pred_low,0.5,color=pos_color)
-                    venn_abers['predict'] = pred_high
-                    ax_main.fill_betweenx(xj, 0.5,pred_high,color=pos_color)
+                    venn_abers["predict"] = pred_low
+                    ax_main.fill_betweenx(xj, pred_low, 0.5, color=pos_color)
+                    venn_abers["predict"] = pred_high
+                    ax_main.fill_betweenx(xj, 0.5, pred_high, color=pos_color)
 
             for i in features_to_plot:
                 main_column_names.append(column_names[i])
                 main_twin_column_names.append(instance[i])
 
-
         ax_main.set_yticks(range(1))
-        ax_main.set_yticklabels(labels=[main_column_names[i]]) #\
-        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-        ax_main.set_xlim([0,1])
-
+        ax_main.set_yticklabels(labels=[main_column_names[i]])  # \
+        ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
+        ax_main.set_xlim([0, 1])
 
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(1))
         ax_main_twin.set_yticklabels(labels=[main_twin_column_names[i]])
-        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+        ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
 
-    ax_main_twin.set_ylabel('Alternative rules')
-    ax_main.set_ylabel('Instance values')
+    ax_main_twin.set_ylabel("Alternative rules")
+    ax_main.set_ylabel("Instance values")
 
-    
     ax_main.set_yticks(range(sum_of_num_to_show_list))
-    ax_main.set_yticklabels(labels=[main_column_names[i] for i in range(len(main_column_names))]) \
-            if (len(main_column_names) == sum_of_num_to_show_list) else ax_main.set_yticks(range(sum_of_num_to_show_list)) # pylint: disable=expression-not-assigned
-    ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-    ax_main.set_ylabel('Alternative rules')
+    ax_main.set_yticklabels(
+        labels=[main_column_names[i] for i in range(len(main_column_names))]
+    ) if (len(main_column_names) == sum_of_num_to_show_list) else ax_main.set_yticks(
+        range(sum_of_num_to_show_list)
+    )  # pylint: disable=expression-not-assigned
+    ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
+    ax_main.set_ylabel("Alternative rules")
 
     ax_main_twin = ax_main.twinx()
     ax_main_twin.set_yticks(range(sum_of_num_to_show_list))
     ax_main_twin.set_yticklabels([main_twin_column_names[i] for i in range(len(main_column_names))])
-    ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.7)
-    ax_main_twin.set_ylabel('Instance values')
-
-
-
-
+    ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.7)
+    ax_main_twin.set_ylabel("Instance values")
 
     if explanation.get_class_labels() is None:
-        if explanation._get_explainer().is_multiclass(): # pylint: disable=protected-access
+        if explanation.get_explainer().is_multiclass():
             ax_main.set_xlabel(f'Probability for class \'{explanation.prediction["classes"]}\'')
         else:
-            ax_main.set_xlabel('Probability for the positive class')
-    elif explanation._get_explainer().is_multiclass(): # pylint: disable=protected-access
+            ax_main.set_xlabel("Probability for the positive class")
+    elif explanation.get_explainer().is_multiclass():
         # pylint: disable=line-too-long
         ax_main.set_xlabel(
             f'Probability for class \'{explanation.get_class_labels()[explanation.prediction["classes"]]}\''
         )
     else:
-        ax_main.set_xlabel(
-            f"Probability for class \'{explanation.get_class_labels()[1]}\'"
-        )
-    #ax_main.set_xlim(0,1)
-    #ax_main.set_xticks(np.linspace(0, 1, 11))
+        ax_main.set_xlabel(f"Probability for class '{explanation.get_class_labels()[1]}'")
+    # ax_main.set_xlim(0,1)
+    # ax_main.set_xticks(np.linspace(0, 1, 11))
 
     with contextlib.suppress(Exception):
         fig.tight_layout()
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches='tight')
+        fig.savefig(path + title + ext, bbox_inches="tight")
     if show:
         plt.show()
     else:
         plt.close(fig)
 
-def get_multiclass_config():
+
+def get_multiclass_config():  # pragma: no cover  # ADR-023: multiclass visualization
+    """Return default plotting style configuration for multiclass figures."""
     config = {}
 
-    config['fonts'] = {
-        'family': 'sans-serif',
-        'sans_serif': 'Arial',
-        'axes_label_size': '6',
-        'tick_label_size': '5',
-        'legend_size': '5',
-        'title_size': '7'
+    config["fonts"] = {
+        "family": "sans-serif",
+        "sans_serif": "Arial",
+        "axes_label_size": "6",
+        "tick_label_size": "5",
+        "legend_size": "5",
+        "title_size": "7",
     }
-    config['lines'] = {'width': '1'}
-    config['figure'] = {
-        'dpi': '200',
-        'save_dpi': '200',
-        'facecolor': 'white',
-        'axes_facecolor': 'white',
-        'width': '5'  # Add default width value
+    config["lines"] = {"width": "1"}
+    config["figure"] = {
+        "dpi": "200",
+        "save_dpi": "200",
+        "facecolor": "white",
+        "axes_facecolor": "white",
+        "width": "5",  # Add default width value
     }
     return config
 
 
-def _plot_probabilistic_dict( explanations,      
-                instances,
-                predicts,
-                feature_weights_list,
-                features_list_to_plot,
-                num_to_show_list,
-                colors,
-                column_names_list,
-                title, 
-                path, 
-                show, 
-                interval=False,
-                idx=None,
-                save_ext=None, 
-                style_override=None):
-                        
+def _plot_probabilistic_dict(  # pragma: no cover  # ADR-023: multiclass visualization
+    explanations,
+    instances,
+    predicts,
+    feature_weights_list,
+    features_list_to_plot,
+    num_to_show_list,
+    colors,
+    column_names_list,
+    title,
+    path,
+    show,
+    interval=False,
+    idx=None,
+    save_ext=None,
+    style_override=None,
+):
     """
     Plot regular and uncertainty explanations.
 
@@ -1956,66 +1992,70 @@ def _plot_probabilistic_dict( explanations,
     config = __setup_plot_style(style_override)
 
     if save_ext is None:
-        save_ext=['svg','pdf','png']
+        save_ext = ["svg", "pdf", "png"]
     if interval is True:
-        pass #assert idx is not None
+        pass  # assert idx is not None
     # Get figure width from config, with fallback to default value
-    fig_width = float(config['figure'].get('width', 10))
-    
+    fig_width = float(config["figure"].get("width", 10))
+
     sum_of_num_to_show_list = sum(num_to_show_list)
-    dig_length = sum_of_num_to_show_list*.5+2
+    dig_length = sum_of_num_to_show_list * 0.5 + 2
     fig = plt.figure(figsize=(fig_width, dig_length))
-    subfigures = fig.subfigures(len(column_names_list)+1, 1) # len(explanations)//2+1, height_ratios=[2, len(explanations)//2+1, num_to_show*2+2]
+    subfigures = fig.subfigures(
+        len(column_names_list) + 1, 1
+    )  # len(explanations)//2+1, height_ratios=[2, len(explanations)//2+1, num_to_show*2+2]
     ax_positive = subfigures[0].add_subplot(111)
 
     num_of_labels = len(explanations)
-    labels_yax_locs = np.linspace(0, num_of_labels-1, num_of_labels)
-    x = np.linspace(0,  sum_of_num_to_show_list-1,  sum_of_num_to_show_list)
+    labels_yax_locs = np.linspace(0, num_of_labels - 1, num_of_labels)
+    x = np.linspace(0, sum_of_num_to_show_list - 1, sum_of_num_to_show_list)
     counter = 0
-    for i, (explanation, predict) in enumerate(zip(explanations, predicts)):
+    for i, (explanation, predict) in enumerate(zip(explanations, predicts, strict=False)):
         if interval and (explanation.is_one_sided()):
-            raise Warning('Interval plot is not supported for one-sided explanations.')
+            raise Warning("Interval plot is not supported for one-sided explanations.")
 
         # plot the probabilities at the top
-        xj = np.linspace(labels_yax_locs[i]-0.2, labels_yax_locs[i]+0.2,2)
-        pred = predict['predict']
-        pred_low = predict['low'] if predict['low'] != -np.inf else explanation.y_minmax[0]
-        pred_high = predict['high'] if predict['high'] != np.inf else explanation.y_minmax[1]
+        xj = np.linspace(labels_yax_locs[i] - 0.2, labels_yax_locs[i] + 0.2, 2)
+        pred = predict["predict"]
+        pred_low = predict["low"] if predict["low"] != -np.inf else explanation.y_minmax[0]
+        pred_high = predict["high"] if predict["high"] != np.inf else explanation.y_minmax[1]
 
-        alpha_val = float(config['colors']['alpha'])
+        alpha_val = float(config["colors"]["alpha"])
         color = colors[int(predict["classes"])]
         if interval:
-                
             ax_positive.fill_betweenx(xj, pred, pred, color=color)
             ax_positive.fill_betweenx(xj, 0, pred_low, color=color)
             ax_positive.fill_betweenx(xj, pred_low, pred_high, color=color, alpha=alpha_val)
         else:
-
             ax_positive.fill_betweenx(xj, pred, pred, color=color)
             ax_positive.fill_betweenx(xj, 0, pred, color=color)
-        
-    for i, (instance, feature_weights, features_to_plot, column_names,num_to_show) in enumerate(zip(instances,
-                                                                                                    feature_weights_list,
-                                                                                                    features_list_to_plot,
-                                                                                                    column_names_list,
-                                                                                                    num_to_show_list)):
-        ax_main = subfigures[i+1].add_subplot(111)
+
+    for i, (instance, feature_weights, features_to_plot, _column_names, num_to_show) in enumerate(
+        zip(
+            instances,
+            feature_weights_list,
+            features_list_to_plot,
+            column_names_list,
+            num_to_show_list,
+            strict=False,
+        )
+    ):
+        ax_main = subfigures[i + 1].add_subplot(111)
 
         # Plot the base prediction in black/grey
         if num_to_show > 0:
-            x = np.linspace(0,  num_to_show-1,  num_to_show)
-        
+            x = np.linspace(0, num_to_show - 1, num_to_show)
 
             # For each feature, plot the weight
             for jx, j in enumerate(features_to_plot):
-                xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
+                xj = np.linspace(x[jx] - 0.2, x[jx] + 0.2, 2)
                 counter += 1
-                min_val,max_val = 0,0
+                min_val, max_val = 0, 0
                 if interval:
-                    width = feature_weights['predict'][j]
-                    #if width > 0:
-                    wl = feature_weights['low'][j]
-                    wh = feature_weights['high'][j]
+                    width = feature_weights["predict"][j]
+                    # if width > 0:
+                    wl = feature_weights["low"][j]
+                    wh = feature_weights["high"][j]
                     wh, wl = np.max([wh, wl]), np.min([wh, wl])
                     max_val = wh if width < 0 else 0
                     min_val = wl if width > 0 else 0
@@ -2024,52 +2064,49 @@ def _plot_probabilistic_dict( explanations,
                         min_val = 0
                         max_val = 0
                 else:
-                    width = feature_weights['predict'][j]
+                    width = feature_weights["predict"][j]
                     min_val = min(width, 0)
                     max_val = max(width, 0)
                 color = colors[int(feature_weights["classes"][j])]
-                ax_main.fill_betweenx(xj, min_val, max_val, color=color),               
+                (ax_main.fill_betweenx(xj, min_val, max_val, color=color),)
                 if interval:
-                    if wl < 0 < wh :
+                    if wl < 0 < wh:
                         ax_main.fill_betweenx(xj, 0, wl, color=color, alpha=alpha_val)
                         ax_main.fill_betweenx(xj, wh, 0, color=color, alpha=alpha_val)
                     else:
                         ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
 
-
-    
         ax_main.set_yticks(range(1))
-        ax_main.set_yticklabels(labels=[column_names_list[i]]) #\
-        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-        ax_main.set_xlim([-1,1])
-
+        ax_main.set_yticklabels(labels=[column_names_list[i]])  # \
+        ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
+        ax_main.set_xlim([-1, 1])
 
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(1))
         ax_main_twin.set_yticklabels(labels=[instance[0]])
-        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+        ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
 
-    ax_main_twin.set_ylabel('Instance values')
-    ax_main.set_ylabel('Features')
-    ax_main.set_xlabel('Feature weights')
+    ax_main_twin.set_ylabel("Instance values")
+    ax_main.set_ylabel("Features")
+    ax_main.set_xlabel("Feature weights")
 
-    ax_positive.set_ylim( 0.3)
-    ax_positive.set_xlim([0,1])
+    ax_positive.set_ylim(0.3)
+    ax_positive.set_xlim([0, 1])
     ax_positive.set_yticks(range(num_of_labels))
-    ax_positive.set_yticklabels(labels=explanations[0].get_class_labels()) # pylint: disable=line-too-long
-    for tick, color in zip(ax_positive.yaxis.get_major_ticks(),colors):
+    ax_positive.set_yticklabels(labels=explanations[0].get_class_labels())  # pylint: disable=line-too-long
+    for tick, color in zip(ax_positive.yaxis.get_major_ticks(), colors, strict=False):
         tick.label1.set_color(color)
-    ax_positive.set_xticks(np.linspace(0,1,6))
+    ax_positive.set_xticks(np.linspace(0, 1, 6))
     # Enhance subplot appearance
     for ax in [ax_positive, ax_main]:
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
 
     # Add background colors for better readability
-    ax_main.patch.set_facecolor(config['colors']['background'])
+    ax_main.patch.set_facecolor(config["colors"]["background"])
 
     # Enhance legend appearance
-    ax_main_twin.tick_params(axis='y', colors=config['colors']['text'])
+    ax_main_twin.tick_params(axis="y", colors=config["colors"]["text"])
     for ext in save_ext:
         fig.savefig(path + title + ext)
     if show:

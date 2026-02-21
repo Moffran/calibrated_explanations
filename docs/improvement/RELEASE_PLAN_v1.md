@@ -289,6 +289,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   10. Perform a final ADR, standards, and improvement docs gap closure sweep.
   11. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
   12. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
+  13. Address issue #104, by adding real multiclass support.
 
   Release gate: ADR-009/012/026/030/031 gaps are closed or explicitly deferred, observability enforcement is in place (ADR-027/028), and core-only install expectations are verified ahead of v1.0.0-rc.
 ### v1.0.0-rc (release candidate readiness)

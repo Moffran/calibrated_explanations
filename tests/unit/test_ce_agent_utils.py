@@ -11,9 +11,11 @@ from calibrated_explanations.ce_agent_utils import (
     ensure_ce_first_wrapper,
     explain_and_summarize,
     explain_and_narrate,
+    format_guarded_audit_table,
     fit_and_calibrate,
     get_calibrated_predictions,
     get_uncalibrated_predictions,
+    print_guarded_audit_table,
     probe_optional_features,
     summarize_explanations,
     set_telemetry_hook,
@@ -601,3 +603,129 @@ def test_get_calibrated_predictions_covers_kwarg_filter_variants(monkeypatch):
     )
     assert out2["prediction"] == [2]
     assert out2["probability"] == [[0.5, 0.5]]
+
+
+def test_format_guarded_audit_table_with_mapping_payload():
+    payload = {
+        "summary": {
+            "n_instances": 1,
+            "intervals_tested": 2,
+            "intervals_conforming": 1,
+            "intervals_removed_guard": 1,
+            "intervals_emitted": 1,
+        },
+        "instances": [
+            {
+                "instance_index": 0,
+                "summary": {
+                    "intervals_tested": 2,
+                    "intervals_conforming": 1,
+                    "intervals_removed_guard": 1,
+                    "intervals_emitted": 1,
+                },
+                "intervals": [
+                    {
+                        "feature": 0,
+                        "feature_name": "f0",
+                        "lower": 0.0,
+                        "upper": 1.0,
+                        "p_value": 0.8,
+                        "conforming": True,
+                        "emitted": True,
+                        "emission_reason": "emitted",
+                    },
+                    {
+                        "feature": 1,
+                        "feature_name": "f1",
+                        "lower": 1.0,
+                        "upper": 2.0,
+                        "p_value": 0.01,
+                        "conforming": False,
+                        "emitted": False,
+                        "emission_reason": "removed_guard",
+                    },
+                ],
+            }
+        ],
+    }
+    text = format_guarded_audit_table(payload)
+    assert "Guarded Audit Summary" in text
+    assert "removed_guard=1" in text
+    assert "f0" in text
+    assert "f1" in text
+    assert "reason_counts:" in text
+    assert "legend:" in text
+
+
+def test_format_guarded_audit_table_accepts_object_with_getter():
+    class AuditObj:
+        def get_guarded_audit(self):
+            return {
+                "instance_index": 0,
+                "summary": {
+                    "intervals_tested": 1,
+                    "intervals_conforming": 1,
+                    "intervals_removed_guard": 0,
+                    "intervals_emitted": 1,
+                },
+                "intervals": [
+                    {
+                        "feature": 0,
+                        "feature_name": "f0",
+                        "lower": -np.inf,
+                        "upper": np.inf,
+                        "p_value": 0.5,
+                        "conforming": True,
+                        "emitted": True,
+                        "emission_reason": "emitted",
+                    }
+                ],
+            }
+
+    text = format_guarded_audit_table(AuditObj())
+    assert "instances=1" in text
+    assert "f0" in text
+
+
+def test_print_guarded_audit_table_emits_text(capsys):
+    print_guarded_audit_table(
+        {
+            "instance_index": 0,
+            "summary": {
+                "intervals_tested": 0,
+                "intervals_conforming": 0,
+                "intervals_removed_guard": 0,
+                "intervals_emitted": 0,
+            },
+            "intervals": [],
+        }
+    )
+    out = capsys.readouterr().out
+    assert "Guarded Audit Summary" in out
+
+
+def test_format_guarded_audit_table_rounds_bounds_for_readability():
+    payload = {
+        "instance_index": 0,
+        "summary": {
+            "intervals_tested": 1,
+            "intervals_conforming": 1,
+            "intervals_removed_guard": 0,
+            "intervals_emitted": 1,
+        },
+        "intervals": [
+            {
+                "feature": 0,
+                "feature_name": "f0",
+                "lower": -np.inf,
+                "upper": 5.3500001430511475,
+                "p_value": 0.294712312,
+                "conforming": True,
+                "emitted": True,
+                "emission_reason": "emitted",
+            }
+        ],
+    }
+    text = format_guarded_audit_table(payload, bound_decimals=3, pvalue_decimals=3)
+    assert "(-inf, 5.35]" in text
+    assert "0.295" in text

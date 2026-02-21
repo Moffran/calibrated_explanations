@@ -1,7 +1,7 @@
 {
   "summary": {
-    "total": 16,
-    "compliant": 16,
+    "total": 18,
+    "compliant": 18,
     "failed": 0
   },
   "notebooks": [
@@ -15,6 +15,23 @@
         "explain_factual",
         "explainer",
         "explore_alternatives",
+        "fit",
+        "learner",
+        "plot",
+        "predict",
+        "predict_proba",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/quickstart_guarded.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "explainer",
         "fit",
         "learner",
         "plot",
@@ -233,6 +250,20 @@
         "plot",
         "predict",
         "predict_proba"
+      ]
+    },
+    {
+      "path": "notebooks/paper_based/ensured.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explore_alternatives",
+        "fit",
+        "learner",
+        "plot",
+        "set_difficulty_estimator"
       ]
     }
   ]

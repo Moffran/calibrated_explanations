@@ -100,6 +100,7 @@ class TestParallelExecutor:
             patch("os.cpu_count", return_value=4),
             patch("calibrated_explanations.parallel.parallel._JoblibParallel", new=MagicMock()),
             patch.object(ParallelExecutor, "_is_ci_environment", return_value=False),
+            patch.object(ParallelExecutor, "get_cgroup_cpu_quota", return_value=None),
         ):
             strategy = executor.resolve_strategy()
             assert strategy.func == executor.joblib_strategy

@@ -764,22 +764,31 @@ class ExplanationOrchestrator:
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
 
-        multi_lables_explanation =kwargs.get("multi_lables_explanation",None)
-        if multi_lables_explanation is not None:
+        multi_labels_enabled = bool(kwargs.get("multi_labels_enabled", False))
+        if multi_labels_enabled:
+            from ...explanations.explanations import (  # pylint: disable=import-outside-toplevel
+                MultiClassCalibratedExplanations,
+            )
             from ._legacy_explain import (
                 explain as legacy_explain,  # pylint: disable=import-outside-toplevel
             )
-            from ...explanations.explanations import MultiClassCalibratedExplanations
+
             multi_label_explanations = [{} for _ in range(len(x))]
             classes = np.unique(self.explainer.y_cal)
-            if self.explainer.class_labels is not None and len(self.explainer.class_labels) > len(classes):
-                classes = np.array([i for i in range(len(self.explainer.class_labels))])
+            if self.explainer.class_labels is not None and len(self.explainer.class_labels) > len(
+                classes
+            ):
+                classes = np.arange(len(self.explainer.class_labels))
             for cls in classes:
                 labels = [cls for _ in range(len(x))]
-                explanations = legacy_explain(self.explainer,x, threshold, low_high_percentiles, bins, labels=labels)
+                explanations = legacy_explain(
+                    self.explainer, x, threshold, low_high_percentiles, bins, labels=labels
+                )
                 for i, explanation in enumerate(explanations):
-                    multi_label_explanations[i][cls]=explanation
-            return MultiClassCalibratedExplanations(self.explainer, x, bins, len(classes), multi_label_explanations)
+                    multi_label_explanations[i][cls] = explanation
+            return MultiClassCalibratedExplanations(
+                self.explainer, x, bins, len(classes), multi_label_explanations
+            )
 
         # When _use_plugin=False, bypass plugin system and use legacy path directly
         if not _use_plugin:
@@ -852,6 +861,32 @@ class ExplanationOrchestrator:
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
 
+        multi_labels_enabled = bool(kwargs.get("multi_labels_enabled", False))
+        if multi_labels_enabled:
+            from ...explanations.explanations import (  # pylint: disable=import-outside-toplevel
+                MultiClassCalibratedExplanations,
+            )
+            from ._legacy_explain import (
+                explain as legacy_explain,  # pylint: disable=import-outside-toplevel
+            )
+
+            multi_label_explanations = [{} for _ in range(len(x))]
+            classes = np.unique(self.explainer.y_cal)
+            if self.explainer.class_labels is not None and len(self.explainer.class_labels) > len(
+                classes
+            ):
+                classes = np.arange(len(self.explainer.class_labels))
+            for cls in classes:
+                labels = [cls for _ in range(len(x))]
+                explanations = legacy_explain(
+                    self.explainer, x, threshold, low_high_percentiles, bins, labels=labels
+                )
+                for i, explanation in enumerate(explanations):
+                    multi_label_explanations[i][cls] = explanation
+            return MultiClassCalibratedExplanations(
+                self.explainer, x, bins, len(classes), multi_label_explanations
+            )
+
         # When _use_plugin=False, bypass plugin system and use legacy path directly
         if not _use_plugin:
             from ._legacy_explain import (
@@ -886,19 +921,23 @@ class ExplanationOrchestrator:
         low_high_percentiles: Tuple[float, float] | None,
         bins: Any,
         features_to_ignore: Any,
+        per_instance_features_to_ignore: Any = None,
+        reject_policy: Any | None = None,
         significance: float = 0.1,
+        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
-        leaf_strategy: str = "median",
         normalize_guard: bool = True,
+        verbose: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Execute guarded factual explanation.
 
         Uses a multi-bin discretiser (``max_depth=3``) and prunes
         out-of-distribution leaves via KNN-based conformity testing.
-        Returns a :class:`~...explanations.guarded_explanation.GuardedExplanations`
-        object in ``'factual'`` mode.
+        Returns a standard :class:`~calibrated_explanations.explanations.CalibratedExplanations`
+        container whose per-instance explanations are
+        :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`.
 
         Parameters
         ----------
@@ -914,24 +953,114 @@ class ExplanationOrchestrator:
             Feature indices to exclude.
         significance : float, default=0.1
             Conformity significance level.
+        use_bonferroni : bool, default=False
+            Whether to apply per-feature Bonferroni correction.
         merge_adjacent : bool, default=False
             Merge adjacent conforming bins into wider intervals.
         n_neighbors : int, default=5
             KNN neighbour count for the in-distribution guard.
-        leaf_strategy : {'median', 'percentiles'}, default='median'
-            Sampling strategy for representative leaf values.
         normalize_guard : bool, default=True
             Apply per-feature normalisation in the guard.
+        verbose : bool, default=False
+            When True, emit UserWarnings for guarded-explanation diagnostics.
         **kwargs : Any
             Currently unused; reserved for future parameters.
 
         Returns
         -------
-        GuardedExplanations (mode='factual')
+        CalibratedExplanations
+            Container with :class:`GuardedFactualExplanation` objects.
         """
+        import numpy as np  # pylint: disable=import-outside-toplevel
+
+        from ...core.reject.policy import RejectPolicy
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
-        import numpy as np  # pylint: disable=import-outside-toplevel
+        if not kwargs.pop("_ce_skip_reject", False):
+            candidate_policy = reject_policy
+            if candidate_policy is None:
+                candidate_policy = getattr(
+                    self.explainer, "default_reject_policy", RejectPolicy.NONE
+                )
+            try:
+                effective_policy = RejectPolicy(candidate_policy)
+            except Exception:  # adr002_allow
+                effective_policy = RejectPolicy.NONE
+            if effective_policy is not RejectPolicy.NONE:
+                with contextlib.suppress(Exception):
+                    _ = self.explainer.reject_orchestrator
+                return self.explainer.reject_orchestrator.apply_policy(
+                    effective_policy,
+                    x,
+                    explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_factual(
+                        x_subset,
+                        threshold=threshold,
+                        low_high_percentiles=low_high_percentiles,
+                        bins=inner_kw.get("bins", bins),
+                        features_to_ignore=features_to_ignore,
+                        per_instance_features_to_ignore=per_instance_features_to_ignore,
+                        reject_policy=RejectPolicy.NONE,
+                        significance=significance,
+                        use_bonferroni=use_bonferroni,
+                        merge_adjacent=merge_adjacent,
+                        n_neighbors=n_neighbors,
+                        normalize_guard=normalize_guard,
+                        verbose=verbose,
+                        _ce_skip_reject=True,
+                    ),
+                    bins=bins,
+                )
+
+        per_instance_ignore = per_instance_features_to_ignore
+
+        features_arg = features_to_ignore or []
+        if isinstance(features_arg, np.ndarray):
+            features_arg = features_arg.tolist()
+
+        if (
+            features_arg
+            and isinstance(features_arg, (list, tuple))
+            and isinstance(features_arg[0], (list, tuple, np.ndarray))
+        ):
+            per_instance_ignore_list: list[tuple[int, ...]] = []
+            unknown_names: list[str] = []
+            for mask in features_arg:
+                mapped, unknown = self._coerce_ignore_items(mask)
+                unknown_names.extend(unknown)
+                per_instance_ignore_list.append(tuple(as_int_array(mapped).tolist()))
+            if unknown_names and verbose:
+                unknown_sorted = sorted(set(unknown_names))
+                warnings.warn(
+                    "Unknown feature names in features_to_ignore were ignored: "
+                    + ", ".join(unknown_sorted[:5])
+                    + ("..." if len(unknown_sorted) > 5 else ""),
+                    UserWarning,
+                    stacklevel=2,
+                )
+            per_instance_ignore = tuple(per_instance_ignore_list)
+            flat_arrays = [
+                np.asarray(mask, dtype=int) for mask in per_instance_ignore if len(mask) > 0
+            ]
+            if flat_arrays:
+                flat_ignore = np.unique(np.concatenate(flat_arrays))
+            else:
+                flat_ignore = np.array([], dtype=int)
+            features_to_ignore_flat = tuple(int(f) for f in flat_ignore.tolist())
+        else:
+            if isinstance(features_arg, (list, tuple)):
+                mapped, unknown = self._coerce_ignore_items(features_arg)
+                if unknown and verbose:
+                    unknown_sorted = sorted(set(unknown))
+                    warnings.warn(
+                        "Unknown feature names in features_to_ignore were ignored: "
+                        + ", ".join(unknown_sorted[:5])
+                        + ("..." if len(unknown_sorted) > 5 else ""),
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                features_to_ignore_flat = tuple(as_int_array(mapped).tolist())
+            else:
+                features_to_ignore_flat = tuple(as_int_array(features_arg).tolist())
 
         x_arr = np.atleast_2d(np.asarray(x))
         return guarded_explain(
@@ -939,14 +1068,18 @@ class ExplanationOrchestrator:
             x_arr,
             mode="factual",
             threshold=threshold,
-            low_high_percentiles=low_high_percentiles if low_high_percentiles is not None else (5, 95),
+            low_high_percentiles=low_high_percentiles
+            if low_high_percentiles is not None
+            else (5, 95),
             mondrian_bins=bins,
-            features_to_ignore=features_to_ignore,
+            features_to_ignore=features_to_ignore_flat,
+            per_instance_features_to_ignore=per_instance_ignore,
             significance=significance,
+            use_bonferroni=use_bonferroni,
             merge_adjacent=merge_adjacent,
             n_neighbors=n_neighbors,
-            leaf_strategy=leaf_strategy,
             normalize_guard=normalize_guard,
+            verbose=verbose,
         )
 
     def invoke_guarded_alternative(  # pylint: disable=invalid-name
@@ -956,20 +1089,24 @@ class ExplanationOrchestrator:
         low_high_percentiles: Tuple[float, float] | None,
         bins: Any,
         features_to_ignore: Any,
+        per_instance_features_to_ignore: Any = None,
+        reject_policy: Any | None = None,
         significance: float = 0.1,
+        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
-        leaf_strategy: str = "median",
         normalize_guard: bool = True,
+        verbose: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Execute guarded alternative explanation.
 
         Uses a multi-bin discretiser (``max_depth=3``) and prunes
         out-of-distribution leaves via KNN-based conformity testing.
-        Returns a :class:`~...explanations.guarded_explanation.GuardedExplanations`
-        object in ``'alternative'`` mode.  Only conforming non-factual bins are
-        exposed as alternatives.
+        Returns a standard :class:`~calibrated_explanations.explanations.AlternativeExplanations`
+        container whose per-instance explanations are
+        :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedAlternativeExplanation`.
+        Only conforming non-factual bins are exposed as alternatives.
 
         Parameters
         ----------
@@ -985,24 +1122,114 @@ class ExplanationOrchestrator:
             Feature indices to exclude.
         significance : float, default=0.1
             Conformity significance level.
+        use_bonferroni : bool, default=False
+            Whether to apply per-feature Bonferroni correction.
         merge_adjacent : bool, default=False
             Merge adjacent conforming bins into wider intervals.
         n_neighbors : int, default=5
             KNN neighbour count for the in-distribution guard.
-        leaf_strategy : {'median', 'percentiles'}, default='median'
-            Sampling strategy for representative leaf values.
         normalize_guard : bool, default=True
             Apply per-feature normalisation in the guard.
+        verbose : bool, default=False
+            When True, emit UserWarnings for guarded-explanation diagnostics.
         **kwargs : Any
             Currently unused; reserved for future parameters.
 
         Returns
         -------
-        GuardedExplanations (mode='alternative')
+        AlternativeExplanations
+            Container with :class:`GuardedAlternativeExplanation` objects.
         """
+        import numpy as np  # pylint: disable=import-outside-toplevel
+
+        from ...core.reject.policy import RejectPolicy
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
-        import numpy as np  # pylint: disable=import-outside-toplevel
+        if not kwargs.pop("_ce_skip_reject", False):
+            candidate_policy = reject_policy
+            if candidate_policy is None:
+                candidate_policy = getattr(
+                    self.explainer, "default_reject_policy", RejectPolicy.NONE
+                )
+            try:
+                effective_policy = RejectPolicy(candidate_policy)
+            except Exception:  # adr002_allow
+                effective_policy = RejectPolicy.NONE
+            if effective_policy is not RejectPolicy.NONE:
+                with contextlib.suppress(Exception):
+                    _ = self.explainer.reject_orchestrator
+                return self.explainer.reject_orchestrator.apply_policy(
+                    effective_policy,
+                    x,
+                    explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_alternative(
+                        x_subset,
+                        threshold=threshold,
+                        low_high_percentiles=low_high_percentiles,
+                        bins=inner_kw.get("bins", bins),
+                        features_to_ignore=features_to_ignore,
+                        per_instance_features_to_ignore=per_instance_features_to_ignore,
+                        reject_policy=RejectPolicy.NONE,
+                        significance=significance,
+                        use_bonferroni=use_bonferroni,
+                        merge_adjacent=merge_adjacent,
+                        n_neighbors=n_neighbors,
+                        normalize_guard=normalize_guard,
+                        verbose=verbose,
+                        _ce_skip_reject=True,
+                    ),
+                    bins=bins,
+                )
+
+        per_instance_ignore = per_instance_features_to_ignore
+
+        features_arg = features_to_ignore or []
+        if isinstance(features_arg, np.ndarray):
+            features_arg = features_arg.tolist()
+
+        if (
+            features_arg
+            and isinstance(features_arg, (list, tuple))
+            and isinstance(features_arg[0], (list, tuple, np.ndarray))
+        ):
+            per_instance_ignore_list: list[tuple[int, ...]] = []
+            unknown_names: list[str] = []
+            for mask in features_arg:
+                mapped, unknown = self._coerce_ignore_items(mask)
+                unknown_names.extend(unknown)
+                per_instance_ignore_list.append(tuple(as_int_array(mapped).tolist()))
+            if unknown_names and verbose:
+                unknown_sorted = sorted(set(unknown_names))
+                warnings.warn(
+                    "Unknown feature names in features_to_ignore were ignored: "
+                    + ", ".join(unknown_sorted[:5])
+                    + ("..." if len(unknown_sorted) > 5 else ""),
+                    UserWarning,
+                    stacklevel=2,
+                )
+            per_instance_ignore = tuple(per_instance_ignore_list)
+            flat_arrays = [
+                np.asarray(mask, dtype=int) for mask in per_instance_ignore if len(mask) > 0
+            ]
+            if flat_arrays:
+                flat_ignore = np.unique(np.concatenate(flat_arrays))
+            else:
+                flat_ignore = np.array([], dtype=int)
+            features_to_ignore_flat = tuple(int(f) for f in flat_ignore.tolist())
+        else:
+            if isinstance(features_arg, (list, tuple)):
+                mapped, unknown = self._coerce_ignore_items(features_arg)
+                if unknown and verbose:
+                    unknown_sorted = sorted(set(unknown))
+                    warnings.warn(
+                        "Unknown feature names in features_to_ignore were ignored: "
+                        + ", ".join(unknown_sorted[:5])
+                        + ("..." if len(unknown_sorted) > 5 else ""),
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                features_to_ignore_flat = tuple(as_int_array(mapped).tolist())
+            else:
+                features_to_ignore_flat = tuple(as_int_array(features_arg).tolist())
 
         x_arr = np.atleast_2d(np.asarray(x))
         return guarded_explain(
@@ -1010,14 +1237,18 @@ class ExplanationOrchestrator:
             x_arr,
             mode="alternative",
             threshold=threshold,
-            low_high_percentiles=low_high_percentiles if low_high_percentiles is not None else (5, 95),
+            low_high_percentiles=low_high_percentiles
+            if low_high_percentiles is not None
+            else (5, 95),
             mondrian_bins=bins,
-            features_to_ignore=features_to_ignore,
+            features_to_ignore=features_to_ignore_flat,
+            per_instance_features_to_ignore=per_instance_ignore,
             significance=significance,
+            use_bonferroni=use_bonferroni,
             merge_adjacent=merge_adjacent,
             n_neighbors=n_neighbors,
-            leaf_strategy=leaf_strategy,
             normalize_guard=normalize_guard,
+            verbose=verbose,
         )
 
     def ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:

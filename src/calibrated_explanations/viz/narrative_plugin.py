@@ -84,7 +84,7 @@ class NarrativePlotPlugin:
         default_template = package_root / "templates" / "explain_template.yaml"
         return str(default_template)
 
-    def plot(
+    def plot(  # pragma: no cover  # ADR-023: narrative visualization rendering
         self,
         explanations,
         template_path: Optional[str] = None,
