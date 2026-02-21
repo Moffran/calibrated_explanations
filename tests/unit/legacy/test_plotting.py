@@ -210,11 +210,12 @@ def test_probabilistic_threshold_and_label_variants(tmp_path):
     assert True
 
 
-def testplot_global_requires_scalar_threshold_for_non_probabilistic():
+def testplot_global_noops_without_matplotlib_when_show_false(monkeypatch):
     class ThresholdWrapper:
         def __init__(self):
             self.learner = types.SimpleNamespace()
             self.y_cal = np.array([0.1, 0.2, 0.3])
+            self.threshold_seen = None
 
         def predict(self, x, uq_interval=False, **kwargs):
             preds = np.linspace(0.2, 0.6, len(x))
@@ -223,6 +224,7 @@ def testplot_global_requires_scalar_threshold_for_non_probabilistic():
             return preds, (low, high)
 
         def predict_proba(self, x, uq_interval=False, threshold=None, **kwargs):
+            self.threshold_seen = threshold
             preds, (low, high) = self.predict(x, uq_interval=uq_interval)
             proba = np.column_stack([1 - preds, preds])
             return proba, (low, high)
@@ -234,14 +236,17 @@ def testplot_global_requires_scalar_threshold_for_non_probabilistic():
     x_vals = np.zeros((3, 1))
     y_vals = np.array([0, 1, 0])
 
-    with pytest.warns(UserWarning), pytest.raises(AssertionError):
-        plotting.plot_global(
-            explainer,
-            x_vals,
-            y=y_vals,
-            threshold=(0.2, 0.8),
-            show=False,
-        )
+    monkeypatch.setattr(plotting, "plt", None)
+
+    plotting.plot_global(
+        explainer,
+        x_vals,
+        y=y_vals,
+        threshold=(0.2, 0.8),
+        show=False,
+    )
+
+    assert explainer.threshold_seen is None
 
 
 def test_regression_non_interval_branches(tmp_path, disable_show):

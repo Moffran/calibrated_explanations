@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import List, Sequence
+import sys
 
 import numpy as np
 import pytest
@@ -15,6 +16,17 @@ from calibrated_explanations.explanations import (
 )
 from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
+
+
+def install_fake_matplotlib_colors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Install a minimal matplotlib.colors stub for non-viz test environments."""
+    fake_matplotlib = ModuleType("matplotlib")
+    fake_colors = ModuleType("matplotlib.colors")
+    fake_colors.BASE_COLORS = {"b": (0, 0, 1), "g": (0, 0.5, 0), "r": (1, 0, 0)}
+    fake_matplotlib.colors = fake_colors
+
+    monkeypatch.setitem(sys.modules, "matplotlib", fake_matplotlib)
+    monkeypatch.setitem(sys.modules, "matplotlib.colors", fake_colors)
 
 
 @dataclass
@@ -326,6 +338,8 @@ def test_multiclass_plot_factual_dispatches_dict_path_for_nonzero_keys(
 ) -> None:
     from calibrated_explanations.explanations import explanations as explanations_module
 
+    install_fake_matplotlib_colors(monkeypatch)
+
     class FakeFactual:
         def __init__(self, klass: int):
             self.prediction = {"predict": 0.6, "low": 0.5, "high": 0.7, "classes": klass}
@@ -386,6 +400,8 @@ def test_multiclass_plot_alternative_dispatches_dict_path_for_nonzero_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from calibrated_explanations.explanations import explanations as explanations_module
+
+    install_fake_matplotlib_colors(monkeypatch)
 
     class FakeAlternative:
         def __init__(self, klass: int):
