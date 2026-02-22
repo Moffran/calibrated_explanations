@@ -12,7 +12,7 @@ Diagnose and fix a bug or failing test in `calibrated_explanations`.
 1. **Reproduce** – identify the minimal failing test or repro script.
 2. **Locate root cause** – trace from the public API (`WrapCalibratedExplainer`) inward; check
    `src/calibrated_explanations/core/` first, then `plugins/`, then `calibration/`.
-3. **Write a regression test (TDD red)** – follow `.github/tests-guidance.md`; add to the nearest
+3. **Write a regression test (TDD red)** – follow `tests/README.md`; add to the nearest
    existing test file.
 4. **Fix (TDD green)** – make the minimal change required; do not refactor unrelated code.
 5. **Verify no regressions** – run `make test` and confirm coverage remains ≥ 90 %.

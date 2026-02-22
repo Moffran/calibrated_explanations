@@ -73,7 +73,7 @@ Design patterns:
 
 ## 4. Testing Standards
 
-> Full guidance: `.github/tests-guidance.md`
+> Full guidance: `tests/README.md`
 
 - Framework: **pytest** + **pytest-mock**. No alternative frameworks.
 - Naming: `should_<behavior>_when_<condition>`.
@@ -111,7 +111,7 @@ Every fallback must be visible to users. No silent fallbacks.
 | `docs/improvement/adrs/` | Architectural Decision Records |
 | `docs/standards/` | Engineering Standards (STD-001 through STD-005) |
 | `docs/improvement/test-quality-method/` | Test-quality agent team definitions |
-| `.github/tests-guidance.md` | Authoritative test guidance |
+| `tests/README.md` | Authoritative test guidance |
 | `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
 | `Makefile` | Entry points: `make test`, `make ci-local` |
 
@@ -144,7 +144,7 @@ Before any implementation work:
 ## 8. Design Patterns & TDD
 
 **TDD workflow:**
-1. **Red** – Write a failing test first (follow `.github/tests-guidance.md`).
+1. **Red** – Write a failing test first (follow `tests/README.md`).
 2. **Green** – Implement the minimal code to pass the test.
 3. **Refactor** – Clean up while keeping tests green.
 

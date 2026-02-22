@@ -15,7 +15,7 @@ Read the relevant ADRs in `docs/improvement/adrs/`:
 1. **Identify plugin type** – calibrator, plot, or explanation.
 2. **Define the Protocol** – extend the matching `typing.Protocol` in `src/calibrated_explanations/plugins/`.
 3. **Register the plugin** – add an entry to the plugin registry; respect the trust model (ADR-006).
-4. **Write failing tests first (TDD red)** – follow `.github/tests-guidance.md`; place tests in `tests/unit/plugins/test_<plugin_name>.py` or the nearest existing file.
+4. **Write failing tests first (TDD red)** – follow `tests/README.md`; place tests in `tests/unit/plugins/test_<plugin_name>.py` or the nearest existing file.
 5. **Implement the plugin (TDD green)** – create `src/calibrated_explanations/plugins/<plugin_name>.py` with Numpy-style docstrings (`from __future__ import annotations`).
 6. **Refactor** – ensure no circular imports; use lazy imports for heavy libs.
 7. **Emit a fallback warning if appropriate** – follow the Fallback Visibility Policy in `copilot-instructions.md` §7.

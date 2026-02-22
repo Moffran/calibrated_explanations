@@ -35,7 +35,7 @@
 - **Deprecation:** Use `utils.deprecate` for legacy features (ADR-011).
 
 ## 4. Testing Guidance (Critical)
-> **Ref:** `.github/tests-guidance.md`
+> **Ref:** `tests/README.md`
 
 1. **Modify existing files first.** Locate the nearest test file for the SUT and extend it.
 2. **Respect scope + naming.** Use `tests/unit|integration|e2e/...` paths with `test_<module>.py` naming.
