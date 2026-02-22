@@ -263,8 +263,6 @@ AI agents have no cross-session memory. To make feedback durable:
    - `**Verification:**` command(s) proving the fix
    - `**Status:**` `open | ✅ incorporated`
 
-This is the **only** reliable way to make an agent "learn" across sessions.
-
 ---
 
 ## 13. Test-Quality Improvement Method
@@ -335,3 +333,17 @@ All outputs land in `reports/over_testing/`.
 | `plugins/registry.py` | ≥ 95% |
 | `calibration/interval_regressor.py` | ≥ 95% |
 | Package-wide | ≥ 90% |
+
+---
+
+## 14. Feedback-Driven Agent Optimization (Shared Canonical Loop)
+
+To maximize agent and Copilot efficiency for calibrated_explanations:
+
+- **Centralize feedback:** Log all agent/Copilot errors, misses, and improvement notes in `.github/copilot-feedback-log.md` after each PR/session.
+- **Update instructions:** After each feedback entry, update `AGENT_INSTRUCTIONS.md` and platform-specific instruction files with new rules, anti-patterns, and best practices.
+- **Strict CE-first enforcement:** Always prime agents with the latest canonical instructions; fail fast or warn for non-canonical patterns.
+- **Continuous improvement:** Review feedback log and instructions after each release/major PR; communicate changes to all agent platforms.
+- **Verification:** Ensure feedback log and instructions are updated and referenced in PRs; validate agent suggestions follow latest CE-first guardrails.
+
+This loop ensures all agents and Copilot benefit from improvements and become more expert and reliable over time.
