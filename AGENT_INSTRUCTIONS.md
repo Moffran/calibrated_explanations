@@ -25,11 +25,13 @@ or explanation output.
 3. **Fit** – `explainer.fit(x_proper, y_proper)` → assert `explainer.fitted is True`.
 4. **Calibrate** – `explainer.calibrate(x_cal, y_cal)` → assert `explainer.calibrated is True`.
 5. **Explain** – Use `explainer.explain_factual(X)` or `explainer.explore_alternatives(X)`.
+    For higher security / in-distribution filtering, use `explainer.explain_guarded_factual(X)`
+    or `explainer.explore_guarded_alternatives(X)` instead.
 6. **Calibrated by default** – Do not return uncalibrated outputs unless explicitly
    requested.
 7. **Conjunctions** – `explanations.add_conjunctions(...)` or
    `explanations[idx].add_conjunctions(...)`.
-8. **Narratives & plots** – `.to_narrative(format=...)` and `.plot(...)`.
+8. **Narratives & plots** – `.to_narrative(output_format=...)` and `.plot(...)`.
 9. **Probabilistic regression** – `threshold=` for probabilistic intervals;
    `low_high_percentiles=` for conformal.
 
