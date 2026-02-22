@@ -4,6 +4,12 @@
 > Agents, automation prompts, and human contributors all follow this document.
 > References in `.github/copilot-instructions.md`, `AGENT_INSTRUCTIONS.md`, and
 > `.github/instructions/tests.instructions.md` all point here.
+>
+> **Test cleanup and quality assurance** (coverage-gap closure, redundant-test
+> removal, anti-pattern auditing, dead-code detection): use the
+> `test-quality-improvement` agent team defined in
+> `docs/improvement/test-quality-method/`. See the **Test-Quality Improvement
+> Method** section at the end of this file for an overview and quick-start.
 
 # Centralized Test Guidance
 
@@ -852,3 +858,45 @@ def test_complex_workflow():
 - Testing graceful degradation
 - Testing compatibility with missing optional dependencies
 - Testing the fallback mechanism itself
+
+---
+
+## Test-Quality Improvement Method
+
+When you need to **improve or clean up** the test suite (coverage gaps,
+redundant tests, anti-patterns, dead code), use the structured
+`test-quality-improvement` agent team rather than ad-hoc edits.
+
+### When to use this method
+
+| Situation | Go-to agent |
+|---|---|
+| Coverage is below a gate or a module has uncovered blocks | `test-creator` |
+| Tests exist that cover zero unique lines | `pruner` |
+| Tests use private members, weak assertions, or non-determinism | `anti-pattern-auditor` |
+| Source code quality gates are failing (imports, docstrings, exceptions) | `code-quality-auditor` |
+| Source code appears dead or covered only incidentally | `deadcode-hunter` |
+| The test workflow itself needs improvement | `process-architect` |
+| Any proposal needs challenge before execution | `devils-advocate` |
+| Ready to execute an approved plan | `implementer` |
+
+### Quick start
+
+```bash
+# Run the full per-test coverage pipeline (slow; ~15–30 min)
+python scripts/over_testing/run_over_testing_pipeline.py
+
+# Check per-module coverage gates
+python scripts/quality/check_coverage_gates.py
+```
+
+Outputs land in `reports/over_testing/`. Then engage the appropriate agent
+from `docs/improvement/test-quality-method/`.
+
+### Three usage modes
+
+- **Option A – Test-Focused**: pipeline → prune redundant tests → close coverage gaps
+- **Option B – Code-Focused**: code-quality gates → refactor + dead-code cleanup
+- **Option C – Full Cycle**: both A and B (recommended for large changes)
+
+Full method documentation: `docs/improvement/test-quality-method/README.md`.

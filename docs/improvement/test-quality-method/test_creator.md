@@ -151,20 +151,20 @@ Write your proposal containing:
 
 ## Key Constraints
 
-- **Use public APIs only.** The private member scanner (`conftest.py`
-  `pytest_sessionstart`) blocks tests accessing private members (`_name`)
-  unless in `.github/private_member_allowlist.json`. Always find a public
-  method that exercises the private code internally.
-- **Follow ADR-030 quality criteria:**
-  - Deterministic (no random, no time-dependent, no network)
-  - Public-contract testing (no `obj._internal`)
-  - Strong assertions (assert specific values, not just `isinstance`)
-  - Proper layering (unit tests don't need full integration setup)
-  - Fixture discipline (use shared fixtures from `tests/helpers/`)
-- **No import-only tests.** `assert isinstance(mod, types.ModuleType)` has
-  zero behavioral value. Every test must assert a specific behavior.
-- **Prefer few high-value tests over many low-value tests.** One test
-  covering 15 lines is better than 5 tests each covering 3 lines.
+> **Full test writing standards live in `tests/README.md`** — the single
+> canonical source for test style, naming, structure, fallback rules, and
+> ADR-030 quality criteria. Refer there for any test creation question.
+
+Key rules summarised for this agent:
+
+- **Use public APIs only.** Never access `_private` members unless listed in
+  `.github/private_member_allowlist.json`.
+- **Determinism**: no randomness, wall-clock, or network in tests.
+- **Strong assertions**: every test must assert specific values, not just
+  `isinstance`.
+- **No zero-unique-lines tests**: a test that adds 0 unique coverage lines must
+  be removed or parameterized (ADR-030).
+- **Prefer few high-value tests**: one test covering 15 lines beats 5 covering 3.
 
 ## Key Scripts
 
