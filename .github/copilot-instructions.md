@@ -1,8 +1,12 @@
 # GitHub Copilot Instructions for `calibrated_explanations`
 
-> **Scope:** Repository-wide defaults for Copilot. **Always** pair these notes with `.github/tests-guidance.md` and `docs/improvement/adrs/` for authoritative rules.
-> **Setup guide:** `docs/get-started/copilot-setup.md` — how to configure VS Code, use prompt files, and keep this context up to date.
-> **Feedback log:** `.github/copilot-feedback-log.md` — dated record of corrections; run `/refresh-ce-context feedback="…"` to add an entry.
+> **Canonical agent instructions:** `AGENT_INSTRUCTIONS.md` — the single source of
+> truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
+> that first. This file adds **only** GitHub Copilot-specific context.
+> **Setup guide:** `docs/get-started/copilot-setup.md` — VS Code setup, prompt files, feedback loop.
+> **Feedback log:** `.github/copilot-feedback-log.md` — dated corrections; run `/refresh-ce-context feedback="…"` to add an entry.
+
+---
 
 ## 1. Project Context & Architecture
 - **Core Purpose:** Extract calibrated explanations (factual rules, alternatives, prediction intervals) from scikit-learn compatible models.
@@ -42,6 +46,7 @@
 ## 5. Key Files & Directories
 - `src/calibrated_explanations/core/__init__.py`: Public API surface (lazy loaded).
 - `src/calibrated_explanations/plugins/`: Plugin implementations.
+- `src/calibrated_explanations/ce_agent_utils.py`: CE-first runtime guardrails for agents.
 - `docs/improvement/adrs/`: Architectural Decision Records (Read these!).
 - `Makefile`: Entry points for build and test tasks.
 
@@ -97,3 +102,38 @@ Prefer using a python -c command, like:
 ```pwsh
 python -c "import calibrated_explanations as ce; print(ce.__version__)"
 ```
+
+---
+
+## 9. Copilot-Specific: Instruction Files (auto-injected context)
+
+The following files are automatically loaded into Copilot's context based on the
+file you are editing (via `applyTo` frontmatter). You do not need to paste them
+into the chat.
+
+| File | Scope | Purpose |
+|---|---|---|
+| `.github/instructions/source-code.instructions.md` | `src/**/*.py` | Module layout, import rules, docstring style, error handling |
+| `.github/instructions/tests.instructions.md` | `tests/**`, `*test*` | Test framework, naming, structure, coverage gate |
+| `.github/instructions/execution plan.instructions.md` | all files | Release plan, ADR conformance, changelog policy |
+
+---
+
+## 10. Copilot-Specific: Prompt Slash Commands
+
+Type `/` in Copilot Chat to invoke these CE workflows:
+
+| Command | Use when |
+|---|---|
+| `/generate-tests-strict` | Writing new tests for any CE module |
+| `/implement-plugin` | Scaffolding a new calibrator, plot, or explanation plugin |
+| `/fix-issue` | Diagnosing and fixing a bug or failing test |
+| `/refresh-ce-context` | Updating instructions after an API change or to record feedback |
+
+---
+
+## 11. Copilot-Specific: Chat Tips
+
+- Use `@workspace` for questions about CE internals — it indexes local files.
+- Use `#file:AGENT_INSTRUCTIONS.md` to explicitly pin the canonical instructions in chat.
+- Commit instruction-file updates in the same PR as the code change so history stays in sync.

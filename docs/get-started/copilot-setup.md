@@ -1,7 +1,12 @@
 # GitHub Copilot Setup Guide for `calibrated_explanations`
 
-> **Goal:** Configure an environment where Copilot understands CE deeply, learns from
-> your feedback, and stays in sync with every API change.
+> **Goal:** Configure an environment where GitHub Copilot (and all other agent
+> platforms) understand CE deeply, learn from your feedback, and stay in sync with
+> every API change.
+>
+> For the canonical CE rules that apply to **all** agents, see
+> `AGENT_INSTRUCTIONS.md`. For platform-specific setup of other agents, see
+> `AGENTS.md` (Codex), `CLAUDE.md` (Claude Code), `GEMINI.md` (Google Gemini).
 
 ---
 
@@ -154,3 +159,28 @@ the current milestone?
   CE test rubric automatically.
 - **Pin ADR references** in code comments when making architectural decisions so
   future Copilot sessions understand *why* a pattern is used.
+
+---
+
+## 9. Multi-agent canonical architecture
+
+This repository maintains a **single source of truth** for all AI agent platforms:
+
+| File | Platform | Contents |
+|---|---|---|
+| `AGENT_INSTRUCTIONS.md` | **All agents** | Canonical CE rules: CE-first policy, architecture, coding standards, testing, fallback policy, key files, commands |
+| `.github/copilot-instructions.md` | GitHub Copilot | Mirrors canonical + Copilot-specific: instruction files, prompt commands, chat tips |
+| `AGENTS.md` | Codex (OpenAI) | References canonical + Codex-specific: session priming, task template, workspace sync |
+| `CLAUDE.md` | Claude Code | References canonical + Claude-specific: permissions, bash tool rules, tool use guidance |
+| `GEMINI.md` | Google Gemini | References canonical + Gemini-specific: session priming, context management, workspace sync |
+
+### Update workflow
+
+When the CE public API changes or an ADR is closed:
+
+1. Run `/refresh-ce-context` (Copilot) — it updates `AGENT_INSTRUCTIONS.md` first,
+   then propagates to all platform files.
+2. Review the proposed diffs in each file.
+3. Commit all instruction-file updates in the same PR as the code change.
+
+This ensures every agent platform receives the same update simultaneously.
