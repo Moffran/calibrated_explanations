@@ -49,6 +49,10 @@ ci-local-new:
 check-private-members:
 	python scripts/anti-pattern-analysis/scan_private_usage.py --check
 
+.PHONY: check-agent-instructions
+check-agent-instructions:
+	python scripts/quality/check_agent_instruction_consistency.py
+
 # Run stacked CI-equivalent checks in the current Python environment,
 # including `pre-commit run --all-files` (no install/bootstrap steps).
 .PHONY: local-checks local-checks-pr

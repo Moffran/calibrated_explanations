@@ -31,7 +31,7 @@ This repository uses a single source of truth for all test-related instructions.
 4. Creating a new file requires a **“Why a new test file?”** section in the PR describing scope, justification, and exact path.
 
 ## Test Content Rubric
-- **Naming:** prefer `should_<behavior>_when_<condition>` style.
+- **Naming:** prefer `test_should_<behavior>_when_<condition>` style.
 - **Structure:** follow Arrange–Act–Assert with one logical assertion block per behavior.
 - **Determinism:** no real network, clock, or randomness. Use mocks/fakes, freeze time, or seed RNG, and pair heavily mocked unit tests with at least one integration test.
 - **Snapshots/Round-trips:** acceptable only for stable structures; always combine with semantic assertions (e.g., serialize → deserialize → verify invariants).
@@ -39,7 +39,7 @@ This repository uses a single source of truth for all test-related instructions.
 - **Performance:** keep unit tests <100 ms, integration tests <2 s when feasible. Mark slow tests using existing repo conventions.
 
 ## Coverage & Tooling Expectations
-- Local gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90`.
+- Local gate: `pytest --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-fail-under=90`.
 - Lint/mypy requirements still apply to any touched modules; update docs when behavior changes.
 - For deep domain context, see the "Detailed Guidelines & Patterns" section below.
 

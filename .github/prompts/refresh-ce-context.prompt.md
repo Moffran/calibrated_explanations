@@ -42,7 +42,12 @@ below. It will NOT generate new files unless asked.
    sections of each platform file.
 6. **Incorporate user feedback** – if the user supplied feedback text (see `feedback=`
    below), create a new bullet in the relevant section of `AGENT_INSTRUCTIONS.md`
-   and append a dated entry to `.github/copilot-feedback-log.md`.
+   and append a dated entry to `.github/copilot-feedback-log.md` using:
+   - `**Feedback:**`
+   - `**Root cause:**`
+   - `**Durable fix:**`
+   - `**Verification:**`
+   - `**Status:**`
 
 ## Inputs (optional)
 

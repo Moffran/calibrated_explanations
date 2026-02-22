@@ -39,7 +39,7 @@
 
 1. **Modify existing files first.** Locate the nearest test file for the SUT and extend it.
 2. **Respect scope + naming.** Use `tests/unit|integration|e2e/...` paths with `test_<module>.py` naming.
-3. **Content rubric.** Output deterministic, AAA-structured pytest tests named `should_<behavior>_when_<condition>`.
+3. **Content rubric.** Output deterministic, AAA-structured pytest tests named `test_should_<behavior>_when_<condition>`.
 4. **Mocking & snapshots.** Mock only to avoid slow I/O. Assert behaviors, not implementation details.
 5. **Coverage context.** Keep an eye on `pytest --cov=... --cov-fail-under=90`.
 
@@ -137,3 +137,4 @@ Type `/` in Copilot Chat to invoke these CE workflows:
 - Use `@workspace` for questions about CE internals — it indexes local files.
 - Use `#file:AGENT_INSTRUCTIONS.md` to explicitly pin the canonical instructions in chat.
 - Commit instruction-file updates in the same PR as the code change so history stays in sync.
+- Persist feedback in `.github/copilot-feedback-log.md` with `Feedback`, `Root cause`, `Durable fix`, `Verification`, and `Status` fields.

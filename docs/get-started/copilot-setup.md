@@ -80,8 +80,9 @@ For GitHub Copilot, the instructions are injected automatically — no priming n
 
 ## 4. GitHub Copilot — VS Code workspace setup
 
-Open the repository root in VS Code. The workspace settings in `.vscode/settings.json`
-activate the following automatically:
+Open the repository root in VS Code. Copilot features are provided by the
+Copilot/Copilot Chat extensions and GitHub's instruction-file loading. This
+repository does not require custom VS Code Copilot keys in `.vscode/settings.json`.
 
 - **Copilot completions** for Python, Markdown, and YAML.
 - **Next Edit Suggestions** – Copilot proposes the next logical edit as you type.
@@ -115,7 +116,7 @@ Prompt slash commands available in Copilot Chat:
 
 1. For GitHub Copilot, run in Chat:
    ```
-   /refresh-ce-context module=calibrated_explanations.core.explainer
+   /refresh-ce-context module=calibrated_explanations.core.calibrated_explainer
    ```
    For other platforms, ask the agent to read `AGENT_INSTRUCTIONS.md`, compare it
    against the current `src/calibrated_explanations/` source, and propose minimal diffs.
@@ -158,6 +159,13 @@ clarifying bullet to the relevant instruction file.
 For other platforms, update `AGENT_INSTRUCTIONS.md` directly with a new bullet in
 the relevant section, then add a dated entry to `.github/copilot-feedback-log.md`
 manually.
+
+Use this mandatory entry schema:
+- `**Feedback:**` what the agent got wrong
+- `**Root cause:**` why the miss happened
+- `**Durable fix:**` exact instruction/test/script updates
+- `**Verification:**` command(s) proving the fix
+- `**Status:**` `open | ✅ incorporated`
 
 ### Structured feedback review
 

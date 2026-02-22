@@ -76,12 +76,12 @@ Design patterns:
 > Full guidance: `tests/README.md`
 
 - Framework: **pytest** + **pytest-mock**. No alternative frameworks.
-- Naming: `should_<behavior>_when_<condition>`.
+- Naming: `test_should_<behavior>_when_<condition>` (pytest collection-safe).
 - Structure: Arrange–Act–Assert; one logical assertion block per behavior.
 - Determinism: no real network, clock, or randomness; seed RNG; freeze time.
 - File policy: extend the nearest existing test file first; new files require a
   "Why a new test file?" justification in the PR.
-- Coverage gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90`.
+- Coverage gate: `pytest --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-fail-under=90`.
 - Fallback tests: tests that rely on a fallback **must** use the `enable_fallbacks`
   fixture and assert a `UserWarning` is raised.
 
@@ -126,7 +126,7 @@ pip install -e .[dev]
 # Run tests
 make test
 # or
-pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90
+pytest --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-fail-under=90
 
 # Run full local CI (lint + type-check + tests)
 make ci-local
@@ -256,7 +256,12 @@ AI agents have no cross-session memory. To make feedback durable:
    - A test that reproduces the mistake.
    - A helper update in `ce_agent_utils.py`.
 2. Commit the change in the same PR as the fix.
-3. Record a dated entry in `.github/copilot-feedback-log.md` (see format there).
+3. Record a dated entry in `.github/copilot-feedback-log.md` using this schema:
+   - `**Feedback:**` what the agent got wrong
+   - `**Root cause:**` why the error happened
+   - `**Durable fix:**` exact files/tests/scripts updated
+   - `**Verification:**` command(s) proving the fix
+   - `**Status:**` `open | ✅ incorporated`
 
 This is the **only** reliable way to make an agent "learn" across sessions.
 

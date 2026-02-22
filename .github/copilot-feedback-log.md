@@ -4,11 +4,16 @@ Dated entries are added here by the `/refresh-ce-context` prompt whenever
 `feedback=` is supplied. Once a pattern is reflected in an instruction file,
 mark the entry ✅ and it can be removed in the next cleanup pass.
 
+This file is the shared compatibility feedback log for all agent platforms
+(Copilot, Codex, Claude Code, Gemini).
+
 Format:
 ```
 ## YYYY-MM-DD – <short description>
 **Feedback:** <what Copilot got wrong or missed>
-**Fix:** <which instruction file was updated and what was added>
+**Root cause:** <why the miss happened>
+**Durable fix:** <which instruction/test/script files were updated>
+**Verification:** <command(s) that prove the fix>
 **Status:** open | ✅ incorporated
 ```
 

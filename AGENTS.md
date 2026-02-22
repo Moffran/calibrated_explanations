@@ -40,7 +40,22 @@ Task:
 
 ---
 
-## 3. Workspace sync (Codex-specific)
+## 3. Compact task modes (Codex-specific)
+
+Use these modes to keep responses and validation proportional:
+
+- `mode=quick-fix`: small edit, targeted test/script validation.
+- `mode=feature`: code + tests + docs for one behavior change.
+- `mode=hardening`: instruction/CI/test policy work across files.
+
+For each mode, explicitly state:
+- changed files
+- validation command(s)
+- residual risk
+
+---
+
+## 4. Workspace sync (Codex-specific)
 
 Run this sync routine after any CE version update or after pulling changes:
 
@@ -58,7 +73,17 @@ Then ask Codex to:
 
 ---
 
-## 4. Feedback loop (Codex-specific)
+## 5. Validation path (Codex-specific)
+
+Default validation order:
+1. `make local-checks-pr` (fast required checks)
+2. `make local-checks` only when changes touch main-branch gates (coverage/perf/over-testing)
+
+If a command is unavailable in the current shell, run the equivalent Python entrypoint and report it.
+
+---
+
+## 6. Feedback loop (Codex-specific)
 
 Codex has no persistent cross-session memory. Convert feedback into durable files:
 
@@ -70,11 +95,18 @@ Codex has no persistent cross-session memory. Convert feedback into durable file
 | Platform-specific Codex quirk | Add a bullet to this file |
 | General improvement | Update `PROMPTS.md` |
 
+Feedback entries must be appended to `.github/copilot-feedback-log.md` using:
+- `Feedback`
+- `Root cause`
+- `Durable fix`
+- `Verification`
+- `Status`
+
 Commit the changes in the same PR so the correction is permanent.
 
 ---
 
-## 5. CE-first utilities (Codex-specific)
+## 7. CE-first utilities (Codex-specific)
 
 Prefer these helpers over ad-hoc code:
 

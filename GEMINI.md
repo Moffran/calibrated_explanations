@@ -31,7 +31,7 @@ Gemini has a large context window. Use it to include the full source of relevant
 modules when answering questions, rather than working from partial snippets.
 
 Gemini does not persist memory across unrelated sessions. Use the same feedback
-persistence pattern as all agents (see `AGENT_INSTRUCTIONS.md` §11). For
+persistence pattern as all agents (see `AGENT_INSTRUCTIONS.md` §12). For
 Gemini-specific quirks, add a bullet to this file and commit it.
 
 ---
@@ -42,7 +42,7 @@ Gemini-specific quirks, add a bullet to this file and commit it.
   `AGENT_INSTRUCTIONS.md` §7.
 - Do not run commands that modify files outside the repository root.
 - Use `make test` to validate changes; do not invent alternative test commands.
-- Never use the Python heredoc construct (see `AGENT_INSTRUCTIONS.md` §10).
+- Never use the Python heredoc construct (see `AGENT_INSTRUCTIONS.md` §11).
 
 ---
 
@@ -67,3 +67,6 @@ reference stale API signatures.
 | Wrong API usage | Update `AGENT_INSTRUCTIONS.md` §1 or §2 |
 | Platform-specific Gemini quirk | Add a bullet to this file |
 | Recurring test mistake | Add a test to `tests/unit/test_ce_agent_utils.py` |
+
+All feedback entries must be recorded in `.github/copilot-feedback-log.md`
+with `Feedback`, `Root cause`, `Durable fix`, `Verification`, and `Status`.

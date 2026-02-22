@@ -32,6 +32,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -c constraints.txt
           pip install -e .[dev,eval] -c constraints.txt
+      - name: Agent instruction consistency
+        run: |
+          python scripts/quality/check_agent_instruction_consistency.py
       - name: Run core tests with coverage (context-aware for over-testing analysis)
         run: |
           pytest -q -o addopts= \
