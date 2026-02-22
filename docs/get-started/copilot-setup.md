@@ -1,33 +1,84 @@
-# GitHub Copilot Setup Guide for `calibrated_explanations`
+# AI Agent Setup Guide for `calibrated_explanations`
 
-> **Goal:** Configure an environment where GitHub Copilot (and all other agent
-> platforms) understand CE deeply, learn from your feedback, and stay in sync with
-> every API change.
+> **Goal:** Configure any AI agent platform so it understands CE deeply, learns
+> from your feedback, and stays in sync with every API change.
 >
-> For the canonical CE rules that apply to **all** agents, see
-> `AGENT_INSTRUCTIONS.md`. For platform-specific setup of other agents, see
-> `AGENTS.md` (Codex), `CLAUDE.md` (Claude Code), `GEMINI.md` (Google Gemini).
+> The **canonical CE rules** that apply to all agents live in `AGENT_INSTRUCTIONS.md`.
+> Platform-specific setup files build on top of that canonical:
+>
+> | Platform | File |
+> |---|---|
+> | GitHub Copilot | `.github/copilot-instructions.md` + `.github/prompts/` |
+> | Codex (OpenAI) | `AGENTS.md` |
+> | Claude Code | `CLAUDE.md` + `.claude/settings.json` |
+> | Google Gemini | `GEMINI.md` |
 
 ---
 
 ## 1. Prerequisites
 
-| Tool | Minimum version | Notes |
-|---|---|---|
-| VS Code | 1.90 | Required for instruction-file support |
-| GitHub Copilot extension | latest | Chat + completions |
-| GitHub Copilot Chat extension | latest | Prompt files and `/` commands |
-| Python extension (ms-python) | latest | Test runner integration |
+| Requirement | Notes |
+|---|---|
+| Python environment | Use one venv per CE branch; install editable: `pip install -e .[dev]` |
+| Agent platform | See platform-specific file for tool installation steps |
+| VS Code (Copilot only) | v1.90+ with Copilot and Copilot Chat extensions |
 
-Install the Copilot extensions from the VS Code Marketplace or via the CLI:
+Quick dev environment setup (all platforms):
+
 ```bash
-code --install-extension GitHub.copilot
-code --install-extension GitHub.copilot-chat
+python -m venv .venv
+source .venv/bin/activate       # or .venv\Scripts\activate on Windows
+pip install --upgrade pip
+pip install -e .[dev]
 ```
 
 ---
 
-## 2. Open the workspace
+## 2. How CE agent context is structured
+
+Every agent platform reads a two-layer set of files:
+
+### Layer 1 — Canonical (all agents)
+
+`AGENT_INSTRUCTIONS.md` at the repo root contains:
+
+- CE-first policy (the mandatory pre-explain checklist)
+- Architecture and module boundary rules
+- Coding standards (type hints, Numpy docstrings, lazy imports)
+- Testing standards and fallback visibility policy
+- ADR/Standards reference map (all 26 active ADRs + 5 STDs with when-to-consult guidance)
+- Test-quality improvement method (8-agent team from `docs/improvement/test-quality-method/`)
+- Key files & directories, development workflow, TDD patterns
+
+### Layer 2 — Platform-specific
+
+Each platform file adds only what is unique to that agent:
+
+| File | Platform | What it adds |
+|---|---|---|
+| `.github/copilot-instructions.md` | GitHub Copilot | Auto-injected instruction files, prompt slash commands, `@workspace` chat tips |
+| `AGENTS.md` | Codex | Session priming prompt, task template, workspace sync routine, CE-first utility list |
+| `CLAUDE.md` | Claude Code | Permissions model (`.claude/settings.json`), bash tool rules, tool use guidance |
+| `GEMINI.md` | Google Gemini | Session priming prompt, context management, workspace sync |
+
+---
+
+## 3. Session priming (all platforms)
+
+At the start of any agent session, prime the agent with:
+
+```text
+You are a CE-first agent for calibrated_explanations. Read AGENT_INSTRUCTIONS.md
+and <platform file> first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
+Fail fast if CE-first invariants are not satisfied.
+```
+
+Replace `<platform file>` with `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` as appropriate.
+For GitHub Copilot, the instructions are injected automatically — no priming needed.
+
+---
+
+## 4. GitHub Copilot — VS Code workspace setup
 
 Open the repository root in VS Code. The workspace settings in `.vscode/settings.json`
 activate the following automatically:
@@ -38,27 +89,18 @@ activate the following automatically:
   automatically loaded into Copilot's context based on the file you are editing.
 - **Workspace agent** – Copilot can search your local files when answering questions.
 
----
-
-## 3. Repository-level instruction files
-
-These files feed Copilot context automatically – you do not need to paste them into
-the chat yourself.
+Instruction files injected automatically by VS Code:
 
 | File | Scope | Purpose |
 |---|---|---|
-| `.github/copilot-instructions.md` | all files | Architecture, coding standards, TDD policy, fallback visibility rules |
-| `.github/instructions/source-code.instructions.md` | `src/**/*.py` | Module layout, import rules, docstring style, error handling |
-| `.github/instructions/tests.instructions.md` | `tests/**`, `*test*` | Testing framework, naming, structure, coverage gate |
+| `.github/copilot-instructions.md` | all files | Architecture, coding standards, TDD policy, fallback rules |
+| `.github/instructions/source-code.instructions.md` | `src/**/*.py` | Module layout, import rules, docstring style |
+| `.github/instructions/tests.instructions.md` | `tests/**`, `*test*` | Testing framework, naming, coverage gate |
 | `.github/instructions/execution plan.instructions.md` | all files | Release plan, ADR conformance, changelog policy |
 
----
+Prompt slash commands available in Copilot Chat:
 
-## 4. Reusable prompt files (slash commands)
-
-Type `/` in Copilot Chat to see all available prompts. CE-specific prompts:
-
-| Prompt | Use when |
+| Command | Use when |
 |---|---|
 | `/generate-tests-strict` | Writing new tests for any CE module |
 | `/implement-plugin` | Scaffolding a new calibrator, plot, or explanation plugin |
@@ -67,120 +109,112 @@ Type `/` in Copilot Chat to see all available prompts. CE-specific prompts:
 
 ---
 
-## 5. Keeping Copilot up to date
+## 5. Keeping agents up to date
 
 ### After an API change
 
-1. Open Copilot Chat and run:
+1. For GitHub Copilot, run in Chat:
    ```
    /refresh-ce-context module=calibrated_explanations.core.explainer
    ```
-2. Review the proposed diff; accept or adjust.
+   For other platforms, ask the agent to read `AGENT_INSTRUCTIONS.md`, compare it
+   against the current `src/calibrated_explanations/` source, and propose minimal diffs.
+2. Review the proposed diffs; accept or adjust.
 3. Commit the updated instruction files alongside the code change.
 
 ### After an ADR is accepted or closed
 
-1. Run:
-   ```
-   /refresh-ce-context adr=ADR-NNN
-   ```
-2. The prompt will suggest targeted edits to `.github/copilot-instructions.md`
-   and `.github/instructions/source-code.instructions.md`.
+Run `/refresh-ce-context adr=ADR-NNN` (Copilot) or ask the agent to update the
+ADR status row in `AGENT_INSTRUCTIONS.md` §9.
+
+### Workspace sync routine (Codex / Claude / Gemini)
+
+```bash
+source .venv/bin/activate
+pip install -e .[dev]
+python -m pip check
+pytest -q
+```
+
+Then ask the agent to re-read `AGENT_INSTRUCTIONS.md` and diff
+`src/calibrated_explanations/` for changed signatures.
 
 ---
 
-## 6. Providing feedback to Copilot (learning loop)
+## 6. Feedback loop (all platforms)
 
-Copilot does not have a built-in persistent memory, but you can close the feedback
-loop by updating the instruction files directly.
+No agent platform retains memory across unrelated sessions. The only way to make
+feedback durable is to encode it in versioned repository files.
 
-### Quick feedback during a chat session
+### Quick feedback
 
-When Copilot gives a wrong answer, use the thumbs-down button **and** follow up with:
-
+For GitHub Copilot, run:
 ```
-/refresh-ce-context feedback="Copilot suggested importing matplotlib at module level – it must always be lazy"
+/refresh-ce-context feedback="Agent suggested importing matplotlib at module level – it must always be lazy"
 ```
+This appends a dated entry to `.github/copilot-feedback-log.md` and adds a
+clarifying bullet to the relevant instruction file.
 
-This creates a dated entry in `.github/copilot-feedback-log.md` **and** adds a
-clarifying bullet to the relevant instruction file, so the same mistake will not
-recur in future sessions.
+For other platforms, update `AGENT_INSTRUCTIONS.md` directly with a new bullet in
+the relevant section, then add a dated entry to `.github/copilot-feedback-log.md`
+manually.
 
 ### Structured feedback review
 
-Schedule a periodic review (e.g. after each sprint or release):
-
+After each sprint or release:
 1. Open `.github/copilot-feedback-log.md` and review accumulated entries.
-2. For each pattern of errors, update the relevant instruction file and remove the
-   log entry once incorporated.
-3. Commit the changes so every team member benefits.
+2. Verify each correction is reflected in `AGENT_INSTRUCTIONS.md` or the platform
+   instruction file.
+3. Mark resolved entries ✅ and commit the changes so every team member benefits.
 
 ---
 
-## 7. Recommended Copilot Chat workflows
+## 7. Common CE workflows (all platforms)
 
 ### Explain a prediction end-to-end
 
-```
-@workspace explain how WrapCalibratedExplainer.explain_factual works, starting from
-the public call to the plugin registry dispatch
+```text
+Read AGENT_INSTRUCTIONS.md, then explain how WrapCalibratedExplainer.explain_factual
+works from the public call down to the plugin registry dispatch.
 ```
 
 ### Scaffold a new plugin
 
-```
+```text
 /implement-plugin plugin_type=calibrator plugin_name=isotonic_regression target_adr=ADR-013
+```
+(Copilot slash command) or give the equivalent instruction to any other agent.
+
+### Run a test-quality improvement cycle
+
+```text
+Read docs/improvement/test-quality-method/README.md, then act as the test-creator
+agent and produce a prioritized coverage-gap analysis.
 ```
 
 ### Check release readiness
 
-```
-@workspace which items in docs/improvement/RELEASE_PLAN_v1.md are still open for
-the current milestone?
+```text
+Read docs/improvement/RELEASE_PLAN_v1.md and list all items still open for the
+current milestone.
 ```
 
 ### Debug a failing test
 
-```
+```text
 /fix-issue failing_test=tests/unit/core/test_explainer.py::test_calibration_state
 ```
 
 ---
 
-## 8. Tips for best results
+## 8. Tips for best results (all platforms)
 
-- **Always use `@workspace`** for questions about CE internals – it gives Copilot access
-  to the indexed source files.
-- **Keep instruction files short and precise.** Copilot's context window is limited;
-  a densely written instruction is more useful than a long one.
-- **Commit instruction-file updates in the same PR as the code change** so the two
-  stay in sync in git history.
-- **Use the `/generate-tests-strict` prompt** when writing tests – it enforces the
-  CE test rubric automatically.
+- **Keep instruction files short and precise.** A densely written instruction is
+  more useful than a long one.
+- **Commit instruction-file updates in the same PR as the code change** so history
+  stays in sync.
+- **Always validate** with `make test` (or `pytest -q`) after any code change.
 - **Pin ADR references** in code comments when making architectural decisions so
-  future Copilot sessions understand *why* a pattern is used.
-
----
-
-## 9. Multi-agent canonical architecture
-
-This repository maintains a **single source of truth** for all AI agent platforms:
-
-| File | Platform | Contents |
-|---|---|---|
-| `AGENT_INSTRUCTIONS.md` | **All agents** | Canonical CE rules: CE-first policy, architecture, coding standards, testing, fallback policy, key files, commands |
-| `.github/copilot-instructions.md` | GitHub Copilot | Mirrors canonical + Copilot-specific: instruction files, prompt commands, chat tips |
-| `AGENTS.md` | Codex (OpenAI) | References canonical + Codex-specific: session priming, task template, workspace sync |
-| `CLAUDE.md` | Claude Code | References canonical + Claude-specific: permissions, bash tool rules, tool use guidance |
-| `GEMINI.md` | Google Gemini | References canonical + Gemini-specific: session priming, context management, workspace sync |
-
-### Update workflow
-
-When the CE public API changes or an ADR is closed:
-
-1. Run `/refresh-ce-context` (Copilot) — it updates `AGENT_INSTRUCTIONS.md` first,
-   then propagates to all platform files.
-2. Review the proposed diffs in each file.
-3. Commit all instruction-file updates in the same PR as the code change.
-
-This ensures every agent platform receives the same update simultaneously.
+  future agent sessions understand *why* a pattern is used.
+- **Use the test-quality-method agents** (`test-creator`, `pruner`, etc.) for large
+  test changes rather than writing coverage-padding tests by hand.
