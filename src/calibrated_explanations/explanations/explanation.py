@@ -1,5 +1,7 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments, line-too-long
+from __future__ import annotations
+
 """Module containing classes for storing and visualizing calibrated explanations.
 
 Classes:
@@ -223,6 +225,98 @@ class CalibratedExplanation(ABC):
         self.reject_context = None
 
         self._validate_prediction_invariant()
+
+    def filter_features(
+        self,
+        *,
+        exclude_features=None,
+        include_features=None,
+        copy=True,
+    ):
+        """Filter rules by feature inclusion or exclusion.
+
+        Parameters
+        ----------
+        exclude_features : str, int, or list of str/int, optional
+            Features to exclude. Rules containing these features will be removed.
+        include_features : str, int, or list of str/int, optional
+            Features to include. Only rules containing these features will be kept.
+        copy : bool, default=True
+            If True, return a copy of the explanation. If False, modify in place.
+
+        Returns
+        -------
+        CalibratedExplanation
+            Filtered explanation.
+        """
+        if (exclude_features is None) == (include_features is None):
+            raise ValidationError(
+                "Exactly one of exclude_features or include_features must be provided",
+                details={
+                    "exclude_features": exclude_features,
+                    "include_features": include_features,
+                },
+            )
+
+        if copy:
+            self = self.copy()
+
+        # Normalize the features to indices
+        target_features = exclude_features if exclude_features is not None else include_features
+        is_exclude = exclude_features is not None
+
+        if isinstance(target_features, (str, int)):
+            target_features = [target_features]
+        elif not isinstance(target_features, list):
+            raise ValidationError("Features must be a string, int, or list of strings/ints")
+
+        if not target_features:
+            raise ValidationError("Features list must not be empty")
+
+        target_indices = []
+        for feat in target_features:
+            if isinstance(feat, str):
+                if feat not in self.get_explainer().feature_names:
+                    raise ValidationError(f"Feature name '{feat}' not found in feature_names")
+                target_indices.append(self.get_explainer().feature_names.index(feat))
+            elif isinstance(feat, int):
+                if not (0 <= feat < self.get_explainer().num_features):
+                    raise ValidationError(
+                        f"Feature index {feat} is out of range [0, {self.get_explainer().num_features})"
+                    )
+                target_indices.append(feat)
+            else:
+                raise ValidationError("Features must contain only strings or ints")
+
+        # Create mask for rules to keep
+        keep_mask = []
+        for i, features in enumerate(self.rules["feature"]):
+            if self.rules["is_conjunctive"][i]:
+                # For conjunctive rules
+                if isinstance(features, list):
+                    has_target = any(f in target_indices for f in features)
+                else:
+                    has_target = features in target_indices
+                keep = has_target if not is_exclude else not has_target
+            else:
+                # For disjunctive rules (single feature)
+                has_target = features in target_indices
+                keep = has_target if not is_exclude else not has_target
+            keep_mask.append(keep)
+
+        # Filter rules
+        filtered_rules = {}
+        for key in self.rules:
+            filtered_rules[key] = [
+                val for val, keep in zip(self.rules[key], keep_mask, strict=False) if keep
+            ]
+
+        self.rules = filtered_rules
+
+        return self
+
+    def test_method(self):
+        return "test"
 
     def _validate_prediction_invariant(self) -> None:
         """Enforce low <= predict <= high invariant on prediction payload."""
@@ -755,6 +849,9 @@ class CalibratedExplanation(ABC):
         if has_conjunctive:
             target.conjunctive_rules = filtered_rules
         return target
+
+    def simple_method(self):
+        return self
 
     # ------------------------------------------------------------------
     # Telemetry helpers
@@ -1588,6 +1685,9 @@ class FactualExplanation(CalibratedExplanation):
             Exception
         ):  # ADR002_ALLOW: prediction payloads vary across plugins.  # pragma: no cover
             self.prediction_probabilities = None
+
+    def test_method(self):
+        return self
 
     def __repr__(self):
         """Return a string representation of the factual explanation."""

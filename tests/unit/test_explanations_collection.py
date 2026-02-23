@@ -174,6 +174,19 @@ class DummyExplanation:
         )
         return self
 
+    def filter_features(self, *, exclude_features=None, include_features=None, copy=True):
+        self.calls.append(
+            (
+                "filter_features",
+                {
+                    "exclude_features": exclude_features,
+                    "include_features": include_features,
+                    "copy": copy,
+                },
+            )
+        )
+        return self
+
     def rank_features(self, feature_weights, num_to_show=None):
         order = list(range(len(feature_weights)))
         return order[: num_to_show if num_to_show is not None else len(order)]
@@ -744,6 +757,13 @@ def test_filter_rule_sizes_inplace_mutates_collection(calibrated_collection):
         assert any(
             call[0] == "filter_rule_sizes" and call[1]["copy"] is False for call in exp.calls
         )
+
+
+def test_filter_features_inplace_mutates_collection(calibrated_collection):
+    out = calibrated_collection.filter_features(exclude_features=0, copy=False)
+    assert out is calibrated_collection
+    for exp in calibrated_collection.explanations:
+        assert any(call[0] == "filter_features" and call[1]["copy"] is False for call in exp.calls)
 
 
 def test_from_batch_full_probabilities_and_instance_validation(calibrated_collection):

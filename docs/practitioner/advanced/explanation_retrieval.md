@@ -99,6 +99,56 @@ Filter the entire collection in one call:
 filtered = calibrated_explanations.filter_rule_sizes(rule_sizes=[1, 2])
 ```
 
+## Filtering rules by features (`filter_features`)
+
+You can filter explanations to include or exclude rules based on the features they contain, either by feature name (str) or index (int). This is useful for focusing on explanations that involve certain features or avoiding others.
+
+### API
+
+`filter_features` exists on both a single instance-level explanation and on the collection:
+
+- `CalibratedExplanation.filter_features(exclude_features=..., copy=True)`
+- `CalibratedExplanation.filter_features(include_features=..., copy=True)`
+- `CalibratedExplanations.filter_features(exclude_features=..., copy=True)`
+- `CalibratedExplanations.filter_features(include_features=..., copy=True)`
+
+Exactly one of `exclude_features` or `include_features` must be provided. Both parameters accept:
+- A single `str` or `int`
+- A sequence (list/tuple) of `str` and/or `int`
+
+If `copy=True` (default), the original object is not mutated.
+
+### Examples
+
+Exclude rules containing feature "age" (by name):
+
+```python
+expl = calibrated_explanations[0]
+filtered = expl.filter_features(exclude_features="age")
+```
+
+Include only rules containing features by index or mixed:
+
+```python
+filtered = expl.filter_features(include_features=[0, "income"])
+```
+
+Filter the entire collection to include only rules with "age" or "gender":
+
+```python
+filtered_collection = calibrated_explanations.filter_features(include_features=["age", "gender"])
+```
+
+### Notes for conjunctive rules
+
+For conjunctive rules (rules with multiple features combined):
+- When excluding: a rule is excluded if it contains ANY of the specified features
+- When including: a rule is included if it contains ANY of the specified features
+
+For disjunctive rules (single feature):
+- When excluding: a rule is excluded if it matches the specified feature
+- When including: a rule is included if it matches the specified feature
+
 ### Notes for agents
 - Prefer explicit exceptions for control flow: use try/except around `get_rule_by_index` and `get_rules_by_feature`.
 - If non-raising behavior is desired, call `list_rules()` and filter in the agent.

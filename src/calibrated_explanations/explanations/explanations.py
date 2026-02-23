@@ -1157,6 +1157,47 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             )
         return self
 
+    def filter_features(
+        self,
+        *,
+        exclude_features=None,
+        include_features=None,
+        copy: bool = True,
+    ) -> "CalibratedExplanations":
+        """Filter rules by feature inclusion or exclusion across all explanations.
+
+        Parameters
+        ----------
+        exclude_features : str, int, or sequence of str/int, optional
+            Feature names (str) or indices (int) to exclude. Rules containing any
+            of these features will be removed.
+        include_features : str, int, or sequence of str/int, optional
+            Feature names (str) or indices (int) to include. Only rules containing
+            these features will be kept.
+        copy : bool, default=True
+            If True, return a filtered copy without mutating the original.
+
+        Returns
+        -------
+        CalibratedExplanations
+            Filtered explanations object.
+        """
+        if copy:
+            new_obj = self.copy()
+            new_obj.explanations = [
+                explanation.filter_features(
+                    exclude_features=exclude_features, include_features=include_features, copy=True
+                )
+                for explanation in self.explanations
+            ]
+            return new_obj
+
+        for idx, explanation in enumerate(self.explanations):
+            self.explanations[idx] = explanation.filter_features(
+                exclude_features=exclude_features, include_features=include_features, copy=False
+            )
+        return self
+
     def get_explanation(self, index):
         """Return the explanation corresponding to the index.
 
