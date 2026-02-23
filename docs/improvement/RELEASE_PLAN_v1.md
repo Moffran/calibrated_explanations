@@ -2,9 +2,9 @@
 
 # Release Plan to v1.0.0
 
-## Current released version: v0.10.2
+## Current released version: v0.10.4
 
-> Status: v0.10.2 shipped on 2026-01-22.
+> Status: v0.10.4 shipped on 2026-02-12.
 
 
 Maintainers: Core team
@@ -33,14 +33,14 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 **ADR-002 – Exception Taxonomy and Validation Contract:** Completed with taxonomy adoption and validator parity; appendix holds the consolidated gap status.
 **ADR-003 – Caching Strategy:** Completed in v0.10.0. Opt-in in-process LRU cache implemented with deterministic keys, eviction controls, and safe fallbacks; docs and tests updated.
 **ADR-004 - Parallel Execution Framework:** Completed with `ParallelExecutor` and instance-parallel execution; remaining work is documentation/name alignment (`ParallelFacade` legacy references) targeted for v0.11.0.
-**ADR-005 - Explanation Payload Schema:** Clarified to favour a payload-first v1 contract for v0.10.1; envelope and richer registry deferred. Remaining work (strict validator + fixtures) targeted for v0.11.0.
-**ADR-006 – Plugin Trust Model:** Completed. Trust/deny controls, diagnostics, and governance logging are in place; appendix updated to reflect closure.
+**ADR-005 - Explanation Payload Schema:** Clarified to favour a payload-first v1 contract for v0.10.1; envelope and richer registry deferred. Remaining work (strict validator + fixtures) targeted for v0.11.1.
+**ADR-006 – Plugin Trust Model:** Completed for core trust/deny/diagnostics. Registry improvements (PluginManager shell, PluginTrustPolicy, over-scoped public surface cleanup) targeted for v0.11.0; registry hardening (resolution migration into PluginManager, trust-state atomicity, governance audit completeness, legacy list deprecation) targeted for v0.11.1.
 **ADR-007 – PlotSpec Abstraction:** Completed. `PlotSpec` IR, schema/versioning, validation, and headless export support implemented; registry extensions are optional.
-**ADR-008 – Explanation Domain Model:** Domain-model hardening targeted for v0.11.0; ADR clarifies domain/legacy round-trips and remaining structured metadata gaps.
+**ADR-008 – Explanation Domain Model:** Domain-model hardening targeted for v0.11.1; ADR clarifies domain/legacy round-trips and remaining structured metadata gaps.
 **ADR-009 – Input Preprocessing and Mapping Policy:** Completed in v0.11.0 with auto-encoding activation, unseen-category policy enforcement, mapping export/import helpers, and telemetry/docs alignment.
 **ADR-010 - Core vs Evaluation Split:** Completed for extras; remaining action is to verify core-only installs do not require matplotlib at import time and align CI accordingly (target v0.11.0).
 **ADR-011 – Deprecation and Migration Policy:** Completed: central `deprecate()` helper and migration guidance implemented; CI gates added for deprecation enforcement.
-**ADR-012 - Documentation & Gallery Build Policy:** Accepted. Notebooks/gallery rendering clarified as advisory on mainline and blocking on release branches; remaining work (executed notebooks + runtime ceilings) targeted for v0.11.0.
+**ADR-012 - Documentation & Gallery Build Policy:** Accepted. Notebooks/gallery rendering clarified as advisory on mainline and blocking on release branches; remaining work (executed notebooks + runtime ceilings) targeted for v0.11.1.
 **ADR-013 – Interval Calibrator Plugin Strategy:** Completed. Protocol validation and CLI diagnostics implemented; remaining notes are documentation-only.
 **ADR-014 – Visualization Plugin Architecture:** Completed. Plot plugin registries, validation hooks, and CLI helpers implemented; docs alignment remains.
 **ADR-015 – Explanation Plugin Integration:** Completed for in-tree FAST plugin and trust enforcement; remaining hardening tracked under ADR-026.
@@ -53,9 +53,10 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 **ADR-024 – Legacy Plot Input Contracts:** Deprecated; legacy plotting maintained in `docs/maintenance/legacy-plotting-reference.md` and gaps retired.
 **ADR-025 – Legacy Plot Rendering Semantics:** Deprecated; pixel-level rendering semantics moved to maintenance reference and gaps retired.
 **ADR-026 - Explanation Plugin Semantics:** Partially complete; strict invariant enforcement and immutability remain open and targeted for v0.11.0 (see appendix).
-**ADR-027 - FAST-Based Feature Filtering:** Partially complete; remaining observability policy and examples targeted for v0.11.0 (see appendix).
-**ADR-028 - Logging and Governance Observability:** Partially complete; remaining enforcement tooling and examples targeted for v0.11.0 (see appendix).
+**ADR-027 - FAST-Based Feature Filtering:** Partially complete; remaining observability policy and examples targeted for v0.11.1 (see appendix).
+**ADR-028 - Logging and Governance Observability:** Partially complete; remaining enforcement tooling and examples targeted for v0.11.1 (see appendix).
 **ADR-031 – Calibrator Serialization & State Persistence:** Drafted for v0.11.x; versioned calibrator primitives and explainer save/load contracts to be implemented after mapping persistence work.
+**ADR-033 – Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
 **Standard-001 – Nomenclature Standardization:** Remediation plan in `Standard-001_nomenclature_remediation.md`; phased renames and shims tracked across releases.
 **Standard-002 – Code Documentation Standardisation:** Accepted and rolled out in batches; numpydoc/pydocstyle enforcement staged with release branches treated as blocking once baselines met.
 **Standard-003 – Test Coverage Standard:** Accepted. Package floor and critical-path thresholds defined (90% package, 95% critical paths); CI/gates staged and waiver governance enforced per appendix.
@@ -73,7 +74,8 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 | v0.10.1 | Doc hubs refreshed with telemetry/performance opt-in notes. | Package-wide ≥90% expected; notebook/example lint extended. | Module thresholds hardened; waiver expiry versions mandatory. | Phase metrics reviewed; % renamed modules tracked. | Rollback: if module gates fail, defer release or lower threshold with explicit expiry in checklist. |
 | v0.10.2 | No changes planned. | No changes planned. | No changes planned. | No changes planned. | Test quality remediation: fix private-member violations in tests per ADR-030. |
 | v0.10.3 | Domain model (ADR-008), Schema (ADR-005), Defaults, Plugin docs (Standard-004), Legacy stability (ADR-020). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure part 1: ADR-005/008/010/020 + Standard-004. |
-| v0.11.0 | Notebook execution + runtime ceilings (ADR-012); observability enforcement docs (ADR-027/028). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure milestone: ADR-004/009/012/026/027/028/030/031. |
+v0.11.0 | Modality extension breaking contract/resolver changes (ADR-033). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure milestone: ADR-004/009/026/030/031/033 (breaking subset). Registry improvements (ADR-006): PluginManager shell, PluginTrustPolicy, public surface cleanup. |
+v0.11.1 | Notebook execution + runtime ceilings (ADR-012); observability enforcement docs (ADR-027/028); ADR-033 migration/docs follow-through for additive modality rollout. | No changes planned. | No changes planned. | Nomenclature cleanup completion tasks (Standard-001). | Registry hardening: resolution migration into PluginManager, trust-state atomicity, governance audit completeness, legacy list deprecation. ADR-033 additive rollout: CLI modality filtering, shim UX, packaging smoke gate. ADR-012/027/028 hardening. CI upgrade: decommission legacy workflows. |
 | v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals completed; legacy API guard tests green. | Test quality ratification: zero-tolerance enforcement for new quality rules per ADR-030; risks surface inline in milestone gates; rollback paths documented per gate. |
 
 ### v0.6.x (stabilisation patches)
@@ -280,18 +282,36 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   1. Complete ADR-009 preprocessing automation with auto_encode='auto', unseen-category enforcement, mapping export/import helpers, and aligned telemetry.
   2. Deliver ADR-030 test quality tooling upgrades (assertion + determinism checks) and wire them into CI.
   3. Add ADR-031 calibrator persistence: versioned to_primitive/from_primitive contracts plus Explainer.save_state()/load_state().
-  4. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
-  5. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.
-  6. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
-  7. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
-  8. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry.
-  9. Empty the private member allow-list (.github/private_member_allowlist.json) as part of the final Pattern 1 remediation hardening.
-  10. Perform a final ADR, standards, and improvement docs gap closure sweep.
-  11. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
-  12. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
-  13. Address issue #104, by adding real multiclass support.
+  4. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.
+  5. Add a conformal guard for guarded (conformal) explanations that extends calibrated-explanations by combining the existing discretizers with a conformalized-data-synthesizer (Meister & Nguyen) to guard explanation rule-conditions from unrealistic perturbations.
+  6. Address issue #104, by adding real multiclass support.
+  7. Implement ADR-033 contract hardening in core: enforce `plugin_api_version` semver parsing with major-hard/minor-soft compatibility checks, enforce `data_modalities` canonical taxonomy + alias normalization + `x-*` namespace, and ship modality-aware resolver tie-break rules (`priority` then explicit ambiguity failure).
+  8. Publish ADR-033 migration notes for v0.11.0 API-breaking behavior (metadata contract enforcement and resolver ambiguity handling), with explicit upgrade guidance.
+  9. Registry improvements (ADR-006): introduce the `PluginManager` class as the single source of truth for plugin resolution; define the `PluginTrustPolicy` protocol for operator-replaceable trust decisions.
+  10. Clean up `registry.py` public surface: remove over-scoped plot trust management API (`mark_plot_builder_trusted`, `mark_plot_builder_untrusted`, `mark_plot_renderer_trusted`, `mark_plot_renderer_untrusted`, `find_plot_plugin_trusted`, `find_plot_renderer_trusted`) from `__all__` per ADR-014's "thin and optional" mandate; remove ~30 test-helper wrappers from `__all__`; fix `find_plot_renderer_trusted` return-type inconsistency and dead `include_untrusted` parameters on `list_plot_descriptors` / `_list_descriptors`.
+  11. Pattern 1 hardening: empty the private member allow-list (.github/private_member_allowlist.json) as part of the final remediation, and remove production test-helper wrapper exports/re-exports (starting with `plugins/registry.py` and `plugins/__init__.py`) so tests cannot bypass public contracts via runtime scaffolding. CI must block this class of regression via `scripts/quality/check_no_test_helper_exports.py`.
+  12. Perform a final ADR, standards, and improvement docs gap closure sweep and update any remaining gaps, ensuring the release appendix reflects reality.
 
-  Release gate: ADR-009/012/026/030/031 gaps are closed or explicitly deferred, observability enforcement is in place (ADR-027/028), and core-only install expectations are verified ahead of v1.0.0-rc.
+  Release gate: ADR-009/026/030/031/033 gaps are closed or explicitly deferred, ADR-033 breaking contract/resolver gates are green (parser/taxonomy/ambiguity behavior), core-only install expectations are verified ahead of v1.0.0-rc, `PluginManager` shell and `PluginTrustPolicy` protocol landed, over-scoped plot trust API and test helpers removed from `__all__`, registry API defects fixed, and private-member allowlist is empty.
+
+### v0.11.1 (hardening)
+
+  1. Migrate plugin resolution logic from `CalibratedExplainer._invoke_explanation_plugin` and related methods into `PluginManager`, making it the authoritative resolver per ADR-006.
+  2. Eliminate dual trust state: unify descriptor `trusted` flag and `_TRUSTED_*` identifier sets so all trust mutations are atomic; eliminate divergence risk between `find_*_trusted()` and `list_*_descriptors(trusted_only=True)`.
+  3. Complete ADR-028 governance audit coverage: add structured audit log events for every accepted plugin registration (currently only deny/skip paths emit governance logs).
+  4. Relocate test helper implementations from `registry.py` to `tests/support/registry_helpers.py` or a dedicated `plugins/_testing.py` internal; eliminate the anti-pattern of exposing test scaffolding through the production module.
+  5. Introduce `deprecate()` calls with a v0.13.0 sunset date for the legacy `_REGISTRY`/`_TRUSTED` list-based path per ADR-011's two-minor-release requirement; document the migration path to the identifier-keyed descriptor dicts.
+  6. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
+  7. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
+  8. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
+  9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry.
+  10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
+  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v0.12.0` remove).
+  12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
+  13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
+
+  Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations; test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green.
+
 ### v1.0.0-rc (release candidate readiness)
 
 1. Freeze Explanation Schema v1, publish draft compatibility statement, and
@@ -316,14 +336,11 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
    settings, CLI usage, caching controls, and plugin integration testing
    expectations.
 10. Audit the ADR gap closure roadmap to confirm every gap is either implemented or superseded with an updated ADR decision before promoting the RC branch, recording outcomes in the status log (see ADR status appendix in this document).
-11. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, reporting lint telemetry, and confining transitional shims to `legacy/` (see ADR status appendix in this document).
-12. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry, ensuring ongoing monitoring after v1.0.0 (see ADR status appendix in this document).
-13. Change default behavior for `condition_source` to `"prediction"` in `CalibratedExplainer` and related components. Update all relevant documentation, including the upgrade checklist, to inform users of this change and provide guidance on how to adjust their implementations if they previously relied on the default `"observed"` setting. This change aims to enhance the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels. Plan for this change to be communicated clearly in the v1.0.0 release notes and upgrade guides (see ADR status appendix in this document).
-14. Empty the private member allow-list (`.github/private_member_allowlist.json`) as part of the final Pattern 1 remediation hardening. All remaining private member usages in tests must be refactored to public APIs or justified as permanent exceptions in the remediation plan.
-15. Extend test quality tooling per ADR-030: update `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` to flag tests without assertions and unseeded random usage, preparing for zero-tolerance enforcement in v1.0.0.
-16. Add ADR-031 calibrator persistence: versioned `to_primitive`/`from_primitive` contracts plus `Explainer.save_state()`/`load_state()` (gate: round-trip tests and schema version policy).
-17. Provide an OSS performance harness template for semi/fully-online latency measurements with README guidance (gate: sample run and documented workflow).
-18. Perform an ADR, standards, and improvement docs gap closure analysis and implementation for any remaining gaps.
+11. Change default behavior for `condition_source` to `"prediction"` in `CalibratedExplainer` and related components. Update all relevant documentation, including the upgrade checklist, to inform users of this change and provide guidance on how to adjust their implementations if they previously relied on the default `"observed"` setting. This change aims to enhance the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels. Plan for this change to be communicated clearly in the v1.0.0 release notes and upgrade guides (see ADR status appendix in this document).
+12. Extend test quality tooling per ADR-030: update `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` to flag tests without assertions and unseeded random usage, preparing for zero-tolerance enforcement in v1.0.0.
+13. Add ADR-031 calibrator persistence: versioned `to_primitive`/`from_primitive` contracts plus `Explainer.save_state()`/`load_state()` (gate: round-trip tests and schema version policy).
+14. Provide an OSS performance harness template for semi/fully-online latency measurements with README guidance (gate: sample run and documented workflow).
+15. Perform an ADR, standards, and improvement docs gap closure analysis and implementation for any remaining gaps.
 
 Release gate: All schema/contract freezes documented, nomenclature and docstring
 lint suites blocking green, PlotSpec/plugin ADRs promoted, versioned docs preview
@@ -493,7 +510,15 @@ boundaries. ADR-004 now documents this expectation.
 
 ## ADR-006 – Plugin Trust Model
 
-*Gaps removed from appendix after completion; see ADR-006 for implementation details.*
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | No `PluginTrustPolicy` interface for integrator override | 3 | 3 | 9 | ADR-006 requires a replaceable policy interface; trust logic is hardcoded as module-level functions. Targeted for v0.11.0. |
+| 2 | No `PluginManager` class — resolution logic silo'd in `calibrated_explainer.py` | 4 | 4 | 16 | ADR-006 mandates `PluginManager` as single source of truth; all resolution currently lives in `CalibratedExplainer`. Manager shell targeted for v0.11.0; full resolution migration for v0.11.1. |
+| 3 | Over-scoped plot trust API in `__all__` contradicts ADR-014 "thin and optional" | 3 | 3 | 9 | Six `mark_plot_*_trusted/untrusted` helpers and `find_plot_*_trusted` are public but violate ADR-014 scope. Remove from `__all__` in v0.11.0. |
+| 4 | ~30 testing-helper wrappers in `__all__` bloat production surface | 3 | 3 | 9 | Functions explicitly labelled "testing helper" are exported in `__all__`, permanently widening the public API. Remove from `__all__` in v0.11.0; relocate bodies in v0.11.1. |
+| 5 | Dual trust state (descriptor field + `_TRUSTED_*` set) can diverge | 3 | 3 | 9 | `_update_trust_keys` mutations do not always follow up with set updates; `find_*_trusted()` and `list_*_descriptors(trusted_only=True)` can disagree. Fix atomically in v0.11.1. |
+| 6 | Accepted registrations emit no governance audit log (ADR-028) | 2 | 3 | 6 | Only deny/skip paths emit `calibrated_explanations.governance.*` events; accepted registrations are silent. Fix in v0.11.1. |
+| 7 | Legacy `_REGISTRY`/`_TRUSTED` lists have no ADR-011 deprecation path | 3 | 2 | 6 | Dual state (list + dict) maintained indefinitely with no `deprecate()` call or sunset date. Add deprecation in v0.11.1. |
 
 ## ADR-007 – PlotSpec Abstraction
 

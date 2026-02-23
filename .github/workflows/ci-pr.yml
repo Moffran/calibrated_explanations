@@ -154,6 +154,11 @@ jobs:
             --output reports/anti-pattern-analysis/test_anti_pattern_report.csv \
             --report reports/anti-pattern-analysis/test_quality_report.json \
             --baseline .github/test-quality-baseline.json
+      - name: Run test-helper export guard
+        run: |
+          python scripts/quality/check_no_test_helper_exports.py \
+            --root src/calibrated_explanations \
+            --report reports/anti-pattern-analysis/test_helper_wrapper_report.json
       - name: Run marker hygiene check
         run: |
           python scripts/quality/check_marker_hygiene.py \
@@ -168,4 +173,5 @@ jobs:
           path: |
             reports/anti-pattern-analysis/test_anti_pattern_report.csv
             reports/anti-pattern-analysis/test_quality_report.json
+            reports/anti-pattern-analysis/test_helper_wrapper_report.json
             reports/marker-hygiene/marker_hygiene_report.json

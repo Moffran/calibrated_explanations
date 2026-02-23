@@ -323,6 +323,7 @@ All outputs land in `reports/over_testing/`.
 4. **No zero-unique-lines tests** – a test that adds zero unique coverage lines must be removed or parameterized.
 5. **No identical fingerprints** – tests with the same coverage fingerprint must be consolidated with `pytest.mark.parametrize`.
 6. **Fallback opt-in** – use the `enable_fallbacks` fixture and assert `UserWarning` whenever a test exercises a fallback path.
+7. **No production test-helper wrapper exports** – do not expose test-helper scaffolding via `__all__` in `src/`; CI blocks this via `scripts/quality/check_no_test_helper_exports.py`.
 
 ### Critical coverage targets (STD-003)
 

@@ -162,6 +162,16 @@ def main() -> int:
             ),
         ),
         Step(
+            "ADR-030 test-helper export guard",
+            _python_cmd(
+                "scripts/quality/check_no_test_helper_exports.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
+            ),
+        ),
+        Step(
             "ADR-030 marker hygiene",
             _python_cmd(
                 "scripts/quality/check_marker_hygiene.py",
@@ -305,6 +315,16 @@ def main() -> int:
                 "reports/anti-pattern-analysis/test_quality_report.json",
                 "--baseline",
                 ".github/test-quality-baseline.json",
+            ),
+        ),
+        Step(
+            "ADR-030 test-helper export guard (main)",
+            _python_cmd(
+                "scripts/quality/check_no_test_helper_exports.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
             ),
         ),
         Step(

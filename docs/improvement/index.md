@@ -10,6 +10,7 @@ working notes used to steer releases.
 RELEASE_PLAN_v1
 v0.11.0_plan
 release_checklist
+modality_extension_rollout_plan
 
 test-quality-method/README
 

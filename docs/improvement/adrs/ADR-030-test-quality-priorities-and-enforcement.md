@@ -52,6 +52,9 @@ criteria that measure reliability and behavioral correctness. The primary criter
    - **Cons:** may need API hooks or integration tests to cover internal edge cases.
    - **Pytest fit:** aligns with current guidance and the private-member scan.
 
+   Public-contract testing also forbids adding production test-helper wrappers
+   as a workaround for private-member access in tests.
+
 3. **Assertion strength (behavioral signal)**
    - **Definition:** tests must contain meaningful assertions that would fail for
      plausible regressions; avoid execution-only tests.
@@ -95,6 +98,9 @@ static audits. Specifically:
   - Coverage gate (≥90%) and per-module coverage checks.
   - Private-member usage scan in tests (fail on non-allowlisted usage).
   - Fallback-chain restrictions (tests must opt in when validating fallbacks).
+  - Production export leakage guard (fail when `src/` publishes test-helper
+    wrappers through `__all__`), via
+    `scripts/quality/check_no_test_helper_exports.py`.
 
 - **Redundant test strictness (zero unique lines)**:
   - **Metric:** `Unique Lines` per test (calculated via `pytest --cov-context=test`).
@@ -149,6 +155,8 @@ Negative/Risks:
 
 - Phase 1 (immediate): record baseline anti-pattern report and enforce “no new
   violations” in CI.
+- Phase 1A (immediate hard blocker): enforce zero tolerance for production
+  test-helper wrapper exports via `check_no_test_helper_exports.py`.
 - Phase 2: extend the detector to cover assertion presence, determinism, and
   mocking heuristics; add allowlists only with justification.
 - Phase 3: enforce marker hygiene and slow-test budgets once tagging is complete.
@@ -179,3 +187,6 @@ Based on analysis of current test practices (directory-based organization, ~2000
   Reports published as CI artifacts.
 - 2026-02-15 – Anti-pattern audit added to `ci-pr.yml` so PR checks survive
   `test.yml` compat-wrapper decommission (release task 12).
+- 2026-02-23 – Added `scripts/quality/check_no_test_helper_exports.py` and
+  wired it into PR/main/compat CI plus local checks as a hard blocker to prevent
+  production test-helper wrapper exports.

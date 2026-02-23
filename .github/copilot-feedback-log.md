@@ -25,3 +25,10 @@ Format:
 **Durable fix:** Added feedback log entry template; will update copilot-instructions.md and AGENT_INSTRUCTIONS.md after each feedback.
 **Verification:** Check that feedback log and instructions are updated after each PR/release.
 **Status:** open
+
+## 2026-02-23 – Test-quality method missed production test-helper wrappers
+**Feedback:** Registry-level test-helper wrapper exports and trust-helper surface leakage were not treated as CI-blocking test-quality violations.
+**Root cause:** ADR-030 enforcement focused on test-file anti-patterns and private-member scans, but lacked a hard source-surface guard for production `__all__` test-helper exports.
+**Durable fix:** Added `scripts/quality/check_no_test_helper_exports.py`, wired it into `ci-pr.yml`, `ci-main.yml`, `test.yml`, and `scripts/local_checks.py`; updated ADR/test-quality docs and release task definitions; removed banned exports from `plugins/registry.py` and `plugins/__init__.py` `__all__`.
+**Verification:** `pytest -q tests/scripts/test_check_no_test_helper_exports.py tests/scripts/test_detect_test_anti_patterns.py --no-cov`
+**Status:** ✅ incorporated
