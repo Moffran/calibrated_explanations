@@ -3273,6 +3273,12 @@ class AlternativeExplanation(CalibratedExplanation):
         target._AlternativeExplanation__is_super_explanation = True  # pylint: disable=protected-access
         return target
 
+    def super(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.super_explanations`."""
+        return self.super_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """Return a filtered view of *semi* alternative explanations.
 
@@ -3317,6 +3323,12 @@ class AlternativeExplanation(CalibratedExplanation):
         )
         target._AlternativeExplanation__is_semi_explanation = True  # pylint: disable=protected-access
         return target
+
+    def semi(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.semi_explanations`."""
+        return self.semi_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
 
     def counter_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """Return a filtered view of *counter* alternative explanations.
@@ -3363,6 +3375,12 @@ class AlternativeExplanation(CalibratedExplanation):
         target._AlternativeExplanation__is_counter_explanation = True  # pylint: disable=protected-access
         return target
 
+    def counter(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.counter_explanations`."""
+        return self.counter_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     def ensured_explanations(self, include_potential=True, copy=True):
         """Return a filtered view of *ensured* alternative explanations.
 
@@ -3397,6 +3415,10 @@ class AlternativeExplanation(CalibratedExplanation):
         target.__filter_rules(only_ensured=True, include_potential=include_potential)
         return target
 
+    def ensured(self, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.ensured_explanations`."""
+        return self.ensured_explanations(include_potential=include_potential, copy=copy)
+
     def pareto_explanations(self, include_potential=True, copy=True):
         """Return output-envelope Pareto alternatives by uncertainty width.
 
@@ -3424,6 +3446,10 @@ class AlternativeExplanation(CalibratedExplanation):
         target.__filter_rules(include_potential=include_potential)
         target.__pareto_filter_rules()
         return target
+
+    def pareto(self, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.pareto_explanations`."""
+        return self.pareto_explanations(include_potential=include_potential, copy=copy)
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """

@@ -1576,6 +1576,12 @@ class AlternativeExplanations(CalibratedExplanations):
             )
         return self
 
+    def super(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.super_explanations`."""
+        return self.super_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     @classmethod
     def from_collection(cls, collection: "CalibratedExplanations"):
         """Create an AlternativeExplanations instance from an existing collection.
@@ -1651,6 +1657,12 @@ class AlternativeExplanations(CalibratedExplanations):
             )
         return self
 
+    def semi(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.semi_explanations`."""
+        return self.semi_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     def counter_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Return a copy with only counter-explanations.
@@ -1690,6 +1702,12 @@ class AlternativeExplanations(CalibratedExplanations):
             )
         return self
 
+    def counter(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.counter_explanations`."""
+        return self.counter_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     def ensured_explanations(self, include_potential=True, copy=True):
         """
         Return a copy with only ensured explanations.
@@ -1719,6 +1737,10 @@ class AlternativeExplanations(CalibratedExplanations):
             explanation.ensured_explanations(include_potential=include_potential, copy=False)
         return self
 
+    def ensured(self, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.ensured_explanations`."""
+        return self.ensured_explanations(include_potential=include_potential, copy=copy)
+
     def pareto_explanations(self, include_potential=True, copy=True):
         """Return a copy with only output-envelope Pareto alternatives.
 
@@ -1747,6 +1769,10 @@ class AlternativeExplanations(CalibratedExplanations):
         for explanation in self.explanations:
             explanation.pareto_explanations(include_potential=include_potential, copy=False)
         return self
+
+    def pareto(self, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.pareto_explanations`."""
+        return self.pareto_explanations(include_potential=include_potential, copy=copy)
 
 
 class FrozenCalibratedExplainer:
