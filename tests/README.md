@@ -2,7 +2,7 @@
 
 > **Canonical source of truth** for all test-related instructions.
 > Agents, automation prompts, and human contributors all follow this document.
-> References in `.github/copilot-instructions.md`, `AGENT_INSTRUCTIONS.md`, and
+> References in `.github/copilot-instructions.md`, `CONTRIBUTOR_INSTRUCTIONS.md`, and
 > `.github/instructions/tests.instructions.md` all point here.
 >
 > **Test cleanup and quality assurance** (coverage-gap closure, redundant-test

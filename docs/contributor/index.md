@@ -20,6 +20,7 @@ CLI, configuration, and documentation updates.
    command-line tooling.
 7. When upgrading between releases, consult the {doc}`../migration/index` for
    terminology changes, breaking changes, and migration guidance.
+8. Check the {doc}`agent_skills` catalogue for the complete AI skill inventory.
 
 ## Local CI pre-checks
 
@@ -57,5 +58,6 @@ plugin-contract
 extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced
+agent_skills
 ../migration/index
 ```

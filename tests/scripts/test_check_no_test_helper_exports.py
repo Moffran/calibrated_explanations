@@ -10,12 +10,12 @@ from pathlib import Path
 SCRIPT_PATH = Path("scripts/quality/check_no_test_helper_exports.py")
 
 
-def _write(path: Path, content: str) -> None:
+def write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(textwrap.dedent(content).strip() + "\n", encoding="utf-8")
 
 
-def _run_checker(root: Path) -> subprocess.CompletedProcess[str]:
+def run_checker(root: Path) -> subprocess.CompletedProcess[str]:
     report = root / "report.json"
     command = [
         sys.executable,
@@ -29,7 +29,7 @@ def _run_checker(root: Path) -> subprocess.CompletedProcess[str]:
 
 
 def test_checker_blocks_banned_registry_exports(tmp_path: Path) -> None:
-    _write(
+    write(
         tmp_path / "src/calibrated_explanations/plugins/registry.py",
         """
         __all__ = ["mark_plot_builder_trusted"]
@@ -38,14 +38,14 @@ def test_checker_blocks_banned_registry_exports(tmp_path: Path) -> None:
             return identifier
         """,
     )
-    result = _run_checker(tmp_path)
+    result = run_checker(tmp_path)
     assert result.returncode == 1
     assert "mark_plot_builder_trusted" in result.stdout
     assert "explicitly banned export" in result.stdout
 
 
 def test_checker_blocks_docstring_labeled_testing_helpers(tmp_path: Path) -> None:
-    _write(
+    write(
         tmp_path / "src/calibrated_explanations/plugins/example.py",
         """
         __all__ = ["normalise_trust"]
@@ -58,13 +58,13 @@ def test_checker_blocks_docstring_labeled_testing_helpers(tmp_path: Path) -> Non
             return bool(meta)
         """,
     )
-    result = _run_checker(tmp_path)
+    result = run_checker(tmp_path)
     assert result.returncode == 1
     assert "docstring labels symbol as testing helper" in result.stdout
 
 
 def test_checker_passes_for_clean_exports(tmp_path: Path) -> None:
-    _write(
+    write(
         tmp_path / "src/calibrated_explanations/plugins/example.py",
         """
         __all__ = ["validate_config"]
@@ -74,7 +74,7 @@ def test_checker_passes_for_clean_exports(tmp_path: Path) -> None:
             return bool(value)
         """,
     )
-    result = _run_checker(tmp_path)
+    result = run_checker(tmp_path)
     assert result.returncode == 0
     assert "No prohibited test-helper exports detected." in result.stdout
 

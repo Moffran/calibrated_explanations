@@ -1,6 +1,5 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments, line-too-long
-from __future__ import annotations
 
 """Module containing classes for storing and visualizing calibrated explanations.
 
@@ -17,6 +16,8 @@ Classes:
     :class:`.FastExplanation`:
         Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
 """
+
+from __future__ import annotations
 
 import contextlib
 import math
@@ -314,9 +315,6 @@ class CalibratedExplanation(ABC):
         self.rules = filtered_rules
 
         return self
-
-    def test_method(self):
-        return "test"
 
     def _validate_prediction_invariant(self) -> None:
         """Enforce low <= predict <= high invariant on prediction payload."""
@@ -849,9 +847,6 @@ class CalibratedExplanation(ABC):
         if has_conjunctive:
             target.conjunctive_rules = filtered_rules
         return target
-
-    def simple_method(self):
-        return self
 
     # ------------------------------------------------------------------
     # Telemetry helpers
@@ -1685,9 +1680,6 @@ class FactualExplanation(CalibratedExplanation):
             Exception
         ):  # ADR002_ALLOW: prediction payloads vary across plugins.  # pragma: no cover
             self.prediction_probabilities = None
-
-    def test_method(self):
-        return self
 
     def __repr__(self):
         """Return a string representation of the factual explanation."""

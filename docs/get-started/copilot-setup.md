@@ -3,7 +3,7 @@
 > **Goal:** Configure any AI agent platform so it understands CE deeply, learns
 > from your feedback, and stays in sync with every API change.
 >
-> The **canonical CE rules** that apply to all agents live in `AGENT_INSTRUCTIONS.md`.
+> The **canonical CE rules** that apply to all agents live in `CONTRIBUTOR_INSTRUCTIONS.md`.
 > Platform-specific setup files build on top of that canonical:
 >
 > | Platform | File |
@@ -40,7 +40,7 @@ Every agent platform reads a two-layer set of files:
 
 ### Layer 1 — Canonical (all agents)
 
-`AGENT_INSTRUCTIONS.md` at the repo root contains:
+`CONTRIBUTOR_INSTRUCTIONS.md` at the repo root contains:
 
 - CE-first policy (the mandatory pre-explain checklist)
 - Architecture and module boundary rules
@@ -68,7 +68,7 @@ Each platform file adds only what is unique to that agent:
 At the start of any agent session, prime the agent with:
 
 ```text
-You are a CE-first agent for calibrated_explanations. Read AGENT_INSTRUCTIONS.md
+You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
 and <platform file> first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
 Fail fast if CE-first invariants are not satisfied.
 ```
@@ -118,7 +118,7 @@ Prompt slash commands available in Copilot Chat:
    ```
    /refresh-ce-context module=calibrated_explanations.core.calibrated_explainer
    ```
-   For other platforms, ask the agent to read `AGENT_INSTRUCTIONS.md`, compare it
+   For other platforms, ask the agent to read `CONTRIBUTOR_INSTRUCTIONS.md`, compare it
    against the current `src/calibrated_explanations/` source, and propose minimal diffs.
 2. Review the proposed diffs; accept or adjust.
 3. Commit the updated instruction files alongside the code change.
@@ -126,7 +126,7 @@ Prompt slash commands available in Copilot Chat:
 ### After an ADR is accepted or closed
 
 Run `/refresh-ce-context adr=ADR-NNN` (Copilot) or ask the agent to update the
-ADR status row in `AGENT_INSTRUCTIONS.md` §9.
+ADR status row in `CONTRIBUTOR_INSTRUCTIONS.md` §9.
 
 ### Workspace sync routine (Codex / Claude / Gemini)
 
@@ -137,7 +137,7 @@ python -m pip check
 pytest -q
 ```
 
-Then ask the agent to re-read `AGENT_INSTRUCTIONS.md` and diff
+Then ask the agent to re-read `CONTRIBUTOR_INSTRUCTIONS.md` and diff
 `src/calibrated_explanations/` for changed signatures.
 
 ---
@@ -156,7 +156,7 @@ For GitHub Copilot, run:
 This appends a dated entry to `.github/copilot-feedback-log.md` and adds a
 clarifying bullet to the relevant instruction file.
 
-For other platforms, update `AGENT_INSTRUCTIONS.md` directly with a new bullet in
+For other platforms, update `CONTRIBUTOR_INSTRUCTIONS.md` directly with a new bullet in
 the relevant section, then add a dated entry to `.github/copilot-feedback-log.md`
 manually.
 
@@ -171,7 +171,7 @@ Use this mandatory entry schema:
 
 After each sprint or release:
 1. Open `.github/copilot-feedback-log.md` and review accumulated entries.
-2. Verify each correction is reflected in `AGENT_INSTRUCTIONS.md` or the platform
+2. Verify each correction is reflected in `CONTRIBUTOR_INSTRUCTIONS.md` or the platform
    instruction file.
 3. Mark resolved entries ✅ and commit the changes so every team member benefits.
 
@@ -182,7 +182,7 @@ After each sprint or release:
 ### Explain a prediction end-to-end
 
 ```text
-Read AGENT_INSTRUCTIONS.md, then explain how WrapCalibratedExplainer.explain_factual
+Read CONTRIBUTOR_INSTRUCTIONS.md, then explain how WrapCalibratedExplainer.explain_factual
 works from the public call down to the plugin registry dispatch.
 ```
 

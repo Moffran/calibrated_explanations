@@ -1,6 +1,6 @@
 # CLAUDE.md — Claude Code Instructions for `calibrated_explanations`
 
-> **Canonical agent instructions:** `AGENT_INSTRUCTIONS.md` — the single source of
+> **Canonical agent instructions:** `CONTRIBUTOR_INSTRUCTIONS.md` — the single source of
 > truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
 > that first. This file adds **only** Claude Code-specific context.
 
@@ -10,7 +10,7 @@
 
 At the start of every Claude Code session, explicitly direct the agent to:
 
-1. Read `AGENT_INSTRUCTIONS.md` (canonical CE rules).
+1. Read `CONTRIBUTOR_INSTRUCTIONS.md` (canonical CE rules).
 2. Read `CLAUDE.md` (this file).
 3. Follow `docs/get-started/ce_first_agent_guide.md`.
 4. Use `src/calibrated_explanations/ce_agent_utils.py` helpers instead of ad-hoc wrappers.
@@ -18,7 +18,7 @@ At the start of every Claude Code session, explicitly direct the agent to:
 Reusable priming prompt:
 
 ```text
-You are a CE-first agent for calibrated_explanations. Read AGENT_INSTRUCTIONS.md
+You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
 and CLAUDE.md first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
 Fail fast if CE-first invariants are not satisfied.
 ```
@@ -49,7 +49,7 @@ Fail fast if CE-first invariants are not satisfied.
 
 Claude sessions do not persist memory across unrelated runs. Persist feedback via:
 
-- Canonical updates in `AGENT_INSTRUCTIONS.md` for shared guidance.
+- Canonical updates in `CONTRIBUTOR_INSTRUCTIONS.md` for shared guidance.
 - Claude-only quirks in `CLAUDE.md`.
 - Cross-agent feedback entries in `.github/copilot-feedback-log.md` using:
   - `Feedback`

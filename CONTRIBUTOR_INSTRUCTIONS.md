@@ -117,6 +117,71 @@ Every fallback must be visible to users. No silent fallbacks.
 
 ---
 
+## 6A. Shared Skill Registry (Cross-Agent)
+
+All agent platforms (Codex, GitHub Copilot, Claude Code, Gemini, and others)
+must treat `.claude/skills/` as the canonical repository skill catalog.
+
+### Skill discovery and use
+
+1. Discover skills from `./.claude/skills/*/SKILL.md`.
+2. Select and apply the minimum skill set matching the task intent.
+3. Follow each selected skill's `SKILL.md` workflow before writing ad-hoc logic.
+4. If a skill conflicts with CE-first policy, CE-first policy wins.
+
+### Current shared skills
+
+| Skill | Path | Primary use |
+|---|---|---|
+| `ce-adr-author` | `.claude/skills/ce-adr-author/SKILL.md` | Author or update ADR documents |
+| `ce-adr-consult` | `.claude/skills/ce-adr-consult/SKILL.md` | Identify and apply relevant ADRs for a task |
+| `ce-alternatives-explore` | `.claude/skills/ce-alternatives-explore/SKILL.md` | Alternative/counterfactual exploration workflows |
+| `ce-calibrated-predict` | `.claude/skills/ce-calibrated-predict/SKILL.md` | Generate calibrated predictions without explanations |
+| `ce-classification` | `.claude/skills/ce-classification/SKILL.md` | Calibrated Explanations for binary and multiclass tasks |
+| `ce-code-quality-auditor` | `.claude/skills/ce-code-quality-auditor/SKILL.md` | Identify quality risks and anti-patterns per ADR-030 |
+| `ce-code-review` | `.claude/skills/ce-code-review/SKILL.md` | Perform CE-focused code reviews |
+| `ce-deadcode-hunter` | `.claude/skills/ce-deadcode-hunter/SKILL.md` | Identify and clean up unreachable or non-contributing code |
+| `ce-deprecation` | `.claude/skills/ce-deprecation/SKILL.md` | Implement ADR-011 compliant deprecations |
+| `ce-devils-advocate` | `.claude/skills/ce-devils-advocate/SKILL.md` | Rigorously review agent proposals for risks and blind spots |
+| `ce-docstring-author` | `.claude/skills/ce-docstring-author/SKILL.md` | Write or fix numpy-style docstrings |
+| `ce-explain-interact` | `.claude/skills/ce-explain-interact/SKILL.md` | Interactive explanation workflows |
+| `ce-factual-explain` | `.claude/skills/ce-factual-explain/SKILL.md` | Factual explanation workflows |
+| `ce-fallback-impl` | `.claude/skills/ce-fallback-impl/SKILL.md` | Implement visible, policy-compliant fallback paths |
+| `ce-fallback-test` | `.claude/skills/ce-fallback-test/SKILL.md` | Fallback visibility and warning tests |
+| `ce-logging-observability` | `.claude/skills/ce-logging-observability/SKILL.md` | Manage logging, governance, and audit context (ADR-028) |
+| `ce-modality-extension` | `.claude/skills/ce-modality-extension/SKILL.md` | Extend CE support to new data modalities |
+| `ce-mondrian-conditional` | `.claude/skills/ce-mondrian-conditional/SKILL.md` | Configure conditional/Mondrian calibration flows |
+| `ce-notebook-audit` | `.claude/skills/ce-notebook-audit/SKILL.md` | Audit notebooks for API/policy compliance |
+| `ce-onboard` | `.claude/skills/ce-onboard/SKILL.md` | Session-start CE orientation and skill routing |
+| `ce-payload-governance` | `.claude/skills/ce-payload-governance/SKILL.md` | Manage and validate explanation payloads (ADR-005) |
+| `ce-pipeline-builder` | `.claude/skills/ce-pipeline-builder/SKILL.md` | CE-first pipeline construction tasks |
+| `ce-plot-review` | `.claude/skills/ce-plot-review/SKILL.md` | Review visualization and plotting changes |
+| `ce-plotspec-author` | `.claude/skills/ce-plotspec-author/SKILL.md` | Author or extend PlotSpec-driven visualizations |
+| `ce-plugin-audit` | `.claude/skills/ce-plugin-audit/SKILL.md` | Audit plugin implementations and contracts |
+| `ce-plugin-scaffold` | `.claude/skills/ce-plugin-scaffold/SKILL.md` | Scaffold new plugin implementations |
+| `ce-regression-intervals` | `.claude/skills/ce-regression-intervals/SKILL.md` | Probabilistic/conformal regression interval workflows |
+| `ce-reject-policy` | `.claude/skills/ce-reject-policy/SKILL.md` | Configure reject/defer decision policies |
+| `ce-release-check` | `.claude/skills/ce-release-check/SKILL.md` | Select and validate next release tasks |
+| `ce-serialization-audit` | `.claude/skills/ce-serialization-audit/SKILL.md` | Audit serialization behavior and coverage |
+| `ce-serializer-impl` | `.claude/skills/ce-serializer-impl/SKILL.md` | Implement serialization and persistence support |
+| `ce-skill-registry-sync` | `.claude/skills/ce-skill-registry-sync/SKILL.md` | Enforce synchronization of all skill registries |
+| `ce-test-audit` | `.claude/skills/ce-test-audit/SKILL.md` | Test quality/compliance audit workflows |
+| `ce-test-author` | `.claude/skills/ce-test-author/SKILL.md` | High-signal CE test authoring workflows |
+| `ce-test-creator` | `.claude/skills/ce-test-creator/SKILL.md` | Design high-efficiency tests to close coverage gaps |
+| `ce-test-pruning-expert` | `.claude/skills/ce-test-pruning-expert/SKILL.md` | Identify and remove redundant or low-value tests |
+| `ce-test-quality-method` | `.claude/skills/ce-test-quality-method/SKILL.md` | Coordinate the full Test Quality Method (ADR-030) |
+
+### Maintenance rule
+
+Whenever a skill is added, renamed, removed, or moved under `.claude/skills/`,
+or when a user requests a skill listing update, agents must invoke
+`ce-skill-registry-sync` and update both this section and
+`.claude/skills/ce-onboard/SKILL.md` section 4 and
+`docs/contributor/agent_skills.md` in the same PR. All listings must include
+every existing skill directory under `.claude/skills/`.
+
+---
+
 ## 7. Development Workflow
 
 ```bash
@@ -342,7 +407,7 @@ All outputs land in `reports/over_testing/`.
 To maximize agent and Copilot efficiency for calibrated_explanations:
 
 - **Centralize feedback:** Log all agent/Copilot errors, misses, and improvement notes in `.github/copilot-feedback-log.md` after each PR/session.
-- **Update instructions:** After each feedback entry, update `AGENT_INSTRUCTIONS.md` and platform-specific instruction files with new rules, anti-patterns, and best practices.
+- **Update instructions:** After each feedback entry, update `CONTRIBUTOR_INSTRUCTIONS.md` and platform-specific instruction files with new rules, anti-patterns, and best practices.
 - **Strict CE-first enforcement:** Always prime agents with the latest canonical instructions; fail fast or warn for non-canonical patterns.
 - **Continuous improvement:** Review feedback log and instructions after each release/major PR; communicate changes to all agent platforms.
 - **Verification:** Ensure feedback log and instructions are updated and referenced in PRs; validate agent suggestions follow latest CE-first guardrails.

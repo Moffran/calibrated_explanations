@@ -3,7 +3,7 @@
 This checker enforces deterministic guardrails for instruction drift:
 1. no `.coveragerc` usage in agent docs/templates
 2. no bare `should_<behavior>_when_<condition>` naming guidance
-3. platform overlays must reference canonical `AGENT_INSTRUCTIONS.md`
+3. platform overlays must reference canonical `CONTRIBUTOR_INSTRUCTIONS.md`
 4. repo-local path references in instruction docs must exist
 5. feedback log schema fields must be present
 """
@@ -23,7 +23,7 @@ REQUIRED_OVERLAYS = (
 )
 
 REQUIRED_DOCS = (
-    Path("AGENT_INSTRUCTIONS.md"),
+    Path("CONTRIBUTOR_INSTRUCTIONS.md"),
     Path("AGENTS.md"),
     Path("CLAUDE.md"),
     Path("GEMINI.md"),
@@ -44,7 +44,7 @@ PATH_PREFIXES = (
     "src/",
     "tests/",
     "scripts/",
-    "AGENT_INSTRUCTIONS.md",
+    "CONTRIBUTOR_INSTRUCTIONS.md",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
@@ -163,9 +163,9 @@ def _check_overlay_contract(root: Path) -> list[str]:
         text = _read_text(full_path)
         lowered = text.lower()
         normalized = re.sub(r"[^a-z0-9]+", " ", lowered).strip()
-        if "AGENT_INSTRUCTIONS.md" not in text:
+        if "CONTRIBUTOR_INSTRUCTIONS.md" not in text:
             errors.append(
-                f"{rel_path.as_posix()}: missing canonical reference to AGENT_INSTRUCTIONS.md."
+                f"{rel_path.as_posix()}: missing canonical reference to CONTRIBUTOR_INSTRUCTIONS.md."
             )
         if "single source of truth" not in normalized:
             errors.append(

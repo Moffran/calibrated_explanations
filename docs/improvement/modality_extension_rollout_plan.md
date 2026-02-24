@@ -13,19 +13,19 @@ This plan defines a sufficient CE-core adaptation path from start to finish whil
 
 ## 2. Scope Principles (and ADR Anchors)
 
-1. Keep CE core small and stable.  
-Motivation: avoid dependency bloat and preserve import/runtime characteristics.  
+1. Keep CE core small and stable.
+Motivation: avoid dependency bloat and preserve import/runtime characteristics.
 ADRs: `ADR-001`, `ADR-010`, `ADR-020`.
-2. Reuse the existing trust-governed plugin model.  
-Motivation: do not fork a second extension mechanism.  
+2. Reuse the existing trust-governed plugin model.
+Motivation: do not fork a second extension mechanism.
 ADRs: `ADR-006`, `ADR-013`, `ADR-014`, `ADR-015`, `ADR-026`.
-3. Use additive, backward-compatible contract evolution first.  
-Motivation: preserve existing plugin ecosystem and user APIs.  
+3. Use additive, backward-compatible contract evolution first.
+Motivation: preserve existing plugin ecosystem and user APIs.
 ADRs: `ADR-011`, `ADR-020`.
-4. Ship in phases with measurable exit criteria.  
+4. Ship in phases with measurable exit criteria.
 Motivation: reduce release risk and avoid architecture drift.
 
-## 3. What "Sufficient but Not Over-Ambitious" Means Here
+## 3. Clarifications
 
 ### 3.1 Must Have in CE Core
 
