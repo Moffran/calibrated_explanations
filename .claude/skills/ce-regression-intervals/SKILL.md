@@ -1,16 +1,8 @@
 ---
 name: ce-regression-intervals
 description: >
-  Configure and interpret regression prediction intervals in calibrated_explanations.
-  Use when working with regression tasks, asking about 'prediction interval',
-  'conformal regression', 'low_high_percentiles', 'threshold regression', 'CPS',
-  'calibrated probability for regression', 'probabilistic regression',
-  'interval width', 'DifficultyEstimator', 'crepes.extras', 'per-instance
-  difficulty', 'difficulty estimation', 'variance normalization',
-  'adaptive intervals', 'set_difficulty_estimator', 'sigma'. Covers ADR-021
-  three-mode semantics: percentile conformal intervals, thresholded probabilistic
-  regression, and the distinction between them; and how per-instance difficulty
-  estimation narrows intervals for easy instances and widens them for hard ones.
+  Configure and interpret CE regression intervals for percentile conformal and
+  thresholded probabilistic modes.
 ---
 
 # CE Regression Intervals

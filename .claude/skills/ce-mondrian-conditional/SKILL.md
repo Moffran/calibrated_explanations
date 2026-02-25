@@ -1,15 +1,8 @@
 ---
 name: ce-mondrian-conditional
 description: >
-  Configure Mondrian (conditional) calibration for group-specific uncertainty
-  estimates and fairness-aware predictions and explanations. Use when asked
-  about 'conditional calibration', 'Mondrian', 'MondrianCategorizer',
-  'fairness', 'bias', 'group-specific calibration', 'protected attribute',
-  'subgroup calibration', 'bins parameter', 'demographic parity',
-  'conditional conformal', 'per-group intervals', 'fairness-aware XAI',
-  'conditional explanations'. Covers the full calibrate → predict → explain
-  workflow for Mondrian calibration using both the bins parameter and
-  MondrianCategorizer.
+  Configure and validate Mondrian and conditional calibration for subgroup-aware
+  uncertainty and fairness-sensitive workflows.
 ---
 
 # CE Mondrian Conditional

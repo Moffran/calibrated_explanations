@@ -1,11 +1,8 @@
 ---
 name: ce-logging-observability
 description: >
-  Manage logging and observability per ADR-028 and Standard-005.
-  Use when asked to 'add logging', 'update logging context', 'check logging
-  domains', 'verify audit logs', 'add governance event', 'fix logging level',
-  'setup structured logging', or 'audit logging usage'. Enforces the
-  operational/governance separation and context propagation rules.
+  Apply ADR-028 and STD-005 logging and observability rules, including governance
+  versus operational separation.
 ---
 
 # CE Logging and Observability

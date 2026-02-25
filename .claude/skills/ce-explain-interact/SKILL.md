@@ -1,14 +1,8 @@
 ---
 name: ce-explain-interact
 description: >
-  Interact with, plot, narrate, filter and inspect calibrated_explanations objects
-  after they have been generated. Use when asked to 'plot explanations', 'to_narrative',
-  'narrate', 'expertise_level', 'output_format', 'add conjunctions', 'max_rule_size',
-  'remove conjunctions', 'filter rules', 'filter features', 'filter_rule_sizes',
-  'filter_features', 'filter_top', 'look inside an explanation', 'inspect explanation
-  output', 'get rules', 'list rules', 'reset explanation'. Covers ALL explanation
-  types (FactualExplanation, AlternativeExplanation, FastExplanation, collections).
-  For explanation-type-specific semantics see ce-factual-explain and ce-alternatives-explore.
+  Post-process CE explanations by narrating, plotting, inspecting rules, filtering
+  features, and managing conjunctions.
 ---
 
 # CE Explain Interact

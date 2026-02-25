@@ -1,12 +1,8 @@
 ---
 name: ce-docstring-author
 description: >
-  Write Numpy-style docstrings for calibrated_explanations source code. Use when
-  asked to 'write docstrings', 'document this function', 'numpy docstring',
-  'add docstring', 'docstring coverage', 'missing docstring', 'Parameters section',
-  'Returns section', 'Raises section', 'Examples section', 'docstring style'.
-  Covers the mandatory Numpy docstring format required by CE coding standards
-  (CONTRIBUTOR_INSTRUCTIONS.md §3, source-code.instructions.md, ADR-018).
+  Write or repair NumPy-style docstrings for public CE APIs following STD-002 and
+  contributor documentation rules.
 ---
 
 # CE Docstring Author

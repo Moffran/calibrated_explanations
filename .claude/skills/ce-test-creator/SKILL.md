@@ -1,34 +1,74 @@
-# SKILL: Test Creator (Gap-Closer)
+---
+name: ce-test-creator
+description: >
+  Design high-value tests that close real coverage gaps without padding and
+  adapt recommendations for Option A/B/C in the Test Quality Method.
+---
 
-This skill implements the **Test Creator** role from the **Test Quality Method** (ADR-030).
+# CE Test Creator
 
-## 1. Role Overview
-As the **Test Creator**, your mission is to analyze coverage gaps and design the most efficient, high-quality tests to close them. You prioritize behavioral tests over implementation-detail tests.
+This skill implements the **Test Creator** role from ADR-030 and mirrors the
+prompt in `docs/improvement/test-quality-method/test_creator.md`.
 
-## 2. Core Rule (ADR-030 Priority #6)
-Every new test MUST have **> 0 unique lines** OR provide a **unique parameter/assertion** that isn't covered by existing tests.
+## Required references
 
-## 3. Workflow & Tasks
-1.  **Analyze Gaps**: Run `scripts/over_testing/gap_analyzer.py` and read `reports/over_testing/gaps.csv`.
-    -   Focus on contiguous gaps >= 10 lines.
-    -   Target "Easy Wins": Files with 2-20 missed lines.
-2.  **Verify Gates**: Run `scripts/quality/check_coverage_gates.py`. High-priority modules (Explainer, Serialization, Registry) require >= 95%.
-3.  **Efficiency Ranking**: Rank targets by **coverage gain per test line**.
-    -   **Tier 1 (High)**: Pickle round-trips, property/method returns, validation error paths.
-    -   **Tier 2 (Good)**: Public API calls exercising helper chains, parameter combinations.
-    -   **Tier 3 (Low)**: Complex integration, visualization, platform-specific code.
+- `docs/improvement/test-quality-method/README.md` (canonical method + options)
+- `docs/improvement/test-quality-method/test_creator.md` (full role prompt)
 
-## 4. Test Design Strategy
--   Prefer public API calls over internal helper tests.
--   Use `pytest.mark.parametrize` for input variations.
--   Use `pytest.raises` for exception paths.
--   Avoid "padding" tests (tests that just call code without assertions).
+## Use this skill when
 
-## 5. Key Assets
--   `reports/over_testing/gaps.csv`: Contiguous uncovered blocks.
--   `scripts/quality/check_coverage_gates.py`: Per-module threshold checker.
+- Closing documented coverage gaps.
+- Replacing low-value tests with stronger behavioral coverage.
+- Adding missing exception, serialization, or contract tests.
 
-## 6. Constraints
--   **No Duplication**: If a path is already covered, do not add a new test unless it tests a unique *behavior*.
--   **Efficiency First**: Do not spend 100 lines of test code to cover 2 lines of source code; consider if the source code itself should be refactored or removed.
--   **Always** submit your proposed tests to the `Devil's Advocate` for review.
+## Focus option handling
+
+- **Option A (Test-Focused):** run the full gap-closing workflow.
+- **Option B (Code-Focused):** only propose targeted tests when code-focused
+  changes expose a coverage-gate failure; otherwise return "no new tests needed."
+- **Option C (Full Cycle):** run Option A and coordinate with code-focused
+  findings to avoid adding tests that duplicate soon-to-be-pruned paths.
+
+## Core rule
+
+Every new test must add meaningful signal:
+- covers unique lines, or
+- introduces unique parameter/assertion behavior.
+
+## Workflow
+
+1. Confirm the selected focus option (`A`, `B`, or `C`) and scope work accordingly.
+2. Analyze gaps:
+
+```bash
+python scripts/over_testing/gap_analyzer.py
+python scripts/quality/check_coverage_gates.py
+```
+
+3. Prioritize targets:
+- Tier 1: public API error paths, serialization round-trips, boundary behavior.
+- Tier 2: parameter combinations that exercise distinct contracts.
+- Tier 3: expensive integration/viz paths (only when needed).
+
+4. Design tests for behavioral specificity:
+- use public APIs only
+- assert outputs/side effects, not just object existence
+- parameterize where duplication risk is high
+
+5. Cross-check with existing coverage artifacts to avoid duplicates.
+
+## Output contract
+
+For each proposed test include:
+- target behavior
+- target module/function
+- why existing tests do not already cover it
+- expected coverage/quality gain
+- selected focus option (`A`, `B`, or `C`) and why the proposal fits it
+
+## Constraints
+
+- Avoid implementation-detail coupling.
+- Avoid coverage padding.
+- Route proposals through `ce-devils-advocate` for risk challenge before
+  large batch changes.

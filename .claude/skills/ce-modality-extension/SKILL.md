@@ -1,12 +1,8 @@
 ---
 name: ce-modality-extension
 description: >
-  Extend calibrated_explanations to a new data modality (image, audio, text,
-  timeseries, multimodal). Use when asked for 'extend to a new modality',
-  'image modality plugin', 'audio CE plugin', 'text tabular CE', 'timeseries
-  predictions', 'ADR-033', 'data_modalities', 'plugin_api_version',
-  'MissingExtensionError', 'calibrated_explanations.vision',
-  'calibrated_explanations.audio', 'modality extension contract'.
+  Extend CE to new data modalities via plugin contracts, modality naming rules, and
+  extension safety guardrails.
 ---
 
 # CE Modality Extension

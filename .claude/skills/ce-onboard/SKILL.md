@@ -1,12 +1,8 @@
 ---
 name: ce-onboard
 description: >
-  Session-start primer for calibrated_explanations agents. Use this skill when
-  starting a new agent session, when asked to 'onboard', 'prime context',
-  'load CE context', 'what is calibrated_explanations', 'how do I start',
-  'refresh context', 'session setup'. This skill is a read-only orientation
-  guide — it does not generate code and does not invoke models.
-disable-model-invocation: true
+  Read-only session primer for CE-first invariants, key files, and skill routing at
+  session start.
 ---
 
 # CE Onboard
@@ -94,8 +90,12 @@ intervals from any model.
 | Generate regression prediction intervals | `ce-regression-intervals` |
 | Configure reject/defer policies | `ce-reject-policy` |
 | Select next release task | `ce-release-check` |
+| Audit RTD documentation quality | `ce-rtd-auditor` |
+| Author or revise RTD pages | `ce-rtd-writer` |
 | Implement serialization | `ce-serializer-impl` |
 | Audit serialization coverage | `ce-serialization-audit` |
+| Audit skills against Claude authoring guidance | `ce-skill-audit` |
+| Create/refactor skills and templates | `ce-skill-creator` |
 | Sync skill registries after skill changes | `ce-skill-registry-sync` |
 | Audit existing tests | `ce-test-audit` |
 | Write new tests | `ce-test-author` |

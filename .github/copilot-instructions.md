@@ -3,6 +3,8 @@
 > **Canonical agent instructions:** `AGENT_INSTRUCTIONS.md` — the single source of
 > truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
 > that first. This file adds **only** GitHub Copilot-specific context.
+> canonical `CONTRIBUTOR_INSTRUCTIONS.md` is the single source of truth.
+> this file adds only copilot-specific context.
 > **Setup guide:** `docs/get-started/copilot-setup.md` — VS Code setup, prompt files, feedback loop.
 > **Feedback log:** `.github/copilot-feedback-log.md` — dated corrections; run `/refresh-ce-context feedback="…"` to add an entry.
 

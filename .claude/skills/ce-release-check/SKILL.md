@@ -1,12 +1,8 @@
 ---
 name: ce-release-check
 description: >
-  Check the release plan and identify the next development step. Use when asked
-  'what is the next step', 'proceed according to plan', 'check release gate',
-  'what should I work on next', 'release plan status', 'next milestone', 'what
-  is outstanding for v0.11', 'open gates', 'ADR gap closure'. Reads the current
-  RELEASE_PLAN_v1.md, identifies the current milestone, and surfaces the next
-  actionable item conforming to all ADRs.
+  Read release-plan state and select the next ADR-compliant actionable development
+  step.
 ---
 
 # CE Release Check

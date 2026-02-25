@@ -1,14 +1,8 @@
 ---
 name: ce-factual-explain
 description: >
-  Generate factual calibrated explanations using calibrated_explanations.
-  Use when asked for 'explain factual', 'factual rules for a prediction',
-  'what rules justify this prediction', 'calibrated rules', 'feature importance
-  with uncertainty', 'CE factual', or 'FactualExplanation'. Covers the
-  explain_factual vs explain_guarded_factual decision, the factual-specific
-  output structure, and the factual interpretation of prediction dicts.
-  For plot/narrative/filter/conjunction API see ce-explain-interact.
-  For alternative/counterfactual rules see ce-alternatives-explore.
+  Generate factual CE explanations and select the correct guarded versus standard
+  factual workflow.
 ---
 
 # CE Factual Explain

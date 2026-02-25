@@ -1,23 +1,34 @@
 ---
 name: ce-test-audit
 description: >
-  Audit existing tests in calibrated_explanations for anti-patterns and quality
-  issues. Use when asked to 'audit tests', 'find test anti-patterns', 'improve
-  test quality', 'review tests', 'clean up test suite', 'identify redundant tests',
-  'check test coverage quality', 'ADR-030 compliance', or 'over-testing'.
-  Runs anti-pattern detection tooling and classifies issues by ADR-030 priority.
-  Requires tests/README.md familiarity — load references/adr-030-test-quality.md.
+  Audit existing tests for ADR-030 anti-patterns, redundancy risk, and compliance
+  with repository test standards.
 ---
 
 # CE Test Audit
 
 You are auditing the test suite for quality issues. This skill applies the
-criteria from ADR-030 and `tests/README.md`. Load
-`references/adr-030-test-quality.md` for the full ADR text.
+criteria from ADR-030, `tests/README.md`, and the test-quality-method docs.
+Load these references before auditing:
+
+- `references/adr-030-test-quality.md`
+- `docs/improvement/test-quality-method/README.md`
+- `docs/improvement/test-quality-method/anti_pattern_auditor.md`
+
+## Focus option handling
+
+- **Option A (Test-Focused):** run the full audit toolchain, including
+  redundancy analysis.
+- **Option B (Code-Focused):** run only hard-gate and anti-pattern checks needed
+  to support source-focused remediation.
+- **Option C (Full Cycle):** run Option A and then re-check hard gates after
+  code-focused changes.
 
 ## Audit Toolchain
 
-Run these in order:
+Choose the command set based on focus option.
+
+### Option A / Option C (full test audit)
 
 ```bash
 # 1. Anti-pattern scan (primary audit)
@@ -36,6 +47,19 @@ python scripts/over_testing/detect_redundant_tests.py
 python scripts/quality/check_marker_hygiene.py --check
 
 # 6. No test-helper export check (hard gate)
+python scripts/quality/check_no_test_helper_exports.py
+```
+
+### Option B (code-focused support audit)
+
+```bash
+# 1. Anti-pattern scan
+python scripts/anti-pattern-analysis/detect_test_anti_patterns.py
+
+# 2. Private member usage scan (hard gate in CI)
+python scripts/anti-pattern-analysis/scan_private_usage.py --check
+
+# 3. No test-helper export check (hard gate)
 python scripts/quality/check_no_test_helper_exports.py
 ```
 
@@ -141,7 +165,7 @@ When reporting audit findings, use this structure:
 
 ## Evaluation Checklist
 
-- [ ] All six tooling scripts run and output reviewed.
+- [ ] Selected focus-option command set run and output reviewed.
 - [ ] Issues classified by ADR-030 priority.
 - [ ] Hard gate violations flagged separately.
 - [ ] Fallback chain violations identified.

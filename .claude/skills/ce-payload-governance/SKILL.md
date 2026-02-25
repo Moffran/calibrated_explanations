@@ -1,11 +1,8 @@
 ---
 name: ce-payload-governance
 description: >
-  Manage and validate explanation payloads for conformance with ADR-005
-  and ADR-028 (governance). Use when asked to 'check payload schema',
-  'update metadata', 'verify provenance', 'validate JSON export', 'save
-  explanation as JSON', 'audit governance output', or 'check invariant
-  low/high'. Enforces the versioned payload contract for interoperability.
+  Validate explanation payload schemas, metadata and provenance fields, and ADR-005
+  and ADR-028 governance invariants.
 ---
 
 # CE Payload and Governance

@@ -1,12 +1,8 @@
 ---
 name: ce-serializer-impl
 description: >
-  Implement calibrator serialization or explainer state persistence per ADR-031.
-  Use when asked to 'implement save_state', 'implement load_state', 'calibrator
-  serialization', 'to_primitive', 'from_primitive', 'serialize calibrator',
-  'persist explainer', 'schema_version', 'save and load explainer',
-  'round-trip explainer', 'IncompatibleSchemaError', 'ADR-031'. Covers the
-  versioned primitive contract and the explainer state persistence API.
+  Implement ADR-031 serializer and persistence APIs with versioned primitives and
+  compatible load behavior.
 ---
 
 # CE Serializer Implementation

@@ -1,12 +1,8 @@
 ---
 name: ce-pipeline-builder
 description: >
-  Build a complete calibrated_explanations (CE) pipeline from scratch.
-  Use when setting up CE for the first time, explaining how to use CE, building
-  a pipeline for binary classification, multiclass, or regression, or when the
-  user asks 'how do I use CE', 'set up a CE pipeline', 'WrapCalibratedExplainer',
-  'fit and calibrate', 'explain predictions with CE', or 'CE-first'. Enforces
-  the mandatory 9-step CE-First policy from CONTRIBUTOR_INSTRUCTIONS.md §1.
+  Build CE-first end-to-end pipelines using WrapCalibratedExplainer with fit,
+  calibrate, and explain or predict sequencing.
 ---
 
 # CE Pipeline Builder

@@ -1,12 +1,8 @@
 ---
 name: ce-adr-consult
 description: >
-  Find and consult the relevant ADRs before making a change to calibrated_explanations.
-  Use when asked 'which ADR governs this', 'check ADRs for this change', 'ADR impact
-  of', 'is there an ADR for', 'which ADRs apply to plugins', 'ADR for serialization',
-  'ADR for visualization', 'ADR for exceptions', 'ADR for deprecation', 'ADR for
-  testing'. Provides a fast lookup from change type to governing ADR(s) and the key
-  constraints each ADR imposes.
+  Map a proposed change to governing ADRs and constraints before implementation; use
+  for ADR applicability and conflict checks.
 ---
 
 # CE ADR Consult

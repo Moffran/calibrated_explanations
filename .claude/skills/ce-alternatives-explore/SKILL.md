@@ -1,15 +1,8 @@
 ---
 name: ce-alternatives-explore
 description: >
-  Explore alternative (counterfactual) predictions using calibrated_explanations.
-  Use when asked for 'explore alternatives', 'what would change this prediction',
-  'counterfactual explanations', 'what-if analysis', 'recourse', 'actionable
-  alternatives', 'explore_alternatives', 'CE alternatives', 'super_explanations',
-  'semi_explanations', 'counter_explanations', 'ensured_explanations',
-  'pareto_explanations', 'ensured framework', 'triangular plot', 'plot style
-  triangular', 'rnk_metric ensured', 'rnk_weight'. Covers the full alternatives
-  API including the five ensured-framework filters and alternatives-specific plot
-  styles. For plot/narrative/filter/conjunction API see ce-explain-interact.
+  Generate and interpret CE alternative and counterfactual explanations, including
+  ensured filters and alternatives-specific plot workflows.
 ---
 
 # CE Alternatives Explorer

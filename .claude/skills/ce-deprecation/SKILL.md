@@ -1,14 +1,8 @@
 ---
 name: ce-deprecation
 description: >
-  Deprecate or remove a feature, parameter, or module in calibrated_explanations.
-  Use when asked to 'deprecate this feature', 'deprecate a parameter', 'mark as
-  deprecated', 'migration path', 'remove old param', 'ADR-011',
-  'utils.deprecate', 'DeprecationWarning', 'once_key', 'two minor release rule',
-  'deprecation timeline', 'CE_DEPRECATIONS=error', 'mitigation guide'. Covers
-  the ADR-011 deprecation policy, the mitigation guide
-  (docs/migration/deprecations.md) updates, symbol removal lifecycle, and
-  searching commit history for deprecation origins.
+  Implement ADR-011 deprecation and removal workflows with correct warnings,
+  migration notes, and release timeline handling.
 ---
 
 # CE Deprecation & Mitigation

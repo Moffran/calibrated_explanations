@@ -1,13 +1,8 @@
 ---
 name: ce-plugin-scaffold
 description: >
-  Scaffold a new plugin for calibrated_explanations. Use when asked to 'add a
-  plugin', 'new calibrator plugin', 'implement a plot plugin', 'new explanation
-  plugin', 'register a plugin', 'contribute a plugin', 'custom calibrator',
-  'custom explanation strategy', 'plugin_meta', 'ExplainerPlugin', 'register_plugin'.
-  Covers all three plugin types (interval calibrator, explanation, plot) and the
-  ADR-006 trust model / plugin_meta contract. Cross-reference ce-modality-extension
-  if extending to a non-tabular modality.
+  Scaffold interval, explanation, or plot plugins that satisfy registry metadata and
+  trust-model contracts.
 ---
 
 # CE Plugin Scaffold

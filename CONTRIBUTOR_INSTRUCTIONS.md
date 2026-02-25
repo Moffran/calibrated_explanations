@@ -162,8 +162,12 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 | `ce-regression-intervals` | `.claude/skills/ce-regression-intervals/SKILL.md` | Probabilistic/conformal regression interval workflows |
 | `ce-reject-policy` | `.claude/skills/ce-reject-policy/SKILL.md` | Configure reject/defer decision policies |
 | `ce-release-check` | `.claude/skills/ce-release-check/SKILL.md` | Select and validate next release tasks |
+| `ce-rtd-auditor` | `.claude/skills/ce-rtd-auditor/SKILL.md` | Audit RTD docs for structure, accuracy, and governance alignment |
+| `ce-rtd-writer` | `.claude/skills/ce-rtd-writer/SKILL.md` | Author or revise RTD docs with audience-aware structure |
 | `ce-serialization-audit` | `.claude/skills/ce-serialization-audit/SKILL.md` | Audit serialization behavior and coverage |
 | `ce-serializer-impl` | `.claude/skills/ce-serializer-impl/SKILL.md` | Implement serialization and persistence support |
+| `ce-skill-audit` | `.claude/skills/ce-skill-audit/SKILL.md` | Audit repository skills against Claude authoring guidance |
+| `ce-skill-creator` | `.claude/skills/ce-skill-creator/SKILL.md` | Create/refactor skills and enforce structure/trigger quality |
 | `ce-skill-registry-sync` | `.claude/skills/ce-skill-registry-sync/SKILL.md` | Enforce synchronization of all skill registries |
 | `ce-test-audit` | `.claude/skills/ce-test-audit/SKILL.md` | Test quality/compliance audit workflows |
 | `ce-test-author` | `.claude/skills/ce-test-author/SKILL.md` | High-signal CE test authoring workflows |

@@ -1,12 +1,8 @@
 ---
 name: ce-notebook-audit
 description: >
-  Audit calibrated_explanations notebooks for API correctness and policy
-  compliance. Use when asked to 'audit notebooks', 'check notebook API usage',
-  'scan private member usage', 'check-private-members', 'notebook policies',
-  'notebook anti-patterns', 'notebooks/core_demos', 'notebook gallery',
-  'ADR-012 notebook', 'check agent instructions consistency'. Covers the full
-  notebook quality pipeline.
+  Audit notebooks for public-API correctness, policy compliance, and private-member
+  usage violations.
 ---
 
 # CE Notebook Audit

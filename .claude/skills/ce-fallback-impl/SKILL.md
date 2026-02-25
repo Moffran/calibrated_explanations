@@ -1,12 +1,8 @@
 ---
 name: ce-fallback-impl
 description: >
-  Implement a fallback path with required CE visibility semantics. Use when asked
-  to 'implement a fallback', 'add fallback visibility', 'parallel to sequential
-  fallback', 'silent fallback violation', 'fallback warning', 'UserWarning for
-  fallback', 'INFO log fallback', 'copilot-instructions fallback policy',
-  'fallback chain', 'disable_fallbacks fixture', 'ce-fallback-visibility'.
-  Covers the mandatory warn+log pattern and integration with the test fallback fixture.
+  Implement fallback chains that always emit UserWarning and INFO logs per CE
+  fallback-visibility policy.
 ---
 
 # CE Fallback Implementation

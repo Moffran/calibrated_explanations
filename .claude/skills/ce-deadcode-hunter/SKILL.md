@@ -1,34 +1,76 @@
-# SKILL: Dead-Code Hunter (Hunter)
+---
+name: ce-deadcode-hunter
+description: >
+  Identify unreachable or non-contributing source code and separate true dead code
+  from merely untested reachable paths, with Test Quality Method Option A/B/C
+  routing.
+---
 
-This skill implements the **Dead-Code Hunter** role from the **Test Quality Method** (ADR-030).
+# CE Dead-Code Hunter
 
-## 1. Role Overview
-As the **Dead-Code Hunter**, you identify and clean up source code that is not contributing meaningful functionality but is still being tested or exists as "cruft". You focus on `src/calibrated_explanations/`.
+This skill implements the **Dead-Code Hunter** role from ADR-030 and mirrors
+the prompt in `docs/improvement/test-quality-method/deadcode_hunter.md`.
 
-## 2. Core Missions
-1.  **Identify Unreachable Code**: Code that cannot be reached from any public API path.
-2.  **Separate Dead from Untested**: Distinguish between code that *is* reachable but lacks tests (requires tests) and code that is truly dead (requires removal).
-3.  **Minimize Maintenance Surface**: Reduce the LOC that must be maintained and covered.
+## Required references
 
-## 3. Workflow & Tasks
-1.  **Private Method Analysis**: Run `scripts/anti-pattern-analysis/analyze_private_methods.py`.
-    -   **Pattern 3 (Completely Dead)**: Private methods called NOWHERE (not even in tests).
-    -   **Pattern 3/2 (Only Tests)**: Private methods only called from tests (Potential "test-only" production code).
-2.  **Large Gap Analysis**: Review `reports/over_testing/gaps.csv` for blocks >= 50 lines.
-3.  **Cross-Reference Coverage**: Analyze `reports/over_testing/line_coverage_counts.csv`. Identify code only covered by placeholder/import-only tests.
-4.  **Test Infrastructure Audit**: Identify production code that only exists to support test scaffolding or debug/introspection.
-5.  **Dynamic Dispatch Check**: Account for lazy imports (`__init__.py`), plugin entry points (`pyproject.toml`), and environment variable toggles.
+- `docs/improvement/test-quality-method/README.md` (canonical method + options)
+- `docs/improvement/test-quality-method/deadcode_hunter.md` (full role prompt)
 
-## 4. Key Assets
--   `reports/over_testing/gaps.csv`: Large uncovered blocks.
--   `reports/over_testing/line_coverage_counts.csv`: Per-line hit counts.
--   `src/calibrated_explanations/__init__.py`: Lazy loading registry.
+## Use this skill when
 
-## 5. Constraints
--   **Analysis-only**: You do not modify code; you produce a removal proposal.
--   **Conservative Deletion**: If code is conditionally reachable (e.g., specific OS/Python version), classify as "Needs Investigation".
--   **Be Prepared**: The `Devil's Advocate` will challenge every claim; ensure you have evidence of unreachability.
+- Proposing source removals.
+- Investigating code only exercised by tests.
+- Reducing maintenance surface without behavioral regressions.
 
-## 6. Coordination
--   Coordinate with the `Pruner` if you find code only exercised by redundant tests.
--   Coordinate with the `Test Creator` if you find reachable but untested code.
+## Focus option handling
+
+- **Option A (Test-Focused):** limit analysis to source paths implicated by
+  pruning and overlap findings.
+- **Option B (Code-Focused):** run the full dead-code reachability audit.
+- **Option C (Full Cycle):** run full audit and reconcile with Option A test
+  proposals before classifying removals.
+
+## Core missions
+
+1. Identify truly unreachable code paths.
+2. Distinguish dead code from untested but reachable code.
+3. Produce evidence-backed removal candidates with risk labels.
+
+## Workflow
+
+1. Confirm the selected focus option (`A`, `B`, or `C`).
+2. Start with structural evidence:
+
+```bash
+python scripts/anti-pattern-analysis/analyze_private_methods.py
+```
+
+3. Cross-check coverage artifacts:
+- `reports/over_testing/gaps.csv`
+- `reports/over_testing/line_coverage_counts.csv`
+
+4. Validate dynamic reachability:
+- lazy imports in `src/calibrated_explanations/__init__.py`
+- plugin registration/entry points
+- environment-specific branches
+
+5. Classify each candidate:
+- `Dead`: unreachable from any supported runtime path.
+- `Untested`: reachable but not covered.
+- `Needs investigation`: dynamic/conditional path not yet proven.
+
+## Output contract
+
+For each candidate provide:
+
+- location (`file:line`)
+- reachability evidence
+- category (`Dead`, `Untested`, `Needs investigation`)
+- recommended action (remove, keep + test, or defer)
+- selected focus option (`A`, `B`, or `C`) and why this candidate is in-scope
+
+## Constraints
+
+- Analysis-first skill; no bulk deletions without explicit approval.
+- Prefer conservative classification when dynamic reachability is uncertain.
+- Coordinate with `ce-test-pruning-expert` when tests are the only callers.

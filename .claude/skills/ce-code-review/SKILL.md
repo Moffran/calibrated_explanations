@@ -1,12 +1,8 @@
 ---
 name: ce-code-review
 description: >
-  Review code for conformance with calibrated_explanations coding standards.
-  Use when asked to 'review this code', 'does this follow CE standards',
-  'check my PR', 'code quality review', 'coding standards check', 'pre-commit
-  checks', 'ADR conformance', 'check imports', 'check docstrings', 'CE code
-  review', 'check for anti-patterns'. Covers all CE source-code standards from
-  CONTRIBUTOR_INSTRUCTIONS.md, source-code.instructions.md, and the active ADRs.
+  Review code changes for CE coding standards, ADR conformance, and behavior or API
+  regression risk.
 ---
 
 # CE Code Review

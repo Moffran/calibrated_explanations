@@ -1,6 +1,6 @@
 # AGENTS.md — Codex (OpenAI) Instructions for `calibrated_explanations`
 
-> **Canonical agent instructions:** `AGENT_INSTRUCTIONS.md` — the single source of
+> **Canonical agent instructions:** `CONTRIBUTOR_INSTRUCTIONS.md` — the single source of
 > truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
 > that first. This file adds **only** Codex-specific context.
 
@@ -10,7 +10,7 @@
 
 At the start of every Codex session, explicitly direct the agent to:
 
-1. Read `AGENT_INSTRUCTIONS.md` (canonical CE rules).
+1. Read `CONTRIBUTOR_INSTRUCTIONS.md` (canonical CE rules).
 2. Read `AGENTS.md` (this file).
 3. Follow the CE-first checklist from `docs/get-started/ce_first_agent_guide.md`.
 4. Use helpers from `src/calibrated_explanations/ce_agent_utils.py` instead of
@@ -19,7 +19,7 @@ At the start of every Codex session, explicitly direct the agent to:
 Reusable priming prompt:
 
 ```text
-You are a CE-first agent for calibrated_explanations. Read AGENT_INSTRUCTIONS.md
+You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
 and AGENTS.md first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
 Fail fast if CE-first invariants are not satisfied.
 ```
@@ -67,7 +67,7 @@ pytest -q                      # confirm tests pass
 ```
 
 Then ask Codex to:
-1. Re-read `AGENT_INSTRUCTIONS.md` and `docs/get-started/ce_first_agent_guide.md`.
+1. Re-read `CONTRIBUTOR_INSTRUCTIONS.md` and `docs/get-started/ce_first_agent_guide.md`.
 2. Diff `src/calibrated_explanations/` for changed signatures.
 3. Update any examples or tests that reference old signatures.
 
@@ -89,8 +89,8 @@ Codex has no persistent cross-session memory. Convert feedback into durable file
 
 | Type of feedback | Where to record it |
 |---|---|
-| Wrong API usage | Update `AGENT_INSTRUCTIONS.md` §1 or §2 |
-| Wrong coding style | Update `AGENT_INSTRUCTIONS.md` §3 |
+| Wrong API usage | Update `CONTRIBUTOR_INSTRUCTIONS.md` §1 or §2 |
+| Wrong coding style | Update `CONTRIBUTOR_INSTRUCTIONS.md` §3 |
 | Recurring test mistake | Add a test to `tests/unit/test_ce_agent_utils.py` |
 | Platform-specific Codex quirk | Add a bullet to this file |
 | General improvement | Update `PROMPTS.md` |

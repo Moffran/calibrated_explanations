@@ -1,15 +1,8 @@
 ---
 name: ce-calibrated-predict
 description: >
-  Obtain calibrated predictions (without explanations) from a fitted and
-  calibrated WrapCalibratedExplainer. Use when asked about 'calibrated
-  predictions', 'predict with confidence', 'predict_proba calibrated',
-  'conformal prediction', 'uncertainty interval', 'uq_interval', 'predict
-  interval', 'calibrated probability', 'predict without explanation', 'only
-  predict', 'prediction with bounds', 'low high prediction', 'calibrated
-  regression predict', 'Venn-Abers probability', 'CPS predict'. Covers
-  predict() and predict_proba() with and without uncertainty intervals, and
-  their regression and classification semantics.
+  Produce calibrated predict and predict_proba outputs, with optional uncertainty
+  intervals, without generating explanations.
 ---
 
 # CE Calibrated Predict

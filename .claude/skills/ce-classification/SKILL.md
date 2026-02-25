@@ -1,12 +1,8 @@
 ---
 name: ce-classification
 description: >
-  Calibrated Explanations for classification tasks (Binary and Multiclass).
-  Use when asked about 'classification', 'binary classification', 'multiclass',
-  'predicted class', 'all classes explanation', 'multi_labels_enabled',
-  'MultiClassCalibratedExplanations', 'probability bounds', or 'Venn-Abers'.
-  Covers the prediction semantics, the default predicted-class explanation,
-  and the multi-label mode for explaining all classes.
+  Handle CE classification workflows for binary and multiclass prediction semantics
+  and class-focused explanation behavior.
 ---
 
 # CE Classification

@@ -1,12 +1,8 @@
 ---
 name: ce-serialization-audit
 description: >
-  Audit serialization code for conformance with ADR-031 (calibrator serialization
-  and state persistence). Use when asked to 'audit serialization code', 'check
-  save/load contract', 'verify round-trip', 'review to_primitive', 'check
-  schema_version', 'serialization contract review', 'JSON-safe audit',
-  'IncompatibleSchemaError check'. Covers all ADR-031 requirements and the
-  invariant checks from ADR-021.
+  Audit save and load behavior for ADR-031 schema contracts, invariants, and
+  round-trip safety.
 ---
 
 # CE Serialization Audit

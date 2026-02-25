@@ -1,52 +1,85 @@
-# SKILL: Test Quality Method (Implementer & Process Architect)
+---
+name: ce-test-quality-method
+description: >
+  Coordinate ADR-030 test-quality remediation using the Test Quality Method and
+  route work across Option A (test-focused), Option B (code-focused), or Option C
+  (full cycle).
+---
 
-This skill implements the **Test Quality Method** (ADR-030), acting as the **Implementer** (executor) and **Process Architect** (designer) for test suite improvements.
+# CE Test Quality Method
 
-## 1. Role Overview
-As the **Implementer**, you consolidate findings from specialized agents into a **Final Remedy Plan** and execute approved cleanup actions.
-As the **Process Architect**, you design and optimize the test quality pipeline and report formats.
+This skill is the ADR-030 integrator. It combines implementer and process
+architect responsibilities and must align with the test-quality-method docs and
+agent prompts.
 
-## 2. Your Specialized Team
-Coordinate findings from these key roles:
-- `ce-test-pruning-expert` (Pruner): Identified overlapping/low-value tests for removal.
-- `ce-deadcode-hunter` (Hunter): Identified dead/non-contributing source code.
-- `ce-test-creator` (Creator): Designed high-value tests to close coverage gaps.
-- `ce-code-quality-auditor` (Auditor/Anti-Pattern): Detected test anti-patterns and quality violations.
-- `ce-devils-advocate` (Reviewer): Critically reviewed all proposals and produced risk ratings.
+## Required references
 
-## 3. Core Workflow (Phase A: Consolidation)
-1.  **Read Expert Proposals**: Collect and analyze reports from:
-    -   `reports/over_testing/pruner_proposal.md`
-    -   `reports/over_testing/deadcode_hunter_proposal.md`
-    -   `reports/over_testing/test_creator_proposal.md`
-    -   `reports/over_testing/anti_pattern_auditor_proposal.md`
-    -   `reports/over_testing/code_quality_auditor_proposal.md`
-    -   `reports/over_testing/process_architect_proposal.md`
-    -   `reports/over_testing/devils_advocate_review.md`
-2.  **Cross-Reference & Verify**: Compare the "safe to remove" claims with the Devil's Advocate risks.
-3.  **Data Freshness**: Check `reports/over_testing/metadata.json` for `--cov-context=test` (multiple contexts check).
-4.  **Produce Final Remedy Plan**: Create `reports/over_testing/final_remedy_plan.md` containing:
-    -   Executive summary with verified metrics.
-    -   Phased action list (Over-testing, Gap closure, Anti-patterns, Dead code, Process).
-    -   Execution checklist with numbered items.
+- `docs/improvement/test-quality-method/README.md` (canonical method + options)
+- `docs/improvement/test-quality-method/implementer.md` (execution prompt)
+- `docs/improvement/test-quality-method/process_architect.md` (workflow prompt)
 
-## 3. Core Workflow (Phase B: Execution)
-1.  **Batching Rule**: Aim for large batches (~100 tests at a time) for removals (B.1).
-2.  **Safe Actions**:
-    -   Delete already-skipped tests (with `overtesting` or `batch1` reason).
-    -   Delete placeholder tests (e.g., in `tests/generated/`).
-    -   Fix marker hygiene (add `slow`, `integration`, `viz`).
-3.  **Continuous Validation**: After each batch, verify coverage and run `make test`. If coverage drops below the gate (90%), stop and close the gap immediately.
+## Specialist skill to prompt mapping
 
-## 4. Key Metrics & Assets
--   `reports/over_testing/metadata.json`: Holds run context and versioning.
--   `reports/over_testing/final_remedy_plan.md`: The canonical execution plan.
--   **Mandatory Scripts**:
-    -   `scripts/over_testing/run_over_testing_pipeline.py` (Gather data).
-    -   `scripts/over_testing/extract_per_test.py` (Detailed analysis).
-    -   `scripts/over_testing/detect_redundant_tests.py` (Identify overlap).
+- `ce-test-pruning-expert` -> `docs/improvement/test-quality-method/pruner.md`
+- `ce-test-creator` -> `docs/improvement/test-quality-method/test_creator.md`
+- `ce-test-audit` -> `docs/improvement/test-quality-method/anti_pattern_auditor.md`
+- `ce-code-quality-auditor` -> `docs/improvement/test-quality-method/code_quality_auditor.md`
+- `ce-deadcode-hunter` -> `docs/improvement/test-quality-method/deadcode_hunter.md`
+- `ce-devils-advocate` -> `docs/improvement/test-quality-method/devils_advocate.md`
 
-## 5. Constraints & Ethics
--   **Never** delete a test that is the sole coverage provider for a line.
--   **Always** prioritize behavioral tests over implementation-detail tests.
--   **Always** follow the batching and rollback rules defined in ADR-030.
+## Use this skill when
+
+- Running end-to-end test quality remediation.
+- Reconciling outputs from specialist skills into one execution plan.
+- Sequencing over-testing reduction with safety checks.
+
+## Focus option handling
+
+- **Option A (Test-Focused):** run coverage-context and redundancy analysis,
+  prioritize `ce-test-pruning-expert`, `ce-test-creator`, and `ce-test-audit`.
+- **Option B (Code-Focused):** run code-quality and dead-code loop, prioritize
+  `ce-code-quality-auditor` and `ce-deadcode-hunter`; run `ce-test-audit` only
+  for hard-gate checks.
+- **Option C (Full Cycle):** run Option A then Option B and reconcile combined
+  coverage, redundancy, and maintainability tradeoffs before execution.
+
+## Specialist inputs
+
+- `ce-test-pruning-expert`
+- `ce-deadcode-hunter`
+- `ce-test-creator`
+- `ce-code-quality-auditor`
+- `ce-test-audit`
+- `ce-devils-advocate`
+
+## Consolidation workflow
+
+1. Select focus option (`A`, `B`, or `C`) from `README.md` and state it in the plan header.
+2. Collect specialist reports from `reports/over_testing/`.
+3. Validate data freshness (`metadata.json`, coverage-context provenance).
+4. Cross-check proposal conflicts (e.g., remove test vs keep behavior guardrail).
+5. Produce `final_remedy_plan.md` with:
+- findings summary
+- phased action list
+- rollback points
+- coverage-risk checkpoints
+
+## Execution workflow
+
+1. Execute low-risk batches first (small, reversible changes).
+2. Re-run relevant verification gates for the selected focus option after each batch.
+3. Stop and remediate immediately if coverage or behavior regresses.
+
+## Output contract
+
+Return:
+
+1. Consolidated remedy plan with selected focus option (`A`, `B`, or `C`).
+2. Ordered execution phases with risk level.
+3. Validation evidence per phase.
+
+## Constraints
+
+- Never drop below enforced coverage gates.
+- Never delete sole-provider tests without replacement behavior coverage.
+- Keep decisions evidence-based and traceable to ADR-030 priorities.

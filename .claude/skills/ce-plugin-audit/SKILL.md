@@ -1,11 +1,8 @@
 ---
 name: ce-plugin-audit
 description: >
-  Audit a plugin for conformance with calibrated_explanations architectural rules.
-  Use when asked to 'review my plugin', 'does this plugin conform to ADRs',
-  'audit plugin conformance', 'check plugin contract', 'plugin registry compliance',
-  'plugin_meta valid', 'plugin trust model', 'ADR-006 plugin', 'ADR-013 plugin',
-  'ADR-015 plugin', 'ADR-033 modality'. Covers all plugin types and the trust model.
+  Audit plugin implementations for registry trust rules, metadata validity, and ADR
+  contract compliance.
 ---
 
 # CE Plugin Audit

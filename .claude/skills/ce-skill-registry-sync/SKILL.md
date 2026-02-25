@@ -1,18 +1,43 @@
 ---
 name: ce-skill-registry-sync
 description: >
-  Keep CONTRIBUTOR_INSTRUCTIONS.md §6A (Shared Skill Registry) and
-  .claude/skills/ce-onboard/SKILL.md §4 (Skill catalogue) and
-  docs/contributor/agent_skills.md (RTD skill catalogue) synchronized with the
-  actual .claude/skills catalog. Use when any skill is added, removed, renamed,
-  or moved, or when the user asks for a skill listing update. Enforces updating
-  all registries in the same patch as the skill change.
+  Synchronize all skill registries with filesystem inventory after any skill add,
+  remove, rename, or move.
 ---
 
 # CE Skill Registry Sync
 
 Use this skill whenever `.claude/skills/` changes or whenever a user requests
 any skill listing update.
+
+## RTD taxonomy model (authoritative)
+
+When maintaining grouped sections in `docs/contributor/agent_skills.md`, apply
+this deterministic classification model:
+
+1. Primary deliverable rule (highest priority):
+- prediction or explanation outputs -> Practitioner Workflows
+- production implementation changes -> Contributor Implementation and Extensibility
+- quality findings, tests, or remediation plans -> Quality, Testing, and Risk Control
+- ADR, docs, registry, or process artifacts -> Governance, Documentation, and Skill Operations
+2. Primary user rule (tie-breaker):
+- end user or analyst -> Practitioner Workflows
+- code contributor -> Contributor Implementation and Extensibility
+- reviewer or QA maintainer -> Quality, Testing, and Risk Control
+- maintainer or documentation owner -> Governance, Documentation, and Skill Operations
+3. Single-primary placement rule:
+- each skill must appear exactly once in one primary RTD subcategory
+4. Subcategory rule:
+- choose subcategory by dominant workflow type (build/configure, audit/review, author/coordinate)
+
+## RTD maintenance checks
+
+When adding or reclassifying skills in `docs/contributor/agent_skills.md`:
+
+1. Keep single-primary placement (one subcategory per skill in RTD).
+2. Ensure all `.claude/skills/*` entries are listed exactly once.
+3. Keep links stable (`.claude/skills/<skill>/SKILL.md`).
+4. Apply the taxonomy model above before introducing new subcategories.
 
 ## Mandatory policy
 
@@ -26,7 +51,8 @@ If any skill directory or `SKILL.md` file is added, removed, renamed, or moved:
 6. Ensure each RTD skill row contains a valid skill link.
 7. Keep registry lists sorted alphabetically by skill name where applicable.
 8. Do not leave stale rows for removed or renamed skills.
-9. Do not complete the task unless all registries and filesystem state match.
+9. Apply the RTD taxonomy model above when updating grouped RTD sections.
+10. Do not complete the task unless all registries and filesystem state match.
 
 Always perform **full-set reconciliation**:
 - Enumerate all directories under `.claude/skills/`.

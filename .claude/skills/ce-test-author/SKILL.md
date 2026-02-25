@@ -1,13 +1,8 @@
 ---
 name: ce-test-author
 description: >
-  Write tests for calibrated_explanations modules following the project's strict
-  standards. Use when asked to 'write tests for', 'add test coverage',
-  'TDD for this module', 'create a test file', 'add a pytest test', 'test this
-  function', 'unit test', 'integration test', or 'generate tests'. Encodes the
-  full CE test rubric from tests/README.md: naming, AAA structure, fallback
-  fixtures, coverage gate (90%+), file placement policy, and anti-pattern avoidance.
-  Load references/tests-readme-extract.md for the complete rubric.
+  Write high-signal CE tests with AAA structure, public-API focus, and coverage-gate
+  discipline.
 ---
 
 # CE Test Author

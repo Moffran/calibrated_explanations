@@ -1,38 +1,91 @@
-# SKILL: Code Quality & Anti-Pattern Auditor (Auditor)
+---
+name: ce-code-quality-auditor
+description: >
+  Audit source and tests for ADR-030 anti-patterns, determinism failures,
+  API-boundary violations, and test-helper leakage with Option A/B/C handling
+  from the Test Quality Method.
+---
 
-This skill implements the **Code Quality Auditor** and **Anti-Pattern Auditor** roles from the **Test Quality Method** (ADR-030).
+# CE Code Quality Auditor
 
-## 1. Role Overview
-As the **Auditor**, you identify high-signal anti-patterns, quality risks, and hygiene issues in both source code and tests. You produce remediation proposals that align with ADRs (ADR-001, ADR-002, ADR-011, ADR-030).
+This skill combines the **Code Quality Auditor** and **Anti-Pattern Auditor**
+roles from ADR-030.
 
-## 2. Core Principles (ADR-030 Quality Criteria)
-1.  **Determinism**: No unsilenced `random`, `time`, or network calls.
-2.  **Public-Contract Testing**: Tests must use public APIs. Private access is a violation unless in `.github/private_member_allowlist.json`.
-3.  **Assertion Strength**: Assert specific values/behaviors, not just `isinstance`.
-4.  **Layering & Markers**: Use correct markers (`slow`, `integration`, `viz`, `platform_dependent`).
-5.  **Fixture Discipline**: Use shared fixtures from `tests/helpers/` or `tests/conftest.py`.
-6.  **No Production Test-Helpers**: Production modules must not export test scaffolding.
+## Required references
 
-## 3. Source Code Quality Tasks
-1.  **Compliance Checks**: Run `scripts/quality/check_adr002_compliance.py`, `check_import_graph.py`, and `check_docstring_coverage.py`.
-2.  **Deprecation Audit**: Run `pytest tests/unit -m "not viz" -q` with `CE_DEPRECATIONS=error`.
-3.  **Private Helper Audit**: Run `scripts/anti-pattern-analysis/analyze_private_methods.py`.
-    -   **Pattern 3 (Dead)**: Completely dead code in `src/`.
-    -   **Pattern 2 (Only Tests)**: Code only exercised by tests (potential code smell).
-4.  **Structural Hotspots**: Identify very large functions (>200 LOC) or long parameter lists (>12 args).
+- `docs/improvement/test-quality-method/README.md` (canonical method + options)
+- `docs/improvement/test-quality-method/code_quality_auditor.md` (code-quality prompt)
+- `docs/improvement/test-quality-method/anti_pattern_auditor.md` (anti-pattern prompt)
 
-## 4. Test Anti-Pattern Tasks
-1.  **Detection**: Run `scripts/anti-pattern-analysis/detect_test_anti_patterns.py`.
-2.  **Private Usage Scan**: Run `scripts/anti-pattern-analysis/scan_private_usage.py --check`.
-3.  **Allowlist Hygiene**: Verify `.github/private_member_allowlist.json`. Identify expired or unnecessary entries.
-4.  **Export Leakage**: Run `scripts/quality/check_no_test_helper_exports.py` (Hard blocker).
+## Use this skill when
 
-## 5. Private Member Usage Taxonomy
--   **Category A (High)**: Internal logic testing via private calls (Rewrite to public-contract).
--   **Category B (Medium)**: Underscored utilities that should be in `tests/helpers/`.
--   **Category C (Medium)**: Deprecated/legacy access (Migrate to modern API).
--   **Category D (Low)**: Factory/setup bypass.
+- Reviewing overall source/test quality before cleanup.
+- Producing a findings-first anti-pattern report.
+- Prioritizing quality issues by risk and blocker level.
 
-## 6. Constraints
--   **Analysis-only**: You do not modify code; you suggest remediation steps.
--   **Zero-Tolerance**: Hard blockers (allowlist violations, export leakage) must be addressed first.
+## Focus option handling
+
+- **Option A (Test-Focused):** prioritize test anti-pattern analysis; run
+  source-quality checks only when they explain test failures.
+- **Option B (Code-Focused):** run the full code-quality gate pack and
+  dead/private helper audits.
+- **Option C (Full Cycle):** run Option A evidence pass and Option B gate pass,
+  then combine results into one ranked proposal.
+
+## Core principles
+
+1. Determinism first: no unsilenced `random`, `time`, or network dependencies.
+2. Public-contract tests only: private-member access requires explicit allowlist.
+3. Assertion strength: favor behavioral assertions over shape/type-only checks.
+4. Marker/layer hygiene: test markers and suite placement must match behavior.
+5. No production test-helper exports from `src/`.
+
+## Audit workflow
+
+1. Confirm the selected focus option (`A`, `B`, or `C`).
+2. Run anti-pattern detection:
+
+```bash
+python scripts/anti-pattern-analysis/detect_test_anti_patterns.py
+python scripts/anti-pattern-analysis/scan_private_usage.py --check
+python scripts/quality/check_no_test_helper_exports.py
+```
+
+3. Run source-quality checks:
+
+```bash
+python scripts/quality/check_import_graph.py
+python scripts/quality/check_docstring_coverage.py
+python scripts/anti-pattern-analysis/analyze_private_methods.py
+```
+
+4. Validate deprecation compliance:
+
+```bash
+$env:CE_DEPRECATIONS='error'
+pytest tests/unit -m "not viz" -q
+```
+
+5. Classify each finding:
+- Severity: blocker/high/medium/low.
+- Scope: source/test/docs/process.
+- Action: remove/refactor/rewrite/test-add/update-allowlist.
+
+## Output contract
+
+Report findings in this order:
+
+1. Blockers (must-fix now).
+2. High-risk defects.
+3. Medium/low hygiene improvements.
+
+For each finding include:
+- file path + line
+- violated rule/ADR
+- concrete remediation proposal
+- selected focus option (`A`, `B`, or `C`) and why the finding is in-scope
+
+## Constraints
+
+- Analysis and planning focus; do not silently auto-fix large areas.
+- Preserve CE-first boundaries (ADR-001 layering and public API policy).

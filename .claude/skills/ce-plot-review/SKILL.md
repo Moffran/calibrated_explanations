@@ -1,11 +1,8 @@
 ---
 name: ce-plot-review
 description: >
-  Review plot code for conformance with calibrated_explanations visualization ADRs.
-  Use when asked to 'review this plot code', 'does this plot conform to ADRs',
-  'check plot implementation', 'audit visualization code', 'plot code review',
-  'ADR-014 plot plugin', 'ADR-016 PlotSpec', 'ADR-023 matplotlib exemption',
-  'viz code review', 'lazy import plot', 'validate_plotspec audit'.
+  Review visualization code for ADR-compliant PlotSpec behavior, lazy imports, and
+  renderer correctness.
 ---
 
 # CE Plot Review

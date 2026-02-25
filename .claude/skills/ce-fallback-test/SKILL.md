@@ -1,12 +1,8 @@
 ---
 name: ce-fallback-test
 description: >
-  Write tests that validate fallback chain behavior in calibrated_explanations.
-  Use when asked to 'test a fallback', 'assert warning is raised', 'fallback
-  fixture', 'enable_fallbacks', 'test graceful degradation', 'test parallel to
-  sequential fallback', 'test cache backend fallback', 'test visualization fallback',
-  or 'test plugin fallback'. Encodes the mandatory enable_fallbacks opt-in
-  pattern, the pytest.warns requirement, and the INFO log side-effect assertion.
+  Author tests that verify fallback visibility through opt-in fixtures, warning
+  assertions, and INFO log side effects.
 ---
 
 # CE Fallback Test

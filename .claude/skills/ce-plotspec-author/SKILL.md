@@ -1,12 +1,8 @@
 ---
 name: ce-plotspec-author
 description: >
-  Add a new PlotSpec-based plot type to calibrated_explanations. Use when asked
-  to 'add a new plot type', 'implement a visualization', 'PlotSpec for', 'new
-  plot kind', 'new visualization IR', 'plotspec builder', 'plotspec renderer',
-  'ADR-007', 'ADR-016', 'viz/plotspec', 'BarHPanelSpec', 'IntervalHeaderSpec',
-  'validate_plotspec', 'backend-agnostic plot'. Covers the PlotSpec IR contract,
-  builder pattern, validation, and legacy co-existence.
+  Author or extend PlotSpec-based visualizations with validated IR contracts and
+  backend-agnostic rendering.
 ---
 
 # CE PlotSpec Author

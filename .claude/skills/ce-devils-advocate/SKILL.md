@@ -1,35 +1,71 @@
-# SKILL: Devil's Advocate (Reviewer)
+---
+name: ce-devils-advocate
+description: >
+  Adversarially challenge cleanup and test proposals for hidden risk, weak evidence,
+  and coverage or behavior regressions, including Option A/B/C focus-specific risks.
+---
 
-This skill implements the **Devil's Advocate** role from the **Test Quality Method** (ADR-030).
+# CE Devil's Advocate
 
-## 1. Role Overview
-As the **Devil's Advocate**, your job is to find flaws, risks, and blind spots in every proposal from the other specialist agents (Pruner, Hunter, etc.). You must prove they are *not* being thorough enough.
+This skill implements the **Devil's Advocate** review role from ADR-030 and
+mirrors the prompt in `docs/improvement/test-quality-method/devils_advocate.md`.
 
-## 2. Core Missions
-1.  **Challenge Assumptions**: Question the data and logic used in every proposal.
-2.  **Verify Risk Assessments**: Ensure every removal or refactor has a confirmed risk rating.
-3.  **Ensure Safety**: Prevent any change that would compromise stability or coverage below the gate (90%).
+## Required references
 
-## 3. Workflow & Tasks
-1.  **Build Independent Knowledge**: Read ADR-030, `reports/over_testing/baseline_summary.json`, `src/calibrated_explanations/__init__.py`, and generic coverage metadata.
-- **Review Proposals**: For EACH proposal:
-    -   **Pruner's Proposal**: CHALLENGE "zero unique lines" if the data context is not fresh. Verify the estimatated coverage impact.
-    -   **Deadcode Hunter's Proposal**: CHALLENGE "dead" code—is it truly unreachable or hidden by lazy imports, plugins, or entry points?
-    -   **Test Creator's Proposal**: CHALLENGE the efficiency and quality—is the new test just "padding" coverage without behavioral value?
-    -   **Auditor's Proposal**: CHALLENGE the suggested refactors—will they actually reduce risk or just churn code?
+- `docs/improvement/test-quality-method/README.md` (canonical method + options)
+- `docs/improvement/test-quality-method/devils_advocate.md` (full role prompt)
 
-## 4. Key Questions to Ask
--   "Is this code actually reachable via `__init__.py` lazy loading?"
--   "Will removing this test drop coverage below the per-module gate?"
--   "Is the data context fresh (Check `reports/over_testing/metadata.json`)?"
--   "Does this test actually *assert* a behavior, or is it just 'importing' as a proxy?"
+## Use this skill when
 
-## 5. Key Assets
--   `reports/over_testing/baseline_summary.json`: The source of truth for current coverage.
--   `src/calibrated_explanations/__init__.py`: The dynamic dispatch "map".
--   `reports/over_testing/metadata.json`: Context verification.
+- Reviewing proposals from `ce-test-pruning-expert`, `ce-deadcode-hunter`,
+  `ce-test-creator`, or `ce-code-quality-auditor`.
+- Risk-rating proposed removals/refactors before execution.
 
-## 6. Constraints
--   **Critical but Constructive**: Your goal is not to block progress, but to ensure that progress is *safe* and *thorough*.
--   **Documentation Required**: Every challenge must have a rationale based on the codebase or ADRs.
--   **Final Decision**: Provide a risk rating (Low/Medium/High) for every proposed change.
+## Focus option handling
+
+- **Option A (Test-Focused):** prioritize objections on redundancy evidence,
+  unique-lines validity, and compensating-test quality.
+- **Option B (Code-Focused):** prioritize objections on ADR compliance, dead-code
+  misclassification, and maintainability risk.
+- **Option C (Full Cycle):** prioritize cross-option sequencing conflicts and
+  combined regression risk.
+
+## Review protocol
+
+1. Confirm the selected focus option (`A`, `B`, or `C`).
+2. Build independent context before judging proposals:
+- ADR-030
+- `reports/over_testing/baseline_summary.json`
+- `reports/over_testing/metadata.json`
+- `src/calibrated_explanations/__init__.py`
+
+3. Challenge assumptions per proposal type:
+- Pruning: are "zero unique lines" findings fresh and correctly interpreted?
+- Dead code: is the code truly unreachable under lazy/plugin paths?
+- New tests: are they behavior-focused and non-padding?
+- Refactors: do they reduce risk instead of moving complexity around?
+
+4. Demand concrete evidence:
+- coverage context recency
+- file/line references
+- expected impact on coverage gate and behavior
+
+## Output contract
+
+Return a findings-first review:
+
+1. High-risk objections.
+2. Medium-risk concerns.
+3. Low-risk caveats.
+
+For each proposal include:
+- risk rating (`Low`, `Medium`, `High`)
+- acceptance decision (`Approve`, `Revise`, `Reject`)
+- rationale and required follow-ups
+- selected focus option (`A`, `B`, or `C`) and focus-specific risk notes
+
+## Constraints
+
+- Be critical but constructive.
+- Do not block without evidence.
+- Do not approve high-impact changes without explicit risk analysis.

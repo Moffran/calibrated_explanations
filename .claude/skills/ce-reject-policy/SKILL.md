@@ -1,15 +1,8 @@
 ---
 name: ce-reject-policy
 description: >
-  Configure and use reject policies for advanced decision pipelines in
-  calibrated_explanations. Use when asked about 'reject policy', 'defer
-  prediction', 'predict_reject', 'RejectPolicy', 'ONLY_ACCEPTED',
-  'FLAG', 'ONLY_REJECTED', 'reject option', 'RejectResult', 'ambiguous
-  prediction', 'uncertain prediction', 'abstain', 'selective prediction',
-  'conformal prediction set', 'reject class', 'reject explain', 'prediction
-  set size', 'novelty detection', 'reject and explain', 'confidence-based
-  rejection'. Covers the full reject policy enum, RejectResult envelope,
-  per-call and explainer-level defaults, and the predict_reject method.
+  Configure reject and defer decision policies and interpret RejectResult behavior
+  in prediction and explanation flows.
 ---
 
 # CE Reject Policy
