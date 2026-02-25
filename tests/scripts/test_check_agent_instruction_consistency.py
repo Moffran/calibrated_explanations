@@ -99,7 +99,7 @@ def test_checker_fails_on_coveragerc_and_bare_should(tmp_path: Path) -> None:
         tmp_path / "CONTRIBUTOR_INSTRUCTIONS.md",
         "Coverage: `--cov-config=.coveragerc`",
     )
-    _write(
+    write(
         tmp_path / "tests/README.md",
         "Naming: `should_<behavior>_when_<condition>`.",
     )

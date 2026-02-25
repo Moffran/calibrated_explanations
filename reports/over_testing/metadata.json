@@ -1,6 +1,6 @@
 {
   "coverage_file": ".coverage",
-  "contexts_detected": 1247,
+  "contexts_detected": 1252,
   "context_regex": null,
   "source_root": "src\\calibrated_explanations",
   "over_testing_threshold": 20,
