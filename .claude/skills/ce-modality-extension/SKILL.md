@@ -1,8 +1,8 @@
 ---
 name: ce-modality-extension
 description: >
-  Extend CE to new data modalities via plugin contracts, modality naming rules, and
-  extension safety guardrails.
+  Extend CE to non-tabular data modalities (vision, audio, timeseries, text) via
+  ADR-033 plugin contracts, modality naming rules, and extension safety guardrails.
 ---
 
 # CE Modality Extension

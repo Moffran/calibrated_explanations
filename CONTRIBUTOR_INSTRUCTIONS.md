@@ -140,6 +140,7 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 | `ce-classification` | `.claude/skills/ce-classification/SKILL.md` | Calibrated Explanations for binary and multiclass tasks |
 | `ce-code-quality-auditor` | `.claude/skills/ce-code-quality-auditor/SKILL.md` | Identify quality risks and anti-patterns per ADR-030 |
 | `ce-code-review` | `.claude/skills/ce-code-review/SKILL.md` | Perform CE-focused code reviews |
+| `ce-data-preparation` | `.claude/skills/ce-data-preparation/SKILL.md` | Validate and preprocess input data for CE pipelines |
 | `ce-deadcode-hunter` | `.claude/skills/ce-deadcode-hunter/SKILL.md` | Identify and clean up unreachable or non-contributing code |
 | `ce-deprecation` | `.claude/skills/ce-deprecation/SKILL.md` | Implement ADR-011 compliant deprecations |
 | `ce-devils-advocate` | `.claude/skills/ce-devils-advocate/SKILL.md` | Rigorously review agent proposals for risks and blind spots |
@@ -148,6 +149,7 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 | `ce-factual-explain` | `.claude/skills/ce-factual-explain/SKILL.md` | Factual explanation workflows |
 | `ce-fallback-impl` | `.claude/skills/ce-fallback-impl/SKILL.md` | Implement visible, policy-compliant fallback paths |
 | `ce-fallback-test` | `.claude/skills/ce-fallback-test/SKILL.md` | Fallback visibility and warning tests |
+| `ce-integration-compare` | `.claude/skills/ce-integration-compare/SKILL.md` | Guide CE integration with SHAP and LIME |
 | `ce-logging-observability` | `.claude/skills/ce-logging-observability/SKILL.md` | Manage logging, governance, and audit context (ADR-028) |
 | `ce-modality-extension` | `.claude/skills/ce-modality-extension/SKILL.md` | Extend CE support to new data modalities |
 | `ce-mondrian-conditional` | `.claude/skills/ce-mondrian-conditional/SKILL.md` | Configure conditional/Mondrian calibration flows |
@@ -158,10 +160,14 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 | `ce-plot-review` | `.claude/skills/ce-plot-review/SKILL.md` | Review visualization and plotting changes |
 | `ce-plotspec-author` | `.claude/skills/ce-plotspec-author/SKILL.md` | Author or extend PlotSpec-driven visualizations |
 | `ce-plugin-audit` | `.claude/skills/ce-plugin-audit/SKILL.md` | Audit plugin implementations and contracts |
+| `ce-performance-tuning` | `.claude/skills/ce-performance-tuning/SKILL.md` | Configure caching, parallelism, and batch-size tuning |
 | `ce-plugin-scaffold` | `.claude/skills/ce-plugin-scaffold/SKILL.md` | Scaffold new plugin implementations |
 | `ce-regression-intervals` | `.claude/skills/ce-regression-intervals/SKILL.md` | Probabilistic/conformal regression interval workflows |
 | `ce-reject-policy` | `.claude/skills/ce-reject-policy/SKILL.md` | Configure reject/defer decision policies |
 | `ce-release-check` | `.claude/skills/ce-release-check/SKILL.md` | Select and validate next release tasks |
+| `ce-release-finalize` | `.claude/skills/ce-release-finalize/SKILL.md` | Execute the PyPI release checklist |
+| `ce-release-planner` | `.claude/skills/ce-release-planner/SKILL.md` | Analyze release plan and produce vX.Y.Z implementation plans |
+| `ce-release-task` | `.claude/skills/ce-release-task/SKILL.md` | Identify, implement, and verify individual release tasks |
 | `ce-rtd-auditor` | `.claude/skills/ce-rtd-auditor/SKILL.md` | Audit RTD docs for structure, accuracy, and governance alignment |
 | `ce-rtd-writer` | `.claude/skills/ce-rtd-writer/SKILL.md` | Author or revise RTD docs with audience-aware structure |
 | `ce-serialization-audit` | `.claude/skills/ce-serialization-audit/SKILL.md` | Audit serialization behavior and coverage |

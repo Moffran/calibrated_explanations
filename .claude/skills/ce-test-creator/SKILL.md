@@ -1,8 +1,9 @@
 ---
 name: ce-test-creator
 description: >
-  Design high-value tests that close real coverage gaps without padding and
-  adapt recommendations for Option A/B/C in the Test Quality Method.
+  Design tests to close documented coverage gaps identified by gap analysis,
+  without padding. Adapts recommendations for Option A/B/C in the Test Quality
+  Method. Use ce-test-author to write tests for already-known targets.
 ---
 
 # CE Test Creator

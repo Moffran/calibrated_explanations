@@ -16,6 +16,7 @@ execution contract.
 | `ce-pipeline-builder` | Build CE-first fit/calibrate/explain pipelines. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-pipeline-builder/SKILL.md) |
 | `ce-calibrated-predict` | Produce calibrated predictions without explanations. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-calibrated-predict/SKILL.md) |
 | `ce-classification` | Calibrated Explanations for binary and multiclass tasks. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-classification/SKILL.md) |
+| `ce-data-preparation` | Validate and preprocess input data for CE pipelines. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-data-preparation/SKILL.md) |
 
 ### 1.2 Explanation Generation and Interpretation
 
@@ -32,6 +33,13 @@ execution contract.
 | `ce-regression-intervals` | Workflows for conformal/probabilistic regression intervals. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-regression-intervals/SKILL.md) |
 | `ce-mondrian-conditional` | Configure conditional and Mondrian calibration. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-mondrian-conditional/SKILL.md) |
 | `ce-reject-policy` | Configure and validate reject/defer policy behavior. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-reject-policy/SKILL.md) |
+
+### 1.4 Integrations and Performance
+
+| Skill | Purpose | Link |
+|---|---|---|
+| `ce-integration-compare` | Guide CE integration with SHAP and LIME. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-integration-compare/SKILL.md) |
+| `ce-performance-tuning` | Configure caching, parallelism, and batch-size tuning. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-performance-tuning/SKILL.md) |
 
 ## 2) Contributor Implementation and Extensibility
 
@@ -97,6 +105,9 @@ execution contract.
 | `ce-adr-author` | Author or update ADR documents. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-adr-author/SKILL.md) |
 | `ce-deprecation` | Apply ADR-011 compliant deprecation patterns. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-deprecation/SKILL.md) |
 | `ce-release-check` | Select and validate release tasks and gates. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-check/SKILL.md) |
+| `ce-release-planner` | Analyze release plan and produce vX.Y.Z implementation plans. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-planner/SKILL.md) |
+| `ce-release-task` | Identify, implement, and verify individual release tasks. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-task/SKILL.md) |
+| `ce-release-finalize` | Execute the PyPI release checklist. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-finalize/SKILL.md) |
 
 ### 4.2 Documentation Authoring and Audit
 

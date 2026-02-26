@@ -68,6 +68,7 @@ intervals from any model.
 | Explanations for binary and multiclass tasks | `ce-classification` |
 | Identify quality risks and anti-patterns | `ce-code-quality-auditor` |
 | Code review a PR | `ce-code-review` |
+| Validate/preprocess input data | `ce-data-preparation` |
 | Identify unreachable or non-contributing code | `ce-deadcode-hunter` |
 | Deprecate a function or param | `ce-deprecation` |
 | Review proposals for risks and blind spots | `ce-devils-advocate` |
@@ -76,6 +77,7 @@ intervals from any model.
 | Generate factual explanations | `ce-factual-explain` |
 | Implement a fallback | `ce-fallback-impl` |
 | Verify fallback coverage in tests | `ce-fallback-test` |
+| Compare CE with SHAP or LIME | `ce-integration-compare` |
 | Manage logging and audit context (ADR-028) | `ce-logging-observability` |
 | Extend to a new data modality | `ce-modality-extension` |
 | Use conditional/Mondrian calibration for fairness | `ce-mondrian-conditional` |
@@ -86,10 +88,14 @@ intervals from any model.
 | Review visualization code | `ce-plot-review` |
 | Author a new PlotSpec | `ce-plotspec-author` |
 | Audit an existing plugin | `ce-plugin-audit` |
+| Tune CE performance (caching/parallelism) | `ce-performance-tuning` |
 | Scaffold a new plugin | `ce-plugin-scaffold` |
 | Generate regression prediction intervals | `ce-regression-intervals` |
 | Configure reject/defer policies | `ce-reject-policy` |
 | Select next release task | `ce-release-check` |
+| Finalize a PyPI release | `ce-release-finalize` |
+| Plan an upcoming release version | `ce-release-planner` |
+| Implement and verify a release task | `ce-release-task` |
 | Audit RTD documentation quality | `ce-rtd-auditor` |
 | Author or revise RTD pages | `ce-rtd-writer` |
 | Implement serialization | `ce-serializer-impl` |

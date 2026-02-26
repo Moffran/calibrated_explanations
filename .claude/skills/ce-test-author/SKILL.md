@@ -1,8 +1,9 @@
 ---
 name: ce-test-author
 description: >
-  Write high-signal CE tests with AAA structure, public-API focus, and coverage-gate
-  discipline.
+  Write individual CE test cases for specified modules or behaviors using AAA
+  structure, public-API focus, and coverage-gate discipline. Does NOT identify
+  coverage gaps; use ce-test-creator for gap-driven test design.
 ---
 
 # CE Test Author
