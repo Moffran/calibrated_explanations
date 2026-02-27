@@ -7,6 +7,7 @@ Guides for upgrading between major releases and understanding breaking changes o
 
 ../foundations/concepts/terminology
 deprecations
+adr033_v0_11_0
 ```
 
 ## Quick navigation
