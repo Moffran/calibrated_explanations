@@ -11,6 +11,12 @@ You are auditing serialization code for conformance with ADR-031. Work through
 each dimension below and report findings. The round-trip invariant and
 schema-version enforcement are blocking (must fix before merge).
 
+This repository currently supports these serialization paths:
+- ADR-031 state artifacts via `WrapCalibratedExplainer.save_state()` / `load_state()`
+- Wrapper object persistence via `pickle.dump` / `pickle.load`
+- Wrapper object persistence via `joblib.dump` / `joblib.load`
+- Explanation collection persistence via pickle
+
 ---
 
 ## Dimension 1 — `to_primitive()` contract
@@ -42,19 +48,21 @@ json.dumps(primitive)   # raises TypeError if not JSON-safe
 ## Dimension 2 — `from_primitive()` error handling
 
 ```python
-# Must raise IncompatibleSchemaError — not ValueError, not KeyError
-with pytest.raises(IncompatibleSchemaError):
+# Current contract: calibrator from_primitive raises ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
+
+with pytest.raises(ConfigurationError):
     MyCalibrator.from_primitive({"schema_version": 9999})
 
 # Must raise on missing schema_version (not produce silent garbage)
-with pytest.raises(IncompatibleSchemaError):
+with pytest.raises(ConfigurationError):
     MyCalibrator.from_primitive({})
 ```
 
 | Check | Requirement |
 |---|---|
-| Unknown `schema_version` → `IncompatibleSchemaError` | Must fail fast |
-| Missing `schema_version` → `IncompatibleSchemaError` | Must fail fast |
+| Unknown `schema_version` → `ConfigurationError` | Must fail fast |
+| Missing `schema_version` → `ConfigurationError` | Must fail fast |
 | Error message names supported versions | Must aid migration |
 | Error message links to migration guide | Strongly encouraged |
 
@@ -95,11 +103,23 @@ If the code serialises explainer state:
 | Check | Requirement |
 |---|---|
 | `manifest.schema_version` present | Must be int |
-| `manifest.ce_version` present | CE package version string |
-| `manifest.serialized_at` present | ISO timestamp |
-| `manifest.checksum` present | SHA-256 of the payload (or equivalent) |
+| `manifest.created_at_utc` present | ISO timestamp |
+| `manifest.files` present | Mapping `filename -> sha256` |
+| `manifest.artifact_type` present | State artifact identity string |
 | Load validates manifest version before deserialising | Fail fast |
-| Load raises `IncompatibleSchemaError` on unsupported version | Not silent |
+| Load raises `IncompatibleStateError` on unsupported version | Not silent |
+
+```python
+from calibrated_explanations.utils.exceptions import IncompatibleStateError
+
+manifest = json.loads((state_dir / "manifest.json").read_text(encoding="utf-8"))
+assert isinstance(manifest["schema_version"], int)
+assert isinstance(manifest["created_at_utc"], str)
+assert isinstance(manifest["files"], dict)
+
+with pytest.raises(IncompatibleStateError):
+    WrapCalibratedExplainer.load_state(state_dir_with_bad_schema)
+```
 
 ---
 
@@ -114,13 +134,14 @@ When `schema_version` changes in a calibrator:
 
 ---
 
-## Dimension 6 — Convenience helpers (optional but expected)
+## Dimension 6 — Legacy object persistence compatibility
 
-```python
-# In-memory round-trip helpers simplify tests and tool usage
-save_state_to_bytes() -> bytes
-load_state_from_bytes(b: bytes) -> WrapCalibratedExplainer
-```
+Verify legacy object round-trips remain functional:
+- `pickle.dump(wrapper)` / `pickle.load(...)`
+- `joblib.dump(wrapper)` / `joblib.load(...)`
+- `pickle.dump(explanations)` / `pickle.load(...)`
+
+These are complementary to ADR-031 and should be exercised in integration tests.
 
 ---
 
@@ -145,8 +166,14 @@ Round-trip invariant (ADR-021):
 
 save_state / load_state (if present):
   manifest.schema_version:        PASS / FAIL / N_A
-  manifest.checksum:              PASS / FAIL / N_A
+  manifest.files checksums:       PASS / FAIL / N_A
   load validates version first:   PASS / FAIL / N_A
+  unsupported schema → state err: PASS / FAIL / N_A
+
+legacy pickle/joblib:
+  wrapper pickle round-trip:      PASS / FAIL
+  wrapper joblib round-trip:      PASS / FAIL
+  explanation pickle round-trip:  PASS / FAIL
 
 Migration guidance:
   docs/migration/ entry:          PRESENT / MISSING / N_A
@@ -160,8 +187,10 @@ Overall: CONFORMANT / NON-CONFORMANT (<N> issues)
 ## Evaluation Checklist
 
 - [ ] `to_primitive()` passes `json.dumps()` without error.
-- [ ] `from_primitive()` raises `IncompatibleSchemaError` on version mismatch.
+- [ ] `from_primitive()` raises `ConfigurationError` on version mismatch.
 - [ ] Round-trip test verifies identical `predict_proba` outputs (not just no-exception).
 - [ ] Interval invariant verified on restored calibrator.
-- [ ] Manifest fields present in `save_state` output.
+- [ ] `manifest.schema_version`, `manifest.created_at_utc`, and `manifest.files` are present.
+- [ ] `load_state()` raises `IncompatibleStateError` on unsupported manifest schema.
+- [ ] Pickle and joblib wrapper round-trips pass on real `WrapCalibratedExplainer` objects.
 - [ ] Migration guide entry present when schema version incremented.

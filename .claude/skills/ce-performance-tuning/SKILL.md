@@ -1,8 +1,8 @@
 ---
 name: ce-performance-tuning
 description: >
-  Configure CE caching, parallel execution, and batch-size tuning per ADR-003
-  and ADR-004 for faster explanations on large datasets.
+  Configure CE caching, parallel execution, batch-size tuning, and FAST feature
+  filtering per ADR-003 and ADR-004 for faster explanations on large datasets.
 ---
 
 # CE Performance Tuning
@@ -61,24 +61,45 @@ For large datasets:
 - Use `instance_chunk_size` to limit per-batch instance count.
 - Monitor memory with `task_size_hint_bytes` for the auto strategy.
 
-### 4. FAST explanations
+### 4. FAST feature filtering
 
-The FAST explanation plugin provides a faster alternative to the default
-explanation engine for scenarios where speed matters more than rule granularity:
-- Enable via `explanation_plugin='fast'` or `CE_EXPLANATION_PLUGIN=fast`.
+Uses FAST explanation weights to filter out low-importance features *before*
+running the expensive factual/alternative explanation pass. This reduces the
+per-instance feature space and can significantly speed up large-feature datasets.
+
+- **Source**: `src/calibrated_explanations/core/explain/_feature_filter.py`
+- **Config object**: `FeatureFilterConfig(enabled, per_instance_top_k=8, strict_observability)`
+- **Enable via env var**: `CE_FEATURE_FILTER=on` (or `1`, `true`)
+- **Disable**: `CE_FEATURE_FILTER=off` (default)
+- **Tune top-k**: `CE_FEATURE_FILTER=on,top_k=12` (comma-separated tokens)
+- **Strict observability**: `CE_STRICT_OBSERVABILITY=1` — promotes debug-level
+  filter events to WARNING and emits structured governance log entries.
+
+How it works:
+1. A FAST explanation pass runs first (cheap, approximate).
+2. Per instance, the top-k features by absolute FAST weight are kept.
+3. Features not in any instance's top-k are added to the global ignore set.
+4. The expensive explanation pass runs on the reduced feature set.
+
+**Trade-off**: Lower `top_k` = faster but may drop marginally relevant features.
+Higher `top_k` = closer to unfiltered behaviour but less speedup.
+
+When to use:
+- Datasets with many features (50+) where most features are irrelevant per instance.
+- Batch explanations where per-instance filtering provides cumulative savings.
 
 ## Diagnostic workflow
 
 1. **Baseline**: Time `explainer.explain_factual(X)` on a representative sample.
 2. **Profile**: Check if bottleneck is calibration, perturbation, or collection.
 3. **Apply**: Enable caching (if repeated calibrator calls), then parallel
-   execution (if many instances/features), then FAST mode (if rule detail
-   is not critical).
+   execution (if many instances/features), then FAST feature filtering
+   (if many features per instance are irrelevant).
 4. **Measure**: Compare timing after each change.
 
 ## Constraints
 
 - Caching is opt-in; it does not change calibration semantics.
 - Parallel execution may increase memory usage.
-- FAST mode may produce different rule structures than the default engine.
+- FAST feature filtering may drop marginally relevant features at low `top_k`.
 - Always verify that explanations remain correct after tuning.

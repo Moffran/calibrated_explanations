@@ -63,6 +63,7 @@ intervals from any model.
 |---|---|
 | Author a new ADR | `ce-adr-author` |
 | Look up which ADRs apply | `ce-adr-consult` |
+| Analyze ADR compliance gaps | `ce-adr-gap-analyzer` |
 | Generate alternative explanations | `ce-alternatives-explore` |
 | Get calibrated predictions (without explanations) | `ce-calibrated-predict` |
 | Explanations for binary and multiclass tasks | `ce-classification` |
@@ -91,6 +92,7 @@ intervals from any model.
 | Tune CE performance (caching/parallelism) | `ce-performance-tuning` |
 | Scaffold a new plugin | `ce-plugin-scaffold` |
 | Generate regression prediction intervals | `ce-regression-intervals` |
+| Map CE to regulatory compliance obligations | `ce-regulatory-compliance` |
 | Configure reject/defer policies | `ce-reject-policy` |
 | Select next release task | `ce-release-check` |
 | Finalize a PyPI release | `ce-release-finalize` |

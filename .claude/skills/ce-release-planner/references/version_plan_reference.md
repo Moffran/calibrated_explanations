@@ -110,4 +110,3 @@ remaining gaps, grouped by task number.
 
 ## Minimal new tests required
 ```
-

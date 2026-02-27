@@ -103,8 +103,8 @@ from calibrated_explanations.utils.exceptions import ValidationError, Configurat
 raise ValidationError("X_query must be 2-D; got shape ...")
 ```
 
-Allowed exceptions: `ValidationError`, `ConfigurationError`, `IncompatibleSchemaError`,
-`MissingExtensionError`, and other classes from `calibrated_explanations.utils.exceptions`.
+Allowed exceptions: `ValidationError`, `ConfigurationError`, `SerializationError`,
+`IncompatibleStateError`, and other classes from `calibrated_explanations.utils.exceptions`.
 
 ---
 

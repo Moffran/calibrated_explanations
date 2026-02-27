@@ -21,16 +21,21 @@ Load `references/serialization_templates.md` for full code templates.
 
 All built-in calibrators must implement this pair:
 - `to_primitive()` returns a dict with `schema_version` as the first key
-  and only JSON-safe values (no numpy arrays — convert to `list`).
-- `from_primitive(payload)` raises `IncompatibleSchemaError` on version
-  mismatch with guidance message.
+  and only JSON-safe values. The built-in calibrators (`VennAbers`,
+  `IntervalRegressor`) use pickle + base64 encoding with sha256 checksum
+  for complex internal state.
+- `from_primitive(payload)` validates `schema_version`, `calibrator_type`,
+  and payload checksum integrity. Raises `ConfigurationError` on any
+  mismatch with a guidance message.
 
 ### Explainer `save_state` / `load_state`
 
-- On-disk format: JSON document with top-level manifest (`schema_version`,
-  `ce_version`, `serialized_at`, `checksum`) and nested calibrator primitives.
-- `save_state` accepts `str | Path | IO[bytes]`.
-- `load_state` validates manifest schema version and fails fast if unsupported.
+- On-disk format: directory artifact with `manifest.json` plus referenced files.
+- Manifest fields include `schema_version`, `created_at_utc`, `artifact_type`,
+  and `files` (mapping `filename -> sha256`).
+- `save_state` accepts a filesystem path, writes an artifact directory, returns `Path`.
+- `load_state` validates manifest schema version and per-file sha256 checksums;
+  raises `IncompatibleStateError` if unsupported or integrity check fails.
 
 ### Round-trip invariant (ADR-031 §4)
 
@@ -39,16 +44,26 @@ outputs (`np.allclose(ref, restored, atol=1e-9)`).
 
 ---
 
+## Additional compatibility expectations
+
+- Wrapper object round-trips via `pickle.dump/load` and `joblib.dump/load`
+  should remain functional.
+- Explanation collection objects should remain pickleable.
+
 ## Out of Scope
 
-- Pickle-based serialization — only JSON-safe primitives per ADR-031.
-- Third-party calibrator schema management — external packages own their schema versions.
+- Third-party calibrator schema management - external packages own their schema versions.
 
 ## Evaluation Checklist
 
 - [ ] `to_primitive()` returns a dict with `schema_version` as the first key.
 - [ ] All values are JSON-safe (no numpy arrays, no non-serialisable objects).
-- [ ] `from_primitive()` raises `IncompatibleSchemaError` on version mismatch with guidance.
+- [ ] `from_primitive()` validates `schema_version`, `calibrator_type`, and checksum.
+- [ ] `from_primitive()` raises `ConfigurationError` on any validation failure.
 - [ ] Round-trip test verifies identical predictions (not just no-exception).
 - [ ] `json.dumps(primitive)` test verifies JSON-safety.
-- [ ] `save_state` / `load_state` include a manifest with `schema_version`, `ce_version`, `checksum`.
+- [ ] Checksum tamper test verifies `from_primitive()` rejects corrupted payloads.
+- [ ] `save_state` / `load_state` manifest includes `schema_version`, `created_at_utc`, `artifact_type`, and `files`.
+- [ ] `load_state` validates per-file sha256 checksums before deserialising.
+- [ ] Unsupported state schema version raises `IncompatibleStateError`.
+- [ ] Wrapper pickle and joblib round-trips are covered in integration tests.

@@ -135,6 +135,7 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 |---|---|---|
 | `ce-adr-author` | `.claude/skills/ce-adr-author/SKILL.md` | Author or update ADR documents |
 | `ce-adr-consult` | `.claude/skills/ce-adr-consult/SKILL.md` | Identify and apply relevant ADRs for a task |
+| `ce-adr-gap-analyzer` | `.claude/skills/ce-adr-gap-analyzer/SKILL.md` | Analyze ADR compliance by verifying implementation and RTD against ADR intent |
 | `ce-alternatives-explore` | `.claude/skills/ce-alternatives-explore/SKILL.md` | Alternative/counterfactual exploration workflows |
 | `ce-calibrated-predict` | `.claude/skills/ce-calibrated-predict/SKILL.md` | Generate calibrated predictions without explanations |
 | `ce-classification` | `.claude/skills/ce-classification/SKILL.md` | Calibrated Explanations for binary and multiclass tasks |
@@ -163,6 +164,7 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 | `ce-performance-tuning` | `.claude/skills/ce-performance-tuning/SKILL.md` | Configure caching, parallelism, and batch-size tuning |
 | `ce-plugin-scaffold` | `.claude/skills/ce-plugin-scaffold/SKILL.md` | Scaffold new plugin implementations |
 | `ce-regression-intervals` | `.claude/skills/ce-regression-intervals/SKILL.md` | Probabilistic/conformal regression interval workflows |
+| `ce-regulatory-compliance` | `.claude/skills/ce-regulatory-compliance/SKILL.md` | Map CE capabilities to EU AI Act, GDPR, and liability directive obligations |
 | `ce-reject-policy` | `.claude/skills/ce-reject-policy/SKILL.md` | Configure reject/defer decision policies |
 | `ce-release-check` | `.claude/skills/ce-release-check/SKILL.md` | Select and validate next release tasks |
 | `ce-release-finalize` | `.claude/skills/ce-release-finalize/SKILL.md` | Execute the PyPI release checklist |
@@ -175,6 +177,7 @@ must treat `.claude/skills/` as the canonical repository skill catalog.
 | `ce-skill-audit` | `.claude/skills/ce-skill-audit/SKILL.md` | Audit repository skills against Claude authoring guidance |
 | `ce-skill-creator` | `.claude/skills/ce-skill-creator/SKILL.md` | Create/refactor skills and enforce structure/trigger quality |
 | `ce-skill-registry-sync` | `.claude/skills/ce-skill-registry-sync/SKILL.md` | Enforce synchronization of all skill registries |
+| `ce-standards-gap-analyzer` | `.claude/skills/ce-standards-gap-analyzer/SKILL.md` | Analyze STD compliance by verifying implementation and RTD against STD intent |
 | `ce-test-audit` | `.claude/skills/ce-test-audit/SKILL.md` | Test quality/compliance audit workflows |
 | `ce-test-author` | `.claude/skills/ce-test-author/SKILL.md` | High-signal CE test authoring workflows |
 | `ce-test-creator` | `.claude/skills/ce-test-creator/SKILL.md` | Design high-efficiency tests to close coverage gaps |

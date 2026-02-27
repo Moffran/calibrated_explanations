@@ -102,12 +102,15 @@ execution contract.
 | Skill | Purpose | Link |
 |---|---|---|
 | `ce-adr-consult` | Find and apply relevant ADRs before implementation. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-adr-consult/SKILL.md) |
+| `ce-adr-gap-analyzer` | Analyze ADR compliance by verifying implementation and RTD against ADR intent. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-adr-gap-analyzer/SKILL.md) |
 | `ce-adr-author` | Author or update ADR documents. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-adr-author/SKILL.md) |
 | `ce-deprecation` | Apply ADR-011 compliant deprecation patterns. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-deprecation/SKILL.md) |
 | `ce-release-check` | Select and validate release tasks and gates. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-check/SKILL.md) |
 | `ce-release-planner` | Analyze release plan and produce vX.Y.Z implementation plans. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-planner/SKILL.md) |
 | `ce-release-task` | Identify, implement, and verify individual release tasks. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-task/SKILL.md) |
 | `ce-release-finalize` | Execute the PyPI release checklist. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-release-finalize/SKILL.md) |
+| `ce-regulatory-compliance` | Map CE capabilities to EU AI Act, GDPR, and liability directive obligations. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-regulatory-compliance/SKILL.md) |
+| `ce-standards-gap-analyzer` | Analyze STD compliance by verifying implementation and RTD against STD intent. | [SKILL.md](https://github.com/Moffran/calibrated_explanations/blob/main/.claude/skills/ce-standards-gap-analyzer/SKILL.md) |
 
 ### 4.2 Documentation Authoring and Audit
 
