@@ -1,7 +1,14 @@
+> **Status note (2026-02-27):** Last edited 2026-02-27 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
+
 # ADR-032: Guarded Explanation Semantics and Semantic Identity
 
 ## Status
-Proposed
+Status: Accepted
+Date: 2026-02-27
+Deciders: Core maintainers
+Reviewers: Core maintainers
+Supersedes: None
+Superseded-by: None
 
 ## Context
 Guarded (in-distribution) explanations were introduced to prevent misleading feature attribution or alternatives for data points that fall outside the high-density regions of the training data.
