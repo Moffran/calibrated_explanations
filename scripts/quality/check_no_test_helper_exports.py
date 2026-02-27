@@ -41,6 +41,11 @@ BANNED_EXPORTS_BY_MODULE: dict[str, set[str]] = {
         "mark_plot_renderer_untrusted",
     },
     "calibrated_explanations.plugins": {
+        "_EXPLANATION_PLUGINS",
+        "_INTERVAL_PLUGINS",
+        "_PLOT_BUILDERS",
+        "_PLOT_RENDERERS",
+        "_PLOT_STYLES",
         "clear_explanation_plugins",
         "clear_interval_plugins",
         "clear_plot_plugins",
@@ -187,12 +192,34 @@ def scan_package(package_root: Path) -> list[Violation]:
             raise RuntimeError(f"Unable to parse {path}: {exc}") from exc
 
         exports = _extract_exports(tree)
-        if not exports:
-            continue
-
         public_defs = _collect_public_defs(tree)
         banned_exports = BANNED_EXPORTS_BY_MODULE.get(module, set())
         report_file = _relative_path(path, package_root)
+
+        # Block import-level leakage of banned symbols from entrypoint modules.
+        if banned_exports:
+            for node in tree.body:
+                if not isinstance(node, ast.ImportFrom):
+                    continue
+                for alias in node.names:
+                    imported_name = alias.name
+                    if imported_name in banned_exports:
+                        key = (module, imported_name, "import-level banned symbol re-export")
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        violations.append(
+                            Violation(
+                                module=module,
+                                file=report_file,
+                                symbol=imported_name,
+                                line=node.lineno,
+                                reason="import-level banned symbol re-export",
+                            )
+                        )
+
+        if not exports:
+            continue
 
         for symbol, export_line in exports.items():
             reasons: list[tuple[str, int]] = []

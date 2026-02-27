@@ -8,6 +8,11 @@ import pytest
 from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
+from tests.support.registry_helpers import (
+    clear_explanation_plugins,
+    clear_interval_plugins,
+    clear_plot_plugins,
+)
 
 
 class FakeEntryPoint:
@@ -133,7 +138,7 @@ class ExampleExplanationPlugin:
 
 def test_register_explanation_plugin_descriptor():
     registry.clear()
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
     plugin = ExampleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("core.explanation.example", plugin)
     registry.mark_explanation_trusted("core.explanation.example")
@@ -149,7 +154,7 @@ def test_register_explanation_plugin_descriptor():
 
 
 def test_register_explanation_plugin_requires_tasks():
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
 
     class NoTasksExplanationPlugin:
         plugin_meta = {
@@ -168,7 +173,7 @@ def test_register_explanation_plugin_requires_tasks():
 
 
 def test_register_explanation_plugin_translates_aliases():
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
 
     class LegacyModePlugin:
         plugin_meta = {
@@ -194,7 +199,7 @@ def test_register_explanation_plugin_translates_aliases():
 
 
 def test_register_explanation_plugin_schema_version_future():
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
 
     class FuturePlugin:
         plugin_meta = {
@@ -252,7 +257,7 @@ class ExampleIntervalPlugin:
 
 
 def test_register_interval_plugin_descriptor():
-    registry.clear_interval_plugins()
+    clear_interval_plugins()
     descriptor = registry.register_interval_plugin("core.interval.example", ExampleIntervalPlugin())
     assert descriptor.identifier == "core.interval.example"
     assert registry.find_interval_plugin("core.interval.example") is descriptor.plugin
@@ -260,7 +265,7 @@ def test_register_interval_plugin_descriptor():
 
 
 def test_register_interval_plugin_requires_modes():
-    registry.clear_interval_plugins()
+    clear_interval_plugins()
 
     class BadIntervalPlugin:
         plugin_meta = {
@@ -312,7 +317,7 @@ class ExamplePlotRenderer:
 
 
 def test_register_plot_plugin_combines_builder_and_renderer():
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
 
     class CombinedPlugin:
         plugin_meta = {
@@ -360,13 +365,13 @@ def test_register_plot_plugin_combines_builder_and_renderer():
             assert trusted_combined is not None
             assert trusted_combined.build(5) == ("build", (5,), {})
     finally:
-        registry.clear_plot_plugins()
+        clear_plot_plugins()
 
 
 def test_list_descriptors_and_trust_management(monkeypatch):
     registry.clear()
-    registry.clear_explanation_plugins()
-    registry.clear_interval_plugins()
+    clear_explanation_plugins()
+    clear_interval_plugins()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None)
 
     class AltExplanationPlugin:
@@ -455,8 +460,8 @@ def test_list_descriptors_and_trust_management(monkeypatch):
         assert [d.identifier for d in trusted_intervals] == ["core.interval.trusted"]
     finally:
         registry.clear()
-        registry.clear_explanation_plugins()
-        registry.clear_interval_plugins()
+        clear_explanation_plugins()
+        clear_interval_plugins()
 
 
 def test_load_entrypoint_plugins_error_branches(monkeypatch):

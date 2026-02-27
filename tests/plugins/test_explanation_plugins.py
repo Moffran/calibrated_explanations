@@ -7,7 +7,6 @@ from calibrated_explanations.plugins import (
     find_explanation_descriptor,
     find_explanation_plugin_trusted,
     register_explanation_plugin,
-    clear_explanation_plugins,
     ensure_builtin_plugins,
 )
 from calibrated_explanations.plugins.manager import PluginManager
@@ -16,6 +15,7 @@ from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.explanations import ExplainerHandle
 from calibrated_explanations.plugins import ExplanationBatch
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from tests.support.registry_helpers import clear_explanation_plugins
 
 
 def test_core_fast_plugin_registered_and_trusted():

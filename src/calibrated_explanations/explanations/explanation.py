@@ -1,20 +1,17 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments, line-too-long
 
-"""Module containing classes for storing and visualizing calibrated explanations.
+"""Calibrated explanation containers and visualization helpers.
 
-Classes:
-    :class:`.CalibratedExplanation`:
-        Abstract base class for calibrated explanations. Defines the interface and shared functionality for different types of explanations.
+This module defines the classes used to represent factual, alternative and
+fast explanations produced by :class:`~calibrated_explanations.core.CalibratedExplainer`.
 
-    :class:`.FactualExplanation`:
-        Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
-
-    :class:`.AlternativeExplanation`:
-        Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
-
-    :class:`.FastExplanation`:
-        Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
+Primary classes
+---------------
+- :class:`CalibratedExplanation` — Abstract base for explanation instances.
+- :class:`FactualExplanation` — Factual explanations for an instance.
+- :class:`AlternativeExplanation` — Alternative/counterfactual explanations.
+- :class:`FastExplanation` — Lightweight fast-mode explanations.
 """
 
 from __future__ import annotations
@@ -125,10 +122,11 @@ class RuleWithImpact:
 class CalibratedExplanation(ABC):
     """Abstract base class for storing and visualizing calibrated explanations.
 
-    This class defines the interface and shared functionality for different types of calibrated explanations.
+    Subclasses implement concrete payload building and plotting utilities while
+    this base class provides shared validation and convenience accessors.
 
-    For detailed information about the internal data structures and attributes used by this class
-    and its subclasses, see docs/foundations/concepts/explanation_structures.md.
+    See documentation at ``docs/foundations/concepts/explanation_structures.md``
+    for details on the internal payload layout.
     """
 
     def __init__(
@@ -687,6 +685,16 @@ class CalibratedExplanation(ABC):
         else:
             # For text and html, return as is
             return result
+
+    def to_dataframe(self, *args, **kwargs):
+        """Return the narrative output as a pandas DataFrame.
+
+        Call :meth:`to_narrative` with ``output_format='dataframe'`` and return
+        the resulting DataFrame. Accepts the same arguments as
+        :meth:`to_narrative`.
+        """
+        kwargs.setdefault("output_format", "dataframe")
+        return self.to_narrative(*args, **kwargs)
 
     @abstractmethod
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):

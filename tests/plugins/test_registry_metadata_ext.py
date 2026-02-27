@@ -7,15 +7,20 @@ from pathlib import Path
 import pytest
 
 from calibrated_explanations.plugins import registry
+from tests.support.registry_helpers import (
+    clear_explanation_plugins,
+    clear_interval_plugins,
+    clear_plot_plugins,
+)
 
 
 @pytest.fixture(autouse=True)
 def isolate_registry_fixture(monkeypatch):
     # Use public clear helpers rather than patching internals.
     registry.clear()
-    registry.clear_explanation_plugins()
-    registry.clear_interval_plugins()
-    registry.clear_plot_plugins()
+    clear_explanation_plugins()
+    clear_interval_plugins()
+    clear_plot_plugins()
     registry.clear_env_trust_cache()
     registry.clear_trust_warnings()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None, raising=False)
@@ -138,3 +143,52 @@ def test_register_plot_plugin_registers_all_components():
     assert "combo" in registry.plot_builders()
     assert "combo" in registry.plot_renderers()
     assert "combo" in registry.plot_styles()
+
+
+def test_register_emits_governance_event_for_accepted_registration(caplog):
+    class Plugin:
+        plugin_meta = base_meta()
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
+        registry.register(Plugin(), source="manual")
+
+    matches = [
+        record
+        for record in caplog.records
+        if getattr(record, "decision", None) == "accepted_registration"
+    ]
+    assert matches
+    assert matches[-1].source == "manual"
+
+
+def test_discover_entrypoint_emits_accepted_registration_event(monkeypatch, caplog):
+    class Plugin:
+        plugin_meta = base_meta(name="tests.entrypoint.accepted")
+
+    class EntryPoint:
+        name = "tests.entrypoint.accepted"
+
+        def load(self):
+            return Plugin()
+
+    class EntryPoints:
+        def select(self, *, group):
+            return [EntryPoint()] if group == "calibrated_explanations.plugins" else []
+
+    monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: EntryPoints())
+    registry.clear()
+    registry.clear_env_trust_cache()
+    registry.clear_trust_warnings()
+    monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.entrypoint.accepted")
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
+        loaded = registry.load_entrypoint_plugins(include_untrusted=False)
+
+    assert len(loaded) == 1
+    matches = [
+        record
+        for record in caplog.records
+        if getattr(record, "decision", None) == "accepted_registration"
+        and getattr(record, "source", None) == "entrypoint"
+    ]
+    assert matches

@@ -301,19 +301,16 @@ def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
 
     mock_plugin = MagicMock()
     mock_plugin.plugin_meta = {}  # Empty metadata causes error
+    mock_explainer.plugin_manager.resolve_explanation_plugin.return_value = (
+        mock_plugin,
+        None,
+        None,
+    )
 
     with (
         patch(
             "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
             return_value=False,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
-            return_value=mock_plugin,
         ),
         pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
     ):

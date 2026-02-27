@@ -205,3 +205,4 @@ scripts/archived/
 reports/archived/
 evaluation/ensure/paper.tex
 evaluation/ensure/*tables/*
+.precommit-cache/

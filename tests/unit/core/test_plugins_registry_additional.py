@@ -5,21 +5,26 @@ from types import MappingProxyType, ModuleType, SimpleNamespace
 import pytest
 
 from calibrated_explanations.plugins import registry
+from tests.support.registry_helpers import (
+    clear_explanation_plugins,
+    clear_interval_plugins,
+    clear_plot_plugins,
+)
 
 
 @pytest.fixture(autouse=True)
 def reset_registry():
     registry.clear()
-    registry.clear_explanation_plugins()
-    registry.clear_interval_plugins()
-    registry.clear_plot_plugins()
+    clear_explanation_plugins()
+    clear_interval_plugins()
+    clear_plot_plugins()
     registry.clear_env_trust_cache()
     registry.clear_trust_warnings()
     yield
     registry.clear()
-    registry.clear_explanation_plugins()
-    registry.clear_interval_plugins()
-    registry.clear_plot_plugins()
+    clear_explanation_plugins()
+    clear_interval_plugins()
+    clear_plot_plugins()
     registry.clear_env_trust_cache()
     registry.clear_trust_warnings()
 
@@ -358,7 +363,7 @@ class SimpleExplanationPlugin:
 def test_register_interval_plugin_requires_metadata():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    registry.clear_interval_plugins()
+    clear_interval_plugins()
 
     class MissingMetaInterval:
         plugin_meta = None
@@ -387,7 +392,7 @@ class ExampleIntervalPlugin:
 def test_register_plot_builder_renderer_require_metadata():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
 
     class NoMetaBuilder:
         plugin_meta = None
@@ -405,7 +410,7 @@ def test_register_plot_builder_renderer_require_metadata():
 def test_register_helpers_validate_identifiers():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
     with pytest.raises(ValidationError):
         registry.register_explanation_plugin("", SimpleExplanationPlugin())
 
@@ -415,11 +420,11 @@ def test_register_helpers_validate_identifiers():
     with pytest.raises(ValidationError):
         registry.register_explanation_plugin("ok", NoMetaPlugin())
 
-    registry.clear_interval_plugins()
+    clear_interval_plugins()
     with pytest.raises(ValidationError):
         registry.register_interval_plugin("", ExampleIntervalPlugin())
 
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
     with pytest.raises(ValidationError):
         registry.register_plot_builder("", Builder())
 
@@ -435,7 +440,7 @@ def test_register_helpers_validate_identifiers():
 def test_register_plot_style_validation():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
     with pytest.raises(ValidationError):
         registry.register_plot_style("style", metadata=None)  # type: ignore[arg-type]
 
@@ -496,7 +501,7 @@ def test_find_plot_plugin_variants():
     registry.set_plot_style("nosteps", empty_descriptor)
     assert registry.find_plot_plugin("nosteps") is None
 
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
     registry.set_plot_style(
         "broken",
         registry.PlotStyleDescriptor(
@@ -504,7 +509,7 @@ def test_find_plot_plugin_variants():
         ),
     )
     assert registry.find_plot_plugin_trusted("broken") is None
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
     registry.register_plot_style(
         "style-only",
         metadata={
@@ -515,7 +520,7 @@ def test_find_plot_plugin_variants():
     )
     assert registry.find_plot_plugin("style-only") is None
 
-    registry.clear_plot_plugins()
+    clear_plot_plugins()
     registry.register_plot_style(
         "style",
         metadata={
@@ -580,7 +585,7 @@ def test_find_plot_plugin_trusted_requires_trust():
 
 
 def test_find_interval_trusted_and_builtin_helpers(monkeypatch):
-    registry.clear_interval_plugins()
+    clear_interval_plugins()
     descriptor = registry.register_interval_plugin("interval", ExampleIntervalPlugin())
     assert registry.find_interval_plugin_trusted("interval") is None
     registry.mark_interval_trusted("interval")
@@ -767,7 +772,7 @@ def test_resolve_plugin_from_name_and_safe_supports():
 def test_refresh_descriptor_and_register_errors():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
     plugin = SimpleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("simple.extra", plugin)
     registry.unregister(plugin)

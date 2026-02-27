@@ -4,18 +4,19 @@ from __future__ import annotations
 import pytest
 
 from calibrated_explanations.plugins import registry
+from tests.support.registry_helpers import clear_explanation_plugins
 
 
 @pytest.fixture(autouse=True)
 def isolate_registry(monkeypatch):
     """Ensure each test works with a clean registry state."""
 
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None)
     # Also clear plot renderers for the new tests using public helpers
     registry.clear_plot_renderers()
     yield
-    registry.clear_explanation_plugins()
+    clear_explanation_plugins()
     registry.clear_plot_renderers()
 
 

@@ -590,7 +590,7 @@ def testplot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("calibrated_explanations.plugins.ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        "calibrated_explanations.plugins.find_plot_plugin_trusted",
+        "calibrated_explanations.plugins.registry.find_plot_plugin_trusted",
         lambda identifier: None,
     )
     monkeypatch.setattr("calibrated_explanations.plugins.find_plot_plugin", lambda identifier: None)

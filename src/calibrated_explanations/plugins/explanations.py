@@ -47,6 +47,25 @@ class ExplanationContext:
     interval_settings: Mapping[str, object]
     plot_settings: Mapping[str, object]
 
+    def __post_init__(self) -> None:
+        """Freeze nested mapping/list fields to prevent plugin-side mutation."""
+
+        def _freeze_value(value: object) -> object:
+            if isinstance(value, MappingABC):
+                return MappingProxyType({k: _freeze_value(v) for k, v in value.items()})
+            if isinstance(value, (list, tuple)):
+                return tuple(_freeze_value(v) for v in value)
+            if isinstance(value, set):
+                return tuple(sorted(_freeze_value(v) for v in value))
+            return value
+
+        frozen_labels = MappingProxyType(
+            {k: MappingProxyType(dict(v)) for k, v in dict(self.categorical_labels).items()}
+        )
+        object.__setattr__(self, "categorical_labels", frozen_labels)
+        object.__setattr__(self, "interval_settings", _freeze_value(self.interval_settings))
+        object.__setattr__(self, "plot_settings", _freeze_value(self.plot_settings))
+
     def __getstate__(self):
         """Get state for pickling.
 
@@ -183,7 +202,26 @@ class ExplainerHandle:
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying explainer."""
-        return getattr(self._explainer, name)
+        explainer = self.__dict__.get("_explainer")
+        if explainer is None:
+            raise AttributeError(name)
+        return getattr(explainer, name)
+
+    def __getstate__(self) -> dict[str, Any]:
+        """Return pickle-safe state for explainer handles."""
+        return {
+            "_explainer": self.__dict__.get("_explainer"),
+            "_metadata": dict(self.__dict__.get("_metadata", {})),
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        """Restore explainer handle state from a pickle payload."""
+        self.__dict__["_explainer"] = state.get("_explainer")
+        metadata = state.get("_metadata", {})
+        if isinstance(metadata, MappingABC):
+            self.__dict__["_metadata"] = MappingProxyType(dict(metadata))
+        else:
+            self.__dict__["_metadata"] = MappingProxyType({})
 
     def explain_fast(self, *args: Any, **kwargs: Any) -> Any:
         """Return fast explanations from the underlying explainer."""

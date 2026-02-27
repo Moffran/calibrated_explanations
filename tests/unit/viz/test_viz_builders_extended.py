@@ -313,3 +313,262 @@ def test_triangular_global_and_serialization_helpers__should_produce_correct_plo
     assert (
         factual["plot_spec"]["uncertainty"] is True
     ), "Uncertainty must be True when interval is enabled in factual plot"
+
+
+# ---------------------------------------------------------------------------
+# Public builder wrappers
+# ---------------------------------------------------------------------------
+
+
+def test_factual_probabilistic_spec_delegates():
+    """Verify build_factual_probabilistic_spec delegates correctly."""
+    spec = builders.build_factual_probabilistic_spec(
+        title="fp",
+        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+        feature_weights=[0.3, 0.7],
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=[1, 2],
+        y_minmax=(0.0, 1.0),
+        interval=True,
+        sort_by=None,
+        ascending=False,
+        legacy_solid_behavior=True,
+    )
+    assert spec.kind == "factual_probabilistic"
+
+
+def test_factual_regression_spec_delegates():
+    """Verify build_factual_regression_spec delegates correctly."""
+    spec = builders.build_factual_regression_spec(
+        title="fr",
+        predict={"predict": 1.0},
+        feature_weights=[0.5, -0.3],
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=[1, 2],
+        y_minmax=None,
+        interval=False,
+    )
+    assert spec.kind == "factual_regression"
+
+
+# ---------------------------------------------------------------------------
+# Regression bars edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_regression_bars_empty_features_raises():
+    """Verify build_regression_bars_spec raises on empty features_to_plot."""
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError, match="cannot be empty"):
+        builders.build_regression_bars_spec(
+            title=None,
+            predict={"predict": 0.0},
+            feature_weights=[0.1],
+            features_to_plot=[],
+            column_names=["a"],
+            instance=None,
+            y_minmax=None,
+            interval=False,
+        )
+
+
+def test_regression_bars_short_feature_weights_raises():
+    """Verify build_regression_bars_spec raises when weights are too short."""
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError, match="does not cover"):
+        builders.build_regression_bars_spec(
+            title=None,
+            predict={"predict": 0.0},
+            feature_weights=[0.1],
+            features_to_plot=[0, 5],
+            column_names=["a", "b", "c", "d", "e", "f"],
+            instance=None,
+            y_minmax=None,
+            interval=False,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Probabilistic bars edge cases and sort paths
+# ---------------------------------------------------------------------------
+
+
+def test_probabilistic_bars_empty_features_raises():
+    """Verify build_probabilistic_bars_spec raises on empty features."""
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError, match="cannot be empty"):
+        builders.build_probabilistic_bars_spec(
+            title=None,
+            predict={"predict": 0.5},
+            feature_weights=[0.3],
+            features_to_plot=[],
+            column_names=["a"],
+            instance=None,
+            y_minmax=None,
+            interval=False,
+        )
+
+
+def make_prob_spec(sort_by, ascending=False):
+    """Helper for probabilistic bar sort tests."""
+    return builders.build_probabilistic_bars_spec(
+        title=None,
+        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+        feature_weights={
+            "predict": [0.3, 0.8, 0.1],
+            "low": [0.2, 0.6, 0.0],
+            "high": [0.4, 0.9, 0.2],
+        },
+        features_to_plot=[0, 1, 2],
+        column_names=["a", "c", "b"],
+        rule_labels=["r0", "r1", "r2"],
+        instance=[1, 2, 3],
+        y_minmax=(0.0, 1.0),
+        interval=True,
+        sort_by=sort_by,
+        ascending=ascending,
+        legacy_solid_behavior=True,
+    )
+
+
+def test_prob_sort_by_value():
+    """Verify probabilistic bars can be sorted by value."""
+    spec = make_prob_spec("value", ascending=True)
+    values = [b.value for b in spec.body.bars]
+    assert values == sorted(values)
+
+
+def test_prob_sort_by_abs():
+    """Verify probabilistic bars can be sorted by absolute value."""
+    spec = make_prob_spec("abs", ascending=False)
+    mags = [abs(b.value) for b in spec.body.bars]
+    assert mags == sorted(mags, reverse=True)
+
+
+def test_prob_sort_by_width():
+    """Verify probabilistic bars can be sorted by interval width."""
+    spec = make_prob_spec("width", ascending=False)
+    assert len(spec.body.bars) == 3
+
+
+def test_prob_sort_by_label():
+    """Verify probabilistic bars can be sorted by label."""
+    spec = make_prob_spec("label", ascending=True)
+    labels = [b.label for b in spec.body.bars]
+    assert labels == sorted(labels)
+
+
+# ---------------------------------------------------------------------------
+# is_valid_probability_values edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_is_valid_probability_values_rejects_nan():
+    """Verify NaN is rejected as invalid probability."""
+    assert not builders.is_valid_probability_values(float("nan"))
+
+
+def test_is_valid_probability_values_rejects_inf():
+    """Verify infinity is rejected as invalid probability."""
+    assert not builders.is_valid_probability_values(float("inf"))
+
+
+# ---------------------------------------------------------------------------
+# Regression bars interval with sort by none and feature_order
+# ---------------------------------------------------------------------------
+
+
+def test_regression_bars_interval_with_feature_order():
+    """Verify regression bars with interval=True populates feature_order."""
+    spec = builders.build_regression_bars_spec(
+        title="of",
+        predict={"predict": 1.0, "low": 0.5, "high": 1.5},
+        feature_weights={
+            "predict": [0.5, -0.4],
+            "low": [0.3, -0.6],
+            "high": [0.7, -0.2],
+        },
+        features_to_plot=[0, 1],
+        column_names=["A", "B"],
+        instance=[1, 2],
+        y_minmax=(0.0, 2.0),
+        interval=True,
+        sort_by="none",
+    )
+    assert spec.body is not None
+    assert spec.feature_order == (0, 1)
+
+
+def test_regression_bars_width_sort_without_interval():
+    """Verify width sort falls back when bars have no interval bounds."""
+    spec = builders.build_regression_bars_spec(
+        title=None,
+        predict={"predict": 1.0},
+        feature_weights=[0.5, -0.3, 0.1],
+        features_to_plot=[0, 1, 2],
+        column_names=["a", "b", "c"],
+        instance=None,
+        y_minmax=None,
+        interval=False,
+        sort_by="width",
+        ascending=True,
+    )
+    assert len(spec.body.bars) == 3
+
+
+def test_regression_bars_unknown_sort_key_fallback():
+    """Verify unknown sort key produces stable output without error."""
+    spec = builders.build_regression_bars_spec(
+        title=None,
+        predict={"predict": 1.0},
+        feature_weights=[0.5, -0.3],
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=None,
+        y_minmax=None,
+        interval=False,
+        sort_by="custom_unsupported",
+        ascending=False,
+    )
+    assert len(spec.body.bars) == 2
+
+
+def test_prob_sort_width_without_interval():
+    """Verify prob width sort falls back when bars lack interval."""
+    spec = builders.build_probabilistic_bars_spec(
+        title=None,
+        predict={"predict": 0.6},
+        feature_weights=[0.3, 0.8],
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=None,
+        y_minmax=None,
+        interval=False,
+        sort_by="width",
+        ascending=True,
+        legacy_solid_behavior=True,
+    )
+    assert len(spec.body.bars) == 2
+
+
+def test_prob_sort_unknown_key_fallback():
+    """Verify prob unknown sort key produces stable output."""
+    spec = builders.build_probabilistic_bars_spec(
+        title=None,
+        predict={"predict": 0.6},
+        feature_weights=[0.3, 0.8],
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=None,
+        y_minmax=None,
+        interval=False,
+        sort_by="custom_unsupported",
+        ascending=False,
+        legacy_solid_behavior=True,
+    )
+    assert len(spec.body.bars) == 2

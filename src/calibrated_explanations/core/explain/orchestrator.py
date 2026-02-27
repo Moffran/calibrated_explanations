@@ -36,8 +36,6 @@ from ...plugins import (
     ExplanationRequest,
     ensure_builtin_plugins,
     find_explanation_descriptor,
-    find_explanation_plugin,
-    find_explanation_plugin_trusted,
     is_identifier_denied,
     validate_explanation_batch,
 )
@@ -779,13 +777,108 @@ class ExplanationOrchestrator:
                 classes
             ):
                 classes = np.arange(len(self.explainer.class_labels))
-            for cls in classes:
-                labels = [cls for _ in range(len(x))]
-                explanations = legacy_explain(
-                    self.explainer, x, threshold, low_high_percentiles, bins, labels=labels
+            # Warn when used on binary-labeled data: multi-label mode is intended for 3+ classes
+            if len(classes) < 3:
+                warnings.warn(
+                    "multi_labels_enabled=True was requested but the problem appears to be binary; "
+                    "this mode is intended for 3+ class problems.",
+                    UserWarning,
+                    stacklevel=2,
                 )
-                for i, explanation in enumerate(explanations):
-                    multi_label_explanations[i][cls] = explanation
+            # Support per-class reject policies by delegating to the reject
+            # orchestrator when a reject_policy is provided. For backward
+            # compatibility, a None reject_policy performs the legacy loop.
+            if reject_policy is None:
+                for cls in classes:
+                    labels = [cls for _ in range(len(x))]
+                    explanations = legacy_explain(
+                        self.explainer,
+                        x,
+                        threshold,
+                        low_high_percentiles,
+                        bins,
+                        labels=labels,
+                        features_to_ignore=features_to_ignore,
+                        interval_summary=kwargs.get(
+                            "interval_summary", self.explainer.interval_summary
+                        ),
+                    )
+                    for i, explanation in enumerate(explanations):
+                        multi_label_explanations[i][int(cls)] = explanation
+            else:
+                from ...core.reject.policy import RejectPolicy
+
+                try:
+                    effective_policy = RejectPolicy(reject_policy)
+                except (TypeError, ValueError):
+                    effective_policy = RejectPolicy.NONE
+
+                # Prepare a per-class explain_fn closure that legacy_explain can call
+                def make_explain_fn_for_class(cls_val):
+                    def _explain_fn(x_subset, **inner_kw):
+                        labels = [cls_val for _ in range(len(x_subset))]
+                        return legacy_explain(
+                            self.explainer,
+                            x_subset,
+                            threshold,
+                            low_high_percentiles,
+                            inner_kw.get("bins", bins),
+                            labels=labels,
+                            features_to_ignore=features_to_ignore,
+                            interval_summary=inner_kw.get(
+                                "interval_summary",
+                                kwargs.get("interval_summary", self.explainer.interval_summary),
+                            ),
+                        )
+
+                    return _explain_fn
+
+                # Apply reject orchestration per-class and map results back
+                for cls in classes:
+                    explain_fn = make_explain_fn_for_class(int(cls))
+                    try:
+                        res = self.explainer.reject_orchestrator.apply_policy(
+                            effective_policy, x, explain_fn=explain_fn, bins=bins
+                        )
+                    except Exception:  # adr002_allow
+                        # Fallback to legacy explain if reject orchestration fails
+                        labels = [cls for _ in range(len(x))]
+                        explanations = legacy_explain(
+                            self.explainer,
+                            x,
+                            threshold,
+                            low_high_percentiles,
+                            bins,
+                            labels=labels,
+                            features_to_ignore=features_to_ignore,
+                            interval_summary=kwargs.get(
+                                "interval_summary", self.explainer.interval_summary
+                            ),
+                        )
+                        for i, explanation in enumerate(explanations):
+                            multi_label_explanations[i][int(cls)] = explanation
+                        continue
+
+                    explanation_payload = getattr(res, "explanation", None)
+                    rejected_mask = getattr(res, "rejected", None)
+
+                    if explanation_payload is None:
+                        continue
+
+                    # explanation_payload corresponds to either full-length
+                    # explanations (FLAG) or a subset aligned with the rejected/accepted mask.
+                    if rejected_mask is None or len(explanation_payload) == len(x):
+                        # Full-length: assign one-to-one
+                        for i, explanation in enumerate(explanation_payload):
+                            multi_label_explanations[i][int(cls)] = explanation
+                    else:
+                        # Subset mapping: find indices matching the mask
+                        idxs = [i for i, v in enumerate(rejected_mask) if v]
+                        if len(idxs) != len(explanation_payload):
+                            # If policy was ONLY_ACCEPTED, invert mapping
+                            idxs = [i for i, v in enumerate(rejected_mask) if not v]
+                        for j, inst_idx in enumerate(idxs):
+                            multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
             return MultiClassCalibratedExplanations(
                 self.explainer, x, bins, len(classes), multi_label_explanations
             )
@@ -876,13 +969,100 @@ class ExplanationOrchestrator:
                 classes
             ):
                 classes = np.arange(len(self.explainer.class_labels))
-            for cls in classes:
-                labels = [cls for _ in range(len(x))]
-                explanations = legacy_explain(
-                    self.explainer, x, threshold, low_high_percentiles, bins, labels=labels
+            # Warn when used on binary-labeled data: multi-label mode is intended for 3+ classes
+            if len(classes) < 3:
+                warnings.warn(
+                    "multi_labels_enabled=True was requested but the problem appears to be binary; "
+                    "this mode is intended for 3+ class problems.",
+                    UserWarning,
+                    stacklevel=2,
                 )
-                for i, explanation in enumerate(explanations):
-                    multi_label_explanations[i][cls] = explanation
+            # Support per-class reject policies by delegating to the reject
+            # orchestrator when a reject_policy is provided. For backward
+            # compatibility, a None reject_policy performs the legacy loop.
+            if reject_policy is None:
+                for cls in classes:
+                    labels = [cls for _ in range(len(x))]
+                    explanations = legacy_explain(
+                        self.explainer,
+                        x,
+                        threshold,
+                        low_high_percentiles,
+                        bins,
+                        labels=labels,
+                        features_to_ignore=features_to_ignore,
+                        interval_summary=kwargs.get(
+                            "interval_summary", self.explainer.interval_summary
+                        ),
+                    )
+                    for i, explanation in enumerate(explanations):
+                        multi_label_explanations[i][int(cls)] = explanation
+            else:
+                from ...core.reject.policy import RejectPolicy
+
+                try:
+                    effective_policy = RejectPolicy(reject_policy)
+                except (TypeError, ValueError):
+                    effective_policy = RejectPolicy.NONE
+
+                def make_explain_fn_for_class(cls_val):
+                    def _explain_fn(x_subset, **inner_kw):
+                        labels = [cls_val for _ in range(len(x_subset))]
+                        return legacy_explain(
+                            self.explainer,
+                            x_subset,
+                            threshold,
+                            low_high_percentiles,
+                            inner_kw.get("bins", bins),
+                            labels=labels,
+                            features_to_ignore=features_to_ignore,
+                            interval_summary=inner_kw.get(
+                                "interval_summary",
+                                kwargs.get("interval_summary", self.explainer.interval_summary),
+                            ),
+                        )
+
+                    return _explain_fn
+
+                for cls in classes:
+                    explain_fn = make_explain_fn_for_class(int(cls))
+                    try:
+                        res = self.explainer.reject_orchestrator.apply_policy(
+                            effective_policy, x, explain_fn=explain_fn, bins=bins
+                        )
+                    except Exception:  # adr002_allow
+                        labels = [cls for _ in range(len(x))]
+                        explanations = legacy_explain(
+                            self.explainer,
+                            x,
+                            threshold,
+                            low_high_percentiles,
+                            bins,
+                            labels=labels,
+                            features_to_ignore=features_to_ignore,
+                            interval_summary=kwargs.get(
+                                "interval_summary", self.explainer.interval_summary
+                            ),
+                        )
+                        for i, explanation in enumerate(explanations):
+                            multi_label_explanations[i][int(cls)] = explanation
+                        continue
+
+                    explanation_payload = getattr(res, "explanation", None)
+                    rejected_mask = getattr(res, "rejected", None)
+
+                    if explanation_payload is None:
+                        continue
+
+                    if rejected_mask is None or len(explanation_payload) == len(x):
+                        for i, explanation in enumerate(explanation_payload):
+                            multi_label_explanations[i][int(cls)] = explanation
+                    else:
+                        idxs = [i for i, v in enumerate(rejected_mask) if v]
+                        if len(idxs) != len(explanation_payload):
+                            idxs = [i for i, v in enumerate(rejected_mask) if not v]
+                        for j, inst_idx in enumerate(idxs):
+                            multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
             return MultiClassCalibratedExplanations(
                 self.explainer, x, bins, len(classes), multi_label_explanations
             )
@@ -1406,32 +1586,18 @@ class ExplanationOrchestrator:
                 errors.append(message)
                 continue
 
-            descriptor = find_explanation_descriptor(identifier)
-            metadata: Mapping[str, Any] | None = None
-            plugin = None
-            if descriptor is not None:
-                metadata = descriptor.metadata
-                if descriptor.trusted:
-                    plugin = descriptor.plugin
-                elif is_preferred and not allow_untrusted:
-                    raise ConfigurationError(
-                        "Explanation plugin configuration failed: "
-                        + identifier
-                        + " is untrusted; explicitly trust the plugin or pass an explicit override"
-                    ) from None
-                elif is_explicit_override:
-                    warnings.warn(
-                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
-                        "Ensure you trust the source of this plugin.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    plugin = descriptor.plugin
-            if plugin is None:
-                if is_explicit_override:
-                    plugin = find_explanation_plugin(identifier)
-                else:
-                    plugin = find_explanation_plugin_trusted(identifier)
+            plugin, metadata, reason = self.explainer.plugin_manager.resolve_explanation_plugin(
+                identifier,
+                allow_untrusted=allow_untrusted,
+                is_preferred=is_preferred,
+                is_explicit_override=is_explicit_override,
+            )
+            if reason == "untrusted":
+                raise ConfigurationError(
+                    "Explanation plugin configuration failed: "
+                    + identifier
+                    + " is untrusted; explicitly trust the plugin or pass an explicit override"
+                ) from None
             if plugin is None:
                 message = f"{identifier}: not registered"
                 if is_preferred:

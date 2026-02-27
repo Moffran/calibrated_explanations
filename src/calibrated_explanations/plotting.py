@@ -1558,9 +1558,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         PlotRenderContext,
         ensure_builtin_plugins,
         find_plot_plugin,
-        find_plot_plugin_trusted,
     )
-    from .plugins.registry import find_plot_renderer
+    from .plugins.registry import find_plot_plugin_trusted, find_plot_renderer
 
     ensure_builtin_plugins()
 
