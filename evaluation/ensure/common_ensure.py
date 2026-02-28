@@ -142,11 +142,13 @@ def _rules_frame(explanation: Any) -> pd.DataFrame:
 
 
 def ablation_counts(explanation: Any) -> dict[str, int]:
-    """Compute per-instance counts used in the paper tables."""
-    # Compute counts directly from the per-instance rules table so we're not
-    # sensitive to higher-level filtering implementation details.
-    df = _rules_frame(explanation)
-    if df.empty:
+    """Compute per-instance counts used in the paper tables.
+
+    Delegates entirely to the public filter API on the explanation object so
+    counts are always consistent with what the API surfaces to callers.
+    """
+    total = len(explanation)
+    if total == 0:
         return {
             "total": 0,
             "ensured": 0,
@@ -156,57 +158,21 @@ def ablation_counts(explanation: Any) -> dict[str, int]:
             "semipotential": 0,
             "superfactual": 0,
             "superpotential": 0,
+            "pareto": 0,
         }
 
-    total = int(len(df))
+    super_with = len(explanation.super(include_potential=True))
+    super_without = len(explanation.super(include_potential=False))
 
-    # Determine whether this is plain regression (numeric) or classification-like
-    is_plain_regression = hasattr(explanation, "is_regression") and explanation.is_regression() and not getattr(explanation, "is_probabilistic", lambda: False)()
+    semi_with = len(explanation.semi(include_potential=True))
+    semi_without = len(explanation.semi(include_potential=False))
 
-    base_predict = float(explanation.prediction["predict"]) if explanation.prediction.get("predict") is not None else float("nan")
-    base_low = float(explanation.prediction.get("low", float("nan")))
-    base_high = float(explanation.prediction.get("high", float("nan")))
+    counter_with = len(explanation.counter(include_potential=True))
+    counter_without = len(explanation.counter(include_potential=False))
 
-    predict = df["predict"].to_numpy(dtype=float)
-    predict_low = df["predict_low"].to_numpy(dtype=float)
-    predict_high = df["predict_high"].to_numpy(dtype=float)
+    ensured_with = len(explanation.ensured(include_potential=True))
 
-    if is_plain_regression:
-        # potential: alternative interval covers the base prediction
-        is_potential = (predict_low <= base_predict) & (predict_high >= base_predict)
-        # super: higher predicted output than base
-        is_super = predict > base_predict
-        # semi/counter: lower predicted output than base (same semantics)
-        is_counter = predict < base_predict
-        is_semi = is_counter
-        # ensured: alternative interval width <= base interval width
-        base_width = base_high - base_low
-        is_ensured = (predict_high - predict_low) <= base_width
-    else:
-        # classification / probabilistic-regression semantics use 0.5 decision boundary
-        is_potential = (predict_low < 0.5) & (predict_high > 0.5)
-        positive_class = base_predict > 0.5
-        # NOTE: We treat exactly-0.5 predictions as being on the boundary.
-        # They are neither counter- nor semi-explanations.
-        if positive_class:
-            is_super = predict > base_predict
-            is_semi = (predict > 0.5) & (predict < base_predict)
-            is_counter = predict < 0.5
-        else:
-            is_super = predict < base_predict
-            is_semi = (predict < 0.5) & (predict > base_predict)
-            is_counter = predict > 0.5
-        base_width = base_high - base_low
-        is_ensured = (predict_high - predict_low) <= base_width
-
-    # Counts without potentials (factual) and with potentials
-    counter_with = int(np.sum(is_counter))
-    counter_without = int(np.sum(is_counter & ~is_potential))
-    semi_with = int(np.sum(is_semi))
-    semi_without = int(np.sum(is_semi & ~is_potential))
-    super_with = int(np.sum(is_super))
-    super_without = int(np.sum(is_super & ~is_potential))
-    ensured_with = int(np.sum(is_ensured))
+    pareto_with = len(explanation.pareto(include_potential=True))
 
     return {
         "total": total,
@@ -217,6 +183,7 @@ def ablation_counts(explanation: Any) -> dict[str, int]:
         "semipotential": semi_with - semi_without,
         "superfactual": super_without,
         "superpotential": super_with - super_without,
+        "pareto": pareto_with,
     }
 
 

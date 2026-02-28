@@ -380,18 +380,25 @@ class TestAlternativeExplanationRegression:
             "high": 160.0,
             "classes": None,
         }
-        # r1=130 (lower), r2=100 (lower), r3=170 (higher)
+        # New 'semi' semantics for plain regression: keep alternatives where
+        # intervals mutually include the other's mean. Construct two rules
+        # that satisfy mutual inclusion and one that does not.
+        # r1=145: interval [140,150] includes base_mean=150 and base interval
+        # includes r1.mean
+        # r2=155: interval [150,160] includes base_mean=150 and base interval
+        # includes r2.mean
+        # r3=170: does not include base_mean
         rules = self.make_regression_rules(
-            [130.0, 100.0, 170.0],
-            [120.0, 90.0, 160.0],
-            [140.0, 110.0, 180.0],
+            [145.0, 155.0, 170.0],
+            [140.0, 150.0, 160.0],
+            [150.0, 160.0, 180.0],
         )
         rules["base_predict_low"] = 140.0
         rules["base_predict_high"] = 160.0
         self.setup_test_rules(regression_explanation, rules)
 
         result = regression_explanation.semi_explanations()
-        assert result.rules["predict"] == [130.0, 100.0]
+        assert result.rules["predict"] == [145.0, 155.0]
 
     def test_counter_keeps_lower_predictions(self, regression_explanation):
         """Counter has identical semantics to semi for plain regression."""

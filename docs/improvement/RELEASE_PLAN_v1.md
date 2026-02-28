@@ -314,7 +314,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 
 ### v0.11.0 (domain model & preprocessing finalisation)
 
-  1. Complete ADR-009 preprocessing automation with auto_encode='auto', unseen-category enforcement, mapping export/import helpers, and aligned telemetry.
+  1. Complete ADR-009 preprocessing automation with auto_encode='auto', unseen-category enforcement, preprocessor mapping export/import helpers (`export_preprocessor_mapping()` / `import_preprocessor_mapping()`), and aligned telemetry.
   2. Deliver ADR-030 test quality tooling upgrades (assertion + determinism checks) and wire them into CI.
   3. Add ADR-031 calibrator persistence: versioned to_primitive/from_primitive contracts plus Explainer.save_state()/load_state().
   4. Harden ADR-026 plugin semantics with strict invariant enforcement, immutable contexts, and telemetry completeness.

@@ -177,6 +177,10 @@ narrative_templates:
         {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
 
     alternative:
+      # Note: For plain regression the narrative 'semi' alternatives are
+      # defined conservatively by mutual interval inclusion: an alternative
+      # is considered 'semi' when the alternative interval contains the
+      # base mean and the base interval contains the alternative mean.
       beginner: |
         Calibrated Prediction: {calibrated_pred}
 

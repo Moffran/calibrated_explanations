@@ -2984,10 +2984,28 @@ class AlternativeExplanation(CalibratedExplanation):
                 # Super: keep only rules with higher prediction
                 if make_super and rules["predict"][rule] <= self.prediction["predict"]:
                     continue
-                # Semi/Counter: keep only rules with lower prediction
-                if (make_semi or make_counter) and (
-                    rules["predict"][rule] >= self.prediction["predict"]
-                ):
+                # Semi: for plain regression, keep alternatives where the
+                # uncertainty intervals mutually include the other's mean
+                # (i.e. conservative 'semi' definition). Use predict and
+                # predict_low/predict_high for comparisons.
+                if make_semi:
+                    try:
+                        rule_mean = float(rules["predict"][rule])
+                        rule_low = float(rules["predict_low"][rule])
+                        rule_high = float(rules["predict_high"][rule])
+                        base_mean = float(self.prediction["predict"])
+                        base_low = float(self.prediction["low"])
+                        base_high = float(self.prediction["high"])
+                    except (TypeError, ValueError):
+                        # If values are not numeric, skip this rule
+                        continue
+                    if not (
+                        (rule_low <= base_mean <= rule_high)
+                        and (base_low <= rule_mean <= base_high)
+                    ):
+                        continue
+                # Counter: keep only rules with lower prediction than original
+                if make_counter and rules["predict"][rule] >= self.prediction["predict"]:
                     continue
                 if (
                     only_ensured
