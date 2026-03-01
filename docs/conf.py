@@ -114,6 +114,9 @@ linkcheck_ignore = [
     # linkcheck focuses on public-facing documentation links.
     r"https://github.com/Moffran/calibrated_explanations/blob/main/\.claude/.*",
     r"https://raw.githubusercontent.com/Moffran/calibrated_explanations/main/\.claude/.*",
+    # External academic portals can be flaky / time out from CI linkcheck runners
+    # Ignore diva-portal host to avoid transient timeouts causing CI failures.
+    r"https://www.diva-portal.org/.*",
 ]
 
 # Pygments style for syntax highlighting
