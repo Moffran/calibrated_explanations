@@ -18,14 +18,11 @@ authors = [
     { name = "Tuwe Löfström", email = "tuwe.lofstrom@ju.se" },
 ]
 dependencies = [
-    "cachetools",
-    "pympler",
-    "crepes",
-    "venn-abers",
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "pyyaml",
+    "crepes>=0.8.0",
+    "venn-abers>=1.4.0",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -40,6 +37,12 @@ Changelog = "https://github.com/Moffran/calibrated_explanations/blob/main/CHANGE
 Repository = "https://github.com/Moffran/calibrated_explanations"
 
 [project.optional-dependencies]
+narrative = [
+    "pyyaml",
+]
+perf = [
+    "cachetools",
+]
 viz = [
     "matplotlib",
 ]
@@ -184,6 +187,7 @@ where = [
 calibrated_explanations = [
     "py.typed",
     "schemas/*.json",
+    "templates/*.json",
     "templates/*.yaml",
 ]
 

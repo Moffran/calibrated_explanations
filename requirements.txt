@@ -12,11 +12,8 @@
 # consistent with the canonical dependency list in pyproject.toml.
 # See ADR-001, ADR-010, and .github/copilot-instructions.md for policy.
 ######################################################################
-cachetools
-pympler
-crepes
-venn-abers
-numpy
-pandas
-scikit-learn
-pyyaml
+crepes>=0.8.0
+venn-abers>=1.4.0
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3

@@ -1,0 +1,64 @@
+{
+    "reject_indicators": {
+        "ambiguity": {
+            "beginner": "(low confidence - treat with caution)",
+            "intermediate": "Rejected (ambiguous prediction, {set_size} possible classes)",
+            "advanced": "REJECTED (ambiguous)\nPrediction Set: {prediction_set} (size: {set_size})\nConfidence: {confidence}\nInterpretation: The model cannot confidently distinguish between the listed classes at the given confidence level.\n"
+        },
+        "novelty": {
+            "beginner": "(unknown pattern - predictions unreliable)",
+            "intermediate": "Rejected (novel instance, outside training distribution)",
+            "advanced": "REJECTED (novel)\nPrediction Set: {} (empty)\nConfidence: {confidence}\nInterpretation: The instance lies outside the training distribution; no class exceeds the p-value threshold.\n"
+        }
+    },
+    "narrative_templates": {
+        "binary_classification": {
+            "factual": {
+                "beginner": "Prediction: {label}\nCalibrated Probability: {calibrated_pred}\n\nFactors impacting the probability for class {positive_label} positively:\n* {feature_name} ({feature_actual_value}) {condition}\n\nFactors impacting the probability for class {positive_label} negatively:\n* {feature_name} ({feature_actual_value}) {condition}\n",
+                "intermediate": "Prediction: {label}\nCalibrated Probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\n\nFactors impacting the calibrated probability for class {positive_label} positively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n\nFactors impacting the calibrated probability for class {positive_label} negatively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n",
+                "advanced": "Prediction: {label}\nCalibrated Probability: {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\n\nFactors impacting the calibrated probability for class {positive_label} positively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n\nFactors impacting the calibrated probability for class {positive_label} negatively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n"
+            },
+            "alternative": {
+                "beginner": "Prediction: {label}\nCalibrated probability: {calibrated_pred}\n\nAlternatives to increase the calibrated probability for class {positive_label}:\n- {feature_name} {condition}\n\nAlternatives to decrease the calibrated probability for class {positive_label}:\n- {feature_name} {condition}\n",
+                "intermediate": "Prediction: {label}\nCalibrated probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\n\nAlternatives to increase the calibrated probability for class {positive_label}:\n- If {feature_name} {condition} then {predict}\n\nAlternatives to decrease the calibrated probability for class {positive_label}:\n- If {feature_name} {condition} then {predict}\n",
+                "advanced": "Prediction: {label}\nCalibrated probability: {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\n\nAlternatives to increase the calibrated probability for class {positive_label}:\n- If {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]\n\nAlternatives to decrease the calibrated probability for class {positive_label}:\n- If {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]\n"
+            }
+        },
+        "multiclass_classification": {
+            "factual": {
+                "beginner": "Calibrated Probability for class {label}: {calibrated_pred}\nRunner-up Class: {runner_up_class} (margin {margin_value})\n\nFactors impacting the probability for class {label} positively:\n* {feature_name} ({feature_actual_value}) {condition}\n\nFactors impacting the probability for class {label} negatively:\n* {feature_name} ({feature_actual_value}) {condition}\n",
+                "intermediate": "Calibrated Probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\nRunner-up Class: {runner_up_class} (margin {margin_value})\n\nFactors impacting the calibrated probability for class {label} positively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n\nFactors impacting the calibrated probability for class {label} negatively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n",
+                "advanced": "Calibrated Probability for class {label}: {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\nRunner-up Class: {runner_up_class} (margin {margin_value})\n\nFactors impacting the calibrated probability for class {label} positively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n\nFactors impacting the calibrated probability for class {label} negatively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n"
+            },
+            "alternative": {
+                "beginner": "Calibrated probability for class {label}: {calibrated_pred}\nRunner-up Class: {runner_up_class} (margin {margin_value})\n\nAlternatives to increase the calibrated probability for class {label}:\n- {feature_name} {condition}\n\nAlternatives to decrease the calibrated probability for class {label}:\n- {feature_name} {condition}\n",
+                "intermediate": "Calibrated probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\nRunner-up Class: {runner_up_class} (margin {margin_value})\n\nAlternatives to increase the calibrated probability for class {label}:\n- If {feature_name} {condition} then {predict}\n\nAlternatives to decrease the calibrated probability for class {label}:\n- If {feature_name} {condition} then {predict}\n",
+                "advanced": "Calibrated probability for class {label}: {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\nRunner-up Class: {runner_up_class} (margin {margin_value})\n\nAlternatives to increase the calibrated probability for class {label}:\n- If {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]\n\nAlternatives to decrease the calibrated probability for class {label}:\n- If {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]\n"
+            }
+        },
+        "regression": {
+            "factual": {
+                "beginner": "Calibrated Prediction: {calibrated_pred}\n\nFactors impacting the prediction positively:\n* {feature_name} ({feature_actual_value}) {condition}\n\nFactors impacting the prediction negatively:\n* {feature_name} ({feature_actual_value}) {condition}\n",
+                "intermediate": "Calibrated Prediction: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\n\nFactors impacting the calibrated prediction positively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n\nFactors impacting the calibrated prediction negatively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n",
+                "advanced": "Calibrated Prediction: {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\n\nFactors impacting the calibrated prediction positively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n\nFactors impacting the calibrated prediction negatively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n"
+            },
+            "alternative": {
+                "beginner": "Calibrated Prediction: {calibrated_pred}\n\nAlternatives to increase the Calibrated Prediction compared to {calibrated_pred}:\n- {feature_name} {condition}\n\nAlternatives to decrease the Calibrated Prediction compared to {calibrated_pred}:\n- {feature_name} {condition}\n",
+                "intermediate": "Calibrated Prediction: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\n\nAlternatives to increase the Calibrated Prediction compared to {calibrated_pred}:\n- If {feature_name} {condition} then {predict}\n\nAlternatives to decrease the Calibrated Prediction compared to {calibrated_pred}:\n- If {feature_name} {condition} then {predict}\n",
+                "advanced": "Calibrated Prediction: {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\n\nAlternatives to increase the Calibrated Prediction compared to {calibrated_pred}:\n- If {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]\n\nAlternatives to decrease the Calibrated Prediction compared to {calibrated_pred}:\n- If {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]\n"
+            }
+        },
+        "probabilistic_regression": {
+            "factual": {
+                "beginner": "Calibrated Probability ({threshold_condition}): {calibrated_pred}\n\nFactors impacting the probability for {threshold_condition} positively:\n* {feature_name} ({feature_actual_value}) {condition}\n\nFactors impacting the probability for {threshold_condition} negatively:\n* {feature_name} ({feature_actual_value}) {condition}\n",
+                "intermediate": "Calibrated Probability ({threshold_condition}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\n\nFactors impacting the calibrated probability for {threshold_condition} positively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n\nFactors impacting the calibrated probability for {threshold_condition} negatively:\n* {feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight}\n",
+                "advanced": "Calibrated Probability ({threshold_condition}): {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\n\nFactors impacting the calibrated probability for {threshold_condition} positively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n\nFactors impacting the calibrated probability for {threshold_condition} negatively:\n{feature_name} ({feature_actual_value}) {condition} \u2014 weight \u2248 {feature_weight} [{feature_weight_low}, {feature_weight_high}]\n"
+            },
+            "alternative": {
+                "beginner": "Calibrated Probability ({threshold_condition}): {calibrated_pred}\n\nAlternatives to increase the Calibrated Probability for {threshold_condition}:\n- {feature_name} {condition}\n\nAlternatives to decrease the Calibrated Probability for {threshold_condition}:\n- {feature_name} {condition}\n",
+                "intermediate": "Calibrated Probability ({threshold_condition}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]\n\nAlternatives to increase the Calibrated Probability for {threshold_condition}:\n- If {feature_name} {condition} then P({threshold_condition}) = {predict}\n\nAlternatives to decrease the Calibrated Probability for {threshold_condition}:\n- If {feature_name} {condition} then P({threshold_condition}) = {predict}\n",
+                "advanced": "Calibrated Probability ({threshold_condition}): {calibrated_pred}\nPrediction Interval: [{pred_interval_lower}, {pred_interval_upper}]\n\nAlternatives to increase the Calibrated Probability for {threshold_condition}:\n- If {feature_name} {condition} then P({threshold_condition}) = {predict} [{predict_low}, {predict_high}]\n\nAlternatives to decrease the Calibrated Probability for {threshold_condition}:\n- If {feature_name} {condition} then P({threshold_condition}) = {predict} [{predict_low}, {predict_high}]\n"
+            }
+        }
+    }
+}

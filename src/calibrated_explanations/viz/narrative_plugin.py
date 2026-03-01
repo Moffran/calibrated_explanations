@@ -81,7 +81,7 @@ class NarrativePlotPlugin:
         current_file = Path(__file__).resolve()
         # src/calibrated_explanations/viz -> src/calibrated_explanations/templates
         package_root = current_file.parent.parent
-        default_template = package_root / "templates" / "explain_template.yaml"
+        default_template = package_root / "templates" / "explain_template.json"
         return str(default_template)
 
     def plot(  # pragma: no cover  # ADR-023: narrative visualization rendering
