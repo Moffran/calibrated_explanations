@@ -35,6 +35,11 @@ jobs:
       - name: Agent instruction consistency
         run: |
           python scripts/quality/check_agent_instruction_consistency.py
+      - name: Logger domain enforcement (ADR-028 / STD-005)
+        run: |
+          python scripts/quality/check_logging_domains.py \
+            --root src/calibrated_explanations \
+            --report reports/quality/logging_domain_report.json
       - name: Run core tests with coverage (context-aware for over-testing analysis)
         run: |
           pytest -q -o addopts= \
@@ -118,6 +123,55 @@ jobs:
             reports/anti-pattern-analysis/test_quality_report.json
             reports/anti-pattern-analysis/test_helper_wrapper_report.json
             reports/marker-hygiene/marker_hygiene_report.json
+
+  parity-core-vs-extras:
+    needs: coverage-and-gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Generate core parity snapshots
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install -e . -c constraints.txt
+          pip install jsonschema -c constraints.txt
+          for dataset in classification regression multiclass probabilistic_regression; do
+            python tests/parity_reference/run_parity_reference.py --dataset $dataset --condition-source observed --update
+            python tests/parity_reference/run_parity_reference.py --dataset $dataset --condition-source prediction --update
+          done
+          mkdir -p artifacts/parity/core
+          cp tests/parity_reference/*.json artifacts/parity/core/
+      - name: Generate extras parity snapshots
+        run: |
+          pip install -e .[dev,eval,viz] -c constraints.txt
+          for dataset in classification regression multiclass probabilistic_regression; do
+            python tests/parity_reference/run_parity_reference.py --dataset $dataset --condition-source observed --update
+            python tests/parity_reference/run_parity_reference.py --dataset $dataset --condition-source prediction --update
+          done
+          mkdir -p artifacts/parity/extras
+          cp tests/parity_reference/*.json artifacts/parity/extras/
+      - name: Compare core vs extras parity snapshots
+        run: |
+          python scripts/quality/compare_parity_snapshots.py \
+            --left artifacts/parity/core \
+            --right artifacts/parity/extras
+      - name: Upload parity snapshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-core-vs-extras
+          path: |
+            artifacts/parity/core
+            artifacts/parity/extras
 
   over-testing-density:
     name: Over-testing density (ADR-030 Phase 4 — advisory)

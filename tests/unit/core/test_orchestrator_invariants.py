@@ -7,6 +7,7 @@ from calibrated_explanations.plugins.explanations import (
 )
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 from calibrated_explanations.explanations.explanation import CalibratedExplanation
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 class DummyContainer(CalibratedExplanations):
@@ -44,5 +45,5 @@ class TestExplanationBatchInvariants:
             instances=[{"prediction": {"predict": 0.5, "low": 0.7, "high": 0.6}}],
             collection_metadata={"task": "regression", "mode": "test"},
         )
-        with pytest.warns(UserWarning, match="low > high"):
+        with pytest.raises(ValidationError, match="low > high"):
             validate_explanation_batch(batch, expected_task="regression", expected_mode="test")

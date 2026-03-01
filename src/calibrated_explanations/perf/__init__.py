@@ -6,15 +6,17 @@ This shim will be removed in v0.11.0.
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from typing import Any
 
-warnings.warn(
+from ..utils.deprecations import deprecate
+
+# Use the central deprecation helper so deprecation behaviour is testable
+deprecate(
     "The 'calibrated_explanations.perf' module is deprecated. "
     "Use 'calibrated_explanations.cache' and 'calibrated_explanations.parallel' instead. "
     "This shim will be removed in v0.11.0.",
-    DeprecationWarning,
+    key="module:perf",
     stacklevel=2,
 )
 

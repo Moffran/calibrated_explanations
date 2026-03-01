@@ -230,7 +230,7 @@ Explanation plugins support mode-specific selection:
 ## Hello, plot plugin
 
 Follow these steps to build a plot plugin (builder and renderer pair) that respects the
-contract defined by ADR-024/025.
+contract defined by ADR-014 and ADR-016.
 
 ### 1. Scaffold the plot builder and renderer
 
@@ -533,17 +533,28 @@ guides.
 
 Use these decision records when designing new plugins:
 
+- [ADR-006 - plugin registry trust model](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md)
+  defines explicit trust controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and governance expectations for third-party plugins.
 - [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
+- [ADR-014 - plot plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-014-plot-plugin-strategy.md)
+  defines optional/explicit plot plugin extension boundaries and default behavior.
 - [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-024 - legacy plot input contracts](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
-  defines PlotSpec and legacy plot inputs that plugins must honour.
-- [ADR-025 - legacy plot rendering semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/superseded%20ADR-025-legacy-plot-rendering-semantics.md)
-  documents rendering semantics so PlotSpec builders remain interchangeable.
+- [ADR-016 - PlotSpec separation](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-016-plot-spec-separation.md)
+  documents PlotSpec semantics and validation responsibilities for builders/renderers.
 - [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval
   plugins.
+
+### Trust and governance checklist
+
+Before shipping a plugin, verify all items:
+
+- Document trust onboarding (how operators should set `CE_TRUST_PLUGIN` or pyproject allowlists).
+- Document emergency deny flow (`CE_DENY_PLUGIN`) for incident mitigation.
+- Verify plugin appears in discovery diagnostics (`python -m calibrated_explanations.plugins.cli report`).
+- Verify trusted-only views behave as expected (`python -m calibrated_explanations.plugins.cli list all --trusted-only`).
 
 ### Runtime performance toggles
 

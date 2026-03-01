@@ -30,6 +30,11 @@ factual = explainer.explain_factual(X_query)
 
 # alternative explanations ("what would change it?")
 alternatives = explainer.explore_alternatives(X_query)
+
+# preprocessor mapping snapshot (JSON-safe primitives only)
+mapping = explainer.export_preprocessor_mapping()
+if mapping is not None:
+    explainer.import_preprocessor_mapping(mapping)
 ```
 
 ## Classification (binary / multiclass)
@@ -51,6 +56,11 @@ For a true multiclass explanation (one explanation per class), enable multi-labe
 ```python
 multi = explainer.explain_factual(x_test[:1], multi_labels_enabled=True)
 ```
+
+`multi_labels_enabled=True` is intended for all-classes analysis. In this mode:
+- collection operations and reject/feature-filter options are supported;
+- multiclass JSON export/import is supported;
+- binary datasets are accepted but emit a compatibility warning (default mode is usually preferable).
 
 ### Calibrated probability + interval
 

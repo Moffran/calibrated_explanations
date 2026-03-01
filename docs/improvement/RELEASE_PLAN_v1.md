@@ -227,7 +227,7 @@ Release gate: Audience landing pages published with calibrated explanations/prob
 5. Reinforce ADR-020 legacy-API commitments with release checklist gates, regression tests for `explain_factual`/`explore_alternatives`, CONTRIBUTING guidance, and a scripted notebook audit workflow (see ADR status appendix in this document).
 6. Restore visualization safety valves per ADR-023 by running the viz suite in CI, removing ignores, and aligning coverage messaging with the final thresholds (see ADR status appendix in this document).
 7. Update governance collateral and hubs to satisfy Standard-004—embed the parity-review checklist in PR templates, reinstate the task API comparison, and publish the researcher future-work ledger (see ADR status appendix in this document).
-8. Implement ADR-004 v0.9.1 scoped deliverable — ParallelFacade: create a conservative facade that centralizes executor selection heuristics, exposes a minimal config surface (min_instances_for_parallel, min_features_for_parallel, task_size_hint_bytes), honors `CE_PARALLEL` overrides, emits compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type), and includes unit tests plus a micro-benchmark harness. This is intentionally small and designed to collect field evidence before any full `ParallelExecutor` rollout in v0.10. 【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L1-L40】
+8. Implement ADR-004 v0.9.1 scoped deliverable — ParallelExecutor: create a conservative execution layer that centralizes executor selection heuristics, exposes a minimal config surface (min_instances_for_parallel, min_features_for_parallel, task_size_hint_bytes), honors `CE_PARALLEL` overrides, emits compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type), and includes unit tests plus a micro-benchmark harness. This is intentionally small and designed to collect field evidence before any full `ParallelExecutor` rollout in v0.10. 【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L1-L40】
 
 Release gate: Deprecation dashboard live, docs CI runs with notebook execution, coverage/waiver gating enforced at ≥90%, legacy API and parity checklists signed, and visualization tests passing on the release branch (see ADR status appendix in this document).
 
@@ -462,7 +462,7 @@ _Last gap analysis: 2026-02-27_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Documentation naming drift (`ParallelFacade` vs `ParallelExecutor`) | 2 | 2 | 4 | Docs still reference `ParallelFacade`; align docs or add a compatibility alias. |
+| 1 | Documentation naming drift (legacy facade term vs `ParallelExecutor`) | 2 | 2 | 4 | Remove remaining legacy facade naming and standardize on `ParallelExecutor` across active docs. |
 | 2 | Implicit `auto` strategy enables auto-selection contrary to ADR decision | 3 | 3 | 9 | Default `strategy="auto"` allows implicit selection; recommend requiring explicit strategy or document ADR exception. |
 
 ### ADR-005 - Explanation Payload Schema

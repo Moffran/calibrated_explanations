@@ -2784,6 +2784,9 @@ class AlternativeExplanation(CalibratedExplanation):
         ):
             return self.conjunctive_rules
 
+        if getattr(self, "has_rules", False) and isinstance(self.rules, dict):
+            return self.rules
+
         self.rules = []
         self.labels = {}  # pylint: disable=attribute-defined-outside-init
         instance = np.array(self.x_test, copy=True)
@@ -3016,6 +3019,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 if (
                     rules["base_predict_low"] == rules["predict_low"][rule]
                     and rules["base_predict_high"] == rules["predict_high"][rule]
+                    and rules["predict"][rule] == self.prediction["predict"]
                 ):
                     continue
                 self.__append_rule(new_rules, rules, rule)
@@ -3026,34 +3030,34 @@ class AlternativeExplanation(CalibratedExplanation):
                 # filter out potential rules if include_potential is False
                 if not include_potential and is_potential:
                     continue
-                if make_super and (
-                    positive_class
-                    and rules["predict"][rule] <= self.prediction["predict"]
-                    or not positive_class
-                    and rules["predict"][rule] >= self.prediction["predict"]
-                ):
-                    continue
-                if make_semi:
-                    if positive_class:
-                        if not (include_potential and is_potential) and (
-                            rules["predict"][rule] < 0.5
-                            or rules["predict"][rule] > self.prediction["predict"]
-                        ):
-                            continue
-                    elif not (include_potential and is_potential) and (
-                        rules["predict"][rule] > 0.5
-                        or rules["predict"][rule] < self.prediction["predict"]
-                    ):
-                        continue
-                if make_counter and (
-                    not (include_potential and is_potential)
-                    and (
-                        positive_class
-                        and rules["predict"][rule] > 0.5
-                        or not positive_class
-                        and rules["predict"][rule] < 0.5
+                # Compute point-based membership (always enforced).
+                rule_predict = rules["predict"][rule]
+                # super: moves further into the predicted class (away from 0.5)
+                is_super_by_point = (
+                    positive_class and rule_predict > self.prediction["predict"]
+                ) or (not positive_class and rule_predict < self.prediction["predict"])
+                # semi: same side as base but closer to the decision boundary (towards 0.5)
+                if positive_class:
+                    is_semi_by_point = (rule_predict > 0.5) and (
+                        rule_predict < self.prediction["predict"]
                     )
-                ):
+                else:
+                    is_semi_by_point = (rule_predict < 0.5) and (
+                        rule_predict > self.prediction["predict"]
+                    )
+                # counter: crosses the decision boundary (opposite side of 0.5)
+                is_counter_by_point = (positive_class and rule_predict <= 0.5) or (
+                    not positive_class and rule_predict >= 0.5
+                )
+
+                # Enforce membership by point-prediction for all modes. Potentials
+                # are still controlled by the `include_potential` flag above, but
+                # when included they must also satisfy the point-based comparator.
+                if make_super and not is_super_by_point:
+                    continue
+                if make_semi and not is_semi_by_point:
+                    continue
+                if make_counter and not is_counter_by_point:
                     continue
                 # if only_ensured is True, filter out rules that lead to increased uncertainty
                 if (

@@ -368,7 +368,7 @@ def test_derive_plot_chain(orchestrator, mock_explainer):
 
 
 @pytest.mark.parametrize("invoker_name", ("invoke_factual", "invoke_alternative"))
-def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
+def test_should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
     """Bins should be frozen to tuples for every mode delegate."""
 
     bins = np.array([[1, 2], [3, 4]])
@@ -408,3 +408,47 @@ def should_freeze_bins_across_modes(orchestrator, mock_explainer, invoker_name):
         )
 
     assert captured_request["bins"] == tuple(tuple(row) for row in bins.tolist())
+
+
+@pytest.mark.parametrize("invoker_name", ("invoke_factual", "invoke_alternative"))
+@pytest.mark.parametrize("x", (np.array([[1, 2]]), np.array([[1, 2], [3, 4]])))
+def test_should_include_interval_dependency_telemetry_in_single_and_batch_paths(
+    orchestrator,
+    mock_explainer,
+    invoker_name,
+    x,
+):
+    """Interval dependency metadata should be present on emitted telemetry payloads."""
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+    mock_explainer.plugin_manager.telemetry_interval_sources = {"default": "core.interval.legacy"}
+    mock_explainer.plugin_manager.interval_plugin_hints = {
+        "factual": ("core.interval.legacy",),
+        "alternative": ("core.interval.legacy",),
+    }
+    mock_explainer.plugin_manager.plot_plugin_fallbacks = {}
+    mock_explainer.plugin_manager.last_telemetry = {}
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_batch.container_cls = mock_container
+    result = MagicMock()
+    mock_container.from_batch.return_value = result
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+    ):
+        getattr(orchestrator, invoker_name)(
+            x=x,
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
+
+    assert result.telemetry["interval_dependencies"] == ("core.interval.legacy",)
+    assert result.telemetry["interval_source"] == "core.interval.legacy"

@@ -44,7 +44,7 @@ class RecordingPreprocessor:
         self.mapping_ = {"feature": {"a": 0, "b": 1}}
 
     def get_mapping_snapshot(self) -> dict[str, Any]:
-        return {"snap": {1, 2}}
+        return {"snap": [1, 2]}
 
     def fit_transform(self, x: Any) -> Any:
         self.fit_called_with.append(tuple(map(tuple, np.asarray(x))))
@@ -408,6 +408,26 @@ def test_export_and_import_preprocessor_mapping_applies_when_possible(
     new_map = {"feature": {"a": 42}}
     wrapper.import_preprocessor_mapping(new_map)
     assert pre.mapping_ == new_map
+
+
+def test_export_preprocessor_mapping_rejects_non_json_serialisable_snapshots(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    class NonJsonSnapshotPreprocessor:
+        def get_mapping_snapshot(self) -> dict[str, Any]:
+            return {"bad": {1, 2}}
+
+    wrapper.preprocessor = NonJsonSnapshotPreprocessor()
+
+    with pytest.raises(ValidationError, match="JSON-serialisable"):
+        wrapper.export_preprocessor_mapping()
+
+
+def test_import_preprocessor_mapping_rejects_non_json_serialisable_payload(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    with pytest.raises(ValidationError, match="JSON-serialisable"):
+        wrapper.import_preprocessor_mapping({"bad": {1, 2}})
 
 
 def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(

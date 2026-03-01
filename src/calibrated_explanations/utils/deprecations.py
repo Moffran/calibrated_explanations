@@ -62,7 +62,9 @@ def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> N
         key = message
 
     # Strict CI mode: raise instead of warning
-    if _should_raise():
+    # Call the public `should_raise()` wrapper so tests can patch it when
+    # asserting raise-on-deprecation behaviour.
+    if should_raise():
         # Record the key so callers can inspect emitted deprecations even when
         # we raise in strict CI mode. When running under pytest, only record
         # into the per-test map to avoid polluting session-wide state and

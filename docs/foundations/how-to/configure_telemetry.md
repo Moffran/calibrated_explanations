@@ -73,3 +73,44 @@ with open("telemetry.json", "w", encoding="utf-8") as fh:
 
 Store the payload with batch identifiers so you can debug plugin fallbacks or
 preprocessor mismatches in production.
+
+## Feature-filtering telemetry example (ADR-027)
+
+When FAST-based feature filtering is enabled, explanation collections can
+include `filter_telemetry` details while runtime telemetry keeps interval and
+resolver provenance.
+
+```python
+batch = explainer.explain_factual(x_test[:2])
+
+runtime = explainer.runtime_telemetry
+print(runtime.get("interval_dependencies", ()))
+print(runtime.get("interval_source"))
+
+# Collection-level feature-filter telemetry (if present)
+print(getattr(batch, "filter_telemetry", {}))
+```
+
+Expected keys, aligned to emitted runtime payloads:
+
+- `runtime_telemetry["interval_dependencies"]`: tuple of interval dependency hints
+- `runtime_telemetry["interval_source"]`: resolved interval plugin source
+- `batch.filter_telemetry["filter_enabled"]`: filter path was enabled
+- `batch.filter_telemetry["filter_skipped"]`: fallback reason when filtering is skipped
+- `batch.filter_telemetry["filter_error"]`: strict-observability error context when configuration fails
+
+## STD-005 logger domains (minimum enforcement)
+
+Telemetry and governance routing should use project logger domains rooted at
+`calibrated_explanations.*` (ADR-028 / STD-005). The repository enforces this
+minimum contract with:
+
+```bash
+python scripts/quality/check_logging_domains.py \
+  --root src/calibrated_explanations \
+  --report reports/quality/logging_domain_report.json
+```
+
+The check accepts `logging.getLogger(__name__)` and explicit
+`calibrated_explanations.<domain>...` literals, and fails if non-project logger
+literals are introduced in library code.

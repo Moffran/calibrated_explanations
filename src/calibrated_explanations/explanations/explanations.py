@@ -76,6 +76,32 @@ class ExportedExplanationCollection:
         return dict(self.__dict__)
 
 
+@dataclass(frozen=True)
+class ExportedMultiClassExplanationCollection:
+    """Exported multiclass explanations grouped by instance and class index."""
+
+    metadata: Mapping[str, Any]
+    explanations_by_instance: Sequence[Mapping[int, DomainExplanation]]
+
+    @property
+    def explanations(self) -> Sequence[DomainExplanation]:
+        """Return flattened exported explanations for backward-compatible access."""
+        flattened: list[DomainExplanation] = []
+        for per_instance in self.explanations_by_instance:
+            flattened.extend(per_instance.values())
+        return tuple(flattened)
+
+    def __getstate__(self):
+        """Get state for pickling.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
+        return dict(self.__dict__)
+
+
 def _jsonify(value: Any) -> Any:
     """Convert numpy objects and arrays into JSON-serialisable primitives."""
     if isinstance(value, np.ndarray):
@@ -665,12 +691,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
-        """Materialise domain explanations from a multiclass :meth:`to_json` payload.
-
-        This override preserves any per-item ``class_index``/``class_label`` annotations
-        emitted by :meth:`to_json` by copying them into the domain explanation
-        `metadata` field when present.
-        """
+        """Materialise domain explanations from a :meth:`to_json` payload."""
         from ..serialization import from_json as _explanation_from_json
 
         explanations_blob = payload.get("explanations", []) or []
@@ -2224,6 +2245,97 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         for i in range(len(self.explanations)):
             yield self[i]
 
+    @classmethod
+    def from_json(cls, payload: Mapping[str, Any]) -> ExportedMultiClassExplanationCollection:
+        """Materialise grouped multiclass explanations from exported JSON payload.
+
+        Raises
+        ------
+        ValidationError
+            If top-level or item-level schema versions are missing/unsupported,
+            or required multiclass keys cannot be restored.
+        """
+        from ..serialization import from_json as _explanation_from_json
+
+        expected_schema = "1.0.0"
+        schema_version = payload.get("schema_version")
+        if schema_version != expected_schema:
+            raise ValidationError(
+                "Unsupported multiclass payload schema version.",
+                details={"expected": expected_schema, "received": schema_version},
+            )
+
+        explanations_blob = payload.get("explanations", [])
+        if not isinstance(explanations_blob, list):
+            raise ValidationError(
+                "Multiclass payload explanations must be a list.",
+                details={"type": type(explanations_blob).__name__},
+            )
+
+        grouped: dict[int, dict[int, DomainExplanation]] = {}
+        for item in explanations_blob:
+            if not isinstance(item, Mapping):
+                raise ValidationError(
+                    "Each multiclass explanation item must be a mapping.",
+                    details={"type": type(item).__name__},
+                )
+            item_schema = item.get("schema_version")
+            if item_schema != expected_schema:
+                raise ValidationError(
+                    "Unsupported multiclass explanation item schema version.",
+                    details={"expected": expected_schema, "received": item_schema},
+                )
+
+            try:
+                instance_index = int(item.get("index"))
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValidationError(
+                    "Multiclass explanation item is missing a valid instance index.",
+                    details={"index": item.get("index")},
+                ) from exc
+
+            metadata_map = item.get("metadata")
+            metadata_dict = metadata_map if isinstance(metadata_map, Mapping) else {}
+            class_index_raw = item.get("class_index", metadata_dict.get("class_index"))
+            class_label = item.get("class_label", metadata_dict.get("class_label"))
+            if class_index_raw is None:
+                raise ValidationError(
+                    "Multiclass explanation item is missing class_index.",
+                    details={"index": instance_index},
+                )
+
+            try:
+                class_index = int(class_index_raw)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValidationError(
+                    "Multiclass explanation item has invalid class_index.",
+                    details={"index": instance_index, "class_index": class_index_raw},
+                ) from exc
+
+            domain_exp = _explanation_from_json(item)
+            metadata_out = (
+                dict(domain_exp.metadata) if isinstance(domain_exp.metadata, Mapping) else {}
+            )
+            metadata_out["class_index"] = class_index
+            if class_label is not None:
+                metadata_out["class_label"] = class_label
+            domain_exp.metadata = metadata_out or None
+
+            per_instance = grouped.setdefault(instance_index, {})
+            if class_index in per_instance:
+                raise ValidationError(
+                    "Duplicate class_index for multiclass explanation item.",
+                    details={"index": instance_index, "class_index": class_index},
+                )
+            per_instance[class_index] = domain_exp
+
+        ordered = tuple(grouped[idx] for idx in sorted(grouped))
+        metadata = payload.get("collection", {}) or {}
+        return ExportedMultiClassExplanationCollection(
+            metadata=cast(Mapping[str, Any], _jsonify(metadata)),
+            explanations_by_instance=ordered,
+        )
+
     def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """Apply add_conjunctions to every class-specific explanation."""
         for class_dict in self.explanations:
@@ -2605,7 +2717,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
             for class_dict in self.explanations
         ]
 
-    def plot(  # pragma: no cover  # ADR-023: multiclass visualization orchestration
+    def plot(
         self,
         index=None,
         class_idx=None,
@@ -2645,7 +2757,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         else:
             warnings.warn("No explanations found", stacklevel=2)
 
-    def plot_alternative(  # pragma: no cover  # ADR-023: multiclass visualization
+    def plot_alternative(
         self,
         index=None,
         class_idx=None,
@@ -2915,7 +3027,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         return merged_factuals
 
-    def plot_factual(  # pragma: no cover  # ADR-023: multiclass visualization
+    def plot_factual(
         self,
         index=None,
         class_idx=None,

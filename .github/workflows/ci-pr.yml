@@ -48,6 +48,11 @@ jobs:
         run: python scripts/quality/check_adr002_compliance.py
       - name: Agent instruction consistency
         run: python scripts/quality/check_agent_instruction_consistency.py
+      - name: Logger domain enforcement (ADR-028 / STD-005)
+        run: |
+          python scripts/quality/check_logging_domains.py \
+            --root src/calibrated_explanations \
+            --report reports/quality/logging_domain_report.json
       - name: Upload lint artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,6 +60,7 @@ jobs:
           name: lint-reports
           path: |
             docstring_coverage.txt
+            reports/quality/logging_domain_report.json
 
   mypy:
     runs-on: ubuntu-latest

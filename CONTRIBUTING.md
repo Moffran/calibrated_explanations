@@ -81,6 +81,12 @@ Style guardrails
 - Naming and documentation conventions are enforced in CI (Ruff naming + pydocstyle).
 - Review the quick-reference checklist in `.github/CONTRIBUTING.md` before
   submitting changes that touch public APIs or new modules.
+- Run naming guardrails locally with `pre-commit run ruff-naming --all-files`
+  (or `ruff check --select N`) before opening a PR.
+- Legacy API contract updates are required for user-facing API changes:
+  update `docs/improvement/legacy_user_api_contract.md`,
+  `tests/unit/api/test_legacy_user_api_contract.py`, and
+  `docs/improvement/release_checklist.md` in the same PR (ADR-020).
 
 Logging and Observability
 -------------------------

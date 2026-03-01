@@ -65,6 +65,20 @@ multi_factual = explainer.explain_factual(x_test, multi_labels_enabled=True)
 multi_alternative = explainer.explore_alternatives(x_test, multi_labels_enabled=True)
 ```
 
+### Multi-label mode support matrix (`multi_labels_enabled=True`)
+
+| Capability | Status | Notes |
+| :--- | :--- | :--- |
+| Per-class factual explanations | Supported | Returns one explanation per class for each instance |
+| Per-class alternative explanations | Supported | Same container shape as factual mode |
+| `predict_proba(..., uq_interval=True)` per-class intervals | Supported | Returns calibrated probability intervals per class |
+| Collection operations (`add_conjunctions`, `reset`, filtering) | Supported | Applied across class-specific explanations |
+| `reject_policy` orchestration | Supported | Reject handling applies in multiclass branch |
+| `features_to_ignore` forwarding | Supported | Forwarded in multiclass explain paths |
+| Narrative/dataframe export | Supported | Collection-level multiclass narrative/dataframe output |
+| JSON export/import | Supported | `to_json` + multiclass-aware `from_json` restore grouped structure |
+| Binary datasets with `multi_labels_enabled=True` | Limited | Allowed with compatibility warning; use default mode when all-classes output is unnecessary |
+
 > ℹ️ **Note:** The rule table shows contributions toward the predicted class. Negative weights reduce confidence in the prediction; positive weights increase it.
 
 ## Key parameters

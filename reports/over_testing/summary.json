@@ -258,7 +258,7 @@
   {
     "file": "src\\calibrated_explanations\\core\\explain\\_computation.py",
     "lines_covered": 295,
-    "mean_count": 44.207,
+    "mean_count": 44.21,
     "median_count": 63.0,
     "max_count": 106,
     "over_threshold": 206
@@ -314,7 +314,7 @@
   {
     "file": "src\\calibrated_explanations\\core\\explain\\feature_task.py",
     "lines_covered": 473,
-    "mean_count": 30.816,
+    "mean_count": 30.818,
     "median_count": 12.0,
     "max_count": 65,
     "over_threshold": 235
@@ -330,9 +330,9 @@
   {
     "file": "src\\calibrated_explanations\\core\\explain\\orchestrator.py",
     "lines_covered": 838,
-    "mean_count": 40.58,
+    "mean_count": 41.425,
     "median_count": 23.0,
-    "max_count": 226,
+    "max_count": 232,
     "over_threshold": 446
   },
   {
@@ -450,9 +450,9 @@
   {
     "file": "src\\calibrated_explanations\\core\\reject\\policy.py",
     "lines_covered": 27,
-    "mean_count": 17.407,
+    "mean_count": 17.852,
     "median_count": 1.0,
-    "max_count": 223,
+    "max_count": 229,
     "over_threshold": 2
   },
   {
@@ -473,10 +473,10 @@
   },
   {
     "file": "src\\calibrated_explanations\\core\\wrap_explainer.py",
-    "lines_covered": 815,
-    "mean_count": 10.656,
+    "lines_covered": 831,
+    "mean_count": 10.532,
     "median_count": 3.0,
-    "max_count": 89,
+    "max_count": 91,
     "over_threshold": 118
   },
   {
@@ -490,31 +490,31 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\_conjunctions.py",
     "lines_covered": 153,
-    "mean_count": 50.81,
+    "mean_count": 51.301,
     "median_count": 42.0,
-    "max_count": 128,
+    "max_count": 131,
     "over_threshold": 97
   },
   {
     "file": "src\\calibrated_explanations\\explanations\\adapters.py",
-    "lines_covered": 26,
-    "mean_count": 1.269,
-    "median_count": 1.0,
-    "max_count": 8,
+    "lines_covered": 37,
+    "mean_count": 3.216,
+    "median_count": 2.0,
+    "max_count": 9,
     "over_threshold": 0
   },
   {
     "file": "src\\calibrated_explanations\\explanations\\explanation.py",
-    "lines_covered": 2195,
-    "mean_count": 24.583,
-    "median_count": 11.0,
-    "max_count": 179,
-    "over_threshold": 978
+    "lines_covered": 2193,
+    "mean_count": 24.91,
+    "median_count": 12.0,
+    "max_count": 182,
+    "over_threshold": 980
   },
   {
     "file": "src\\calibrated_explanations\\explanations\\explanations.py",
-    "lines_covered": 1468,
-    "mean_count": 13.268,
+    "lines_covered": 1520,
+    "mean_count": 12.843,
     "median_count": 2.0,
     "max_count": 196,
     "over_threshold": 216
@@ -522,7 +522,7 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\guarded_explanation.py",
     "lines_covered": 356,
-    "mean_count": 16.292,
+    "mean_count": 16.289,
     "median_count": 14.0,
     "max_count": 48,
     "over_threshold": 123
@@ -538,17 +538,17 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\models.py",
     "lines_covered": 88,
-    "mean_count": 3.636,
-    "median_count": 5.0,
-    "max_count": 8,
+    "mean_count": 4.25,
+    "median_count": 6.0,
+    "max_count": 9,
     "over_threshold": 0
   },
   {
     "file": "src\\calibrated_explanations\\explanations\\reject.py",
-    "lines_covered": 105,
-    "mean_count": 1.533,
+    "lines_covered": 101,
+    "mean_count": 1.673,
     "median_count": 1.0,
-    "max_count": 8,
+    "max_count": 14,
     "over_threshold": 0
   },
   {
@@ -586,7 +586,7 @@
   {
     "file": "src\\calibrated_explanations\\legacy\\plotting.py",
     "lines_covered": 543,
-    "mean_count": 9.617,
+    "mean_count": 9.61,
     "median_count": 7.0,
     "max_count": 49,
     "over_threshold": 83
@@ -594,9 +594,9 @@
   {
     "file": "src\\calibrated_explanations\\logging.py",
     "lines_covered": 55,
-    "mean_count": 44.182,
+    "mean_count": 45.055,
     "median_count": 1.0,
-    "max_count": 241,
+    "max_count": 247,
     "over_threshold": 16
   },
   {
@@ -609,8 +609,8 @@
   },
   {
     "file": "src\\calibrated_explanations\\parallel\\parallel.py",
-    "lines_covered": 441,
-    "mean_count": 10.537,
+    "lines_covered": 442,
+    "mean_count": 10.516,
     "median_count": 1.0,
     "max_count": 221,
     "over_threshold": 53
@@ -666,9 +666,9 @@
   {
     "file": "src\\calibrated_explanations\\plugins\\builtins.py",
     "lines_covered": 1135,
-    "mean_count": 11.158,
+    "mean_count": 11.198,
     "median_count": 1.0,
-    "max_count": 201,
+    "max_count": 203,
     "over_threshold": 144
   },
   {
@@ -681,10 +681,10 @@
   },
   {
     "file": "src\\calibrated_explanations\\plugins\\explanations.py",
-    "lines_covered": 267,
-    "mean_count": 21.581,
+    "lines_covered": 260,
+    "mean_count": 22.727,
     "median_count": 1.0,
-    "max_count": 91,
+    "max_count": 94,
     "over_threshold": 73
   },
   {
@@ -818,9 +818,9 @@
   {
     "file": "src\\calibrated_explanations\\utils\\deprecations.py",
     "lines_covered": 48,
-    "mean_count": 3.75,
-    "median_count": 1.5,
-    "max_count": 14,
+    "mean_count": 5.083,
+    "median_count": 1.0,
+    "max_count": 17,
     "over_threshold": 0
   },
   {
@@ -842,25 +842,25 @@
   {
     "file": "src\\calibrated_explanations\\utils\\exceptions.py",
     "lines_covered": 35,
-    "mean_count": 15.314,
+    "mean_count": 15.714,
     "median_count": 1.0,
-    "max_count": 251,
+    "max_count": 258,
     "over_threshold": 2
   },
   {
     "file": "src\\calibrated_explanations\\utils\\helper.py",
     "lines_covered": 290,
-    "mean_count": 34.214,
+    "mean_count": 34.372,
     "median_count": 2.0,
-    "max_count": 295,
+    "max_count": 297,
     "over_threshold": 73
   },
   {
     "file": "src\\calibrated_explanations\\utils\\int_utils.py",
     "lines_covered": 52,
-    "mean_count": 25.442,
+    "mean_count": 26.712,
     "median_count": 3.0,
-    "max_count": 155,
+    "max_count": 164,
     "over_threshold": 8
   },
   {

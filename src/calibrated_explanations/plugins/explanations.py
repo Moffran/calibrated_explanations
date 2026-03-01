@@ -476,22 +476,12 @@ def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> 
 
         # Check low <= high
         if not np.all(low_arr <= high_arr):
-            import warnings
-
-            warnings.warn(
-                f"{context}: interval invariant violated (low > high)",
-                UserWarning,
-                stacklevel=2,
-            )
+            raise ValidationError(f"{context}: Interval invariant violated: low > high")
 
         # Check low <= predict <= high
         # Allow small floating point tolerance
         epsilon = 1e-9
         if not np.all((low_arr - epsilon <= predict_arr) & (predict_arr <= high_arr + epsilon)):
-            import warnings
-
-            warnings.warn(
-                f"{context}: prediction invariant violated (predict not in [low, high])",
-                UserWarning,
-                stacklevel=2,
+            raise ValidationError(
+                f"{context}: Prediction invariant violated: predict not in [low, high]"
             )

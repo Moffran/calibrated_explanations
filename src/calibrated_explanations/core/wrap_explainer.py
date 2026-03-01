@@ -1233,10 +1233,19 @@ class WrapCalibratedExplainer:
         getter = getattr(pre, "get_mapping_snapshot", None)
         if callable(getter):
             try:
-                return getter()
-            except:  # noqa: E722
-                if not isinstance(sys.exc_info()[1], Exception):
-                    raise
+                snapshot = getter()
+                if snapshot is not None:
+                    if not isinstance(snapshot, Mapping):
+                        raise ValidationError(
+                            "Preprocessor mapping snapshot must be a mapping.",
+                            details={"source": "get_mapping_snapshot"},
+                        )
+                    self._validate_json_safe_mapping(snapshot, source="get_mapping_snapshot")
+                    return dict(snapshot)
+                return None
+            except ValidationError:
+                raise
+            except (AttributeError, TypeError, ValueError):
                 self._logger.warning(
                     "Preprocessor.get_mapping_snapshot failed; falling back to mapping_"
                 )
@@ -1245,10 +1254,12 @@ class WrapCalibratedExplainer:
         if mapping_attr is not None:
             # Shallow copy to avoid exposing internal objects
             try:
-                return dict(mapping_attr)
-            except:  # noqa: E722
-                if not isinstance(sys.exc_info()[1], Exception):
-                    raise
+                snapshot = dict(mapping_attr)
+                self._validate_json_safe_mapping(snapshot, source="mapping_")
+                return snapshot
+            except ValidationError:
+                raise
+            except (AttributeError, TypeError, ValueError):
                 return None
         return None
 
@@ -1263,6 +1274,7 @@ class WrapCalibratedExplainer:
         A warning is emitted when the mapping could not be applied to ensure
         visibility per the fallback policy.
         """
+        self._validate_json_safe_mapping(mapping, source="import")
         pre = getattr(self, "_preprocessor", None)
         applied = False
         if pre is not None:
@@ -1293,6 +1305,30 @@ class WrapCalibratedExplainer:
                 UserWarning,
                 stacklevel=2,
             )
+
+    @staticmethod
+    def _validate_json_safe_mapping(mapping: Mapping[str, Any], *, source: str) -> None:
+        """Validate that mapping snapshots are JSON-serialisable primitives.
+
+        Parameters
+        ----------
+        mapping : Mapping[str, Any]
+            Mapping snapshot to validate.
+        source : str
+            Context string used in validation error details.
+
+        Raises
+        ------
+        ValidationError
+            If the mapping cannot be serialised with standard JSON encoding.
+        """
+        try:
+            json.dumps(mapping, sort_keys=True, separators=(",", ":"))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "Preprocessor mapping must be JSON-serialisable.",
+                details={"source": source, "error": str(exc)},
+            ) from exc
 
     def _state_path(self, path_or_fileobj: Any) -> Path:
         """Normalize and validate state path inputs."""

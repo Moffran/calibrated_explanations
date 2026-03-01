@@ -17,7 +17,7 @@ Some calibration and explanation workflows run per-fold, per-bootstrap, or per-f
 
 Adopt an explicit, opt-in parallelism surface with serial-by-default behaviour and no automatic strategy selection:
 
-- Provide a minimal `ParallelFacade` that accepts user-supplied executors and standardizes how core routines invoke them.
+- Provide `ParallelExecutor` as the user-supplied execution surface and standardize how core routines invoke it.
 - Do not auto-select strategies or infer parallelism based on workload size. Callers must explicitly pass an executor or enable parallelism through configuration.
 - Keep supported strategies limited to what callers provide (serial, threads, processes, joblib). The core library does not implement a strategy matrix.
 - Ensure parallel execution remains deterministic with respect to input ordering and output aggregation (parallelism may affect timing but not results).
@@ -70,7 +70,7 @@ Negative / Risks:
 
 ### Implementation status (2025-12-13)
 
-- v0.9.1 decision: implement the explicit opt-in "ParallelFacade" scoped deliverable (see Decision above). The facade standardizes executor usage without adding selection heuristics or telemetry requirements.
+- v0.9.1 decision: implement the explicit opt-in `ParallelExecutor` scoped deliverable (see Decision above). It standardizes executor usage without adding selection heuristics or telemetry requirements.
 - **Update (2025-12-13):** Feature-parallel execution strategy has been deprecated and shimmed to fall back to instance-parallel execution. Benchmarking revealed that feature-parallelism introduced significant overhead without providing performance benefits for typical workloads. The `FeatureParallelExplanationPlugin` and `FeatureParallelAlternativeExplanationPlugin` now alias to their instance-parallel counterparts to maintain API compatibility.
 
 ### Testing and rollout guidance (v0.9.1)
