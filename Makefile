@@ -59,6 +59,10 @@ check-agent-instructions:
 local-checks:
 	python scripts/local_checks.py
 
+.PHONY: local-checks-ci
+local-checks-ci:
+	python scripts/local_checks.py --ci-parity
+
 # PR-scope only: lint/type/core-tests + policy scanners.
 local-checks-pr:
 	python scripts/local_checks.py --skip-main

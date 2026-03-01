@@ -183,3 +183,47 @@ def test_validate_inputs_adr002_nan_in_y_with_details():
     assert exc_info.value.details is not None
     assert exc_info.value.details.get("param") == "y"
     assert exc_info.value.details.get("check") == "finitude"
+
+
+def test_validate_inputs_matrix_falls_back_when_frame_values_coercion_fails():
+    """Frame-like inputs should fall back to coercing the object itself when values fail."""
+
+    class ValuesThatFail:
+        def __array__(self, dtype=None):
+            raise ValueError("values coercion failed")
+
+    class FrameLikeWithFallback:
+        def __init__(self):
+            self.values = ValuesThatFail()
+            self.shape = (2, 2)
+            self.array_data = np.array([[1.0, 2.0], [3.0, 4.0]])
+
+        def __array__(self, dtype=None):
+            return self.array_data
+
+    x = FrameLikeWithFallback()
+    y = np.array([0, 1])
+
+    # Should succeed via _as_2d_array fallback path.
+    validation.validate_inputs_matrix(x, y, check_finite=True)
+    assert np.asarray(x).shape == (2, 2)
+    assert np.asarray(x).dtype.kind == "f"
+
+
+def test_validate_inputs_matrix_reraises_non_exception_from_frame_values():
+    """Non-Exception failures during values coercion should be re-raised."""
+
+    class HardFailure(BaseException):
+        pass
+
+    class ValuesThatHardFail:
+        def __array__(self, dtype=None):
+            raise HardFailure("hard failure")
+
+    class FrameLikeReraise:
+        def __init__(self):
+            self.values = ValuesThatHardFail()
+            self.shape = (2, 2)
+
+    with pytest.raises(HardFailure, match="hard failure"):
+        validation.validate_inputs_matrix(FrameLikeReraise())

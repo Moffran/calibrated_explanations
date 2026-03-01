@@ -506,7 +506,7 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\explanation.py",
     "lines_covered": 2193,
-    "mean_count": 24.91,
+    "mean_count": 24.911,
     "median_count": 12.0,
     "max_count": 182,
     "over_threshold": 980
@@ -522,7 +522,7 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\guarded_explanation.py",
     "lines_covered": 356,
-    "mean_count": 16.289,
+    "mean_count": 16.292,
     "median_count": 14.0,
     "max_count": 48,
     "over_threshold": 123

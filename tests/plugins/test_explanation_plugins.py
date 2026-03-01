@@ -118,3 +118,26 @@ def test_explainerhandle_metadata_is_immutable():
     assert isinstance(meta, (MappingProxyType, dict))
     with pytest.raises(TypeError):
         meta["k"] = "x"
+
+
+@pytest.mark.parametrize(
+    ("preprocessor_metadata", "expected"),
+    [
+        (None, None),
+        ({"feature_map": {"a": 1}}, {"feature_map": {"a": 1}}),
+        ("raw-metadata", {"value": "raw-metadata"}),
+    ],
+)
+def test_explainerhandle_get_preprocessor_state_variants(preprocessor_metadata, expected):
+    class Dummy:
+        pass
+
+    dummy = Dummy()
+    dummy.preprocessor_metadata = preprocessor_metadata
+    handle = ExplainerHandle(dummy, {"k": "v"})
+
+    state = handle.get_preprocessor_state()
+    if expected is None:
+        assert state is None
+    else:
+        assert dict(state) == expected

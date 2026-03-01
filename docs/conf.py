@@ -108,6 +108,12 @@ if shutil.which("pandoc") is None:
 # Skip specific GitHub targets that consistently hit rate limits during local linkcheck runs.
 linkcheck_ignore = [
     r"https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG\.md",
+    # Some internal skill docs and large assets are hosted in the repo under
+    # `.claude/skills/`. These links can hit rate limits on GitHub or be
+    # transiently unavailable from CI linkcheck runners; ignore them here so
+    # linkcheck focuses on public-facing documentation links.
+    r"https://github.com/Moffran/calibrated_explanations/blob/main/\.claude/.*",
+    r"https://raw.githubusercontent.com/Moffran/calibrated_explanations/main/\.claude/.*",
 ]
 
 # Pygments style for syntax highlighting
