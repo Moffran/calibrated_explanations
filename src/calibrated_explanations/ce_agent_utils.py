@@ -144,6 +144,7 @@ def _require_ce() -> type:
 
 
 def _is_wrapper(obj: Any, wrap_cls: type) -> bool:
+    """Return ``True`` when ``obj`` is an instance of the CE wrapper class."""
     return isinstance(obj, wrap_cls)
 
 
@@ -158,6 +159,7 @@ def serialize_policy() -> str:
 
 
 def _supports_kwarg(callable_obj: Callable[..., Any], kwarg: str) -> bool:
+    """Check whether a callable accepts a named keyword argument."""
     try:
         signature = inspect.signature(callable_obj)
     except (TypeError, ValueError):
@@ -171,6 +173,7 @@ def _supports_kwarg(callable_obj: Callable[..., Any], kwarg: str) -> bool:
 
 
 def _filter_kwargs(callable_obj: Callable[..., Any], kwargs: Mapping[str, Any]) -> Dict[str, Any]:
+    """Filter kwargs to those supported by ``callable_obj``."""
     if not kwargs:
         return {}
     if _supports_kwarg(callable_obj, "kwargs"):
@@ -184,6 +187,7 @@ def _filter_kwargs(callable_obj: Callable[..., Any], kwargs: Mapping[str, Any]) 
 
 
 def _ensure_required_methods(wrapper: Any, required: Iterable[str]) -> None:
+    """Raise when required wrapper methods are missing."""
     missing = [name for name in required if not hasattr(wrapper, name)]
     if missing:
         raise ModelNotSupportedError(
@@ -193,6 +197,7 @@ def _ensure_required_methods(wrapper: Any, required: Iterable[str]) -> None:
 
 
 def _ensure_required_attrs(wrapper: Any, required: Iterable[str]) -> None:
+    """Raise when required wrapper attributes are missing."""
     missing = [name for name in required if not hasattr(wrapper, name)]
     if missing:
         raise ModelNotSupportedError(
@@ -204,6 +209,7 @@ def _ensure_required_attrs(wrapper: Any, required: Iterable[str]) -> None:
 def _validate_wrapper_state(
     wrapper: Any, *, require_fitted: bool = True, require_calibrated: bool = True
 ) -> None:
+    """Validate fitted/calibrated state flags on the CE wrapper."""
     if require_fitted and not getattr(wrapper, "fitted", False):
         raise NotFittedError(
             CE_FIRST_POLICY["failure_messages"]["not_fitted"],
@@ -283,11 +289,13 @@ def fit_and_calibrate(
 
 
 def _safe_call_with_kwargs(callable_obj: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Invoke a callable after dropping unsupported keyword arguments."""
     filtered = _filter_kwargs(callable_obj, kwargs)
     return callable_obj(*args, **filtered)
 
 
 def _extract_top_features(explanation: Any, top_k: int = 3) -> List[str]:
+    """Extract top-ranked rule texts from an explanation payload."""
     if explanation is None:
         return []
     rules = None
@@ -314,6 +322,7 @@ def _extract_top_features(explanation: Any, top_k: int = 3) -> List[str]:
 
 
 def _format_probability(proba: Any) -> str:
+    """Format probability-like values for narrative output."""
     if proba is None:
         return "n/a"
     if isinstance(proba, (list, tuple, np.ndarray)):
@@ -328,12 +337,14 @@ def _format_probability(proba: Any) -> str:
 
 
 def _format_interval(interval: Any) -> str:
+    """Format interval-like values for narrative output."""
     if interval is None:
         return "n/a"
     return str(interval)
 
 
 def _extract_prediction_triplet(prediction: Any) -> Optional[Tuple[Any, Any, Any]]:
+    """Extract ``(predict, low, high)`` from prediction mappings when present."""
     if not isinstance(prediction, Mapping):
         return None
     if all(key in prediction for key in ("predict", "low", "high")):

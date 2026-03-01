@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import numpy as np
+import pytest
 
 from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
 
@@ -85,6 +86,7 @@ class SimplePlotExp:
 
 
 def test_plot_factual_calls_plot_wrapper(monkeypatch):
+    pytest.importorskip("matplotlib")
     # Build a small multiclass collection with two instances
     x = np.array([[0.0], [1.0]])
     explanations = [

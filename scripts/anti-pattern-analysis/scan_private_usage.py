@@ -68,7 +68,11 @@ def get_category_and_pattern(name, usage_file, analysis_data):
 
 def scan_workspace(root_path, analysis_data):
     root = Path(root_path)
-    skip_dirs = {".ci-env", "venv", ".venv", ".git", "site-packages", "__pycache__", "build", "dist", "scripts"}
+    # Skip common virtualenv/build/cache directories to avoid scanning third-party
+    # repositories (e.g. pre-commit cached hooks) which would produce noisy
+    # violations. This mirrors the behavior expected when scanning only the
+    # project's `tests/` directory on CI.
+    skip_dirs = {".ci-env", "venv", ".venv", ".git", "site-packages", "__pycache__", "build", "dist", "scripts", ".cache"}
 
     test_files = []
     for dirpath, dirnames, filenames in os.walk(root):

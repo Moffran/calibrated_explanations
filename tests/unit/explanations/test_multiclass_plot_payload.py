@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 import numpy as np
+import pytest
 
 from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
 
@@ -47,6 +48,7 @@ class SimpleExp:
 
 
 def test_plot_factual_payload_via_public_api(monkeypatch):
+    pytest.importorskip("matplotlib")
     # Build a small multiclass collection with a single instance containing two class explanations
     x = np.array([[1.0]])
     explanations = [

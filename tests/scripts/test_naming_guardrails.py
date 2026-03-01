@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 
+
+ruff_available = importlib.util.find_spec("ruff") is not None
+
+
+@pytest.mark.skipif(not ruff_available, reason="ruff is not installed in this environment")
 def test_should_fail_when_naming_violation_exists(tmp_path: Path):
     """Verify Ruff naming checks fail on non-compliant identifiers."""
     bad_file = tmp_path / "bad_naming.py"
@@ -23,9 +30,11 @@ def test_should_fail_when_naming_violation_exists(tmp_path: Path):
     )
 
     assert result.returncode != 0
-    assert "N802" in result.stdout
+    combined_output = f"{result.stdout}\n{result.stderr}"
+    assert "N802" in combined_output
 
 
+@pytest.mark.skipif(not ruff_available, reason="ruff is not installed in this environment")
 def test_should_pass_when_names_are_compliant(tmp_path: Path):
     """Verify Ruff naming checks pass for compliant identifiers."""
     good_file = tmp_path / "good_naming.py"
