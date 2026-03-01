@@ -75,10 +75,6 @@ def test_cache_fallback_logic(monkeypatch):
         sys.modules.clear()
         sys.modules.update(old_modules)
 
-    # Re-import to restore normal state
-    if "calibrated_explanations.cache.cache" in sys.modules:
-        del sys.modules["calibrated_explanations.cache.cache"]
-
 
 def test_make_key_should_include_namespace_version_and_parts():
     """make_key should compose a deterministic namespaced cache key."""
