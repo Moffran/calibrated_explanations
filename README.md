@@ -4,7 +4,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/calibrated-explanations)](https://pypi.org/project/calibrated-explanations/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
 [![Docs](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io)
-[![CI](https://github.com/Moffran/calibrated_explanations/actions/workflows/ci.yml/badge.svg)](https://github.com/Moffran/calibrated_explanations/actions)
+[![CI](https://github.com/Moffran/calibrated_explanations/actions/workflows/ci-main.yml/badge.svg)](https://github.com/Moffran/calibrated_explanations/actions/workflows/ci-main.yml)
 
 **Trustworthy AI explanations with uncertainty intervals and counterfactuals, for any scikit-learn model.**
 
