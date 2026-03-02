@@ -96,7 +96,7 @@ exp[0].plot()
 | Binary classification | Binary yes/no decision with calibrated probabilities | `explain_factual`, `explore_alternatives` |
 | Multiclass | Multiclass classification (3+ classes), per-class explanations | `explain_factual`, `explore_alternatives` |
 | Regression with intervals | Predict a value with a conformal uncertainty interval defined by given percentiles | `explain_factual(low_high_percentiles=(5, 95))`, `explore_alternatives(low_high_percentiles=(10, 90))` |
-| Probabilistic regression | Explain a probability query on a regression target (e.g., $P(y \le t)$ or $P(t_l < y \le t_h)$) | `explain_factual(threshold=t)`, `explore_alternatives(threshold=(t_l,t_h))` |
+| Probabilistic regression | Explain a probability query on a regression target (e.g., $P(y \le t)$ or $P(t_l < y \le t_h)$ ) | `explain_factual(threshold=t)`, `explore_alternatives(threshold=(t_l, t_h))` |
 
 All four modes use the same API — the wrapper infers classification vs regression from the underlying estimator (or you pass `mode` to `calibrate`), and you add `threshold` only for probabilistic regression.
 
