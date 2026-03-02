@@ -1,11 +1,19 @@
 import importlib
 import warnings
 
+import pytest
+
 from calibrated_explanations.cache import cache as canonical
+from tests.helpers.deprecation import deprecations_error_enabled
 
 
 def testperf_cache_shim_warns_and_forwards(monkeypatch):
     monkeypatch.syspath_prepend(".")
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning, match="calibrated_explanations.perf.cache"):
+            importlib.reload(importlib.import_module("calibrated_explanations.perf.cache"))
+        return
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         perf_cache = importlib.reload(importlib.import_module("calibrated_explanations.perf.cache"))

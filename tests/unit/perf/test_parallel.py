@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
+from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class DummyCache:
@@ -56,7 +57,12 @@ def test_parallel_config_from_env_extended_tokens(monkeypatch):
         "min_instances=3,instance_chunk=5,feature_chunk=7,task_bytes=1024,"
         "force_serial=true,granularity=feature",
     )
-    with pytest.warns(DeprecationWarning):
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning, match="Feature parallelism is deprecated and removed"):
+            ParallelConfig.from_env(base)
+        return
+
+    with warns_or_raises("Feature parallelism is deprecated and removed"):
         cfg = ParallelConfig.from_env(base)
     assert cfg.min_instances_for_parallel == 3
     assert cfg.instance_chunk_size == 5
