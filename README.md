@@ -106,7 +106,7 @@ All four modes use the same API — the wrapper infers classification vs regress
 
 | Feature | LIME | SHAP | calibrated-explanations |
 |---|---|---|---|
-| Calibrated probabilities | No | No | **Yes** |
+| Calibrated probabilities and predictions | No | No | **Yes** |
 | Uncertainty intervals per explanation | No | No | **Yes** |
 | Built-in counterfactual / alternative rules | No | No | **Yes** |
 | Deterministic (stable) output | No | High (TreeExplainer) | **Yes** |
