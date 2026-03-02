@@ -116,7 +116,32 @@ def main() -> int:
         action="store_true",
         help="Run PR checks only (skip main-branch checks such as coverage/perf/over-testing).",
     )
+    parser.add_argument(
+        "--ci-parity",
+        action="store_true",
+        help="Run docs/linkcheck in strict CI parity mode (make linkcheck fatal).",
+    )
     args = parser.parse_args()
+
+    # CI-parity mode: dynamically read CI workflows and run them locally.
+    if args.ci_parity:
+        print("CI parity mode: delegating to scripts/run_ci_locally.py (dynamic workflow runner)")
+        # Prefer bash to emulate GitHub Actions Linux runners; fall back to pwsh on Windows.
+        shell_arg = "bash"
+        if os.name == "nt":
+            shell_arg = "bash"
+        # Pre-clean any stale coverage database files which can cause sqlite schema
+        # errors when pytest-cov writes coverage data from parallel runs.
+        try:
+            for cov in Path('.').glob('.coverage*'):
+                try:
+                    cov.unlink()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        rc = subprocess.call([sys.executable, "scripts/run_ci_locally.py", "--shell", shell_arg])
+        return rc
 
     if shutil.which("mypy") is None:
         print("ERROR: mypy not found in current environment.")
@@ -140,6 +165,10 @@ def main() -> int:
         ),
         Step("ADR-001 boundary check", _python_cmd("scripts/quality/check_import_graph.py")),
         Step("ADR-002 compliance check", _python_cmd("scripts/quality/check_adr002_compliance.py")),
+        Step(
+            "Agent instruction consistency",
+            _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
+        ),
         Step("Core tests (no viz/no cov)", ["pytest", "-q", "-m", "not viz", "--no-cov"]),
         Step("Private-member scan", _python_cmd("scripts/anti-pattern-analysis/scan_private_usage.py", "tests", "--check")),
         Step(
@@ -155,6 +184,16 @@ def main() -> int:
                 "reports/anti-pattern-analysis/test_quality_report.json",
                 "--baseline",
                 ".github/test-quality-baseline.json",
+            ),
+        ),
+        Step(
+            "ADR-030 test-helper export guard",
+            _python_cmd(
+                "scripts/quality/check_no_test_helper_exports.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
             ),
         ),
         Step(
@@ -218,12 +257,20 @@ def main() -> int:
             Step(
                 "Docs build (HTML)",
                 ["sphinx-build", "-b", "html", "docs", "docs/_build/html"],
-                optional=True,
+                optional=not args.ci_parity,
             ),
             Step(
                 "Docs linkcheck",
-                ["sphinx-build", "-b", "linkcheck", "docs", "docs/_build/linkcheck"],
-                optional=True,
+                [
+                    "sphinx-build",
+                    "-b",
+                    "linkcheck",
+                    "-D",
+                    "nbsphinx_execute=never",
+                    "docs",
+                    "docs/_build/linkcheck",
+                ],
+                optional=not args.ci_parity,
             ),
         ]
     if Path("tests/examples").exists():
@@ -301,6 +348,16 @@ def main() -> int:
                 "reports/anti-pattern-analysis/test_quality_report.json",
                 "--baseline",
                 ".github/test-quality-baseline.json",
+            ),
+        ),
+        Step(
+            "ADR-030 test-helper export guard (main)",
+            _python_cmd(
+                "scripts/quality/check_no_test_helper_exports.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
             ),
         ),
         Step(

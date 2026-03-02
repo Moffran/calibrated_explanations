@@ -25,7 +25,7 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 
 ## Common deprecated items and migration examples
 
-- `CalibratedExplanations.get_explanation(index)` → Use indexing: `explanations[index]`.
+- `CalibratedExplanations.get_explanation(index)` was removed → Use indexing: `explanations[index]`.
 
   Example:
 
@@ -37,7 +37,7 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
   e = explanations[0]
   ```
 
-- `CalibratedExplainer.explain_counterfactual(...)` → `explore_alternatives(...)`.
+- `WrapCalibratedExplainer.explain_counterfactual(...)` was removed → `explore_alternatives(...)`.
 
   ```py
   # old
@@ -47,11 +47,46 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
   alt = explainer.explore_alternatives(x)
   ```
 
-- `calibrated_explanations.core` legacy import → use the package façade (e.g. `from calibrated_explanations.core import CalibratedExplainer`). The legacy module import emits a single deprecation warning on first import.
+- `calibrated_explanations.core` no longer emits the legacy module deprecation warning.
 
-- Parameter aliases: `alpha` / `alphas` → `low_high_percentiles` (canonical key). Use `canonicalize_kwargs` or supply the canonical keyword. The alias helper will emit a deprecation warning when present.
+- Parameter aliases `alpha` / `alphas` were removed in v0.11.0 → use `low_high_percentiles`.
 
-- `register_plot_plugin(...)` → use `register_plot_builder(...)` and `register_plot_renderer(...)` separately.
+- `register_plot_plugin(...)` was removed → use `register_plot_builder(...)` and `register_plot_renderer(...)` separately.
+
+- Parameter alias `n_jobs` was removed in v0.11.0 → use `parallel_workers`:
+
+  ```py
+  # old
+  explainer.explain_factual(x, n_jobs=4)
+
+  # new
+  explainer.explain_factual(x, parallel_workers=4)
+  ```
+
+- `calibrated_explanations.core.calibration` import → top-level:
+
+  ```py
+  # old
+  from calibrated_explanations.core.calibration import IntervalRegressor, VennAbers
+
+  # new
+  from calibrated_explanations.calibration import IntervalRegressor, VennAbers
+  ```
+
+- `RejectPolicy` renamed aliases:
+
+  ```py
+  # old
+  from calibrated_explanations import RejectPolicy
+  policy = RejectPolicy.PREDICT_AND_FLAG   # or EXPLAIN_ALL
+  policy = RejectPolicy.EXPLAIN_REJECTS
+  policy = RejectPolicy.EXPLAIN_NON_REJECTS  # or SKIP_ON_REJECT
+
+  # new
+  policy = RejectPolicy.FLAG
+  policy = RejectPolicy.ONLY_REJECTED
+  policy = RejectPolicy.ONLY_ACCEPTED
+  ```
 
 ## Migration timeline and policy
 
@@ -60,13 +95,38 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 
 ## Status table
 
-| Deprecated symbol | Replacement | Introduced | Removal ETA | Notes |
+### Active deprecations
+
+Symbols listed here still emit warnings. Stop using them — they will be removed on the date shown.
+
+| Deprecated symbol | Replacement | Deprecated since | Removal ETA | Notes |
 |---|---|---:|---:|---|
-| `get_explanation` (CalibratedExplanations) | indexing (`[i]`) | v0.9.0 | v0.11.0 | Helper converted to use `deprecate()`; update callsites.
-| `explain_counterfactual` | `explore_alternatives` | v0.9.0 | v0.11.0 | Backward-compatible delegator emits deprecation; replace directly.
-| `calibrated_explanations.core` legacy module import | package façade | v0.9.0 | v0.11.0 | Single-session DeprecationWarning emitted on import.
-| `register_plot_plugin` | `register_plot_builder` + `register_plot_renderer` | v0.9.0 | v0.11.0 | Converted to call `deprecate()`; update plugin registration code.
-| Parameter aliases (`alpha`, `alphas`) | `low_high_percentiles` | v0.9.0 | v0.11.0 | Use `canonicalize_kwargs` or pass canonical key; library will warn on aliases.
+| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v1.0.0 | ADR-001 Stage 1a. Shims in `core/calibration/__init__.py` and submodule files (`interval_learner`, `interval_regressor`, `state`, `summaries`, `venn_abers`). |
+| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v1.0.0 | Shim in `perf/cache.py`. |
+| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v1.0.0 | Shim in `perf/parallel.py`. |
+| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v1.0.0 | Lazy `__getattr__` shim in `core/calibration_helpers.py`. |
+| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v1.0.0 | Aliases in `explanations/reject.py` (`_missing_`) and `core/reject/policy.py` (`__getattr__`). |
+| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v1.0.0 | Same files. |
+| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v1.0.0 | Same files. |
+| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v1.0.0 | `plugins/registry.py` validates and warns on old mode aliases. |
+| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v1.0.0 | Same. |
+| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v1.0.0 | Same. |
+| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v1.0.0 | `parallel/parallel.py` silently upgrades the value and warns. |
+
+### Removed deprecations (history)
+
+Symbols listed here have been deleted. Any remaining usage will raise `AttributeError` or `ImportError`.
+
+| Deprecated symbol | Replacement | Deprecated since | Removed in | Notes |
+|---|---|---:|---:|---|
+| `get_explanation(index)` (CalibratedExplanations) | `explanations[index]` | v0.9.0 | v0.11.0 | Removed from the base collection API. |
+| `explain_counterfactual(...)` (WrapCalibratedExplainer) | `explore_alternatives(...)` | v0.9.0 | v0.11.0 | Removed alias from wrapper API. |
+| `calibrated_explanations.core` legacy module warning path | package façade | v0.9.0 | v0.11.0 | Legacy deprecation warning removed. |
+| `register_plot_plugin(...)` | `register_plot_builder(...)` + `register_plot_renderer(...)` | v0.9.0 | v0.11.0 | Compatibility shim removed. |
+| Parameter aliases `alpha`, `alphas` | `low_high_percentiles` | v0.9.0 | v0.11.0 | Removed alias mapping/warning path; calls now fail fast with `ConfigurationError`. |
+| Parameter alias `n_jobs` | `parallel_workers` | v0.9.0 | v0.11.0 | Removed alias mapping/warning path; calls now fail fast with `ConfigurationError`. |
+| Top-level package exports (`AlternativeExplanation`, `FactualExplanation`, `FastExplanation`, `AlternativeExplanations`, `CalibratedExplanations`, `BinaryEntropyDiscretizer`, `BinaryRegressorDiscretizer`, `EntropyDiscretizer`, `RegressorDiscretizer`, `IntervalRegressor`, `VennAbers`) | Import from respective submodules | v0.9.0 | v0.11.0 | Verified by `tests/unit/test_package_init_deprecation.py`. |
+| `calibrated_explanations.perf` root facade | `calibrated_explanations.cache` + `calibrated_explanations.parallel` | v0.10.x | v0.11.0 | `perf/__init__.py` is now empty. |
 
 ## Breaking changes
 

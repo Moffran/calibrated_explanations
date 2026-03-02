@@ -14,16 +14,17 @@ Compatibility notes
 
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
 from ..cache import cache as _cache
+from ..utils.deprecations import deprecate
 
-warnings.warn(
+# Use the centralized deprecation helper for consistent messaging and testability
+deprecate(
     "The 'calibrated_explanations.perf.cache' module is deprecated. "
     "Use 'calibrated_explanations.cache' instead. "
     "This shim will be removed after v1.1.0.",
-    DeprecationWarning,
+    key="module:perf.cache",
     stacklevel=2,
 )
 

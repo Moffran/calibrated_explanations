@@ -172,6 +172,98 @@ class TestAlternativeExplanation:
         filtered = explanation.rules
         assert filtered["predict"] == [0.4]
 
+    def test_potential_membership_enforced_probabilistic(self, explanation):
+        """Potentials must also satisfy point-prediction membership when included."""
+        # Base prediction > 0.5 (positive class)
+        explanation.prediction = {"predict": 0.7, "low": 0.6, "high": 0.8, "classes": [0, 1]}
+
+        # r1: point=0.48, interval overlaps 0.5 -> potential AND counter by point
+        # r2: point=0.52, interval overlaps 0.5 -> potential but NOT counter by point
+        # r3: point=0.49, interval does NOT overlap 0.5 -> non-potential counter by point
+        rules = {
+            "predict": [0.48, 0.52, 0.49],
+            "predict_low": [0.45, 0.49, 0.40],
+            "predict_high": [0.51, 0.55, 0.49],
+            "weight": [0, 0, 0],
+            "weight_low": [0, 0, 0],
+            "weight_high": [0, 0, 0],
+            "value": [1, 2, 3],
+            "rule": ["r1", "r2", "r3"],
+            "feature": [0, 1, 0],
+            "sampled_values": [[], [], []],
+            "feature_value": [None, None, None],
+            "is_conjunctive": [False, False, False],
+            "classes": [0, 1],
+            "base_predict_low": 0.6,
+            "base_predict_high": 0.8,
+        }
+        self.setup_test_rules(explanation, rules)
+
+        # include_potential=True: should include r1 (potential & counter by point)
+        # and r3 (non-potential counter by point). r2 must be excluded.
+        result = explanation.counter_explanations(include_potential=True)
+        assert sorted(result.rules["predict"]) == sorted([0.48, 0.49])
+
+        # include_potential=False: potentials excluded, only non-potential counter remains
+        result_no_pot = explanation.counter_explanations(include_potential=False)
+        assert result_no_pot.rules["predict"] == [0.49]
+
+    def test_potential_membership_enforced_semi_super(self, explanation):
+        """Semi and super must also enforce point-membership for potentials."""
+        # Base prediction > 0.5 (positive class)
+        explanation.prediction = {"predict": 0.7, "low": 0.6, "high": 0.8, "classes": [0, 1]}
+
+        # semi candidate that is potential and point-semi
+        semi_rules = {
+            "predict": [0.55, 0.55, 0.85],
+            "predict_low": [0.49, 0.53, 0.83],
+            "predict_high": [0.57, 0.57, 0.87],
+            "weight": [0, 0, 0],
+            "weight_low": [0, 0, 0],
+            "weight_high": [0, 0, 0],
+            "value": [1, 2, 3],
+            "rule": ["s1", "s2", "s3"],
+            "feature": [0, 1, 0],
+            "sampled_values": [[], [], []],
+            "feature_value": [None, None, None],
+            "is_conjunctive": [False, False, False],
+            "classes": [0, 1],
+            "base_predict_low": 0.6,
+            "base_predict_high": 0.8,
+        }
+        self.setup_test_rules(explanation, semi_rules)
+
+        # semi(include_potential=True) should include s1 and s2 (both semi by point),
+        # even though s1 is potential and s2 is non-potential. s3 is a super and excluded.
+        res_semi = explanation.semi_explanations(include_potential=True)
+        assert sorted(res_semi.rules["predict"]) == sorted([0.55, 0.55])
+
+        # super examples: include_potential should require point-super as well
+        explanation.prediction = {"predict": 0.3, "low": 0.2, "high": 0.4, "classes": [0, 1]}
+        super_rules = {
+            "predict": [0.1, 0.2, 0.48],
+            "predict_low": [0.05, 0.15, 0.45],
+            "predict_high": [0.15, 0.25, 0.51],
+            "weight": [0, 0, 0],
+            "weight_low": [0, 0, 0],
+            "weight_high": [0, 0, 0],
+            "value": [1, 2, 3],
+            "rule": ["u1", "u2", "u3"],
+            "feature": [0, 1, 0],
+            "sampled_values": [[], [], []],
+            "feature_value": [None, None, None],
+            "is_conjunctive": [False, False, False],
+            "classes": [0, 1],
+            "base_predict_low": 0.2,
+            "base_predict_high": 0.4,
+        }
+        self.setup_test_rules(explanation, super_rules)
+
+        # u3 is potential (interval crosses 0.5) but not point-super for base=0.3;
+        # only u1 and u2 (point-super) should remain when include_potential=True
+        res_super = explanation.super_explanations(include_potential=True)
+        assert sorted(res_super.rules["predict"]) == sorted([0.1, 0.2])
+
     def test_ensured_explanations(self, explanation):
         explanation.prediction = {"predict": 0.5, "low": 0.4, "high": 0.6, "classes": [0, 1]}
 
@@ -380,18 +472,25 @@ class TestAlternativeExplanationRegression:
             "high": 160.0,
             "classes": None,
         }
-        # r1=130 (lower), r2=100 (lower), r3=170 (higher)
+        # New 'semi' semantics for plain regression: keep alternatives where
+        # intervals mutually include the other's mean. Construct two rules
+        # that satisfy mutual inclusion and one that does not.
+        # r1=145: interval [140,150] includes base_mean=150 and base interval
+        # includes r1.mean
+        # r2=155: interval [150,160] includes base_mean=150 and base interval
+        # includes r2.mean
+        # r3=170: does not include base_mean
         rules = self.make_regression_rules(
-            [130.0, 100.0, 170.0],
-            [120.0, 90.0, 160.0],
-            [140.0, 110.0, 180.0],
+            [145.0, 155.0, 170.0],
+            [140.0, 150.0, 160.0],
+            [150.0, 160.0, 180.0],
         )
         rules["base_predict_low"] = 140.0
         rules["base_predict_high"] = 160.0
         self.setup_test_rules(regression_explanation, rules)
 
         result = regression_explanation.semi_explanations()
-        assert result.rules["predict"] == [130.0, 100.0]
+        assert result.rules["predict"] == [145.0, 155.0]
 
     def test_counter_keeps_lower_predictions(self, regression_explanation):
         """Counter has identical semantics to semi for plain regression."""
@@ -438,6 +537,35 @@ class TestAlternativeExplanationRegression:
         result = regression_explanation.super_explanations(include_potential=False)
         # r3 (170) is super (higher), r2 is potential and excluded
         assert result.rules["predict"] == [170.0]
+
+    def test_potential_membership_enforced_regression(self, regression_explanation):
+        """For plain regression potentials, include_potential requires point-membership."""
+        regression_explanation.prediction = {
+            "predict": 150.0,
+            "low": 140.0,
+            "high": 160.0,
+            "classes": None,
+        }
+
+        # r1: point=140, interval [140,160] intersects base -> potential AND counter by point
+        # r2: point=160, interval [140,160] intersects base -> potential but NOT counter by point
+        # r3: point=140, interval [135,145] does NOT intersect base -> non-potential counter by point
+        rules = self.make_regression_rules(
+            [140.0, 160.0, 140.0],
+            [140.0, 140.0, 135.0],
+            [160.0, 160.0, 145.0],
+        )
+        rules["base_predict_low"] = 140.0
+        rules["base_predict_high"] = 160.0
+        self.setup_test_rules(regression_explanation, rules)
+
+        res_with = regression_explanation.counter_explanations(include_potential=True)
+        # should include r1 (potential+counter) and r3 (non-potential counter)
+        assert sorted(res_with.rules["predict"]) == sorted([140.0, 140.0])
+
+        res_without = regression_explanation.counter_explanations(include_potential=False)
+        # only non-potential counter remains
+        assert res_without.rules["predict"] == [140.0]
 
     def test_ensured_filters_by_uncertainty_width(self, regression_explanation):
         regression_explanation.prediction = {

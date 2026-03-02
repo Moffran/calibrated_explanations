@@ -26,13 +26,14 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Iterable, List, Mapping, Tuple
+from typing import Any, Dict, Iterable, List, Literal, Mapping, Tuple
 
 from .. import __version__ as package_version
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ValidationError
 from .base import ExplainerPlugin, validate_plugin_meta
+from .trust_policy import DefaultPluginTrustPolicy, PluginTrustPolicy
 
 _REGISTRY: List[ExplainerPlugin] = []
 
@@ -48,6 +49,7 @@ _LAST_DISCOVERY_REPORT: "PluginDiscoveryReport | None" = None
 
 _LOGGER = logging.getLogger("calibrated_explanations.governance.registry")
 ensure_logging_context_filter()
+_TRUST_POLICY: PluginTrustPolicy = DefaultPluginTrustPolicy()
 
 
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -117,21 +119,29 @@ def _env_denylist() -> set[str]:
 def is_identifier_denied(identifier: str) -> bool:
     """Return ``True`` when *identifier* appears in the denylist environment toggle."""
     denied = _env_denylist()
-    return identifier in denied
+    return _TRUST_POLICY.is_denied(identifier, denylist=denied)
 
 
 def _should_trust(meta: Mapping[str, Any], *, identifier: str, source: str) -> bool:
     """Return whether *identifier* should be trusted by default."""
-    # Builtin plugins are trusted by definition.
-    if source == "builtin":
-        return True
-
-    # All non-builtin plugins (including entry-point and external/manual
-    # registrations) must be explicitly allowed by the operator. The
-    # operator-provided allowlist is sourced from CE_TRUST_PLUGIN and
-    # the pyproject.toml trusted list.
     trusted_ids = _trusted_identifiers()
-    return identifier in trusted_ids
+    return _TRUST_POLICY.is_trusted(
+        meta=meta,
+        identifier=identifier,
+        source=source,
+        trusted_identifiers=trusted_ids,
+    )
+
+
+def set_trust_policy(policy: PluginTrustPolicy | None) -> None:
+    """Set the plugin trust policy used by registry trust/deny checks."""
+    global _TRUST_POLICY
+    _TRUST_POLICY = policy or DefaultPluginTrustPolicy()
+
+
+def get_trust_policy() -> PluginTrustPolicy:
+    """Return the active plugin trust policy."""
+    return _TRUST_POLICY
 
 
 def _update_trust_keys(meta: Dict[str, Any], trusted: bool) -> None:
@@ -203,58 +213,85 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     _WARNED_UNTRUSTED.add(name)
 
 
-# Public testing helpers (temporary; used during Category A remediation).
-def normalise_trust(meta: Mapping[str, Any]) -> bool:
-    """Public wrapper around internal trust normalisation used by tests."""
-    return _normalise_trust(meta)
+def _log_plugin_registration_event(
+    *,
+    identifier: str,
+    provider: Any,
+    source: str,
+    trusted: bool,
+) -> None:
+    """Emit a structured governance event for accepted plugin registrations."""
+    governance_logger = logging.getLogger("calibrated_explanations.governance.plugins")
+    ensure_logging_context_filter("calibrated_explanations.governance.plugins")
+    with logging_context(plugin_identifier=identifier):
+        governance_logger.info(
+            "Plugin trust decision: accepted plugin registration",
+            extra={
+                "provider": provider,
+                "source": source,
+                "decision": "accepted_registration",
+                "trusted": bool(trusted),
+            },
+        )
 
 
-def env_trusted_names() -> set[str]:
-    """Return identifiers trusted via CE_TRUST_PLUGIN (public wrapper)."""
-    return _env_trusted_names()
-
-
-def should_trust(meta: Mapping[str, Any], *, identifier: str, source: str) -> bool:
-    """Public wrapper around internal trust decision helper."""
-    return _should_trust(meta, identifier=identifier, source=source)
-
-
-def propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
-    """Public wrapper for best-effort propagation of trust metadata."""
-    return _propagate_trust_metadata(plugin, meta)
-
-
-def update_trust_keys(meta: dict, trusted: bool) -> None:
-    """Public wrapper for synchronising trust keys in metadata (testing helper)."""
-    return _update_trust_keys(meta, trusted)
-
-
-def resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
-    """Public wrapper for module file resolution (used in tests)."""
-    return _resolve_plugin_module_file(plugin)
-
-
-def verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) -> None:
-    """Public wrapper for checksum verification used by tests."""
-    return _verify_plugin_checksum(plugin, meta)
-
-
-def clear_env_trust_cache() -> None:
-    """Clear the environment-derived trust cache (testing helper)."""
+def _clear_env_trust_cache_for_testing() -> None:
+    """Clear the environment-derived trust cache (test-only helper)."""
     global _ENV_TRUST_CACHE, _PYPROJECT_TRUST_CACHE
     _ENV_TRUST_CACHE = None
     _PYPROJECT_TRUST_CACHE = None
 
 
-def set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None:
+def _set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None:
     """Set the pyproject trust cache for tests."""
     global _PYPROJECT_TRUST_CACHE
     _PYPROJECT_TRUST_CACHE = None if trusted is None else set(trusted)
 
 
-def clear_trust_warnings() -> None:
-    """Clear the warned-untrusted set (testing helper)."""
+def _clear_trust_warnings_for_testing() -> None:
+    """Clear the warned-untrusted set (test-only helper)."""
     _WARNED_UNTRUSTED.clear()
+
+
+# Compatibility wrappers retained for internal tests.
+def normalise_trust(meta: Mapping[str, Any]) -> bool:
+    return _normalise_trust(meta)
+
+
+def env_trusted_names() -> set[str]:
+    return _env_trusted_names()
+
+
+def should_trust(meta: Mapping[str, Any], *, identifier: str, source: str) -> bool:
+    return _should_trust(meta, identifier=identifier, source=source)
+
+
+def propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
+    _propagate_trust_metadata(plugin, meta)
+
+
+def update_trust_keys(meta: dict, trusted: bool) -> None:
+    _update_trust_keys(meta, trusted)
+
+
+def resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
+    return _resolve_plugin_module_file(plugin)
+
+
+def verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) -> None:
+    _verify_plugin_checksum(plugin, meta)
+
+
+def clear_env_trust_cache() -> None:
+    _clear_env_trust_cache_for_testing()
+
+
+def set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None:
+    _set_pyproject_trust_cache_for_testing(trusted)
+
+
+def clear_trust_warnings() -> None:
+    _clear_trust_warnings_for_testing()
 
 
 # Plot/registry accessors for tests (temporary)
@@ -1002,25 +1039,59 @@ _TRUSTED_PLOT_RENDERERS: set[str] = set()
 _PLOT_STYLES: Dict[str, PlotStyleDescriptor] = {}
 
 
-def clear_explanation_plugins() -> None:
-    """Clear explanation plugin descriptors (testing helper)."""
+def _reset_explanation_plugin_catalog() -> None:
+    """Clear explanation plugin descriptors and trust state."""
     _EXPLANATION_PLUGINS.clear()
     _TRUSTED_EXPLANATIONS.clear()
 
 
-def clear_interval_plugins() -> None:
-    """Clear interval plugin descriptors (testing helper)."""
+def _reset_interval_plugin_catalog() -> None:
+    """Clear interval plugin descriptors and trust state."""
     _INTERVAL_PLUGINS.clear()
     _TRUSTED_INTERVALS.clear()
 
 
-def clear_plot_plugins() -> None:
-    """Clear plot plugin descriptors (testing helper)."""
+def _reset_plot_plugin_catalog() -> None:
+    """Clear plot builder/renderer/style descriptors and trust state."""
     _PLOT_BUILDERS.clear()
     _TRUSTED_PLOT_BUILDERS.clear()
     _PLOT_RENDERERS.clear()
     _TRUSTED_PLOT_RENDERERS.clear()
     _PLOT_STYLES.clear()
+
+
+def reset_plugin_catalog(
+    *, kind: Literal["all", "explanation", "interval", "plot"] = "all"
+) -> None:
+    """Reset registered plugin descriptor catalogs.
+
+    Parameters
+    ----------
+    kind:
+        Catalog to reset. Use ``"all"`` to clear all descriptor catalogs and
+        runtime plugin registration state.
+    """
+    if kind == "all":
+        _reset_explanation_plugin_catalog()
+        _reset_interval_plugin_catalog()
+        _reset_plot_plugin_catalog()
+        clear()
+        global _LAST_DISCOVERY_REPORT
+        _LAST_DISCOVERY_REPORT = None
+        return
+    if kind == "explanation":
+        _reset_explanation_plugin_catalog()
+        return
+    if kind == "interval":
+        _reset_interval_plugin_catalog()
+        return
+    if kind == "plot":
+        _reset_plot_plugin_catalog()
+        return
+    raise ValidationError(
+        "Unsupported plugin catalog kind",
+        details={"param": "kind", "allowed": ("all", "explanation", "interval", "plot")},
+    )
 
 
 def ensure_builtin_plugins() -> None:
@@ -1136,6 +1207,72 @@ def find_explanation_plugin_trusted(identifier: str) -> ExplainerPlugin | None:
     if descriptor and descriptor.trusted:
         return descriptor.plugin
     return None
+
+
+def find_explanation_plugin_for(
+    modality: str,
+    *,
+    mode: str,
+    task: str,
+    model: Any,
+    trusted_only: bool = True,
+    identifier: str | None = None,
+) -> tuple[str, ExplainerPlugin]:
+    """Resolve an explanation plugin for a modality/mode/task combination.
+
+    Resolution order is trust -> kind -> modality -> mode/task -> supports(model)
+    -> priority. Ambiguous top-priority matches raise ``ValidationError``.
+    """
+    if identifier:
+        plugin = (
+            find_explanation_plugin_trusted(identifier)
+            if trusted_only
+            else find_explanation_plugin(identifier)
+        )
+        if plugin is None:
+            raise ValidationError(f"Requested plugin identifier '{identifier}' is unavailable")
+        return identifier, plugin
+
+    candidates: list[ExplanationPluginDescriptor] = []
+    for desc in list_explanation_descriptors(trusted_only=trusted_only):
+        modalities = desc.metadata.get("data_modalities", ("tabular",))
+        if modality not in modalities:
+            continue
+        modes = desc.metadata.get("modes", ())
+        if mode not in modes:
+            continue
+        tasks = desc.metadata.get("tasks", ())
+        if task not in tasks and "both" not in tasks:
+            continue
+        if not _safe_supports(desc.plugin, model):
+            continue
+        candidates.append(desc)
+
+    if not candidates:
+        raise ValidationError(
+            f"No explanation plugin matches modality={modality!r}, mode={mode!r}, task={task!r}"
+        )
+
+    def _priority(desc: ExplanationPluginDescriptor) -> int:
+        raw = desc.metadata.get("priority", 0)
+        if not isinstance(raw, (int, float, str)) or not str(raw).strip():
+            return 0
+        try:
+            return int(float(raw))
+        except (TypeError, ValueError):
+            return 0
+
+    candidates.sort(key=_priority, reverse=True)
+    top = candidates[0]
+    top_priority = _priority(top)
+    ambiguous = [c for c in candidates if _priority(c) == top_priority]
+    if len(ambiguous) > 1:
+        ids = ", ".join(sorted(c.identifier for c in ambiguous))
+        raise ValidationError(
+            "Ambiguous explanation plugin resolution for modality selection; "
+            f"top-priority candidates: {ids}. Provide explicit plugin identifier."
+        )
+    return top.identifier, top.plugin
 
 
 def register_interval_plugin(
@@ -1475,7 +1612,7 @@ def list_plot_style_descriptors() -> Tuple[PlotStyleDescriptor, ...]:
     return tuple(_PLOT_STYLES[identifier] for identifier in identifiers)
 
 
-def list_plot_descriptors(include_untrusted=True):
+def list_plot_descriptors():
     """Return registered plot style descriptors."""
     ensure_builtin_plugins()
     return list(_PLOT_STYLES.values())
@@ -1725,40 +1862,10 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
     return tuple(loaded)
 
 
-def register_plot_plugin(
-    identifier: str,
-    plugin: Any,
-    *,
-    metadata: Mapping[str, Any] | None = None,
-    source: str = "manual",
-) -> PlotBuilderDescriptor:
-    """Compatibility shim registering *plugin* as both builder and renderer."""
-    from ..utils import deprecate
-
-    deprecate(
-        "register_plot_plugin is deprecated; use register_plot_builder/register_plot_renderer",
-        key="register_plot_plugin",
-        stacklevel=3,
-    )
-    descriptor = register_plot_builder(identifier, plugin, metadata=metadata, source=source)
-    register_plot_renderer(identifier, plugin, metadata=metadata, source=source)
-    register_plot_style(
-        identifier,
-        metadata={
-            "style": identifier,
-            "builder_id": identifier,
-            "renderer_id": identifier,
-            "fallbacks": (),
-        },
-    )
-    return descriptor
-
-
 def _list_descriptors(
     store: Dict[str, Any],
     trusted_only: bool,
     trusted_set: set[str],
-    include_untrusted: bool = False,
 ) -> Tuple[Any, ...]:
     """Return descriptors from *store* with optional trust filtering."""
     if trusted_only:
@@ -1769,7 +1876,7 @@ def _list_descriptors(
 
 
 def list_explanation_descriptors(
-    *, trusted_only: bool = False, include_untrusted: bool = False
+    *, trusted_only: bool = False
 ) -> Tuple[ExplanationPluginDescriptor, ...]:
     """Return registered explanation plugin descriptors."""
     ensure_builtin_plugins()
@@ -1989,10 +2096,22 @@ def register(
     if plugin in _REGISTRY:
         if trusted and plugin not in _TRUSTED:
             _TRUSTED.append(plugin)
+        _log_plugin_registration_event(
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=trusted,
+        )
         return
     _REGISTRY.append(plugin)
     if trusted and plugin not in _TRUSTED:
         _TRUSTED.append(plugin)
+    _log_plugin_registration_event(
+        identifier=identifier,
+        provider=meta.get("provider"),
+        source=source,
+        trusted=trusted,
+    )
 
 
 def unregister(plugin: ExplainerPlugin) -> None:
@@ -2114,28 +2233,26 @@ __all__ = [
     "validate_plot_builder_metadata",
     "validate_plot_renderer_metadata",
     "validate_plot_style_metadata",
-    "clear_explanation_plugins",
-    "clear_interval_plugins",
-    "clear_plot_plugins",
     "ensure_builtin_plugins",
     "is_identifier_denied",
+    "set_trust_policy",
+    "get_trust_policy",
     "register_explanation_plugin",
     "register_interval_plugin",
     "register_plot_builder",
     "register_plot_renderer",
     "register_plot_style",
-    "register_plot_plugin",
     "find_explanation_descriptor",
     "find_interval_descriptor",
     "find_plot_builder_descriptor",
     "find_plot_renderer_descriptor",
     "find_plot_style_descriptor",
     "find_explanation_plugin",
+    "find_explanation_plugin_for",
     "find_interval_plugin",
     "find_plot_builder",
     "find_plot_renderer",
     "find_plot_plugin",
-    "find_plot_plugin_trusted",
     "get_last_discovery_report",
     "get_discovery_report",
     "list_explanation_descriptors",
@@ -2148,13 +2265,10 @@ __all__ = [
     "mark_explanation_untrusted",
     "mark_interval_trusted",
     "mark_interval_untrusted",
-    "mark_plot_builder_trusted",
-    "mark_plot_builder_untrusted",
-    "mark_plot_renderer_trusted",
-    "mark_plot_renderer_untrusted",
     "register",
     "unregister",
     "clear",
+    "reset_plugin_catalog",
     "list_plugins",
     "trust_plugin",
     "untrust_plugin",

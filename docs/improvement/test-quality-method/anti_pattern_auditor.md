@@ -23,7 +23,7 @@ The repository root (run all commands from here).
 
 ## ADR-030 Quality Criteria
 
-Every test should satisfy these five criteria (from ADR-030):
+Every test should satisfy these six criteria (from ADR-030):
 
 1. **Determinism**: No `random`, `time.time()`, network calls, or
    platform-dependent paths without the `platform_dependent` marker
@@ -35,6 +35,8 @@ Every test should satisfy these five criteria (from ADR-030):
    appropriate markers (`slow`, `integration`, `viz`)
 5. **Fixture discipline**: Tests use shared fixtures from `tests/helpers/`
    and `tests/conftest.py`, not ad-hoc duplicated setup
+6. **No production test-helper wrappers**: Tests must not rely on
+   test-helper wrappers exported from production modules.
 
 ## Private-member usage taxonomy (mined)
 
@@ -63,6 +65,15 @@ Analyze the output for:
 - Tests using `FrozenInstanceError` testing patterns
 - Tests with exact path comparisons (fragile, platform-dependent)
 - Tests calling `to_dict()` on internal objects (coupling to representation)
+
+### Task 1.5: Run production export leakage guard (hard blocker)
+
+```bash
+python scripts/quality/check_no_test_helper_exports.py
+```
+
+Treat any violation as **high severity**: this indicates tests are being
+supported by production-module test scaffolding instead of public contracts.
 
 ### Task 2: Audit private member usage
 
@@ -149,6 +160,7 @@ Write your proposal containing:
 ## Key Scripts
 
 - `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` -- AST-based anti-pattern scanner
+- `scripts/quality/check_no_test_helper_exports.py` -- production export leakage blocker
 - `scripts/anti-pattern-analysis/scan_private_usage.py` -- Private member usage scanner
 - `scripts/anti-pattern-analysis/analyze_private_methods.py` -- Private method pattern analysis
 - `scripts/anti-pattern-analysis/find_shared_helpers.py` -- Shared helper detection

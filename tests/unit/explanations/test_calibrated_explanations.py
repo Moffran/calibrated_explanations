@@ -15,7 +15,6 @@ from calibrated_explanations.explanations import (
     CalibratedExplanations,
 )
 from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
-from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 def install_fake_matplotlib_colors(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -200,29 +199,14 @@ def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
     assert collection.get_confidence() == 80.0
 
 
-def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
+def test_indexing_validates_bounds_and_type(collection: CalibratedExplanations) -> None:
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    if deprecations_error_enabled():
-        # In raise-mode deprecations trigger before the validation checks;
-        # assert that the deprecation is raised instead of the ValidationError.
-        with pytest.raises(DeprecationWarning):
-            collection.get_explanation(1)
-        with pytest.raises(DeprecationWarning):
-            collection.get_explanation("1")  # type: ignore[arg-type]
-        with pytest.raises(DeprecationWarning):
-            collection.get_explanation(-1)
-        with pytest.raises(DeprecationWarning):
-            collection.get_explanation(len(collection.x_test))
-    else:
-        with warns_or_raises():
-            assert collection.get_explanation(1) is collection.explanations[1]
-        with pytest.raises(ValidationError), warns_or_raises():
-            collection.get_explanation("1")  # type: ignore[arg-type]
-        with pytest.raises(ValidationError), warns_or_raises():
-            collection.get_explanation(-1)
-        with pytest.raises(ValidationError), warns_or_raises():
-            collection.get_explanation(len(collection.x_test))
+    assert collection[1] is collection.explanations[1]
+    with pytest.raises(ValidationError):
+        _ = collection["1"]  # type: ignore[index]
+    with pytest.raises((ValidationError, IndexError)):
+        _ = collection[len(collection.x_test)]
 
 
 def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> None:
@@ -330,7 +314,7 @@ def test_multiclass_interface_parity_slice_list_and_get_explanation(
     assert len(subset) == 2
     assert len(masked) == 2
     assert coll.X_test.shape == coll.x_test.shape
-    assert coll.get_explanation(0, 2) is coll.explanations[0][2]
+    assert coll[(0, 2)] is coll.explanations[0][2]
 
 
 def test_multiclass_plot_factual_dispatches_dict_path_for_nonzero_keys(

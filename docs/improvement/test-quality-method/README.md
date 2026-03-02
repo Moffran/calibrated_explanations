@@ -8,6 +8,7 @@ This umbrella includes:
 - Test overlap analysis using per-test coverage contexts (`--cov-context=test`)
 - Coverage gap closure with high-signal behavioral tests (no padding)
 - Anti-pattern auditing in tests (private member usage, brittle coupling, weak assertions)
+- Source-surface audits that block test-helper wrapper exports from production modules
 - Code-quality gates (exception taxonomy, import boundaries, docstrings, deprecations)
 - Dead-code and deprecation-shim cleanup (conservative, evidence-based)
 - Safe pruning and consolidation (remove redundant tests without breaking coverage)
@@ -62,6 +63,30 @@ All outputs land in `reports/over_testing/`.
 
 > **Runtime**: Expect 3-10x slower than a normal `pytest` run due to per-test
 > context recording. On this codebase, ~15-30 minutes depending on hardware.
+
+---
+
+## Critical Gap Review (2026-02-23)
+
+### What failed
+
+The prior method focused on test-file anti-patterns but did not hard-block
+production modules from exporting test-helper wrappers via `__all__`. This
+created a loophole: tests could bypass public contracts by importing wrapper
+scaffolding from runtime code.
+
+### Durable remediation
+
+- Added a CI-blocking export guard:
+  `python scripts/quality/check_no_test_helper_exports.py`
+- The guard treats test-helper wrapper exports as hard blockers.
+- The guard explicitly bans over-scoped `plugins.registry` trust-helper exports
+  identified during release hardening.
+
+### Policy impact
+
+Tests that depend on production test-helper wrappers are classified as
+ADR-030 anti-pattern debt and are not considered high-quality tests.
 
 ---
 
@@ -155,6 +180,9 @@ python scripts/quality/check_import_graph.py
 
 # Docstrings: keep documentation quality from silently regressing
 python scripts/quality/check_docstring_coverage.py
+
+# ADR-030: block production test-helper wrapper exports
+python scripts/quality/check_no_test_helper_exports.py
 ```
 
 Deprecation-sensitive spot check (mirrors CI `deprecation-check.yml`):
@@ -371,6 +399,7 @@ remediation recommendations and ensures any fallback-testing is visible
 **Key tasks**:
 
 - Run the anti-pattern detector: `scripts/anti-pattern-analysis/detect_test_anti_patterns.py`.
+- Run the production export guard: `scripts/quality/check_no_test_helper_exports.py`.
 - Audit private member usage with `scripts/anti-pattern-analysis/scan_private_usage.py` and
    cross-reference `.github/private_member_allowlist.json`.
 - Analyze private method patterns via `analyze_private_methods.py` to find
@@ -397,9 +426,11 @@ remediation recommendations and ensures any fallback-testing is visible
 **Key files**:
 
 - `scripts/anti-pattern-analysis/detect_test_anti_patterns.py`
+- `scripts/quality/check_no_test_helper_exports.py`
 - `scripts/anti-pattern-analysis/scan_private_usage.py`
 - `.github/private_member_allowlist.json`
 - `reports/anti-pattern-analysis/test_anti_pattern_report.csv`
+- `reports/anti-pattern-analysis/test_helper_wrapper_report.json`
 - `reports/over_testing/per_test_summary.csv`
 
 **Key principles**:
@@ -545,6 +576,7 @@ Designs and improves the test quality workflow and tooling.
 | `check_adr002_compliance.py`   | Exception taxonomy + warnings hygiene (ADR-002) | Every code-focused iteration        |
 | `check_import_graph.py`        | Import boundary enforcement (ADR-001)           | Every code-focused iteration        |
 | `check_docstring_coverage.py`  | Docstring coverage gate                         | Before release / when touching docs |
+| `check_no_test_helper_exports.py` | Blocks production test-helper wrapper exports (ADR-030) | Every PR + release gating |
 | `check_coverage_gates.py`      | Per-module coverage thresholds (Standard-019)   | After test/code changes             |
 
 ---
@@ -610,6 +642,10 @@ committed for future reference:
 
 9. **Respect ADR-023 for viz coverage**. If coverage instrumentation breaks matplotlib adapter imports, follow ADR-023’s split strategy (run viz validation under `pytest --no-cov -m viz` and keep the coverage omit scoped to the documented adapter file).
 
+10. **Treat test-helper export leakage as a hard blocker**. Any violation from
+    `scripts/quality/check_no_test_helper_exports.py` must be fixed before
+    declaring test quality acceptable.
+
 ---
 
 ## Example: Full Analysis Cycle
@@ -625,6 +661,7 @@ python scripts/over_testing/extract_per_test.py
 python scripts/quality/check_adr002_compliance.py
 python scripts/quality/check_import_graph.py
 python scripts/quality/check_docstring_coverage.py
+python scripts/quality/check_no_test_helper_exports.py
 
 # 3. Review triage report
 cat reports/over_testing/triage.md

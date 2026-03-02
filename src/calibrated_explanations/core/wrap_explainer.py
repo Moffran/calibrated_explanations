@@ -1,4 +1,9 @@
-"""Mechanical extraction of WrapCalibratedExplainer."""
+"""High-level wrapper for building, calibrating and explaining models.
+
+This module provides :class:`WrapCalibratedExplainer`, a convenience wrapper
+that mirrors :class:`.CalibratedExplainer` while exposing a scikit-learn
+style fit/calibrate/explain surface for downstream users and integrations.
+"""
 
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
@@ -17,15 +22,15 @@ import warnings as _warnings
 from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
+from time import sleep
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 
 from crepes.extras import MondrianCategorizer
 
 from ..api.params import (
-    ALIAS_MAP,
+    reject_removed_aliases,
     validate_param_combination,
-    warn_on_aliases,
 )
 from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
 from ..utils.exceptions import (
@@ -47,6 +52,15 @@ class WrapCalibratedExplainer:
     The wrapper mirrors :class:`CalibratedExplainer` while orchestrating
     fitting, calibration, and explanation steps behind a scikit-learn style
     interface.
+
+    Attributes
+    ----------
+    learner : Any
+        The underlying predictive learner instance.
+    explainer : CalibratedExplainer | None
+        The calibrated explainer created during :meth:`calibrate`.
+    calibrated : bool
+        True when the wrapper has been calibrated.
     """
 
     learner: Any
@@ -158,9 +172,9 @@ class WrapCalibratedExplainer:
                 perf_factory = cfg._perf_factory
             else:
                 # lazy import to avoid import cycles
-                from calibrated_explanations.perf import from_config as _from_config
+                from calibrated_explanations.api.config import _build_perf_factory
 
-                perf_factory = _from_config(cfg)
+                perf_factory = _build_perf_factory(cfg)
             # stash created primitives for downstream use; keep None when disabled
             if perf_factory is not None:
                 cache = perf_factory.make_cache()
@@ -225,14 +239,27 @@ class WrapCalibratedExplainer:
     def fit(
         self, x_proper_train: Any, y_proper_train: Any, **kwargs: Any
     ) -> WrapCalibratedExplainer:
-        """Fit the learner to the training data.
+        """Fit the underlying learner on training data.
 
         Parameters
         ----------
-        x_proper_train : array-like
-            The training input samples.
-        y_proper_train : array-like
-            The target values.
+        x_proper_train : array-like of shape (n_samples, n_features)
+            Training input samples.
+        y_proper_train : array-like of shape (n_samples,)
+            Training target values.
+        **kwargs
+            Additional keyword arguments forwarded to the learner's ``fit``.
+
+        Returns
+        -------
+        WrapCalibratedExplainer
+            The wrapper instance (allows chaining).
+
+        Examples
+        --------
+        >>> w = WrapCalibratedExplainer(clf)
+        >>> w.fit(X_train, y_train)
+        WrapCalibratedExplainer(...)
         """
         reinitialize = bool(self.calibrated)
         self.fitted = False
@@ -253,47 +280,42 @@ class WrapCalibratedExplainer:
         mc: Callable[[Any], Any] | MondrianCategorizer | None = None,
         **kwargs: Any,
     ) -> WrapCalibratedExplainer:
-        """Calibrate the explainer with calibration data.
+        """Calibrate the wrapper using calibration data and create an explainer.
 
         Parameters
         ----------
-        x_calibration : array-like
-            The calibration input samples.
-        y_calibration : array-like
-            The calibration target values.
+        x_calibration : array-like of shape (n_samples, n_features)
+            Calibration features used to fit internal calibrators.
+        y_calibration : array-like of shape (n_samples,)
+            Calibration targets corresponding to ``x_calibration``.
         mc : callable or MondrianCategorizer, optional
             Optional Mondrian categories helper. Defaults to ``None``.
-
         **kwargs
-            Keyword arguments to be passed to the :class:`.CalibratedExplainer`'s __init__ method
-
-        Raises
-        ------
-        NotFittedError: If the learner is not fitted before calibration.
+            Forwarded to :class:`.CalibratedExplainer.__init__` for advanced
+            configuration (e.g. ``mode``, ``feature_names``, ``bins``).
 
         Returns
         -------
-        :class:`.WrapCalibratedExplainer`
-            The :class:`.WrapCalibratedExplainer` object with `explainer` initialized as a :class:`.CalibratedExplainer`.
+        WrapCalibratedExplainer
+            The wrapper instance with the ``explainer`` attribute set to a
+            configured :class:`.CalibratedExplainer`.
+
+        Raises
+        ------
+        NotFittedError
+            If the underlying learner has not been fitted via :meth:`fit`.
 
         Examples
         --------
-        Calibrate the learner to the calibration data:
-
-        .. code-block:: python
-
-            w.calibrate(x_calibration, y_calibration)
-
-        Provide additional keyword arguments to the :class:`.CalibratedExplainer`:
-
-        .. code-block:: python
-
-            w.calibrate(x_calibration, y_calibration, feature_names=feature_names,
-                        categorical_features=categorical_features)
+        >>> w = WrapCalibratedExplainer(clf)
+        >>> w.fit(X_train, y_train)
+        >>> w.calibrate(X_cal, y_cal)
 
         Notes
         -----
-        if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
+        If ``mode`` is not provided in ``kwargs`` the wrapper will infer
+        classification vs regression from the presence of ``predict_proba``
+        on the underlying learner.
         """
         self._assert_fitted("The WrapCalibratedExplainer must be fitted before calibration.")
         self.calibrated = False
@@ -381,12 +403,25 @@ class WrapCalibratedExplainer:
         return None
 
     def explain_factual(self, x: Any, **kwargs: Any) -> Any:
-        """Generate factual explanations for the test data.
+        """Generate factual explanations for provided instances.
+
+        Parameters
+        ----------
+        x : array-like
+            Instances to explain (single or batch). Shape should match the
+            feature dimensionality used during calibration.
+        **kwargs
+            Forwarded to :meth:`CalibratedExplainer.explain_factual`.
+
+        Returns
+        -------
+        CalibratedExplanations or mapping
+            Explanation collection produced by the underlying explainer.
 
         See Also
         --------
-        :meth:`.CalibratedExplainer.explain_factual` : Refer to the docstring for explain_factual in CalibratedExplainer for more details.
-
+        :meth:`CalibratedExplainer.explain_factual`
+            For full parameter and return semantics.
         """
         assert (
             self._assert_fitted(
@@ -436,10 +471,6 @@ class WrapCalibratedExplainer:
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explore_alternatives(x_local, **kwargs)
-
-    def explain_counterfactual(self, x: Any, **kwargs: Any) -> Any:
-        """Alias for explore_alternatives (legacy API)."""
-        return self.explore_alternatives(x, **kwargs)
 
     def explain_guarded_factual(self, x: Any, **kwargs: Any) -> Any:
         """Generate guarded factual explanations that only use in-distribution perturbations.
@@ -871,19 +902,12 @@ class WrapCalibratedExplainer:
     def _normalize_public_kwargs(
         self, kwargs: dict[str, Any], allowed: "set[str] | None" = None
     ) -> dict[str, Any]:
-        """Warn on deprecated aliases and strip alias keys without altering behavior.
-
-        - Emit DeprecationWarning for any alias keys present in the original kwargs.
-        - Do not inject canonical keys; we preserve user-provided keys as-is, except
-          alias keys which are removed after warning.
-        - If `allowed` is provided, only keep keys in that set; otherwise keep all.
-        """
+        """Normalize public kwargs and reject removed aliases."""
         if not kwargs:
             return {}
         original = dict(kwargs)
-        warn_on_aliases(original)
-        # Keep only original keys and drop any alias keys
-        base = {k: v for k, v in original.items() if k not in ALIAS_MAP}
+        reject_removed_aliases(original)
+        base = dict(original)
         if allowed is None:
             return base
         return {k: v for k, v in base.items() if k in allowed}
@@ -1197,10 +1221,19 @@ class WrapCalibratedExplainer:
         getter = getattr(pre, "get_mapping_snapshot", None)
         if callable(getter):
             try:
-                return getter()
-            except:  # noqa: E722
-                if not isinstance(sys.exc_info()[1], Exception):
-                    raise
+                snapshot = getter()
+                if snapshot is not None:
+                    if not isinstance(snapshot, Mapping):
+                        raise ValidationError(
+                            "Preprocessor mapping snapshot must be a mapping.",
+                            details={"source": "get_mapping_snapshot"},
+                        )
+                    self._validate_json_safe_mapping(snapshot, source="get_mapping_snapshot")
+                    return dict(snapshot)
+                return None
+            except ValidationError:
+                raise
+            except (AttributeError, TypeError, ValueError):
                 self._logger.warning(
                     "Preprocessor.get_mapping_snapshot failed; falling back to mapping_"
                 )
@@ -1209,10 +1242,12 @@ class WrapCalibratedExplainer:
         if mapping_attr is not None:
             # Shallow copy to avoid exposing internal objects
             try:
-                return dict(mapping_attr)
-            except:  # noqa: E722
-                if not isinstance(sys.exc_info()[1], Exception):
-                    raise
+                snapshot = dict(mapping_attr)
+                self._validate_json_safe_mapping(snapshot, source="mapping_")
+                return snapshot
+            except ValidationError:
+                raise
+            except (AttributeError, TypeError, ValueError):
                 return None
         return None
 
@@ -1227,6 +1262,7 @@ class WrapCalibratedExplainer:
         A warning is emitted when the mapping could not be applied to ensure
         visibility per the fallback policy.
         """
+        self._validate_json_safe_mapping(mapping, source="import")
         pre = getattr(self, "_preprocessor", None)
         applied = False
         if pre is not None:
@@ -1257,6 +1293,30 @@ class WrapCalibratedExplainer:
                 UserWarning,
                 stacklevel=2,
             )
+
+    @staticmethod
+    def _validate_json_safe_mapping(mapping: Mapping[str, Any], *, source: str) -> None:
+        """Validate that mapping snapshots are JSON-serialisable primitives.
+
+        Parameters
+        ----------
+        mapping : Mapping[str, Any]
+            Mapping snapshot to validate.
+        source : str
+            Context string used in validation error details.
+
+        Raises
+        ------
+        ValidationError
+            If the mapping cannot be serialised with standard JSON encoding.
+        """
+        try:
+            json.dumps(mapping, sort_keys=True, separators=(",", ":"))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "Preprocessor mapping must be JSON-serialisable.",
+                details={"source": source, "error": str(exc)},
+            ) from exc
 
     def _state_path(self, path_or_fileobj: Any) -> Path:
         """Normalize and validate state path inputs."""
@@ -1460,7 +1520,23 @@ class WrapCalibratedExplainer:
                 backup = target.with_name(f"{target.name}.bak-{os.getpid()}-{id(self)}")
                 os.replace(target, backup)
             try:
-                os.replace(temp_dir, target)
+                replaced = False
+                last_permission_error: PermissionError | None = None
+                for _ in range(3):
+                    try:
+                        os.replace(temp_dir, target)
+                        replaced = True
+                        break
+                    except PermissionError as exc:
+                        last_permission_error = exc
+                        sleep(0.05)
+                if not replaced:
+                    if last_permission_error is not None:
+                        self._logger.debug(
+                            "os.replace failed during save_state; falling back to shutil.move: %s",
+                            last_permission_error,
+                        )
+                    shutil.move(str(temp_dir), str(target))
             except OSError:
                 if backup is not None and backup.exists() and not target.exists():
                     os.replace(backup, target)

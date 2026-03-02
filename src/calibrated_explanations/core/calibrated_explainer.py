@@ -1,12 +1,12 @@
-"""Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
+"""Explain black-box learners using calibrated prediction intervals.
 
-The calibrated explanations explanation method is based on the paper
+This module implements the core :class:`CalibratedExplainer` which fits
+interval calibrators on calibration data and exposes methods for generating
+factual and alternative explanations augmented with uncertainty information.
+
+The implementation follows the approach described in
 "Calibrated Explanations: with Uncertainty Information and Counterfactuals"
-by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
-
-Calibrated explanations are a way to explain the predictions of a black-box learner
-using Venn-Abers predictors (classification & regression) or
-conformal predictive systems (regression).
+by Helena Löfström et al.
 """
 
 # pylint: disable=unknown-option-value
@@ -59,15 +59,18 @@ from .prediction.interval_summary import IntervalSummary, coerce_interval_summar
 
 
 class CalibratedExplainer:
-    """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated predictions.
+    """Explain a fitted learner using calibrated intervals and plugins.
 
-    The calibrated explanations are based on the paper
-    "Calibrated Explanations for Black-Box Predictions"
-    by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
+    The explainer fits internal interval calibrators on provided calibration
+    data and exposes high-level APIs for producing `CalibratedExplanations`.
 
-    Calibrated explanations provides a way to explain the predictions of a black-box learner
-    using Venn-Abers predictors (classification) or
-    conformal predictive systems (regression).
+    Recommended use is to use `WrapCalibratedExplainer`, which is a wrapper around the learner and this explainer.
+
+    Examples
+    --------
+    >>> from calibrated_explanations import CalibratedExplainer
+    >>> explainer = CalibratedExplainer(learner, X_cal, y_cal, mode="classification")
+    >>> explanations = explainer.explain_factual(X_test)
     """
 
     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
@@ -2560,12 +2563,12 @@ class CalibratedExplainer:
         # Lazy import API params functions (deferred from module level)
         from ..api.params import (
             canonicalize_kwargs,
+            reject_removed_aliases,
             validate_param_combination,
-            warn_on_aliases,
         )
 
-        # emit deprecation warnings for aliases and normalize kwargs
-        warn_on_aliases(kwargs)
+        # reject removed aliases and normalize kwargs
+        reject_removed_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
         if "interval_summary" not in kwargs or kwargs["interval_summary"] is None:
@@ -2738,12 +2741,12 @@ class CalibratedExplainer:
         # Lazy import API params functions (deferred from module level)
         from ..api.params import (
             canonicalize_kwargs,
+            reject_removed_aliases,
             validate_param_combination,
-            warn_on_aliases,
         )
 
-        # emit deprecation warnings for aliases and normalize kwargs
-        warn_on_aliases(kwargs)
+        # reject removed aliases and normalize kwargs
+        reject_removed_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
 

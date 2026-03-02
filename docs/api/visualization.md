@@ -16,9 +16,11 @@ adapters.
 
 ## Plot kinds
 
-Plot kinds are registered and validated through the plot plugin registry. The
-PlotSpec `kind`/`mode` metadata determines which renderer and validation rules
-apply.
+Plot kinds are validated by `viz.serializers.PlotKindRegistry` using the
+built-in `_SUPPORTED_KINDS` contract in this release. The PlotSpec
+`kind`/`mode` metadata determines which renderer and validation rules apply.
+Runtime `kind` registration extensibility is deferred (see ADR-014 and the
+v0.11.1 plan references in the release plan appendix).
 
 ## Related ADRs
 

@@ -7,7 +7,6 @@ from calibrated_explanations.plugins import (
     find_explanation_descriptor,
     find_explanation_plugin_trusted,
     register_explanation_plugin,
-    clear_explanation_plugins,
     ensure_builtin_plugins,
 )
 from calibrated_explanations.plugins.manager import PluginManager
@@ -16,6 +15,7 @@ from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.explanations import ExplainerHandle
 from calibrated_explanations.plugins import ExplanationBatch
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from tests.support.registry_helpers import clear_explanation_plugins
 
 
 def test_core_fast_plugin_registered_and_trusted():
@@ -118,3 +118,26 @@ def test_explainerhandle_metadata_is_immutable():
     assert isinstance(meta, (MappingProxyType, dict))
     with pytest.raises(TypeError):
         meta["k"] = "x"
+
+
+@pytest.mark.parametrize(
+    ("preprocessor_metadata", "expected"),
+    [
+        (None, None),
+        ({"feature_map": {"a": 1}}, {"feature_map": {"a": 1}}),
+        ("raw-metadata", {"value": "raw-metadata"}),
+    ],
+)
+def test_explainerhandle_get_preprocessor_state_variants(preprocessor_metadata, expected):
+    class Dummy:
+        pass
+
+    dummy = Dummy()
+    dummy.preprocessor_metadata = preprocessor_metadata
+    handle = ExplainerHandle(dummy, {"k": "v"})
+
+    state = handle.get_preprocessor_state()
+    if expected is None:
+        assert state is None
+    else:
+        assert dict(state) == expected

@@ -15,7 +15,7 @@ def deprecate_public_api_symbol(
     symbol_name: str,
     current_import: str,
     recommended_import: str,
-    removal_version: str = "v0.11.0",
+    removal_version: str = "v1.0.0",
     extra_context: Optional[str] = None,
 ) -> None:
     """Emit structured deprecation warning for top-level API symbols.
@@ -30,7 +30,7 @@ def deprecate_public_api_symbol(
                         (e.g., "from calibrated_explanations import CalibratedExplanations")
         recommended_import: Recommended new import path
                            (e.g., "from calibrated_explanations.explanations import CalibratedExplanations")
-        removal_version: Version in which the symbol will be removed from __init__.py (default: v0.11.0)
+        removal_version: Version in which the symbol will be removed from __init__.py.
         extra_context: Optional additional migration guidance or explanation
 
     Examples

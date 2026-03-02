@@ -145,6 +145,11 @@ class TestTrustEnforcement:
             mock_explainer.plugin_manager.explanation_preferred_identifier = {
                 "factual": "test.untrusted"
             }
+            mock_explainer.plugin_manager.resolve_explanation_plugin.return_value = (
+                None,
+                None,
+                "untrusted",
+            )
 
             with pytest.raises(ConfigurationError, match="untrusted"):
                 orchestrator.resolve_plugin("factual")

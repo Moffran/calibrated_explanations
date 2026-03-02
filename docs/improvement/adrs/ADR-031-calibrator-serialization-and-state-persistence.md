@@ -1,11 +1,11 @@
-> **Status note (2026-01-12):** Last edited 2026-01-12 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
+> **Status note (2026-02-27):** Last edited 2026-02-27 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
 
 # ADR-031: Calibrator Serialization & Explainer State Persistence
 
-Status: Draft
-Date: 2026-01-12
+Status: Accepted
+Date: 2026-02-27
 Deciders: Core maintainers
-Reviewers: TBD
+Reviewers: Core maintainers
 Supersedes: None
 Superseded-by: None
 Related: ADR-009-input-preprocessing-and-mapping-policy, ADR-021-calibrated-interval-semantics

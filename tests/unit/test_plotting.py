@@ -9,10 +9,7 @@ import pytest
 import calibrated_explanations.plotting as plotting_module
 from calibrated_explanations.utils.exceptions import ConfigurationError
 
-# Suppress deprecation warning for importing plotting
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    from calibrated_explanations import plotting
+import calibrated_explanations.plotting as plotting
 
 pytestmark = [pytest.mark.viz, pytest.mark.filterwarnings("ignore::DeprecationWarning")]
 
@@ -590,7 +587,7 @@ def testplot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("calibrated_explanations.plugins.ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        "calibrated_explanations.plugins.find_plot_plugin_trusted",
+        "calibrated_explanations.plugins.registry.find_plot_plugin_trusted",
         lambda identifier: None,
     )
     monkeypatch.setattr("calibrated_explanations.plugins.find_plot_plugin", lambda identifier: None)

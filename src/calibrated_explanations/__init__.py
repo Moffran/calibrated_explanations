@@ -52,7 +52,7 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    """Lazy import for public symbols (sanctioned and deprecated per ADR-001 Stage 3).
+    """Lazy import for sanctioned public symbols.
 
     This avoids importing `calibrated_explanations.core` at package import time
     while preserving the public API surface for users and tests.
@@ -60,11 +60,9 @@ def __getattr__(name: str):
     Sanctioned symbols (no deprecation warning):
     - CalibratedExplainer, WrapCalibratedExplainer, transform_to_numeric
 
-    Deprecated symbols (emit DeprecationWarning, to be removed in v0.11.0):
-    - Explanation classes: AlternativeExplanation, FactualExplanation, etc.
-    - Discretizers: BinaryEntropyDiscretizer, EntropyDiscretizer, etc.
-    - Calibrators: IntervalRegressor, VennAbers
-    - Visualization: viz namespace
+    Removed in v0.11.0:
+    - Top-level compatibility exports for explanation classes/discretizers/calibrators
+    - Top-level ``viz`` and ``plotting`` compatibility aliases
     """
     # ===================================================================
     # SANCTIONED SYMBOLS (no deprecation warning)
@@ -87,105 +85,5 @@ def __getattr__(name: str):
         value = getattr(module, name)
         globals()[name] = value
         return value
-
-    # ===================================================================
-    # DEPRECATED SYMBOLS (emit DeprecationWarning per ADR-001 Stage 3)
-    # ===================================================================
-
-    from .utils import deprecate_public_api_symbol
-
-    if name == "viz":
-        deprecate_public_api_symbol(
-            "viz",
-            "from calibrated_explanations import viz",
-            "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter",
-            extra_context="The viz namespace is now a submodule. Import specific classes/functions from it directly.",
-        )
-        module = importlib.import_module(f"{__name__}.viz")
-        globals()[name] = module
-        return module
-
-    if name in {
-        "AlternativeExplanation",
-        "FactualExplanation",
-        "FastExplanation",
-    }:
-        deprecate_public_api_symbol(
-            name,
-            f"from calibrated_explanations import {name}",
-            f"from calibrated_explanations.explanations.explanation import {name}",
-            extra_context="Explanation domain classes should be imported from the explanations submodule.",
-        )
-        module = importlib.import_module(f"{__name__}.explanations.explanation")
-        value = getattr(module, name)
-        globals()[name] = value
-        return value
-
-    if name in {
-        "AlternativeExplanations",
-        "CalibratedExplanations",
-    }:
-        deprecate_public_api_symbol(
-            name,
-            f"from calibrated_explanations import {name}",
-            f"from calibrated_explanations.explanations import {name}",
-            extra_context="Explanation collections should be imported from the explanations submodule.",
-        )
-        module = importlib.import_module(f"{__name__}.explanations.explanations")
-        value = getattr(module, name)
-        globals()[name] = value
-        return value
-
-    if name in {
-        "BinaryEntropyDiscretizer",
-        "BinaryRegressorDiscretizer",
-        "EntropyDiscretizer",
-        "RegressorDiscretizer",
-    }:
-        deprecate_public_api_symbol(
-            name,
-            f"from calibrated_explanations import {name}",
-            f"from calibrated_explanations.utils import {name}",
-            extra_context="Discretizers are internal utilities; import from the discretizers submodule.",
-        )
-        module = importlib.import_module(f"{__name__}.utils")
-        value = getattr(module, name)
-        globals()[name] = value
-        return value
-
-    if name == "IntervalRegressor":
-        deprecate_public_api_symbol(
-            "IntervalRegressor",
-            "from calibrated_explanations import IntervalRegressor",
-            "from calibrated_explanations.calibration import IntervalRegressor",
-            extra_context="Calibrators are domain components; import from the calibration submodule.",
-        )
-        from .calibration.interval_regressor import IntervalRegressor
-
-        globals()[name] = IntervalRegressor
-        return IntervalRegressor
-
-    if name == "VennAbers":
-        deprecate_public_api_symbol(
-            "VennAbers",
-            "from calibrated_explanations import VennAbers",
-            "from calibrated_explanations.calibration import VennAbers",
-            extra_context="Calibrators are domain components; import from the calibration submodule.",
-        )
-        from .calibration.venn_abers import VennAbers
-
-        globals()[name] = VennAbers
-        return VennAbers
-
-    if name == "plotting":
-        deprecate_public_api_symbol(
-            "plotting",
-            "from calibrated_explanations import plotting",
-            "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter, ...",
-            extra_context="The plotting module is deprecated. Use calibrated_explanations.viz submodule directly. Will be removed in v0.11.0.",
-        )
-        module = importlib.import_module(f"{__name__}.plotting")
-        globals()[name] = module
-        return module
 
     raise AttributeError(name)

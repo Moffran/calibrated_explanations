@@ -32,7 +32,18 @@ def legacy_to_domain(idx: int, payload: Mapping[str, Any]) -> models.Explanation
     Explanation
         Domain model representation of the explanation.
     """
-    return models.from_legacy_dict(idx, payload)
+    domain = models.from_legacy_dict(idx, payload)
+    provenance = payload.get("provenance")
+    metadata = payload.get("metadata")
+    if isinstance(provenance, Mapping):
+        domain.provenance = dict(provenance)
+    else:
+        domain.provenance = None
+    if isinstance(metadata, Mapping):
+        domain.metadata = dict(metadata)
+    else:
+        domain.metadata = None
+    return domain
 
 
 def domain_to_legacy(exp: models.Explanation) -> Dict[str, Any]:
@@ -54,6 +65,8 @@ def domain_to_legacy(exp: models.Explanation) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "task": exp.task,
         "prediction": dict(exp.prediction),
+        "provenance": dict(exp.provenance) if isinstance(exp.provenance, Mapping) else None,
+        "metadata": dict(exp.metadata) if isinstance(exp.metadata, Mapping) else None,
     }
 
     # Prepare parallel arrays for rules

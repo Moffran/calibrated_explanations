@@ -4,18 +4,26 @@ import pytest
 
 from calibrated_explanations.api.params import (
     canonicalize_kwargs,
+    reject_removed_aliases,
     validate_param_combination,
+    warn_on_aliases,
 )
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
-def test_canonicalize_kwargs_maps_alias_without_overwriting() -> None:
-    out = canonicalize_kwargs({"alpha": (5, 95), "threshold": 0.4})
-    assert out["low_high_percentiles"] == (5, 95)
-    assert out["alpha"] == (5, 95)
+def test_canonicalize_kwargs_preserves_keys_without_alias_mapping() -> None:
+    out = canonicalize_kwargs({"threshold": 0.4})
+    assert out == {"threshold": 0.4}
 
-    out_with_canonical = canonicalize_kwargs({"alpha": (1, 99), "low_high_percentiles": (10, 90)})
-    assert out_with_canonical["low_high_percentiles"] == (10, 90)
+
+def test_reject_removed_aliases_raises_configuration_error() -> None:
+    with pytest.raises(ConfigurationError, match="removed in v0.11.0"):
+        reject_removed_aliases({"alpha": (5, 95)})
+
+
+def test_warn_on_aliases_delegates_to_removed_alias_guard() -> None:
+    with pytest.raises(ConfigurationError, match="removed in v0.11.0"):
+        warn_on_aliases({"n_jobs": 2})
 
 
 def test_validate_param_combination_rejects_conflict() -> None:

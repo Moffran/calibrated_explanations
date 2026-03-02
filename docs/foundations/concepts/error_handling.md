@@ -21,7 +21,8 @@ This package raises a small set of library-specific exceptions to make failures 
 
 ## Parameter canonicalization
 
-- `calibrated_explanations.api.params.canonicalize_kwargs(kwargs)`: Maps known aliases to canonical keys without removing the originals (Phase 1B is no-op on unknowns).
+- `calibrated_explanations.api.params.reject_removed_aliases(kwargs)`: Raises `ConfigurationError` when removed aliases (`alpha`, `alphas`, `n_jobs`) are used.
+- `calibrated_explanations.api.params.canonicalize_kwargs(kwargs)`: Returns a normalized copy of kwargs without alias remapping.
 - `calibrated_explanations.api.params.validate_param_combination(kwargs)`: Reserved for future stricter checks; a no-op in Phase 1B.
 
 ## Usage tips

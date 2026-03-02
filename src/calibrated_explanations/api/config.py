@@ -14,7 +14,9 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from ..perf import from_config as _perf_from_config
+# Backward-compatible patch point used by tests. When set to a callable, build_config
+# uses it instead of the internal factory builder.
+_perf_from_config = None
 
 TaskLiteral = Literal["classification", "regression", "auto"]
 
@@ -256,14 +258,69 @@ class ExplainerBuilder:
         # consumers can opt-in to perf primitives consistently. This does not
         # change behavior unless the factory is used.
         try:
+            factory_builder = _perf_from_config or _build_perf_factory
             # stash a lightweight factory on the config for downstream wiring
-            self._cfg._perf_factory = _perf_from_config(self._cfg)  # type: ignore[attr-defined]
+            self._cfg._perf_factory = factory_builder(self._cfg)  # type: ignore[attr-defined]
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             # be conservative: do not fail config building if perf factory creation fails
             self._cfg._perf_factory = None  # type: ignore[attr-defined]
         return self._cfg
+
+
+class _ConfigPerfFactory:
+    """Internal cache/parallel primitive builder for config-based wrapper wiring."""
+
+    def __init__(self, cache_cfg: Any, parallel_cfg: Any) -> None:
+        self._cache_cfg = cache_cfg
+        self._parallel_cfg = parallel_cfg
+
+    def make_cache(self) -> Any:
+        """Build a cache backend based on the stored configuration."""
+        from ..cache import CalibratorCache
+
+        return CalibratorCache(self._cache_cfg)
+
+    def make_parallel_executor(self, cache: Any | None = None) -> Any:
+        """Create a parallel executor wired to the stored parallel configuration."""
+        from ..parallel import ParallelExecutor
+
+        return ParallelExecutor(self._parallel_cfg, cache=cache)
+
+    def make_parallel_backend(self, cache: Any | None = None) -> Any:
+        """Alias for :meth:`make_parallel_executor`."""
+        return self.make_parallel_executor(cache=cache)
+
+
+def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
+    """Create perf primitives from config without using removed perf root facade."""
+    from ..cache import CacheConfig
+    from ..parallel import ParallelConfig
+
+    cache_cfg = CacheConfig(
+        enabled=getattr(cfg, "perf_cache_enabled", False),
+        namespace=getattr(cfg, "perf_cache_namespace", "calibrator"),
+        version=getattr(cfg, "perf_cache_version", "v1"),
+        max_items=getattr(cfg, "perf_cache_max_items", 512),
+        max_bytes=getattr(cfg, "perf_cache_max_bytes", 32 * 1024 * 1024),
+        ttl_seconds=getattr(cfg, "perf_cache_ttl", None),
+        telemetry=getattr(cfg, "perf_telemetry", None),
+    )
+    cache_cfg = CacheConfig.from_env(cache_cfg)
+
+    parallel_cfg = ParallelConfig(
+        enabled=getattr(cfg, "perf_parallel_enabled", False),
+        strategy=getattr(cfg, "perf_parallel_backend", "auto"),
+        max_workers=getattr(cfg, "perf_parallel_workers", None),
+        min_batch_size=getattr(cfg, "perf_parallel_min_batch", 8),
+        min_instances_for_parallel=getattr(cfg, "perf_parallel_min_instances", None),
+        tiny_workload_threshold=getattr(cfg, "perf_parallel_tiny_workload", None),
+        granularity=getattr(cfg, "perf_parallel_granularity", "feature"),
+        telemetry=getattr(cfg, "perf_telemetry", None),
+    )
+    parallel_cfg = ParallelConfig.from_env(parallel_cfg)
+    return _ConfigPerfFactory(cache_cfg=cache_cfg, parallel_cfg=parallel_cfg)
 
 
 __all__ = [

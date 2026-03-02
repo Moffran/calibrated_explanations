@@ -21,15 +21,15 @@ from typing import Any
 
 from ..utils.exceptions import ConfigurationError
 
-# Minimal, conservative alias map.
-ALIAS_MAP: dict[str, str] = {
-    # Example: users sometimes pass statistical alpha(s) instead of percentiles.
-    # Mapping stays syntactic only in 1B; no semantic conversion performed.
+# Removed aliases (v0.11.0).
+REMOVED_ALIAS_MAP: dict[str, str] = {
     "alpha": "low_high_percentiles",
     "alphas": "low_high_percentiles",
-    # Parallelism terminology normalization (future-facing; not wired yet).
     "n_jobs": "parallel_workers",
 }
+
+# Kept for API compatibility; no active alias mapping remains after v0.11.0.
+ALIAS_MAP: dict[str, str] = {}
 
 # Parameter combinations that are mutually exclusive or conflicting.
 EXCLUSIVE_PARAM_GROUPS: list[tuple[str, ...]] = [
@@ -52,11 +52,24 @@ def canonicalize_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
       any chance of behavior drift. Callers should read canonical keys first.
     - Unknown keys are left untouched.
     """
-    out = dict(kwargs)
-    for alias, canonical in ALIAS_MAP.items():
-        if alias in kwargs and canonical not in kwargs:
-            out[canonical] = kwargs[alias]
-    return out
+    return dict(kwargs)
+
+
+def reject_removed_aliases(kwargs: dict[str, Any]) -> None:
+    """Reject aliases removed in v0.11.0 with actionable migration guidance."""
+    used = {alias: canonical for alias, canonical in REMOVED_ALIAS_MAP.items() if alias in kwargs}
+    if not used:
+        return
+    formatted = ", ".join(f"'{alias}' -> '{canonical}'" for alias, canonical in used.items())
+    raise ConfigurationError(
+        "Deprecated parameter aliases were removed in v0.11.0. "
+        f"Use canonical names instead: {formatted}.",
+        details={
+            "removed_aliases": list(used.keys()),
+            "canonical_replacements": used,
+            "removed_in": "v0.11.0",
+        },
+    )
 
 
 def validate_param_combination(kwargs: dict[str, Any]) -> None:
@@ -89,32 +102,24 @@ def validate_param_combination(kwargs: dict[str, Any]) -> None:
             )
 
 
-__all__ = ["ALIAS_MAP", "canonicalize_kwargs", "validate_param_combination"]
+__all__ = [
+    "ALIAS_MAP",
+    "REMOVED_ALIAS_MAP",
+    "canonicalize_kwargs",
+    "reject_removed_aliases",
+    "validate_param_combination",
+]
 
 
 def warn_on_aliases(kwargs: dict[str, Any]) -> None:
-    """Emit deprecation warnings when known alias keys are used.
+    """Compatibility wrapper for the removed alias guard.
 
     Notes
     -----
-    - No behavior change; only a `DeprecationWarning` to guide users.
+    - `warn_on_aliases` historically emitted deprecation warnings.
+    - Since aliases were removed in v0.11.0, this now fails fast.
     """
-    import warnings as _warnings
-
-    from ..utils import deprecate_alias
-
-    for alias, canonical in ALIAS_MAP.items():
-        if alias in kwargs:
-            # Emit a lightweight UserWarning so outer `warnings.catch_warnings`
-            # contexts (used in unit tests) can observe the deprecation even
-            # when pytest's `pytest.warns` context manager intercepts
-            # DeprecationWarning emissions.
-            _warnings.warn(
-                "Parameter or alias '" + alias + "' is deprecated; use '" + canonical + "'",
-                UserWarning,
-                stacklevel=3,
-            )
-            deprecate_alias(alias, canonical, stacklevel=3)
+    reject_removed_aliases(kwargs)
 
 
 __all__.append("warn_on_aliases")

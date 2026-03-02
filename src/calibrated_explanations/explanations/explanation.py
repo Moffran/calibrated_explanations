@@ -1,20 +1,20 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments, line-too-long
-"""Module containing classes for storing and visualizing calibrated explanations.
 
-Classes:
-    :class:`.CalibratedExplanation`:
-        Abstract base class for calibrated explanations. Defines the interface and shared functionality for different types of explanations.
+"""Calibrated explanation containers and visualization helpers.
 
-    :class:`.FactualExplanation`:
-        Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
+This module defines the classes used to represent factual, alternative and
+fast explanations produced by :class:`~calibrated_explanations.core.CalibratedExplainer`.
 
-    :class:`.AlternativeExplanation`:
-        Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
-
-    :class:`.FastExplanation`:
-        Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
+Primary classes
+---------------
+- :class:`CalibratedExplanation` — Abstract base for explanation instances.
+- :class:`FactualExplanation` — Factual explanations for an instance.
+- :class:`AlternativeExplanation` — Alternative/counterfactual explanations.
+- :class:`FastExplanation` — Lightweight fast-mode explanations.
 """
+
+from __future__ import annotations
 
 import contextlib
 import math
@@ -122,10 +122,11 @@ class RuleWithImpact:
 class CalibratedExplanation(ABC):
     """Abstract base class for storing and visualizing calibrated explanations.
 
-    This class defines the interface and shared functionality for different types of calibrated explanations.
+    Subclasses implement concrete payload building and plotting utilities while
+    this base class provides shared validation and convenience accessors.
 
-    For detailed information about the internal data structures and attributes used by this class
-    and its subclasses, see docs/foundations/concepts/explanation_structures.md.
+    See documentation at ``docs/foundations/concepts/explanation_structures.md``
+    for details on the internal payload layout.
     """
 
     def __init__(
@@ -223,6 +224,95 @@ class CalibratedExplanation(ABC):
         self.reject_context = None
 
         self._validate_prediction_invariant()
+
+    def filter_features(
+        self,
+        *,
+        exclude_features=None,
+        include_features=None,
+        copy=True,
+    ):
+        """Filter rules by feature inclusion or exclusion.
+
+        Parameters
+        ----------
+        exclude_features : str, int, or list of str/int, optional
+            Features to exclude. Rules containing these features will be removed.
+        include_features : str, int, or list of str/int, optional
+            Features to include. Only rules containing these features will be kept.
+        copy : bool, default=True
+            If True, return a copy of the explanation. If False, modify in place.
+
+        Returns
+        -------
+        CalibratedExplanation
+            Filtered explanation.
+        """
+        if (exclude_features is None) == (include_features is None):
+            raise ValidationError(
+                "Exactly one of exclude_features or include_features must be provided",
+                details={
+                    "exclude_features": exclude_features,
+                    "include_features": include_features,
+                },
+            )
+
+        if copy:
+            self = self.copy()
+
+        # Normalize the features to indices
+        target_features = exclude_features if exclude_features is not None else include_features
+        is_exclude = exclude_features is not None
+
+        if isinstance(target_features, (str, int)):
+            target_features = [target_features]
+        elif not isinstance(target_features, list):
+            raise ValidationError("Features must be a string, int, or list of strings/ints")
+
+        if not target_features:
+            raise ValidationError("Features list must not be empty")
+
+        target_indices = []
+        for feat in target_features:
+            if isinstance(feat, str):
+                if feat not in self.get_explainer().feature_names:
+                    raise ValidationError(f"Feature name '{feat}' not found in feature_names")
+                target_indices.append(self.get_explainer().feature_names.index(feat))
+            elif isinstance(feat, int):
+                if not (0 <= feat < self.get_explainer().num_features):
+                    raise ValidationError(
+                        f"Feature index {feat} is out of range [0, {self.get_explainer().num_features})"
+                    )
+                target_indices.append(feat)
+            else:
+                raise ValidationError("Features must contain only strings or ints")
+
+        # Create mask for rules to keep
+        keep_mask = []
+        for i, features in enumerate(self.rules["feature"]):
+            if self.rules["is_conjunctive"][i]:
+                # For conjunctive rules
+                if isinstance(features, list):
+                    has_target = any(f in target_indices for f in features)
+                else:
+                    has_target = features in target_indices
+                keep = has_target if not is_exclude else not has_target
+            else:
+                # For disjunctive rules (single feature)
+                has_target = features in target_indices
+                keep = has_target if not is_exclude else not has_target
+            keep_mask.append(keep)
+
+        # Filter rules
+        filtered_rules = {}
+        for key in self.rules:
+            filtered_rules[key] = [
+                val for val, keep in zip(self.rules[key], keep_mask, strict=False) if keep
+            ]
+
+        self.rules = filtered_rules
+
+        return self
 
     def _validate_prediction_invariant(self) -> None:
         """Enforce low <= predict <= high invariant on prediction payload."""
@@ -595,6 +685,16 @@ class CalibratedExplanation(ABC):
         else:
             # For text and html, return as is
             return result
+
+    def to_dataframe(self, *args, **kwargs):
+        """Return the narrative output as a pandas DataFrame.
+
+        Call :meth:`to_narrative` with ``output_format='dataframe'`` and return
+        the resulting DataFrame. Accepts the same arguments as
+        :meth:`to_narrative`.
+        """
+        kwargs.setdefault("output_format", "dataframe")
+        return self.to_narrative(*args, **kwargs)
 
     @abstractmethod
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
@@ -2684,6 +2784,9 @@ class AlternativeExplanation(CalibratedExplanation):
         ):
             return self.conjunctive_rules
 
+        if getattr(self, "has_rules", False) and isinstance(self.rules, dict):
+            return self.rules
+
         self.rules = []
         self.labels = {}  # pylint: disable=attribute-defined-outside-init
         instance = np.array(self.x_test, copy=True)
@@ -2884,10 +2987,28 @@ class AlternativeExplanation(CalibratedExplanation):
                 # Super: keep only rules with higher prediction
                 if make_super and rules["predict"][rule] <= self.prediction["predict"]:
                     continue
-                # Semi/Counter: keep only rules with lower prediction
-                if (make_semi or make_counter) and (
-                    rules["predict"][rule] >= self.prediction["predict"]
-                ):
+                # Semi: for plain regression, keep alternatives where the
+                # uncertainty intervals mutually include the other's mean
+                # (i.e. conservative 'semi' definition). Use predict and
+                # predict_low/predict_high for comparisons.
+                if make_semi:
+                    try:
+                        rule_mean = float(rules["predict"][rule])
+                        rule_low = float(rules["predict_low"][rule])
+                        rule_high = float(rules["predict_high"][rule])
+                        base_mean = float(self.prediction["predict"])
+                        base_low = float(self.prediction["low"])
+                        base_high = float(self.prediction["high"])
+                    except (TypeError, ValueError):
+                        # If values are not numeric, skip this rule
+                        continue
+                    if not (
+                        (rule_low <= base_mean <= rule_high)
+                        and (base_low <= rule_mean <= base_high)
+                    ):
+                        continue
+                # Counter: keep only rules with lower prediction than original
+                if make_counter and rules["predict"][rule] >= self.prediction["predict"]:
                     continue
                 if (
                     only_ensured
@@ -2898,6 +3019,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 if (
                     rules["base_predict_low"] == rules["predict_low"][rule]
                     and rules["base_predict_high"] == rules["predict_high"][rule]
+                    and rules["predict"][rule] == self.prediction["predict"]
                 ):
                     continue
                 self.__append_rule(new_rules, rules, rule)
@@ -2908,34 +3030,34 @@ class AlternativeExplanation(CalibratedExplanation):
                 # filter out potential rules if include_potential is False
                 if not include_potential and is_potential:
                     continue
-                if make_super and (
-                    positive_class
-                    and rules["predict"][rule] <= self.prediction["predict"]
-                    or not positive_class
-                    and rules["predict"][rule] >= self.prediction["predict"]
-                ):
-                    continue
-                if make_semi:
-                    if positive_class:
-                        if not (include_potential and is_potential) and (
-                            rules["predict"][rule] < 0.5
-                            or rules["predict"][rule] > self.prediction["predict"]
-                        ):
-                            continue
-                    elif not (include_potential and is_potential) and (
-                        rules["predict"][rule] > 0.5
-                        or rules["predict"][rule] < self.prediction["predict"]
-                    ):
-                        continue
-                if make_counter and (
-                    not (include_potential and is_potential)
-                    and (
-                        positive_class
-                        and rules["predict"][rule] > 0.5
-                        or not positive_class
-                        and rules["predict"][rule] < 0.5
+                # Compute point-based membership (always enforced).
+                rule_predict = rules["predict"][rule]
+                # super: moves further into the predicted class (away from 0.5)
+                is_super_by_point = (
+                    positive_class and rule_predict > self.prediction["predict"]
+                ) or (not positive_class and rule_predict < self.prediction["predict"])
+                # semi: same side as base but closer to the decision boundary (towards 0.5)
+                if positive_class:
+                    is_semi_by_point = (rule_predict > 0.5) and (
+                        rule_predict < self.prediction["predict"]
                     )
-                ):
+                else:
+                    is_semi_by_point = (rule_predict < 0.5) and (
+                        rule_predict > self.prediction["predict"]
+                    )
+                # counter: crosses the decision boundary (opposite side of 0.5)
+                is_counter_by_point = (positive_class and rule_predict <= 0.5) or (
+                    not positive_class and rule_predict >= 0.5
+                )
+
+                # Enforce membership by point-prediction for all modes. Potentials
+                # are still controlled by the `include_potential` flag above, but
+                # when included they must also satisfy the point-based comparator.
+                if make_super and not is_super_by_point:
+                    continue
+                if make_semi and not is_semi_by_point:
+                    continue
+                if make_counter and not is_counter_by_point:
                     continue
                 # if only_ensured is True, filter out rules that lead to increased uncertainty
                 if (
@@ -3173,6 +3295,12 @@ class AlternativeExplanation(CalibratedExplanation):
         target._AlternativeExplanation__is_super_explanation = True  # pylint: disable=protected-access
         return target
 
+    def super(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.super_explanations`."""
+        return self.super_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """Return a filtered view of *semi* alternative explanations.
 
@@ -3217,6 +3345,12 @@ class AlternativeExplanation(CalibratedExplanation):
         )
         target._AlternativeExplanation__is_semi_explanation = True  # pylint: disable=protected-access
         return target
+
+    def semi(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.semi_explanations`."""
+        return self.semi_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
 
     def counter_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """Return a filtered view of *counter* alternative explanations.
@@ -3263,6 +3397,12 @@ class AlternativeExplanation(CalibratedExplanation):
         target._AlternativeExplanation__is_counter_explanation = True  # pylint: disable=protected-access
         return target
 
+    def counter(self, only_ensured=False, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.counter_explanations`."""
+        return self.counter_explanations(
+            only_ensured=only_ensured, include_potential=include_potential, copy=copy
+        )
+
     def ensured_explanations(self, include_potential=True, copy=True):
         """Return a filtered view of *ensured* alternative explanations.
 
@@ -3297,6 +3437,10 @@ class AlternativeExplanation(CalibratedExplanation):
         target.__filter_rules(only_ensured=True, include_potential=include_potential)
         return target
 
+    def ensured(self, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.ensured_explanations`."""
+        return self.ensured_explanations(include_potential=include_potential, copy=copy)
+
     def pareto_explanations(self, include_potential=True, copy=True):
         """Return output-envelope Pareto alternatives by uncertainty width.
 
@@ -3324,6 +3468,10 @@ class AlternativeExplanation(CalibratedExplanation):
         target.__filter_rules(include_potential=include_potential)
         target.__pareto_filter_rules()
         return target
+
+    def pareto(self, include_potential=True, copy=True):
+        """Shorthand delegator for :meth:`.pareto_explanations`."""
+        return self.pareto_explanations(include_potential=include_potential, copy=copy)
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """

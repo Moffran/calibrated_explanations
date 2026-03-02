@@ -165,11 +165,9 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(
 
     monkeypatch.setattr(plugins, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        plugins, "find_plot_plugin_trusted", lambda ident: dummy if ident == "dummy-style" else None
-    )
-    monkeypatch.setattr(
         plugins, "find_plot_plugin", lambda ident: dummy if ident == "dummy-style" else None
     )
+    monkeypatch.setattr(registry, "find_plot_plugin_trusted", lambda _ident: None)
 
     def raise_missing(_identifier: str) -> Any:
         raise Exception("missing")

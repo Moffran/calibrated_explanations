@@ -20,14 +20,19 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import warnings
 from types import MappingProxyType
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Mapping, Tuple
 
 from .predict_monitor import PredictBridgeMonitor
 from .registry import (
     find_explanation_descriptor,
+    find_explanation_plugin,
+    find_explanation_plugin_trusted,
     find_interval_descriptor,
+    set_trust_policy,
 )
+from .trust_policy import PluginTrustPolicy
 
 # DEFAULT PLUGIN IDENTIFIERS (Single Source of Truth)
 # These are the fallback plugins used when no override/env/config is specified
@@ -77,7 +82,7 @@ class PluginManager:
       - Provide plugin override coercion for callable overrides
     """
 
-    def __init__(self, explainer: Any) -> None:
+    def __init__(self, explainer: Any, *, policy: PluginTrustPolicy | None = None) -> None:
         """Initialize plugin manager with back-reference to explainer.
 
         Parameters
@@ -87,6 +92,8 @@ class PluginManager:
         """
         self.explainer = explainer
         self._logger = logging.getLogger(__name__)
+        if policy is not None:
+            set_trust_policy(policy)
 
         # Default identifiers (can be patched in tests)
         self._default_explanation_identifiers = dict(DEFAULT_EXPLANATION_IDENTIFIERS)
@@ -908,6 +915,52 @@ class PluginManager:
     def clear_explanation_plugin_identifiers(self) -> None:
         """Clear all cached explanation plugin identifiers."""
         self._explanation_plugin_identifiers.clear()
+
+    def resolve_explanation_plugin(
+        self,
+        identifier: str,
+        *,
+        allow_untrusted: bool = False,
+        is_preferred: bool = False,
+        is_explicit_override: bool = False,
+    ) -> tuple[Any | None, Mapping[str, Any] | None, str | None]:
+        """Resolve an explanation plugin candidate by identifier.
+
+        Returns
+        -------
+        tuple
+            ``(plugin, metadata, reason)`` where ``reason`` is set when
+            resolution fails (for example ``"untrusted"`` or
+            ``"not registered"``).
+        """
+        descriptor = find_explanation_descriptor(identifier)
+        metadata: Mapping[str, Any] | None = None
+        plugin = None
+        if descriptor is not None:
+            metadata = descriptor.metadata
+            if descriptor.trusted:
+                plugin = descriptor.plugin
+            elif is_preferred and not allow_untrusted:
+                return None, metadata, "untrusted"
+            elif is_explicit_override:
+                warnings.warn(
+                    f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                    "Ensure you trust the source of this plugin.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                plugin = descriptor.plugin
+
+        if plugin is None:
+            if is_explicit_override:
+                plugin = find_explanation_plugin(identifier)
+            else:
+                plugin = find_explanation_plugin_trusted(identifier)
+
+        if plugin is None:
+            return None, metadata, "not registered"
+
+        return plugin, metadata, None
 
     # =========================================================================
     # Orchestrator initialization (moved from CalibratedExplainer)

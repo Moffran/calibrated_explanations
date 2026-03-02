@@ -6,17 +6,32 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
 
 ### Added
+- **Claude Code Skill Library (ADR-030/012):** Implemented 37 specialized Claude Code skills for `calibrated_explanations`, covering everything from core pipeline setup and Mondrian fairness to plugin scaffolding, logging & observability (ADR-028), payload governance (ADR-005), and the role-based Test Quality Method (ADR-030) including specialized roles for Pruning, Dead-code Hunting, and Quality Auditing.
 - **Multiclass explanations (Issue#104):** Introduced first-class multiclass explanation support via `MultiClassCalibratedExplanations`, enabling per-instance all-class explanation access and multiclass-aware plotting for factual and alternative workflows. This addresses [#104](https://github.com/Moffran/calibrated_explanations/issues/104).
 - **ADR-009 task closure:** Completed preprocessing automation and mapping persistence hardening. `auto_encode='auto'` now activates the deterministic built-in encoder, unseen-category enforcement now raises actionable `ValidationError` when policy is `error` (with `ignore` preserving sentinel behavior), non-numeric input without preprocessing now fails with actionable guidance, and mapping export/import helpers remain available with telemetry visibility.
 - **ADR-030 test-quality enforcement upgrade:** Extended `detect_test_anti_patterns.py` with assertion and determinism checks, added baseline support (`--check` / `--rebaseline`), committed `.github/test-quality-baseline.json`, and wired reports into CI artifacts.
+
+- **ADR-011 deprecation coverage:** Standardized the deprecation helper behavior and testability by routing `deprecate()` through the public `should_raise()` wrapper to allow deterministic test patching and `CE_DEPRECATIONS=error` compatibility. Targeted deprecation-helper tests pass in a focused run; follow-up sweep to replace direct `warnings.warn(..., DeprecationWarning)` callsites with `deprecate()` is planned for v0.11.1.
+ - **Deprecation alias handling (fix):** Ensure ADR-011 conformance by routing alias deprecations through the central `deprecate()` helper with a non-raising flag so low-risk parameter/module aliases emit warnings (and are recorded) without escalating CI jobs configured with `CE_DEPRECATIONS=error`. This avoids import-time escalation while preserving centralised deprecation semantics and per-test recording.
 - **Pattern 1 hardening:** Emptied `.github/private_member_allowlist.json` and enforced private-member scanning in CI (`scan_private_usage.py --check`) with current violations remediated.
 - **Alternative Pareto filtering:** Added `pareto_explanations()` on `AlternativeExplanation` and `AlternativeExplanations` to return output-envelope Pareto alternatives over output/uncertainty space (interval-width uncertainty), always pruning equal-output higher-uncertainty rules while preserving output-span extrema. Also added the `ensured.ipynb` notebook to demonstrate the ensured framework.
 - **ADR-032 guarded explanations:** Introduced `explain_guarded_factual` and `explore_guarded_alternatives` for guarded factual/alternative explanations with in-distribution guardrails. Intended use: identical to standard CE in all aspects except rule conditions and the internal perturbation strategy. This update only affect feature rules, not predictions being explained. Added first-class guarded auditability via `get_guarded_audit()` on guarded explanations and guarded collections. The payload reports per-interval bounds/p-values/conformity/emission reasons and collection-level counts including `intervals_removed_guard` (strictly non-conforming intervals), without modifying existing `get_rules()` contracts. Updated guarded quickstart/concept docs with `get_guarded_audit()` usage, table interpretation guidance, emission-reason semantics (`emitted`, `removed_guard`, `design_excluded`, `baseline_equal`, `zero_impact`, `ignored_feature`), and clarified that Bonferroni correction is optional via `bonferroni_correction`. Added `format_guarded_audit_table(...)` and `print_guarded_audit_table(...)` in `calibrated_explanations.ce_agent_utils` for compact tabular notebook inspection of guarded audit payloads.
+- `CalibratedExplanation.filter_features()` and `CalibratedExplanations.filter_features()` methods to exclude rules containing specified features by name or index.
+- **ADR-031 calibrator persistence:** Added primitive serialization/deserialization contracts for built-in calibrators (`VennAbers`, `IntervalRegressor`) and explainer persistence support in `WrapCalibratedExplainer`, including checksum validation and persistence-focused tests.
+- **Ensure API shorthand aliases:** Added concise aliases on both single-instance and collection alternatives (`.super()`, `.semi()`, `.counter()`, `.ensured()`, `.pareto()`) delegating to the corresponding `*_explanations()` methods.
 
 ### Changed
 - **Project script and report reorganization:** Moved `api_diff.py`, `audit_notebook_api.py`, and `snapshot_public_api.py` to `scripts/quality/` to align with their purpose as quality gates. Archived legacy and debugging scripts (`compare_golden.py`, `migrate_aliases.py`, `run_feature_filter_debug.py`) to `scripts/archived/`. Cleaned up `reports/` by moving historical documentation and benchmark results to `reports/archived/`. Updated documentation and workflow references to reflect new locations.
 - **General test and code quality method:** Adopted a broader ADR-aligned quality method across tests and source code (behavior-first assertions, deterministic AAA structure, reduced implementation-detail coupling, stronger linting/analysis checks, and targeted removal of low-signal redundancy) while preserving regression protection and coverage gates.
 - **Ensured framework documentation refresh:** Expanded the alternatives concept page, updated the ensured playbook to use the first-class filtering APIs (`ensured_explanations`, `super_explanations`, `semi_explanations`, `counter_explanations`, `pareto_explanations`), documented regression semantics and ensured ranking controls (`rnk_metric`, `rnk_weight`, `filter_top`), and added `style="ensured"` as an alias for triangular alternative plots.
+- **Plain regression `semi` semantics:** Updated semi-alternative selection for plain regression to use conservative representative alternatives, and aligned docs/templates/tests with the new behavior.
+- **Adapter metadata retention:** Hardened explanation adapters and related collection flows to preserve provenance/metadata through conversions and serialization pathways.
+- **Public API contract parity:** Aligned guarded and unguarded entry-point contracts so user-facing argument and return behavior stays consistent across explain/predict wrappers.
+- **Validation and CI checks:** Extended local checks with parity snapshot comparison and tighter link-check ignores, plus follow-up CI/link fixes and dependency refreshes.
+
+### Removed
+- **ADR-011 deprecation removals (v0.11.0 window):** Removed top-level compatibility exports from `calibrated_explanations.__init__` (`viz`, `plotting`, explanation/discretizer/calibrator aliases), removed `WrapCalibratedExplainer.explain_counterfactual`, removed `CalibratedExplanations.get_explanation` (base collection helper), removed `plugins.registry.register_plot_plugin`, removed the deprecated `calibrated_explanations.perf` root facade API, and removed the obsolete legacy-core import deprecation warning path.
+- **ADR-011 alias removals (v0.11.0 window):** Removed deprecated parameter aliases `alpha`/`alphas` and `n_jobs`; call sites must use canonical keywords (`low_high_percentiles`, `parallel_workers`). Alias usage now fails fast with `ConfigurationError`.
 
 ## [v0.10.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.4) - 2026-02-12
 
@@ -553,17 +568,17 @@ The following parameters have been renamed across multiple functions and methods
 - y_test → y
 
 ##### Wrapper keyword normalisation
-The following `WrapCalibratedExplainer` entry points now strip deprecated alias
-arguments after emitting a `DeprecationWarning`:
+The following `WrapCalibratedExplainer` entry points introduced alias
+normalization in v0.7.0:
 - `calibrate`
 - `explain_factual`
 - `explore_alternatives`
 - `explain_fast`
 - `predict`
 - `predict_proba`
-Alias keys such as `alpha`, `alphas`, and `n_jobs` are therefore ignored going
-forward. Callers must provide the canonical keyword names (`low_high_percentiles`,
-`parallel_workers`, etc.) for custom behaviour to take effect.【F:src/calibrated_explanations/core/wrap_explainer.py†L201-L409】【F:src/calibrated_explanations/api/params.py†L16-L70】
+These aliases were fully removed in v0.11.0; passing `alpha`, `alphas`, or
+`n_jobs` now raises `ConfigurationError`. Use canonical keywords such as
+`low_high_percentiles` and `parallel_workers` instead.【F:src/calibrated_explanations/core/wrap_explainer.py†L201-L409】【F:src/calibrated_explanations/api/params.py†L16-L70】
 
 ##### Explanation plugin toggle
 `CalibratedExplainer` now exposes a keyword-only `_use_plugin` flag across all

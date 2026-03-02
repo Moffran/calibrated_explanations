@@ -13,16 +13,17 @@ Compatibility notes
 
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
 from ..parallel import parallel as _parallel
+from ..utils.deprecations import deprecate
 
-warnings.warn(
+# Centralized deprecation helper for testable behaviour
+deprecate(
     "The 'calibrated_explanations.perf.parallel' module is deprecated. "
     "Use 'calibrated_explanations.parallel' instead. "
     "This shim will be removed after v1.1.0.",
-    DeprecationWarning,
+    key="module:perf.parallel",
     stacklevel=2,
 )
 

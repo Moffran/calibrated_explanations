@@ -39,7 +39,9 @@ def should_raise() -> bool:
     return _should_raise()
 
 
-def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> None:
+def deprecate(
+    message: str, *, key: str | None = None, stacklevel: int = 2, raise_on_error: bool = True
+) -> None:
     """Emit a `DeprecationWarning` for *message*.
 
     - If `CE_DEPRECATIONS` is set to an error value, raise a
@@ -61,8 +63,11 @@ def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> N
     if key is None:
         key = message
 
-    # Strict CI mode: raise instead of warning
-    if _should_raise():
+    # Strict CI mode: raise instead of warning, unless the caller has
+    # explicitly opted out (e.g., low-risk alias deprecations).
+    # Call the public `should_raise()` wrapper so tests can patch it when
+    # asserting raise-on-deprecation behaviour.
+    if should_raise() and raise_on_error:
         # Record the key so callers can inspect emitted deprecations even when
         # we raise in strict CI mode. When running under pytest, only record
         # into the per-test map to avoid polluting session-wide state and
@@ -73,6 +78,18 @@ def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> N
             raise DeprecationWarning(message)
         _EMITTED.add(key)
         raise DeprecationWarning(message)
+    elif should_raise() and not raise_on_error:
+        # Record the key but do not raise; emit a normal warning instead so
+        # CI jobs configured with CE_DEPRECATIONS=error remain strict for
+        # important deprecations while allowing low-risk aliases to warn.
+        pytest_id = os.getenv("PYTEST_CURRENT_TEST")
+        if pytest_id:
+            _EMITTED_PER_TEST.setdefault(pytest_id, set()).add(key)
+            warnings.warn(message, DeprecationWarning, stacklevel=stacklevel)
+            return
+        _EMITTED.add(key)
+        warnings.warn(message, DeprecationWarning, stacklevel=stacklevel)
+        return
 
     # Per-test dedup when running under pytest
     pytest_id = os.getenv("PYTEST_CURRENT_TEST")
@@ -96,12 +113,18 @@ def deprecate_alias(alias: str, canonical: str, *, stacklevel: int = 3) -> None:
     """Provide convenience helper for deprecated parameter/module aliases.
 
     Emits a concise message using a stable key derived from the alias.
+
+    Alias deprecations are considered low-risk (informational) and should
+    not escalate CI jobs configured with `CE_DEPRECATIONS=error`. To comply
+    with ADR-011 we still use the central `deprecate()` helper but request
+    a non-raising emission.
     """
     key = f"alias:{alias}"
     deprecate(
         "Parameter or alias '" + alias + "' is deprecated; use '" + canonical + "'",
         key=key,
         stacklevel=stacklevel,
+        raise_on_error=False,
     )
 
 

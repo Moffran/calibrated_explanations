@@ -2,10 +2,10 @@
 
 from calibrated_explanations.plugins import (
     unregister,
-    clear_explanation_plugins,
     ensure_builtin_plugins,
 )
 from calibrated_explanations.plugins.plots import PlotRenderContext
+from tests.support.registry_helpers import clear_explanation_plugins
 
 
 def cleanup_plugin(plugin) -> None:

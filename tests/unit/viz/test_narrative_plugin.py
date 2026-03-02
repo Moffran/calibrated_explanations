@@ -440,3 +440,79 @@ def test_narrative_plugin_feature_name_helpers(monkeypatch):
 
     alt = SimpleNamespace(is_alternative=lambda: True)
     assert plugin.is_alternative(alt) is True
+
+
+def test_detect_problem_type_classification_non_multiclass():
+    """Verify classification mode returns binary when is_multiclass is False."""
+    plugin = NarrativePlotPlugin()
+    explainer = SimpleNamespace(mode="classification", is_multiclass=lambda: False)
+    explanations = SimpleNamespace(
+        y_threshold=None,
+        calibrated_explainer=explainer,
+        explanations=[SimpleNamespace()],
+    )
+    result = plugin.detect_problem_type(explanations)
+    assert result == "binary_classification"
+
+
+def test_detect_problem_type_multiclass_exception_fallback():
+    """Verify is_multiclass exception triggers fallback path."""
+    plugin = NarrativePlotPlugin()
+    explainer = SimpleNamespace(mode="classification")
+
+    def bad_multiclass():
+        raise TypeError("not callable right")
+
+    explainer.is_multiclass = bad_multiclass
+    explanations = SimpleNamespace(
+        y_threshold=None,
+        calibrated_explainer=explainer,
+        explanations=[SimpleNamespace()],
+    )
+    result = plugin.detect_problem_type(explanations)
+    assert result in ("multiclass_classification", "binary_classification")
+
+
+def test_detect_problem_type_outer_exception_returns_regression():
+    """Verify outer exception fallback returns regression."""
+    plugin = NarrativePlotPlugin()
+
+    class BadExplainer:
+        @property
+        def mode(self):
+            raise RuntimeError("total failure")
+
+    explanations = SimpleNamespace(
+        y_threshold=None,
+        calibrated_explainer=BadExplainer(),
+        explanations=[SimpleNamespace()],
+    )
+    result = plugin.detect_problem_type(explanations)
+    assert result == "regression"
+
+
+def test_get_feature_names_returns_none_on_broken_explainer():
+    """Verify feature name extraction returns None when explainer raises."""
+    plugin = NarrativePlotPlugin()
+
+    class BrokenExplainer:
+        @property
+        def feature_names(self):
+            raise RuntimeError("boom")
+
+    explanations = SimpleNamespace(calibrated_explainer=BrokenExplainer())
+    result = plugin.get_feature_names(explanations)
+    assert result is None
+
+
+def test_get_feature_names_fallback_to_underlying():
+    """Verify feature names fall through to underlying explainer."""
+    plugin = NarrativePlotPlugin()
+    underlying = SimpleNamespace(feature_names=["x", "y", "z"])
+    explainer = SimpleNamespace(
+        feature_names=None,
+        explainer=underlying,
+    )
+    explanations = SimpleNamespace(calibrated_explainer=explainer)
+    result = plugin.get_feature_names(explanations)
+    assert result == ["x", "y", "z"]

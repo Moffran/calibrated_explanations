@@ -22,6 +22,8 @@ The tests ensure that:
 
 import numpy as np
 import pytest
+import json
+import pickle
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.utils.exceptions import NotFittedError
 from crepes.extras import MondrianCategorizer
@@ -50,6 +52,16 @@ def verify_predictions(y_pred1, y_pred2, bounds=None):
         if bounds:
             low, high = bounds
             assert low[i] <= p1 <= high[i], f"Prediction {p1} outside bounds at index {i}"
+
+
+def assert_payload_close(left, right):
+    """Recursively compare nested persistence payloads."""
+    if isinstance(left, tuple) and isinstance(right, tuple):
+        assert len(left) == len(right)
+        for lhs, rhs in zip(left, right, strict=True):
+            assert_payload_close(lhs, rhs)
+        return
+    np.testing.assert_allclose(np.asarray(left), np.asarray(right), atol=1e-9)
 
 
 @pytest.mark.parametrize(
@@ -455,6 +467,194 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
         decimal=6,
         err_msg="Probabilities should sum to 1",
     )
+
+
+def test_should_roundtrip_state_with_native_classification_primitive_when_saved(
+    tmp_path, binary_dataset
+):
+    """ADR-031 classification round-trip should preserve calibrated outputs and manifest shape."""
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=20, random_state=42))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+    baseline = wrapper.predict_proba(x_test[:12], uq_interval=True)
+
+    state_dir = tmp_path / "classification_state"
+    wrapper.save_state(state_dir)
+
+    manifest = json.loads((state_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert isinstance(manifest.get("schema_version"), int)
+    assert isinstance(manifest.get("created_at_utc"), str)
+    assert isinstance(manifest.get("files"), dict)
+    assert "wrapper.pkl" in manifest["files"]
+    assert "calibrator_primitive.json" in manifest["files"]
+
+    primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
+    assert primitive["calibrator_type"] == "venn_abers"
+    assert primitive["schema_version"] == 1
+
+    restored = WrapCalibratedExplainer.load_state(state_dir)
+    reloaded = restored.predict_proba(x_test[:12], uq_interval=True)
+    assert_payload_close(baseline, reloaded)
+
+
+def test_should_roundtrip_state_with_fast_collection_primitive_when_interval_learner_is_sequence(
+    tmp_path,
+    binary_dataset,
+):
+    """ADR-031 fast-collection payload path should round-trip when interval learners are serialized as a list."""
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=18, random_state=7))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+    interval_learner = wrapper.explainer.interval_learner
+    wrapper.explainer.interval_learner = [interval_learner, interval_learner]
+    baseline = wrapper.predict_proba(x_test[:10], uq_interval=True)
+
+    state_dir = tmp_path / "classification_fast_collection_state"
+    wrapper.save_state(state_dir)
+
+    primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
+    assert primitive["calibrator_type"] == "fast_collection"
+    assert isinstance(primitive.get("calibrators"), list)
+    assert len(primitive["calibrators"]) == 2
+
+    restored = WrapCalibratedExplainer.load_state(state_dir)
+    reloaded = restored.predict_proba(x_test[:10], uq_interval=True)
+    assert_payload_close(baseline, reloaded)
+
+
+def test_should_roundtrip_wrapper_with_pickle_dump_load_when_calibrated(
+    tmp_path,
+    binary_dataset,
+    monkeypatch,
+):
+    """Pickle dump/load should preserve calibrated wrapper predictions."""
+    monkeypatch.setenv("CE_PARALLEL", "sequential")
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=20, random_state=41))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+    baseline = wrapper.predict_proba(x_test[:12], uq_interval=True)
+
+    pickle_path = tmp_path / "wrapper.pkl"
+    with pickle_path.open("wb") as handle:
+        pickle.dump(wrapper, handle)
+    with pickle_path.open("rb") as handle:
+        restored = pickle.load(handle)
+
+    reloaded = restored.predict_proba(x_test[:12], uq_interval=True)
+    assert_payload_close(baseline, reloaded)
+
+
+def test_should_roundtrip_wrapper_with_joblib_dump_load_when_calibrated(
+    tmp_path,
+    binary_dataset,
+    monkeypatch,
+):
+    """Joblib dump/load should preserve calibrated wrapper predictions."""
+    monkeypatch.setenv("CE_PARALLEL", "sequential")
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=20, random_state=43))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+    baseline = wrapper.predict_proba(x_test[:12], uq_interval=True)
+
+    joblib_path = tmp_path / "wrapper.joblib"
+    dump(wrapper, joblib_path)
+    restored = load(joblib_path)
+
+    reloaded = restored.predict_proba(x_test[:12], uq_interval=True)
+    assert_payload_close(baseline, reloaded)
+
+
+def test_should_roundtrip_explanation_object_with_pickle_when_serialized(
+    tmp_path,
+    binary_dataset,
+    monkeypatch,
+):
+    """Explanation collections should support pickle round-trip."""
+    monkeypatch.setenv("CE_PARALLEL", "sequential")
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=20, random_state=47))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+    explanations = wrapper.explain_factual(x_test[:3])
+
+    explanation_pickle_path = tmp_path / "explanations.pkl"
+    with explanation_pickle_path.open("wb") as handle:
+        pickle.dump(explanations, handle)
+    with explanation_pickle_path.open("rb") as handle:
+        restored = pickle.load(handle)
+
+    assert len(explanations) == len(restored)
+    for lhs, rhs in zip(explanations, restored, strict=True):
+        assert repr(lhs) == repr(rhs)
 
 
 def multiple_failing_calls(cal_exp, x, y):

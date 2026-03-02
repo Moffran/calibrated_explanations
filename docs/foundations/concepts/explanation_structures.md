@@ -126,6 +126,23 @@ Alternative rules explore counterfactual scenarios. For each feature, they show:
 - The uncertainty interval for that alternative prediction
 - How much the prediction changes (weight delta)
 
+### Filtering semantics (summary)
+
+The framework exposes several named filters over alternative rules (`super`,
+`semi`, `counter`, `ensured`, `pareto`) which are applied after rule generation. The semantics are task-dependent:
+
+- **Classification / probabilistic regression**: 'semi' alternatives stay on
+  the same side of the decision boundary (0.5) as the base prediction while
+  moving it closer to the boundary.
+- **Plain regression**: 'semi' alternatives are selected conservatively as
+  those alternatives whose uncertainty intervals *mutually include* the
+  other's mean (i.e. the alternative's interval contains the base mean AND
+  the base interval contains the alternative mean). This mutual-inclusion
+  rule preserves alternatives that are representative of the base prediction, thus defining 'semi' as alternatives that are both representative and conservative.
+
+The 'ensured' filter is task-agnostic and keeps alternatives whose
+uncertainty interval is no wider than the base prediction interval.
+
 For categorical features, alternatives explore all other possible categories. For continuous features, alternatives examine values outside the current bin (less than lower bound or greater than upper bound).
 
 ## Rule Generation Process

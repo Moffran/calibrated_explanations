@@ -27,6 +27,21 @@ It must be reviewed and completed for every pull request that touches the user-f
 - **Anti-patterns check**
   - [ ] Passed
 
+## v0.11.0 Gate Closure (ADR-033/006/026 + Pattern 1)
+
+- **ADR-033 metadata contract enforced (`plugin_api_version`, `data_modalities`)**
+  - [ ] Passed
+- **ADR-033 ambiguity handling covered by tests**
+  - [ ] Passed
+- **PluginTrustPolicy protocol exists and is registry-wired**
+  - [ ] Passed
+- **Dead registry `include_untrusted` descriptor params removed**
+  - [ ] Passed
+- **Pattern 1: test-helper wrapper exports/re-exports blocked**
+  - [ ] Passed
+- **ADR-026 immutable context + telemetry assertions covered**
+  - [ ] Passed
+
 ## Formatting & Standards (run `pre-commit run --all-files`)
 
 - **Linting**

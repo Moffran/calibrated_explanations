@@ -35,7 +35,7 @@ CANON_COLUMNS = [
     "SuFa",
     "SuPo",
     "Ens",
-    "Time",
+    "Pareto",
 ]
 
 
@@ -45,9 +45,7 @@ RANKVAL_COLUMNS = [
 ]
 
 
-def _counts_to_row(
-    counts_mean: dict[str, float], time_mean_seconds: float
-) -> dict[str, float]:
+def _counts_to_row(counts_mean: dict[str, float]) -> dict[str, float]:
     return {
         "Total": float(counts_mean.get("total", np.nan)),
         "CoFa": float(counts_mean.get("counterfactual", np.nan)),
@@ -57,7 +55,7 @@ def _counts_to_row(
         "SuFa": float(counts_mean.get("superfactual", np.nan)),
         "SuPo": float(counts_mean.get("superpotential", np.nan)),
         "Ens": float(counts_mean.get("ensured", np.nan)),
-        "Time": float(time_mean_seconds),
+        "Pareto": float(counts_mean.get("pareto", np.nan)),
     }
 
 
@@ -79,14 +77,8 @@ def build_table_for_dataset(task_result: dict[str, Any]) -> pd.DataFrame:
     for cal_size in sorted(by_cal.keys(), reverse=False):
         explore = by_cal[cal_size]["explore"]
         conj = by_cal[cal_size]["conjugate"]
-        rows[f"{cal_size} (s)"] = _counts_to_row(
-            explore["counts_mean"],
-            explore.get("time_mean_seconds", 0.0),
-        )
-        rows[f"{cal_size} (c)"] = _counts_to_row(
-            conj["counts_mean"],
-            conj.get("time_mean_seconds", 0.0),
-        )
+        rows[f"{cal_size} (s)"] = _counts_to_row(explore["counts_mean"])
+        rows[f"{cal_size} (c)"] = _counts_to_row(conj["counts_mean"])
 
     df = pd.DataFrame.from_dict(rows, orient="index")
     return df.reindex(columns=CANON_COLUMNS)
@@ -103,14 +95,8 @@ def build_table_for_regression_setting(
     for cal_size in sorted(by_cal.keys(), reverse=False):
         explore = by_cal[cal_size]["explore"]
         conj = by_cal[cal_size]["conjugate"]
-        rows[f"{cal_size} (s)"] = _counts_to_row(
-            explore["counts_mean"],
-            explore.get("time_mean_seconds", 0.0),
-        )
-        rows[f"{cal_size} (c)"] = _counts_to_row(
-            conj["counts_mean"],
-            conj.get("time_mean_seconds", 0.0),
-        )
+        rows[f"{cal_size} (s)"] = _counts_to_row(explore["counts_mean"])
+        rows[f"{cal_size} (c)"] = _counts_to_row(conj["counts_mean"])
 
     df = pd.DataFrame.from_dict(rows, orient="index")
     return df.reindex(columns=CANON_COLUMNS)

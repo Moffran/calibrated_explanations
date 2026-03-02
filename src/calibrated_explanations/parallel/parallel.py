@@ -136,10 +136,13 @@ class ParallelConfig:
                 continue
             if token.startswith("granularity="):
                 value = token.split("=", 1)[1].strip().lower()
+
                 if value == "feature":
-                    warnings.warn(
+                    from ..utils.deprecations import deprecate
+
+                    deprecate(
                         "Feature parallelism is deprecated and removed. Using 'instance' parallelism instead.",
-                        DeprecationWarning,
+                        key="parallel:granularity:feature",
                         stacklevel=2,
                     )
                     cfg.granularity = "instance"

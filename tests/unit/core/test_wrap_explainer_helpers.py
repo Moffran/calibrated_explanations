@@ -9,9 +9,13 @@ import numpy as np
 import pytest
 
 import calibrated_explanations.core.wrap_explainer as wrap_module
-from calibrated_explanations.utils.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    NotFittedError,
+    ValidationError,
+)
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 class PredictOnlyLearner:
@@ -44,7 +48,7 @@ class RecordingPreprocessor:
         self.mapping_ = {"feature": {"a": 0, "b": 1}}
 
     def get_mapping_snapshot(self) -> dict[str, Any]:
-        return {"snap": {1, 2}}
+        return {"snap": [1, 2]}
 
     def fit_transform(self, x: Any) -> Any:
         self.fit_called_with.append(tuple(map(tuple, np.asarray(x))))
@@ -71,15 +75,10 @@ def wrapper() -> WrapCalibratedExplainer:
     return WrapCalibratedExplainer(PredictOnlyLearner())
 
 
-def test_normalize_public_kwargs_filters_aliases(wrapper: WrapCalibratedExplainer) -> None:
+def test_normalize_public_kwargs_rejects_removed_aliases(wrapper: WrapCalibratedExplainer) -> None:
     payload = {"threshold": 0.3, "alpha": (1, 99), "irrelevant": "value"}
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning):
-            wrapper.normalize_public_kwargs(payload, allowed={"threshold"})
-    else:
-        with warns_or_raises():
-            filtered = wrapper.normalize_public_kwargs(payload, allowed={"threshold"})
-        assert filtered == {"threshold": 0.3}
+    with pytest.raises(ConfigurationError, match="removed in v0.11.0"):
+        wrapper.normalize_public_kwargs(payload, allowed={"threshold"})
     assert payload["alpha"] == (1, 99)
     assert payload["irrelevant"] == "value"
 
@@ -234,7 +233,7 @@ def test_predict_proba_requires_threshold_for_regression(wrapper: WrapCalibrated
 def test_from_config_sets_perf_primitives_to_none_when_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("calibrated_explanations.perf.from_config", lambda _: None)
+    monkeypatch.setattr("calibrated_explanations.api.config._build_perf_factory", lambda _: None)
     cfg = SimpleNamespace(
         model=PredictOnlyLearner(),
         threshold=0.4,
@@ -408,6 +407,26 @@ def test_export_and_import_preprocessor_mapping_applies_when_possible(
     new_map = {"feature": {"a": 42}}
     wrapper.import_preprocessor_mapping(new_map)
     assert pre.mapping_ == new_map
+
+
+def test_export_preprocessor_mapping_rejects_non_json_serialisable_snapshots(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    class NonJsonSnapshotPreprocessor:
+        def get_mapping_snapshot(self) -> dict[str, Any]:
+            return {"bad": {1, 2}}
+
+    wrapper.preprocessor = NonJsonSnapshotPreprocessor()
+
+    with pytest.raises(ValidationError, match="JSON-serialisable"):
+        wrapper.export_preprocessor_mapping()
+
+
+def test_import_preprocessor_mapping_rejects_non_json_serialisable_payload(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    with pytest.raises(ValidationError, match="JSON-serialisable"):
+        wrapper.import_preprocessor_mapping({"bad": {1, 2}})
 
 
 def test_pre_fit_preprocess_auto_mode_uses_builtin_encoder(

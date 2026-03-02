@@ -14,6 +14,7 @@ material used to steer releases.
 - Coverage uplift plan (archived): `docs/improvement/archived/coverage_uplift_plan.md`
 - Anti-pattern remediation plan (archived): `docs/improvement/archived/ANTI_PATTERN_REMEDIATION_PLAN.md`
 - Release checklist: `docs/improvement/release_checklist.md`
+- Modality extension rollout plan (draft): `docs/improvement/modality_extension_rollout_plan.md`
 
 ## Notes
 

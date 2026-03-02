@@ -145,6 +145,64 @@ class TestExplanationUnit:
         with pytest.raises(ValidationError):
             expl.filter_rule_sizes(rule_sizes=1, size_range=(1, 2))
 
+    def test_filter_features_copy_preserves_original(self):
+        expl = self.create_expl()
+        expl.rules = {
+            "rule": ["r1", "r2", "r3"],
+            "feature": [0, 1, [0, 1]],
+            "predict": [0.1, 0.2, 0.3],
+            "predict_low": [0.0, 0.1, 0.2],
+            "predict_high": [0.2, 0.3, 0.4],
+            "weight": [0.1, 0.2, 0.3],
+            "weight_low": [0.05, 0.15, 0.25],
+            "weight_high": [0.15, 0.25, 0.35],
+            "value": ["v1", "v2", "v3"],
+            "sampled_values": [1, 2, 3],
+            "feature_value": [10, 20, 30],
+            "is_conjunctive": [False, False, True],
+        }
+        filtered = expl.filter_features(exclude_features=0, copy=True)
+        assert len(filtered.rules["rule"]) == 1
+        assert filtered.rules["rule"] == ["r2"]
+        assert len(expl.rules["rule"]) == 3
+        assert expl.rules["rule"] == ["r1", "r2", "r3"]
+
+    def test_filter_features_include(self):
+        expl = self.create_expl()
+        expl.rules = {
+            "rule": ["r1", "r2", "r3"],
+            "feature": [0, 1, [0, 1]],
+            "predict": [0.1, 0.2, 0.3],
+            "predict_low": [0.0, 0.1, 0.2],
+            "predict_high": [0.2, 0.3, 0.4],
+            "weight": [0.1, 0.2, 0.3],
+            "weight_low": [0.05, 0.15, 0.25],
+            "weight_high": [0.15, 0.25, 0.35],
+            "value": ["v1", "v2", "v3"],
+            "sampled_values": [1, 2, 3],
+            "feature_value": [10, 20, 30],
+            "is_conjunctive": [False, False, True],
+        }
+        filtered = expl.filter_features(include_features=0, copy=True)
+        assert len(filtered.rules["rule"]) == 2
+        assert filtered.rules["rule"] == ["r1", "r3"]  # r1 has 0, r3 has [0,1] so includes 0
+        assert len(expl.rules["rule"]) == 3
+        assert expl.rules["rule"] == ["r1", "r2", "r3"]
+
+    def test_filter_features_validation(self):
+        expl = self.create_expl()
+        with pytest.raises(
+            ValidationError,
+            match="Exactly one of exclude_features or include_features must be provided",
+        ):
+            expl.filter_features()
+        with pytest.raises(ValidationError, match="Features list must not be empty"):
+            expl.filter_features(exclude_features=[])
+        with pytest.raises(ValidationError, match="Feature index 10 is out of range"):
+            expl.filter_features(exclude_features=10)
+        with pytest.raises(ValidationError, match="Feature name 'nonexistent' not found"):
+            expl.filter_features(exclude_features="nonexistent")
+
     # --- Tests for add_new_rule_condition ---
 
     def test_add_new_rule_condition_invalid_feature(self):

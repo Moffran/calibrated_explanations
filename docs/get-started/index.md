@@ -25,6 +25,8 @@ walkthrough.
 
 Need CE-first guidance for agents and humans? See the
 {doc}`ce_first_agent_guide` for a runnable, OSS-only workflow.
+Want to set up an AI agent (GitHub Copilot, Codex, Claude Code, Gemini) for CE development? See the
+{doc}`copilot-setup` guide for environment setup, instruction files, prompt workflows, and the feedback loop.
 Need a faster start? Use the {doc}`../getting_started_60s` decision tree.
 Need a method cheat-sheet? Start with the {doc}`quick_api` page.
 For quick programmatic access to explanation rules see
@@ -50,6 +52,7 @@ quickstart_regression
 quickstart_guarded
 ../getting_started_60s
 ce_first_agent_guide
+copilot-setup
 troubleshooting
 ../practitioner/advanced/explanation_retrieval
 ```

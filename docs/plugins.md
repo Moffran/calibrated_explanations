@@ -27,6 +27,7 @@ Notes
 - ADR references (GitHub):
   [ADR-006 plugin registry trust model](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md),
   [ADR-013 interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md),
+  [ADR-014 plot plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-014-plot-plugin-strategy.md),
   [ADR-015 explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md),
   [ADR-026 explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md).
 

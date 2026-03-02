@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from copy import copy
 from dataclasses import dataclass
 from enum import Enum
@@ -54,12 +53,10 @@ class RejectPolicy(Enum):
         lower_value = value.lower()
         if lower_value in deprecation_map:
             new_name, new_policy = deprecation_map[lower_value]
-            warnings.warn(
-                f"RejectPolicy('{value}') is deprecated and will be removed in v1.0.0. "
-                f"Use RejectPolicy.{new_name} instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
+            from ..utils.deprecations import deprecate_alias
+
+            # Emit a standardized alias deprecation message
+            deprecate_alias(lower_value, new_name, stacklevel=3)
             return new_policy
         return None
 

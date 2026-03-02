@@ -98,3 +98,32 @@ class TestDeprecate:
 
             # Key should be recorded in session-wide dict
             assert unique_key in emitted_keys()
+
+    def test_should_warn_without_raising_for_low_risk_alias_in_pytest_mode(self):
+        """deprecate(..., raise_on_error=False) should warn and record in per-test map."""
+        pytest_test_id = "test_low_risk_alias_pytest_mode"
+        with (
+            patch.dict(
+                os.environ,
+                {"CE_DEPRECATIONS": "error", "PYTEST_CURRENT_TEST": pytest_test_id},
+                clear=True,
+            ),
+            patch("calibrated_explanations.utils.deprecations.should_raise", return_value=True),
+            pytest.warns(DeprecationWarning, match="Alias warning"),
+        ):
+            deprecate("Alias warning", key="alias_key_pytest", raise_on_error=False)
+
+        per = emitted_per_test()
+        assert pytest_test_id in per
+        assert "alias_key_pytest" in per[pytest_test_id]
+
+    def test_should_warn_without_raising_for_low_risk_alias_in_session_mode(self):
+        """deprecate(..., raise_on_error=False) should warn and record session-wide key."""
+        with (
+            patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}, clear=True),
+            patch("calibrated_explanations.utils.deprecations.should_raise", return_value=True),
+            pytest.warns(DeprecationWarning, match="Alias warning session"),
+        ):
+            deprecate("Alias warning session", key="alias_key_session", raise_on_error=False)
+
+        assert "alias_key_session" in emitted_keys()

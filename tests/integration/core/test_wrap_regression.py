@@ -19,14 +19,29 @@ Functions:
 import numpy as np
 import os
 import pytest
+import json
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import (
+    IncompatibleStateError,
+    NotFittedError,
+    ValidationError,
+)
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 
 from tests.helpers.explainer_utils import generic_test
 
 pytestmark = pytest.mark.integration
+
+
+def assert_payload_close(left, right):
+    """Recursively compare nested persistence payloads."""
+    if isinstance(left, tuple) and isinstance(right, tuple):
+        assert len(left) == len(right)
+        for lhs, rhs in zip(left, right, strict=True):
+            assert_payload_close(lhs, rhs)
+        return
+    np.testing.assert_allclose(np.asarray(left), np.asarray(right), atol=1e-9)
 
 
 class TestWrapRegressionExplainer:
@@ -442,3 +457,87 @@ def test_wrap_regression_fast_ce(regression_dataset):
     cal_exp = generic_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test)
     cal_exp.plot(x_test, show=False, threshold=y_test[0])
     cal_exp.plot(x_test, y_test, show=False, threshold=y_test[0])
+
+
+def test_should_roundtrip_state_with_native_regression_primitive_when_saved(
+    tmp_path, regression_dataset
+):
+    """ADR-031 regression round-trip should persist interval_regressor primitives."""
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, y_test, _, _, feature_names = (
+        regression_dataset
+    )
+    wrapper = WrapCalibratedExplainer(RandomForestRegressor(n_estimators=24, random_state=13))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(x_cal, y_cal, feature_names=feature_names)
+    threshold = float(np.median(y_test))
+    baseline = wrapper.predict_proba(x_test[:14], threshold=threshold, uq_interval=True)
+
+    state_dir = tmp_path / "regression_state"
+    wrapper.save_state(state_dir)
+
+    primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
+    assert primitive["calibrator_type"] == "interval_regressor"
+    assert primitive["schema_version"] == 1
+
+    restored = WrapCalibratedExplainer.load_state(state_dir)
+    reloaded = restored.predict_proba(x_test[:14], threshold=threshold, uq_interval=True)
+    assert_payload_close(baseline, reloaded)
+
+
+def test_should_roundtrip_state_with_pickle_fallback_when_fast_interval_calibrator_is_used(
+    tmp_path,
+    regression_dataset,
+):
+    """Fast regression should exercise the python_pickle calibrator primitive path."""
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, y_test, _, _, feature_names = (
+        regression_dataset
+    )
+    wrapper = WrapCalibratedExplainer(RandomForestRegressor(n_estimators=22, random_state=17))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(x_cal, y_cal, feature_names=feature_names, fast=True)
+    threshold = float(np.median(y_test))
+    baseline = wrapper.predict_proba(x_test[:12], threshold=threshold, uq_interval=True)
+
+    state_dir = tmp_path / "regression_pickle_fallback_state"
+    wrapper.save_state(state_dir)
+
+    primitive = json.loads((state_dir / "calibrator_primitive.json").read_text(encoding="utf-8"))
+    assert primitive["calibrator_type"] == "python_pickle"
+    assert primitive["schema_version"] == 1
+    assert "payload" in primitive and "pickle_b64" in primitive["payload"]
+
+    restored = WrapCalibratedExplainer.load_state(state_dir)
+    reloaded = restored.predict_proba(x_test[:12], threshold=threshold, uq_interval=True)
+    assert_payload_close(baseline, reloaded)
+
+
+def test_should_fail_load_when_pickle_fallback_payload_checksum_is_tampered(
+    tmp_path,
+    regression_dataset,
+):
+    """load_state should reject tampered python_pickle payloads even when manifest checksums are recomputed."""
+    x_prop_train, y_prop_train, x_cal, y_cal, _, _, _, _, feature_names = regression_dataset
+    wrapper = WrapCalibratedExplainer(RandomForestRegressor(n_estimators=18, random_state=19))
+    wrapper.fit(x_prop_train, y_prop_train)
+    wrapper.calibrate(x_cal, y_cal, feature_names=feature_names, fast=True)
+
+    state_dir = tmp_path / "regression_tamper_state"
+    wrapper.save_state(state_dir)
+
+    primitive_path = state_dir / "calibrator_primitive.json"
+    primitive = json.loads(primitive_path.read_text(encoding="utf-8"))
+    primitive["payload"]["pickle_b64"] = primitive["payload"]["pickle_b64"][:-4] + "AAAA"
+    primitive_path.write_text(json.dumps(primitive, indent=2, sort_keys=True), encoding="utf-8")
+
+    manifest_path = state_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    with primitive_path.open("rb") as handle:
+        import hashlib
+
+        manifest["files"]["calibrator_primitive.json"] = hashlib.sha256(handle.read()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+
+    with pytest.raises(
+        IncompatibleStateError, match="Calibrator primitive checksum validation failed"
+    ):
+        WrapCalibratedExplainer.load_state(state_dir)

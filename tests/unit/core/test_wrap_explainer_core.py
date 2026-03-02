@@ -1,11 +1,10 @@
 import numpy as np
 from types import SimpleNamespace
-import os
-import warnings
 
 import pytest
 
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_serialise_preprocessor_value_various_types():
@@ -61,23 +60,9 @@ def test_format_proba_output_variants():
 
 def test_normalize_public_kwargs_and_import_mapping_stash(monkeypatch):
     w = WrapCalibratedExplainer(learner=SimpleNamespace(fitted=True))
-    strict_deprecations = os.getenv("CE_DEPRECATIONS", "").strip().lower() in {
-        "error",
-        "1",
-        "true",
-        "on",
-    }
-    if strict_deprecations:
-        with pytest.raises(DeprecationWarning):
-            w.normalize_public_kwargs({"alpha": 0.1, "foo": 2})
-        res = w.normalize_public_kwargs({"foo": 2})
-    else:
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            res = w.normalize_public_kwargs({"alpha": 0.1, "foo": 2})
-        assert any(issubclass(warn.category, (DeprecationWarning, UserWarning)) for warn in caught)
-    # alias 'alpha' should be removed by the normaliser
-    assert "alpha" not in res
+    with pytest.raises(ConfigurationError, match="removed in v0.11.0"):
+        w.normalize_public_kwargs({"alpha": 0.1, "foo": 2})
+    res = w.normalize_public_kwargs({"foo": 2})
     assert res.get("foo") == 2
 
     # import_preprocessor_mapping should warn when mapping cannot be applied

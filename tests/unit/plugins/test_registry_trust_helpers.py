@@ -11,6 +11,7 @@ def test_normalise_trust_various_forms():
 
 def test_env_trusted_names_and_clear_cache(monkeypatch):
     monkeypatch.setenv("CE_TRUST_PLUGIN", "a,b; c")
+    reg.clear_env_trust_cache()
     names = reg.env_trusted_names()
     assert "a" in names and "b" in names and "c" in names
     # clearing should reset cached value
