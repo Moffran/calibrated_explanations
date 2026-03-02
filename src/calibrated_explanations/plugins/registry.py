@@ -1862,35 +1862,6 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
     return tuple(loaded)
 
 
-def register_plot_plugin(
-    identifier: str,
-    plugin: Any,
-    *,
-    metadata: Mapping[str, Any] | None = None,
-    source: str = "manual",
-) -> PlotBuilderDescriptor:
-    """Compatibility shim registering *plugin* as both builder and renderer."""
-    from ..utils import deprecate
-
-    deprecate(
-        "register_plot_plugin is deprecated; use register_plot_builder/register_plot_renderer",
-        key="register_plot_plugin",
-        stacklevel=3,
-    )
-    descriptor = register_plot_builder(identifier, plugin, metadata=metadata, source=source)
-    register_plot_renderer(identifier, plugin, metadata=metadata, source=source)
-    register_plot_style(
-        identifier,
-        metadata={
-            "style": identifier,
-            "builder_id": identifier,
-            "renderer_id": identifier,
-            "fallbacks": (),
-        },
-    )
-    return descriptor
-
-
 def _list_descriptors(
     store: Dict[str, Any],
     trusted_only: bool,
@@ -2271,7 +2242,6 @@ __all__ = [
     "register_plot_builder",
     "register_plot_renderer",
     "register_plot_style",
-    "register_plot_plugin",
     "find_explanation_descriptor",
     "find_interval_descriptor",
     "find_plot_builder_descriptor",

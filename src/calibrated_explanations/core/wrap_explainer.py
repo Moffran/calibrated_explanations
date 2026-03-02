@@ -29,9 +29,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 from crepes.extras import MondrianCategorizer
 
 from ..api.params import (
-    ALIAS_MAP,
+    reject_removed_aliases,
     validate_param_combination,
-    warn_on_aliases,
 )
 from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
 from ..utils.exceptions import (
@@ -173,9 +172,9 @@ class WrapCalibratedExplainer:
                 perf_factory = cfg._perf_factory
             else:
                 # lazy import to avoid import cycles
-                from calibrated_explanations.perf import from_config as _from_config
+                from calibrated_explanations.api.config import _build_perf_factory
 
-                perf_factory = _from_config(cfg)
+                perf_factory = _build_perf_factory(cfg)
             # stash created primitives for downstream use; keep None when disabled
             if perf_factory is not None:
                 cache = perf_factory.make_cache()
@@ -472,10 +471,6 @@ class WrapCalibratedExplainer:
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explore_alternatives(x_local, **kwargs)
-
-    def explain_counterfactual(self, x: Any, **kwargs: Any) -> Any:
-        """Alias for explore_alternatives (legacy API)."""
-        return self.explore_alternatives(x, **kwargs)
 
     def explain_guarded_factual(self, x: Any, **kwargs: Any) -> Any:
         """Generate guarded factual explanations that only use in-distribution perturbations.
@@ -907,19 +902,12 @@ class WrapCalibratedExplainer:
     def _normalize_public_kwargs(
         self, kwargs: dict[str, Any], allowed: "set[str] | None" = None
     ) -> dict[str, Any]:
-        """Warn on deprecated aliases and strip alias keys without altering behavior.
-
-        - Emit DeprecationWarning for any alias keys present in the original kwargs.
-        - Do not inject canonical keys; we preserve user-provided keys as-is, except
-          alias keys which are removed after warning.
-        - If `allowed` is provided, only keep keys in that set; otherwise keep all.
-        """
+        """Normalize public kwargs and reject removed aliases."""
         if not kwargs:
             return {}
         original = dict(kwargs)
-        warn_on_aliases(original)
-        # Keep only original keys and drop any alias keys
-        base = {k: v for k, v in original.items() if k not in ALIAS_MAP}
+        reject_removed_aliases(original)
+        base = dict(original)
         if allowed is None:
             return base
         return {k: v for k, v in base.items() if k in allowed}

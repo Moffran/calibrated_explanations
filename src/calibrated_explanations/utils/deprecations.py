@@ -39,7 +39,9 @@ def should_raise() -> bool:
     return _should_raise()
 
 
-def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2, raise_on_error: bool = True) -> None:
+def deprecate(
+    message: str, *, key: str | None = None, stacklevel: int = 2, raise_on_error: bool = True
+) -> None:
     """Emit a `DeprecationWarning` for *message*.
 
     - If `CE_DEPRECATIONS` is set to an error value, raise a

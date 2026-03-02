@@ -9,10 +9,7 @@ import pytest
 import calibrated_explanations.plotting as plotting_module
 from calibrated_explanations.utils.exceptions import ConfigurationError
 
-# Suppress deprecation warning for importing plotting
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    from calibrated_explanations import plotting
+import calibrated_explanations.plotting as plotting
 
 pytestmark = [pytest.mark.viz, pytest.mark.filterwarnings("ignore::DeprecationWarning")]
 

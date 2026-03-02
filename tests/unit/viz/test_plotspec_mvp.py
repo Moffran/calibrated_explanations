@@ -247,7 +247,7 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
 
 
 def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):
-    from calibrated_explanations import plotting
+    import calibrated_explanations.plotting as plotting
 
     recorded: dict[str, dict] = {}
     sentinel = object()
@@ -265,6 +265,7 @@ def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):
         "calibrated_explanations.viz.builders.build_alternative_regression_spec", fake_builder
     )
     monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
 
     explanation = types.SimpleNamespace(
         y_minmax=(0.0, 1.0),

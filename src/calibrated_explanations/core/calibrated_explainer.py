@@ -2563,12 +2563,12 @@ class CalibratedExplainer:
         # Lazy import API params functions (deferred from module level)
         from ..api.params import (
             canonicalize_kwargs,
+            reject_removed_aliases,
             validate_param_combination,
-            warn_on_aliases,
         )
 
-        # emit deprecation warnings for aliases and normalize kwargs
-        warn_on_aliases(kwargs)
+        # reject removed aliases and normalize kwargs
+        reject_removed_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
         if "interval_summary" not in kwargs or kwargs["interval_summary"] is None:
@@ -2741,12 +2741,12 @@ class CalibratedExplainer:
         # Lazy import API params functions (deferred from module level)
         from ..api.params import (
             canonicalize_kwargs,
+            reject_removed_aliases,
             validate_param_combination,
-            warn_on_aliases,
         )
 
-        # emit deprecation warnings for aliases and normalize kwargs
-        warn_on_aliases(kwargs)
+        # reject removed aliases and normalize kwargs
+        reject_removed_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
 

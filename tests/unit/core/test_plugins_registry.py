@@ -343,27 +343,32 @@ def test_register_plot_plugin_combines_builder_and_renderer():
 
     plugin = CombinedPlugin()
     try:
-        if deprecations_error_enabled():
-            with pytest.raises(DeprecationWarning):
-                registry.register_plot_plugin("example.plot.combined", plugin)
-        else:
-            with warns_or_raises():
-                descriptor = registry.register_plot_plugin(
-                    "example.plot.combined", plugin, source="builtin"
-                )
-            assert descriptor.identifier == "example.plot.combined"
-            assert registry.find_plot_builder("example.plot.combined") is plugin
-            assert registry.find_plot_renderer("example.plot.combined") is plugin
+        descriptor = registry.register_plot_builder(
+            "example.plot.combined", plugin, source="builtin"
+        )
+        registry.register_plot_renderer("example.plot.combined", plugin, source="builtin")
+        registry.register_plot_style(
+            "example.plot.combined",
+            metadata={
+                "style": "example.plot.combined",
+                "builder_id": "example.plot.combined",
+                "renderer_id": "example.plot.combined",
+                "fallbacks": (),
+            },
+        )
+        assert descriptor.identifier == "example.plot.combined"
+        assert registry.find_plot_builder("example.plot.combined") is plugin
+        assert registry.find_plot_renderer("example.plot.combined") is plugin
 
-            combined = registry.find_plot_plugin("example.plot.combined")
-            assert combined is not None
-            assert combined.plugin_meta is plugin.plugin_meta
-            assert combined.build(1, foo=2) == ("build", (1,), {"foo": 2})
-            assert combined.render(3, bar=4) == ("render", (3,), {"bar": 4})
+        combined = registry.find_plot_plugin("example.plot.combined")
+        assert combined is not None
+        assert combined.plugin_meta is plugin.plugin_meta
+        assert combined.build(1, foo=2) == ("build", (1,), {"foo": 2})
+        assert combined.render(3, bar=4) == ("render", (3,), {"bar": 4})
 
-            trusted_combined = registry.find_plot_plugin_trusted("example.plot.combined")
-            assert trusted_combined is not None
-            assert trusted_combined.build(5) == ("build", (5,), {})
+        trusted_combined = registry.find_plot_plugin_trusted("example.plot.combined")
+        assert trusted_combined is not None
+        assert trusted_combined.build(5) == ("build", (5,), {})
     finally:
         clear_plot_plugins()
 

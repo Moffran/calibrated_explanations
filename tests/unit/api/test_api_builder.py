@@ -148,3 +148,12 @@ def test_explainer_builder_perf_factory_failure(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr("calibrated_explanations.api.config._perf_from_config", boom)
     cfg = builder.build_config()
     assert cfg.perf_factory is None
+
+
+def test_perf_factory_make_parallel_backend_alias():
+    model = RandomForestClassifier()
+    cfg = ExplainerBuilder(model).build_config()
+    factory = cfg.perf_factory
+    cache = factory.make_cache()
+    backend = factory.make_parallel_backend(cache)
+    assert backend is not None

@@ -183,7 +183,7 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
     def raise_agg(*args, **kwargs):
         raise RuntimeError("Backend 'Agg' not available")
 
-    from calibrated_explanations import plotting
+    import calibrated_explanations.plotting as plotting
 
     monkeypatch.setattr(plotting, "plot_regression", raise_agg)
     monkeypatch.setattr(plotting, "plot_probabilistic", raise_agg)

@@ -16,9 +16,19 @@ Load `references/deprecation_patterns.md` for full code patterns and test templa
 
 ---
 
+## ⚠ Mandatory: Update the Status Table
+
+Every deprecation introduced or removed **MUST** update `docs/migration/deprecations.md`:
+
+- **New deprecation**: Add a row to the **Active Deprecations** table (set Removal ETA to at least 2 minor versions ahead).
+- **Removal**: Move the row from Active to the **Removed Deprecations (History)** table and fill in the actual version removed.
+- This is not optional — the table is the authoritative inventory of all library deprecations.
+
+---
+
 ## The Mitigation Guide (`docs/migration/deprecations.md`)
 
-1. **Check if existing**: Every symbol marked with `.. deprecated::` MUST be listed in the status table.
+1. **Check if existing**: Every symbol marked with `.. deprecated::` MUST be listed in the Active Deprecations table.
 2. **Add if missing**: If you find a deprecation in code that isn't in the guide, add it immediately.
 3. **Removal Status**: Check the "Removal ETA" column to determine if a symbol is eligible for removal.
 
@@ -30,10 +40,12 @@ Before removing a symbol, verify it meets the ADR-011 "Two Minor Release" rule:
 - A symbol deprecated in `v0.10.x` is only eligible for removal in `v0.12.x` or later.
 
 **Steps for removal**:
+
 1. Delete the implementation, deprecated parameters, or module shims.
-2. Update `docs/migration/deprecations.md`: move entry to "Removed" section.
-3. Remove associated deprecation tests.
-4. Update `docs/improvement/RELEASE_PLAN_v1.md` status table.
+2. Update `docs/migration/deprecations.md`: move the row from **Active Deprecations** to **Removed Deprecations (History)** and fill in the actual removal version.
+3. Confirm no remaining call sites exist in `src/` via `grep -r "<symbol>" src/`.
+4. Remove associated deprecation tests.
+5. Update `docs/improvement/RELEASE_PLAN_v1.md` status table.
 
 ---
 
@@ -101,6 +113,6 @@ CE_DEPRECATIONS=error pytest
 - [ ] `.. deprecated:: <version>` added to docstring.
 - [ ] If version is unknown, research commit history to find deprecation origin.
 - [ ] Removal version is at least 2 minor releases after the deprecation release.
-- [ ] Mitigation Guide (`docs/migration/deprecations.md`) status table updated.
+- [ ] Row added to the **Active Deprecations** table in `docs/migration/deprecations.md` (or moved to **Removed Deprecations (History)** on removal, with actual version filled in).
 - [ ] `RELEASE_PLAN_v1.md` status table updated.
 - [ ] Test uses `pytest.deprecated_call()` to assert the warning fires.

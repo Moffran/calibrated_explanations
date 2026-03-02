@@ -179,3 +179,17 @@ def test_explanation_cache_facade_enabled_roundtrip():
 
     facade.reset_version("v2")
     assert cal.version == "v2"
+
+
+def test_explanation_cache_facade_enabled_compute_uses_cache_compute():
+    cache_mod = fresh_cache_module()
+    cfg = cache_mod.CacheConfig(enabled=True)
+    cal = cache_mod.CalibratorCache(cfg)
+    facade = ExplanationCacheFacade(cal)
+
+    result = facade.compute_calibration_summaries(
+        explainer_id="x",
+        x_cal_hash="h",
+        compute_fn=lambda: ({0: {"a": 1}}, {0: np.array([1.0])}),
+    )
+    assert result[0][0]["a"] == 1

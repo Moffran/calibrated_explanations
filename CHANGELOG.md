@@ -29,6 +29,10 @@
 - **Public API contract parity:** Aligned guarded and unguarded entry-point contracts so user-facing argument and return behavior stays consistent across explain/predict wrappers.
 - **Validation and CI checks:** Extended local checks with parity snapshot comparison and tighter link-check ignores, plus follow-up CI/link fixes and dependency refreshes.
 
+### Removed
+- **ADR-011 deprecation removals (v0.11.0 window):** Removed top-level compatibility exports from `calibrated_explanations.__init__` (`viz`, `plotting`, explanation/discretizer/calibrator aliases), removed `WrapCalibratedExplainer.explain_counterfactual`, removed `CalibratedExplanations.get_explanation` (base collection helper), removed `plugins.registry.register_plot_plugin`, removed the deprecated `calibrated_explanations.perf` root facade API, and removed the obsolete legacy-core import deprecation warning path.
+- **ADR-011 alias removals (v0.11.0 window):** Removed deprecated parameter aliases `alpha`/`alphas` and `n_jobs`; call sites must use canonical keywords (`low_high_percentiles`, `parallel_workers`). Alias usage now fails fast with `ConfigurationError`.
+
 ## [v0.10.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.4) - 2026-02-12
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...v0.10.4)
@@ -564,17 +568,17 @@ The following parameters have been renamed across multiple functions and methods
 - y_test → y
 
 ##### Wrapper keyword normalisation
-The following `WrapCalibratedExplainer` entry points now strip deprecated alias
-arguments after emitting a `DeprecationWarning`:
+The following `WrapCalibratedExplainer` entry points introduced alias
+normalization in v0.7.0:
 - `calibrate`
 - `explain_factual`
 - `explore_alternatives`
 - `explain_fast`
 - `predict`
 - `predict_proba`
-Alias keys such as `alpha`, `alphas`, and `n_jobs` are therefore ignored going
-forward. Callers must provide the canonical keyword names (`low_high_percentiles`,
-`parallel_workers`, etc.) for custom behaviour to take effect.【F:src/calibrated_explanations/core/wrap_explainer.py†L201-L409】【F:src/calibrated_explanations/api/params.py†L16-L70】
+These aliases were fully removed in v0.11.0; passing `alpha`, `alphas`, or
+`n_jobs` now raises `ConfigurationError`. Use canonical keywords such as
+`low_high_percentiles` and `parallel_workers` instead.【F:src/calibrated_explanations/core/wrap_explainer.py†L201-L409】【F:src/calibrated_explanations/api/params.py†L16-L70】
 
 ##### Explanation plugin toggle
 `CalibratedExplainer` now exposes a keyword-only `_use_plugin` flag across all

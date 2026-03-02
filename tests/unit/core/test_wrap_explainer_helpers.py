@@ -9,9 +9,13 @@ import numpy as np
 import pytest
 
 import calibrated_explanations.core.wrap_explainer as wrap_module
-from calibrated_explanations.utils.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    NotFittedError,
+    ValidationError,
+)
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 class PredictOnlyLearner:
@@ -71,15 +75,10 @@ def wrapper() -> WrapCalibratedExplainer:
     return WrapCalibratedExplainer(PredictOnlyLearner())
 
 
-def test_normalize_public_kwargs_filters_aliases(wrapper: WrapCalibratedExplainer) -> None:
+def test_normalize_public_kwargs_rejects_removed_aliases(wrapper: WrapCalibratedExplainer) -> None:
     payload = {"threshold": 0.3, "alpha": (1, 99), "irrelevant": "value"}
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning):
-            wrapper.normalize_public_kwargs(payload, allowed={"threshold"})
-    else:
-        with warns_or_raises():
-            filtered = wrapper.normalize_public_kwargs(payload, allowed={"threshold"})
-        assert filtered == {"threshold": 0.3}
+    with pytest.raises(ConfigurationError, match="removed in v0.11.0"):
+        wrapper.normalize_public_kwargs(payload, allowed={"threshold"})
     assert payload["alpha"] == (1, 99)
     assert payload["irrelevant"] == "value"
 
@@ -234,7 +233,7 @@ def test_predict_proba_requires_threshold_for_regression(wrapper: WrapCalibrated
 def test_from_config_sets_perf_primitives_to_none_when_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("calibrated_explanations.perf.from_config", lambda _: None)
+    monkeypatch.setattr("calibrated_explanations.api.config._build_perf_factory", lambda _: None)
     cfg = SimpleNamespace(
         model=PredictOnlyLearner(),
         threshold=0.4,

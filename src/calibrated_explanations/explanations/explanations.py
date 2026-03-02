@@ -1257,57 +1257,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             )
         return self
 
-    def get_explanation(self, index):
-        """Return the explanation corresponding to the index.
-
-        Parameters
-        ----------
-        index : int
-            The index of the explanation to retrieve.
-
-        Returns
-        -------
-        CalibratedExplanation
-            The explanation at the specified index.
-
-        Warnings
-        --------
-        Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
-        """
-        from ..utils import deprecate
-        from ..utils.exceptions import ValidationError
-
-        deprecate(
-            "This method is deprecated and may be removed in future versions. Use indexing instead.",
-            key="CalibratedExplanations.get_explanation",
-            stacklevel=3,
-        )
-        if not isinstance(index, int):
-            raise ValidationError(
-                "index must be an integer",
-                details={
-                    "param": "index",
-                    "expected_type": "int",
-                    "actual_type": type(index).__name__,
-                },
-            )
-        if index < 0:
-            raise ValidationError(
-                "index must be greater than or equal to 0",
-                details={"param": "index", "value": index, "requirement": "non-negative"},
-            )
-        if index >= len(self.x_test):
-            raise ValidationError(
-                "index must be less than the number of test instances",
-                details={
-                    "param": "index",
-                    "value": index,
-                    "max_index": len(self.x_test) - 1,
-                    "n_instances": len(self.x_test),
-                },
-            )
-        return self.explanations[index]
-
     def is_alternative(self):
         """Return True when the collection represents an alternative explanation workflow."""
         return isinstance(

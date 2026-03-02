@@ -282,8 +282,8 @@ class TestImportGraphRuntime:
                 f"This suggests lazy imports are not working correctly."
             )
 
-    def test_should_maintain_export_paths_for_deprecation_warnings(self):
-        """Verify that deprecated symbols can still be accessed (for deprecation warnings)."""
+    def test_should_expose_sanctioned_root_exports(self):
+        """Verify that sanctioned package-root symbols remain accessible."""
         from calibrated_explanations import CalibratedExplainer
 
         assert CalibratedExplainer is not None
@@ -397,16 +397,15 @@ class TestImportGraphRegressions:
             "importlib.import_module" in content or "from .." in content
         ), "CalibratedExplainer should use lazy imports for sibling packages"
 
-    def test_should_maintain_stage3_public_api_deprecations(self):
-        """Verify Stage 3 public API narrowing is maintained."""
+    def test_should_maintain_stage3_public_api_narrowing(self):
+        """Verify Stage 3 public API narrowing is maintained after removals."""
         init_file = Path("src/calibrated_explanations/__init__.py")
         content = init_file.read_text(encoding="utf-8", errors="replace")
 
-        # Check for deprecation helper usage
-        assert "deprecate_public_api_symbol" in content or "DeprecationWarning" in content, (
-            "__init__.py should emit deprecation warnings for unsanctioned symbols\n"
-            "This ensures public API surface narrowing is maintained."
-        )
+        assert '"CalibratedExplainer"' in content
+        assert '"WrapCalibratedExplainer"' in content
+        assert '"transform_to_numeric"' in content
+        assert "deprecate_public_api_symbol" not in content
 
 
 if __name__ == "__main__":

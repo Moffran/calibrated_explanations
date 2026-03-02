@@ -54,7 +54,7 @@ def test_large_conjunctions_alternative(binary_dataset):
     )
 
     # Get an explanation
-    explanation = explainer.explain_counterfactual(x_test[0].reshape(1, -1))
+    explanation = explainer.explore_alternatives(x_test[0].reshape(1, -1))
 
     # Try to add conjunctions with size 4
     # This should now succeed as _use_batched=True is the default

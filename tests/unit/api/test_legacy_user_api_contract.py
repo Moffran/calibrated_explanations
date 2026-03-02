@@ -83,7 +83,6 @@ def test_explanation_collection_api_is_stable():
         "plot",
         "add_conjunctions",
         "remove_conjunctions",
-        "get_explanation",
         "__getitem__",
     ]
     for attr in required:
