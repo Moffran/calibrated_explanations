@@ -292,8 +292,8 @@ def test_multiclass_ce_multi_labels_enabled_guarded_compat(multiclass_dataset):
     # Multi-label (per-class) explanations: exercise dict-plot branches
     multi_factual = cal_exp.explain_factual(x_subset, multi_labels_enabled=True)
     multi_alternative = cal_exp.explore_alternatives(x_subset, multi_labels_enabled=True)
-    assert multi_factual.get_explanation(0, 0) is not None
-    assert multi_alternative.get_explanation(0, 0) is not None
+    assert multi_factual[0, 0] is not None
+    assert multi_alternative[0, 0] is not None
     multi_factual.plot(show=False, uncertainty=True)
     multi_alternative.plot(show=False)
 

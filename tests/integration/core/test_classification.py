@@ -292,8 +292,8 @@ def test_multiclass_ce_multi_labels_enabled(multiclass_dataset):
     multi_alternative = cal_exp.explore_alternatives(x_subset, multi_labels_enabled=True)
 
     # Public indexing contract: (instance_idx, class_idx) returns a per-class explanation
-    first_class_factual = multi_factual.get_explanation(0, 0)
-    first_class_alternative = multi_alternative.get_explanation(0, 0)
+    first_class_factual = multi_factual[0, 0]
+    first_class_alternative = multi_alternative[0, 0]
     assert first_class_factual is not None
     assert first_class_alternative is not None
 

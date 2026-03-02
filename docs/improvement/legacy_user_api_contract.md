@@ -197,8 +197,7 @@ These examples of WrapCalibratedExplainer shows what may only be extended, not r
 
 - Preserve the methods and keyword parameters outlined above for
   `WrapCalibratedExplainer`, `CalibratedExplainer`, and explanation collections.
-- Maintain indexing, slicing, and `.get_explanation(...)` semantics on
-  explanation collections.
+- Maintain indexing, slicing semantics on explanation collections. `.get_explanation(...)` was removed in favor of standard indexing, so the new contract is to support `collection[i]` and `collection[:n]` for any `i` and `n` that are valid for the collection length.
 - Keep support for probabilistic regression flags (`threshold`), interval knobs
   (`low_high_percentiles`), and conjunction controls (`max_rule_size`,
   `n_top_features`).

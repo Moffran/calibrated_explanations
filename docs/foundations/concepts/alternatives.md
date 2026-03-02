@@ -90,7 +90,10 @@ ensured = alt0.ensured_explanations()
 super_alts = alt0.super_explanations()
 semi_alts = alt0.semi_explanations()
 counter_alts = alt0.counter_explanations()
-pareto = alt0.pareto_explanations()
+pareto = alt0.pareto_explanations() # by uncertainty
+
+# Pareto by rule complexity (useful when conjunctions are present)
+pareto_simple = alt0.pareto_explanations(pareto_cost="rule_size")
 
 # Combine: ensured super-explanations
 ensured_super = alt0.super_explanations(only_ensured=True)

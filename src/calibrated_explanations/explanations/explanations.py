@@ -1759,7 +1759,13 @@ class AlternativeExplanations(CalibratedExplanations):
         """Shorthand delegator for :meth:`.ensured_explanations`."""
         return self.ensured_explanations(include_potential=include_potential, copy=copy)
 
-    def pareto_explanations(self, include_potential=True, copy=True):
+    def pareto_explanations(
+        self,
+        include_potential: bool = True,
+        copy: bool = True,
+        *,
+        pareto_cost: str = "uncertainty_width",
+    ):
         """Return a copy with only output-envelope Pareto alternatives.
 
         Parameters
@@ -1770,6 +1776,8 @@ class AlternativeExplanations(CalibratedExplanations):
         copy : bool, default=True
             Determines whether to return a copy of the explanations or modify
             them in place.
+        pareto_cost : str, default="uncertainty_width"
+            The Pareto cost dimension minimized along the output axis.
 
         Returns
         -------
@@ -1780,17 +1788,35 @@ class AlternativeExplanations(CalibratedExplanations):
         if copy:
             new_obj = self.copy()
             new_obj.explanations = [
-                explanation.pareto_explanations(include_potential=include_potential, copy=True)
+                explanation.pareto_explanations(
+                    include_potential=include_potential,
+                    copy=True,
+                    pareto_cost=pareto_cost,
+                )
                 for explanation in self.explanations
             ]
             return new_obj
         for explanation in self.explanations:
-            explanation.pareto_explanations(include_potential=include_potential, copy=False)
+            explanation.pareto_explanations(
+                include_potential=include_potential,
+                copy=False,
+                pareto_cost=pareto_cost,
+            )
         return self
 
-    def pareto(self, include_potential=True, copy=True):
+    def pareto(
+        self,
+        include_potential: bool = True,
+        copy: bool = True,
+        *,
+        pareto_cost: str = "uncertainty_width",
+    ):
         """Shorthand delegator for :meth:`.pareto_explanations`."""
-        return self.pareto_explanations(include_potential=include_potential, copy=copy)
+        return self.pareto_explanations(
+            include_potential=include_potential,
+            copy=copy,
+            pareto_cost=pareto_cost,
+        )
 
 
 class FrozenCalibratedExplainer:
@@ -2726,7 +2752,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         if index is not None:
             if class_idx is not None:
-                explanation = self.get_explanation(index, class_idx)
+                explanation = self[index, class_idx]
                 if explanation:
                     explanation.plot(
                         filter_top=filter_top,
@@ -2996,7 +3022,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         if index is not None:
             if class_idx is not None:
-                explanation = self.get_explanation(index, class_idx)
+                explanation = self[index, class_idx]
                 if explanation:
                     explanation.plot(
                         filter_top=filter_top,

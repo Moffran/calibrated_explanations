@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 from unittest.mock import Mock
 from calibrated_explanations.explanations.explanation import AlternativeExplanation
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 class TestAlternativeExplanation:
@@ -348,6 +349,58 @@ class TestAlternativeExplanation:
         filtered = pareto.rules
         assert filtered["predict"][0] == 0.1
         assert filtered["predict"][-1] == 0.9
+
+    def test_should_filter_pareto_by_rule_size_when_requested(self, explanation):
+        explanation.prediction = {"predict": 0.45, "low": 0.4, "high": 0.5, "classes": [0, 1]}
+
+        rules = {
+            "predict": [0.2, 0.2, 0.8],
+            "predict_low": [0.15, 0.15, 0.65],
+            "predict_high": [0.25, 0.25, 0.95],
+            "weight": [0, 0, 0],
+            "weight_low": [0, 0, 0],
+            "weight_high": [0, 0, 0],
+            "value": [1, 2, 3],
+            "rule": ["r_small", "r_big", "r_hi"],
+            "feature": [0, [0, 1], 1],
+            "sampled_values": [[], [], []],
+            "feature_value": [None, None, None],
+            "is_conjunctive": [False, True, False],
+            "classes": [0, 1],
+            "base_predict_low": 0.4,
+            "base_predict_high": 0.5,
+        }
+        self.setup_test_rules(explanation, rules)
+
+        pareto = explanation.pareto_explanations(pareto_cost="rule_size")
+
+        assert pareto.rules["predict"] == [0.2, 0.8]
+        assert pareto.rules["rule"][0] == "r_small"
+
+    def test_should_raise_validation_error_when_pareto_cost_is_unknown(self, explanation):
+        explanation.prediction = {"predict": 0.45, "low": 0.4, "high": 0.5, "classes": [0, 1]}
+
+        rules = {
+            "predict": [0.2, 0.8],
+            "predict_low": [0.15, 0.65],
+            "predict_high": [0.25, 0.95],
+            "weight": [0, 0],
+            "weight_low": [0, 0],
+            "weight_high": [0, 0],
+            "value": [1, 2],
+            "rule": ["r1", "r2"],
+            "feature": [0, 1],
+            "sampled_values": [[], []],
+            "feature_value": [None, None],
+            "is_conjunctive": [False, False],
+            "classes": [0, 1],
+            "base_predict_low": 0.4,
+            "base_predict_high": 0.5,
+        }
+        self.setup_test_rules(explanation, rules)
+
+        with pytest.raises(ValidationError, match="pareto_cost must be one of"):
+            explanation.pareto_explanations(pareto_cost="not-a-metric")
 
 
 class TestAlternativeExplanationRegression:

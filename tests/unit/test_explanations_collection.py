@@ -161,8 +161,19 @@ class DummyExplanation:
         self.calls.append(("ensured", {"include_potential": include_potential, "copy": copy}))
         return self
 
-    def pareto_explanations(self, include_potential=True, copy=True):
-        self.calls.append(("pareto", {"include_potential": include_potential, "copy": copy}))
+    def pareto_explanations(
+        self, include_potential=True, copy=True, *, pareto_cost="uncertainty_width"
+    ):
+        self.calls.append(
+            (
+                "pareto",
+                {
+                    "include_potential": include_potential,
+                    "copy": copy,
+                    "pareto_cost": pareto_cost,
+                },
+            )
+        )
         return self
 
     def filter_rule_sizes(self, *, rule_sizes=None, size_range=None, copy=True):
@@ -520,7 +531,7 @@ def test_alternative_specific_filters(calibrated_collection):
     alt.semi_explanations(only_ensured=True, include_potential=False)
     alt.counter_explanations(only_ensured=True, include_potential=False)
     alt.ensured_explanations()
-    alt.pareto_explanations(include_potential=False)
+    alt.pareto_explanations(include_potential=False, pareto_cost="rule_size")
     for exp in alt.explanations:
         actions = [
             call[0]
@@ -528,6 +539,10 @@ def test_alternative_specific_filters(calibrated_collection):
             if call[0] in {"super", "semi", "counter", "ensured", "pareto"}
         ]
         assert {"super", "semi", "counter", "ensured", "pareto"}.issubset(set(actions))
+
+        pareto_calls = [call for call in exp.calls if call[0] == "pareto"]
+        assert pareto_calls
+        assert pareto_calls[-1][1]["pareto_cost"] == "rule_size"
 
 
 def test_alternative_specific_filters_inplace(calibrated_collection):

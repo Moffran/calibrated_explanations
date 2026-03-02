@@ -2,9 +2,9 @@
 
 # Release Plan to v1.0.0
 
-## Current released version: v0.10.4
+## Current released version: v0.11.0
 
-> Status: v0.10.4 shipped on 2026-02-12.
+> Status: v0.11.0 shipped on 2026-03-02.
 
 
 Maintainers: Core team
@@ -326,6 +326,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   10. Clean up `registry.py` public surface: remove over-scoped plot trust management API (`mark_plot_builder_trusted`, `mark_plot_builder_untrusted`, `mark_plot_renderer_trusted`, `mark_plot_renderer_untrusted`, `find_plot_plugin_trusted`, `find_plot_renderer_trusted`) from `__all__` per ADR-014's "thin and optional" mandate; remove ~30 test-helper wrappers from `__all__`; fix `find_plot_renderer_trusted` return-type inconsistency and dead `include_untrusted` parameters on `list_plot_descriptors` / `_list_descriptors`.
   11. Pattern 1 hardening: empty the private member allow-list (.github/private_member_allowlist.json) as part of the final remediation, and remove production test-helper wrapper exports/re-exports (starting with `plugins/registry.py` and `plugins/__init__.py`) so tests cannot bypass public contracts via runtime scaffolding. CI must block this class of regression via `scripts/quality/check_no_test_helper_exports.py`.
   12. Perform a final ADR, standards, and improvement docs gap closure sweep and update any remaining gaps, ensuring the release appendix reflects reality.
+  13. Extend alternative Pareto filtering with a selectable non-dominance cost dimension via `pareto_cost` (default `uncertainty_width`, optional `rule_size`).
 
   Release gate: ADR-009/026/030/031/033 gaps are closed or explicitly deferred, ADR-033 breaking contract/resolver gates are green (parser/taxonomy/ambiguity behavior), core-only install expectations are verified ahead of v1.0.0-rc, `PluginManager` shell and `PluginTrustPolicy` protocol landed, over-scoped plot trust API and test helpers removed from `__all__`, registry API defects fixed, and private-member allowlist is empty.
 
@@ -345,7 +346,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
   13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
 
-  Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations; test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green.
+   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations; test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green.
 
 ### v1.0.0-rc (release candidate readiness)
 

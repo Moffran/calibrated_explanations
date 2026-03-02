@@ -130,6 +130,6 @@ def test_multiclass_conditional_ce_multi_labels_dup(multiclass_dataset):
     # Plot a per-class explanation for the first instance to avoid container-level
     # dict-plot branches that expect internal `index` bookkeeping.
     first_class_key = int(next(iter(multi_factual.explanations[0].keys())))
-    ex = multi_factual.get_explanation(0, first_class_key)
+    ex = multi_factual[0, first_class_key]
     assert ex is not None
     ex.plot(show=False, uncertainty=True)

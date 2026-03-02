@@ -3081,24 +3081,45 @@ class AlternativeExplanation(CalibratedExplanation):
         self.rules = new_rules
         return self
 
-    def __pareto_rule_indexes(self, rules):
+    def __pareto_rule_indexes(self, rules, *, pareto_cost: str):
         """Return rule indices on the output-envelope Pareto frontier.
 
         The output value (probability for classification or calibrated output
-        for regression) is treated as the coverage axis, while uncertainty is
-        represented by interval width.
+        for regression) is treated as the coverage axis, while the Pareto
+        *cost* dimension is minimized.
+
+        Supported Pareto cost dimensions:
+
+        - ``"uncertainty_width"``: minimize interval width (``high - low``).
+        - ``"rule_size"``: minimize number of features changed in the rule
+          (1 for atomic rules; >1 for conjunctive rules).
         """
         rule_count = len(rules.get("rule", []))
         if rule_count <= 1:
             return list(range(rule_count))
 
+        def _rule_size(feature: Any) -> float:
+            if isinstance(feature, (list, tuple, np.ndarray)):
+                return float(len(np.asarray(feature).ravel()))
+            return 1.0
+
+        def _rule_cost(index: int) -> float:
+            if pareto_cost == "uncertainty_width":
+                return float(rules["predict_high"][index]) - float(rules["predict_low"][index])
+            if pareto_cost == "rule_size":
+                features = rules.get("feature", [])
+                feature_value = features[index] if index < len(features) else None
+                return _rule_size(feature_value)
+            raise ValidationError(
+                "pareto_cost must be one of: uncertainty_width, rule_size",
+                details={"pareto_cost": pareto_cost},
+            )
+
         tolerance = 1e-12
         best_per_output = {}
         for index in range(rule_count):
             output_value = float(rules["predict"][index])
-            uncertainty_value = float(rules["predict_high"][index]) - float(
-                rules["predict_low"][index]
-            )
+            cost_value = _rule_cost(index)
             output_key = round(output_value, 12)
 
             current_best = best_per_output.get(output_key)
@@ -3106,15 +3127,15 @@ class AlternativeExplanation(CalibratedExplanation):
                 best_per_output[output_key] = {
                     "index": index,
                     "output": output_value,
-                    "uncertainty": uncertainty_value,
+                    "cost": cost_value,
                 }
                 continue
 
             if (
-                uncertainty_value < current_best["uncertainty"] - tolerance
+                cost_value < current_best["cost"] - tolerance
                 or math.isclose(
-                    uncertainty_value,
-                    current_best["uncertainty"],
+                    cost_value,
+                    current_best["cost"],
                     rel_tol=tolerance,
                     abs_tol=tolerance,
                 )
@@ -3123,7 +3144,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 best_per_output[output_key] = {
                     "index": index,
                     "output": output_value,
-                    "uncertainty": uncertainty_value,
+                    "cost": cost_value,
                 }
 
         candidates = sorted(best_per_output.values(), key=lambda candidate: candidate["output"])
@@ -3133,13 +3154,13 @@ class AlternativeExplanation(CalibratedExplanation):
         left_mins = []
         running_left_min = float("inf")
         for candidate in candidates:
-            running_left_min = min(running_left_min, candidate["uncertainty"])
+            running_left_min = min(running_left_min, candidate["cost"])
             left_mins.append(running_left_min)
 
         right_mins = [0.0] * len(candidates)
         running_right_min = float("inf")
         for reverse_index in range(len(candidates) - 1, -1, -1):
-            running_right_min = min(running_right_min, candidates[reverse_index]["uncertainty"])
+            running_right_min = min(running_right_min, candidates[reverse_index]["cost"])
             right_mins[reverse_index] = running_right_min
 
         kept_indexes = {
@@ -3147,19 +3168,19 @@ class AlternativeExplanation(CalibratedExplanation):
             candidates[-1]["index"],
         }
         for position, candidate in enumerate(candidates):
-            uncertainty_value = candidate["uncertainty"]
+            cost_value = candidate["cost"]
             if (
-                uncertainty_value <= left_mins[position] + tolerance
-                or uncertainty_value <= right_mins[position] + tolerance
+                cost_value <= left_mins[position] + tolerance
+                or cost_value <= right_mins[position] + tolerance
             ):
                 kept_indexes.add(candidate["index"])
 
         return sorted(kept_indexes)
 
-    def __pareto_filter_rules(self):
+    def __pareto_filter_rules(self, *, pareto_cost: str):
         """Reduce current rules to the output-envelope Pareto frontier."""
         rules = self.get_rules()  # pylint: disable=protected-access
-        pareto_indexes = set(self.__pareto_rule_indexes(rules))
+        pareto_indexes = set(self.__pareto_rule_indexes(rules, pareto_cost=pareto_cost))
 
         new_rules = self.__set_up_result()
         for rule in range(len(rules.get("rule", []))):
@@ -3441,8 +3462,14 @@ class AlternativeExplanation(CalibratedExplanation):
         """Shorthand delegator for :meth:`.ensured_explanations`."""
         return self.ensured_explanations(include_potential=include_potential, copy=copy)
 
-    def pareto_explanations(self, include_potential=True, copy=True):
-        """Return output-envelope Pareto alternatives by uncertainty width.
+    def pareto_explanations(
+        self,
+        include_potential: bool = True,
+        copy: bool = True,
+        *,
+        pareto_cost: Literal["uncertainty_width", "rule_size"] = "uncertainty_width",
+    ):
+        """Return output-envelope Pareto alternatives.
 
         Parameters
         ----------
@@ -3452,6 +3479,11 @@ class AlternativeExplanation(CalibratedExplanation):
         copy : bool, default=True
             Determines whether to return a copy of the explanation or modify it
             in place.
+        pareto_cost : {"uncertainty_width", "rule_size"}, default="uncertainty_width"
+            The dimension minimized along the output axis when selecting the
+            frontier. ``"uncertainty_width"`` reproduces the historical behavior
+            (minimize interval width). ``"rule_size"`` minimizes the number of
+            changed features in the rule (useful when conjunctions are present).
 
         Returns
         -------
@@ -3459,19 +3491,29 @@ class AlternativeExplanation(CalibratedExplanation):
 
         Notes
         -----
-        Pareto filtering keeps a frontier over (output, uncertainty width)
-        where no alternative can reduce uncertainty without changing the output.
+        Pareto filtering keeps an output-envelope frontier where no alternative
+        can reduce the chosen Pareto cost without changing the output.
         The output axis is the calibrated probability (classification /
         probabilistic regression) or the calibrated numeric output (regression).
         """
         target = self.copy() if copy else self
         target.__filter_rules(include_potential=include_potential)
-        target.__pareto_filter_rules()
+        target.__pareto_filter_rules(pareto_cost=pareto_cost)
         return target
 
-    def pareto(self, include_potential=True, copy=True):
+    def pareto(
+        self,
+        include_potential: bool = True,
+        copy: bool = True,
+        *,
+        pareto_cost: Literal["uncertainty_width", "rule_size"] = "uncertainty_width",
+    ):
         """Shorthand delegator for :meth:`.pareto_explanations`."""
-        return self.pareto_explanations(include_potential=include_potential, copy=copy)
+        return self.pareto_explanations(
+            include_potential=include_potential,
+            copy=copy,
+            pareto_cost=pareto_cost,
+        )
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """

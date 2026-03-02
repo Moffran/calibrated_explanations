@@ -66,7 +66,7 @@ for dataSet in [
     ce = CalibratedExplainer(model, x_cal, y_cal, feature_names=df.columns)
     factual_explanations = ce.explain_factual(x_test)
     for i in range(num_to_test):
-        predicted = factual_explanations.get_explanation(i).prediction["classes"]
+        predicted = factual_explanations[i].prediction["classes"]
         factual_explanations.plot(
             i,
             filter_top=features_to_plot,
@@ -83,7 +83,7 @@ for dataSet in [
 
     alternative_explanations = ce.explore_alternatives(x_test)
     for i in range(num_to_test):
-        predicted = alternative_explanations.get_explanation(i).prediction["classes"]
+        predicted = alternative_explanations[i].prediction["classes"]
         alternative_explanations.plot(
             i,
             filter_top=features_to_plot,
@@ -98,7 +98,7 @@ for dataSet in [
     ce = CalibratedExplainer(model, x_cal, y_cal, feature_names=df.columns, bins=cal_p)
     factual_explanations = ce.explain_factual(x_test, bins=test_p)
     for i in range(num_to_test):
-        predicted = factual_explanations.get_explanation(i).prediction["classes"]
+        predicted = factual_explanations[i].prediction["classes"]
         factual_explanations.plot(
             i,
             filter_top=features_to_plot,
@@ -115,7 +115,7 @@ for dataSet in [
 
     alternative_explanations = ce.explore_alternatives(x_test, bins=test_p)
     for i in range(num_to_test):
-        predicted = alternative_explanations.get_explanation(i).prediction["classes"]
+        predicted = alternative_explanations[i].prediction["classes"]
         alternative_explanations.plot(
             i,
             filter_top=features_to_plot,

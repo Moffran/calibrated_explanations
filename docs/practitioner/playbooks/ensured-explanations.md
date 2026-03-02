@@ -63,6 +63,9 @@ counter_alts = alt0.counter_explanations()
 # Pareto: output-envelope frontier over (output, uncertainty width)
 pareto_alts = alt0.pareto_explanations()
 
+# Pareto: prefer fewer changed features (effective with conjunctions)
+pareto_simple = alt0.pareto_explanations(pareto_cost="rule_size")
+
 # Combine: ensured super-explanations
 ensured_super = alt0.super_explanations(only_ensured=True)
 ```
