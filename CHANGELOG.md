@@ -3,9 +3,15 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.3...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
+
+## [v0.11.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.0)  - 2026-03-02
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.4...v0.11.0)
 
 ### Added
+
+- **Alternative Pareto filtering:** Added `pareto_cost` to `AlternativeExplanation.pareto_explanations()` / `AlternativeExplanations.pareto_explanations()` to select the minimized non-dominance dimension (`"uncertainty_width"` default, or `"rule_size"` to prefer simpler interventions).
 - **Claude Code Skill Library (ADR-030/012):** Implemented 37 specialized Claude Code skills for `calibrated_explanations`, covering everything from core pipeline setup and Mondrian fairness to plugin scaffolding, logging & observability (ADR-028), payload governance (ADR-005), and the role-based Test Quality Method (ADR-030) including specialized roles for Pruning, Dead-code Hunting, and Quality Auditing.
 - **Multiclass explanations (Issue#104):** Introduced first-class multiclass explanation support via `MultiClassCalibratedExplanations`, enabling per-instance all-class explanation access and multiclass-aware plotting for factual and alternative workflows. This addresses [#104](https://github.com/Moffran/calibrated_explanations/issues/104).
 - **ADR-009 task closure:** Completed preprocessing automation and mapping persistence hardening. `auto_encode='auto'` now activates the deterministic built-in encoder, unseen-category enforcement now raises actionable `ValidationError` when policy is `error` (with `ignore` preserving sentinel behavior), non-numeric input without preprocessing now fails with actionable guidance, and mapping export/import helpers remain available with telemetry visibility.

@@ -1,6 +1,6 @@
 {
   "name": "calibrated-explanations",
-  "version": "0.10.4",
+  "version": "0.11.0",
   "category": "explainable-ai",
   "subcategories": ["feature-importance", "uncertainty-quantification", "xai"],
   "public_api": ["WrapCalibratedExplainer"],
