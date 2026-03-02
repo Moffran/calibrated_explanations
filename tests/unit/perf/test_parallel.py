@@ -58,7 +58,9 @@ def test_parallel_config_from_env_extended_tokens(monkeypatch):
         "force_serial=true,granularity=feature",
     )
     if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning, match="Feature parallelism is deprecated and removed"):
+        with pytest.raises(
+            DeprecationWarning, match="Feature parallelism is deprecated and removed"
+        ):
             ParallelConfig.from_env(base)
         return
 

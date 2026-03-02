@@ -114,6 +114,10 @@ linkcheck_ignore = [
     # linkcheck focuses on public-facing documentation links.
     r"https://github.com/Moffran/calibrated_explanations/blob/main/\.claude/.*",
     r"https://raw.githubusercontent.com/Moffran/calibrated_explanations/main/\.claude/.*",
+    # GitHub-hosted notebook files sometimes hit rate limits during CI linkcheck
+    # runs; ignore repo-hosted notebooks to avoid transient failures.
+    r"https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/.*",
+    r"https://raw.githubusercontent.com/Moffran/calibrated_explanations/main/notebooks/.*",
     # External academic portals can be flaky / time out from CI linkcheck runners
     # Ignore diva-portal host to avoid transient timeouts causing CI failures.
     r"https://www.diva-portal.org/.*",

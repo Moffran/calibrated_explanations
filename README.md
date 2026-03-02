@@ -1,408 +1,198 @@
-# Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/))
+# calibrated-explanations
 
-[![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/calibrated-explanations)](https://pypi.org/project/calibrated-explanations/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
-[![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Moffran/calibrated_explanations)](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md)
-[![Docstring coverage](https://img.shields.io/badge/docstring%20coverage-94%25-brightgreen)](https://github.com/Moffran/calibrated_explanations/blob/main/reports/docstring_coverage_20251025.txt)
-[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE)
-[![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
+[![Docs](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io)
+[![CI](https://github.com/Moffran/calibrated_explanations/actions/workflows/ci.yml/badge.svg)](https://github.com/Moffran/calibrated_explanations/actions)
 
-## Quick Reference
+**Trustworthy AI explanations with uncertainty intervals and counterfactuals, for any scikit-learn model.**
 
-**Purpose**: Uncertainty-aware feature-importance explanations for scikit-learn compatible models.
+---
 
-**Install**:
+## What Problem Does It Solve?
+
+Most XAI tools — LIME, SHAP — explain whatever the model outputs. If the model's predicted probabilities are miscalibrated (and they often are, especially for tree-based models trained without a calibration step), the explanations inherit that miscalibration. The feature weights reflect an overconfident model, not a reliable signal you can act on.
+
+`calibrated-explanations` fixes this at the root. It calibrates the model first — using Venn-Abers predictors for classification and Conformal Predictive Systems for regression — then explains the calibrated output. Every explanation includes a **calibrated uncertainty interval** that shows how confident the model actually is, not just a point estimate that hides model uncertainty.
+
+---
+
+## What Does the Output Look Like?
+
+Calling `explanation[0].to_narrative(output_format="text", expertise_level="advanced")` returns a structured text narrative. The output below is **(illustrative)** — a loan-approval context using the exact format produced at runtime:
+
+```text
+Factual Explanation:
+--------------------------------------------------------------------------------
+Prediction: APPROVE
+Calibrated Probability: 0.840
+Prediction Interval: [0.710, 0.930]
+
+Factors impacting the calibrated probability for class APPROVE positively:
+annual_income (45200) >= 45000 — weight ≈ +0.312 [+0.198, +0.421]
+credit_history_years (5.2) >= 5 — weight ≈ +0.187 [+0.091, +0.284]
+outstanding_debt (2800) < 3000 — weight ≈ +0.143 [+0.055, +0.231]
+employment_status (permanent) = permanent — weight ≈ +0.098 [+0.012, +0.185]
+
+Factors impacting the calibrated probability for class APPROVE negatively:
+missed_payments (3) > 2 — weight ≈ -0.201 [-0.334, -0.068]
+```
+
+- The **Prediction Interval** `[0.710, 0.930]` shows the calibrated uncertainty range — narrow means high confidence, wide (e.g., `[0.12, 0.89]`) means the model is uncertain and the decision should be treated with caution.
+- Each **factor line** shows the observed value, the matching rule condition, the signed weight (positive = pushes toward the predicted class), and the **weight's own uncertainty interval** — all computed from calibrated probabilities, not raw model scores.
+
+Calling `alt[0].to_narrative(output_format="text", expertise_level="advanced")` on the result of `explore_alternatives` shows what needs to change to flip or reinforce the decision, with each alternative backed by a calibrated interval:
+
+```text
+Alternative Explanations:
+--------------------------------------------------------------------------------
+Prediction: APPROVE
+Calibrated probability: 0.840
+Prediction Interval: [0.710, 0.930]
+
+Alternatives to increase the calibrated probability for class APPROVE:
+- If missed_payments <= 1 then 0.921 [0.856, 0.970]
+- If outstanding_debt < 2000 then 0.893 [0.814, 0.949]
+
+Alternatives to decrease the calibrated probability for class APPROVE:
+- If annual_income < 30000 then 0.518 [0.344, 0.686]
+- If credit_history_years < 2 then 0.601 [0.447, 0.752]
+```
+
+- Each **alternative line** shows the rule that would need to hold, the resulting calibrated probability if that rule were satisfied, and the **uncertainty interval on that alternative** — narrow means the model is confident even in the counterfactual region.
+
+---
+
+## Quick Start
+
 ```bash
 pip install calibrated-explanations
 ```
 
-**Primary Use Cases**: binary-classification, multiclass-classification, regression, probabilistic regression
+```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from calibrated_explanations import WrapCalibratedExplainer
 
-**Key Class (public API)**: `WrapCalibratedExplainer`
+d = load_breast_cancer()
+X_tr, X_te, y_tr, y_te = train_test_split(d.data, d.target, test_size=0.2, stratify=d.target, random_state=42)
+X_pr, X_cal, y_pr, y_cal = train_test_split(X_tr, y_tr, test_size=0.25, stratify=y_tr, random_state=42)
+explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=42))
+explainer.fit(X_pr, y_pr);
+explainer.calibrate(X_cal, y_cal, feature_names=d.feature_names)
+exp = explainer.explain_factual(X_te[:1])
+print(exp[0].to_narrative(output_format="text", expertise_level="advanced"))
+exp[0].plot()
+```
 
-**Required calibration**: `true` (calibration set is mandatory).
+---
 
-**All examples in this repo use `WrapCalibratedExplainer`.**
+## What Can It Explain?
 
-**Typical Workflow (3 lines)**:
+| Task | Description | Key Method |
+|---|---|---|
+| Binary classification | Binary yes/no decision with calibrated probabilities | `explain_factual`, `explore_alternatives` |
+| Multiclass | Multiclass classification (3+ classes), per-class explanations | `explain_factual`, `explore_alternatives` |
+| Regression with intervals | Predict a value with a conformal uncertainty interval defined by given percentiles | `explain_factual(low_high_percentiles=(5, 95))`, `explore_alternatives(low_high_percentiles=(10, 90))` |
+| Probabilistic regression | Explain a probability query on a regression target (e.g., $P(y \le t)$ or $P(t_l < y \le t_h)$) | `explain_factual(threshold=t)`, `explore_alternatives(threshold=(t_l,t_h))` |
+
+All four modes use the same API — the wrapper infers classification vs regression from the underlying estimator (or you pass `mode` to `calibrate`), and you add `threshold` only for probabilistic regression.
+
+---
+
+## What Makes It Different?
+
+| Feature | LIME | SHAP | calibrated-explanations |
+|---|---|---|---|
+| Calibrated probabilities | No | No | **Yes** |
+| Uncertainty intervals per explanation | No | No | **Yes** |
+| Built-in counterfactual / alternative rules | No | No | **Yes** |
+| Deterministic (stable) output | No | High (TreeExplainer) | **Yes** |
+| Uncertainty-qualified counterfactuals (Ensured framework) | No | No | **Yes** |
+| Conditional calibration by group | No | No | **Yes** |
+
+> **Honest limitation:** CE does not currently provide global feature importance rankings — tasks requiring aggregated SHAP-style importance plots should use SHAP for that component.
+
+---
+
+## Uncertainty-Qualified Counterfactuals (Ensured)
+
+Standard counterfactual methods tell you "change feature X to value Y and the decision flips." They do not tell you whether the model is actually confident about that alternative scenario. The counterfactual may point to a region of input space where the model has seen very little training data, meaning the flip is a formal artefact, not a reliable prediction.
+
+CE's **Ensured** framework (Löfström et al., arXiv:2410.05479) addresses this directly. The `ensured_explanations()` filter keeps only counterfactuals where the model's calibrated interval lies **fully in the opposite class** — providing formal coverage evidence that the alternative decision is not merely a point estimate crossing the class boundary. The result: every surfaced counterfactual is backed by conformal guarantees.
 
 ```python
-from calibrated_explanations import WrapCalibratedExplainer
-explainer = WrapCalibratedExplainer(model)           # wrap your sklearn-like model
-explainer.fit(x_proper, y_proper); explainer.calibrate(x_cal, y_cal)
-explanation = explainer.explain_factual(x_test)      # returns calibrated rules + uncertainty
+explainer.explore_alternatives(X_query)[0].ensured_explanations()  # X_query: array-like, shape (n_samples, n_features)
 ```
 
-**Core Methods**:
-
-* `fit(x_proper, y_proper)` — train/prepare internal state (model fitting or wrapper).
-* `calibrate(x_cal, y_cal, feature_names=None)` — required: align uncertainty estimates.
-* `explain_factual(X)` — factual rules + feature importance with [low, high] bounds.
-* `explore_alternatives(X)` — counterfactual / alternative rules.
-* `predict_proba(X[, uq_interval=True])` — calibrated probability (with uncertainty interval).
-* `predict(X[, uq_interval=True])` — point prediction (with uncertainty interval).
-
-**Outputs**: calibrated prediction intervals, per-feature importance with uncertainty bounds, factual/alternative rule tables.
-
-### Task map (critical: regression meanings differ)
-
-**Classification (binary/multiclass)**:
-Classification in this library is calibrated using Venn-Abers predictors.
-- Calibrated probability: `predict_proba(x[, ...])`
-- Calibrated probability with uncertainty bounds using Venn-Abers: `predict_proba(x, uq_interval=True[, ...])`
-- Calibrated prediction: `predict(x[, ...])`
-- Explanations: `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
-
-**Conformal interval regression (CPS)  ← CE "regression"**:
-Regression in this library is **conformal interval regression** via **Conformal Predictive Systems (CPS)**:
-- CPS calibrated point regression: `predict(x[, ...])`
-- Point regression + calibrated uncertainty intervals = (conformal) interval regression: `predict(x, uq_interval=True, low_high_percentiles=(a, b)[, ...])`. Note that one-sided intervals can be obtained by setting `a=-np.Inf` or `b=np.Inf`.
-- You can also request CPS-controlled intervals from explanations: `explain_factual(x, low_high_percentiles=(a, b)[, ...])` and `explore_alternatives(x, low_high_percentiles=(a, b)[, ...])`
-- Default: `low_high_percentiles` = (5, 95) for 90% intervals.
-
-**Probabilistic regression (thresholded probability queries for y)**:
-Probabilistic regression requires assigning a `threshold`:
-- Threshold probability for real-valued target: `predict_proba(x, threshold=t[, ...])` gives **P(y <= t)**
-- Within-spec probability for real-valued target: `predict_proba(x, threshold=(low, high)[, ...])` gives **P(low < y <= high)**
-- Add uncertainty bounds with `uq_interval=True`
-- Exceedance explanations: `explain_factual(x, threshold=t[, ...])` and `explore_alternatives(x, threshold=t[, ...])`
-- Within-spec explanations: `explain_factual(x, threshold=(low, high)[, ...])` and `explore_alternatives(x, threshold=(low, high)[, ...])`
-
-**All tasks also support (core capability)**:
-- `predict(x[, ...])` and `predict(x, uq_interval=True[, ...])`
-- `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
-
-**Common optional parameters (`[, ...]`)**:
-- `bins=...` for conditional calibration. Can also set a Mondrian Calibrator (see [crepes.extras.MondrianCategorizer](https://crepes.readthedocs.io/en/latest/crepes.extras.html#crepes.extras.MondrianCategorizer))
-- `low_high_percentiles=(a, b)` for CPS conformal interval regression intervals
-- `threshold=t` or `threshold=(low, high)` for probabilistic regression
-
-**Local dev**: run `pip install -e .` before running examples/tests locally.
-
-**When not to use**: raw deep nets without an sklearn wrapper; real-time streaming without a calibration set; extremely high-dimensional (>10k) feature vectors.
-
-Calibrated Explanations turns any scikit-learn-compatible estimator into a
-calibrated explainer that returns:
-
-- **Factual rules** – the calibrated reasons your model backed its prediction.
-- **Alternative rules** – what needs to change to flip or reinforce that
-  decision, complete with uncertainty bounds.
-- **Prediction intervals** – uncertainty-aware probabilities or regression
-  ranges that quantify both aleatoric and epistemic risk.
-
-Every quickstart, notebook, and benchmark follows the same recipe: fit your
-estimator, calibrate on held-out data, then interpret the returned rule table
-before acting.
-
-> **Guarantees & Assumptions**
->
-> * **Calibration set required**: A held-out calibration set (typically 20-25% of training data) is mandatory for all workflows.
-> * **Interval invariant**: All intervals satisfy `low <= predict <= high`; violations trigger errors.
-> * **Uncertainty decomposition**: Intervals capture both aleatoric (data) and epistemic (model) uncertainty.
-> * **Calibration validity**: Guarantees hold when calibration and test distributions match (exchangeability assumption).
->
-> See [ADR-021](docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md) for formal semantics.
+> **Read more:** [Ensured explanations playbook](https://calibrated-explanations.readthedocs.io/en/latest/practitioner/playbooks/ensured-explanations) · [Alternatives concept guide](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/alternatives)
 
 ---
 
-## Your first calibrated explanation (≈5 minutes)
+## Fairness-Aware Explanations
 
-1. **Install the essentials**
-   ```bash
-   python -m pip install calibrated-explanations
-   ```
+A model can be globally well-calibrated but systematically overconfident for a minority group. CE's **Mondrian/conditional calibration** conditions calibration and uncertainty on a per-instance group label (`bins`) (Löfström & Löfström, xAI 2024). The result: explanation uncertainty intervals are valid *within each group*, not only on average. Wider intervals for a group are a direct, auditable signal of data insufficiency — a concrete fairness artefact that can be reported to regulators or risk committees.
 
-   **Optional extras:**
-   | Extra | Purpose | Key Packages |
-   | :--- | :--- | :--- |
-   | `[viz]` | Plotting and visualizations | `matplotlib` |
-   | `[notebooks]` | Jupyter notebook support | `ipython`, `jupyter`, `nbconvert` |
-   | `[eval]` | Reproducing benchmarks | `lime`, `shap`, `xgboost`, `scipy` |
-   | `[external-plugins]` | High-performance plugins | `numpy>=1.24`, `pandas>=2.0`, `scikit-learn>=1.3` |
+```python
+explainer.explain_factual(X_query, bins=X_query[:, gender_col_index])
+```
 
-   Install with: `pip install "calibrated-explanations[viz,notebooks]"`
-
-2. **Run the quickstart** – this mirrors the smoke-tested docs example.
-   ```python
-   from sklearn.datasets import load_breast_cancer
-   from sklearn.model_selection import train_test_split
-   from sklearn.ensemble import RandomForestClassifier
-   from calibrated_explanations import WrapCalibratedExplainer
-
-   dataset = load_breast_cancer()
-   x_train, x_test, y_train, y_test = train_test_split(
-       dataset.data,
-       dataset.target,
-       test_size=0.2,
-       stratify=dataset.target,
-       random_state=0,
-   )
-   x_proper, x_cal, y_proper, y_cal = train_test_split(
-       x_train,
-       y_train,
-       test_size=0.25,
-       stratify=y_train,
-       random_state=0,
-   )
-
-   explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-   explainer.fit(x_proper, y_proper)
-   explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
-
-   factual = explainer.explain_factual(x_test[:1])
-   alternatives = explainer.explore_alternatives(x_test[:1])
-   probabilities, probability_interval = explainer.predict_proba(x_test[:1], uq_interval=True)
-   low, high = probability_interval
-   print(f"Calibrated probability: {probabilities[0, 1]:.3f}")
-   print(factual[0])
-   ```
-3. **Check the output** – the first factual explanation prints a calibrated rule
-   table. A real run looks like:
-   ```text
-   Prediction [ Low ,  High]
-   0.077 [0.000, 0.083]
-   Value : Feature                                  Weight [ Low  ,  High ]
-   0.07  : mean concave points > 0.05               -0.418 [-0.576, -0.256]
-   0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
-   0.34  : worst concavity > 0.22                   -0.090 [-0.123,  0.077]
-   ```
-   - The header row shows the calibrated prediction and its low/high uncertainty
-     interval.
-   - Each subsequent line is a factual rule: the observed value, the matching
-     feature, and its signed contribution with uncertainty bounds.
-4. **Interpret what you see** – follow the
-   [Interpret Calibrated Explanations guide](https://calibrated-explanations.readthedocs.io/en/latest/foundations/how-to/interpret_explanations.html)
-   to learn how calibrated intervals, rule weights, and the triangular plot work
-   together. The [triangular alternatives tutorial](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/alternatives.html)
-   then shows how to narrate trade-offs across alternative rules.
+> **Read more:** [Mondrian / conditional calibration playbook](https://calibrated-explanations.readthedocs.io/en/latest/practitioner/playbooks/mondrian-calibration)
 
 ---
 
-## Mental model: fit → calibrate → explain → interpret
+## Research and Citations
 
-1. **Fit** your preferred estimator.
-2. **Calibrate** with held-out data to align predicted and observed outcomes.
-3. **Explain** with `explain_factual` for calibrated rules and
-   `explore_alternatives` for semi-, super-, and counterfactuals.
-4. **Interpret** using the how-to guides so decisions account for both aleatoric
-   and epistemic uncertainty.
+`calibrated-explanations` is the product of peer-reviewed research. If you use it, please cite the relevant paper(s).
 
-This workflow is identical across binary, multiclass classification, as well as probabilistic, and
-interval regression tasks, the difference lies in how you configure the underlying estimator and read the returned intervals.
+1. Löfström, H., Löfström, T., Johansson, U., Sönströd, C. (2024). "Calibrated Explanations: with Uncertainty Information and Counterfactuals." *Expert Systems with Applications*. doi:[10.1016/j.eswa.2024.123154](https://doi.org/10.1016/j.eswa.2024.123154)
 
----
+2. Löfström, T., Löfström, H., Johansson, U., Sönströd, C., Matela, R. (2025). "Calibrated Explanations for Regression." *Machine Learning* 114, 100. Springer Nature. doi:[10.1007/s10994-024-06642-8](https://doi.org/10.1007/s10994-024-06642-8)
 
-## Choose your path
+3. Löfström, H., Löfström, T. (2024). "Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty." *xAI 2024*, Communications in Computer and Information Science, vol 2153. Springer, Cham. doi:[10.1007/978-3-031-63787-2_17](https://doi.org/10.1007/978-3-031-63787-2_17)
 
-### New practitioners (first run)
-- Stay on this README quickstart, then open the
-  [classification quickstart](https://calibrated-explanations.readthedocs.io/en/latest/get-started/quickstart_classification.html)
-  for a notebook-friendly walk-through with the breast cancer dataset.
-- Compare factual vs. alternative explanations using the
-  [triangular plot tutorial](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/alternatives.html).
+4. Löfström, T., Löfström, H., Johansson, U. (2024). "Calibrated Explanations for Multi-class." *Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications*, Proceedings of Machine Learning Research, PMLR 230:175–194.
 
-### Practitioners (day-to-day usage)
-- Follow the
-  [practitioner hub](https://calibrated-explanations.readthedocs.io/en/latest/practitioner/index.html)
-  for production checklists, integration how-tos, and interpretation playbooks.
-- Explore the
-  [probabilistic regression quickstart](https://calibrated-explanations.readthedocs.io/en/latest/get-started/quickstart_regression.html)
-  when you need calibrated thresholds.
-- Opt into plugins only when needed via
-  `pip install "calibrated-explanations[external-plugins]"`—they remain
-  optional extensions. Note: `fast` explanations are experimental and
-  provided via opt-in plugins; they are allowed in the schema for
-  interoperability but are not promoted for primary practitioner
-  workflows. Treat `fast` as an experimental, opt-in feature and prefer
-  `factual`/`alternative` workflows for production use.
+5. Löfström, H., Löfström, T., Hallberg Szabadvary, J. (2024). "Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions." *arXiv:2410.05479*. [https://arxiv.org/abs/2410.05479](https://arxiv.org/abs/2410.05479)
 
-### Agents (CE-first by default)
-- Read `AGENTS.md` for the minimal entrypoint.
-- Follow the CE-first guide in `docs/get-started/ce_first_agent_guide.md`.
-- Use the helper module in `src/calibrated_explanations/ce_agent_utils.py`.
+6. Löfström, H. et al. (2023). "Investigating the impact of calibration on the quality of explanations." *Annals of Mathematics and Artificial Intelligence*.
 
-### Researchers
-- Reproduce published studies through the
-  [researcher hub](https://calibrated-explanations.readthedocs.io/en/latest/researcher/index.html),
-  which links directly to benchmark manifests, dataset splits, and evaluation
-  notebooks.
-- Fetch replication artefacts from the
-  [evaluation README](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/README.md)
-  and align with the release plan checkpoints.
-- Cite the work using the ready-made entries in
-  [docs/citing.md](https://calibrated-explanations.readthedocs.io/en/latest/citing.html).
-
-### Contributors
-- Start with the
-  [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
-  for development environment setup, plugin guardrails, and quality gates.
-- Review the
-  [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
-  before submitting pull requests.
-
-### Maintainers
-- Track release readiness through the root-level
-  [`ROADMAP.md`](https://github.com/Moffran/calibrated_explanations/blob/main/ROADMAP.md),
-  [docs/foundations/governance/release_checklist.md](https://calibrated-explanations.readthedocs.io/en/latest/governance/release_checklist.html),
-  and the implementation plan in
-  [`docs/improvement/RELEASE_PLAN_v1.md`](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/RELEASE_PLAN_v1.md).
-- Confirm Standards and ADR alignment via
-  [docs/improvement/standards/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/standards) and
-  [docs/improvement/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs)
-  and keep docs navigation synced with the
-  [IA crosswalk](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/nav_crosswalk.html).
+BibTeX entries are available in [`CITATION.cff`](CITATION.cff).
 
 ---
 
-## Documentation map
-
-- **API reference** – start with the
-  [API index](https://calibrated-explanations.readthedocs.io/en/latest/api/index.html),
-  then browse CLI, plugin, serialization, and visualization references.
-- **Architecture overview** – the
-  [architecture notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/concepts/architecture.html)
-  connect runtime components, telemetry, and plugin boundaries.
-- **Contributor guidance** – see the
-  [contributor hub](https://calibrated-explanations.readthedocs.io/en/latest/contributor/index.html)
-  for setup, quality gates, and process notes.
-- **Release notes & changelog** – check
-  [release notes](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/release_notes.html)
-  and the project
-  [CHANGELOG](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md).
-- **Plugin CLI** – inspect registered plugins and trust state with
-  `ce.plugins list all` (see the
-  [CLI reference](https://calibrated-explanations.readthedocs.io/en/latest/api/cli.html)).
-- **Project governance** – review
-  [GOVERNANCE.md](https://github.com/Moffran/calibrated_explanations/blob/main/GOVERNANCE.md),
-  [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md),
-  and the
-  [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md).
-- **Support** – see
-  [SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md)
-  for the fastest way to get help.
-
----
-
-## Licensing & Contributions
-
-Contributions to this project are licensed under the same terms as the project
-itself (BSD 3-Clause). By contributing, you agree to the
-[Developer Certificate of Origin (DCO)](https://developercertificate.org/)
-and that your contributions will be available under the project's license.
-See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for details on how to
-sign off your commits.
-
----
-
-## Feature highlights
-
-- **Calibrated prediction confidence** for binary and multiclass classification.
-- **Uncertainty-aware feature importance** with aleatoric and epistemic bounds.
-- **Probabilistic and interval regression** that mirrors the classification API.
-- **Alternative explanations with triangular plots** for visualising trade-offs.
-- **Conjunctional and conditional rules** for interaction and fairness analysis.
-- **Experimental plugin lane** for `fast` explanations (opt-in only, not
-  promoted for production—see practitioner notes above).
-
----
-
-## Installation options
+## Install & Requirements
 
 ```bash
-python -m pip install calibrated-explanations           # PyPI
-conda install -c conda-forge calibrated-explanations    # conda-forge, currently only v0.9.0
-python -m pip install "calibrated-explanations[dev]"    # local development tooling
-python -m pip install "calibrated-explanations[viz]"    # plotting extras
+pip install calibrated-explanations
 ```
 
-Python ≥3.8 is supported. Optional extras remain additive so the core package
-stays lightweight.
+- Python ≥ 3.8
+- scikit-learn ≥ 1.3
+- crepes ≥ 0.8.0 (conformal calibration backend)
+- venn-abers ≥ 1.4.0 (Venn-Abers calibration)
+- numpy ≥ 1.24, pandas ≥ 2.0 (standard data science stack)
+
+Optional: `matplotlib` is required only for `.plot()` visualisation calls.
 
 ---
 
-## Research and reproducibility
+## Documentation
 
-1. **Set up the evaluation environment**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   python -m pip install --upgrade pip
-   python -m pip install -e .[dev,eval]
-   ```
-   The optional `[eval]` extras pull in `xgboost`, `venn-abers`, and plotting
-   dependencies used across the published studies.
-2. **Load the benchmark assets** – datasets live in the
-   [`data/`](https://github.com/Moffran/calibrated_explanations/tree/main/data)
-   directory (CSV files and zipped archives) and are referenced directly by the
-   evaluation scripts.
-3. **Re-run the flagship experiments** – each paper has a matching notebook or
-   script under [`evaluation/`](https://github.com/Moffran/calibrated_explanations/tree/main/evaluation):
-   - `Classification_Experiment_sota.py` and the accompanying notebooks cover
-     the 25-dataset binary classification suite.
-   - `multiclass/` and `regression/` host the multiclass and interval
-     regression pipelines, respectively.
-   - `ensure/` and `fastCE/` contain the ensured-explanations and accelerated
-     plugin studies.
-   Result archives (`*.pkl`, `.zip`) sit beside each run for quick comparison.
-4. **Keep results traceable** – preserve the random seeds baked into the scripts
-   (typically `42` or `0`) and record any deviations alongside the active ADRs
-   noted in [`docs/improvement/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs).
-5. **Cite the sources** – the
-   [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/researcher/advanced/theory_and_literature.html)
-   lists DOIs, arXiv IDs, and funding acknowledgements to include in your work.
+- [Full documentation](https://calibrated-explanations.readthedocs.io)
+- [Getting started in 60 seconds](docs/getting_started_60s.md)
+- [Contributing](CONTRIBUTING.md)
 
 ---
 
-## Contributing and maintenance workflow
+## License
 
-1. **Create a virtual environment**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   python -m pip install --upgrade pip
-   python -m pip install -e .[dev] -c constraints.txt
-   python -m pip install -r docs/requirements-doc.txt -c constraints.txt
-   ```
-2. **Run the quality gates locally**
-   ```bash
-   pytest
-   ruff check .
-   mypy src tests
-   ```
-3. **Build the documentation (optional but encouraged)**
-   ```bash
-   make -C docs html
-   ```
-4. **Open a pull request** referencing the active milestone and relevant ADRs.
-   The [PR guide](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/pr_guide.html)
-   lists the checklist used during reviews.
-5. **Review community health docs** – contributions are expected to follow the
-   [Code of Conduct](https://github.com/Moffran/calibrated_explanations/blob/main/CODE_OF_CONDUCT.md),
-   the contribution licensing guidance in
-   [CONTRIBUTING](https://github.com/Moffran/calibrated_explanations/blob/main/.github/CONTRIBUTING.md),
-   and the support/security policies in
-   [SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md)
-   and [SECURITY.md](https://github.com/Moffran/calibrated_explanations/blob/main/SECURITY.md).
+Released under the [BSD 3-Clause License](LICENSE) — open for both academic and commercial use without restriction.
 
 ---
 
-## License and citation
+## Acknowledgements
 
-- Licensed under the [BSD 3-Clause License](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE).
-- Cite Calibrated Explanations using the entries in
-  [`CITATION.cff`](https://github.com/Moffran/calibrated_explanations/blob/main/CITATION.cff)
-  or [docs/citing.md](https://calibrated-explanations.readthedocs.io/en/latest/citing.html).
-
----
-
-## Acknowledgements & support
-
-Funded by the [Swedish Knowledge Foundation](https://www.kks.se/) through the
-Knowledge Intensive Product Realization SPARK environment at Jönköping
-University. For questions or support, open an issue on
-[GitHub](https://github.com/Moffran/calibrated_explanations/issues) or review
-the guidance in
-[SUPPORT.md](https://github.com/Moffran/calibrated_explanations/blob/main/SUPPORT.md).
-
-[pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations.svg
-[calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations/
+Development of `calibrated-explanations` has been funded by the Swedish Knowledge Foundation together with industrial partners supporting the research and education environment on Knowledge Intensive Product Realization SPARK at Jönköping University, Sweden, through projects: AFAIR grant no. 20200223, ETIAI grant no. 20230040, and PREMACOP grant no. 20220187. Helena Löfström was initially a PhD student in the Industrial Graduate School in Digital Retailing (INSiDR) at the University of Borås, funded by the Swedish Knowledge Foundation, grant no. 20160035.
