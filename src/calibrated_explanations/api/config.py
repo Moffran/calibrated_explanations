@@ -14,7 +14,9 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from ..perf import from_config as _perf_from_config
+# Import perf lazily in `build_config` to avoid emitting deprecations at
+# module import time (tests set CE_DEPRECATIONS=error during collection).
+_perf_from_config = None
 
 TaskLiteral = Literal["classification", "regression", "auto"]
 
@@ -256,7 +258,17 @@ class ExplainerBuilder:
         # consumers can opt-in to perf primitives consistently. This does not
         # change behavior unless the factory is used.
         try:
+            # Allow tests to monkeypatch the module-level `_perf_from_config`.
+            # Declare it global so we don't accidentally shadow it and prevent
+            # non-Exception errors (KeyboardInterrupt, SystemExit) from
+            # propagating as the tests expect.
+            global _perf_from_config
             # stash a lightweight factory on the config for downstream wiring
+            # Import lazily so importing this module does not trigger the
+            # deprecated `perf` shim during test collection (which may treat
+            # deprecations as errors).
+            if _perf_from_config is None:
+                from ..perf import from_config as _perf_from_config  # type: ignore
             self._cfg._perf_factory = _perf_from_config(self._cfg)  # type: ignore[attr-defined]
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
