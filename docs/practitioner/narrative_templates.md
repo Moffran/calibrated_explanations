@@ -135,7 +135,7 @@ The `to_narrative()` method supports multiple output formats:
 
 ## Creating Custom Templates
 
-1. Copy the default template from `src/calibrated_explanations/templates/explain_template.yaml`
+1. Copy the default template from `src/calibrated_explanations/templates/explain_template.json`
 2. Modify the templates as needed
 3. Pass your template path to `to_narrative()`:
 
