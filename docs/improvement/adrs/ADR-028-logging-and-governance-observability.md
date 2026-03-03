@@ -1,8 +1,8 @@
-> **Status note (2026-01-05):** Last edited 2026-01-05 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.10.2–v1.0.0.
+> **Status note (2026-03-03):** Last edited 2026-03-03 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.10.2–v1.0.0.
 
 # ADR-028: Logging and Governance Observability
 
-Status: Draft
+Status: Accepted
 Date: 2026-01-05
 Deciders: Runtime & Governance maintainers
 Reviewers: TBD

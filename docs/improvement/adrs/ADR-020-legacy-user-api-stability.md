@@ -1,8 +1,8 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-03-03):** Last edited 2026-03-03 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-020: Legacy User API Stability Guardrails
 
-Status: Draft
+Status: Accepted
 Date: 2025-10-07
 Deciders: Core maintainers
 Reviewers: TBD
@@ -92,3 +92,6 @@ Negative / Risks:
 
 - 2025-10-07 – ADR proposed together with the initial contract document and
   signature-based regression tests.
+- 2026-03-03 – ADR promoted to Accepted. `legacy_user_api_contract.md` updated
+  to reflect v0.11.0 removals (`explain_counterfactual`, `get_explanation`,
+  deprecated parameter aliases). Release checklist ADR-020 gate confirmed active.

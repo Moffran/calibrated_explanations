@@ -5,6 +5,14 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
 
+### Documentation / Governance (2026-03-03)
+
+- **ADR-020 promoted to Accepted:** `ADR-020-legacy-user-api-stability.md` status promoted from Draft to Accepted. `docs/improvement/legacy_user_api_contract.md` updated with a `## Removed in v0.11.0` section listing all symbols removed in v0.11.0 (`explain_counterfactual`, `get_explanation`, `register_plot_plugin`, `perf` facade, `alpha`/`alphas`/`n_jobs` aliases, top-level `viz`/`plotting` exports) with replacement guidance.
+- **ADR-028 promoted to Accepted:** `ADR-028-logging-and-governance-observability.md` status promoted from Draft to Accepted. Remaining open gaps (enforcement tooling, Standard-005 observability example alignment) are assigned to v0.11.1 Task 7.
+- **Standard-005 added to release plan:** `RELEASE_PLAN_v1.md` roadmap summary and Standards appendix updated to include Standard-005 (Logging and Observability Standard). Two open gap entries targeting v0.11.1 Task 7 recorded.
+- **ADR-029–034 appendix entries added:** `RELEASE_PLAN_v1.md` ADR status appendix extended with entries for ADR-029 (Reject Integration Strategy), ADR-030 (Test Quality Priorities), ADR-031 (Calibrator Serialization — no gaps), ADR-032 (Guarded Explanation Semantics), ADR-033 (Modality Extension Plugin Contract), and ADR-034 (Centralized Configuration Management) with unified severity gap tables.
+- **v0.11.1 tasks 16–19 added and closed:** `v0.11.1_plan.md` and `RELEASE_PLAN_v1.md` extended with Tasks 16–19 (governance doc work completed this date) and Task 20 (GovernanceEvent config lifecycle extension, planned).
+
 ## [v0.11.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.0)  - 2026-03-02
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.4...v0.11.0)

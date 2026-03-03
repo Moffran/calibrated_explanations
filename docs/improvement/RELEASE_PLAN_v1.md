@@ -61,7 +61,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-016 - PlotSpec Separation and Schema:** Completed; no open appendix gaps.
 
-**ADR-020 - Legacy User API Stability:** Partially complete; v0.11.0 target is release checklist gates, parity regression assertions, and contributor contract-update workflow updates.
+**ADR-020 - Legacy User API Stability:** Accepted (2026-03-03); `legacy_user_api_contract.md` updated for v0.11.0 removals. Remaining open appendix gaps (parity assertions, contributor workflow guidance) targeted v0.11.1.
 
 **ADR-021 - Calibrated Interval Semantics:** Completed; no open appendix gaps.
 
@@ -77,25 +77,29 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-027 - FAST-Based Feature Filtering:** Partially complete; v0.11.0 target is observability policy/docs/examples closure.
 
-**ADR-028 - Logging and Governance Observability:** Partially complete; v0.11.0 target is docs/examples alignment to Standard-005 plus minimum enforcement checks; deeper tooling hardening may continue in v0.11.1.
+**ADR-028 - Logging and Governance Observability:** Accepted (2026-03-03); enforcement tooling for domain-logger naming and Standard-005 observability example alignment remain v0.11.1 open gaps.
 
 **ADR-029 - Reject Integration Strategy:** Accepted (2026-01-06); policy enum, strategy registry, and reject envelope direction documented in ADR-029.
 
-**ADR-030 - Test Quality Priorities and Enforcement:** Accepted; v0.11.0 target is full planned detector extension and CI check-mode enforcement.
+**ADR-030 - Test Quality Priorities and Enforcement:** Accepted; v0.11.0 delivered full detector extension and CI check-mode enforcement (assertion + determinism checks). Zero-tolerance ratification (marker hygiene, mutation testing policy) targets v0.11.3.
 
-**ADR-031 - Calibrator Serialization & State Persistence:** Accepted; v0.11.0 target is versioned primitives plus explainer save/load contract closure.
+**ADR-031 - Calibrator Serialization & State Persistence:** Completed in v0.11.0; versioned `to_primitive`/`from_primitive` contracts plus `WrapCalibratedExplainer` save/load delivered. No open appendix gaps.
 
 **ADR-032 - Guarded Explanation Semantics:** Accepted; semantic identity and guarded auditability contract are now authoritative, with full rollout/closure tracked in v0.11.x.
 
 **ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
 
-**Standard-001 - Nomenclature Standardization:** Partially complete; v0.11.0 target is automated naming guardrails where feasible. Double-underscore mutation cleanup remains v0.11.1.
+**ADR-034 - Centralized Configuration Management:** Proposed (2026-03-03); Phase A complete in v0.11.1 (ConfigManager established, plugin/registry/logging paths migrated). Phase B in v0.11.2: migrate `cache`, `parallel`, `_feature_filter`, `orchestrator` and close allowlist. Promoted to Accepted after Phase B verification.
 
-**Standard-002 - Code Documentation Standardisation:** Partially complete; v0.11.0 target is wrapper/public numpydoc closure.
+**Standard-001 - Nomenclature Standardization:** Partially complete; v0.11.0 delivered naming guardrail automation and private-member allowlist emptied. Double-underscore mutation cleanup targets v0.11.1; final transitional shim removal targets v0.11.3.
+
+**Standard-002 - Code Documentation Standardisation:** Partially complete; v0.11.0 target is wrapper/public numpydoc closure. Known gap (WrapCalibratedExplainer numpydoc blocks) targets v0.11.3.
 
 **Standard-003 - Test Coverage Standard:** Completed; no open appendix gaps.
 
 **Standard-004 - Documentation Standard (Audience Hubs):** Completed; no open appendix gaps.
+
+**Standard-005 - Logging and Observability Standard:** Accepted (2026-01-15); enforcement tooling for domain-logger naming and observability example alignment with Standard-005 rules targeted v0.11.1 (ADR-028 open gaps 1–2).
 
 ## Release milestones
 
@@ -111,7 +115,9 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 | v0.10.3 | Domain model (ADR-008), Schema (ADR-005), Defaults, Plugin docs (Standard-004), Legacy stability (ADR-020). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure part 1: ADR-005/008/010/020 + Standard-004. |
 | v0.11.0 | Modality extension breaking contract/resolver changes (ADR-033); ADR-027 observability policy/examples updates and ADR-028 docs alignment to Standard-005. | Wrapper/public numpydoc closure target (Standard-002). | ADR-030 detector + CI enforcement and ADR-010 core-only vs extras parity checks. | Naming guardrail automation where feasible (Standard-001). | ADR gap-closure maximization milestone: close ADR-004/005/006(partial)/009/011/014/015/020/026/030/031/033; keep only architecture-heavy migrations deferred. |
 | v0.11.1 | Notebook execution + runtime ceilings (ADR-012); remaining ADR-027/028 enforcement hardening; ADR-033 additive modality rollout follow-through. | No major new code-doc initiative planned beyond maintenance. | No major new coverage initiative planned beyond maintenance. | Double-underscore mutation cleanup completion tasks (Standard-001). | Registry hardening deferred from v0.11.0: full PluginManager resolution migration, trust-state atomicity unification, governance audit completion, and legacy list deprecation. CI upgrade: decommission legacy workflows. |
-| v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals completed; legacy API guard tests green. | Test quality ratification: zero-tolerance enforcement for new quality rules per ADR-030; risks surface inline in milestone gates; rollback paths documented per gate. |
+| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B) and ADR governance sweep: migrate 4 allowlisted modules, close allowlist, promote ADR-034, audit all appendix gaps. |
+| v0.11.3 | Minimal docs-build changes; Standard-002 numpydoc gap closure. | Close WrapCalibratedExplainer numpydoc blocks (Standard-002). | No new coverage work planned. | Final transitional shim removal (Standard-001). | RC readiness: Standard-001 shim closure, Standard-002 gap, ADR-030 zero-tolerance ratification, OSS perf harness (stretch). |
+| v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled. |
 
 ### v0.6.x (stabilisation patches)
 
@@ -340,51 +346,100 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   6. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
   7. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
   8. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
-  9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry.
-  10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan.
+  9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry. → relocated to v0.11.2.
+  10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan. → relocated to v0.11.2.
   11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v0.12.0` remove).
   12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
   13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
+  14. Update the Reject Framework within Calibrated Explanations to include other forms of rejection beyond just binary conformal-based rejectors, such as uncertainty-based rejectors that leverage the uncertainty estimates from calibrated explanations to make informed decisions about when to abstain from making a prediction. Document the new rejector types and provide examples of how to implement and use them effectively in practice.
+  15. Introduce a centralized package configuration layer via `ConfigManager` as the single runtime source of configuration truth. `ConfigManager` must resolve values from call-site overrides, environment variables, `pyproject.toml`, and hard defaults using one documented precedence contract; expose typed accessors for plugin resolution, telemetry, cache/parallel, and reject configuration; and replace ad-hoc config reads across core/plugins/CLI so behavior is deterministic, testable, and auditable.
+   16. Promote ADR-020 from Draft → Accepted: update contract document for v0.11.0 removals, confirm release checklist ADR-020 gate active.
+      - 2026-03-03 – ADR-020 promoted to Accepted; `legacy_user_api_contract.md` updated with v0.11.0 removal table (`explain_counterfactual`, `get_explanation`, deprecated aliases).
+   17. Promote ADR-028 from Draft → Accepted before enforcement script (Task 7) merges, so task 7 enforces an authoritative policy record.
+      - 2026-03-03 – ADR-028 promoted to Accepted.
+   18. Update `docs/improvement/legacy_user_api_contract.md` for v0.11.0 removals and update status note date.
+      - 2026-03-03 – Removed-in-v0.11.0 section added; `.get_explanation(i)` note corrected; status note updated.
+   19. Add Standard-005 to ADR/Standards roadmap summary table in `RELEASE_PLAN_v1.md` and confirm v0.11.1 enforcement gate.
+      - 2026-03-03 – Standard-005 row added to roadmap summary and Standards appendix; observability gaps assigned to v0.11.1 Task 7.
+   20. Extend `GovernanceEvent` schema (introduced in Task 3 for plugin events) to cover `calibrated_explanations.governance.config` lifecycle events (resolve, export, validation-failure) per ADR-034 §4 + ADR-028; add caplog tests and CI governance-event schema gate.
 
-   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations; test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green.
+   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations (including `governance.config` events from ConfigManager); test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green; ADR-020 and ADR-028 promoted to Accepted; and `ConfigManager` is the authoritative configuration entry point with precedence and migration tests green.
+### v0.11.2 (config hardening and ADR governance sweep)
+
+  1. Migrate `cache/cache.py`, `parallel/parallel.py`,
+     `core/explain/_feature_filter.py`, `core/prediction/orchestrator.py` to
+     `ConfigManager`. Done when all four files are removed from the CI allowlist
+     (ADR-034 Phase B).
+  2. Finalize ADR-034 (pulled forward from v1.0.0-rc; no RC dependency): confirm
+     CI allowlist reaches zero or documents any remaining sanctioned boundaries;
+     promote ADR-034 status from Proposed to Accepted with an implementation summary.
+     Depends on task 1 completing green.
+  3. ADR and standards governance sweep (pulled forward from v1.0.0-rc; rolling audit;
+     no RC dependency): audit all open gaps in the RELEASE_PLAN_v1.md appendix, confirm
+     every gap is assigned to a milestone or marked superseded, refresh gap-analysis
+     dates older than 60 days, and close any quick-win gaps that require no feature
+     work (e.g., remaining ADR-026 observability gaps).
+  4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3 and 7 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
+  5. CI workflow decommissioning (relocated from v0.11.1 Task 10; depends on v0.11.1 Task 6 replacement workflows stabilizing): remove legacy wrapper workflows (`test.yml`, `coverage.yml`, `examples.yml`) and update branch protection references. ADR-011 does not apply (CI wrappers are not public API).
+
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 status promoted to Accepted; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated; legacy CI wrapper workflows removed with replacement workflows confirmed green; `make local-checks-pr` passes.
+
+### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
+
+  1. Close Standard-001 (pulled forward from v1.0.0-rc; depends on v0.11.1 Standard-001
+     cleanup): remove remaining transitional shims from `legacy/`, confirm naming/tooling
+     enforcement green on main.【F:docs/improvement/Standard-001_nomenclature_remediation.md†L40-L44】
+  2. Close Standard-002 known gap (implementation pulled forward from v1.0.0-rc; RC only
+     verifies): add full numpydoc blocks to `WrapCalibratedExplainer` and remaining
+     stable public surfaces identified in the appendix.【F:docs/improvement/code_documentation_uplift.md†L24-L92】【F:docs/standards/STD-002-code-documentation-standard.md†L43-L62】
+  3. Ratify ADR-030 zero-tolerance enforcement (pulled forward from v1.0.0; ratification
+     should inform RC readiness): confirm extended anti-pattern scans are CI-blocking,
+     document marker hygiene rules in the ADR, and declare mutation testing optional for
+     core modules.【F:docs/improvement/adrs/ADR-030-test-quality-priorities-and-enforcement.md†L1-L50】
+  4. (Stretch) OSS performance harness template (pulled forward from v1.0.0-rc;
+     self-contained): provide a reusable harness for semi/fully-online latency
+     measurements with README guidance and a sample run (gate: sample run documented
+     and reproducible).
+
+  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; `make local-checks-pr` passes.
 
 ### v1.0.0-rc (release candidate readiness)
+
+<!-- Removed items (evidence in parentheses):
+  - #6 Institutionalise Standard-003 → STALE: appendix confirms "STD-003 fully compliant (2026-02-27): no further action required"; CI enforcement already in place
+  - #7 Promote ADR-026 / deprecate ADR-024/025 → STALE: ADR-026 already Accepted (Status: 2026-01-12); ADR-024/025 already Retired with superseded-prefix files
+  - #10 ADR gap closure audit → moved to v0.11.2
+  - #11 condition_source default change → DONE: delivered in v0.10.3 CHANGELOG
+  - #12 ADR-030 tooling extension → DONE: delivered in v0.11.0 CHANGELOG (assertion + determinism checks; script reorganized to scripts/quality/)
+  - #13 ADR-031 calibrator persistence → DONE: delivered in v0.11.0 CHANGELOG (to_primitive/from_primitive + WrapCalibratedExplainer save/load)
+  - #15 ADR/standards docs gap closure → moved to v0.11.2
+  - #16 ADR-034 finalization → moved to v0.11.2
+  Items #3 (Standard-001 shim removal) and #4 (Standard-002 gap closure) moved to v0.11.3.
+  Item #14 (OSS performance harness) moved to v0.11.3.
+-->
 
 1. Freeze Explanation Schema v1, publish draft compatibility statement, and
    communicate that only patch updates will follow for the schema.【F:docs/schema_v1.md†L1-L120】
 2. Reconfirm wrap interfaces and exception taxonomy against v0.6.x contracts,
    updating README & CHANGELOG with a release-candidate compatibility note.【F:src/calibrated_explanations/core/wrap_explainer.py†L260-L471】【F:src/calibrated_explanations/core/exceptions.py†L1-L63】
-3. Close Standard-001 by removing remaining transitional shims and ensure naming/tooling
-   enforcement is green on the release branch.【F:docs/improvement/Standard-001_nomenclature_remediation.md†L40-L44】
-4. Maintain Standard-002 compliance at ≥90% docstring coverage and outline the
-   ongoing maintenance workflow in the RC changelog section.【F:docs/improvement/code_documentation_uplift.md†L24-L92】【F:docs/standards/STD-002-code-documentation-standard.md†L43-L62】
-5. Validate the new caching/parallel toggles in staging, document safe defaults
+3. Validate the new caching/parallel toggles in staging, document safe defaults
    for RC adopters, and ensure telemetry captures cache hits/misses and worker
    utilisation metrics for release sign-off.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】
-6. Institutionalise Standard-003 by baking coverage checks into release branch
-   policies, publishing a health dashboard (Codecov badge + waiver log), and
-   enforcing `--cov-fail-under=90` in CI.【F:docs/standards/STD-003-test-coverage-standard.md†L34-L74】【F:docs/improvement/archived/coverage_uplift_plan.md†L24-L33】
-7. Promote ADR-026 from Draft to Accepted with implementation summaries so plugin semantics remain authoritative before the freeze; ADR-024 and ADR-025 are deprecated and their legacy parity guidance moved to the maintenance reference (see ADR status appendix).
-8. Launch the versioned documentation preview and public doc-quality dashboards
+4. Verify Standard-002 compliance at ≥90% docstring coverage holds for the RC branch
+   (the WrapCalibratedExplainer gap was closed in v0.11.3; this is a verification gate,
+   not an implementation task).
+5. Launch the versioned documentation preview and public doc-quality dashboards
    (coverage badge, doc lint, notebook lint) described in the information
    architecture plan so stakeholders can validate the structure ahead of GA.【F:docs/improvement/documentation_information_architecture.md†L108-L118】
-9. Provide an RC upgrade checklist covering environment variables, pyproject
+6. Provide an RC upgrade checklist covering environment variables, pyproject
    settings, CLI usage, caching controls, and plugin integration testing
    expectations.
-10. Audit the ADR gap closure roadmap to confirm every gap is either implemented or superseded with an updated ADR decision before promoting the RC branch, recording outcomes in the status log (see ADR status appendix in this document).
-11. Change default behavior for `condition_source` to `"prediction"` in `CalibratedExplainer` and related components. Update all relevant documentation, including the upgrade checklist, to inform users of this change and provide guidance on how to adjust their implementations if they previously relied on the default `"observed"` setting. This change aims to enhance the consistency of calibrated explanations by basing condition labels on model predictions rather than observed labels. Plan for this change to be communicated clearly in the v1.0.0 release notes and upgrade guides (see ADR status appendix in this document).
-12. Extend test quality tooling per ADR-030: update `scripts/anti-pattern-analysis/detect_test_anti_patterns.py` to flag tests without assertions and unseeded random usage, preparing for zero-tolerance enforcement in v1.0.0.
-13. Add ADR-031 calibrator persistence: versioned `to_primitive`/`from_primitive` contracts plus `Explainer.save_state()`/`load_state()` (gate: round-trip tests and schema version policy).
-14. Provide an OSS performance harness template for semi/fully-online latency measurements with README guidance (gate: sample run and documented workflow).
-15. Perform an ADR, standards, and improvement docs gap closure analysis and implementation for any remaining gaps.
 
-Release gate: All schema/contract freezes documented, nomenclature and docstring
-lint suites blocking green, PlotSpec/plugin ADRs promoted, versioned docs preview
-and doc-quality dashboards live, caching/parallel telemetry dashboards reviewed,
-coverage dashboards live, ADR gap closure log signed off, and upgrade checklist
-ready for pilot customers.
+Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy compatibility confirmed; caching/parallel staging validation signed off; Standard-002 ≥90% verified; versioned docs preview and doc-quality dashboards live; upgrade checklist ready for pilot customers.
 
 ### v1.0.0 (stability declaration)
+
+<!-- Removed item #6 (Ratify ADR-030): moved to v0.11.3 so ratification informs RC readiness. -->
 
 1. Announce the stable plugin/telemetry contracts and publish the final
    compatibility statement across README, CHANGELOG, and docs hub.
@@ -400,7 +455,6 @@ ready for pilot customers.
 5. Finalise versioned documentation hosting and publish long-term dashboard
    links (coverage, doc lint, notebooks) so the IA plan’s success metrics are met
    when GA lands.【F:docs/improvement/documentation_information_architecture.md†L108-L118】
-6. Ratify ADR-030 test quality enforcement: ensure extended anti-pattern scans are in CI, marker hygiene is enforced, and mutation testing is optional for core modules.
 
 Release gate: Tagged release artifacts available, documentation hubs updated with
 versioned hosting and public dashboards, caching/parallel toggles operating
@@ -637,6 +691,60 @@ _Last gap analysis: 2026-02-27_
 | 1 | Enforcement tooling for logger domains missing | 2 | 2 | 4 | Add lint/tests to confirm domain-based logger usage. |
 | 2 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Update docs/examples to match structured logging guidance. |
 
+### ADR-029 - Reject Integration Strategy
+
+_Last gap analysis: 2026-03-03_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Reject strategy expansion beyond binary conformal rejectors not yet implemented | 3 | 3 | 9 | Uncertainty-based and cost-sensitive strategies targeted for v0.11.1 Task 14. |
+| 2 | Strategy lifecycle hooks and configuration surface not finalized | 2 | 2 | 4 | Defer detailed strategy config API to v0.11.2. |
+
+### ADR-030 - Test Quality Priorities and Enforcement
+
+_Last gap analysis: 2026-03-03_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Marker hygiene zero-tolerance ratification not yet formalized | 3 | 3 | 9 | Hybrid taxonomy still advisory on some categories; ratification in v0.11.3 Task 3. |
+| 2 | Mutation testing policy documentation not published | 2 | 2 | 4 | v0.11.3; declare mutation testing optional for core modules and document. |
+
+### ADR-031 - Calibrator Serialization and State Persistence
+
+**Compliance verification (2026-03-03):** Delivered in v0.11.0 — versioned `to_primitive`/`from_primitive` contracts plus `WrapCalibratedExplainer` `save_state`/`load_state` present and tested. No open gaps.
+
+### ADR-032 - Guarded Explanation Semantics
+
+_Last gap analysis: 2026-03-03_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Full rollout/closure of guarded auditability is tracked generically as “v0.11.x” with no concrete milestone | 3 | 3 | 9 | Assign closure to v0.11.2 governance sweep (ADR-032 open items). |
+
+### ADR-033 - Modality Extension Plugin Contract and Packaging Strategy
+
+_Last gap analysis: 2026-03-03_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | CLI `--modality` filtering not yet implemented | 3 | 3 | 9 | v0.11.1 Task 11. |
+| 2 | `vision.py`/`audio.py` shims not yet present (must raise `MissingExtensionError`) | 3 | 3 | 9 | v0.11.1 Task 11; shim removal v0.12.0. |
+| 3 | Packaging smoke test (extension install + entry-point discovery) missing | 3 | 3 | 9 | v0.11.1 Task 13. |
+| 4 | Plugin contributor contract docs not updated for `plugin_api_version`/`data_modalities` requirements | 2 | 2 | 4 | v0.11.1 Task 12. |
+
+### ADR-034 - Centralized Configuration Management
+
+_Last gap analysis: 2026-03-03_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Phase A remaining: allowlisted modules not fully migrated; status not yet Accepted | 4 | 3 | 12 | v0.11.1 Task 15; gate is CI allowlist reduced to zero or documented boundary. |
+| 2 | Phase B: `cache/cache.py`, `parallel/parallel.py`, `_feature_filter.py`, `orchestrator.py` use direct env/pyproject reads | 4 | 3 | 12 | v0.11.2 Task 1; done when all four removed from CI allowlist. |
+| 3 | `GovernanceEvent` schema not yet extended to `governance.config` lifecycle events | 3 | 2 | 6 | v0.11.1 Task 20; ADR-034 §4 + ADR-028 requirement. |
+| 4 | Phase C: remaining direct env/pyproject readers (allowlist not closed) | 2 | 2 | 4 | v0.11.3. |
+| 5 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Deferred to v1.0.0; interim: document that no redaction exists until post-GA. |
+| 6 | `export_effective()` payload schema not versioned for external consumers (Open Item 2) | 3 | 2 | 6 | v1.0.0-rc gate; must be versioned before external tooling can rely on export. |
+
 ## Standards status appendix (unified severity tables)
 
 ### Standard-001 - Nomenclature Standardization
@@ -663,3 +771,12 @@ _Last gap analysis: 2026-02-27_
 ### Standard-004 - Documentation Standard (Audience Hubs)
 
 **Compliance verification (2026-02-27):** Reviewed code and RTD - no STD-004 gaps found; STD-004 is fully compliant. No further action required.
+
+### Standard-005 - Logging and Observability Standard
+
+_Last gap analysis: 2026-03-03_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | ADR-028 gap 1; v0.11.1 Task 7. Add lint/test to confirm all loggers use approved `calibrated_explanations.*` domain prefixes. |
+| 2 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | ADR-028 gap 2; v0.11.1 Task 7. Update docs/examples to match Standard-005 guidance. |

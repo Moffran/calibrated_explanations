@@ -1,4 +1,5 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2026-03-03):** Last edited 2026-03-03 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **v0.11.0 update:** Removed entries for `WrapCalibratedExplainer.explain_counterfactual`, `CalibratedExplanations.get_explanation`, and deprecated parameter aliases `alpha`/`alphas`/`n_jobs` now reflected in a dedicated "Removed in v0.11.0" section below.
 
 # Legacy User API Contract Analysis
 
@@ -64,10 +65,11 @@ hard guardrails without accidentally breaking published workflows. Terminology f
     guides.【F:docs/getting_started.md†L218-L223】【F:docs/getting_started.md†L374-L377】
   - `max_rule_size` and `n_top_features` arguments appear in the regression and
     probabilistic notebooks and therefore need to remain supported.【F:notebooks/demo_regression.ipynb†L614-L614】【F:notebooks/core_demos/demo_probabilistic_regression.ipynb†L1213-L1213】
-- Downstream consumers call `.get_explanation(i)` to pull individual
-  explanations, and immediately call `.plot(...)` (often with filenames) on the
-  returned objects; both operations and their keyword arguments are
-  contractually required.【F:notebooks/demo_multiclass_glass.ipynb†L1477-L2487】
+- Individual explanation objects are accessed via standard indexing
+  (`collection[i]`, `collection[:n]`) and expose `.plot(...)` (often with
+  filenames); both the indexing semantics and the keyword arguments of `.plot`
+  are contractually required. (`.get_explanation(i)` was **removed in v0.11.0**
+  in favour of standard indexing; callers must migrate.)【F:notebooks/demo_multiclass_glass.ipynb†L1477-L2487】
 
 ## Direct use of `CalibratedExplainer`
 
@@ -178,6 +180,22 @@ These examples of WrapCalibratedExplainer shows what may only be extended, not r
    # Include uncertainty interval, outputted as a tuple (low, high)
    calib_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
 ```
+
+## Removed in v0.11.0
+
+The following previously documented API surface was removed in v0.11.0. It is
+no longer part of the legacy contract and must not be re-added without a formal
+ADR approving the regression.
+
+| Symbol | Replacement | Notes |
+|---|---|---|
+| `WrapCalibratedExplainer.explain_counterfactual` | `explore_alternatives(...)` | Removed; use the alternatives API |
+| `CalibratedExplanations.get_explanation(i)` | `collection[i]` | Standard indexing is the supported path |
+| `plugins.registry.register_plot_plugin` | `PluginManager` / registry APIs | Removed from public `__all__` per ADR-014 |
+| `calibrated_explanations.perf` | `calibrated_explanations.utils` / direct imports | Root perf facade removed |
+| Parameter alias `alpha` / `alphas` | `low_high_percentiles` | ADR-011 removal; two-minor window satisfied |
+| Parameter alias `n_jobs` | `parallel_workers` | ADR-011 removal; two-minor window satisfied |
+| Top-level `viz`, `plotting` compatibility exports | Internal plugin path | Removed from top-level `__init__` |
 
 ## Enforcement and verification roadmap
 
