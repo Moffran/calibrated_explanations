@@ -115,7 +115,7 @@ jobs:
             --baseline .github/marker-hygiene-baseline.json
       - name: Upload quality reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-quality-reports
           path: |
@@ -166,7 +166,7 @@ jobs:
             --right artifacts/parity/extras
       - name: Upload parity snapshot artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: parity-core-vs-extras
           path: |
@@ -214,7 +214,7 @@ jobs:
           python scripts/over_testing/detect_redundant_tests.py
       - name: Upload over-testing reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: over-testing-reports
           path: |
