@@ -209,8 +209,14 @@ def ranking_validation_for_instance(
             "per_w": {},
         }
 
-    uncertainty = (df["predict_high"] - df["predict_low"]).to_numpy(dtype=float)
-    prediction = df["predict"].to_numpy(dtype=float)
+    # Extract numeric rule envelopes (handle both pandas Series and numpy arrays)
+    prediction = np.asarray(df["predict"], dtype=float)
+    predict_low = np.asarray(df["predict_low"], dtype=float)
+    predict_high = np.asarray(df["predict_high"], dtype=float)
+    uncertainty = predict_high - predict_low
+
+    # Compute Pareto frontier indexes for the candidate set once (weight-independent)
+    pareto_set = set(_pareto_indexes(prediction, predict_low, predict_high))
 
     per_w: dict[str, Any] = {}
     for w in weights:
@@ -225,9 +231,21 @@ def ranking_validation_for_instance(
         if score.size == 0 or np.all(np.isnan(score)):
             continue
 
+        # Determine whether the top-ranked candidate (argmax of S_w) lies on the
+        # Pareto frontier in the (prediction, uncertainty) envelope.
+        try:
+            top_idx = int(np.nanargmax(score))
+        except Exception:
+            top_idx = None
+
+        top_is_pareto = 0.0
+        if top_idx is not None and top_idx in pareto_set:
+            top_is_pareto = 1.0
+
         per_w[str(w)] = {
             "spearman_score_uncertainty": _spearman(score, uncertainty),
             "spearman_score_prediction": _spearman(score, prediction),
+            "top_is_pareto": float(top_is_pareto),
         }
 
     return {
@@ -259,6 +277,7 @@ def summarize_ranking_validation(
         per_w_summary[w_key] = {
             "spearman_score_uncertainty": _mean("spearman_score_uncertainty"),
             "spearman_score_prediction": _mean("spearman_score_prediction"),
+            "pareto_consistency_pct": _mean("top_is_pareto"),
         }
 
     return {

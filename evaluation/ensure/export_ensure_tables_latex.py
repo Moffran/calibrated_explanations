@@ -241,6 +241,57 @@ def build_ranking_validation_table(
     return pd.DataFrame.from_dict(rows, orient="index").reindex(columns=RANKVAL_COLUMNS)
 
 
+def build_pareto_consistency_table(
+    results: dict[str, Any],
+    *,
+    cal_size: int,
+    mode: str,
+    show_std: bool,
+) -> pd.DataFrame:
+    """Aggregate Pareto-consistency (top-ranked on Pareto frontier) across datasets.
+
+    Only includes representative weights with |w| < 1 (e.g., -0.5, 0.0, 0.5).
+    Returns a DataFrame with one column 'Pareto-cons. (%)' showing mean percent.
+    """
+
+    cfg = results.get("config", {})
+    weights = [float(w) for w in cfg.get("ranking_weights", [-1.0, -0.5, 0.0, 0.5, 1.0])]
+    # Keep only representative interior weights (exclude pure +/-1.0)
+    rep_weights = [w for w in weights if abs(w) < 1.0]
+
+    per_weight: dict[str, list[float | None]] = {str(float(w)): [] for w in rep_weights}
+
+    for _, ds_result in results.get("results", {}).items():
+        if _is_skipped(ds_result):
+            continue
+
+        by_cal = ds_result.get("by_calibration_size")
+        if not by_cal or int(cal_size) not in by_cal:
+            continue
+
+        rv = by_cal[int(cal_size)].get(mode, {}).get("ranking_validation", {})
+        per_w = rv.get("per_w", {})
+
+        for w in rep_weights:
+            w_key = str(float(w))
+            row = per_w.get(w_key)
+            if row is None:
+                per_weight[w_key].append(None)
+                continue
+            # Expect a value in [0,1]; convert to percent for presentation
+            val = row.get("pareto_consistency_pct")
+            per_weight[w_key].append(float(val) * 100.0 if val is not None and not (isinstance(val, float) and np.isnan(val)) else None)
+
+    rows: dict[str, dict[str, str]] = {}
+    for w in rep_weights:
+        w_key = str(float(w))
+        rows[w_key] = {
+            "Pareto-cons. (%)": _format_mean_std(per_weight[w_key], show_std=show_std),
+        }
+
+    return pd.DataFrame.from_dict(rows, orient="index").reindex(columns=["Pareto-cons. (%)"])
+
+
 def _build_dataset_list_table(
     results: dict[str, Any],
     *,
@@ -301,18 +352,18 @@ def _build_master_table(
     reg_p75_src = reg_p75_agg if reg_p75_agg is not None else empty
 
     sources = [
-        ("single binary", binary_src, s_key),
-        ("conjunctive binary", binary_src, c_key),
-        ("single multiclass", multiclass_src, s_key),
-        ("conjunctive multiclass", multiclass_src, c_key),
-        ("single regression", reg_plain_src, s_key),
-        ("conjunctive regression", reg_plain_src, c_key),
-        ("single p25 regression", reg_p25_src, s_key),
-        ("conjunctive p25 regression", reg_p25_src, c_key),
-        ("single p50 regression", reg_p50_src, s_key),
-        ("conjunctive p50 regression", reg_p50_src, c_key),
-        ("single p75 regression", reg_p75_src, s_key),
-        ("conjunctive p75 regression", reg_p75_src, c_key),
+        ("s binary", binary_src, s_key),
+        ("c binary", binary_src, c_key),
+        ("s multi.", multiclass_src, s_key),
+        ("c multi.", multiclass_src, c_key),
+        ("s 25 regr.", reg_p25_src, s_key),
+        ("c 25 regr.", reg_p25_src, c_key),
+        ("s 50 regr.", reg_p50_src, s_key),
+        ("c 50 regr.", reg_p50_src, c_key),
+        ("s 75 regr.", reg_p75_src, s_key),
+        ("c 75 regr.", reg_p75_src, c_key),
+        ("s regr.", reg_plain_src, s_key),
+        ("c regr.", reg_plain_src, c_key),
     ]
 
     rows: dict[str, dict[str, str]] = {}
@@ -348,18 +399,18 @@ def _build_calibration_sensitivity_table(
     empty = pd.DataFrame(columns=CANON_COLUMNS)
 
     task_sources = [
-        ("single binary", binary_agg, "s"),
-        ("conjunctive binary", binary_agg, "c"),
-        ("single multiclass", multiclass_agg, "s"),
-        ("conjunctive multiclass", multiclass_agg, "c"),
-        ("single regression", reg_plain_agg, "s"),
-        ("conjunctive regression", reg_plain_agg, "c"),
-        ("single p25 regression", reg_p25_agg, "s"),
-        ("conjunctive p25 regression", reg_p25_agg, "c"),
-        ("single p50 regression", reg_p50_agg, "s"),
-        ("conjunctive p50 regression", reg_p50_agg, "c"),
-        ("single p75 regression", reg_p75_agg, "s"),
-        ("conjunctive p75 regression", reg_p75_agg, "c"),
+        ("s binary", binary_agg, "s"),
+        ("c binary", binary_agg, "c"),
+        ("s multi.", multiclass_agg, "s"),
+        ("c multi.", multiclass_agg, "c"),
+        ("s 25 regr.", reg_p25_agg, "s"),
+        ("c 25 regr.", reg_p25_agg, "c"),
+        ("s 50 regr.", reg_p50_agg, "s"),
+        ("c 50 regr.", reg_p50_agg, "c"),
+        ("s 75 regr.", reg_p75_agg, "s"),
+        ("c 75 regr.", reg_p75_agg, "c"),
+        ("s regr.", reg_plain_agg, "s"),
+        ("c regr.", reg_plain_agg, "c"),
     ]
 
     rows: dict[str, dict[str, str]] = {}
@@ -379,6 +430,128 @@ def _build_calibration_sensitivity_table(
     return pd.DataFrame.from_dict(rows, orient="index").reindex(
         columns=SENSITIVITY_COLUMNS
     )
+
+
+def _rv_from_setting(
+    reg: dict[str, Any],
+    *,
+    out_dir: Path,
+    cal_size: int,
+    show_std: bool,
+    key: str,
+) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+    """Export ranking-validation and Pareto-consistency tables for one
+    regression setting and return the two Pareto-consistency DataFrames.
+
+    This mirrors the previous nested helper but is top-level for clarity.
+    """
+    if not reg:
+        return None, None
+
+    pseudo_results = {"config": reg.get("config", {}), "results": {}}
+    for ds_name, ds_result in reg.get("results", {}).items():
+        if _is_skipped(ds_result):
+            continue
+        if key == "plain":
+            setting = ds_result.get("plain")
+        else:
+            setting = ds_result.get("probabilistic", {}).get(key)
+        if not setting or "by_calibration_size" not in setting:
+            continue
+        pseudo_results["results"][ds_name] = {
+            "meta": ds_result.get("meta", {}),
+            "by_calibration_size": setting["by_calibration_size"],
+        }
+
+    # Ranking validation (single + conjunctive) and Pareto-consistency
+    rv_single = build_ranking_validation_table(
+        pseudo_results, cal_size=cal_size, mode="explore", show_std=show_std
+    )
+    write_table(
+        rv_single,
+        out_dir / "regression" / f"ensure_regression_{key}_ranking_validation_single.tex",
+        caption=f"Regression ({key}) - Ranking validation (single-feature alternatives).",
+        label=f"tab:ensure_reg_{key}_rankval_single",
+    )
+    pc_single = build_pareto_consistency_table(pseudo_results, cal_size=cal_size, mode="explore", show_std=show_std)
+    write_table(
+        pc_single,
+        out_dir / "regression" / f"ensure_regression_{key}_pareto_consistency_single.tex",
+        caption=f"Regression ({key}) - Pareto-consistency of top-ranked candidate (single-feature).",
+        label=f"tab:ensure_reg_{key}_pareto_single",
+    )
+
+    rv_conj = build_ranking_validation_table(
+        pseudo_results, cal_size=cal_size, mode="conjugate", show_std=show_std
+    )
+    write_table(
+        rv_conj,
+        out_dir / "regression" / f"ensure_regression_{key}_ranking_validation_conjunctive.tex",
+        caption=f"Regression ({key}) - Ranking validation (conjunctive alternatives).",
+        label=f"tab:ensure_reg_{key}_rankval_conj",
+    )
+    pc_conj = build_pareto_consistency_table(pseudo_results, cal_size=cal_size, mode="conjugate", show_std=show_std)
+    write_table(
+        pc_conj,
+        out_dir / "regression" / f"ensure_regression_{key}_pareto_consistency_conjunctive.tex",
+        caption=f"Regression ({key}) - Pareto-consistency of top-ranked candidate (conjunctive).",
+        label=f"tab:ensure_reg_{key}_pareto_conj",
+    )
+
+    return pc_single, pc_conj
+
+
+def _build_master_pareto_table(
+    *,
+    binary_pc_single: pd.DataFrame | None,
+    binary_pc_conj: pd.DataFrame | None,
+    multiclass_pc_single: pd.DataFrame | None,
+    multiclass_pc_conj: pd.DataFrame | None,
+    reg_plain_pc_single: pd.DataFrame | None,
+    reg_plain_pc_conj: pd.DataFrame | None,
+    reg_p25_pc_single: pd.DataFrame | None,
+    reg_p25_pc_conj: pd.DataFrame | None,
+    reg_p50_pc_single: pd.DataFrame | None,
+    reg_p50_pc_conj: pd.DataFrame | None,
+    reg_p75_pc_single: pd.DataFrame | None,
+    reg_p75_pc_conj: pd.DataFrame | None,
+) -> pd.DataFrame:
+    """Compose a master Pareto-consistency table with rows for each
+    task/mode and columns for representative weights (e.g., -0.5, 0.0, 0.5).
+    """
+
+    sources = [
+        ("s binary", binary_pc_single),
+        ("c binary", binary_pc_conj),
+        ("s multi.", multiclass_pc_single),
+        ("c multi.", multiclass_pc_conj),
+        ("s 25 regr.", reg_p25_pc_single),
+        ("c 25 regr.", reg_p25_pc_conj),
+        ("s 50 regr.", reg_p50_pc_single),
+        ("c 50 regr.", reg_p50_pc_conj),
+        ("s 75 regr.", reg_p75_pc_single),
+        ("c 75 regr.", reg_p75_pc_conj),
+        ("s regr.", reg_plain_pc_single),
+        ("c regr.", reg_plain_pc_conj),
+    ]
+
+    # Use standard representative weight keys
+    weight_keys = ["-0.5", "0.0", "0.5"]
+    rows: dict[str, dict[str, str]] = {}
+    for label, df in sources:
+        row: dict[str, str] = {}
+        if df is None or df.empty:
+            for wk in weight_keys:
+                row[wk] = ""
+        else:
+            for wk in weight_keys:
+                if wk in df.index and "Pareto-cons. (%)" in df.columns:
+                    row[wk] = str(df.loc[wk, "Pareto-cons. (%)"]) if df.loc[wk, "Pareto-cons. (%)"] != "" else ""
+                else:
+                    row[wk] = ""
+        rows[label] = row
+
+    return pd.DataFrame.from_dict(rows, orient="index").reindex(columns=weight_keys)
 
 
 def main() -> None:
@@ -432,6 +605,19 @@ def main() -> None:
     reg_p25_agg: pd.DataFrame | None = None
     reg_p50_agg: pd.DataFrame | None = None
     reg_p75_agg: pd.DataFrame | None = None
+    # Pareto-consistency aggregated tables (per-task)
+    binary_pc_single: pd.DataFrame | None = None
+    binary_pc_conj: pd.DataFrame | None = None
+    multiclass_pc_single: pd.DataFrame | None = None
+    multiclass_pc_conj: pd.DataFrame | None = None
+    reg_plain_pc_single: pd.DataFrame | None = None
+    reg_plain_pc_conj: pd.DataFrame | None = None
+    reg_p25_pc_single: pd.DataFrame | None = None
+    reg_p25_pc_conj: pd.DataFrame | None = None
+    reg_p50_pc_single: pd.DataFrame | None = None
+    reg_p50_pc_conj: pd.DataFrame | None = None
+    reg_p75_pc_single: pd.DataFrame | None = None
+    reg_p75_pc_conj: pd.DataFrame | None = None
 
     # Binary
     binary_path = Path(args.binary)
@@ -485,6 +671,15 @@ def main() -> None:
             caption="Binary classification - Ranking validation (single-feature alternatives).",
             label="tab:ensure_binary_rankval_single",
         )
+        # Pareto-consistency table (representative weights |w|<1)
+        pc_single = build_pareto_consistency_table(binary, cal_size=cal_size, mode="explore", show_std=show_std)
+        write_table(
+            pc_single,
+            out_dir / "binary" / "ensure_binary_pareto_consistency_single.tex",
+            caption="Binary classification - Pareto-consistency of top-ranked candidate (single-feature).",
+            label="tab:ensure_binary_pareto_single",
+        )
+        binary_pc_single = pc_single
         rv_conj = build_ranking_validation_table(
             binary, cal_size=cal_size, mode="conjugate", show_std=show_std
         )
@@ -494,6 +689,14 @@ def main() -> None:
             caption="Binary classification - Ranking validation (conjunctive alternatives).",
             label="tab:ensure_binary_rankval_conj",
         )
+        pc_conj = build_pareto_consistency_table(binary, cal_size=cal_size, mode="conjugate", show_std=show_std)
+        write_table(
+            pc_conj,
+            out_dir / "binary" / "ensure_binary_pareto_consistency_conjunctive.tex",
+            caption="Binary classification - Pareto-consistency of top-ranked candidate (conjunctive).",
+            label="tab:ensure_binary_pareto_conj",
+        )
+        binary_pc_conj = pc_conj
 
     # Multiclass
     multi_path = Path(args.multiclass)
@@ -552,6 +755,14 @@ def main() -> None:
             caption="Multiclass classification - Ranking validation (single-feature alternatives).",
             label="tab:ensure_multiclass_rankval_single",
         )
+        pc_single = build_pareto_consistency_table(multi, cal_size=cal_size, mode="explore", show_std=show_std)
+        write_table(
+            pc_single,
+            out_dir / "multiclass" / "ensure_multiclass_pareto_consistency_single.tex",
+            caption="Multiclass classification - Pareto-consistency of top-ranked candidate (single-feature).",
+            label="tab:ensure_multiclass_pareto_single",
+        )
+        multiclass_pc_single = pc_single
         rv_conj = build_ranking_validation_table(
             multi, cal_size=cal_size, mode="conjugate", show_std=show_std
         )
@@ -561,6 +772,14 @@ def main() -> None:
             caption="Multiclass classification - Ranking validation (conjunctive alternatives).",
             label="tab:ensure_multiclass_rankval_conj",
         )
+        pc_conj = build_pareto_consistency_table(multi, cal_size=cal_size, mode="conjugate", show_std=show_std)
+        write_table(
+            pc_conj,
+            out_dir / "multiclass" / "ensure_multiclass_pareto_consistency_conjunctive.tex",
+            caption="Multiclass classification - Pareto-consistency of top-ranked candidate (conjunctive).",
+            label="tab:ensure_multiclass_pareto_conj",
+        )
+        multiclass_pc_conj = pc_conj
 
     # Regression
     reg_path = Path(args.regression)
@@ -662,50 +881,18 @@ def main() -> None:
         # Ranking validation tables for regression are exported separately per setting.
         cal_size = int(reg.get("config", {}).get("calibration_sizes", [100])[0])
 
-        def _rv_from_setting(setting_results: dict[str, Any], *, key: str) -> None:
-            if not setting_results:
-                return
-            rv_single_rows: list[dict[str, Any]] = []
-            rv_conj_rows: list[dict[str, Any]] = []
-            # We need to map into the same structure expected by build_ranking_validation_table.
-            # Create a shallow results-like dict.
-            pseudo_results = {
-                "config": reg.get("config", {}),
-                "results": {},
-            }
-            for ds_name, ds_result in reg.get("results", {}).items():
-                if _is_skipped(ds_result):
-                    continue
-                if key == "plain":
-                    setting = ds_result.get("plain")
-                else:
-                    setting = ds_result.get("probabilistic", {}).get(key)
-                if not setting or "by_calibration_size" not in setting:
-                    continue
-                pseudo_results["results"][ds_name] = {"meta": ds_result.get("meta", {}), "by_calibration_size": setting["by_calibration_size"]}
-
-            rv_single = build_ranking_validation_table(
-                pseudo_results, cal_size=cal_size, mode="explore", show_std=show_std
-            )
-            write_table(
-                rv_single,
-                out_dir / "regression" / f"ensure_regression_{key}_ranking_validation_single.tex",
-                caption=f"Regression ({key}) - Ranking validation (single-feature alternatives).",
-                label=f"tab:ensure_reg_{key}_rankval_single",
-            )
-            rv_conj = build_ranking_validation_table(
-                pseudo_results, cal_size=cal_size, mode="conjugate", show_std=show_std
-            )
-            write_table(
-                rv_conj,
-                out_dir / "regression" / f"ensure_regression_{key}_ranking_validation_conjunctive.tex",
-                caption=f"Regression ({key}) - Ranking validation (conjunctive alternatives).",
-                label=f"tab:ensure_reg_{key}_rankval_conj",
-            )
-
-        _rv_from_setting(reg, key="plain")
-        for key in ["p25", "p50", "p75"]:
-            _rv_from_setting(reg, key=key)
+        reg_plain_pc_single, reg_plain_pc_conj = _rv_from_setting(
+            reg, out_dir=out_dir, cal_size=cal_size, show_std=show_std, key="plain"
+        )
+        reg_p25_pc_single, reg_p25_pc_conj = _rv_from_setting(
+            reg, out_dir=out_dir, cal_size=cal_size, show_std=show_std, key="p25"
+        )
+        reg_p50_pc_single, reg_p50_pc_conj = _rv_from_setting(
+            reg, out_dir=out_dir, cal_size=cal_size, show_std=show_std, key="p50"
+        )
+        reg_p75_pc_single, reg_p75_pc_conj = _rv_from_setting(
+            reg, out_dir=out_dir, cal_size=cal_size, show_std=show_std, key="p75"
+        )
 
     # Master aggregated table
     master = _build_master_table(
@@ -743,6 +930,31 @@ def main() -> None:
             "of calibration-set size (mean across datasets)."
         ),
         label="tab:ensure_cal_sensitivity",
+    )
+
+    # Master Pareto-consistency table across tasks/modes
+    master_pareto = _build_master_pareto_table(
+        binary_pc_single=binary_pc_single,
+        binary_pc_conj=binary_pc_conj,
+        multiclass_pc_single=multiclass_pc_single,
+        multiclass_pc_conj=multiclass_pc_conj,
+        reg_plain_pc_single=reg_plain_pc_single,
+        reg_plain_pc_conj=reg_plain_pc_conj,
+        reg_p25_pc_single=reg_p25_pc_single,
+        reg_p25_pc_conj=reg_p25_pc_conj,
+        reg_p50_pc_single=reg_p50_pc_single,
+        reg_p50_pc_conj=reg_p50_pc_conj,
+        reg_p75_pc_single=reg_p75_pc_single,
+        reg_p75_pc_conj=reg_p75_pc_conj,
+    )
+    write_table(
+        master_pareto,
+        out_dir / "ensure_master_pareto_consistency.tex",
+        caption=(
+            "Aggregated Pareto-consistency (\%) of top-ranked candidates "
+            "across tasks and modes (weights -0.5, 0.0, 0.5)."
+        ),
+        label="tab:ensure_master_pareto",
     )
 
     print(f"Wrote LaTeX tables under {out_dir}")
