@@ -741,8 +741,23 @@ class WrapCalibratedExplainer:
         )
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
-    def initialize_reject_learner(self, threshold: float | None = None) -> Any:
+    def initialize_reject_learner(  # pylint: disable=invalid-name
+        self, threshold: float | None = None, ncf=None, w: float = 0.5
+    ) -> Any:
         """Initialize the reject learner with a threshold value.
+
+        Parameters
+        ----------
+        threshold : float or None
+            Decision threshold (regression only). Defaults to None.
+        ncf : str or None, default None
+            Non-conformity function type: 'hinge' (default), 'ensured'
+            (Venn-Abers interval width), 'entropy' (Shannon entropy), or
+            'margin' (top-two probability gap). When None, auto-selects
+            'margin' for multiclass and 'hinge' otherwise.
+        w : float, default 0.5
+            Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge.
+            Ignored when ``ncf='hinge'``.
 
         See Also
         --------
@@ -758,7 +773,7 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        return self.explainer.initialize_reject_learner(threshold=threshold)
+        return self.explainer.initialize_reject_learner(threshold=threshold, ncf=ncf, w=w)
 
     def predict_reject(self, x: Any, bins: Any = None, confidence: float = 0.95) -> Any:
         """Predict whether to reject the explanations for the test data.

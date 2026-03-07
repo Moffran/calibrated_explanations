@@ -715,7 +715,9 @@ class CalibratedExplainer:
         # Backward compatibility:
         # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
 
-        candidate_policy = reject_policy
+        from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+
+        candidate_policy = resolve_policy_spec(reject_policy, self)
         if candidate_policy is None:
             candidate_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
 
@@ -2425,7 +2427,9 @@ class CalibratedExplainer:
         if initialize:
             self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
 
-    def initialize_reject_learner(self, calibration_set=None, threshold=None):
+    def initialize_reject_learner(  # pylint: disable=invalid-name
+        self, calibration_set=None, threshold=None, ncf=None, w=0.5
+    ):
         """Initialize the reject learner with a threshold value.
 
         The reject learner is a :class:`crepes.base.ConformalClassifier`
@@ -2439,9 +2443,17 @@ class CalibratedExplainer:
             The calibration set to use. Defaults to None.
         threshold : float, optional
             The threshold value. Defaults to None.
+        ncf : str or None, default None
+            Non-conformity function type: 'hinge' (default), 'ensured'
+            (Venn-Abers interval width), 'entropy' (Shannon entropy), or
+            'margin' (top-two probability gap). When None, auto-selects
+            'margin' for multiclass and 'hinge' otherwise.
+        w : float, default 0.5
+            Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge.
+            Ignored when ``ncf='hinge'``.
         """
         return self.reject_orchestrator.initialize_reject_learner(
-            calibration_set=calibration_set, threshold=threshold
+            calibration_set=calibration_set, threshold=threshold, ncf=ncf, w=w
         )
 
     def predict_reject(self, x, bins=None, confidence=0.95):
@@ -2593,7 +2605,11 @@ class CalibratedExplainer:
             reject_policy_kw = None
             skip_reject_for_internal = True
         else:
-            reject_policy_kw = kwargs.pop("reject_policy", None)
+            from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+
+            reject_policy_kw = resolve_policy_spec(
+                kwargs.pop("reject_policy", None), self
+            )
             skip_reject_for_internal = False
         try:
             policy = (
@@ -2761,7 +2777,11 @@ class CalibratedExplainer:
             reject_policy_kw = None
             skip_reject_for_internal = True
         else:
-            reject_policy_kw = kwargs.pop("reject_policy", None)
+            from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+
+            reject_policy_kw = resolve_policy_spec(
+                kwargs.pop("reject_policy", None), self
+            )
             skip_reject_for_internal = False
 
         try:

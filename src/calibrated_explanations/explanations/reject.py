@@ -61,6 +61,86 @@ class RejectPolicy(Enum):
         return None
 
 
+_VALID_NCF = frozenset({"hinge", "ensured", "entropy", "margin"})
+
+
+@dataclass(eq=False)
+class RejectPolicySpec:
+    """Bundle a RejectPolicy with a non-conformity function (NCF) configuration.
+
+    Parameters
+    ----------
+    policy : RejectPolicy
+        The reject policy (FLAG, ONLY_REJECTED, ONLY_ACCEPTED).
+    ncf : str, default 'hinge'
+        Non-conformity function: 'hinge' (default/existing), 'ensured'
+        (Venn-Abers interval width), 'entropy' (Shannon entropy), or
+        'margin' (top-two probability gap).
+    w : float, default 0.5
+        Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge (identical
+        to the default behaviour). ``w=0.5`` gives equal weight to the
+        uncertainty measure and the hinge term.
+
+    Class Methods
+    -------------
+    flag(ncf, w) / only_rejected(ncf, w) / only_accepted(ncf, w)
+        Convenience constructors for common policy values.
+
+    Examples
+    --------
+    >>> spec = RejectPolicySpec(RejectPolicy.FLAG, ncf='ensured', w=0.5)
+    >>> spec = RejectPolicySpec.flag(ncf='ensured', w=0.5)
+    """
+
+    policy: RejectPolicy
+    ncf: str = "hinge"
+    w: float = 0.5  # pylint: disable=invalid-name
+
+    def __post_init__(self) -> None:
+        if self.ncf not in _VALID_NCF:
+            raise ValueError(
+                f"ncf must be one of {sorted(_VALID_NCF)!r}; got {self.ncf!r}"
+            )
+        if not 0.0 <= self.w <= 1.0:
+            raise ValueError(f"w must be in [0, 1]; got {self.w}")
+
+    @classmethod
+    def flag(cls, ncf: str = "hinge", w: float = 0.5) -> "RejectPolicySpec":  # pylint: disable=invalid-name
+        """Return a FLAG RejectPolicySpec with the given NCF configuration."""
+        return cls(RejectPolicy.FLAG, ncf=ncf, w=w)
+
+    @classmethod
+    def only_rejected(cls, ncf: str = "hinge", w: float = 0.5) -> "RejectPolicySpec":  # pylint: disable=invalid-name
+        """Return an ONLY_REJECTED RejectPolicySpec with the given NCF configuration."""
+        return cls(RejectPolicy.ONLY_REJECTED, ncf=ncf, w=w)
+
+    @classmethod
+    def only_accepted(cls, ncf: str = "hinge", w: float = 0.5) -> "RejectPolicySpec":  # pylint: disable=invalid-name
+        """Return an ONLY_ACCEPTED RejectPolicySpec with the given NCF configuration."""
+        return cls(RejectPolicy.ONLY_ACCEPTED, ncf=ncf, w=w)
+
+    def __eq__(self, other: object) -> bool:
+        """Support equality comparison with RejectPolicy enum members and other specs.
+
+        ``spec == RejectPolicy.ONLY_REJECTED`` returns True when
+        ``spec.policy is RejectPolicy.ONLY_REJECTED``, enabling mixed policy
+        lists to be compared with ``==`` regardless of type.
+        """
+        if isinstance(other, RejectPolicy):
+            return self.policy == other
+        if isinstance(other, RejectPolicySpec):
+            return self.policy == other.policy and self.ncf == other.ncf and self.w == other.w
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.policy, self.ncf, self.w))
+
+    @property
+    def value(self) -> str:
+        """String value compatible with RejectPolicy.value for use in mixed policy lists."""
+        return f"{self.policy.value}[ncf={self.ncf},w={self.w}]"
+
+
 @dataclass
 class RejectResult:
     """Envelope returned when a reject policy is active.

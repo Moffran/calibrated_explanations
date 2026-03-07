@@ -48,6 +48,7 @@ __all__ = [
     "CalibratedExplainer",
     "WrapCalibratedExplainer",
     "transform_to_numeric",
+    "RejectPolicySpec",
 ]
 
 
@@ -85,5 +86,11 @@ def __getattr__(name: str):
         value = getattr(module, name)
         globals()[name] = value
         return value
+
+    if name == "RejectPolicySpec":
+        from .explanations.reject import RejectPolicySpec
+
+        globals()[name] = RejectPolicySpec
+        return RejectPolicySpec
 
     raise AttributeError(name)

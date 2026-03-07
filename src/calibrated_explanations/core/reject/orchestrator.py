@@ -16,6 +16,113 @@ from ...explanations.reject import RejectResult
 from ...utils.exceptions import ValidationError
 from .policy import RejectPolicy
 
+_VALID_NCF = frozenset({"hinge", "ensured", "entropy", "margin"})
+
+
+def _base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
+    """Compute instance-level (class-independent) non-conformity base scores.
+
+    Parameters
+    ----------
+    proba : ndarray of shape (n, k)
+        Calibrated probability matrix. For Venn-Abers binary output, column 0
+        = predict_low and column 1 = predict_high, so the width
+        ``proba[:,1] - proba[:,0]`` is the calibrated uncertainty interval.
+    ncf : {'ensured', 'entropy', 'margin'}
+        Non-conformity function type.
+
+    Returns
+    -------
+    ndarray of shape (n,) with scores in [0, 1].
+    """
+    proba = np.asarray(proba, dtype=float)
+    if ncf == "ensured":
+        if proba.shape[1] < 2:
+            return np.zeros(len(proba))
+        return proba[:, 1] - proba[:, 0]
+    if ncf == "entropy":
+        proba_clipped = np.clip(proba, 1e-12, 1.0)
+        k = max(proba.shape[1], 2)
+        return -np.sum(proba_clipped * np.log2(proba_clipped), axis=1) / np.log2(k)
+    if ncf == "margin":
+        if proba.shape[1] < 2:
+            return np.zeros(len(proba))
+        sorted_proba = np.sort(proba, axis=1)[:, ::-1]
+        return 1.0 - (sorted_proba[:, 0] - sorted_proba[:, 1])
+    raise ValidationError(
+        f"Unsupported ncf type {ncf!r}; expected one of {sorted(_VALID_NCF)!r}",
+        details={"ncf": ncf},
+    )
+
+
+def _ncf_scores_cal(  # pylint: disable=invalid-name
+    proba: np.ndarray,
+    classes: np.ndarray,
+    labels: np.ndarray,
+    ncf: str,
+    w: float,
+) -> np.ndarray:
+    """Compute 1-D calibration non-conformity scores.
+
+    Returns
+    -------
+    ndarray of shape (n,)
+    """
+    if ncf == "hinge" or w >= 1.0:
+        return hinge(proba, classes, labels)
+    hinge_cal = hinge(proba, classes, labels)
+    base = _base_ncf(proba, ncf)
+    return (1.0 - w) * base + w * hinge_cal
+
+
+def _ncf_scores_test(proba: np.ndarray, ncf: str, w: float) -> np.ndarray:  # pylint: disable=invalid-name
+    """Compute 2-D test non-conformity scores (one column per class).
+
+    Returns
+    -------
+    ndarray of shape (n, k)
+    """
+    if ncf == "hinge" or w >= 1.0:
+        return hinge(proba)
+    hinge_test = hinge(proba)           # (n, k)
+    base = _base_ncf(proba, ncf)        # (n,)
+    return (1.0 - w) * base[:, np.newaxis] + w * hinge_test
+
+
+def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
+    """Resolve a ``RejectPolicySpec`` to a ``RejectPolicy`` value.
+
+    When *reject_policy_kw* is a plain ``RejectPolicy`` enum (or ``None``),
+    it is returned unchanged.  When it is a :class:`.RejectPolicySpec`, the
+    NCF configuration is compared against what is stored on *explainer*; if
+    it differs, ``explainer.initialize_reject_learner`` is called so the
+    conformal classifier is rebuilt before the policy is used.
+
+    Parameters
+    ----------
+    reject_policy_kw :
+        A :class:`.RejectPolicy` enum value, a :class:`.RejectPolicySpec`,
+        or ``None``.
+    explainer :
+        The :class:`.CalibratedExplainer` instance that owns the reject
+        learner.
+
+    Returns
+    -------
+    The original *reject_policy_kw* when it is not a ``RejectPolicySpec``,
+    otherwise ``spec.policy`` (a ``RejectPolicy`` enum value).
+    """
+    from ...explanations.reject import RejectPolicySpec  # pylint: disable=import-outside-toplevel
+
+    if not isinstance(reject_policy_kw, RejectPolicySpec):
+        return reject_policy_kw
+    spec = reject_policy_kw
+    stored_ncf = getattr(explainer, "reject_ncf", None)
+    stored_w = getattr(explainer, "reject_ncf_w", None)
+    if stored_ncf != spec.ncf or stored_w != spec.w:
+        explainer.initialize_reject_learner(ncf=spec.ncf, w=spec.w)
+    return spec.policy
+
 
 class RejectOrchestrator:
     """Coordinate reject learner lifecycle and predictions."""
@@ -58,8 +165,26 @@ class RejectOrchestrator:
             return kwargs
         return {k: v for k, v in kwargs.items() if k in signature.parameters}
 
-    def initialize_reject_learner(self, calibration_set=None, threshold=None):
-        """Initialize the reject learner with a threshold value."""
+    def initialize_reject_learner(  # pylint: disable=invalid-name
+        self, calibration_set=None, threshold=None, ncf=None, w=0.5
+    ):
+        """Initialize the reject learner with a threshold value.
+
+        Parameters
+        ----------
+        calibration_set : tuple (x_cal, y_cal) or None
+            Calibration data. Uses the explainer's calibration set when None.
+        threshold : float or None
+            Decision threshold (regression only).
+        ncf : str or None, default None
+            Non-conformity function type: 'hinge' (default), 'ensured'
+            (Venn-Abers interval width), 'entropy' (Shannon entropy), or
+            'margin' (top-two probability gap). When None, auto-selects
+            'margin' for multiclass and 'hinge' for binary/regression.
+        w : float, default 0.5
+            Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge.
+            Ignored when ``ncf='hinge'``.
+        """
         bins_cal = self.explainer.bins if calibration_set is None else None
         if calibration_set is None:
             x_cal, y_cal = self.explainer.x_cal, self.explainer.y_cal
@@ -67,7 +192,33 @@ class RejectOrchestrator:
             x_cal, y_cal = calibration_set
         else:
             raise ValidationError("calibration_set must be a (x_cal, y_cal) pair or None")
+
+        # Resolve effective NCF: auto-select 'margin' for multiclass when not set
+        ncf_explicit = ncf is not None
+        if ncf is None:
+            ncf = (
+                "margin"
+                if self.explainer.is_multiclass()  # pylint: disable=protected-access
+                else "hinge"
+            )
+        if ncf not in _VALID_NCF:
+            raise ValidationError(
+                f"ncf must be one of {sorted(_VALID_NCF)!r}; got {ncf!r}",
+                details={"ncf": ncf},
+            )
+        if ncf != "hinge" and w < 0.1:
+            warnings.warn(
+                f"ncf='{ncf}' with w={w} (near 0) produces near-symmetric per-class "
+                "NCF scores; prediction sets will rarely be singletons and most instances "
+                "will be rejected. Consider w >= 0.1.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         self.explainer.reject_threshold = None
+        self.explainer.reject_ncf = ncf
+        self.explainer.reject_ncf_w = float(w)
+
         if self.explainer.mode == "regression":
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
                 x_cal, y_threshold=threshold, bins=bins_cal
@@ -87,8 +238,11 @@ class RejectOrchestrator:
             proba = self.explainer.interval_learner.predict_proba(x_cal, bins=bins_cal)
             calibration_bins = y_cal
 
-        alphas_cal = hinge(proba, np.unique(calibration_bins), calibration_bins)
+        alphas_cal = _ncf_scores_cal(
+            proba, np.unique(calibration_bins), calibration_bins, ncf, w
+        )
         self.explainer.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=bins_cal)
+        _ = ncf_explicit  # used above; suppress unused-variable warning
         return self.explainer.reject_learner
 
     def _compute_prediction_set(
@@ -114,7 +268,9 @@ class RejectOrchestrator:
         else:
             proba = self.explainer.interval_learner.predict_proba(x, bins=bins)
 
-        alphas_test = np.asarray(hinge(proba))
+        ncf = getattr(self.explainer, "reject_ncf", "hinge")
+        ncf_w = getattr(self.explainer, "reject_ncf_w", 1.0)
+        alphas_test = np.asarray(_ncf_scores_test(proba, ncf, ncf_w))
 
         seed = getattr(self.explainer, "seed", None)
         epsilon = 1 - confidence

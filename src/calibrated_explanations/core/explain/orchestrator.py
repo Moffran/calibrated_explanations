@@ -329,6 +329,8 @@ class ExplanationOrchestrator:
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
                 )
 
+            from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+            candidate_policy = resolve_policy_spec(candidate_policy, self.explainer)
             try:
                 effective_policy = RejectPolicy(candidate_policy)
             except Exception:  # adr002_allow
@@ -807,7 +809,8 @@ class ExplanationOrchestrator:
                         multi_label_explanations[i][int(cls)] = explanation
             else:
                 from ...core.reject.policy import RejectPolicy
-
+                from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+                reject_policy = resolve_policy_spec(reject_policy, self.explainer)
                 try:
                     effective_policy = RejectPolicy(reject_policy)
                 except (TypeError, ValueError):
@@ -999,7 +1002,8 @@ class ExplanationOrchestrator:
                         multi_label_explanations[i][int(cls)] = explanation
             else:
                 from ...core.reject.policy import RejectPolicy
-
+                from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+                reject_policy = resolve_policy_spec(reject_policy, self.explainer)
                 try:
                     effective_policy = RejectPolicy(reject_policy)
                 except (TypeError, ValueError):
@@ -1154,6 +1158,7 @@ class ExplanationOrchestrator:
         import numpy as np  # pylint: disable=import-outside-toplevel
 
         from ...core.reject.policy import RejectPolicy
+        from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
@@ -1162,6 +1167,7 @@ class ExplanationOrchestrator:
                 candidate_policy = getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
                 )
+            candidate_policy = resolve_policy_spec(candidate_policy, self.explainer)
             try:
                 effective_policy = RejectPolicy(candidate_policy)
             except Exception:  # adr002_allow
@@ -1323,6 +1329,7 @@ class ExplanationOrchestrator:
         import numpy as np  # pylint: disable=import-outside-toplevel
 
         from ...core.reject.policy import RejectPolicy
+        from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
@@ -1331,6 +1338,7 @@ class ExplanationOrchestrator:
                 candidate_policy = getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
                 )
+            candidate_policy = resolve_policy_spec(candidate_policy, self.explainer)
             try:
                 effective_policy = RejectPolicy(candidate_policy)
             except Exception:  # adr002_allow

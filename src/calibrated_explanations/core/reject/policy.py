@@ -5,7 +5,9 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
-from ...explanations.reject import RejectPolicy
+from ...explanations.reject import RejectPolicy, RejectPolicySpec
+
+__all__ = ["RejectPolicy", "RejectPolicySpec", "is_policy_enabled"]
 
 # Deprecation map for attribute-style access (e.g., RejectPolicy.PREDICT_AND_FLAG)
 _DEPRECATED_ATTRS = {
@@ -33,6 +35,8 @@ def __getattr__(name: str) -> Any:
 
 def is_policy_enabled(policy: Any) -> bool:
     """Return True if the provided policy requires reject orchestration."""
+    if isinstance(policy, RejectPolicySpec):
+        return policy.policy != RejectPolicy.NONE
     try:
         resolved = RejectPolicy(policy)
         return resolved.value != RejectPolicy.NONE.value
