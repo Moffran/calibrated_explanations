@@ -399,8 +399,9 @@ def guarded_explain(
     features_to_ignore : sequence of int or None
         Feature indices to skip.
     significance : float, default=0.1
-        Conformity significance level.  A smaller value yields a stricter
-        test (fewer bins accepted as in-distribution).
+        Conformity significance level.  A larger value yields a stricter
+        test (fewer bins accepted as in-distribution), because the
+        conforming predicate is ``p_value >= significance``.
     use_bonferroni : bool, default=False
         When ``True``, apply per-feature Bonferroni correction and test each
         bin of feature ``f`` at ``significance / n_bins(f)``.

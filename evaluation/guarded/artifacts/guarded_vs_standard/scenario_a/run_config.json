@@ -1,0 +1,29 @@
+{
+  "num_seeds": 2,
+  "bootstrap_draws": 4,
+  "sample_test": 24,
+  "n_train": 3000,
+  "n_cal": 1000,
+  "n_test": 500,
+  "top_k_alternatives": 8,
+  "significance": [
+    0.01,
+    0.05,
+    0.1,
+    0.2
+  ],
+  "n_neighbors": [
+    3,
+    5,
+    10
+  ],
+  "merge_adjacent": [
+    false,
+    true
+  ],
+  "models": [
+    "logreg",
+    "rf"
+  ],
+  "scenario": "A"
+}
