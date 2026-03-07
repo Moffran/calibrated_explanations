@@ -55,7 +55,7 @@ jobs:
             --report reports/quality/logging_domain_report.json
       - name: Upload lint artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-reports
           path: |
@@ -173,7 +173,7 @@ jobs:
             --baseline .github/marker-hygiene-baseline.json
       - name: Upload quality reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-quality-reports
           path: |
