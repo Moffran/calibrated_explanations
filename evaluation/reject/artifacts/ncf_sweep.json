@@ -1,0 +1,20 @@
+{
+  "scenario": "ncf_sweep",
+  "display_name": "Scenario B \u2014 NCF sweep",
+  "dataset": "iris",
+  "quick": false,
+  "highlights": [
+    "Best mean accepted-accuracy uplift came from `hinge`, with delta 0.0494 at mean coverage 0.5800.",
+    "This scenario uses `RejectPolicySpec.flag(...)` so the sweep exercises the public per-call policy+NCF contract rather than direct synthetic scoring.",
+    "Prediction-set size highlights how aggressively each NCF concentrates accepted multiclass decisions."
+  ],
+  "outcome": {
+    "best_ncf": "hinge",
+    "best_mean_accuracy_delta": 0.049404761904761896,
+    "best_mean_coverage": 0.58,
+    "lowest_mean_error_rate": 0.0
+  },
+  "plots": [
+    "ncf_sweep_comparison.png"
+  ]
+}

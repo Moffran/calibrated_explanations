@@ -1,17 +1,17 @@
 # Guarded Explanation Evaluation — Summary Report
 
 **5 PASS / 0 FAIL** across 5 scenario(s).
-Total runtime: 990.0s
+Total runtime: 1785.2s
 
 ## Results by Scenario
 
 | Scenario | Status | Runtime (s) |
 |---|---|---|
-| Scenario A — Domain plausibility (synthetic constraint) | ✓ PASS | 651.0 |
-| Scenario B — OOD detection quality | ✓ PASS | 43.8 |
-| Scenario C — Regression invariants | ✓ PASS | 13.6 |
-| Scenario D — Real dataset correctness | ✓ PASS | 248.0 |
-| Scenario E — Edge case behavior | ✓ PASS | 33.6 |
+| Scenario A — Domain plausibility (synthetic constraint) | ✓ PASS | 1533.0 |
+| Scenario B — OOD detection quality | ✓ PASS | 53.5 |
+| Scenario C — Regression invariants | ✓ PASS | 21.1 |
+| Scenario D — Real dataset correctness | ✓ PASS | 162.9 |
+| Scenario E — Edge case behavior | ✓ PASS | 14.7 |
 
 ## Per-Scenario Reports
 

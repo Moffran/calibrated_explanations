@@ -233,10 +233,25 @@ class RejectMixin:
         # Constant fields just copy
         self.policy = source.policy
         self.epsilon = source.epsilon
-        # Metadata (rates) are invariant to slicing for now? Or should they be recomputed?
-        # For simple parity, we copy the original metadata dict reference or values.
-        # Since rates won't match the slice, copying static metadata is safer than nothing.
+        # Copy base metadata then recompute rates from sliced per-instance arrays
+        # so aggregate rates stay consistent with the slice rather than the original.
         self._metadata = copy(source._metadata)
+        if self._metadata is not None:
+            rejected_arr = self.rejected
+            has_len = rejected_arr is not None and hasattr(rejected_arr, "__len__")
+            n = len(rejected_arr) if has_len else 0  # pylint: disable=invalid-name
+            if n > 0:
+                recomputed: dict = {}
+                if self.rejected is not None:
+                    recomputed["reject_rate"] = float(np.mean(self.rejected))
+                if self.ambiguity_mask is not None:
+                    recomputed["ambiguity_rate"] = float(np.mean(self.ambiguity_mask))
+                if self.novelty_mask is not None:
+                    recomputed["novelty_rate"] = float(np.mean(self.novelty_mask))
+                # error_rate cannot be recomputed without raw set sizes and epsilon;
+                # mark as undefined after slicing.
+                recomputed["error_rate_defined"] = False
+                self._metadata = {**self._metadata, **recomputed}
 
 
 class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):

@@ -1,0 +1,14 @@
+{
+  "scenario": "scenario_h_ncf_grid",
+  "display_name": "Scenario H \u2014 NCF grid",
+  "quick": false,
+  "highlights": [
+    "This grid compares hinge, margin, entropy, and ensured NCFs across binary and multiclass settings.",
+    "Accepted accuracy delta is always empirical and benchmarked against the non-reject baseline."
+  ],
+  "outcome": {
+    "rows": 736,
+    "datasets": 46,
+    "best_accuracy_delta": 0.5806451612903225
+  }
+}

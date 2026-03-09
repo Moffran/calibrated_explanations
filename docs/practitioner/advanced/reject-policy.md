@@ -112,6 +112,61 @@ if reject_result.rejected:
     print("The policy skipped processing on rejects.")
 ```
 
+## NCF auto-selection
+
+The reject learner uses a *non-conformity function* (NCF) to score how unusual each
+instance is compared to the calibration set. You can specify the NCF explicitly via
+`RejectPolicySpec` or `initialize_reject_learner(ncf=...)`, or let the framework
+choose automatically.
+
+**Auto-selection rule:**
+
+- `margin` is selected for **multiclass** classification (more than two classes).
+- `hinge` is selected for **binary** classification and regression.
+
+When the NCF is auto-selected, `explainer.reject_ncf_auto_selected` is set to `True`
+and `explainer.reject_ncf` records which NCF was chosen. You can read these attributes
+to understand which NCF was used:
+
+```python
+wrapper.initialize_reject_learner()          # auto-selects based on task type
+print(wrapper.explainer.reject_ncf)          # e.g. "hinge" or "margin"
+print(wrapper.explainer.reject_ncf_auto_selected)  # True
+```
+
+To override the auto-selection, pass `ncf` explicitly:
+
+```python
+from calibrated_explanations import RejectPolicySpec
+
+spec = RejectPolicySpec.flag(ncf="entropy", w=0.5)
+result = wrapper.predict(X_new, reject_policy=spec, confidence=0.95)
+print(wrapper.explainer.reject_ncf)           # "entropy"
+print(wrapper.explainer.reject_ncf_auto_selected)  # False
+```
+
+**Available NCFs and the `w` blending parameter:**
+
+The `w` parameter blends the selected NCF with `hinge`. `w=1.0` uses pure hinge;
+lower values increase the weight of the chosen NCF.
+
+| NCF | Binary | Multiclass | Recommended `w` | Notes |
+| --- | ------ | ---------- | --------------- | ----- |
+| `hinge` | Yes | Yes (binarized) | 1.0 | Default for binary; `w` is ignored |
+| `margin` | Yes | Yes (binarized) | 0.5 | Default for multiclass |
+| `entropy` | Yes | Yes (binarized) | 0.3–0.7 | Sensitive to probability spread |
+| `ensured` | Yes | Yes (binarized) | 0.3–0.7 | Requires `w > 0.0`; use `w ≥ 0.1` |
+
+> **Multiclass note:** In multiclass mode, `entropy` and `margin` operate on a
+> *binarized* `(n, 2)` probability matrix `[1 - p_argmax, p_argmax]`, not the full
+> K-class distribution. Scores will differ from the standard full-class entropy or
+> margin definition. A `UserWarning` is emitted when these NCFs are used with a
+> multiclass explainer.
+>
+> **w=0.0 guard:** Passing `w=0.0` with any non-hinge NCF raises a `ValidationError`
+> because it produces class-independent scores that reject every instance. Values
+> `w < 0.1` emit a `UserWarning`.
+
 ## Policy selection advice
 
 - Use `RejectPolicy.FLAG` when you want to process all instances and annotate which
@@ -145,9 +200,16 @@ These guarantees help you write robust production code that handles all scenario
 When `metadata` is not `None`, it contains the following keys:
 
 | Key | Type | Description |
-|-----|------|-------------|
-| `error_rate` | `float` | Estimated error rate on accepted samples |
+| --- | ---- | ----------- |
+| `error_rate` | `float` | Estimated error rate on accepted samples (≥ 0.0; see `error_rate_defined`) |
+| `error_rate_defined` | `bool` | `False` when no singleton prediction sets exist (error_rate is 0.0 sentinel, not a real estimate) |
 | `reject_rate` | `float` | Proportion of instances rejected |
+| `ambiguity_rate` | `float` | Proportion of instances with ambiguous (multi-label) prediction sets |
+| `novelty_rate` | `float` | Proportion of instances with empty prediction sets |
+| `reject_ncf` | `str` | NCF used for this result (e.g. `"hinge"`, `"entropy"`) |
+| `reject_ncf_w` | `float` | Blend weight `w` for the NCF |
+| `reject_ncf_auto_selected` | `bool` | `True` when the NCF was auto-selected (not specified by the caller) |
+| `matched_count` | `int` | Number of instances matched by `ONLY_REJECTED` or `ONLY_ACCEPTED` (0 when subset is empty) |
 | `init_error` | `bool` (optional) | Present and `True` only when reject learner initialization failed |
 
 Additionally, when a per-call reject policy is active the `metadata` dictionary

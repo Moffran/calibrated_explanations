@@ -1,0 +1,15 @@
+{
+  "scenario": "scenario_g_regression_coverage",
+  "display_name": "Scenario G \u2014 Threshold regression empirical coverage",
+  "quick": false,
+  "highlights": [
+    "Accepted-subset coverage is reported as an empirical quantity only.",
+    "Threshold-based regression reject remains explicitly heuristic in this suite.",
+    "Both interval width and MSE are tracked on the accepted subset to capture the trade-off."
+  ],
+  "outcome": {
+    "datasets": 22,
+    "mean_reject_rate": 0.20827303102409164,
+    "mean_accepted_mse_empirical": 0.009235536973170796
+  }
+}

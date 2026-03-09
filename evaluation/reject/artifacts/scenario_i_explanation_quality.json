@@ -1,0 +1,14 @@
+{
+  "scenario": "scenario_i_explanation_quality",
+  "display_name": "Scenario I \u2014 Explanation quality",
+  "quick": false,
+  "highlights": [
+    "Explanation quality is evaluated only empirically; no conformal claim is attached to these metrics.",
+    "Feature-weight stability is computed from per-instance explanation weight vectors."
+  ],
+  "outcome": {
+    "datasets": 46,
+    "mean_accuracy_delta": 0.09330327086290359,
+    "mean_ece_delta": -0.05939792954629726
+  }
+}

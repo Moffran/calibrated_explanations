@@ -1,0 +1,15 @@
+{
+  "scenario": "scenario_k_mondrian_regression",
+  "display_name": "Scenario K \u2014 Regression reject comparison",
+  "quick": false,
+  "highlights": [
+    "The primary method follows the 2024 conformal regression with reject option paper via difficulty-based Mondrian categories.",
+    "Threshold and value-bin methods are retained only as heuristic baselines.",
+    "Accepted-subset metrics are explicitly empirical for the heuristic baselines."
+  ],
+  "outcome": {
+    "datasets": 22,
+    "methods": "paper_difficulty_mondrian, threshold_baseline, value_bin_width_baseline",
+    "best_accepted_mae": 0.0
+  }
+}

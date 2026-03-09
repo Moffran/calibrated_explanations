@@ -25,9 +25,21 @@ def _base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
     Parameters
     ----------
     proba : ndarray of shape (n, k)
-        Calibrated probability matrix. For Venn-Abers binary output, column 0
-        = predict_low and column 1 = predict_high, so the width
-        ``proba[:,1] - proba[:,0]`` is the calibrated uncertainty interval.
+        Calibrated probability matrix.  In multiclass mode this is a binarized
+        ``(n, 2)`` matrix ``[1 - p_argmax, p_argmax]``, not the full K-class
+        distribution.  Consequently ``entropy`` and ``margin`` operate on this
+        two-column representation rather than the full K-class probabilities:
+
+        * ``entropy`` → binary entropy of ``p_argmax``.
+        * ``margin``  → ``2 * (1 - p_argmax)`` (confidence-based, not true
+          K-class margin).
+
+        For binary classification and regression the full probability matrix
+        is passed and the semantics match the documented definitions.
+
+        For Venn-Abers binary output, column 0 = predict_low and column 1 =
+        predict_high, so the width ``proba[:,1] - proba[:,0]`` is the
+        calibrated uncertainty interval (used by ``ensured``).
     ncf : {'ensured', 'entropy', 'margin'}
         Non-conformity function type.
 
@@ -111,6 +123,21 @@ def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
     -------
     The original *reject_policy_kw* when it is not a ``RejectPolicySpec``,
     otherwise ``spec.policy`` (a ``RejectPolicy`` enum value).
+
+    Notes
+    -----
+    **Plain** :class:`.RejectPolicy` enum values are returned unchanged without
+    any NCF reinitialization check.  If you need to change the non-conformity
+    function (NCF) or the hinge weight *w*, pass a :class:`.RejectPolicySpec`
+    instead of a plain enum:
+
+    .. code-block:: python
+
+        # Reinitializes the reject learner with entropy NCF:
+        explain_fn(x, reject_policy=RejectPolicySpec.flag(ncf="entropy", w=0.5))
+
+        # Silently reuses whatever NCF was last used:
+        explain_fn(x, reject_policy=RejectPolicy.FLAG)
     """
     from ...explanations.reject import RejectPolicySpec  # pylint: disable=import-outside-toplevel
 
@@ -206,18 +233,36 @@ class RejectOrchestrator:
                 f"ncf must be one of {sorted(_VALID_NCF)!r}; got {ncf!r}",
                 details={"ncf": ncf},
             )
-        if ncf != "hinge" and w < 0.1:
+        if self.explainer.is_multiclass() and ncf in ("entropy", "margin"):  # pylint: disable=protected-access
             warnings.warn(
-                f"ncf='{ncf}' with w={w} (near 0) produces near-symmetric per-class "
-                "NCF scores; prediction sets will rarely be singletons and most instances "
-                "will be rejected. Consider w >= 0.1.",
+                f"ncf='{ncf}' in multiclass mode operates on a binarized "
+                "(predicted-class vs. rest) representation, not the full K-class "
+                "distribution. 'entropy' reduces to binary entropy of p_argmax; "
+                "'margin' reduces to 2*(1-p_argmax). "
+                "Use 'hinge' or 'ensured' for full-distribution multiclass scoring.",
                 UserWarning,
                 stacklevel=2,
             )
+        if ncf != "hinge":
+            if w == 0.0:
+                raise ValidationError(
+                    f"w=0.0 with ncf='{ncf}' produces class-independent NCF scores "
+                    "and rejects all instances. Use w > 0.0 (recommended w >= 0.1).",
+                    details={"w": w, "ncf": ncf},
+                )
+            if w < 0.1:
+                warnings.warn(
+                    f"ncf='{ncf}' with w={w} (near 0) produces near-symmetric per-class "
+                    "NCF scores; prediction sets will rarely be singletons and most instances "
+                    "will be rejected. Consider w >= 0.1.",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         self.explainer.reject_threshold = None
         self.explainer.reject_ncf = ncf
         self.explainer.reject_ncf_w = float(w)
+        self.explainer.reject_ncf_auto_selected = not ncf_explicit
 
         if self.explainer.mode == "regression":
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
@@ -468,6 +513,15 @@ class RejectOrchestrator:
                 ambiguity_rate = 0.0 if num_instances == 0 else float(np.mean(ambiguity))
                 novelty_rate = 0.0 if num_instances == 0 else float(np.mean(novelty))
 
+                # Clamp error_rate from legacy override to [0, 1]; it may be
+                # None (undefined) when the legacy method could not compute it.
+                legacy_error_rate_defined = error_rate is not None
+                if legacy_error_rate_defined and isinstance(error_rate, (int, float)):
+                    error_rate = max(0.0, min(1.0, float(error_rate)))
+                else:
+                    error_rate = 0.0
+                    legacy_error_rate_defined = False
+
                 return {
                     "rejected": rejected,
                     "ambiguity": ambiguity,
@@ -477,6 +531,7 @@ class RejectOrchestrator:
                     "ambiguity_rate": ambiguity_rate,
                     "novelty_rate": novelty_rate,
                     "error_rate": error_rate,
+                    "error_rate_defined": legacy_error_rate_defined,
                     "epsilon": 1.0 - float(confidence),
                 }
             except Exception as exc:  # adr002_allow - graceful fallback for legacy override
@@ -497,10 +552,16 @@ class RejectOrchestrator:
         # When there are no singleton prediction sets (all empty or ambiguous),
         # fall back to a numeric sentinel (0.0) rather than None so callers
         # expecting a numeric error_rate do not error on np.isnan checks.
+        # error_rate_defined=False signals the value is a sentinel, not a
+        # meaningful estimate (e.g. all instances were rejected as novel/ambiguous).
         if num_instances == 0 or singleton == 0:
             error_rate = 0.0
+            error_rate_defined = False
         else:
-            error_rate = (num_instances * epsilon - empty) / singleton
+            # Clamp to [0, 1]: the formula can go negative when empty > n*epsilon
+            # (high novelty rate with small epsilon), which is not a valid rate.
+            error_rate = max(0.0, min(1.0, (num_instances * epsilon - empty) / singleton))
+            error_rate_defined = True
 
         reject_rate = 0.0 if num_instances == 0 else float(np.mean(rejected))
         ambiguity_rate = 0.0 if num_instances == 0 else float(np.mean(ambiguity))
@@ -516,6 +577,7 @@ class RejectOrchestrator:
             "ambiguity_rate": ambiguity_rate,
             "novelty_rate": novelty_rate,
             "error_rate": error_rate,
+            "error_rate_defined": error_rate_defined,
             "epsilon": epsilon,
         }
 
@@ -657,6 +719,10 @@ class RejectOrchestrator:
                 )
                 prediction = None
 
+        # matched_count records how many instances matched the policy filter;
+        # None for FLAG (all instances processed), 0 when subset was empty.
+        matched_count = None
+
         # Obtain explanations via provided callable according to policy
         if explain_fn is not None:
             try:
@@ -666,6 +732,7 @@ class RejectOrchestrator:
                 elif policy is RejectPolicy.ONLY_REJECTED:
                     # Process only rejected instances
                     idx = [i for i, r in enumerate(rejected) if r]
+                    matched_count = len(idx)
                     if idx:
                         subset = (
                             np.asarray(x)[idx] if isinstance(x, np.ndarray) else [x[i] for i in idx]
@@ -676,6 +743,7 @@ class RejectOrchestrator:
                 elif policy is RejectPolicy.ONLY_ACCEPTED:
                     # Process only non-rejected (accepted) instances
                     idx = [i for i, r in enumerate(rejected) if not r]
+                    matched_count = len(idx)
                     if idx:
                         subset = (
                             np.asarray(x)[idx] if isinstance(x, np.ndarray) else [x[i] for i in idx]
@@ -697,6 +765,7 @@ class RejectOrchestrator:
 
         metadata = {
             "error_rate": error_rate,
+            "error_rate_defined": breakdown.get("error_rate_defined", True),
             "reject_rate": reject_rate,
             "ambiguity_rate": breakdown.get("ambiguity_rate"),
             "novelty_rate": breakdown.get("novelty_rate"),
@@ -706,6 +775,12 @@ class RejectOrchestrator:
             "prediction_set_size": breakdown.get("prediction_set_size"),
             "prediction_set": breakdown.get("prediction_set"),
             "epsilon": breakdown.get("epsilon"),
+            # NCF provenance: which function was used and whether it was auto-selected
+            "reject_ncf": getattr(self.explainer, "reject_ncf", None),
+            "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
+            "reject_ncf_auto_selected": getattr(self.explainer, "reject_ncf_auto_selected", None),
+            # How many instances matched the policy filter (None for FLAG, 0 when empty)
+            "matched_count": matched_count,
         }
         return RejectResult(
             prediction=prediction,

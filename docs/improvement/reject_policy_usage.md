@@ -72,6 +72,46 @@ assert envelope.policy == RejectPolicy.EXPLAIN_ALL
 - Explanation and prediction entry points now accept `reject_policy`, with non-`NONE` selections implicitly enabling reject orchestration and returning a structured envelope.
 - Explainer defaults (`default_reject_policy`) and wrapper calibration now offer reusable policy configuration, while per-call overrides continue to take precedence.
 
+## NCF selection and the `w` blending parameter
+
+The non-conformity function (NCF) controls how the reject learner scores each instance.
+Pass `ncf` and `w` via `RejectPolicySpec` or `initialize_reject_learner`. When omitted,
+the framework auto-selects `hinge` (binary/regression) or `margin` (multiclass).
+
+The `w` parameter blends the chosen NCF with `hinge`: `score = w * hinge + (1-w) * ncf`.
+`w=1.0` gives pure hinge; `w=0.0` is forbidden for non-hinge NCFs.
+
+**Recommended `w` ranges per NCF:**
+
+| NCF | Task | Safe `w` range | Starting point | Notes |
+| --- | ---- | -------------- | -------------- | ----- |
+| `hinge` | Binary / Regression | — | 1.0 | `w` is ignored; always pure hinge |
+| `margin` | Binary / Multiclass | 0.3–0.9 | 0.5 | Safe default for multiclass |
+| `entropy` | Binary / Multiclass | 0.3–0.7 | 0.5 | Sensitive to probability spread; avoid extremes |
+| `ensured` | Binary / Multiclass | 0.1–0.9 | 0.5 | Requires `w > 0.0`; `w < 0.1` warns |
+
+**Guard rails:**
+
+- `w=0.0` with a non-hinge NCF raises `ValidationError` (class-independent scores, all instances rejected).
+- `w < 0.1` with a non-hinge NCF emits a `UserWarning`.
+- In multiclass mode, `entropy` and `margin` operate on a binarized `[1-p_argmax, p_argmax]`
+  representation, not the full K-class distribution. A `UserWarning` is emitted automatically.
+
+```python
+from calibrated_explanations import RejectPolicySpec
+
+# Safe starting configuration for multiclass:
+spec = RejectPolicySpec.flag(ncf="margin", w=0.5)
+
+# Specify entropy with a conservative w:
+spec = RejectPolicySpec.flag(ncf="entropy", w=0.4)
+
+# Check which NCF was selected:
+wrapper.initialize_reject_learner(ncf="entropy", w=0.4)
+print(wrapper.explainer.reject_ncf)             # "entropy"
+print(wrapper.explainer.reject_ncf_auto_selected)  # False
+```
+
 ## Per-instance breakdowns
 
 When a non-`NONE` policy is active the `RejectResult.metadata` dictionary contains per-instance keys that let you inspect the rejection breakdown without invoking the orchestrator directly. These keys are:

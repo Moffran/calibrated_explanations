@@ -1,0 +1,16 @@
+{
+  "scenario": "scenario_e_binary_coverage_sweep",
+  "display_name": "Scenario E \u2014 Binary coverage sweep",
+  "quick": false,
+  "highlights": [
+    "Coverage is reported as standard label-set coverage from the conformal prediction sets.",
+    "Accepted accuracy is included as a separate empirical metric and not treated as the conformal guarantee.",
+    "Observed coverage violations: 31/78 (0.3974)."
+  ],
+  "outcome": {
+    "datasets": 26,
+    "rows": 78,
+    "violation_rate": 0.3974358974358974,
+    "mean_coverage": 0.94244588396505
+  }
+}

@@ -179,6 +179,7 @@ These members cover common integration patterns; additional policies may be adde
 	- **Envelope contract:** When a reject policy is active, the envelope's `prediction` field MUST mirror the invoked method's legacy payload (including tuple shapes used by regression UQ, e.g., `(proba, (low, high))`). The envelope's `metadata` will include stable per-instance keys to inspect breakdown without calling the orchestrator: `ambiguity_mask`, `novelty_mask`, `prediction_set_size`, and `epsilon`, in addition to the existing aggregate rates. The envelope's `explanation` field will contain the explanation object or `None` if no explanation was produced.
 - **Strategy:** Extensibility is handled via a lightweight registry within the `RejectOrchestrator`.
 - **Visualization:** No changes to visualization; users handle reject visualization manually if needed.
+- **Error rate sentinel:** `error_rate` in `metadata` is always ≥ 0.0. When no singleton prediction sets exist (i.e., all sets are empty or multi-label), `error_rate` is clamped to `0.0` as a sentinel and `error_rate_defined` is set to `False`. Consumers **must** check `metadata["error_rate_defined"]` before interpreting `error_rate` as a meaningful estimate. When `error_rate_defined` is `True`, the value is clamped to `[0.0, 1.0]`.
 
 ## Implementation plan (recommended)
 
