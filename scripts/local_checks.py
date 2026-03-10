@@ -169,6 +169,18 @@ def main() -> int:
             "Agent instruction consistency",
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
+        Step(
+            "CI policy workflow validation (advisory)",
+            _python_cmd(
+                "scripts/quality/validate_ci_policy.py",
+                "--base-sha",
+                "HEAD~1",
+                "--head-sha",
+                "HEAD",
+                "--advisory",
+            ),
+            optional=True,
+        ),
         Step("Core tests (no viz/no cov)", ["pytest", "-q", "-m", "not viz", "--no-cov"]),
         Step("Private-member scan", _python_cmd("scripts/anti-pattern-analysis/scan_private_usage.py", "tests", "--check")),
         Step(

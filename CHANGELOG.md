@@ -5,8 +5,11 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
 
-### Documentation / Governance (2026-03-03)
+### Documentation / Governance 
 
+- **ADR-035 proposed:** Added `docs/improvement/adrs/ADR-035-ci-workflow-governance.md` to codify CI workflow governance and merge-blocking policy, with explicit advisory rollout and exception handling.
+- **CI policy validator introduced:** Added `.github/workflows/ci-policy.yml`, local composite action `.github/actions/ci-policy/action.yml`, and `scripts/quality/validate_ci_policy.py` with targeted tests to enforce reusable workflows, constraints usage, permission posture, and CI PR metadata.
+- **CI governance scaffolding:** Added `.github/CODEOWNERS` CI ownership entries and CI-specific PR template `.github/PULL_REQUEST_TEMPLATE/ci_workflow_template.md`; wired local reproduction hooks via `scripts/local_checks.py` and `Makefile` target `check-ci-policy`.
 - **ADR-020 promoted to Accepted:** `ADR-020-legacy-user-api-stability.md` status promoted from Draft to Accepted. `docs/improvement/legacy_user_api_contract.md` updated with a `## Removed in v0.11.0` section listing all symbols removed in v0.11.0 (`explain_counterfactual`, `get_explanation`, `register_plot_plugin`, `perf` facade, `alpha`/`alphas`/`n_jobs` aliases, top-level `viz`/`plotting` exports) with replacement guidance.
 - **ADR-028 promoted to Accepted:** `ADR-028-logging-and-governance-observability.md` status promoted from Draft to Accepted. Remaining open gaps (enforcement tooling, Standard-005 observability example alignment) are assigned to v0.11.1 Task 7.
 - **Standard-005 added to release plan:** `RELEASE_PLAN_v1.md` roadmap summary and Standards appendix updated to include Standard-005 (Logging and Observability Standard). Two open gap entries targeting v0.11.1 Task 7 recorded.

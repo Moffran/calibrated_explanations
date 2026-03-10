@@ -1,0 +1,40 @@
+name: ci-policy/validate-workflows
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/ci-policy/**'
+      - 'scripts/local_checks.py'
+      - 'scripts/quality/validate_ci_policy.py'
+      - 'Makefile'
+      - '.github/pull_request_template.md'
+      - '.github/PULL_REQUEST_TEMPLATE/**'
+      - '.github/CODEOWNERS'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Run CI workflow policy validation (advisory rollout)
+        uses: ./.github/actions/ci-policy
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          advisory: 'true'

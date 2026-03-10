@@ -1,0 +1,4 @@
+# CI governance ownership
+/.github/workflows/ @org/ci-team @org/core-maintainers
+/.github/actions/ci-policy/ @org/ci-team @org/core-maintainers
+/.github/CODEOWNERS @org/core-maintainers

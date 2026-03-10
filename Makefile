@@ -53,6 +53,10 @@ check-private-members:
 check-agent-instructions:
 	python scripts/quality/check_agent_instruction_consistency.py
 
+.PHONY: check-ci-policy
+check-ci-policy:
+	python scripts/quality/validate_ci_policy.py --base-sha HEAD~1 --head-sha HEAD --advisory
+
 # Run stacked CI-equivalent checks in the current Python environment,
 # including `pre-commit run --all-files` (no install/bootstrap steps).
 .PHONY: local-checks local-checks-pr

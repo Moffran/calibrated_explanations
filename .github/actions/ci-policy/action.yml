@@ -1,0 +1,30 @@
+name: ci-policy
+
+description: Validate CI workflow policy (ADR-035)
+inputs:
+  base-sha:
+    description: Base SHA for comparison
+    required: true
+  head-sha:
+    description: Head SHA for comparison
+    required: true
+  advisory:
+    description: Run in advisory mode
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Validate workflow governance policy
+      shell: bash
+      run: |
+        set -euo pipefail
+        advisory_flag=""
+        if [ "${{ inputs.advisory }}" = "true" ]; then
+          advisory_flag="--advisory"
+        fi
+        python scripts/quality/validate_ci_policy.py \
+          --base-sha "${{ inputs.base-sha }}" \
+          --head-sha "${{ inputs.head-sha }}" \
+          --event-path "$GITHUB_EVENT_PATH" \
+          ${advisory_flag}
