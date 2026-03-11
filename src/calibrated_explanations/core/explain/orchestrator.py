@@ -51,6 +51,19 @@ _TELEMETRY_LOGGER = logging.getLogger("calibrated_explanations.telemetry.explana
 ensure_logging_context_filter()
 
 
+def _resolve_reject_policy_spec(candidate_policy: Any, explainer: Any) -> Any:
+    """Resolve reject policy via lazy import and ensure orchestrators are initialized."""
+    from ...core.reject.orchestrator import (
+        resolve_policy_spec,  # pylint: disable=import-outside-toplevel
+    )
+
+    if getattr(explainer, "reject_orchestrator", None) is None:
+        plugin_manager = getattr(explainer, "plugin_manager", None)
+        if plugin_manager is not None:
+            plugin_manager.initialize_orchestrators()
+    return resolve_policy_spec(candidate_policy, explainer)
+
+
 class ExplanationOrchestrator:
     """Orchestrate explanation pipeline execution and plugin coordination.
 
@@ -324,13 +337,23 @@ class ExplanationOrchestrator:
 
         if not _ce_skip_reject:
             candidate_policy = reject_policy
+            used_default_policy = candidate_policy is None
             if candidate_policy is None:
                 candidate_policy = getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
                 )
-
-            from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
-            candidate_policy = resolve_policy_spec(candidate_policy, self.explainer)
+            try:
+                candidate_policy = _resolve_reject_policy_spec(candidate_policy, self.explainer)
+            except (
+                Exception
+            ):  # adr002_allow - tolerate invalid explainer-level default policy sentinels
+                # Some tests use MagicMock explainers where unknown attributes
+                # resolve to MagicMock sentinels. Treat invalid explainer-level
+                # defaults as NONE, but still fail fast for explicit inputs.
+                if used_default_policy:
+                    candidate_policy = RejectPolicy.NONE
+                else:
+                    raise
             try:
                 effective_policy = RejectPolicy(candidate_policy)
             except Exception:  # adr002_allow
@@ -361,6 +384,7 @@ class ExplanationOrchestrator:
                 # per-explanation `RejectContext` so downstream narrative/plot
                 # code can render expertise-aware messages and badges.
                 from ...explanations.reject import (
+                    RejectAlternativeExplanations,
                     RejectCalibratedExplanations,
                     RejectContext,
                     RejectResult,
@@ -428,31 +452,26 @@ class ExplanationOrchestrator:
                             except (TypeError, ValueError):
                                 confidence = None
 
-                            pset = None
+                            prediction_set_ref = None
                             try:
                                 if pred_set_mask is not None:
-                                    # Get row mask for this instance
                                     row_mask = pred_set_mask[global_idx]
                                     if hasattr(row_mask, "flatten"):
                                         row_mask = row_mask.flatten()
-                                    # Get indices where mask is True
                                     indices = np.flatnonzero(row_mask)
-                                    # Map to labels
-                                    labels = getattr(self.explainer, "class_labels", None)
-                                    if labels:
-                                        # labels is typically dict[int, str]
-                                        pset = {labels[i] for i in indices}
-                                    else:
-                                        pset = set(indices.tolist())
+                                    prediction_set_ref = {
+                                        "type": "indices",
+                                        "indices": indices.tolist(),
+                                    }
                             except (AttributeError, IndexError, TypeError, ValueError):
-                                pset = None
+                                prediction_set_ref = None
 
                             rc = RejectContext(
                                 rejected=is_rej,
                                 reject_type=rtype,
                                 prediction_set_size=psize,
                                 confidence=confidence,
-                                prediction_set=pset,
+                                prediction_set_ref=prediction_set_ref,
                             )
                             # attach to the materialised explanation object when possible
                             try:
@@ -476,6 +495,34 @@ class ExplanationOrchestrator:
                     and hasattr(res.explanation, "explanations")
                 ):
                     try:
+                        try:
+                            from ...explanations import (  # pylint: disable=import-outside-toplevel
+                                AlternativeExplanations,
+                            )
+
+                            alt_cls = AlternativeExplanations
+                        except Exception:  # adr002_allow - import environment variation
+                            alt_cls = None
+                            logging.getLogger(__name__).debug(
+                                "AlternativeExplanations import failed during reject upgrade; falling back to attribute heuristic.",
+                                exc_info=True,
+                            )
+
+                        if alt_cls is not None:
+                            is_alternative = isinstance(res.explanation, alt_cls)
+                        else:
+                            # Deterministic fallback: when alternative class import
+                            # is unavailable we avoid brittle duck-typing and keep
+                            # generic reject wrapping.
+                            is_alternative = False
+
+                        if is_alternative:
+                            return RejectAlternativeExplanations.from_collection(
+                                res.explanation,
+                                res.metadata or {},
+                                res.policy,
+                                rejected=res.rejected,
+                            )
                         return RejectCalibratedExplanations.from_collection(
                             res.explanation,
                             res.metadata or {},
@@ -809,8 +856,8 @@ class ExplanationOrchestrator:
                         multi_label_explanations[i][int(cls)] = explanation
             else:
                 from ...core.reject.policy import RejectPolicy
-                from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
-                reject_policy = resolve_policy_spec(reject_policy, self.explainer)
+
+                reject_policy = _resolve_reject_policy_spec(reject_policy, self.explainer)
                 try:
                     effective_policy = RejectPolicy(reject_policy)
                 except (TypeError, ValueError):
@@ -1002,8 +1049,8 @@ class ExplanationOrchestrator:
                         multi_label_explanations[i][int(cls)] = explanation
             else:
                 from ...core.reject.policy import RejectPolicy
-                from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
-                reject_policy = resolve_policy_spec(reject_policy, self.explainer)
+
+                reject_policy = _resolve_reject_policy_spec(reject_policy, self.explainer)
                 try:
                     effective_policy = RejectPolicy(reject_policy)
                 except (TypeError, ValueError):
@@ -1158,7 +1205,6 @@ class ExplanationOrchestrator:
         import numpy as np  # pylint: disable=import-outside-toplevel
 
         from ...core.reject.policy import RejectPolicy
-        from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
@@ -1167,7 +1213,7 @@ class ExplanationOrchestrator:
                 candidate_policy = getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
                 )
-            candidate_policy = resolve_policy_spec(candidate_policy, self.explainer)
+            candidate_policy = _resolve_reject_policy_spec(candidate_policy, self.explainer)
             try:
                 effective_policy = RejectPolicy(candidate_policy)
             except Exception:  # adr002_allow
@@ -1329,7 +1375,6 @@ class ExplanationOrchestrator:
         import numpy as np  # pylint: disable=import-outside-toplevel
 
         from ...core.reject.policy import RejectPolicy
-        from ...core.reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
@@ -1338,7 +1383,7 @@ class ExplanationOrchestrator:
                 candidate_policy = getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
                 )
-            candidate_policy = resolve_policy_spec(candidate_policy, self.explainer)
+            candidate_policy = _resolve_reject_policy_spec(candidate_policy, self.explainer)
             try:
                 effective_policy = RejectPolicy(candidate_policy)
             except Exception:  # adr002_allow

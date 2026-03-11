@@ -71,7 +71,9 @@ def _threshold_rows(spec, config: RunConfig) -> list[dict[str, float | str]]:
     for requested_reject_rate in quantile_grid(config.quick):
         bundle = build_regression_bundle(spec, config, seed_offset=int(requested_reject_rate * 1000))
         threshold = float(np.quantile(bundle.y_cal, requested_reject_rate))
-        bundle.wrapper.initialize_reject_learner(threshold=threshold)
+        bundle.wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+            threshold=threshold
+        )
         breakdown = bundle.wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
             bundle.x_test,
             confidence=0.95,

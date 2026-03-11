@@ -5,9 +5,45 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
 
-### Documentation / Governance 
+### Reject Framework Upgrade (since v0.11.0)
+
+#### Added
+
+- **Simplified reject NCF contract:** Public reject NCF choices are now `default` and `ensured`. Internal default scoring is task-dependent (`hinge` for binary + thresholded regression, `margin` for multiclass).
+- **`RejectPolicySpec`:** Structured policy+NCF configuration with deterministic constructors, validation, stable hashing, and round-trip serialization (`to_dict()` / `from_dict()`).
+- **Flexible policy resolution:** `resolve_policy_spec(...)` accepts `None`, enum values, canonical strings, `RejectPolicySpec` objects, and dict payloads.
+- **Richer reject metadata:** Added `prediction_set`, `prediction_set_size`, `epsilon`, `raw_total_examples`, and `raw_reject_counts` fields to reject flows.
+- **`RejectAlternativeExplanations`:** Reject-aware alternative collection preserving policy metadata through ensured filtering.
+
+#### Changed
+
+- **Memory-light reject wrappers:** `from_collection(...)` avoids copying calibration-heavy arrays and preserves shared explainer references.
+- **Metadata split:** `metadata()` returns lightweight aggregates; `metadata_full()` returns JSON-safe per-instance payloads.
+- **Hardened slicing:** Strict bounds/type validation with reject metadata sliced in lockstep; slices preserve `raw_total_examples`, recompute `error_rate` with `error_rate_defined` signaling.
+- **Deterministic predict-set computation:** Prefers p-value thresholding, uses `smoothing=False` fallback, degrades with user-visible warnings.
+- **Ensured scoring formula:** `ensured` now always computes `score = (1 - w) * interval_width + w * default_score`.
+- **Compatibility normalization:** Legacy `ncf="entropy"` inputs are silently normalized to `ncf="default"` in parsing/serialization paths.
+
+#### Fixed
+
+- **Policy parsing:** JSON-string payloads and unsupported types now raise `ValidationError` immediately.
+- **Pickling contract:** `__getstate__` prunes unpicklable runtime state and stamps `_ce_version`; unpickled collections are read-only until `reconstruct_runtime(...)` is called.
+- **NCF guard rails:** `w=0` and low-`w` guards now apply only to `ensured`.
+
+#### Removed
+
+- **Breaking NCF input removal:** Explicit user inputs `ncf="hinge"` and `ncf="margin"` are no longer accepted and now raise `ValidationError`.
+
+#### Deprecated
+
+- **Legacy reject wrapper methods (ADR-011, removal ≥ v0.13.0):**
+  - `CalibratedExplainer.initialize_reject_learner(...)` / `predict_reject(...)`
+  - `WrapCalibratedExplainer.initialize_reject_learner(...)` / `predict_reject(...)`
+
+### Documentation / Governance
 
 - **ADR-035 proposed:** Added `docs/improvement/adrs/ADR-035-ci-workflow-governance.md` to codify CI workflow governance and merge-blocking policy, with explicit advisory rollout and exception handling.
+- **ADR-011 reject wrapper deprecations aligned:** Deprecated `initialize_reject_learner` and `predict_reject` from both `CalibratedExplainer` and `WrapCalibratedExplainer`, and routed all four through the central `deprecate()` helper, and documented removal ETA (`v0.13.0/v1.0.0`) in `docs/migration/deprecations.md` and `docs/improvement/RELEASE_PLAN_v1.md`.
 - **CI policy validator introduced:** Added `.github/workflows/ci-policy.yml`, local composite action `.github/actions/ci-policy/action.yml`, and `scripts/quality/validate_ci_policy.py` with targeted tests to enforce reusable workflows, constraints usage, permission posture, and CI PR metadata.
 - **CI governance scaffolding:** Added `.github/CODEOWNERS` CI ownership entries and CI-specific PR template `.github/PULL_REQUEST_TEMPLATE/ci_workflow_template.md`; wired local reproduction hooks via `scripts/local_checks.py` and `Makefile` target `check-ci-policy`.
 - **ADR-020 promoted to Accepted:** `ADR-020-legacy-user-api-stability.md` status promoted from Draft to Accepted. `docs/improvement/legacy_user_api_contract.md` updated with a `## Removed in v0.11.0` section listing all symbols removed in v0.11.0 (`explain_counterfactual`, `get_explanation`, `register_plot_plugin`, `perf` facade, `alpha`/`alphas`/`n_jobs` aliases, top-level `viz`/`plotting` exports) with replacement guidance.

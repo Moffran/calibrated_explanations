@@ -342,13 +342,13 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   2. Eliminate dual trust state: unify descriptor `trusted` flag and `_TRUSTED_*` identifier sets so all trust mutations are atomic; eliminate divergence risk between `find_*_trusted()` and `list_*_descriptors(trusted_only=True)`.
   3. Complete ADR-028 governance audit coverage: add structured audit log events for every accepted plugin registration (currently only deny/skip paths emit governance logs).
   4. Relocate test helper implementations from `registry.py` to `tests/support/registry_helpers.py` or a dedicated `plugins/_testing.py` internal; eliminate the anti-pattern of exposing test scaffolding through the production module.
-  5. Introduce `deprecate()` calls with a v0.13.0 sunset date for the legacy `_REGISTRY`/`_TRUSTED` list-based path per ADR-011's two-minor-release requirement; document the migration path to the identifier-keyed descriptor dicts.
+  5. Introduce `deprecate()` calls with a v0.13.0/v1.0.0 sunset date for the legacy `_REGISTRY`/`_TRUSTED` list-based path per ADR-011's two-minor-release requirement; document the migration path to the identifier-keyed descriptor dicts.
   6. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
   7. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
   8. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
   9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry. → relocated to v0.11.2.
   10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan. → relocated to v0.11.2.
-  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v0.12.0` remove).
+  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v0.12.0/v1.0.0` remove).
   12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
   13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
   14. Update the Reject Framework within Calibrated Explanations to include other forms of rejection beyond just binary conformal-based rejectors, such as uncertainty-based rejectors that leverage the uncertainty estimates from calibrated explanations to make informed decisions about when to abstain from making a prediction. Document the new rejector types and provide examples of how to implement and use them effectively in practice.

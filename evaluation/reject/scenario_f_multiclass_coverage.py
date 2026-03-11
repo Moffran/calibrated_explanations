@@ -25,7 +25,7 @@ def run(config: RunConfig) -> None:
         bundle = build_classification_bundle(spec, config)
         for epsilon in (0.05, 0.10):
             confidence = 1.0 - float(epsilon)
-            for ncf in ("hinge", "margin"):
+            for ncf in ("default", "ensured"):
                 result = bundle.wrapper.predict(
                     bundle.x_test,
                     reject_policy=RejectPolicySpec.flag(ncf=ncf, w=0.5),

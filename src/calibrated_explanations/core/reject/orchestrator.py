@@ -6,21 +6,91 @@ import inspect
 import logging
 import threading
 import warnings
+from math import isclose
 from typing import Any
 
 import numpy as np
 from crepes import ConformalClassifier
 from crepes.extras import hinge
 
-from ...explanations.reject import RejectResult
+from ...explanations.reject import (
+    RejectResult,
+    canonical_reject_ncf_w,
+    normalize_reject_ncf_choice,
+)
 from ...utils.exceptions import ValidationError
 from .policy import RejectPolicy
 
-_VALID_NCF = frozenset({"hinge", "ensured", "entropy", "margin"})
+_VALID_NCF = frozenset({"default", "ensured"})
 
 
-def _base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
-    """Compute instance-level (class-independent) non-conformity base scores.
+def _interval_width_score(proba: np.ndarray) -> np.ndarray:
+    """Compute instance-level interval-width score from a 2-column VA output."""
+    proba = np.asarray(proba, dtype=float)
+    if proba.shape[1] < 2:
+        return np.zeros(len(proba))
+    return proba[:, 1] - proba[:, 0]
+
+
+def _margin_score(proba: np.ndarray) -> np.ndarray:
+    """Compute instance-level margin score (higher means less conforming)."""
+    proba = np.asarray(proba, dtype=float)
+    if proba.shape[1] < 2:
+        return np.zeros(len(proba))
+    sorted_proba = np.sort(proba, axis=1)[:, ::-1]
+    return 1.0 - (sorted_proba[:, 0] - sorted_proba[:, 1])
+
+
+def _default_ncf_kind(is_multiclass: bool) -> str:
+    """Return internal default score kind for the current task."""
+    return "margin" if is_multiclass else "hinge"
+
+
+def _default_score_cal(
+    proba: np.ndarray,
+    classes: np.ndarray,
+    labels: np.ndarray,
+    default_kind: str,
+) -> np.ndarray:
+    """Compute 1-D calibration scores for the internal default reject score."""
+    if default_kind == "hinge":
+        return hinge(proba, classes, labels)
+    if default_kind == "margin":
+        return _margin_score(proba)
+    raise ValidationError(
+        f"Unsupported internal default score kind {default_kind!r}.",
+        details={"default_kind": default_kind},
+    )
+
+
+def _default_score_test(proba: np.ndarray, default_kind: str) -> np.ndarray:
+    """Compute 2-D test scores for the internal default reject score."""
+    if default_kind == "hinge":
+        return hinge(proba)
+    if default_kind == "margin":
+        base = _margin_score(proba)
+        k = np.asarray(proba).shape[1]
+        return np.repeat(base[:, np.newaxis], k, axis=1)
+    raise ValidationError(
+        f"Unsupported internal default score kind {default_kind!r}.",
+        details={"default_kind": default_kind},
+    )
+
+
+def _normalize_stored_ncf(value: Any) -> str | None:
+    """Normalize persisted/legacy NCF names for re-init equality checks."""
+    if value is None:
+        return None
+    lowered = str(value).strip().lower()
+    if lowered in ("default", "hinge", "margin", "entropy"):
+        return "default"
+    if lowered == "ensured":
+        return "ensured"
+    return lowered
+
+
+def _legacy_base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
+    """Compute instance-level legacy NCF scores.
 
     Parameters
     ----------
@@ -49,18 +119,13 @@ def _base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
     """
     proba = np.asarray(proba, dtype=float)
     if ncf == "ensured":
-        if proba.shape[1] < 2:
-            return np.zeros(len(proba))
-        return proba[:, 1] - proba[:, 0]
+        return _interval_width_score(proba)
     if ncf == "entropy":
         proba_clipped = np.clip(proba, 1e-12, 1.0)
         k = max(proba.shape[1], 2)
         return -np.sum(proba_clipped * np.log2(proba_clipped), axis=1) / np.log2(k)
     if ncf == "margin":
-        if proba.shape[1] < 2:
-            return np.zeros(len(proba))
-        sorted_proba = np.sort(proba, axis=1)[:, ::-1]
-        return 1.0 - (sorted_proba[:, 0] - sorted_proba[:, 1])
+        return _margin_score(proba)
     raise ValidationError(
         f"Unsupported ncf type {ncf!r}; expected one of {sorted(_VALID_NCF)!r}",
         details={"ncf": ncf},
@@ -73,6 +138,7 @@ def _ncf_scores_cal(  # pylint: disable=invalid-name
     labels: np.ndarray,
     ncf: str,
     w: float,
+    default_kind: str,
 ) -> np.ndarray:
     """Compute 1-D calibration non-conformity scores.
 
@@ -80,75 +146,138 @@ def _ncf_scores_cal(  # pylint: disable=invalid-name
     -------
     ndarray of shape (n,)
     """
-    if ncf == "hinge" or w >= 1.0:
-        return hinge(proba, classes, labels)
-    hinge_cal = hinge(proba, classes, labels)
-    base = _base_ncf(proba, ncf)
-    return (1.0 - w) * base + w * hinge_cal
+    default_score = _default_score_cal(proba, classes, labels, default_kind)
+    if ncf == "default":
+        return default_score
+    if ncf == "ensured":
+        interval = _interval_width_score(proba)
+        return (1.0 - w) * interval + w * default_score
+    return _legacy_base_ncf(proba, ncf)
 
 
-def _ncf_scores_test(proba: np.ndarray, ncf: str, w: float) -> np.ndarray:  # pylint: disable=invalid-name
+def _ncf_scores_test(  # pylint: disable=invalid-name
+    proba: np.ndarray,
+    ncf: str,
+    w: float,
+    default_kind: str,
+) -> np.ndarray:
     """Compute 2-D test non-conformity scores (one column per class).
 
     Returns
     -------
     ndarray of shape (n, k)
     """
-    if ncf == "hinge" or w >= 1.0:
-        return hinge(proba)
-    hinge_test = hinge(proba)           # (n, k)
-    base = _base_ncf(proba, ncf)        # (n,)
-    return (1.0 - w) * base[:, np.newaxis] + w * hinge_test
+    default_score = _default_score_test(proba, default_kind)
+    if ncf == "default":
+        return default_score
+    if ncf == "ensured":
+        interval = _interval_width_score(proba)
+        k = np.asarray(proba).shape[1]
+        return (1.0 - w) * np.repeat(interval[:, np.newaxis], k, axis=1) + w * default_score
+    base = _legacy_base_ncf(proba, ncf)  # (n,)
+    k = np.asarray(proba).shape[1]
+    return np.repeat(base[:, np.newaxis], k, axis=1)
 
 
 def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
-    """Resolve a ``RejectPolicySpec`` to a ``RejectPolicy`` value.
+    """Resolve reject policy inputs to a canonical policy value.
 
-    When *reject_policy_kw* is a plain ``RejectPolicy`` enum (or ``None``),
-    it is returned unchanged.  When it is a :class:`.RejectPolicySpec`, the
-    NCF configuration is compared against what is stored on *explainer*; if
-    it differs, ``explainer.initialize_reject_learner`` is called so the
-    conformal classifier is rebuilt before the policy is used.
-
-    Parameters
-    ----------
-    reject_policy_kw :
-        A :class:`.RejectPolicy` enum value, a :class:`.RejectPolicySpec`,
-        or ``None``.
-    explainer :
-        The :class:`.CalibratedExplainer` instance that owns the reject
-        learner.
+    This function accepts:
+      - RejectPolicy enum members
+      - RejectPolicySpec instances
+      - dict payloads produced by RejectPolicySpec.to_dict()
+            - plain policy strings ("flag", "only_rejected", ...)
+      - None (returned unchanged)
 
     Returns
     -------
-    The original *reject_policy_kw* when it is not a ``RejectPolicySpec``,
-    otherwise ``spec.policy`` (a ``RejectPolicy`` enum value).
+    RejectPolicy | None
+        The canonical RejectPolicy value, or None when input is None.
 
-    Notes
-    -----
-    **Plain** :class:`.RejectPolicy` enum values are returned unchanged without
-    any NCF reinitialization check.  If you need to change the non-conformity
-    function (NCF) or the hinge weight *w*, pass a :class:`.RejectPolicySpec`
-    instead of a plain enum:
-
-    .. code-block:: python
-
-        # Reinitializes the reject learner with entropy NCF:
-        explain_fn(x, reject_policy=RejectPolicySpec.flag(ncf="entropy", w=0.5))
-
-        # Silently reuses whatever NCF was last used:
-        explain_fn(x, reject_policy=RejectPolicy.FLAG)
+    Raises
+    ------
+    ValidationError
+        When the input cannot be parsed into a known policy/spec.
     """
     from ...explanations.reject import RejectPolicySpec  # pylint: disable=import-outside-toplevel
 
-    if not isinstance(reject_policy_kw, RejectPolicySpec):
+    if reject_policy_kw is None:
+        return None
+
+    if isinstance(reject_policy_kw, RejectPolicy):
         return reject_policy_kw
-    spec = reject_policy_kw
-    stored_ncf = getattr(explainer, "reject_ncf", None)
-    stored_w = getattr(explainer, "reject_ncf_w", None)
-    if stored_ncf != spec.ncf or stored_w != spec.w:
-        explainer.initialize_reject_learner(ncf=spec.ncf, w=spec.w)
-    return spec.policy
+
+    spec: RejectPolicySpec | None = None
+    if isinstance(reject_policy_kw, RejectPolicySpec):
+        spec = reject_policy_kw
+    elif isinstance(reject_policy_kw, dict):
+        try:
+            spec = RejectPolicySpec.from_dict(reject_policy_kw)
+        except ValueError as exc:
+            raise ValidationError(str(exc), details={"payload": reject_policy_kw}) from exc
+        except ValidationError as exc:
+            raise ValidationError(
+                "Invalid RejectPolicySpec dict; expected keys 'policy','ncf','w'.",
+                details={"payload": reject_policy_kw},
+            ) from exc
+    elif isinstance(reject_policy_kw, str):
+        stripped = reject_policy_kw.strip()
+        if stripped.startswith("{"):
+            raise ValidationError(
+                "JSON string reject policy payloads are unsupported; pass a dict or RejectPolicySpec.",
+                details={"payload": reject_policy_kw},
+            )
+        try:
+            return RejectPolicy(stripped.lower())
+        except ValueError as exc:
+            raise ValidationError(
+                "Unknown reject policy string.",
+                details={"policy": reject_policy_kw},
+            ) from exc
+    else:
+        raise ValidationError(
+            "Unsupported reject_policy input type.",
+            details={"type": type(reject_policy_kw).__name__, "value": repr(reject_policy_kw)},
+        )
+
+    if spec is not None:
+        stored_ncf = _normalize_stored_ncf(getattr(explainer, "reject_ncf", None))
+        stored_w = getattr(explainer, "reject_ncf_w", None)
+        effective_spec_w = canonical_reject_ncf_w(spec.ncf, float(spec.w))
+        effective_stored_w = (
+            None
+            if stored_w is None or stored_ncf is None
+            else canonical_reject_ncf_w(str(stored_ncf), float(stored_w))
+        )
+        if (
+            stored_ncf != spec.ncf
+            or effective_stored_w is None
+            or not isclose(
+                float(effective_stored_w), float(effective_spec_w), rel_tol=1e-9, abs_tol=0.0
+            )
+        ):
+            reject_orchestrator = getattr(explainer, "reject_orchestrator", None)
+            if reject_orchestrator is None:
+                plugin_manager = getattr(explainer, "plugin_manager", None)
+                if plugin_manager is None:
+                    raise ValidationError(
+                        "Reject orchestrator is unavailable for policy initialization.",
+                        details={"reason": "missing_plugin_manager"},
+                    )
+                plugin_manager.initialize_orchestrators()
+                reject_orchestrator = getattr(explainer, "reject_orchestrator", None)
+            if reject_orchestrator is None:
+                raise ValidationError(
+                    "Reject orchestrator is unavailable for policy initialization.",
+                    details={"reason": "missing_reject_orchestrator"},
+                )
+            reject_orchestrator.initialize_reject_learner(ncf=spec.ncf, w=effective_spec_w)
+        return spec.policy
+
+    raise ValidationError(
+        "Failed to resolve reject_policy to a canonical form.",
+        details={"input": repr(reject_policy_kw)},
+    )
 
 
 class RejectOrchestrator:
@@ -195,22 +324,42 @@ class RejectOrchestrator:
     def initialize_reject_learner(  # pylint: disable=invalid-name
         self, calibration_set=None, threshold=None, ncf=None, w=0.5
     ):
-        """Initialize the reject learner with a threshold value.
+        """Initialize the reject learner with calibration data and NCF settings.
 
         Parameters
         ----------
         calibration_set : tuple (x_cal, y_cal) or None
             Calibration data. Uses the explainer's calibration set when None.
         threshold : float or None
-            Decision threshold (regression only).
+            Decision threshold for **regression only**. **Required** when the
+            explainer is in regression mode — omitting it raises
+            ``ValidationError``.
+
+            The threshold defines a binary event: *"will the target be below
+            this value?"*  The framework converts regression into threshold-
+            binarized conformal classification (``P(y ≤ threshold)``). This is
+            **not** conformal prediction interval regression; it is conformal
+            prediction for a user-defined threshold crossing. For classification
+            this parameter is unused and should remain ``None``.
         ncf : str or None, default None
-            Non-conformity function type: 'hinge' (default), 'ensured'
-            (Venn-Abers interval width), 'entropy' (Shannon entropy), or
-            'margin' (top-two probability gap). When None, auto-selects
-            'margin' for multiclass and 'hinge' for binary/regression.
+            Non-conformity function type: 'default' or 'ensured'. The
+            internal default score is task-dependent: margin for multiclass
+            and hinge for binary/regression. Legacy 'entropy' input is
+            accepted and silently mapped to 'default'. Explicit 'hinge' and
+            'margin' inputs are rejected.
         w : float, default 0.5
-            Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge.
-            Ignored when ``ncf='hinge'``.
+            Blending weight in [0, 1] used only when ``ncf='ensured'``.
+            ``score = (1-w) * interval_width + w * default_score``.
+            Ignored for ``ncf='default'``. ``w=0.0`` raises
+            ``ValidationError``; ``w < 0.1`` emits a ``UserWarning``.
+
+        Raises
+        ------
+        ValidationError
+            If ``threshold`` is ``None`` and the explainer is in regression
+            mode, if ``ncf`` is not a recognised value, if explicit
+            ``ncf='hinge'`` or ``ncf='margin'`` is supplied, or if ``w=0.0``
+            with ``ncf='ensured'``.
         """
         bins_cal = self.explainer.bins if calibration_set is None else None
         if calibration_set is None:
@@ -220,49 +369,44 @@ class RejectOrchestrator:
         else:
             raise ValidationError("calibration_set must be a (x_cal, y_cal) pair or None")
 
-        # Resolve effective NCF: auto-select 'margin' for multiclass when not set
+        # Resolve user NCF; internal default score remains task-dependent.
         ncf_explicit = ncf is not None
         if ncf is None:
-            ncf = (
-                "margin"
-                if self.explainer.is_multiclass()  # pylint: disable=protected-access
-                else "hinge"
-            )
+            ncf = "default"
+        try:
+            ncf = normalize_reject_ncf_choice(ncf)
+        except ValueError as exc:
+            raise ValidationError(
+                str(exc),
+                details={"ncf": ncf},
+            ) from exc
         if ncf not in _VALID_NCF:
             raise ValidationError(
                 f"ncf must be one of {sorted(_VALID_NCF)!r}; got {ncf!r}",
                 details={"ncf": ncf},
             )
-        if self.explainer.is_multiclass() and ncf in ("entropy", "margin"):  # pylint: disable=protected-access
-            warnings.warn(
-                f"ncf='{ncf}' in multiclass mode operates on a binarized "
-                "(predicted-class vs. rest) representation, not the full K-class "
-                "distribution. 'entropy' reduces to binary entropy of p_argmax; "
-                "'margin' reduces to 2*(1-p_argmax). "
-                "Use 'hinge' or 'ensured' for full-distribution multiclass scoring.",
-                UserWarning,
-                stacklevel=2,
-            )
-        if ncf != "hinge":
+        if ncf == "ensured":
             if w == 0.0:
                 raise ValidationError(
-                    f"w=0.0 with ncf='{ncf}' produces class-independent NCF scores "
-                    "and rejects all instances. Use w > 0.0 (recommended w >= 0.1).",
+                    "w=0.0 with ncf='ensured' is not allowed. Use w > 0.0 "
+                    "(recommended w >= 0.1).",
                     details={"w": w, "ncf": ncf},
                 )
             if w < 0.1:
                 warnings.warn(
-                    f"ncf='{ncf}' with w={w} (near 0) produces near-symmetric per-class "
-                    "NCF scores; prediction sets will rarely be singletons and most instances "
-                    "will be rejected. Consider w >= 0.1.",
+                    f"ncf='ensured' with w={w} (near 0) may produce unstable reject "
+                    "behavior. Consider w >= 0.1.",
                     UserWarning,
                     stacklevel=2,
                 )
 
         self.explainer.reject_threshold = None
         self.explainer.reject_ncf = ncf
-        self.explainer.reject_ncf_w = float(w)
+        self.explainer.reject_ncf_w = canonical_reject_ncf_w(ncf, float(w))
         self.explainer.reject_ncf_auto_selected = not ncf_explicit
+        default_kind = _default_ncf_kind(
+            bool(self.explainer.is_multiclass())  # pylint: disable=protected-access
+        )
 
         if self.explainer.mode == "regression":
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
@@ -283,8 +427,9 @@ class RejectOrchestrator:
             proba = self.explainer.interval_learner.predict_proba(x_cal, bins=bins_cal)
             calibration_bins = y_cal
 
+        effective_w = canonical_reject_ncf_w(ncf, float(w))
         alphas_cal = _ncf_scores_cal(
-            proba, np.unique(calibration_bins), calibration_bins, ncf, w
+            proba, np.unique(calibration_bins), calibration_bins, ncf, effective_w, default_kind
         )
         self.explainer.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=bins_cal)
         _ = ncf_explicit  # used above; suppress unused-variable warning
@@ -313,9 +458,12 @@ class RejectOrchestrator:
         else:
             proba = self.explainer.interval_learner.predict_proba(x, bins=bins)
 
-        ncf = getattr(self.explainer, "reject_ncf", "hinge")
+        ncf = getattr(self.explainer, "reject_ncf", "default")
         ncf_w = getattr(self.explainer, "reject_ncf_w", 1.0)
-        alphas_test = np.asarray(_ncf_scores_test(proba, ncf, ncf_w))
+        default_kind = _default_ncf_kind(
+            bool(self.explainer.is_multiclass())  # pylint: disable=protected-access
+        )
+        alphas_test = np.asarray(_ncf_scores_test(proba, ncf, ncf_w, default_kind))
 
         seed = getattr(self.explainer, "seed", None)
         epsilon = 1 - confidence
@@ -533,6 +681,13 @@ class RejectOrchestrator:
                     "error_rate": error_rate,
                     "error_rate_defined": legacy_error_rate_defined,
                     "epsilon": 1.0 - float(confidence),
+                    "raw_total_examples": int(len(rejected)),
+                    "raw_reject_counts": {
+                        "rejected": int(np.sum(rejected)),
+                        "ambiguity_mask": int(np.sum(ambiguity)),
+                        "novelty_mask": int(np.sum(novelty)),
+                        "prediction_set_size": int(np.sum(set_sizes)),
+                    },
                 }
             except Exception as exc:  # adr002_allow - graceful fallback for legacy override
                 # If the legacy override misbehaves, fall through to full computation
@@ -579,6 +734,13 @@ class RejectOrchestrator:
             "error_rate": error_rate,
             "error_rate_defined": error_rate_defined,
             "epsilon": epsilon,
+            "raw_total_examples": int(num_instances),
+            "raw_reject_counts": {
+                "rejected": int(np.sum(rejected)),
+                "ambiguity_mask": int(np.sum(ambiguity)),
+                "novelty_mask": int(np.sum(novelty)),
+                "prediction_set_size": int(np.sum(set_sizes)),
+            },
         }
 
     def predict_reject(self, x, bins=None, confidence=0.95):
@@ -762,6 +924,8 @@ class RejectOrchestrator:
                     stacklevel=2,
                 )
                 explanation = None
+                if kwargs.get("_reject_raise", False):
+                    raise
 
         metadata = {
             "error_rate": error_rate,
@@ -775,6 +939,8 @@ class RejectOrchestrator:
             "prediction_set_size": breakdown.get("prediction_set_size"),
             "prediction_set": breakdown.get("prediction_set"),
             "epsilon": breakdown.get("epsilon"),
+            "raw_total_examples": breakdown.get("raw_total_examples"),
+            "raw_reject_counts": breakdown.get("raw_reject_counts"),
             # NCF provenance: which function was used and whether it was auto-selected
             "reject_ncf": getattr(self.explainer, "reject_ncf", None),
             "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),

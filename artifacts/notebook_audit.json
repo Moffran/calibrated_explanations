@@ -48,7 +48,6 @@
         "calibrate",
         "explain_factual",
         "fit",
-        "get_explanation",
         "plot"
       ]
     },
@@ -100,6 +99,7 @@
         "explain_factual",
         "explainer",
         "fit",
+        "initialize_reject_learner",
         "predict",
         "predict_proba"
       ]
@@ -114,7 +114,6 @@
         "explain_factual",
         "explore_alternatives",
         "fit",
-        "get_explanation",
         "plot",
         "remove_conjunctions"
       ]
@@ -156,7 +155,6 @@
         "explain_factual",
         "explore_alternatives",
         "fit",
-        "get_explanation",
         "plot",
         "predict_proba"
       ]
@@ -230,7 +228,6 @@
         "calibrate",
         "explain_factual",
         "fit",
-        "get_explanation",
         "plot",
         "predict",
         "predict_proba",

@@ -367,8 +367,8 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
         explainer.set_mode("invalid")
 
     # initialize_reject_learner / predict_reject
-    explainer.initialize_reject_learner()
-    explainer.predict_reject(x_cal)
+    explainer.reject_orchestrator.initialize_reject_learner()
+    explainer.reject_orchestrator.predict_reject(x_cal)
 
     # set_discretizer
     explainer.set_discretizer("entropy")

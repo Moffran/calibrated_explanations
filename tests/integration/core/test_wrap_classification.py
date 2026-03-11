@@ -440,8 +440,8 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     repr(cal_exp)
 
     cal_exp.calibrated_confusion_matrix()
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test)
+    cal_exp.explainer.reject_orchestrator.initialize_reject_learner()
+    cal_exp.explainer.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0])
 
     y_test_hat1 = cal_exp.predict(x_test)
     y_test_hat2, (low, high) = cal_exp.predict(x_test, True)

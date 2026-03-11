@@ -40,7 +40,7 @@ def train_regression(seed=0):
     w.calibrate(x_cal, y_cal, mode="regression", seed=seed)
     w.explainer.seed = seed
     # initialize reject learner for regression threshold tests
-    w.initialize_reject_learner(threshold=np.median(y_cal))
+    w.explainer.reject_orchestrator.initialize_reject_learner(threshold=np.median(y_cal))
     return w, X[:6]
 
 

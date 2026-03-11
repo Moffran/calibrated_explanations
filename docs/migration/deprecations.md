@@ -112,6 +112,10 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v1.0.0 | Same. |
 | Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v1.0.0 | Same. |
 | `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v1.0.0 | `parallel/parallel.py` silently upgrades the value and warns. |
+| `CalibratedExplainer.initialize_reject_learner(...)` | `explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.13.0/v1.0.0 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
+| `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.13.0/v1.0.0 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
+| `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.13.0/v1.0.0 | Wrapper parity deprecation aligned with explainer-level deprecation. |
+| `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.13.0/v1.0.0 | Wrapper parity deprecation aligned with explainer-level deprecation. |
 
 ### Removed deprecations (history)
 
@@ -129,6 +133,15 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `calibrated_explanations.perf` root facade | `calibrated_explanations.cache` + `calibrated_explanations.parallel` | v0.10.x | v0.11.0 | `perf/__init__.py` is now empty. |
 
 ## Breaking changes
+
+### Reject NCF public contract simplified (v0.11.1+)
+
+Reject NCF user-facing inputs are now limited to `default` and `ensured`.
+
+- `ncf="default"`: task-dependent internal score (`hinge` for binary + thresholded regression, `margin` for multiclass).
+- `ncf="ensured"`: `score = (1 - w) * interval_width + w * default_score`.
+- Legacy `ncf="entropy"` remains accepted and is silently normalized to `ncf="default"`.
+- Explicit `ncf="hinge"` and `ncf="margin"` are no longer accepted and now raise `ValidationError`.
 
 ### Default `condition_source` changed to `"prediction"` (v0.11.0)
 

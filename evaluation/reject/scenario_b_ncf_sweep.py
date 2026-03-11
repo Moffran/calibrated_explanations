@@ -20,7 +20,7 @@ from .common_reject import (
     write_csv_json_md,
 )
 
-NCF_TYPES = ["hinge", "entropy", "margin", "ensured"]
+NCF_TYPES = ["default", "entropy", "ensured"]
 
 
 def run(config: RunConfig) -> None:

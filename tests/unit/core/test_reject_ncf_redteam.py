@@ -1,13 +1,11 @@
 """Red-team tests for reject NCF implementations.
 
-These tests exercise the various NCF variants and the orchestration
-paths that warn on low hinge-weight (`w`) for non-hinge NCFs. The goal
-is to validate shapes, ranges, and warning semantics across NCF types.
+These tests exercise the public NCF contract ``{default, ensured}`` plus
+legacy ``entropy`` input mapping to ``default``.
 """
 
 from __future__ import annotations
 
-import warnings
 from types import SimpleNamespace
 
 import numpy as np
@@ -108,8 +106,8 @@ def test_predict_reject_breakdown_runs_for_all_ncfs(monkeypatch):
     expl = ExplainerStub()
     orchestrator = orch.RejectOrchestrator(expl)
 
-    for ncf in ("hinge", "ensured", "entropy", "margin"):
-        # Initialize with a non-trivial w for non-hinge
+    for ncf in ("default", "ensured", "entropy"):
+        # Include legacy 'entropy' mapping alongside public values.
         orchestrator.initialize_reject_learner(ncf=ncf, w=0.5)
         breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.95)
 
@@ -126,7 +124,8 @@ def test_predict_reject_breakdown_runs_for_all_ncfs(monkeypatch):
 # Shared stub factory
 # ---------------------------------------------------------------------------
 
-def _make_stub(monkeypatch, *, all_empty: bool = False, singletons: bool = False):
+
+def make_stub(monkeypatch, *, all_empty: bool = False, singletons: bool = False):
     """Return (ExplainerStub, RejectOrchestrator) with a deterministic DummyConformal.
 
     Modes (mutually exclusive; all_empty takes priority):
@@ -135,6 +134,7 @@ def _make_stub(monkeypatch, *, all_empty: bool = False, singletons: bool = False
                        → every prediction set is a singleton {0} (accepted).
     - default        : both p-values are 0.9 → ambiguous sets (size 2), all rejected.
     """
+
     class StubIntervalLearner:
         def predict_proba(self, x, bins=None):
             return np.tile(np.array([[0.5, 0.5]]), (len(x), 1))
@@ -156,11 +156,11 @@ def _make_stub(monkeypatch, *, all_empty: bool = False, singletons: bool = False
             return False
 
     if all_empty:
-        p_row = [0.0, 0.0]          # both fail → empty sets
+        p_row = [0.0, 0.0]  # both fail → empty sets
     elif singletons:
-        p_row = [0.9, 0.01]         # only class-0 passes → singleton {0}
+        p_row = [0.9, 0.01]  # only class-0 passes → singleton {0}
     else:
-        p_row = [0.9, 0.9]          # both pass → ambiguous sets (size 2)
+        p_row = [0.9, 0.9]  # both pass → ambiguous sets (size 2)
 
     class DummyConformal:
         def fit(self, *args, **kwargs):
@@ -173,7 +173,7 @@ def _make_stub(monkeypatch, *, all_empty: bool = False, singletons: bool = False
     monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
     expl = ExplainerStub()
     orchestrator = orch.RejectOrchestrator(expl)
-    orchestrator.initialize_reject_learner(ncf="hinge", w=1.0)
+    orchestrator.initialize_reject_learner(ncf="default", w=1.0)
     return expl, orchestrator
 
 
@@ -181,16 +181,17 @@ def _make_stub(monkeypatch, *, all_empty: bool = False, singletons: bool = False
 # MT-3 — error_rate is always >= 0 and error_rate_defined reflects validity
 # ---------------------------------------------------------------------------
 
+
 def test_error_rate_nonnegative_all_empty(monkeypatch):
     """error_rate must be >= 0 even when all prediction sets are empty."""
-    _, orchestrator = _make_stub(monkeypatch, all_empty=True)
+    _, orchestrator = make_stub(monkeypatch, all_empty=True)
     breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.99)
     assert breakdown["error_rate"] >= 0.0
 
 
 def test_error_rate_defined_false_when_no_singletons(monkeypatch):
     """error_rate_defined is False when there are no singleton prediction sets."""
-    _, orchestrator = _make_stub(monkeypatch, all_empty=True)
+    _, orchestrator = make_stub(monkeypatch, all_empty=True)
     breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.99)
     assert breakdown["error_rate_defined"] is False
 
@@ -198,7 +199,7 @@ def test_error_rate_defined_false_when_no_singletons(monkeypatch):
 def test_error_rate_defined_true_when_singletons_exist(monkeypatch):
     """error_rate_defined is True when at least one singleton prediction set exists."""
     # singletons=True → only class-0 passes threshold → every set is {0} (singleton)
-    _, orchestrator = _make_stub(monkeypatch, singletons=True)
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
     breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.95)
     assert breakdown["error_rate_defined"] is True
 
@@ -207,9 +208,10 @@ def test_error_rate_defined_true_when_singletons_exist(monkeypatch):
 # MT-9 — auto-selected NCF is recorded on the explainer
 # ---------------------------------------------------------------------------
 
+
 def test_ncf_auto_selected_true_when_implicit(monkeypatch):
     """reject_ncf_auto_selected is True when ncf is not specified explicitly."""
-    expl, orchestrator = _make_stub(monkeypatch)
+    expl, orchestrator = make_stub(monkeypatch)
     expl.reject_learner = None
     orchestrator.initialize_reject_learner()
     assert expl.reject_ncf_auto_selected is True
@@ -217,49 +219,131 @@ def test_ncf_auto_selected_true_when_implicit(monkeypatch):
 
 def test_ncf_auto_selected_false_when_explicit(monkeypatch):
     """reject_ncf_auto_selected is False when ncf is specified explicitly."""
-    expl, orchestrator = _make_stub(monkeypatch)
-    orchestrator.initialize_reject_learner(ncf="hinge")
+    expl, orchestrator = make_stub(monkeypatch)
+    orchestrator.initialize_reject_learner(ncf="default")
     assert expl.reject_ncf_auto_selected is False
 
 
 # ---------------------------------------------------------------------------
-# MT-10 — w=0.0 raises ValidationError for non-hinge NCFs
+# MT-10 — w=0.0 raises ValidationError only for ensured NCF
 # ---------------------------------------------------------------------------
 
-def test_w_zero_raises_for_nohinge_ncf(monkeypatch):
-    """w=0.0 with a non-hinge NCF must raise ValidationError."""
+
+def test_w_zero_raises_for_ensured_ncf(monkeypatch):
+    """w=0.0 with ensured must raise ValidationError."""
     from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
 
-    _, orchestrator = _make_stub(monkeypatch)
+    _, orchestrator = make_stub(monkeypatch)
     with pytest.raises(ValidationError, match="w=0.0"):
-        orchestrator.initialize_reject_learner(ncf="entropy", w=0.0)
+        orchestrator.initialize_reject_learner(ncf="ensured", w=0.0)
+
+
+def test_w_zero_allowed_for_default_and_entropy(monkeypatch):
+    """w is accepted/ignored for non-ensured default NCF mode."""
+    _, orchestrator = make_stub(monkeypatch)
+    orchestrator.initialize_reject_learner(ncf="default", w=0.0)
+    orchestrator.initialize_reject_learner(ncf="entropy", w=0.0)
+    assert orchestrator.explainer.reject_ncf == "default"
+    assert abs(orchestrator.explainer.reject_ncf_w - 0.0) < 1e-8
+
+
+@pytest.mark.parametrize("ncf", ["hinge", "margin"])
+def test_removed_explicit_ncf_inputs_raise_validation_error(monkeypatch, ncf):
+    """Explicit hinge/margin user inputs are removed and must fail fast."""
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    _, orchestrator = make_stub(monkeypatch)
+    with pytest.raises(ValidationError, match="no longer supported"):
+        orchestrator.initialize_reject_learner(ncf=ncf, w=0.5)
+
+
+def test_default_entropy_breakdown_invariant_to_w(monkeypatch):
+    """default/entropy public reject breakdown must be invariant to w."""
+
+    class StubIntervalLearner:
+        def predict_proba(self, x, bins=None):
+            return np.array(
+                [
+                    [0.1, 0.9],
+                    [0.3, 0.7],
+                    [0.45, 0.55],
+                    [0.6, 0.4],
+                ],
+                dtype=float,
+            )[: len(x)]
+
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            return np.zeros(len(x)), None, None, None
+
+    class ExplainerStub(SimpleNamespace):
+        def __init__(self):
+            super().__init__()
+            self.mode = "classification"
+            self.x_cal = np.array([[0], [1], [2], [3]])
+            self.y_cal = np.array([0, 1, 0, 1])
+            self.bins = None
+            self.interval_learner = StubIntervalLearner()
+            self.reject_learner = None
+
+        def is_multiclass(self):
+            return False
+
+    class DummyConformal:
+        def fit(self, *args, **kwargs):
+            return self
+
+        def predict_p(self, alphas, **kwargs):
+            # propagate alpha differences into p-values so NCF score changes
+            # would affect the public breakdown path.
+            arr = np.asarray(alphas, dtype=float)
+            return np.clip(arr, 0.0, 1.0)
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
+
+    expl = ExplainerStub()
+    orchestrator = orch.RejectOrchestrator(expl)
+    x = np.array([[0], [1], [2], [3]])
+
+    orchestrator.initialize_reject_learner(ncf="default", w=0.1)
+    default_low = orchestrator.predict_reject_breakdown(x, confidence=0.95)
+    orchestrator.initialize_reject_learner(ncf="default", w=0.9)
+    default_high = orchestrator.predict_reject_breakdown(x, confidence=0.95)
+    assert np.array_equal(default_low["prediction_set_size"], default_high["prediction_set_size"])
+
+    orchestrator.initialize_reject_learner(ncf="entropy", w=0.1)
+    entropy_low = orchestrator.predict_reject_breakdown(x, confidence=0.95)
+    orchestrator.initialize_reject_learner(ncf="entropy", w=0.9)
+    entropy_high = orchestrator.predict_reject_breakdown(x, confidence=0.95)
+    assert np.array_equal(entropy_low["prediction_set_size"], entropy_high["prediction_set_size"])
 
 
 # ---------------------------------------------------------------------------
 # MT-5 — plain RejectPolicy reuses existing NCF without reinit
 # ---------------------------------------------------------------------------
 
+
 def test_plain_policy_reuses_existing_ncf_no_reinit(monkeypatch):
     """Passing a plain RejectPolicy enum returns it unchanged; reject_ncf unchanged."""
     from calibrated_explanations.core.reject.orchestrator import resolve_policy_spec
     from calibrated_explanations.core.reject.policy import RejectPolicy
 
-    expl, _ = _make_stub(monkeypatch)
-    expl.reject_ncf = "entropy"
+    expl, _ = make_stub(monkeypatch)
+    expl.reject_ncf = "default"
     expl.reject_ncf_w = 0.5
 
     result = resolve_policy_spec(RejectPolicy.FLAG, expl)
     assert result is RejectPolicy.FLAG
-    assert expl.reject_ncf == "entropy"
+    assert expl.reject_ncf == "default"
 
 
 # ---------------------------------------------------------------------------
 # MT-6 — ONLY_REJECTED with 0 matches: explanation=None, matched_count=0
 # ---------------------------------------------------------------------------
 
+
 def test_only_rejected_empty_subset_returns_none_and_matched_count_zero(monkeypatch):
     """When no instances are rejected, explanation is None and matched_count==0."""
-    _, orchestrator = _make_stub(monkeypatch, singletons=True)  # singleton sets → all accepted
+    _, orchestrator = make_stub(monkeypatch, singletons=True)  # singleton sets → all accepted
     from calibrated_explanations.core.reject.policy import RejectPolicy
 
     explain_called = []
@@ -283,6 +367,7 @@ def test_only_rejected_empty_subset_returns_none_and_matched_count_zero(monkeypa
 # MT-4 — sliced RejectCalibratedExplanations recomputes aggregate rates
 # ---------------------------------------------------------------------------
 
+
 def test_sliced_reject_rates_recomputed():
     """After slicing, aggregate rates must reflect the sliced masks, not originals.
 
@@ -305,6 +390,7 @@ def test_sliced_reject_rates_recomputed():
             self.x_test = np.zeros((4, 2))
             self.y_threshold = None
             self.bins = None
+            self.calibrated_explainer = SimpleNamespace()
 
     # 4 instances: 0=rejected/ambiguous, 1=accepted, 2=rejected/novel, 3=accepted
     rejected_full = np.array([True, False, True, False])

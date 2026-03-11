@@ -19,13 +19,13 @@ from .common_reject import (
 
 
 def run(config: RunConfig) -> None:
-    """Sweep NCF variants and hinge-weight blends across task types."""
+    """Sweep public reject NCF variants across task types."""
     rows: list[dict[str, float | str]] = []
     datasets = task_specs("binary", quick=config.quick) + task_specs("multiclass", quick=config.quick)
     for spec in datasets:
         bundle = build_classification_bundle(spec, config)
         baseline_accuracy = float(np.mean(bundle.baseline_pred == bundle.y_test))
-        for ncf in ("hinge", "margin", "entropy", "ensured"):
+        for ncf in ("default", "entropy", "ensured"):
             for w in (0.3, 0.5, 0.7, 1.0):
                 result = bundle.wrapper.predict(
                     bundle.x_test,
@@ -54,7 +54,7 @@ def run(config: RunConfig) -> None:
         "display_name": "Scenario H — NCF grid",
         "quick": config.quick,
         "highlights": [
-            "This grid compares hinge, margin, entropy, and ensured NCFs across binary and multiclass settings.",
+            "This grid compares default, ensured, and legacy entropy-mapped reject NCFs across binary and multiclass settings.",
             "Accepted accuracy delta is always empirical and benchmarked against the non-reject baseline.",
         ],
         "outcome": {

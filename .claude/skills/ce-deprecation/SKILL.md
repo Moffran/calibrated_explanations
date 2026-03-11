@@ -85,7 +85,7 @@ Add an entry to `docs/migration/deprecations.md`:
 ```markdown
 | Deprecated symbol | Replacement | Introduced | Removal ETA | Notes |
 |---|---|---:|---:|---|
-| `old_param` | `top_features` | v0.11.0 | v0.13.0 | Uses `deprecate()` in `explain_factual`. |
+| `old_param` | `top_features` | v0.9.0 | v0.11.0 | Uses `deprecate()` in `explain_factual`. |
 ```
 
 Also update the status table in `docs/improvement/RELEASE_PLAN_v1.md`.

@@ -72,43 +72,51 @@ assert envelope.policy == RejectPolicy.EXPLAIN_ALL
 - Explanation and prediction entry points now accept `reject_policy`, with non-`NONE` selections implicitly enabling reject orchestration and returning a structured envelope.
 - Explainer defaults (`default_reject_policy`) and wrapper calibration now offer reusable policy configuration, while per-call overrides continue to take precedence.
 
-## NCF selection and the `w` blending parameter
+## NCF selection and the `w` parameter
 
 The non-conformity function (NCF) controls how the reject learner scores each instance.
 Pass `ncf` and `w` via `RejectPolicySpec` or `initialize_reject_learner`. When omitted,
-the framework auto-selects `hinge` (binary/regression) or `margin` (multiclass).
+the framework uses `ncf="default"` (task-dependent internal score).
 
-The `w` parameter blends the chosen NCF with `hinge`: `score = w * hinge + (1-w) * ncf`.
-`w=1.0` gives pure hinge; `w=0.0` is forbidden for non-hinge NCFs.
+Public NCF values are:
+- `default`: internal score is `hinge` for binary + thresholded regression, `margin` for multiclass.
+- `ensured`: blended score
+  `score = (1 - w) * interval_width + w * default_score`.
+
+Legacy `ncf="entropy"` is silently mapped to `ncf="default"` for compatibility.
+Explicit `ncf="hinge"` and `ncf="margin"` are no longer supported.
+
+The `w` parameter is operational only for `ensured`; for `default` it is accepted but ignored.
 
 **Recommended `w` ranges per NCF:**
 
 | NCF | Task | Safe `w` range | Starting point | Notes |
 | --- | ---- | -------------- | -------------- | ----- |
-| `hinge` | Binary / Regression | — | 1.0 | `w` is ignored; always pure hinge |
-| `margin` | Binary / Multiclass | 0.3–0.9 | 0.5 | Safe default for multiclass |
-| `entropy` | Binary / Multiclass | 0.3–0.7 | 0.5 | Sensitive to probability spread; avoid extremes |
-| `ensured` | Binary / Multiclass | 0.1–0.9 | 0.5 | Requires `w > 0.0`; `w < 0.1` warns |
+| `default` | Binary / Multiclass / Regression¹ | — | — | Task-dependent internal score; `w` ignored |
+| `ensured` | Binary / Multiclass / Regression¹ | 0.1–0.9 | 0.5 | Uses blending; requires `w > 0.0`; `w < 0.1` warns |
 
 **Guard rails:**
 
-- `w=0.0` with a non-hinge NCF raises `ValidationError` (class-independent scores, all instances rejected).
-- `w < 0.1` with a non-hinge NCF emits a `UserWarning`.
-- In multiclass mode, `entropy` and `margin` operate on a binarized `[1-p_argmax, p_argmax]`
-  representation, not the full K-class distribution. A `UserWarning` is emitted automatically.
+- `w=0.0` with `ncf='ensured'` raises `ValidationError`.
+- `w < 0.1` with `ncf='ensured'` emits a `UserWarning`.
+- In multiclass mode, `default` uses internal margin scoring.
+
+¹ **Regression requires a threshold.** The reject framework supports regression only when
+a decision threshold is supplied to `initialize_reject_learner(threshold=t)`. The framework
+converts regression into threshold-binarized conformal classification — it models
+`P(y ≤ threshold)` and runs conformal prediction on that binary event. This is **not**
+conformal prediction intervals. Omitting `threshold` for a regression explainer raises
+`ValidationError`.
 
 ```python
 from calibrated_explanations import RejectPolicySpec
 
 # Safe starting configuration for multiclass:
-spec = RejectPolicySpec.flag(ncf="margin", w=0.5)
-
-# Specify entropy with a conservative w:
-spec = RejectPolicySpec.flag(ncf="entropy", w=0.4)
+spec = RejectPolicySpec.flag(ncf="default", w=0.5)
 
 # Check which NCF was selected:
-wrapper.initialize_reject_learner(ncf="entropy", w=0.4)
-print(wrapper.explainer.reject_ncf)             # "entropy"
+wrapper.initialize_reject_learner(ncf="default", w=0.4)
+print(wrapper.explainer.reject_ncf)             # "default"
 print(wrapper.explainer.reject_ncf_auto_selected)  # False
 ```
 
@@ -121,6 +129,32 @@ When a non-`NONE` policy is active the `RejectResult.metadata` dictionary contai
 - `prediction_set_size`: `numpy.ndarray[int]` — Integer size of the prediction set per instance.
 - `epsilon`: `numpy.ndarray[float]` — Per-instance epsilon used when constructing the prediction set.
 
+### Metadata audit semantics (hardened)
+
+Reject-aware wrapped collections expose two denominator scopes:
+
+- `raw_total_examples`: original collection size used by the unsliced reject computation (audit baseline).
+- `sliced_total_examples`: current view length after slicing/indexing.
+
+`raw_reject_counts` always stores canonical sums for the active view:
+
+- `rejected`, `ambiguity_mask`, `novelty_mask` → sum of `True` entries.
+- `prediction_set_size` → numeric sum of per-instance set sizes.
+
+`metadata()` returns a lightweight aggregate view, `metadata_summary()` is an alias to that lightweight view, and `metadata_full()` includes JSON-safe per-instance arrays for the current view.
+
+`RejectPolicySpec` supports canonical user-facing NCF values (`default`, `ensured`)
+and is fully round-trippable via `to_dict()` / `from_dict()`. Legacy `entropy`
+payloads are normalized to `default` on read.
+For custom runtime callables, initialize the reject learner directly rather than
+encoding callables in policy specs.
+
+`resolve_policy_spec(...)` accepts multiple interoperable input forms:
+
+- `RejectPolicySpec` objects,
+- policy dict payloads from `to_dict()`,
+- plain policy values (for legacy compatibility).
+
 Short example:
 
 ```python
@@ -131,6 +165,6 @@ nov = meta.get("novelty_mask")
 sizes = meta.get("prediction_set_size")
 
 print("Ambiguous count:", int(np.sum(ambig)) if ambig is not None else 0)
-print("Uncertain count:", int(np.sum(unc)) if unc is not None else 0)
+print("Novelty count:", int(np.sum(nov)) if nov is not None else 0)
 print("Prediction set sizes sample:", sizes[:10] if sizes is not None else None)
 ```

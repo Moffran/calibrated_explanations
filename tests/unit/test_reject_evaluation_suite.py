@@ -81,7 +81,9 @@ def test_should_mark_multiclass_results_empirical_when_running_scenario_f(
     monkeypatch.setattr(
         scenario_f,
         "task_specs",
-        lambda task_type, quick=False: [spec for spec in task_specs(task_type, quick=True) if spec.name == "iris"],
+        lambda task_type, quick=False: [
+            spec for spec in task_specs(task_type, quick=True) if spec.name == "iris"
+        ],
     )
     monkeypatch.setattr(
         scenario_f,
@@ -124,7 +126,11 @@ def test_should_emit_empirical_columns_when_running_scenario_g(monkeypatch) -> N
 
     table = captured["table"]
     assert captured["prefix"] == "scenario_g_regression_coverage"
-    assert {"accepted_coverage_empirical", "accepted_interval_width_empirical", "accepted_mse_empirical"} <= set(table.columns)
+    assert {
+        "accepted_coverage_empirical",
+        "accepted_interval_width_empirical",
+        "accepted_mse_empirical",
+    } <= set(table.columns)
 
 
 def test_should_compare_primary_and_heuristic_methods_when_running_scenario_k(
@@ -154,8 +160,19 @@ def test_should_compare_primary_and_heuristic_methods_when_running_scenario_k(
 
     table = captured["table"]
     assert captured["prefix"] == "scenario_k_mondrian_regression"
-    assert {"method", "difficulty_estimator", "requested_reject_rate", "empirical_reject_rate", "accepted_coverage", "accepted_interval_width", "accepted_mae", "accepted_mse"} <= set(table.columns)
-    assert {"paper_difficulty_mondrian", "threshold_baseline", "value_bin_width_baseline"} <= set(table["method"])
+    assert {
+        "method",
+        "difficulty_estimator",
+        "requested_reject_rate",
+        "empirical_reject_rate",
+        "accepted_coverage",
+        "accepted_interval_width",
+        "accepted_mae",
+        "accepted_mse",
+    } <= set(table.columns)
+    assert {"paper_difficulty_mondrian", "threshold_baseline", "value_bin_width_baseline"} <= set(
+        table["method"]
+    )
     assert {"target_formal_result", "heuristic"} <= set(table["guarantee_status"])
 
 
@@ -177,10 +194,14 @@ def test_should_use_accept_rate_not_coverage_column_in_scenario_h(monkeypatch) -
 
     table = captured["table"]
     assert "accept_rate" in table.columns, "scenario H must use 'accept_rate' column"
-    assert "coverage" not in table.columns, "scenario H must not use 'coverage' for the accept fraction"
+    assert (
+        "coverage" not in table.columns
+    ), "scenario H must not use 'coverage' for the accept fraction"
 
 
-def test_should_have_non_increasing_accepted_width_for_k1_as_reject_rate_increases(monkeypatch) -> None:
+def test_should_have_non_increasing_accepted_width_for_k1_as_reject_rate_increases(
+    monkeypatch,
+) -> None:
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
@@ -202,7 +223,9 @@ def test_should_have_non_increasing_accepted_width_for_k1_as_reject_rate_increas
     widths = k1["accepted_interval_width"].dropna().tolist()
     if len(widths) >= 2:
         violations = sum(widths[i] < widths[i + 1] - 0.05 for i in range(len(widths) - 1))
-        assert violations == 0, "K1 accepted_interval_width must be non-increasing as reject rate rises"
+        assert (
+            violations == 0
+        ), "K1 accepted_interval_width must be non-increasing as reject rate rises"
 
 
 def test_should_not_claim_proved_guarantee_in_scenario_f_metadata() -> None:
@@ -211,6 +234,6 @@ def test_should_not_claim_proved_guarantee_in_scenario_f_metadata() -> None:
         pytest.skip("scenario_f artifact not present")
     meta = json.loads(json_path.read_text(encoding="utf-8"))
     highlights = " ".join(meta.get("highlights", []))
-    assert "proved" not in highlights.lower() or "formalization target" in highlights.lower(), (
-        "Scenario F metadata must not claim a proved guarantee for multiclass correctness"
-    )
+    assert (
+        "proved" not in highlights.lower() or "formalization target" in highlights.lower()
+    ), "Scenario F metadata must not claim a proved guarantee for multiclass correctness"

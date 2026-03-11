@@ -119,10 +119,9 @@ instance is compared to the calibration set. You can specify the NCF explicitly 
 `RejectPolicySpec` or `initialize_reject_learner(ncf=...)`, or let the framework
 choose automatically.
 
-**Auto-selection rule:**
-
-- `margin` is selected for **multiclass** classification (more than two classes).
-- `hinge` is selected for **binary** classification and regression.
+Public choices are `default` and `ensured`:
+- `default` is task-dependent internal scoring (`margin` for multiclass, `hinge` otherwise).
+- `ensured` uses `score = (1 - w) * interval_width + w * default_score`.
 
 When the NCF is auto-selected, `explainer.reject_ncf_auto_selected` is set to `True`
 and `explainer.reject_ncf` records which NCF was chosen. You can read these attributes
@@ -130,7 +129,7 @@ to understand which NCF was used:
 
 ```python
 wrapper.initialize_reject_learner()          # auto-selects based on task type
-print(wrapper.explainer.reject_ncf)          # e.g. "hinge" or "margin"
+print(wrapper.explainer.reject_ncf)          # "default"
 print(wrapper.explainer.reject_ncf_auto_selected)  # True
 ```
 
@@ -139,33 +138,89 @@ To override the auto-selection, pass `ncf` explicitly:
 ```python
 from calibrated_explanations import RejectPolicySpec
 
-spec = RejectPolicySpec.flag(ncf="entropy", w=0.5)
+spec = RejectPolicySpec.flag(ncf="default", w=0.5)
 result = wrapper.predict(X_new, reject_policy=spec, confidence=0.95)
-print(wrapper.explainer.reject_ncf)           # "entropy"
+print(wrapper.explainer.reject_ncf)           # "default"
 print(wrapper.explainer.reject_ncf_auto_selected)  # False
 ```
 
-**Available NCFs and the `w` blending parameter:**
+**Available NCFs and the `w` parameter:**
 
-The `w` parameter blends the selected NCF with `hinge`. `w=1.0` uses pure hinge;
-lower values increase the weight of the chosen NCF.
+The `w` parameter is operational only for `ensured`:
+`score = (1 - w) * interval_width + w * default_score`.
+For `default`, `w` is accepted for API compatibility but ignored.
 
 | NCF | Binary | Multiclass | Recommended `w` | Notes |
 | --- | ------ | ---------- | --------------- | ----- |
-| `hinge` | Yes | Yes (binarized) | 1.0 | Default for binary; `w` is ignored |
-| `margin` | Yes | Yes (binarized) | 0.5 | Default for multiclass |
-| `entropy` | Yes | Yes (binarized) | 0.3–0.7 | Sensitive to probability spread |
-| `ensured` | Yes | Yes (binarized) | 0.3–0.7 | Requires `w > 0.0`; use `w ≥ 0.1` |
-
-> **Multiclass note:** In multiclass mode, `entropy` and `margin` operate on a
-> *binarized* `(n, 2)` probability matrix `[1 - p_argmax, p_argmax]`, not the full
-> K-class distribution. Scores will differ from the standard full-class entropy or
-> margin definition. A `UserWarning` is emitted when these NCFs are used with a
-> multiclass explainer.
+| `default` | Yes | Yes | — | Internal hinge/margin by task; `w` ignored |
+| `ensured` | Yes | Yes | 0.3–0.7 | Requires `w > 0.0`; use `w ≥ 0.1` |
 >
-> **w=0.0 guard:** Passing `w=0.0` with any non-hinge NCF raises a `ValidationError`
-> because it produces class-independent scores that reject every instance. Values
-> `w < 0.1` emit a `UserWarning`.
+> **w=0.0 guard:** Passing `w=0.0` with `ncf='ensured'` raises a `ValidationError`.
+> Values `w < 0.1` with `ensured` emit a `UserWarning`.
+
+## Regression and the reject framework
+
+> **Important:** The reject framework supports regression **only when a decision threshold
+> is provided**. Conformal prediction intervals for regression (lower/upper bounds on the
+> target value) are a separate CE feature and are **not** available through the reject
+> framework.
+
+### Why a threshold is required
+
+For classification, the reject learner works directly with calibrated class probabilities
+(`predict_proba`). For regression there are no inherent class probabilities, so the
+framework converts the problem into a binary event: *"will the target be below the
+threshold?"* It then applies conformal prediction to that binary event.
+
+Concretely, `initialize_reject_learner(threshold=t)` calls
+`predict_probability(x, y_threshold=t)` to obtain calibrated probabilities
+`P(y ≤ t)`, converts them to a binary matrix `[[1-p, p], ...]`, and fits a conformal
+classifier on those scores. The NCF and rejection logic proceed exactly as for binary
+classification.
+
+If `threshold` is not provided for a regression explainer, a `ValidationError` is raised
+immediately.
+
+### Regression usage example
+
+```python
+import numpy as np
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.core.reject.policy import RejectPolicy
+
+wrapper = WrapCalibratedExplainer(reg_model)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal)
+
+# Threshold is REQUIRED — choose a meaningful decision boundary
+threshold = float(np.median(y_cal))
+wrapper.initialize_reject_learner(threshold=threshold, ncf="default")
+
+result = wrapper.predict(x_test, reject_policy=RejectPolicy.FLAG)
+print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
+```
+
+To use `ensured` NCF with regression:
+
+```python
+wrapper.initialize_reject_learner(threshold=threshold, ncf="ensured", w=0.5)
+```
+
+### What the threshold means
+
+The threshold defines the binary question the conformal classifier answers. Choose it to
+reflect the decision your application cares about — for example:
+
+- Risk scoring: "Will the predicted cost exceed budget X?"
+- Quality control: "Will the output metric fall below acceptable level Y?"
+- Medical triage: "Will the predicted value be in the high-risk range (> Z)?"
+
+Instances where the model is uncertain about the threshold crossing are rejected.
+Instances where the model is confident (singleton prediction set for the binary event)
+are accepted.
+
+> **NCF auto-selection for regression:** When `ncf` is omitted, `default` is selected
+> (internal hinge scoring on the binarized `[1-p, p]` representation).
 
 ## Policy selection advice
 
@@ -206,8 +261,8 @@ When `metadata` is not `None`, it contains the following keys:
 | `reject_rate` | `float` | Proportion of instances rejected |
 | `ambiguity_rate` | `float` | Proportion of instances with ambiguous (multi-label) prediction sets |
 | `novelty_rate` | `float` | Proportion of instances with empty prediction sets |
-| `reject_ncf` | `str` | NCF used for this result (e.g. `"hinge"`, `"entropy"`) |
-| `reject_ncf_w` | `float` | Blend weight `w` for the NCF |
+| `reject_ncf` | `str` | NCF used for this result (`"default"` or `"ensured"`) |
+| `reject_ncf_w` | `float` | Effective/canonical NCF weight (operational for `ensured`) |
 | `reject_ncf_auto_selected` | `bool` | `True` when the NCF was auto-selected (not specified by the caller) |
 | `matched_count` | `int` | Number of instances matched by `ONLY_REJECTED` or `ONLY_ACCEPTED` (0 when subset is empty) |
 | `init_error` | `bool` (optional) | Present and `True` only when reject learner initialization failed |
@@ -364,7 +419,7 @@ set_sizes = meta.get("prediction_set_size")  # integer array
 eps = meta.get("epsilon")  # float array
 
 # Example: indices that are ambiguous but not uncertain
-ambiguous_only = np.where(ambiguity & ~uncertainty)[0]
+ambiguous_only = np.where(ambiguity & ~novelty)[0]
 print("Ambiguous-only indices:", ambiguous_only)
 ```
 

@@ -1,4 +1,10 @@
-"""Reject policy enum for the `core.reject` package."""
+"""Reject policy compatibility exports for the ``core.reject`` package.
+
+This module re-exports :class:`RejectPolicy` and :class:`RejectPolicySpec`.
+For stable serialization of policy specs, prefer ``RejectPolicySpec.to_dict()``
+and ``RejectPolicySpec.from_dict()`` over parsing ``RejectPolicySpec.value``.
+Serialization supports the canonical string NCF values.
+"""
 
 from __future__ import annotations
 

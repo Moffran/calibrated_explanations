@@ -593,7 +593,9 @@ def reject_breakdown(
     """Return the detailed reject breakdown through the supported orchestrator."""
     assert wrapper.explainer is not None
     if getattr(wrapper.explainer, "reject_learner", None) is None:
-        wrapper.initialize_reject_learner(threshold=threshold, ncf=ncf, w=w)
+        wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+            threshold=threshold, ncf=ncf, w=w
+        )
     return wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
         inputs,
         confidence=confidence,

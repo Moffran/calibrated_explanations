@@ -29,7 +29,9 @@ def run(config: RunConfig) -> None:
     for quantile in quantile_grid(config.quick):
         threshold = float(np.quantile(base_bundle.y_cal, quantile))
         bundle = build_regression_bundle(config, seed_offset=int(quantile * 1000))
-        bundle.wrapper.initialize_reject_learner(threshold=threshold)
+        bundle.wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+            threshold=threshold
+        )
         breakdown = bundle.wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
             bundle.x_test,
             confidence=0.95,

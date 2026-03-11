@@ -53,8 +53,8 @@ def test_binary_ce(binary_dataset):
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
     )
 
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test)
+    cal_exp.reject_orchestrator.initialize_reject_learner()
+    cal_exp.reject_orchestrator.predict_reject(x_test)
 
     factual_explanation = cal_exp.explain_guarded_factual(x_test)
     factual_explanation[0].add_new_rule_condition(feature_names[0], x_cal[0, 0])
@@ -114,8 +114,8 @@ def test_multiclass_ce_str_target(multiclass_dataset):
         verbose=True,
     )
 
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test)
+    cal_exp.reject_orchestrator.initialize_reject_learner()
+    cal_exp.reject_orchestrator.predict_reject(x_test)
 
     factual_explanation = cal_exp.explain_guarded_factual(x_test)
     factual_explanation.add_conjunctions()
@@ -166,7 +166,7 @@ def test_binary_ce_str_target(binary_dataset):
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
     )
 
-    cal_exp.initialize_reject_learner()
+    cal_exp.reject_orchestrator.initialize_reject_learner()
     assert cal_exp is not None
     factual_explanation = cal_exp.explain_guarded_factual(x_test)
     factual_explanation[0].add_new_rule_condition(feature_names[0], x_cal[0, 0])
@@ -224,8 +224,8 @@ def test_multiclass_ce(multiclass_dataset):
         verbose=True,
     )
 
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test)
+    cal_exp.reject_orchestrator.initialize_reject_learner()
+    cal_exp.reject_orchestrator.predict_reject(x_test)
 
     cal_exp.predict(x_test)
     cal_exp.predict_proba(x_test)
@@ -337,8 +337,8 @@ def test_binary_conditional_ce(binary_dataset):
         bins=x_cal[:, 0],
     )
 
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test, bins=x_test[:, 0])
+    cal_exp.reject_orchestrator.initialize_reject_learner()
+    cal_exp.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0])
 
     factual_explanation = cal_exp.explain_guarded_factual(x_test, bins=x_test[:, 0])
     factual_explanation.add_conjunctions()

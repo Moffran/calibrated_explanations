@@ -32,7 +32,7 @@ from ..api.params import (
     reject_removed_aliases,
     validate_param_combination,
 )
-from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
+from ..utils import check_is_fitted, deprecate, safe_isinstance  # noqa: F401
 from ..utils.exceptions import (
     DataShapeError,
     IncompatibleStateError,
@@ -746,18 +746,23 @@ class WrapCalibratedExplainer:
     ) -> Any:
         """Initialize the reject learner with a threshold value.
 
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.initialize_reject_learner`` on the
+            calibrated explainer instead. This wrapper will be removed no
+            earlier than v0.13.0.
+
         Parameters
         ----------
         threshold : float or None
             Decision threshold (regression only). Defaults to None.
         ncf : str or None, default None
-            Non-conformity function type: 'hinge' (default), 'ensured'
-            (Venn-Abers interval width), 'entropy' (Shannon entropy), or
-            'margin' (top-two probability gap). When None, auto-selects
-            'margin' for multiclass and 'hinge' otherwise.
+            Non-conformity function type: ``'default'`` or ``'ensured'``.
+            The internal default score is task-dependent (margin for
+            multiclass, hinge for binary/regression). Legacy ``'entropy'``
+            is accepted and mapped to ``'default'``.
         w : float, default 0.5
-            Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge.
-            Ignored when ``ncf='hinge'``.
+            Blending weight in [0, 1] used only when ``ncf='ensured'``.
+            Ignored for ``ncf='default'``.
 
         See Also
         --------
@@ -773,10 +778,28 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        return self.explainer.initialize_reject_learner(threshold=threshold, ncf=ncf, w=w)
+        deprecate(
+            "WrapCalibratedExplainer.initialize_reject_learner is deprecated since v0.11.1; "
+            "use explainer.reject_orchestrator.initialize_reject_learner instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.wrap_explainer."
+                "WrapCalibratedExplainer.initialize_reject_learner_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.explainer.plugin_manager.initialize_orchestrators()
+        return self.explainer.reject_orchestrator.initialize_reject_learner(
+            threshold=threshold, ncf=ncf, w=w
+        )
 
     def predict_reject(self, x: Any, bins: Any = None, confidence: float = 0.95) -> Any:
         """Predict whether to reject the explanations for the test data.
+
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.predict_reject`` on the calibrated
+            explainer instead. This wrapper will be removed no earlier than
+            v0.13.0.
 
         See Also
         --------
@@ -793,7 +816,20 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
+        deprecate(
+            "WrapCalibratedExplainer.predict_reject is deprecated since v0.11.1; "
+            "use explainer.reject_orchestrator.predict_reject instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.wrap_explainer."
+                "WrapCalibratedExplainer.predict_reject_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.explainer.plugin_manager.initialize_orchestrators()
+        return self.explainer.reject_orchestrator.predict_reject(
+            x, bins=bins, confidence=confidence
+        )
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> Any:

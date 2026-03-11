@@ -38,7 +38,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 
 # Core imports (no cross-sibling dependencies)
 from ..calibration.interval_wrappers import is_fast_interval_collection
-from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
+from ..utils import check_is_fitted, convert_targets_to_numeric, deprecate, safe_isinstance
 
 from ..utils.exceptions import (
     DataShapeError,
@@ -2432,26 +2432,38 @@ class CalibratedExplainer:
     ):
         """Initialize the reject learner with a threshold value.
 
-        The reject learner is a :class:`crepes.base.ConformalClassifier`
-        that is trained on the calibration data. The reject learner is used to determine whether a test
-        instance is within the calibration data distribution. The reject learner is only available for
-        classification, unless a threshold is assigned.
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.initialize_reject_learner`` instead.
+            This wrapper will be removed no earlier than v0.13.0.
 
         Parameters
         ----------
         calibration_set : array-like, optional
-            The calibration set to use. Defaults to None.
+            Optional calibration set override.
         threshold : float, optional
-            The threshold value. Defaults to None.
+            Decision threshold (required for regression reject calibration).
         ncf : str or None, default None
-            Non-conformity function type: 'hinge' (default), 'ensured'
-            (Venn-Abers interval width), 'entropy' (Shannon entropy), or
-            'margin' (top-two probability gap). When None, auto-selects
-            'margin' for multiclass and 'hinge' otherwise.
+            Non-conformity function type.
         w : float, default 0.5
-            Hinge weight in [0, 1]. ``w=1.0`` reduces to pure hinge.
-            Ignored when ``ncf='hinge'``.
+            Blending weight used only when ``ncf='ensured'``.
+            Ignored for ``ncf='default'``.
+
+        Returns
+        -------
+        Any
+            The initialized reject learner.
         """
+        deprecate(
+            "CalibratedExplainer.initialize_reject_learner is deprecated since v0.11.1; "
+            "use reject_orchestrator.initialize_reject_learner instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.calibrated_explainer."
+                "CalibratedExplainer.initialize_reject_learner_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.plugin_manager.initialize_orchestrators()
         return self.reject_orchestrator.initialize_reject_learner(
             calibration_set=calibration_set, threshold=threshold, ncf=ncf, w=w
         )
@@ -2459,22 +2471,35 @@ class CalibratedExplainer:
     def predict_reject(self, x, bins=None, confidence=0.95):
         """Predict whether to reject the explanations for the test data.
 
-        Use conformal classifier to identify test instances that may be too different from calibration data.
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.predict_reject`` instead.
+            This wrapper will be removed no earlier than v0.13.0.
 
         Parameters
         ----------
         x : array-like
             The test data.
         bins : array-like, optional
-            Mondrian categories. Defaults to None.
+            Mondrian categories for conditional calibration.
         confidence : float, default=0.95
-            The confidence level.
+            Confidence level used by the reject predictor.
 
         Returns
         -------
-        array-like
-            Returns rejection decisions and error/rejection rates.
+        tuple
+            Rejection decisions and summary rates.
         """
+        deprecate(
+            "CalibratedExplainer.predict_reject is deprecated since v0.11.1; "
+            "use reject_orchestrator.predict_reject instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.calibrated_explainer."
+                "CalibratedExplainer.predict_reject_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.plugin_manager.initialize_orchestrators()
         return self.reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=too-many-branches
@@ -2607,9 +2632,7 @@ class CalibratedExplainer:
         else:
             from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
 
-            reject_policy_kw = resolve_policy_spec(
-                kwargs.pop("reject_policy", None), self
-            )
+            reject_policy_kw = resolve_policy_spec(kwargs.pop("reject_policy", None), self)
             skip_reject_for_internal = False
         try:
             policy = (
@@ -2779,9 +2802,7 @@ class CalibratedExplainer:
         else:
             from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
 
-            reject_policy_kw = resolve_policy_spec(
-                kwargs.pop("reject_policy", None), self
-            )
+            reject_policy_kw = resolve_policy_spec(kwargs.pop("reject_policy", None), self)
             skip_reject_for_internal = False
 
         try:
