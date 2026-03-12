@@ -715,16 +715,17 @@ class CalibratedExplainer:
         # Backward compatibility:
         # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
 
-        from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
+        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+            resolve_effective_reject_policy,
+        )
 
-        candidate_policy = resolve_policy_spec(reject_policy, self)
-        if candidate_policy is None:
-            candidate_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
-
-        try:
-            effective_policy = RejectPolicy(candidate_policy)
-        except Exception:  # adr002_allow
-            effective_policy = RejectPolicy.NONE
+        resolution = resolve_effective_reject_policy(
+            reject_policy,
+            self,
+            default_policy=getattr(self, "default_reject_policy", RejectPolicy.NONE),
+            logger=logging.getLogger(__name__),
+        )
+        effective_policy = resolution.policy
 
         if effective_policy is RejectPolicy.NONE:
             return self.explanation_orchestrator.invoke(
@@ -2624,28 +2625,30 @@ class CalibratedExplainer:
 
         # Resolve reject policy (per-call overrides explainer default)
         from .reject.policy import RejectPolicy as _RejectPolicy
+        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+            resolve_effective_reject_policy,
+        )
 
         # Internal callers may skip reject orchestration by setting this flag
         if kwargs.pop("_ce_skip_reject", False):
-            reject_policy_kw = None
             skip_reject_for_internal = True
+            resolution = None
         else:
-            from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
-
-            reject_policy_kw = resolve_policy_spec(kwargs.pop("reject_policy", None), self)
             skip_reject_for_internal = False
-        try:
-            policy = (
-                _RejectPolicy(reject_policy_kw)
-                if reject_policy_kw is not None
-                else self.default_reject_policy
+            resolution = resolve_effective_reject_policy(
+                kwargs.pop("reject_policy", None),
+                self,
+                default_policy=getattr(self, "default_reject_policy", _RejectPolicy.NONE),
+                logger=logging.getLogger(__name__),
             )
-        except Exception:  # adr002_allow - graceful fallback for invalid reject policy
-            policy = _RejectPolicy.NONE
+        policy = _RejectPolicy.NONE if skip_reject_for_internal else resolution.policy
 
         implicit_default_used = (
-            reject_policy_kw is None and policy is not _RejectPolicy.NONE
-        ) and not skip_reject_for_internal
+            (not skip_reject_for_internal)
+            and resolution is not None
+            and resolution.used_default
+            and policy is not _RejectPolicy.NONE
+        )
 
         # If no reject orchestration requested, proceed with legacy behavior
         if policy is _RejectPolicy.NONE or skip_reject_for_internal:
@@ -2794,29 +2797,31 @@ class CalibratedExplainer:
 
         # Resolve reject policy (per-call override else explainer default)
         from .reject.policy import RejectPolicy as _RejectPolicy
+        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+            resolve_effective_reject_policy,
+        )
 
         # Internal callers may skip reject orchestration by setting this flag
         if kwargs.pop("_ce_skip_reject", False):
-            reject_policy_kw = None
             skip_reject_for_internal = True
+            resolution = None
         else:
-            from .reject.orchestrator import resolve_policy_spec  # pylint: disable=import-outside-toplevel
-
-            reject_policy_kw = resolve_policy_spec(kwargs.pop("reject_policy", None), self)
             skip_reject_for_internal = False
-
-        try:
-            policy = (
-                _RejectPolicy(reject_policy_kw)
-                if reject_policy_kw is not None
-                else self.default_reject_policy
+            resolution = resolve_effective_reject_policy(
+                kwargs.pop("reject_policy", None),
+                self,
+                default_policy=getattr(self, "default_reject_policy", _RejectPolicy.NONE),
+                logger=logging.getLogger(__name__),
             )
-        except Exception:  # adr002_allow - graceful fallback for invalid reject policy
-            policy = _RejectPolicy.NONE
+
+        policy = _RejectPolicy.NONE if skip_reject_for_internal else resolution.policy
 
         implicit_default_used = (
-            reject_policy_kw is None and policy is not _RejectPolicy.NONE
-        ) and not skip_reject_for_internal
+            (not skip_reject_for_internal)
+            and resolution is not None
+            and resolution.used_default
+            and policy is not _RejectPolicy.NONE
+        )
 
         # Helper: compute legacy proba payload for this call
         proba_payload = None

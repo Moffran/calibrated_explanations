@@ -64,6 +64,29 @@ def _resolve_reject_policy_spec(candidate_policy: Any, explainer: Any) -> Any:
     return resolve_policy_spec(candidate_policy, explainer)
 
 
+def _resolve_effective_reject_policy(
+    candidate_policy: Any,
+    explainer: Any,
+    *,
+    default_policy: Any,
+) -> Any:
+    """Resolve effective reject policy with shared fail-fast/fallback semantics."""
+    from ...core.reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+        resolve_effective_reject_policy,
+    )
+
+    if getattr(explainer, "reject_orchestrator", None) is None:
+        plugin_manager = getattr(explainer, "plugin_manager", None)
+        if plugin_manager is not None:
+            plugin_manager.initialize_orchestrators()
+    return resolve_effective_reject_policy(
+        candidate_policy,
+        explainer,
+        default_policy=default_policy,
+        logger=logging.getLogger(__name__),
+    )
+
+
 class ExplanationOrchestrator:
     """Orchestrate explanation pipeline execution and plugin coordination.
 
@@ -336,28 +359,14 @@ class ExplanationOrchestrator:
         from ...core.reject.policy import RejectPolicy
 
         if not _ce_skip_reject:
-            candidate_policy = reject_policy
-            used_default_policy = candidate_policy is None
-            if candidate_policy is None:
-                candidate_policy = getattr(
+            resolution = _resolve_effective_reject_policy(
+                reject_policy,
+                self.explainer,
+                default_policy=getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
-                )
-            try:
-                candidate_policy = _resolve_reject_policy_spec(candidate_policy, self.explainer)
-            except (
-                Exception
-            ):  # adr002_allow - tolerate invalid explainer-level default policy sentinels
-                # Some tests use MagicMock explainers where unknown attributes
-                # resolve to MagicMock sentinels. Treat invalid explainer-level
-                # defaults as NONE, but still fail fast for explicit inputs.
-                if used_default_policy:
-                    candidate_policy = RejectPolicy.NONE
-                else:
-                    raise
-            try:
-                effective_policy = RejectPolicy(candidate_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
+                ),
+            )
+            effective_policy = resolution.policy
 
             if effective_policy is not RejectPolicy.NONE:
                 # Ensure reject orchestrator is available (implicit enable)
@@ -857,11 +866,12 @@ class ExplanationOrchestrator:
             else:
                 from ...core.reject.policy import RejectPolicy
 
-                reject_policy = _resolve_reject_policy_spec(reject_policy, self.explainer)
-                try:
-                    effective_policy = RejectPolicy(reject_policy)
-                except (TypeError, ValueError):
-                    effective_policy = RejectPolicy.NONE
+                resolution = _resolve_effective_reject_policy(
+                    reject_policy,
+                    self.explainer,
+                    default_policy=RejectPolicy.NONE,
+                )
+                effective_policy = resolution.policy
 
                 # Prepare a per-class explain_fn closure that legacy_explain can call
                 def make_explain_fn_for_class(cls_val):
@@ -1050,11 +1060,12 @@ class ExplanationOrchestrator:
             else:
                 from ...core.reject.policy import RejectPolicy
 
-                reject_policy = _resolve_reject_policy_spec(reject_policy, self.explainer)
-                try:
-                    effective_policy = RejectPolicy(reject_policy)
-                except (TypeError, ValueError):
-                    effective_policy = RejectPolicy.NONE
+                resolution = _resolve_effective_reject_policy(
+                    reject_policy,
+                    self.explainer,
+                    default_policy=RejectPolicy.NONE,
+                )
+                effective_policy = resolution.policy
 
                 def make_explain_fn_for_class(cls_val):
                     def _explain_fn(x_subset, **inner_kw):
@@ -1208,16 +1219,14 @@ class ExplanationOrchestrator:
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
-            candidate_policy = reject_policy
-            if candidate_policy is None:
-                candidate_policy = getattr(
+            resolution = _resolve_effective_reject_policy(
+                reject_policy,
+                self.explainer,
+                default_policy=getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
-                )
-            candidate_policy = _resolve_reject_policy_spec(candidate_policy, self.explainer)
-            try:
-                effective_policy = RejectPolicy(candidate_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
+                ),
+            )
+            effective_policy = resolution.policy
             if effective_policy is not RejectPolicy.NONE:
                 with contextlib.suppress(Exception):
                     _ = self.explainer.reject_orchestrator
@@ -1378,16 +1387,14 @@ class ExplanationOrchestrator:
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
-            candidate_policy = reject_policy
-            if candidate_policy is None:
-                candidate_policy = getattr(
+            resolution = _resolve_effective_reject_policy(
+                reject_policy,
+                self.explainer,
+                default_policy=getattr(
                     self.explainer, "default_reject_policy", RejectPolicy.NONE
-                )
-            candidate_policy = _resolve_reject_policy_spec(candidate_policy, self.explainer)
-            try:
-                effective_policy = RejectPolicy(candidate_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
+                ),
+            )
+            effective_policy = resolution.policy
             if effective_policy is not RejectPolicy.NONE:
                 with contextlib.suppress(Exception):
                     _ = self.explainer.reject_orchestrator

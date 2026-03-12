@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from calibrated_explanations.core.reject.orchestrator import resolve_policy_spec
+from calibrated_explanations.core.reject.orchestrator import (
+    resolve_effective_reject_policy,
+    resolve_policy_spec,
+)
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectPolicySpec
 from calibrated_explanations.utils.exceptions import ValidationError
@@ -125,3 +128,40 @@ def test_resolve_policy_spec_rejects_removed_explicit_ncfs(ncf):
     explainer = DummyExplainer()
     with pytest.raises(ValidationError, match="no longer supported"):
         _ = resolve_policy_spec({"policy": "flag", "ncf": ncf, "w": 0.5}, explainer)
+
+
+def test_resolve_effective_reject_policy_uses_explicit_policy():
+    explainer = DummyExplainer()
+    res = resolve_effective_reject_policy(
+        "flag",
+        explainer,
+        default_policy=RejectPolicy.NONE,
+    )
+    assert res.policy is RejectPolicy.FLAG
+    assert res.used_default is False
+    assert res.fallback_used is False
+    assert res.reason is None
+
+
+def test_resolve_effective_reject_policy_invalid_explicit_fails_fast():
+    explainer = DummyExplainer()
+    with pytest.raises(ValidationError, match="Unknown reject policy string"):
+        _ = resolve_effective_reject_policy(
+            "not-a-policy",
+            explainer,
+            default_policy=RejectPolicy.NONE,
+        )
+
+
+def test_resolve_effective_reject_policy_invalid_default_falls_back_with_warning():
+    explainer = DummyExplainer()
+    with pytest.warns(UserWarning, match="Invalid default_reject_policy"):
+        res = resolve_effective_reject_policy(
+            None,
+            explainer,
+            default_policy="not-a-policy",
+        )
+    assert res.policy is RejectPolicy.NONE
+    assert res.used_default is True
+    assert res.fallback_used is True
+    assert res.reason == "invalid_default_reject_policy"

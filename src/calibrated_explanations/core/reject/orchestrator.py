@@ -6,6 +6,7 @@ import inspect
 import logging
 import threading
 import warnings
+from dataclasses import dataclass
 from math import isclose
 from typing import Any
 
@@ -22,6 +23,16 @@ from ...utils.exceptions import ValidationError
 from .policy import RejectPolicy
 
 _VALID_NCF = frozenset({"default", "ensured"})
+
+
+@dataclass(frozen=True)
+class RejectPolicyResolution:
+    """Canonical reject-policy resolution result."""
+
+    policy: RejectPolicy
+    used_default: bool
+    fallback_used: bool
+    reason: str | None = None
 
 
 def _interval_width_score(proba: np.ndarray) -> np.ndarray:
@@ -277,6 +288,55 @@ def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
     raise ValidationError(
         "Failed to resolve reject_policy to a canonical form.",
         details={"input": repr(reject_policy_kw)},
+    )
+
+
+def resolve_effective_reject_policy(
+    reject_policy_kw: Any,
+    explainer: Any,
+    *,
+    default_policy: Any = RejectPolicy.NONE,
+    logger: logging.Logger | None = None,
+) -> RejectPolicyResolution:
+    """Resolve explicit/default reject policy to a canonical effective policy.
+
+    Behavior contract
+    -----------------
+    - Explicit invalid per-call inputs fail fast with ``ValidationError``.
+    - Invalid explainer defaults fall back to ``RejectPolicy.NONE`` and emit
+      both a ``UserWarning`` and an INFO log event.
+    """
+    used_default = reject_policy_kw is None
+    candidate_policy = default_policy if used_default else reject_policy_kw
+    active_logger = logger or logging.getLogger(__name__)
+
+    try:
+        resolved = resolve_policy_spec(candidate_policy, explainer)
+    except ValidationError as exc:
+        if not used_default:
+            raise
+        message = (
+            "Invalid default_reject_policy; falling back to RejectPolicy.NONE."
+        )
+        active_logger.info("%s %s", message, str(exc))
+        warnings.warn(f"{message} {exc!s}", UserWarning, stacklevel=3)
+        return RejectPolicyResolution(
+            policy=RejectPolicy.NONE,
+            used_default=True,
+            fallback_used=True,
+            reason="invalid_default_reject_policy",
+        )
+
+    if resolved is None:
+        resolved_policy = RejectPolicy.NONE
+    else:
+        resolved_policy = RejectPolicy(resolved)
+
+    return RejectPolicyResolution(
+        policy=resolved_policy,
+        used_default=used_default,
+        fallback_used=False,
+        reason=None,
     )
 
 
