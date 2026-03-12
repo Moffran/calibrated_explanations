@@ -37,7 +37,9 @@ def test_reject_collection_pickles_unpickles_with_metadata_intact():
 
     assert isinstance(restored, RejectCalibratedExplanations)
     assert restored.policy == res.policy
-    assert restored.metadata_full().get("raw_reject_counts") == res.metadata_full().get("raw_reject_counts")
+    assert restored.metadata_full().get("raw_reject_counts") == res.metadata_full().get(
+        "raw_reject_counts"
+    )
     assert list(restored.rejected) == list(res.rejected)
 
 

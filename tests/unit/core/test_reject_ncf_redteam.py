@@ -402,6 +402,66 @@ def test_apply_policy_metadata_includes_effective_confidence_and_w(monkeypatch):
     )
 
 
+def test_apply_policy_metadata_includes_source_indices_and_original_count(monkeypatch):
+    """Non-NONE policies expose deterministic source mapping metadata."""
+    _, orchestrator = make_stub(monkeypatch)
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    x = np.array([[0], [1], [2]], dtype=float)
+    res_flag = orchestrator.apply_policy(RejectPolicy.FLAG, x, explain_fn=lambda arr, **_: arr)
+    assert res_flag.metadata["source_indices"] == [0, 1, 2]
+    assert res_flag.metadata["original_count"] == 3
+
+    res_only_rej = orchestrator.apply_policy(
+        RejectPolicy.ONLY_REJECTED,
+        x,
+        explain_fn=lambda arr, **_: arr,
+    )
+    assert res_only_rej.metadata["source_indices"] == [0, 1, 2]
+    assert res_only_rej.metadata["original_count"] == 3
+
+    orchestrator_singletons = make_stub(monkeypatch, singletons=True)[1]
+    res_only_acc = orchestrator_singletons.apply_policy(
+        RejectPolicy.ONLY_ACCEPTED,
+        x,
+        explain_fn=lambda arr, **_: arr,
+    )
+    assert res_only_acc.metadata["source_indices"] == [0, 1, 2]
+    assert res_only_acc.metadata["original_count"] == 3
+
+
+def test_apply_policy_source_indices_follow_reject_mask_for_subset_policies(monkeypatch):
+    """Subset policies must expose source indices that match the full rejected mask."""
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    orchestrator.predict_reject_breakdown = lambda *args, **kwargs: {
+        "rejected": np.array([True, False, True, False]),
+        "error_rate": 0.0,
+        "reject_rate": 0.5,
+        "ambiguity_rate": 0.5,
+        "novelty_rate": 0.0,
+        "ambiguity": np.array([True, False, True, False]),
+        "novelty": np.array([False, False, False, False]),
+        "prediction_set_size": np.array([2, 1, 2, 1]),
+        "prediction_set": np.array([[1, 1], [1, 0], [1, 1], [1, 0]]),
+        "epsilon": 0.05,
+        "raw_total_examples": 4,
+        "raw_reject_counts": {"rejected": 2},
+        "error_rate_defined": True,
+    }
+
+    x = np.array([[0], [1], [2], [3]], dtype=float)
+    only_rej = orchestrator.apply_policy(
+        RejectPolicy.ONLY_REJECTED, x, explain_fn=lambda arr, **_: arr
+    )
+    only_acc = orchestrator.apply_policy(
+        RejectPolicy.ONLY_ACCEPTED, x, explain_fn=lambda arr, **_: arr
+    )
+    assert only_rej.metadata["source_indices"] == [0, 2]
+    assert only_acc.metadata["source_indices"] == [1, 3]
+
+
 # ---------------------------------------------------------------------------
 # MT-4 — sliced RejectCalibratedExplanations recomputes aggregate rates
 # ---------------------------------------------------------------------------
@@ -463,3 +523,74 @@ def test_sliced_reject_rates_recomputed():
     assert abs(meta["novelty_rate"] - 0.0) < 1e-9
     # error_rate_defined must be False after slicing
     assert meta["error_rate_defined"] is False
+
+
+def test_reject_wrapper_raises_on_malformed_source_indices():
+    """Malformed source_indices must fail fast to avoid silent index drift."""
+    from dataclasses import dataclass
+
+    from calibrated_explanations.explanations.reject import (
+        RejectCalibratedExplanations,
+        RejectPolicy,
+    )
+    from calibrated_explanations.utils.exceptions import DataShapeError
+
+    @dataclass
+    class FakeExpl:
+        index: int
+
+    class FakeBase:
+        def __init__(self):
+            self.explanations = [FakeExpl(0), FakeExpl(1)]
+            self.x_test = np.zeros((2, 2))
+            self.y_threshold = None
+            self.bins = None
+            self.calibrated_explainer = SimpleNamespace()
+
+    with pytest.raises(DataShapeError, match="source_indices"):
+        RejectCalibratedExplanations.from_collection(
+            FakeBase(),
+            {
+                "source_indices": [2, 1],  # invalid ordering + out of range
+                "original_count": 2,
+                "ambiguity_mask": np.array([True, False, True, False]),
+            },
+            RejectPolicy.ONLY_ACCEPTED,
+            rejected=np.array([True, False, True, False]),
+        )
+
+
+def test_reject_wrapper_derives_source_indices_when_missing():
+    """Missing source_indices falls back deterministically for subset policies."""
+    from dataclasses import dataclass
+
+    from calibrated_explanations.explanations.reject import (
+        RejectCalibratedExplanations,
+        RejectPolicy,
+    )
+
+    @dataclass
+    class FakeExpl:
+        index: int
+
+    class FakeBase:
+        def __init__(self):
+            self.explanations = [FakeExpl(1), FakeExpl(3)]
+            self.x_test = np.zeros((2, 2))
+            self.y_threshold = None
+            self.bins = None
+            self.calibrated_explainer = SimpleNamespace()
+
+    with pytest.warns(UserWarning, match="missing source_indices"):
+        wrapped = RejectCalibratedExplanations.from_collection(
+            FakeBase(),
+            {
+                "ambiguity_mask": np.array([True, False, True, False]),
+                "novelty_mask": np.array([False, False, False, False]),
+                "prediction_set_size": np.array([2, 1, 2, 1]),
+            },
+            RejectPolicy.ONLY_ACCEPTED,
+            rejected=np.array([True, False, True, False]),
+        )
+    assert wrapped.metadata["source_indices"] == [1, 3]
+    assert len(wrapped.rejected) == len(wrapped.explanations) == 2

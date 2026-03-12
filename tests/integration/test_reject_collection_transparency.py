@@ -26,7 +26,7 @@ def should_return_rejected_collection_subclass_when_explain_factual_called_with_
     w.calibrate(X_cal, y_cal)
 
     # Initialize reject learner to ensure reject logic runs
-    w.initialize_reject_learner()
+    w.explainer.reject_orchestrator.initialize_reject_learner()
 
     X_test = X_cal[:5]
 
@@ -64,3 +64,53 @@ def should_return_rejected_collection_subclass_when_explain_factual_called_with_
         res.plot(show=False)
     except Exception as e:
         pytest.fail(f"plot() failed on RejectCalibratedExplanations: {e}")
+
+
+def test_subset_policy_returns_alignment_safe_reject_wrapper():
+    X, y = make_classification(n_samples=140, n_features=4, random_state=7)
+    X_train, X_cal, y_train, y_cal = train_test_split(X, y, test_size=0.5, random_state=7)
+
+    clf = RandomForestClassifier(n_estimators=12, random_state=7)
+    clf.fit(X_train, y_train)
+
+    w = WrapCalibratedExplainer(clf)
+    w.calibrate(X_cal, y_cal)
+    w.explainer.reject_orchestrator.initialize_reject_learner()
+
+    X_test = X_cal[:10]
+    res = w.explain_factual(X_test, reject_policy=RejectPolicy.ONLY_ACCEPTED)
+    assert isinstance(res, RejectCalibratedExplanations)
+
+    if res.rejected is not None:
+        assert len(res.rejected) == len(res.explanations)
+    if res.ambiguity_mask is not None:
+        assert len(res.ambiguity_mask) == len(res.explanations)
+    if res.novelty_mask is not None:
+        assert len(res.novelty_mask) == len(res.explanations)
+
+    assert "source_indices" in res.metadata
+    assert "original_count" in res.metadata
+    assert res.metadata["original_count"] == 10
+    assert len(res.metadata["source_indices"]) == len(res.explanations)
+
+
+def test_subset_wrapper_indexing_and_slicing_stays_consistent():
+    X, y = make_classification(n_samples=120, n_features=4, random_state=11)
+    X_train, X_cal, y_train, y_cal = train_test_split(X, y, test_size=0.5, random_state=11)
+
+    clf = RandomForestClassifier(n_estimators=10, random_state=11)
+    clf.fit(X_train, y_train)
+
+    w = WrapCalibratedExplainer(clf)
+    w.calibrate(X_cal, y_cal)
+    w.explainer.reject_orchestrator.initialize_reject_learner()
+
+    res = w.explain_factual(X_cal[:8], reject_policy=RejectPolicy.ONLY_REJECTED)
+    assert isinstance(res, RejectCalibratedExplanations)
+
+    if len(res.explanations) > 0:
+        _ = res[0]
+    sliced = res[: min(2, len(res.explanations))]
+    assert isinstance(sliced, RejectCalibratedExplanations)
+    if sliced.rejected is not None:
+        assert len(sliced.rejected) == len(sliced.explanations)

@@ -40,7 +40,7 @@ from ...plugins import (
     validate_explanation_batch,
 )
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
-from ...utils.exceptions import CalibratedError, ConfigurationError
+from ...utils.exceptions import CalibratedError, ConfigurationError, DataShapeError
 from ...utils.int_utils import as_int_array, coerce_to_int
 
 if TYPE_CHECKING:
@@ -85,6 +85,102 @@ def _resolve_effective_reject_policy(
         default_policy=default_policy,
         logger=logging.getLogger(__name__),
     )
+
+
+def _warn_source_index_issue(message: str) -> None:
+    """Emit visible warning and diagnostic log for source-index resolution issues."""
+    logger = logging.getLogger(__name__)
+    logger.info(message)
+    warnings.warn(message, UserWarning, stacklevel=3)
+
+
+def _resolve_source_indices_for_payload(
+    *,
+    policy: Any,
+    metadata: Any,
+    rejected_mask: Any,
+    payload_count: int,
+) -> list[int] | None:
+    """Resolve source indices for reject-filtered payloads.
+
+    Returns ``None`` when a safe mapping cannot be established.
+    """
+    source_indices_raw = None
+    if isinstance(metadata, Mapping):
+        source_indices_raw = metadata.get("source_indices")
+
+    if source_indices_raw is not None:
+        try:
+            idx_arr = np.asarray(source_indices_raw)
+            if idx_arr.ndim != 1 or not np.issubdtype(idx_arr.dtype, np.integer):
+                raise ValueError("source_indices must be a 1D integer sequence")
+            idxs = [int(v) for v in idx_arr.tolist()]
+            if len(idxs) != payload_count:
+                raise ValueError(
+                    f"source_indices length {len(idxs)} does not match payload length {payload_count}"
+                )
+            if any(i < 0 for i in idxs):
+                raise ValueError("source_indices must be non-negative")
+            if len(set(idxs)) != len(idxs):
+                raise ValueError("source_indices must be unique")
+            if any(curr >= nxt for curr, nxt in zip(idxs, idxs[1:], strict=False)):
+                raise ValueError("source_indices must preserve source order")
+            if isinstance(metadata, Mapping) and metadata.get("original_count") is not None:
+                original_count = int(metadata["original_count"])
+                if any(i >= original_count for i in idxs):
+                    raise ValueError(
+                        f"source_indices must be < original_count={original_count}; got {idxs!r}"
+                    )
+            return idxs
+        except (TypeError, ValueError) as exc:
+            _warn_source_index_issue(
+                f"Reject source_indices metadata is invalid ({exc!s}); attempting deterministic fallback."
+            )
+
+    if rejected_mask is None:
+        return list(range(payload_count)) if payload_count == 0 else None
+
+    try:
+        rejected = np.asarray(rejected_mask, dtype=bool).flatten()
+        policy_enum = policy
+        from ...core.reject.policy import RejectPolicy  # pylint: disable=import-outside-toplevel
+
+        if not isinstance(policy_enum, RejectPolicy):
+            policy_enum = RejectPolicy(policy_enum)
+        if policy_enum is RejectPolicy.ONLY_REJECTED:
+            idxs = [i for i, v in enumerate(rejected) if v]
+        elif policy_enum is RejectPolicy.ONLY_ACCEPTED:
+            idxs = [i for i, v in enumerate(rejected) if not v]
+        else:
+            idxs = list(range(len(rejected)))
+        if len(idxs) != payload_count:
+            rejected_idxs = [i for i, v in enumerate(rejected) if v]
+            accepted_idxs = [i for i, v in enumerate(rejected) if not v]
+            if len(rejected_idxs) == payload_count and len(accepted_idxs) != payload_count:
+                _warn_source_index_issue(
+                    "Reject source mapping inferred from rejected subset cardinality."
+                )
+                return rejected_idxs
+            if len(accepted_idxs) == payload_count and len(rejected_idxs) != payload_count:
+                _warn_source_index_issue(
+                    "Reject source mapping inferred from accepted subset cardinality."
+                )
+                return accepted_idxs
+            _warn_source_index_issue(
+                "Unable to map reject payload to source rows: derived fallback indices length "
+                f"{len(idxs)} differs from payload length {payload_count}."
+            )
+            return None
+        _warn_source_index_issue(
+            "Reject result is missing source_indices metadata; using deterministic fallback mapping."
+        )
+        return idxs
+    except (TypeError, ValueError) as exc:
+        _warn_source_index_issue(
+            f"Unable to derive reject source indices from policy/mask ({exc!s}); "
+            "reject context attachment skipped."
+        )
+        return None
 
 
 class ExplanationOrchestrator:
@@ -359,17 +455,11 @@ class ExplanationOrchestrator:
         from ...core.reject.policy import RejectPolicy
 
         if not _ce_skip_reject:
-            confidence = (
-                extras.get("confidence", 0.95)
-                if isinstance(extras, Mapping)
-                else 0.95
-            )
+            confidence = extras.get("confidence", 0.95) if isinstance(extras, Mapping) else 0.95
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
-                default_policy=getattr(
-                    self.explainer, "default_reject_policy", RejectPolicy.NONE
-                ),
+                default_policy=getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE),
             )
             effective_policy = resolution.policy
 
@@ -437,14 +527,21 @@ class ExplanationOrchestrator:
                         else:
                             targets = []
 
-                        # Determine mapping from returned explanations to original indices
-                        if rejected_mask is not None and len(targets) != len(rejected_mask):
-                            # ONLY_REJECTED path: map targets to indices where rejected is True
-                            map_indices = [i for i, r in enumerate(rejected_mask) if r]
-                        else:
-                            map_indices = list(range(len(targets)))
+                        map_indices = _resolve_source_indices_for_payload(
+                            policy=res.policy,
+                            metadata=metadata,
+                            rejected_mask=rejected_mask,
+                            payload_count=len(targets),
+                        )
+                        if map_indices is None:
+                            logging.getLogger(__name__).info(
+                                "Skipping reject_context attachment due to unresolved source mapping."
+                            )
+                            map_indices = []
 
                         for local_idx, global_idx in enumerate(map_indices):
+                            if local_idx >= len(targets):
+                                continue
                             try:
                                 is_rej = (
                                     bool(rejected_mask[global_idx])
@@ -466,9 +563,11 @@ class ExplanationOrchestrator:
                             except (IndexError, TypeError, ValueError):
                                 psize = 1
                             try:
-                                confidence = None if epsilon is None else (1.0 - float(epsilon))
+                                context_confidence = (
+                                    None if epsilon is None else (1.0 - float(epsilon))
+                                )
                             except (TypeError, ValueError):
-                                confidence = None
+                                context_confidence = None
 
                             prediction_set_ref = None
                             try:
@@ -488,7 +587,7 @@ class ExplanationOrchestrator:
                                 rejected=is_rej,
                                 reject_type=rtype,
                                 prediction_set_size=psize,
-                                confidence=confidence,
+                                confidence=context_confidence,
                                 prediction_set_ref=prediction_set_ref,
                             )
                             # attach to the materialised explanation object when possible
@@ -547,7 +646,18 @@ class ExplanationOrchestrator:
                             res.policy,
                             rejected=res.rejected,
                         )
-                    except (AttributeError, CalibratedError, TypeError, ValueError) as exc:
+                    except (
+                        AttributeError,
+                        CalibratedError,
+                        DataShapeError,
+                        TypeError,
+                        ValueError,
+                    ) as exc:
+                        warnings.warn(
+                            "Reject wrapper upgrade skipped due to reject metadata/payload misalignment.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
                         logging.getLogger(__name__).debug(
                             "failed to upgrade to RejectCalibratedExplanations: %s",
                             exc,
@@ -939,20 +1049,16 @@ class ExplanationOrchestrator:
                     if explanation_payload is None:
                         continue
 
-                    # explanation_payload corresponds to either full-length
-                    # explanations (FLAG) or a subset aligned with the rejected/accepted mask.
-                    if rejected_mask is None or len(explanation_payload) == len(x):
-                        # Full-length: assign one-to-one
-                        for i, explanation in enumerate(explanation_payload):
-                            multi_label_explanations[i][int(cls)] = explanation
-                    else:
-                        # Subset mapping: find indices matching the mask
-                        idxs = [i for i, v in enumerate(rejected_mask) if v]
-                        if len(idxs) != len(explanation_payload):
-                            # If policy was ONLY_ACCEPTED, invert mapping
-                            idxs = [i for i, v in enumerate(rejected_mask) if not v]
-                        for j, inst_idx in enumerate(idxs):
-                            multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
+                    idxs = _resolve_source_indices_for_payload(
+                        policy=getattr(res, "policy", effective_policy),
+                        metadata=getattr(res, "metadata", {}),
+                        rejected_mask=rejected_mask,
+                        payload_count=len(explanation_payload),
+                    )
+                    if idxs is None:
+                        continue
+                    for j, inst_idx in enumerate(idxs):
+                        multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
             return MultiClassCalibratedExplanations(
                 self.explainer, x, bins, len(classes), multi_label_explanations
             )
@@ -1135,15 +1241,16 @@ class ExplanationOrchestrator:
                     if explanation_payload is None:
                         continue
 
-                    if rejected_mask is None or len(explanation_payload) == len(x):
-                        for i, explanation in enumerate(explanation_payload):
-                            multi_label_explanations[i][int(cls)] = explanation
-                    else:
-                        idxs = [i for i, v in enumerate(rejected_mask) if v]
-                        if len(idxs) != len(explanation_payload):
-                            idxs = [i for i, v in enumerate(rejected_mask) if not v]
-                        for j, inst_idx in enumerate(idxs):
-                            multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
+                    idxs = _resolve_source_indices_for_payload(
+                        policy=getattr(res, "policy", effective_policy),
+                        metadata=getattr(res, "metadata", {}),
+                        rejected_mask=rejected_mask,
+                        payload_count=len(explanation_payload),
+                    )
+                    if idxs is None:
+                        continue
+                    for j, inst_idx in enumerate(idxs):
+                        multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
             return MultiClassCalibratedExplanations(
                 self.explainer, x, bins, len(classes), multi_label_explanations
             )
@@ -1242,9 +1349,7 @@ class ExplanationOrchestrator:
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
-                default_policy=getattr(
-                    self.explainer, "default_reject_policy", RejectPolicy.NONE
-                ),
+                default_policy=getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE),
             )
             effective_policy = resolution.policy
             if effective_policy is not RejectPolicy.NONE:
@@ -1412,9 +1517,7 @@ class ExplanationOrchestrator:
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
-                default_policy=getattr(
-                    self.explainer, "default_reject_policy", RejectPolicy.NONE
-                ),
+                default_policy=getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE),
             )
             effective_policy = resolution.policy
             if effective_policy is not RejectPolicy.NONE:

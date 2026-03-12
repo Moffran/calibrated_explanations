@@ -349,9 +349,7 @@ def resolve_effective_reject_policy(
     except ValidationError as exc:
         if not used_default:
             raise
-        message = (
-            "Invalid default_reject_policy; falling back to RejectPolicy.NONE."
-        )
+        message = "Invalid default_reject_policy; falling back to RejectPolicy.NONE."
         active_logger.info("%s %s", message, str(exc))
         warnings.warn(f"{message} {exc!s}", UserWarning, stacklevel=3)
         return RejectPolicyResolution(
@@ -983,6 +981,11 @@ class RejectOrchestrator:
         # matched_count records how many instances matched the policy filter;
         # None for FLAG (all instances processed), 0 when subset was empty.
         matched_count = None
+        source_indices: list[int] = list(range(len(rejected)))
+        if policy is RejectPolicy.ONLY_REJECTED:
+            source_indices = [i for i, r in enumerate(rejected) if r]
+        elif policy is RejectPolicy.ONLY_ACCEPTED:
+            source_indices = [i for i, r in enumerate(rejected) if not r]
 
         # Obtain explanations via provided callable according to policy
         if explain_fn is not None:
@@ -992,7 +995,7 @@ class RejectOrchestrator:
                     explanation = explain_fn(x, **kwargs)
                 elif policy is RejectPolicy.ONLY_REJECTED:
                     # Process only rejected instances
-                    idx = [i for i, r in enumerate(rejected) if r]
+                    idx = source_indices
                     matched_count = len(idx)
                     if idx:
                         subset = (
@@ -1003,7 +1006,7 @@ class RejectOrchestrator:
                         explanation = None
                 elif policy is RejectPolicy.ONLY_ACCEPTED:
                     # Process only non-rejected (accepted) instances
-                    idx = [i for i, r in enumerate(rejected) if not r]
+                    idx = source_indices
                     matched_count = len(idx)
                     if idx:
                         subset = (
@@ -1046,6 +1049,8 @@ class RejectOrchestrator:
             "reject_ncf_auto_selected": getattr(self.explainer, "reject_ncf_auto_selected", None),
             # How many instances matched the policy filter (None for FLAG, 0 when empty)
             "matched_count": matched_count,
+            "source_indices": source_indices,
+            "original_count": int(len(rejected)),
             "effective_confidence": confidence,
             "effective_w": validate_reject_w(
                 getattr(self.explainer, "reject_ncf_w", 0.0)

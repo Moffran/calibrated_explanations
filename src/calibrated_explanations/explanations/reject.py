@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
@@ -681,6 +683,133 @@ def _lightweight_reject_metadata(metadata: Dict[str, Any] | None) -> Dict[str, A
     return normalized
 
 
+def _resolve_source_indices_for_wrapper(
+    *,
+    policy: RejectPolicy,
+    metadata: Dict[str, Any] | None,
+    rejected: np.ndarray | None,
+    payload_count: int,
+) -> np.ndarray:
+    """Resolve a strict source-index mapping for wrapper alignment.
+
+    Raises
+    ------
+    DataShapeError
+        If a safe, deterministic source mapping cannot be established.
+    """
+    logger = logging.getLogger(__name__)
+    source_raw = (metadata or {}).get("source_indices")
+    if source_raw is not None:
+        idx_arr = np.asarray(source_raw)
+        if idx_arr.ndim != 1 or not np.issubdtype(idx_arr.dtype, np.integer):
+            raise DataShapeError(
+                "source_indices must be a one-dimensional integer sequence",
+                details={"source_indices_type": type(source_raw).__name__},
+            )
+        idxs = idx_arr.astype(int, copy=False)
+        if len(idxs) != payload_count:
+            raise DataShapeError(
+                "source_indices length mismatch for filtered reject payload",
+                details={
+                    "source_indices_len": int(len(idxs)),
+                    "payload_count": int(payload_count),
+                },
+            )
+        if np.any(idxs < 0):
+            raise DataShapeError(
+                "source_indices must be non-negative",
+                details={"source_indices": idxs.tolist()},
+            )
+        if len(set(idxs.tolist())) != len(idxs):
+            raise DataShapeError(
+                "source_indices must be unique",
+                details={"source_indices": idxs.tolist()},
+            )
+        if np.any(np.diff(idxs) <= 0):
+            raise DataShapeError(
+                "source_indices must preserve source ordering",
+                details={"source_indices": idxs.tolist()},
+            )
+        original_count = (metadata or {}).get("original_count")
+        if original_count is not None:
+            original_count_int = int(original_count)
+            if np.any(idxs >= original_count_int):
+                raise DataShapeError(
+                    "source_indices must be < original_count",
+                    details={
+                        "source_indices": idxs.tolist(),
+                        "original_count": original_count_int,
+                    },
+                )
+        return np.array(idxs, copy=True)
+
+    if rejected is None:
+        if payload_count == 0:
+            return np.array([], dtype=int)
+        raise DataShapeError(
+            "Cannot align filtered reject payload without source_indices metadata or rejected mask.",
+            details={"payload_count": int(payload_count), "policy": policy.value},
+        )
+
+    rejected_arr = np.asarray(rejected, dtype=bool)
+    if policy is RejectPolicy.FLAG:
+        idxs = np.arange(len(rejected_arr), dtype=int)
+    elif policy is RejectPolicy.ONLY_REJECTED:
+        idxs = np.flatnonzero(rejected_arr)
+    elif policy is RejectPolicy.ONLY_ACCEPTED:
+        idxs = np.flatnonzero(~rejected_arr)
+    else:
+        idxs = np.arange(len(rejected_arr), dtype=int)
+
+    if len(idxs) != payload_count:
+        raise DataShapeError(
+            "Cannot derive deterministic source_indices from policy/rejected mask.",
+            details={
+                "derived_len": int(len(idxs)),
+                "payload_count": int(payload_count),
+                "policy": policy.value,
+            },
+        )
+    warnings.warn(
+        "Reject result is missing source_indices metadata; derived mapping from policy/rejected mask.",
+        UserWarning,
+        stacklevel=3,
+    )
+    logger.info("Derived source_indices fallback for reject wrapper alignment.")
+    return np.array(idxs, dtype=int)
+
+
+def _align_reject_field_to_payload(
+    *,
+    name: str,
+    value: Any,
+    payload_count: int,
+    source_indices: np.ndarray,
+    ensure_dtype: Any | None = None,
+) -> np.ndarray | None:
+    """Align a reject per-instance field to payload length using source indices."""
+    arr = _copy_array_or_none(value, ensure_dtype=ensure_dtype)
+    if arr is None:
+        return None
+    if arr.ndim == 0:
+        raise DataShapeError(
+            f"Reject field '{name}' is scalar and cannot be aligned.",
+            details={"field": name},
+        )
+    if len(arr) == payload_count:
+        return arr
+    if np.any(source_indices >= len(arr)):
+        raise DataShapeError(
+            f"Reject field '{name}' is shorter than source_indices require.",
+            details={
+                "field": name,
+                "field_length": int(len(arr)),
+                "max_source_index": int(np.max(source_indices)) if len(source_indices) else -1,
+            },
+        )
+    return np.array(arr[source_indices], copy=True)
+
+
 def _prune_unpickleable_state(state: dict[str, Any]) -> dict[str, Any]:
     """Prune runtime-only, heavy, or unpicklable attributes before pickling."""
     prune_keys = {
@@ -716,21 +845,57 @@ class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
         obj.calibrated_explainer = getattr(base, "calibrated_explainer", None)
         obj.explanations = base.explanations
         obj.policy = policy
-        obj.rejected = _copy_array_or_none(rejected, ensure_dtype=bool)
+        rejected_arr = _copy_array_or_none(rejected, ensure_dtype=bool)
+        payload_count = int(len(base.explanations))
+        source_indices = _resolve_source_indices_for_wrapper(
+            policy=policy,
+            metadata=metadata,
+            rejected=rejected_arr,
+            payload_count=payload_count,
+        )
+        obj.rejected = _align_reject_field_to_payload(
+            name="rejected",
+            value=rejected_arr,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=bool,
+        )
         # Stash the raw metadata
         obj._metadata = _lightweight_reject_metadata(metadata)
+        obj._metadata["source_indices"] = source_indices.tolist()
+        if metadata and metadata.get("original_count") is not None:
+            obj._metadata["original_count"] = int(metadata["original_count"])
+        elif rejected_arr is not None:
+            obj._metadata["original_count"] = int(len(rejected_arr))
+        else:
+            obj._metadata["original_count"] = int(payload_count)
         # Unpack masks to fields for slicing
-        obj.ambiguity_mask = _copy_array_or_none(
-            metadata.get("ambiguity_mask") if metadata else None, ensure_dtype=bool
+        obj.ambiguity_mask = _align_reject_field_to_payload(
+            name="ambiguity_mask",
+            value=metadata.get("ambiguity_mask") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=bool,
         )
-        obj.novelty_mask = _copy_array_or_none(
-            metadata.get("novelty_mask") if metadata else None, ensure_dtype=bool
+        obj.novelty_mask = _align_reject_field_to_payload(
+            name="novelty_mask",
+            value=metadata.get("novelty_mask") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=bool,
         )
-        obj.prediction_set_size = _copy_array_or_none(
-            metadata.get("prediction_set_size") if metadata else None, ensure_dtype=int
+        obj.prediction_set_size = _align_reject_field_to_payload(
+            name="prediction_set_size",
+            value=metadata.get("prediction_set_size") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=int,
         )
-        obj.prediction_set = _copy_array_or_none(
-            metadata.get("prediction_set") if metadata else None
+        obj.prediction_set = _align_reject_field_to_payload(
+            name="prediction_set",
+            value=metadata.get("prediction_set") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
         )
         obj.epsilon = metadata.get("epsilon") if metadata else None
         for name in ("x_cal", "_X_cal", "scaled_x_cal", "fast_x_cal", "scaled_y_cal"):
@@ -803,11 +968,14 @@ class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
         if isinstance(new_inst, RejectCalibratedExplanations):
             new_inst._slice_reject_fields(key, source=self)
             return new_inst
+        rejected_for_wrap = None
+        if self.rejected is not None:
+            rejected_for_wrap = np.asarray(self.rejected)[key]
         wrapped = RejectCalibratedExplanations.from_collection(
             new_inst,
-            dict(self._metadata or {}),
+            {},
             self.policy,
-            rejected=self.rejected,
+            rejected=rejected_for_wrap,
         )
         wrapped._slice_reject_fields(key, source=self)
         return wrapped
@@ -829,19 +997,55 @@ class RejectAlternativeExplanations(AlternativeExplanations, RejectMixin):
         obj.initialize_reject_metadata()
         _copy_collection_attributes(obj, base)
         obj.policy = policy
-        obj.rejected = _copy_array_or_none(rejected, ensure_dtype=bool)
+        rejected_arr = _copy_array_or_none(rejected, ensure_dtype=bool)
+        payload_count = int(len(base.explanations))
+        source_indices = _resolve_source_indices_for_wrapper(
+            policy=policy,
+            metadata=metadata,
+            rejected=rejected_arr,
+            payload_count=payload_count,
+        )
+        obj.rejected = _align_reject_field_to_payload(
+            name="rejected",
+            value=rejected_arr,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=bool,
+        )
         obj._metadata = _lightweight_reject_metadata(metadata)
-        obj.ambiguity_mask = _copy_array_or_none(
-            metadata.get("ambiguity_mask") if metadata else None, ensure_dtype=bool
+        obj._metadata["source_indices"] = source_indices.tolist()
+        if metadata and metadata.get("original_count") is not None:
+            obj._metadata["original_count"] = int(metadata["original_count"])
+        elif rejected_arr is not None:
+            obj._metadata["original_count"] = int(len(rejected_arr))
+        else:
+            obj._metadata["original_count"] = int(payload_count)
+        obj.ambiguity_mask = _align_reject_field_to_payload(
+            name="ambiguity_mask",
+            value=metadata.get("ambiguity_mask") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=bool,
         )
-        obj.novelty_mask = _copy_array_or_none(
-            metadata.get("novelty_mask") if metadata else None, ensure_dtype=bool
+        obj.novelty_mask = _align_reject_field_to_payload(
+            name="novelty_mask",
+            value=metadata.get("novelty_mask") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=bool,
         )
-        obj.prediction_set_size = _copy_array_or_none(
-            metadata.get("prediction_set_size") if metadata else None, ensure_dtype=int
+        obj.prediction_set_size = _align_reject_field_to_payload(
+            name="prediction_set_size",
+            value=metadata.get("prediction_set_size") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
+            ensure_dtype=int,
         )
-        obj.prediction_set = _copy_array_or_none(
-            metadata.get("prediction_set") if metadata else None
+        obj.prediction_set = _align_reject_field_to_payload(
+            name="prediction_set",
+            value=metadata.get("prediction_set") if metadata else None,
+            payload_count=payload_count,
+            source_indices=source_indices,
         )
         obj.epsilon = metadata.get("epsilon") if metadata else None
         return cast(RejectAlternativeExplanations, obj)
@@ -906,11 +1110,14 @@ class RejectAlternativeExplanations(AlternativeExplanations, RejectMixin):
         if isinstance(new_inst, RejectAlternativeExplanations):
             new_inst._slice_reject_fields(key, source=self)
             return new_inst
+        rejected_for_wrap = None
+        if self.rejected is not None:
+            rejected_for_wrap = np.asarray(self.rejected)[key]
         wrapped = RejectAlternativeExplanations.from_collection(
             new_inst,
-            dict(self._metadata or {}),
+            {},
             self.policy,
-            rejected=self.rejected,
+            rejected=rejected_for_wrap,
         )
         wrapped._slice_reject_fields(key, source=self)
         return wrapped

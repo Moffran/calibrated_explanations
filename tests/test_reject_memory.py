@@ -30,7 +30,9 @@ def test_calibration_set_reused_not_duplicated():
     )
 
     assert wrapped.calibrated_explainer is base.calibrated_explainer
-    assert id(wrapped.calibrated_explainer.x_cal) == id(base.calibrated_explainer.x_cal) or np.shares_memory(
+    assert id(wrapped.calibrated_explainer.x_cal) == id(
+        base.calibrated_explainer.x_cal
+    ) or np.shares_memory(
         wrapped.calibrated_explainer.x_cal,
         base.calibrated_explainer.x_cal,
     )

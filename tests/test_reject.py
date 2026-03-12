@@ -47,7 +47,9 @@ def test_from_collection_no_aliasing():
         "raw_reject_counts": {"rejected": 10, "ambiguity_mask": 10, "novelty_mask": 0},
     }
 
-    wrapped = RejectCalibratedExplanations.from_collection(base, metadata, RejectPolicy.FLAG, rejected)
+    wrapped = RejectCalibratedExplanations.from_collection(
+        base, metadata, RejectPolicy.FLAG, rejected
+    )
     rejected[0] = False
 
     assert isinstance(wrapped, RejectCalibratedExplanations)
@@ -67,7 +69,9 @@ def test_from_collection_merges_legacy_raw_count_alias():
         "prediction_set_size": np.array([1, 0, 1, 1, 1, 0]),
     }
 
-    wrapped = RejectCalibratedExplanations.from_collection(base, metadata, RejectPolicy.FLAG, rejected)
+    wrapped = RejectCalibratedExplanations.from_collection(
+        base, metadata, RejectPolicy.FLAG, rejected
+    )
     counts = wrapped.metadata["raw_reject_counts"]
     assert counts["rejected"] == 3
     assert counts["novelty_mask"] == 1
@@ -333,7 +337,13 @@ def test_metadata_is_lightweight():
     res = wrapper.explain_factual(x_query, reject_policy=RejectPolicy.FLAG)
     meta = res.metadata
 
-    heavy_keys = {"ambiguity_mask", "novelty_mask", "prediction_set_size", "rejected", "prediction_set"}
+    heavy_keys = {
+        "ambiguity_mask",
+        "novelty_mask",
+        "prediction_set_size",
+        "rejected",
+        "prediction_set",
+    }
     assert heavy_keys.isdisjoint(meta.keys())
 
 

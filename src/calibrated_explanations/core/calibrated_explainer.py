@@ -739,11 +739,7 @@ class CalibratedExplainer:
             )
 
         # Policy enabled: ensure reject orchestration and delegate via RejectOrchestrator
-        confidence = (
-            extras.get("confidence", 0.95)
-            if isinstance(extras, Mapping)
-            else 0.95
-        )
+        confidence = extras.get("confidence", 0.95) if isinstance(extras, Mapping) else 0.95
 
         def _explain_fn(x_subset, **kw):
             return self.explanation_orchestrator.invoke(

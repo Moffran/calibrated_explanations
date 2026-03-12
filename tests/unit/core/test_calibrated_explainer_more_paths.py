@@ -270,3 +270,98 @@ def test_invalid_confidence_rejected_across_predict_and_explain(bad_confidence):
         cal_exp.explain_factual(
             x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence
         )
+
+
+def test_reject_context_uses_source_indices_for_only_accepted(monkeypatch):
+    dataset = make_binary_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
+
+    class DummyExplanation:
+        def __init__(self, name):
+            self.name = name
+            self.reject_context = None
+
+    payload = [DummyExplanation("accepted-1"), DummyExplanation("accepted-3")]
+
+    def fake_apply_policy(policy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+        return RejectResult(
+            prediction=None,
+            explanation=payload,
+            rejected=np.array([True, False, True, False]),
+            policy=RejectPolicy.ONLY_ACCEPTED,
+            metadata={
+                "source_indices": [1, 3],
+                "original_count": 4,
+                "prediction_set_size": np.array([2, 1, 2, 1]),
+                "ambiguity_mask": np.array([True, False, True, False]),
+                "novelty_mask": np.array([False, False, False, False]),
+                "epsilon": 0.05,
+            },
+        )
+
+    monkeypatch.setattr(cal_exp.reject_orchestrator, "apply_policy", fake_apply_policy)
+
+    result = cal_exp.explain_factual(x_test[:4], reject_policy=RejectPolicy.ONLY_ACCEPTED)
+    assert isinstance(result, RejectResult)
+    assert result.explanation[0].reject_context.rejected is False
+    assert result.explanation[1].reject_context.rejected is False
+
+
+def test_reject_context_fallback_mapping_warns_when_source_indices_missing(monkeypatch):
+    dataset = make_binary_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
+
+    class DummyExplanation:
+        def __init__(self):
+            self.reject_context = None
+
+    payload = [DummyExplanation(), DummyExplanation()]
+
+    def fake_apply_policy(policy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+        return RejectResult(
+            prediction=None,
+            explanation=payload,
+            rejected=np.array([True, False, True, False]),
+            policy=RejectPolicy.ONLY_REJECTED,
+            metadata={},
+        )
+
+    monkeypatch.setattr(cal_exp.reject_orchestrator, "apply_policy", fake_apply_policy)
+
+    with pytest.warns(UserWarning, match="missing source_indices"):
+        result = cal_exp.explain_factual(x_test[:4], reject_policy=RejectPolicy.ONLY_REJECTED)
+    assert isinstance(result, RejectResult)
+    assert result.explanation[0].reject_context.rejected is True
+    assert result.explanation[1].reject_context.rejected is True
