@@ -40,7 +40,7 @@ missed_payments (3) > 2 — weight ≈ -0.201 [-0.334, -0.068]
 ```
 
 - The **Prediction Interval** `[0.710, 0.930]` shows the calibrated uncertainty range — narrow means high confidence, wide (e.g., `[0.12, 0.89]`) means the model is uncertain and the decision should be treated with caution.
-- Each **factor line** shows the observed value, the matching rule condition, the signed weight (positive = pushes toward the predicted class), and the **weight's own uncertainty interval** — all computed from calibrated probabilities, not raw model scores.
+- Each **factor line** shows the observed value, the matching rule condition, the signed weight (positive = pushes toward the predicted class), and the **endpoint envelope describing the prediction boundary shift** — all computed from calibrated probabilities, not raw model scores.
 
 Calling `alt[0].to_narrative(output_format="text", expertise_level="advanced")` on the result of `explore_alternatives` shows what needs to change to flip or reinforce the decision, with each alternative backed by a calibrated interval:
 

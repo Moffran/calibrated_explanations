@@ -59,8 +59,8 @@ class RuleWithImpact:
     base_predict: float
     predict: float
     value: Any
-    uncertainty_low: Optional[float] = None
-    uncertainty_high: Optional[float] = None
+    weight_envelope_low: Optional[float] = None
+    weight_envelope_high: Optional[float] = None
     predict_low: Optional[float] = None
     predict_high: Optional[float] = None
 
@@ -1703,7 +1703,7 @@ class FactualExplanation(CalibratedExplanation):
 
         for r in canonical_rules:
             output.append(
-                f"{str(r.value):6}: {r.text:40s} {r.impact:>6.3f} [{r.uncertainty_low:>6.3f}, {r.uncertainty_high:>6.3f}]"
+                f"{str(r.value):6}: {r.text:40s} {r.impact:>6.3f} [{r.weight_envelope_low:>6.3f}, {r.weight_envelope_high:>6.3f}]"
             )
         return "\n".join(output) + "\n"
 
@@ -1885,8 +1885,8 @@ class FactualExplanation(CalibratedExplanation):
                     else float("nan"),
                     predict=float(prediction),
                     value=rules_dict["value"][i],
-                    uncertainty_low=float(rules_dict["weight_low"][i]),
-                    uncertainty_high=float(rules_dict["weight_high"][i]),
+                    weight_envelope_low=float(rules_dict["weight_low"][i]),
+                    weight_envelope_high=float(rules_dict["weight_high"][i]),
                     predict_low=float(rules_dict["predict_low"][i]),
                     predict_high=float(rules_dict["predict_high"][i]),
                 )
@@ -2653,8 +2653,8 @@ class AlternativeExplanation(CalibratedExplanation):
                     base_predict=float(base_predict_value),
                     predict=float(rules_dict["predict"][i]),  # Alternative prediction
                     value=rules_dict["value"][i],
-                    uncertainty_low=float(rules_dict["weight_low"][i]),
-                    uncertainty_high=float(rules_dict["weight_high"][i]),
+                    weight_envelope_low=float(rules_dict["weight_low"][i]),
+                    weight_envelope_high=float(rules_dict["weight_high"][i]),
                     predict_low=float(rules_dict["predict_low"][i]),
                     predict_high=float(rules_dict["predict_high"][i]),
                 )
@@ -4222,7 +4222,7 @@ class FastExplanation(CalibratedExplanation):
             uncertainty : bool, default=False
                 The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
                 intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-                range of possible feature weights based on the lower and upper bounds of the uncertainty
+                envelope of possible boundary shifts based on the lower and upper bounds of the uncertainty
                 intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
             style : str, default='regular'
                 The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FastExplanation`:

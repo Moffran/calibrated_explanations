@@ -359,10 +359,7 @@ def resolve_effective_reject_policy(
             reason="invalid_default_reject_policy",
         )
 
-    if resolved is None:
-        resolved_policy = RejectPolicy.NONE
-    else:
-        resolved_policy = RejectPolicy(resolved)
+    resolved_policy = RejectPolicy.NONE if resolved is None else RejectPolicy(resolved)
 
     return RejectPolicyResolution(
         policy=resolved_policy,

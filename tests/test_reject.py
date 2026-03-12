@@ -19,6 +19,8 @@ from calibrated_explanations.explanations.reject import (
     RejectContext,
     RejectPolicySpec,
     RejectResult,
+    _align_reject_field_to_payload,
+    _resolve_source_indices_for_wrapper,
 )
 from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 
@@ -188,6 +190,48 @@ def test_reject_getitem_wraps_plain_collection_result(monkeypatch):
     assert isinstance(wrapped, RejectCalibratedExplanations)
     assert wrapped.policy is reject_res.policy
     assert "raw_reject_counts" in wrapped.metadata
+
+
+def test_resolve_source_indices_for_wrapper_accepts_valid_metadata():
+    idxs = _resolve_source_indices_for_wrapper(
+        policy=RejectPolicy.ONLY_ACCEPTED,
+        metadata={"source_indices": [1, 3], "original_count": 4},
+        rejected=np.array([True, False, True, False]),
+        payload_count=2,
+    )
+    np.testing.assert_array_equal(idxs, np.array([1, 3]))
+
+
+def test_resolve_source_indices_for_wrapper_fallback_from_rejected_mask_warns():
+    with pytest.warns(UserWarning, match="missing source_indices"):
+        idxs = _resolve_source_indices_for_wrapper(
+            policy=RejectPolicy.ONLY_REJECTED,
+            metadata={},
+            rejected=np.array([True, False, True, False]),
+            payload_count=2,
+        )
+    np.testing.assert_array_equal(idxs, np.array([0, 2]))
+
+
+def test_align_reject_field_to_payload_slices_by_source_indices():
+    aligned = _align_reject_field_to_payload(
+        name="ambiguity_mask",
+        value=np.array([True, False, True, False]),
+        payload_count=2,
+        source_indices=np.array([1, 3]),
+        ensure_dtype=bool,
+    )
+    np.testing.assert_array_equal(aligned, np.array([False, False]))
+
+
+def test_resolve_source_indices_for_wrapper_raises_without_mapping_or_mask():
+    with pytest.raises(DataShapeError, match="Cannot align filtered reject payload"):
+        _resolve_source_indices_for_wrapper(
+            policy=RejectPolicy.ONLY_ACCEPTED,
+            metadata={},
+            rejected=None,
+            payload_count=1,
+        )
 
 
 def test_clear_reject_arrays_can_drop_summary_metadata():

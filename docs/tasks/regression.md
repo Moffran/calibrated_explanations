@@ -50,4 +50,4 @@ explanation = explainer.explain_factual(
 ## Key semantics
 
 * **Prediction Interval:** The interval returned by `predict(..., uq_interval=True)` is the conformal interval derived from the CPS.
-* **Rule Intervals:** The uncertainty bounds on feature weights in `explain_factual` rules are also derived from the underlying CPS calibration.
+* **Rule Intervals:** The explanation envelopes on feature weights in `explain_factual` rules are also derived from the underlying CPS calibration.

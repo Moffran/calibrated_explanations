@@ -34,7 +34,7 @@ narrative_templates:
 
 - `beginner` - Simple language, minimal details
 - `intermediate` - Includes weights and prediction intervals
-- `advanced` - Full weight intervals and uncertainty bounds
+- `advanced` - Full weight intervals and explanation envelopes
 
 ## Available Placeholders
 

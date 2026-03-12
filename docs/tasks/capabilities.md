@@ -76,7 +76,7 @@ See the ADR-021 formal semantics on GitHub:
 
 ### Factual Explanations
 
-**What it is**: Rule-based explanations showing why the model made its prediction. Each feature contribution includes uncertainty bounds reflecting calibration quality.
+**What it is**: Rule-based explanations showing why the model made its prediction. Each feature contribution includes explanation envelopes reflecting calibration quality.
 
 **API**: `explain_factual(x)` returns `CalibratedExplanation` with rules and weights
 

@@ -27,7 +27,7 @@ print(f"Probability: {probs[0, 1]:.3f} (Interval: {low[0, 1]:.3f} – {high[0, 1
 
 ### 2. Factual explanation
 
-Returns the rules explaining *why* the model made this prediction, with epistemic and aleatoric uncertainty bounds on the feature weights.
+Returns the rules explaining *why* the model made this prediction, with epistemic and aleatoric explanation envelopes on the feature weights.
 
 ```python
 explanation = explainer.explain_factual(x_test)

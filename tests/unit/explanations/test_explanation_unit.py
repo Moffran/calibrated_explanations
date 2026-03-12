@@ -352,8 +352,8 @@ class TestRuleWithImpact:
             base_predict=0.8,
             predict=2.0,
             value="> 0.5",
-            uncertainty_low=1.0,
-            uncertainty_high=1.4,
+            weight_envelope_low=1.0,
+            weight_envelope_high=1.4,
             predict_low=1.8,
             predict_high=2.2,
         )
@@ -366,8 +366,8 @@ class TestRuleWithImpact:
         assert rule.base_predict == 0.8
         assert rule.predict == 2.0
         assert rule.value == "> 0.5"
-        assert rule.uncertainty_low == 1.0
-        assert rule.uncertainty_high == 1.4
+        assert rule.weight_envelope_low == 1.0
+        assert rule.weight_envelope_high == 1.4
         assert rule.predict_low == 1.8
         assert rule.predict_high == 2.2
 
@@ -386,8 +386,8 @@ class TestRuleWithImpact:
             value="<= 0.3",
         )
 
-        assert rule.uncertainty_low is None
-        assert rule.uncertainty_high is None
+        assert rule.weight_envelope_low is None
+        assert rule.weight_envelope_high is None
         assert rule.predict_low is None
         assert rule.predict_high is None
 
@@ -405,8 +405,8 @@ def test_rule_with_impact_dataclass():
         base_predict=1.0,
         predict=2.0,
         value="> 0.5",
-        uncertainty_low=1.0,
-        uncertainty_high=1.4,
+        weight_envelope_low=1.0,
+        weight_envelope_high=1.4,
         predict_low=1.8,
         predict_high=2.2,
     )
@@ -419,7 +419,7 @@ def test_rule_with_impact_dataclass():
     assert rule.base_predict == 1.0
     assert rule.predict == 2.0
     assert rule.value == "> 0.5"
-    assert rule.uncertainty_low == 1.0
-    assert rule.uncertainty_high == 1.4
+    assert rule.weight_envelope_low == 1.0
+    assert rule.weight_envelope_high == 1.4
     assert rule.predict_low == 1.8
     assert rule.predict_high == 2.2

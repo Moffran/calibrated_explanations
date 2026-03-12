@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+from calibrated_explanations.core.explain.orchestrator import _resolve_source_indices_for_payload
 from calibrated_explanations.explanations.explanations import MultiClassCalibratedExplanations
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectResult
@@ -107,3 +109,35 @@ def test_per_class_only_accepted_mapping_uses_source_indices():
     assert set(coll.explanations[3].keys()) == {0, 1, 2}
     assert coll.explanations[0] == {}
     assert coll.explanations[2] == {}
+
+
+def test_resolve_source_indices_prefers_metadata():
+    idxs = _resolve_source_indices_for_payload(
+        policy=RejectPolicy.ONLY_ACCEPTED,
+        metadata={"source_indices": [1, 3], "original_count": 4},
+        rejected_mask=np.array([True, False, True, False]),
+        payload_count=2,
+    )
+    assert idxs == [1, 3]
+
+
+def test_resolve_source_indices_fallback_from_mask_when_missing_metadata():
+    with pytest.warns(UserWarning, match="missing source_indices"):
+        idxs = _resolve_source_indices_for_payload(
+            policy=RejectPolicy.ONLY_REJECTED,
+            metadata={},
+            rejected_mask=np.array([True, False, True, False]),
+            payload_count=2,
+        )
+    assert idxs == [0, 2]
+
+
+def test_resolve_source_indices_uses_cardinality_inference_for_subset_payload():
+    with pytest.warns(UserWarning, match="inferred from accepted subset"):
+        idxs = _resolve_source_indices_for_payload(
+            policy=RejectPolicy.FLAG,
+            metadata={},
+            rejected_mask=np.array([True, False, False, False]),
+            payload_count=3,
+        )
+    assert idxs == [1, 2, 3]

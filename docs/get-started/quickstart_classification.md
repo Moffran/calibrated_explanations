@@ -23,7 +23,7 @@ CPython 3.8–3.11 for Linux runners.
 
 * Calibrated probabilities require a held-out calibration set (the `x_cal`, `y_cal` split below)
 * Venn-Abers calibration provides valid probability intervals under exchangeability
-* Feature weights include uncertainty bounds reflecting calibration quality
+* Feature weights include explanation envelopes reflecting calibration quality
 * See [ADR-021 formal semantics (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 ```
 
@@ -85,7 +85,7 @@ Value : Feature                                  Weight [ Low  ,  High ]
 ```
 
 The first column shows the instance value, followed by the matching feature and
-its calibrated contribution with uncertainty bounds.
+its calibrated contribution with explanation envelopes.
 ```
 
 Use the [interpretation guide](../foundations/how-to/interpret_explanations.md) to understand
