@@ -193,3 +193,80 @@ def test_invalid_explicit_policy_fails_fast_across_predict_and_explain():
 
     with pytest.raises(ValidationError, match="Unknown reject policy string"):
         cal_exp.explain_factual(x_test[:2], reject_policy="not-a-policy")
+
+
+def test_reject_confidence_forwarded_across_explain_and_guarded_paths(monkeypatch):
+    dataset = make_binary_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
+
+    seen_confidences = []
+
+    def fake_apply_policy(policy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+        seen_confidences.append(float(confidence))
+        return RejectResult(
+            prediction=None,
+            explanation=None,
+            rejected=np.zeros(len(x), dtype=bool),
+            policy=RejectPolicy.FLAG,
+            metadata={},
+        )
+
+    monkeypatch.setattr(cal_exp.reject_orchestrator, "apply_policy", fake_apply_policy)
+
+    cal_exp.explain_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.81)
+    cal_exp.explore_alternatives(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.82)
+    cal_exp.explain_guarded_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.83)
+    cal_exp.explore_guarded_alternatives(
+        x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.84
+    )
+
+    assert seen_confidences == [0.81, 0.82, 0.83, 0.84]
+
+
+@pytest.mark.parametrize("bad_confidence", [0.0, 1.0, -0.1, 1.1])
+def test_invalid_confidence_rejected_across_predict_and_explain(bad_confidence):
+    dataset = make_binary_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
+
+    with pytest.raises(ValidationError, match="confidence must be a float"):
+        cal_exp.predict(x_test[:3], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence)
+    with pytest.raises(ValidationError, match="confidence must be a float"):
+        cal_exp.predict_proba(
+            x_test[:3], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence
+        )
+    with pytest.raises(ValidationError, match="confidence must be a float"):
+        cal_exp.explain_factual(
+            x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence
+        )

@@ -739,6 +739,12 @@ class CalibratedExplainer:
             )
 
         # Policy enabled: ensure reject orchestration and delegate via RejectOrchestrator
+        confidence = (
+            extras.get("confidence", 0.95)
+            if isinstance(extras, Mapping)
+            else 0.95
+        )
+
         def _explain_fn(x_subset, **kw):
             return self.explanation_orchestrator.invoke(
                 mode,
@@ -761,7 +767,7 @@ class CalibratedExplainer:
                 self.plugin_manager.initialize_orchestrators()
 
         return self.reject_orchestrator.apply_policy(
-            effective_policy, x, explain_fn=_explain_fn, bins=bins
+            effective_policy, x, explain_fn=_explain_fn, bins=bins, confidence=confidence
         )
 
     def ensure_interval_runtime_state(self) -> None:
@@ -1904,6 +1910,7 @@ class CalibratedExplainer:
                 n_neighbors=n_neighbors,
                 normalize_guard=normalize_guard,
                 verbose=verbose,
+                **kwargs,
             )
 
     def explore_guarded_alternatives(
@@ -2002,6 +2009,7 @@ class CalibratedExplainer:
                 n_neighbors=n_neighbors,
                 normalize_guard=normalize_guard,
                 verbose=verbose,
+                **kwargs,
             )
 
     def __call__(
@@ -2794,6 +2802,7 @@ class CalibratedExplainer:
 
         # Inject default interval_summary if not provided
         kwargs.setdefault("interval_summary", self.interval_summary)
+        confidence_arg = kwargs.pop("confidence", 0.95)
 
         # Resolve reject policy (per-call override else explainer default)
         from .reject.policy import RejectPolicy as _RejectPolicy
@@ -2883,7 +2892,6 @@ class CalibratedExplainer:
 
         # Reject policy active: compute envelope via orchestrator and attach legacy payload
         bins_arg = kwargs.pop("bins", None)
-        confidence_arg = kwargs.pop("confidence", 0.95)
         rr = self.reject_orchestrator.apply_policy(
             policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
         )

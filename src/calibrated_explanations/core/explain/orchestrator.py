@@ -359,6 +359,11 @@ class ExplanationOrchestrator:
         from ...core.reject.policy import RejectPolicy
 
         if not _ce_skip_reject:
+            confidence = (
+                extras.get("confidence", 0.95)
+                if isinstance(extras, Mapping)
+                else 0.95
+            )
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
@@ -400,7 +405,11 @@ class ExplanationOrchestrator:
                 )
 
                 res = self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy, x, explain_fn=_explain_fn, bins=bins
+                    effective_policy,
+                    x,
+                    explain_fn=_explain_fn,
+                    bins=bins,
+                    confidence=confidence,
                 )
 
                 # Attach RejectContext instances when possible. Be defensive
@@ -872,6 +881,7 @@ class ExplanationOrchestrator:
                     default_policy=RejectPolicy.NONE,
                 )
                 effective_policy = resolution.policy
+                confidence = kwargs.get("confidence", 0.95)
 
                 # Prepare a per-class explain_fn closure that legacy_explain can call
                 def make_explain_fn_for_class(cls_val):
@@ -898,7 +908,11 @@ class ExplanationOrchestrator:
                     explain_fn = make_explain_fn_for_class(int(cls))
                     try:
                         res = self.explainer.reject_orchestrator.apply_policy(
-                            effective_policy, x, explain_fn=explain_fn, bins=bins
+                            effective_policy,
+                            x,
+                            explain_fn=explain_fn,
+                            bins=bins,
+                            confidence=confidence,
                         )
                     except Exception:  # adr002_allow
                         # Fallback to legacy explain if reject orchestration fails
@@ -1066,6 +1080,7 @@ class ExplanationOrchestrator:
                     default_policy=RejectPolicy.NONE,
                 )
                 effective_policy = resolution.policy
+                confidence = kwargs.get("confidence", 0.95)
 
                 def make_explain_fn_for_class(cls_val):
                     def _explain_fn(x_subset, **inner_kw):
@@ -1090,7 +1105,11 @@ class ExplanationOrchestrator:
                     explain_fn = make_explain_fn_for_class(int(cls))
                     try:
                         res = self.explainer.reject_orchestrator.apply_policy(
-                            effective_policy, x, explain_fn=explain_fn, bins=bins
+                            effective_policy,
+                            x,
+                            explain_fn=explain_fn,
+                            bins=bins,
+                            confidence=confidence,
                         )
                     except Exception:  # adr002_allow
                         labels = [cls for _ in range(len(x))]
@@ -1219,6 +1238,7 @@ class ExplanationOrchestrator:
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
+            confidence = kwargs.get("confidence", 0.95)
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
@@ -1250,6 +1270,7 @@ class ExplanationOrchestrator:
                         _ce_skip_reject=True,
                     ),
                     bins=bins,
+                    confidence=confidence,
                 )
 
         per_instance_ignore = per_instance_features_to_ignore
@@ -1387,6 +1408,7 @@ class ExplanationOrchestrator:
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
+            confidence = kwargs.get("confidence", 0.95)
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
@@ -1418,6 +1440,7 @@ class ExplanationOrchestrator:
                         _ce_skip_reject=True,
                     ),
                     bins=bins,
+                    confidence=confidence,
                 )
 
         per_instance_ignore = per_instance_features_to_ignore

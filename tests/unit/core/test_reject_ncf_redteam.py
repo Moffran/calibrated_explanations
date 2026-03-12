@@ -247,6 +247,16 @@ def test_w_zero_allowed_for_default_and_entropy(monkeypatch):
     assert abs(orchestrator.explainer.reject_ncf_w - 0.0) < 1e-8
 
 
+@pytest.mark.parametrize("bad_w", [-0.01, 1.01])
+def test_w_out_of_bounds_raises_validation_error(monkeypatch, bad_w):
+    """w outside [0,1] must fail fast before any NCF-specific handling."""
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    _, orchestrator = make_stub(monkeypatch)
+    with pytest.raises(ValidationError, match="w must be a float in the closed interval"):
+        orchestrator.initialize_reject_learner(ncf="default", w=bad_w)
+
+
 @pytest.mark.parametrize("ncf", ["hinge", "margin"])
 def test_removed_explicit_ncf_inputs_raise_validation_error(monkeypatch, ncf):
     """Explicit hinge/margin user inputs are removed and must fail fast."""
@@ -317,6 +327,16 @@ def test_default_entropy_breakdown_invariant_to_w(monkeypatch):
     assert np.array_equal(entropy_low["prediction_set_size"], entropy_high["prediction_set_size"])
 
 
+@pytest.mark.parametrize("bad_confidence", [0.0, 1.0, -0.1, 1.1])
+def test_predict_reject_breakdown_rejects_invalid_confidence(monkeypatch, bad_confidence):
+    """confidence outside (0,1) must raise ValidationError."""
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    with pytest.raises(ValidationError, match="confidence must be a float in the open interval"):
+        orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=bad_confidence)
+
+
 # ---------------------------------------------------------------------------
 # MT-5 — plain RejectPolicy reuses existing NCF without reinit
 # ---------------------------------------------------------------------------
@@ -361,6 +381,25 @@ def test_only_rejected_empty_subset_returns_none_and_matched_count_zero(monkeypa
     assert result.explanation is None
     assert result.metadata["matched_count"] == 0
     assert not explain_called
+
+
+def test_apply_policy_metadata_includes_effective_confidence_and_w(monkeypatch):
+    """Non-NONE policy metadata includes effective confidence and w."""
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0], [1], [2]]),
+        explain_fn=None,
+        confidence=0.77,
+    )
+
+    assert result.metadata is not None
+    assert result.metadata["effective_confidence"] == pytest.approx(0.77)
+    assert result.metadata["effective_w"] == pytest.approx(
+        float(getattr(orchestrator.explainer, "reject_ncf_w", 0.0))
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -35,6 +35,40 @@ class RejectPolicyResolution:
     reason: str | None = None
 
 
+def validate_reject_confidence(confidence: Any) -> float:
+    """Validate reject confidence and return canonical float in (0, 1)."""
+    try:
+        value = float(confidence)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            "confidence must be a float in the open interval (0, 1).",
+            details={"confidence": confidence},
+        ) from exc
+    if not 0.0 < value < 1.0:
+        raise ValidationError(
+            "confidence must be a float in the open interval (0, 1).",
+            details={"confidence": value},
+        )
+    return value
+
+
+def validate_reject_w(w: Any) -> float:
+    """Validate reject blending weight and return canonical float in [0, 1]."""
+    try:
+        value = float(w)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            "w must be a float in the closed interval [0, 1].",
+            details={"w": w},
+        ) from exc
+    if not 0.0 <= value <= 1.0:
+        raise ValidationError(
+            "w must be a float in the closed interval [0, 1].",
+            details={"w": value},
+        )
+    return value
+
+
 def _interval_width_score(proba: np.ndarray) -> np.ndarray:
     """Compute instance-level interval-width score from a 2-column VA output."""
     proba = np.asarray(proba, dtype=float)
@@ -421,6 +455,7 @@ class RejectOrchestrator:
             ``ncf='hinge'`` or ``ncf='margin'`` is supplied, or if ``w=0.0``
             with ``ncf='ensured'``.
         """
+        validated_w = validate_reject_w(w)
         bins_cal = self.explainer.bins if calibration_set is None else None
         if calibration_set is None:
             x_cal, y_cal = self.explainer.x_cal, self.explainer.y_cal
@@ -446,15 +481,15 @@ class RejectOrchestrator:
                 details={"ncf": ncf},
             )
         if ncf == "ensured":
-            if w == 0.0:
+            if validated_w == 0.0:
                 raise ValidationError(
                     "w=0.0 with ncf='ensured' is not allowed. Use w > 0.0 "
                     "(recommended w >= 0.1).",
-                    details={"w": w, "ncf": ncf},
+                    details={"w": validated_w, "ncf": ncf},
                 )
-            if w < 0.1:
+            if validated_w < 0.1:
                 warnings.warn(
-                    f"ncf='ensured' with w={w} (near 0) may produce unstable reject "
+                    f"ncf='ensured' with w={validated_w} (near 0) may produce unstable reject "
                     "behavior. Consider w >= 0.1.",
                     UserWarning,
                     stacklevel=2,
@@ -462,7 +497,7 @@ class RejectOrchestrator:
 
         self.explainer.reject_threshold = None
         self.explainer.reject_ncf = ncf
-        self.explainer.reject_ncf_w = canonical_reject_ncf_w(ncf, float(w))
+        self.explainer.reject_ncf_w = canonical_reject_ncf_w(ncf, validated_w)
         self.explainer.reject_ncf_auto_selected = not ncf_explicit
         default_kind = _default_ncf_kind(
             bool(self.explainer.is_multiclass())  # pylint: disable=protected-access
@@ -487,7 +522,7 @@ class RejectOrchestrator:
             proba = self.explainer.interval_learner.predict_proba(x_cal, bins=bins_cal)
             calibration_bins = y_cal
 
-        effective_w = canonical_reject_ncf_w(ncf, float(w))
+        effective_w = canonical_reject_ncf_w(ncf, validated_w)
         alphas_cal = _ncf_scores_cal(
             proba, np.unique(calibration_bins), calibration_bins, ncf, effective_w, default_kind
         )
@@ -498,6 +533,7 @@ class RejectOrchestrator:
     def _compute_prediction_set(
         self, x, bins=None, confidence: float = 0.95
     ) -> tuple[np.ndarray, float]:
+        confidence = validate_reject_confidence(confidence)
         if bins is not None:
             bins = np.asarray(bins)
 
@@ -673,6 +709,7 @@ class RejectOrchestrator:
         *ambiguity* rate (multi-label sets) is non-decreasing while the
         *novelty* rate (empty sets) is non-increasing.
         """
+        confidence = validate_reject_confidence(confidence)
         # Backwards compatibility: if a subclass has overridden the legacy
         # `predict_reject` method (tests and some mocks do this), prefer its
         # lightweight result shape. This keeps the mocking pattern in unit
@@ -831,6 +868,7 @@ class RejectOrchestrator:
         RejectResult
             Envelope with `prediction`, `explanation`, `rejected`, `policy`, and `metadata`.
         """
+        confidence = validate_reject_confidence(confidence)
         # Allow callers to select a strategy identifier via the `strategy` kwarg.
         # By default, resolve to `builtin.default` which preserves legacy semantics.
         strategy_name = kwargs.pop("strategy", None)
@@ -875,6 +913,7 @@ class RejectOrchestrator:
         self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
     ):
         """Builtin strategy that preserves the previous `apply_policy` semantics."""
+        confidence = validate_reject_confidence(confidence)
         try:
             policy = RejectPolicy(policy)
         except Exception:  # adr002_allow
@@ -1007,6 +1046,12 @@ class RejectOrchestrator:
             "reject_ncf_auto_selected": getattr(self.explainer, "reject_ncf_auto_selected", None),
             # How many instances matched the policy filter (None for FLAG, 0 when empty)
             "matched_count": matched_count,
+            "effective_confidence": confidence,
+            "effective_w": validate_reject_w(
+                getattr(self.explainer, "reject_ncf_w", 0.0)
+                if getattr(self.explainer, "reject_ncf_w", None) is not None
+                else 0.0
+            ),
         }
         return RejectResult(
             prediction=prediction,
