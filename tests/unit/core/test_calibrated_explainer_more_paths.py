@@ -365,3 +365,76 @@ def test_reject_context_fallback_mapping_warns_when_source_indices_missing(monke
     assert isinstance(result, RejectResult)
     assert result.explanation[0].reject_context.rejected is True
     assert result.explanation[1].reject_context.rejected is True
+
+
+def test_regression_predict_proba_forwards_threshold_to_reject_policy(monkeypatch):
+    dataset = make_regression_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    seen_thresholds = []
+
+    def fake_apply_policy(
+        policy, x, explain_fn=None, bins=None, confidence=0.95, threshold=None, **kwargs
+    ):
+        seen_thresholds.append(threshold)
+        return RejectResult(
+            prediction=None,
+            explanation=None,
+            rejected=np.zeros(len(x), dtype=bool),
+            policy=RejectPolicy.FLAG,
+            metadata={},
+        )
+
+    monkeypatch.setattr(cal_exp.reject_orchestrator, "apply_policy", fake_apply_policy)
+    cal_exp.predict_proba(x_test[:3], reject_policy=RejectPolicy.FLAG, threshold=0.42)
+    assert seen_thresholds == [0.42]
+
+
+def test_regression_reject_without_threshold_raises_across_paths():
+    dataset = make_regression_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    with pytest.raises(
+        ValidationError, match="reject learner unavailable for regression without threshold"
+    ):
+        cal_exp.predict(x_test[:3], reject_policy=RejectPolicy.FLAG)
+    with pytest.raises(
+        ValidationError, match="reject learner unavailable for regression without threshold"
+    ):
+        cal_exp.predict_proba(x_test[:3], reject_policy=RejectPolicy.FLAG)
+    with pytest.raises(
+        ValidationError, match="reject learner unavailable for regression without threshold"
+    ):
+        cal_exp.explain_factual(x_test[:2], reject_policy=RejectPolicy.FLAG)

@@ -599,6 +599,7 @@ def reject_breakdown(
     return wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
         inputs,
         confidence=confidence,
+        threshold=threshold,
     )
 
 

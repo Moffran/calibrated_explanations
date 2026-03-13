@@ -374,7 +374,7 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
     assert cal_exp.reject_threshold == 0.6
 
     rejected, error_rate, reject_rate = cal_exp.reject_orchestrator.predict_reject(
-        x_test, confidence=0.9
+        x_test, confidence=0.9, threshold=0.6
     )
 
     assert rejected.shape == (len(x_test),)
@@ -410,7 +410,7 @@ def test_probabilistic_regression_ce(regression_dataset):
     )
 
     cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
-    cal_exp.reject_orchestrator.predict_reject(x_test)
+    cal_exp.reject_orchestrator.predict_reject(x_test, threshold=0.5)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test)
     factual_explanation.add_conjunctions()
@@ -617,7 +617,7 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
     )
 
     cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
-    cal_exp.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0])
+    cal_exp.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0], threshold=0.5)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test, bins=x_test[:, 0])
     factual_explanation.add_conjunctions()

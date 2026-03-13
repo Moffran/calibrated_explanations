@@ -500,6 +500,7 @@ class ExplanationOrchestrator:
                     explain_fn=_explain_fn,
                     bins=bins,
                     confidence=confidence,
+                    threshold=threshold,
                 )
 
                 # Attach RejectContext instances when possible. Be defensive
@@ -1023,6 +1024,7 @@ class ExplanationOrchestrator:
                             explain_fn=explain_fn,
                             bins=bins,
                             confidence=confidence,
+                            threshold=threshold,
                         )
                     except Exception:  # adr002_allow
                         # Fallback to legacy explain if reject orchestration fails
@@ -1216,6 +1218,7 @@ class ExplanationOrchestrator:
                             explain_fn=explain_fn,
                             bins=bins,
                             confidence=confidence,
+                            threshold=threshold,
                         )
                     except Exception:  # adr002_allow
                         labels = [cls for _ in range(len(x))]
@@ -1376,6 +1379,7 @@ class ExplanationOrchestrator:
                     ),
                     bins=bins,
                     confidence=confidence,
+                    threshold=threshold,
                 )
 
         per_instance_ignore = per_instance_features_to_ignore
@@ -1544,6 +1548,7 @@ class ExplanationOrchestrator:
                     ),
                     bins=bins,
                     confidence=confidence,
+                    threshold=threshold,
                 )
 
         per_instance_ignore = per_instance_features_to_ignore

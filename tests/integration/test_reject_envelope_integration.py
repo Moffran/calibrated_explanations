@@ -67,7 +67,8 @@ def test_multiclass_predict_proba_envelope():
 def test_regression_predict_uq_envelope():
     w, Xq = train_regression(seed=5)
     # regression probabilistic predictions require threshold for reject machinery; use predict with uq interval
-    res = w.predict(Xq, uq_interval=True, reject_policy=RejectPolicy.FLAG)
+    threshold = np.median(w.explainer.y_cal)
+    res = w.predict(Xq, uq_interval=True, reject_policy=RejectPolicy.FLAG, threshold=threshold)
     assert isinstance(res, RejectResult)
     # legacy regression payload (proba, (low, high)) must be preserved
     pred = res.prediction

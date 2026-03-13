@@ -77,6 +77,7 @@ def _threshold_rows(spec, config: RunConfig) -> list[dict[str, float | str]]:
         breakdown = bundle.wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
             bundle.x_test,
             confidence=0.95,
+            threshold=threshold,
         )
         rejected = np.asarray(breakdown["rejected"], dtype=bool)
         accepted = ~rejected

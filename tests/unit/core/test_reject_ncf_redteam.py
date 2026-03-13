@@ -462,6 +462,318 @@ def test_apply_policy_source_indices_follow_reject_mask_for_subset_policies(monk
     assert only_acc.metadata["source_indices"] == [1, 3]
 
 
+def test_regression_apply_policy_requires_call_threshold():
+    """Regression reject orchestration must fail fast when threshold is absent."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    class StubIntervalLearner:
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            proba = np.full(len(x), 0.5)
+            return proba, np.zeros(len(x)), np.ones(len(x)), None
+
+    class DummyPredictionOrchestrator:
+        def predict(self, x, **kwargs):
+            return np.zeros(len(x)), np.zeros(len(x)), np.ones(len(x)), None
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.1, 0.5, 0.9]),
+        bins=None,
+        interval_learner=StubIntervalLearner(),
+        prediction_orchestrator=DummyPredictionOrchestrator(),
+        reject_learner=object(),
+        reject_threshold=0.5,
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+    with pytest.raises(
+        ValidationError, match="reject learner unavailable for regression without threshold"
+    ):
+        orchestrator.apply_policy(RejectPolicy.FLAG, np.array([[0.0], [1.0]]), explain_fn=None)
+
+
+def test_regression_apply_policy_uses_call_threshold_and_reinitializes_on_mismatch(monkeypatch):
+    """Regression reject decision and prediction payload share one call threshold."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    class DummyPredictionOrchestrator:
+        def __init__(self):
+            self.seen_thresholds = []
+
+        def predict(self, x, **kwargs):
+            self.seen_thresholds.append(kwargs.get("threshold"))
+            n = len(x)
+            return np.zeros(n), np.zeros(n), np.ones(n), None
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.0, 1.0, 2.0]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        prediction_orchestrator=DummyPredictionOrchestrator(),
+        reject_learner=object(),
+        reject_threshold=0.1,
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+
+    init_calls = []
+    seen_breakdown_thresholds = []
+
+    def fake_init(calibration_set=None, threshold=None, ncf=None, w=0.5):
+        init_calls.append(threshold)
+        expl.reject_threshold = threshold
+        expl.reject_learner = object()
+        return expl.reject_learner
+
+    def fake_breakdown(x, bins=None, confidence=0.95, threshold=None):
+        seen_breakdown_thresholds.append(threshold)
+        n = len(x)
+        rejected = np.array([False] * n, dtype=bool)
+        return {
+            "rejected": rejected,
+            "error_rate": 0.0,
+            "reject_rate": 0.0,
+            "ambiguity_rate": 0.0,
+            "novelty_rate": 0.0,
+            "ambiguity": rejected.copy(),
+            "novelty": rejected.copy(),
+            "prediction_set_size": np.ones(n, dtype=int),
+            "prediction_set": np.ones((n, 2), dtype=bool),
+            "epsilon": 0.05,
+            "raw_total_examples": n,
+            "raw_reject_counts": {"rejected": 0},
+            "error_rate_defined": True,
+        }
+
+    monkeypatch.setattr(orchestrator, "initialize_reject_learner", fake_init)
+    monkeypatch.setattr(orchestrator, "predict_reject_breakdown", fake_breakdown)
+
+    with pytest.warns(UserWarning, match="threshold mismatch"):
+        result = orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            np.array([[0.0], [1.0], [2.0]]),
+            explain_fn=None,
+            threshold=0.8,
+        )
+
+    assert init_calls == [0.8]
+    assert seen_breakdown_thresholds == [0.8]
+    assert expl.prediction_orchestrator.seen_thresholds == [0.8]
+    assert result.metadata["effective_threshold"] == pytest.approx(0.8)
+    assert result.metadata["threshold_source"] == "call_reinitialized"
+
+
+def test_regression_apply_policy_same_threshold_does_not_reinitialize(monkeypatch):
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    class DummyPredictionOrchestrator:
+        def predict(self, x, **kwargs):
+            n = len(x)
+            return np.zeros(n), np.zeros(n), np.ones(n), None
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.0, 1.0, 2.0]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        prediction_orchestrator=DummyPredictionOrchestrator(),
+        reject_learner=object(),
+        reject_threshold=np.array([0.8, 0.8, 0.8]),
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+
+    init_calls = []
+    monkeypatch.setattr(
+        orchestrator,
+        "initialize_reject_learner",
+        lambda *args, **kwargs: init_calls.append(kwargs.get("threshold")),
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "predict_reject_breakdown",
+        lambda *args, **kwargs: {
+            "rejected": np.array([False, False, False]),
+            "error_rate": 0.0,
+            "reject_rate": 0.0,
+            "ambiguity_rate": 0.0,
+            "novelty_rate": 0.0,
+            "ambiguity": np.array([False, False, False]),
+            "novelty": np.array([False, False, False]),
+            "prediction_set_size": np.array([1, 1, 1]),
+            "prediction_set": np.ones((3, 2), dtype=bool),
+            "epsilon": 0.05,
+            "raw_total_examples": 3,
+            "raw_reject_counts": {"rejected": 0},
+            "error_rate_defined": True,
+        },
+    )
+
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0.0], [1.0], [2.0]]),
+        threshold=np.array([0.8, 0.8, 0.8]),
+    )
+    assert init_calls == []
+    assert result.metadata["threshold_source"] == "call"
+
+
+def test_predict_reject_breakdown_legacy_override_without_threshold_arg_fallback():
+    class LegacyOverrideOrchestrator(orch.RejectOrchestrator):
+        def predict_reject(self, x, bins=None, confidence=0.95):  # threshold intentionally omitted
+            rejected = np.array([False] * len(x), dtype=bool)
+            return rejected, 0.0, 0.0
+
+    expl = SimpleNamespace(
+        mode="classification",
+        x_cal=np.array([[0], [1]]),
+        y_cal=np.array([0, 1]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        reject_learner=object(),
+        is_multiclass=lambda: False,
+    )
+    orchestrator = LegacyOverrideOrchestrator(expl)
+    breakdown = orchestrator.predict_reject_breakdown(np.array([[0], [1]]), confidence=0.95)
+    assert breakdown["reject_rate"] == 0.0
+    assert np.array_equal(breakdown["rejected"], np.array([False, False]))
+
+
+def test_regression_apply_policy_reinitializes_on_threshold_shape_mismatch(monkeypatch):
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    class DummyPredictionOrchestrator:
+        def predict(self, x, **kwargs):
+            n = len(x)
+            return np.zeros(n), np.zeros(n), np.ones(n), None
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.0, 1.0, 2.0]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        prediction_orchestrator=DummyPredictionOrchestrator(),
+        reject_learner=object(),
+        reject_threshold=np.array([0.4, 0.4]),
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+    init_calls = []
+    monkeypatch.setattr(
+        orchestrator,
+        "initialize_reject_learner",
+        lambda *args, **kwargs: init_calls.append(kwargs.get("threshold")),
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "predict_reject_breakdown",
+        lambda *args, **kwargs: {
+            "rejected": np.array([False, False]),
+            "error_rate": 0.0,
+            "reject_rate": 0.0,
+            "ambiguity_rate": 0.0,
+            "novelty_rate": 0.0,
+            "ambiguity": np.array([False, False]),
+            "novelty": np.array([False, False]),
+            "prediction_set_size": np.array([1, 1]),
+            "prediction_set": np.ones((2, 2), dtype=bool),
+            "epsilon": 0.05,
+            "raw_total_examples": 2,
+            "raw_reject_counts": {"rejected": 0},
+            "error_rate_defined": True,
+        },
+    )
+    with pytest.warns(UserWarning, match="threshold mismatch"):
+        orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            np.array([[0.0], [1.0]]),
+            threshold=0.4,
+        )
+    assert init_calls == [0.4]
+
+
+def test_regression_apply_policy_reinitializes_when_threshold_comparison_falls_back(monkeypatch):
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    class Unarrayable:
+        def __array__(self, dtype=None):  # pragma: no cover - invoked by numpy
+            raise TypeError("cannot convert")
+
+        def __eq__(self, other):
+            return False
+
+    class DummyPredictionOrchestrator:
+        def predict(self, x, **kwargs):
+            n = len(x)
+            return np.zeros(n), np.zeros(n), np.ones(n), None
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0]]),
+        y_cal=np.array([0.0, 1.0]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        prediction_orchestrator=DummyPredictionOrchestrator(),
+        reject_learner=object(),
+        reject_threshold=Unarrayable(),
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+    init_calls = []
+    monkeypatch.setattr(
+        orchestrator,
+        "initialize_reject_learner",
+        lambda *args, **kwargs: init_calls.append(kwargs.get("threshold")),
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "predict_reject_breakdown",
+        lambda *args, **kwargs: {
+            "rejected": np.array([False, False]),
+            "error_rate": 0.0,
+            "reject_rate": 0.0,
+            "ambiguity_rate": 0.0,
+            "novelty_rate": 0.0,
+            "ambiguity": np.array([False, False]),
+            "novelty": np.array([False, False]),
+            "prediction_set_size": np.array([1, 1]),
+            "prediction_set": np.ones((2, 2), dtype=bool),
+            "epsilon": 0.05,
+            "raw_total_examples": 2,
+            "raw_reject_counts": {"rejected": 0},
+            "error_rate_defined": True,
+        },
+    )
+    with pytest.warns(UserWarning, match="threshold mismatch"):
+        orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            np.array([[0.0], [1.0]]),
+            threshold=0.4,
+        )
+    assert init_calls == [0.4]
+
+
 # ---------------------------------------------------------------------------
 # MT-4 — sliced RejectCalibratedExplanations recomputes aggregate rates
 # ---------------------------------------------------------------------------

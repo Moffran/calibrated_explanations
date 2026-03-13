@@ -69,6 +69,19 @@ def validate_reject_w(w: Any) -> float:
     return value
 
 
+def _thresholds_equal(lhs: Any, rhs: Any) -> bool:
+    """Return True when two threshold payloads are numerically equivalent."""
+    try:
+        left = np.asarray(lhs)
+        right = np.asarray(rhs)
+    except Exception:  # adr002_allow
+        return lhs == rhs
+    if left.shape != right.shape:
+        return False
+    with np.errstate(invalid="ignore"):
+        return bool(np.allclose(left, right, equal_nan=True))
+
+
 def _interval_width_score(proba: np.ndarray) -> np.ndarray:
     """Compute instance-level interval-width score from a 2-column VA output."""
     proba = np.asarray(proba, dtype=float)
@@ -410,6 +423,50 @@ class RejectOrchestrator:
             return kwargs
         return {k: v for k, v in kwargs.items() if k in signature.parameters}
 
+    def _resolve_regression_effective_threshold(
+        self, threshold: Any
+    ) -> tuple[Any | None, str | None]:
+        """Resolve effective threshold for reject-enabled calls.
+
+        Regression contract:
+        - Call threshold is mandatory.
+        - Stored reject_threshold is never used as fallback.
+        """
+        if self.explainer.mode != "regression":
+            return None, None
+        if threshold is None:
+            raise ValidationError("reject learner unavailable for regression without threshold")
+
+        effective_threshold = threshold
+        threshold_source = "call"
+        current_threshold = getattr(self.explainer, "reject_threshold", None)
+        learner_missing = getattr(self.explainer, "reject_learner", None) is None
+        mismatch = current_threshold is None or not _thresholds_equal(
+            current_threshold, effective_threshold
+        )
+        if learner_missing or mismatch:
+            if not learner_missing and mismatch:
+                self._logger.info(
+                    "Reject threshold mismatch detected; reinitializing reject learner with call threshold."
+                )
+                warnings.warn(
+                    "Reject threshold mismatch detected; reinitializing reject learner "
+                    "with call threshold.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+            self.initialize_reject_learner(
+                threshold=effective_threshold,
+                ncf=getattr(self.explainer, "reject_ncf", None),
+                w=(
+                    getattr(self.explainer, "reject_ncf_w", 0.5)
+                    if getattr(self.explainer, "reject_ncf_w", None) is not None
+                    else 0.5
+                ),
+            )
+            threshold_source = "call_reinitialized" if mismatch else "call"
+        return effective_threshold, threshold_source
+
     def initialize_reject_learner(  # pylint: disable=invalid-name
         self, calibration_set=None, threshold=None, ncf=None, w=0.5
     ):
@@ -499,6 +556,8 @@ class RejectOrchestrator:
         )
 
         if self.explainer.mode == "regression":
+            if threshold is None:
+                raise ValidationError("reject learner unavailable for regression without threshold")
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
                 x_cal, y_threshold=threshold, bins=bins_cal
             )
@@ -526,19 +585,17 @@ class RejectOrchestrator:
         return self.explainer.reject_learner
 
     def _compute_prediction_set(
-        self, x, bins=None, confidence: float = 0.95
+        self, x, bins=None, confidence: float = 0.95, threshold=None
     ) -> tuple[np.ndarray, float]:
         confidence = validate_reject_confidence(confidence)
         if bins is not None:
             bins = np.asarray(bins)
 
         if self.explainer.mode == "regression":
-            if self.explainer.reject_threshold is None:
-                raise ValidationError(
-                    "The reject learner is only available for regression with a threshold."
-                )
+            if threshold is None:
+                raise ValidationError("reject learner unavailable for regression without threshold")
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
-                x, y_threshold=self.explainer.reject_threshold, bins=bins
+                x, y_threshold=threshold, bins=bins
             )
             proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
         elif self.explainer.is_multiclass():  # pylint: disable=protected-access
@@ -695,7 +752,9 @@ class RejectOrchestrator:
 
         return prediction_set.astype(bool), float(epsilon)
 
-    def predict_reject_breakdown(self, x, bins=None, confidence: float = 0.95) -> dict[str, Any]:
+    def predict_reject_breakdown(
+        self, x, bins=None, confidence: float = 0.95, threshold=None
+    ) -> dict[str, Any]:
         """Return reject decision plus ambiguity/novelty breakdown.
 
         Notes
@@ -712,7 +771,14 @@ class RejectOrchestrator:
         legacy_predict = getattr(type(self), "predict_reject", None)
         if legacy_predict is not None and legacy_predict is not RejectOrchestrator.predict_reject:
             try:
-                legacy_res = self.predict_reject(x, bins=bins, confidence=confidence)
+                try:
+                    legacy_res = self.predict_reject(
+                        x, bins=bins, confidence=confidence, threshold=threshold
+                    )
+                except TypeError:
+                    # Backward compatibility for legacy overrides that have not
+                    # adopted the new threshold parameter.
+                    legacy_res = self.predict_reject(x, bins=bins, confidence=confidence)
                 # Expected legacy shape: (rejected_array, error_rate, reject_rate)
                 if isinstance(legacy_res, tuple) and len(legacy_res) >= 1:
                     rejected = np.asarray(legacy_res[0], dtype=bool)
@@ -787,7 +853,9 @@ class RejectOrchestrator:
                     "Legacy predict_reject override misbehaved: %s", exc, exc_info=True
                 )
 
-        prediction_set, epsilon = self._compute_prediction_set(x, bins=bins, confidence=confidence)
+        prediction_set, epsilon = self._compute_prediction_set(
+            x, bins=bins, confidence=confidence, threshold=threshold
+        )
         set_sizes = np.sum(prediction_set, axis=1)
         rejected = set_sizes != 1
         ambiguity = set_sizes >= 2
@@ -835,13 +903,22 @@ class RejectOrchestrator:
             },
         }
 
-    def predict_reject(self, x, bins=None, confidence=0.95):
+    def predict_reject(self, x, bins=None, confidence=0.95, threshold=None):
         """Predict whether to reject the explanations for the test data."""
-        breakdown = self.predict_reject_breakdown(x, bins=bins, confidence=confidence)
+        breakdown = self.predict_reject_breakdown(
+            x, bins=bins, confidence=confidence, threshold=threshold
+        )
         return breakdown["rejected"], breakdown["error_rate"], breakdown["reject_rate"]
 
     def apply_policy(
-        self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
+        self,
+        policy: RejectPolicy,
+        x,
+        explain_fn=None,
+        bins=None,
+        confidence=0.95,
+        threshold=None,
+        **kwargs,
     ):
         """Apply a `RejectPolicy` to inputs and optionally produce predictions/explanations.
 
@@ -869,7 +946,13 @@ class RejectOrchestrator:
         strategy_name = kwargs.pop("strategy", None)
         strategy = self.resolve_strategy(strategy_name)
         return strategy(
-            policy, x, explain_fn=explain_fn, bins=bins, confidence=confidence, **kwargs
+            policy,
+            x,
+            explain_fn=explain_fn,
+            bins=bins,
+            confidence=confidence,
+            threshold=threshold,
+            **kwargs,
         )
 
     # --- Registry helpers -------------------------------------------------
@@ -905,7 +988,14 @@ class RejectOrchestrator:
 
     # --- Builtin strategy (preserve previous apply_policy impl) -----------
     def _builtin_strategy(
-        self, policy: RejectPolicy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs
+        self,
+        policy: RejectPolicy,
+        x,
+        explain_fn=None,
+        bins=None,
+        confidence=0.95,
+        threshold=None,
+        **kwargs,
     ):
         """Builtin strategy that preserves the previous `apply_policy` semantics."""
         confidence = validate_reject_confidence(confidence)
@@ -920,31 +1010,42 @@ class RejectOrchestrator:
                 prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
             )
 
-        # Ensure reject learner is initialized (implicit enable)
-        if getattr(self.explainer, "reject_learner", None) is None:
-            # Best-effort initialization using explainer calibration set
-            try:
+        effective_threshold = None
+        threshold_source = None
+        try:
+            explainer_mode = getattr(self.explainer, "mode", "classification")
+            if explainer_mode == "regression":
+                effective_threshold, threshold_source = (
+                    self._resolve_regression_effective_threshold(threshold)
+                )
+            elif getattr(self.explainer, "reject_learner", None) is None:
                 self.initialize_reject_learner()
-            except Exception as exc:  # adr002_allow
-                self._logger.info(
-                    "Reject learner init failed; returning empty RejectResult.",
-                    exc_info=True,
-                )
-                warnings.warn(
-                    f"Reject initialization failed; reject policy will not run ({exc!s}).",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                # If initialization fails, surface minimal metadata but continue
-                return RejectResult(
-                    prediction=None,
-                    explanation=None,
-                    rejected=None,
-                    policy=policy,
-                    metadata={"init_error": True, "error_message": str(exc)},
-                )
+        except ValidationError:
+            raise
+        except Exception as exc:  # adr002_allow
+            self._logger.info(
+                "Reject learner init failed; returning empty RejectResult.",
+                exc_info=True,
+            )
+            warnings.warn(
+                f"Reject initialization failed; reject policy will not run ({exc!s}).",
+                UserWarning,
+                stacklevel=2,
+            )
+            return RejectResult(
+                prediction=None,
+                explanation=None,
+                rejected=None,
+                policy=policy,
+                metadata={"init_error": True, "error_message": str(exc)},
+            )
 
-        breakdown = self.predict_reject_breakdown(x, bins=bins, confidence=confidence)
+        breakdown = self.predict_reject_breakdown(
+            x,
+            bins=bins,
+            confidence=confidence,
+            threshold=effective_threshold,
+        )
         rejected = breakdown["rejected"]
         error_rate = breakdown["error_rate"]
         reject_rate = breakdown["reject_rate"]
@@ -962,7 +1063,10 @@ class RejectOrchestrator:
                 # Use the prediction orchestrator directly. The explainer's
                 # public predict method is a thin facade over the same
                 # orchestrator and does not own reject orchestration.
-                prediction = self.explainer.prediction_orchestrator.predict(x, **kwargs)
+                prediction_kwargs = dict(kwargs)
+                if getattr(self.explainer, "mode", "classification") == "regression":
+                    prediction_kwargs["threshold"] = effective_threshold
+                prediction = self.explainer.prediction_orchestrator.predict(x, **prediction_kwargs)
             except Exception as exc:  # adr002_allow
                 self._logger.info(
                     "Reject policy prediction failed; returning prediction=None.",
@@ -1049,6 +1153,8 @@ class RejectOrchestrator:
             "source_indices": source_indices,
             "original_count": int(len(rejected)),
             "effective_confidence": confidence,
+            "effective_threshold": effective_threshold,
+            "threshold_source": threshold_source,
             "effective_w": validate_reject_w(
                 getattr(self.explainer, "reject_ncf_w", 0.0)
                 if getattr(self.explainer, "reject_ncf_w", None) is not None

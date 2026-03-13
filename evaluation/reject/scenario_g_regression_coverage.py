@@ -35,6 +35,7 @@ def run(config: RunConfig) -> None:
                 breakdown = bundle.wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
                     bundle.x_test,
                     confidence=float(confidence),
+                    threshold=threshold,
                 )
                 rejected = np.asarray(breakdown["rejected"], dtype=bool)
                 accepted = ~rejected

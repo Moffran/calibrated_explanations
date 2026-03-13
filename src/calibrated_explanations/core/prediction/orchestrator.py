@@ -221,7 +221,11 @@ class PredictionOrchestrator:
                 )
 
             return self.explainer.reject_orchestrator.apply_policy(
-                effective_policy, x, explain_fn=_predict_fn, bins=bins
+                effective_policy,
+                x,
+                explain_fn=_predict_fn,
+                bins=bins,
+                threshold=threshold,
             )
         key_parts = None
         if cache_enabled:

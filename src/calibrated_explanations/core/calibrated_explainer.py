@@ -763,7 +763,12 @@ class CalibratedExplainer:
                 self.plugin_manager.initialize_orchestrators()
 
         return self.reject_orchestrator.apply_policy(
-            effective_policy, x, explain_fn=_explain_fn, bins=bins, confidence=confidence
+            effective_policy,
+            x,
+            explain_fn=_explain_fn,
+            bins=bins,
+            confidence=confidence,
+            threshold=threshold,
         )
 
     def ensure_interval_runtime_state(self) -> None:
@@ -2827,6 +2832,13 @@ class CalibratedExplainer:
             and resolution.used_default
             and policy is not _RejectPolicy.NONE
         )
+        if (
+            not skip_reject_for_internal
+            and policy is not _RejectPolicy.NONE
+            and self.mode == "regression"
+            and threshold is None
+        ):
+            raise ValidationError("reject learner unavailable for regression without threshold")
 
         # Helper: compute legacy proba payload for this call
         proba_payload = None
@@ -2889,7 +2901,13 @@ class CalibratedExplainer:
         # Reject policy active: compute envelope via orchestrator and attach legacy payload
         bins_arg = kwargs.pop("bins", None)
         rr = self.reject_orchestrator.apply_policy(
-            policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
+            policy,
+            x,
+            explain_fn=None,
+            bins=bins_arg,
+            confidence=confidence_arg,
+            threshold=threshold,
+            **kwargs,
         )
         rr.prediction = proba_payload
 
