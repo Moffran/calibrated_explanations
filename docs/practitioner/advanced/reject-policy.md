@@ -3,9 +3,10 @@
 Reject policies control how the calibrated explanations runtime handles rejection
 decisions when confidence or uncertainty thresholds no longer support the
 requested output. The policy-driven API introduced around ADR-029 keeps the
-legacy `reject=False` behaviour while optionally enabling reject orchestration
-and returning a structured envelope that annotates the policy, rejection mask,
-and metadata.
+legacy `reject=False` behaviour while optionally enabling reject orchestration.
+For prediction entrypoints, reject-enabled calls return a structured
+`RejectResult` envelope. For explanation entrypoints, reject-enabled calls
+return reject-aware explanation collections carrying the same reject metadata.
 
 ## RejectPolicy overview
 
@@ -69,27 +70,53 @@ if envelope.rejected is not None and envelope.rejected.any():
 When `reject_policy` is left at its default (`RejectPolicy.NONE`) the call returns
 the original prediction/explanation as before; no reject orchestration is performed.
 
-## RejectResult envelope
+## Reject-aware return types
 
-When a reject policy is active (per-call or via `default_reject_policy`) the runtime
-returns a `RejectResult` from `calibrated_explanations.explanations.reject`. The
-envelope includes:
+When a reject policy is active (per-call or via `default_reject_policy`), return
+shape depends on entrypoint:
 
-- `prediction`: optional prediction payload (present unless the policy skips
-  predictions).
-- `explanation`: optional explanation collection (omitted when the policy skips them).
-- `rejected`: optional boolean mask or flag showing which inputs were rejected.
-- `policy`: the `RejectPolicy` that generated this result.
-- `metadata`: dictionary of supplementary telemetry (rate limits, thresholds, etc.).
+- `predict` / `predict_proba`: returns `RejectResult`
+- `explain_factual` / `explore_alternatives` / guarded explain variants: returns
+  a reject-aware explanation collection (for example
+  `RejectCalibratedExplanations` or `RejectAlternativeExplanations`)
 
-Treat the envelope as the canonical return value when `reject_policy != RejectPolicy.NONE`;
-legacy expectations remain unchanged when the policy is `NONE`.
+Prediction envelopes include:
+
+- `prediction`: optional prediction payload (present unless policy or fallback omits it)
+- `explanation`: optional explanation payload (used in orchestration paths that request it)
+- `rejected`: full-batch boolean reject mask
+- `policy`: the `RejectPolicy` that generated this result
+- `metadata`: supplementary telemetry, including contract keys listed below
+
+Reject-aware explanation collections expose:
+
+- `.explanations`: filtered explanation payload (policy-dependent)
+- `.rejected`: policy-aligned reject mask for collection indexing safety
+- `.metadata`: contract metadata including `source_indices` and `original_count`
+- `.policy`: effective reject policy
+
+Use `metadata["source_indices"]` to map explanation rows back to original input rows.
+
+### Schema versioning (advanced)
+
+The runtime now exposes strict v2 reject artifacts internally:
+
+- `RejectDecisionArtifact`: decision diagnostics (mask/rates/epsilon/confidence)
+- `RejectPayloadArtifact`: policy-filtered payload mapping (`source_indices`)
+- `RejectResultV2`: versioned envelope (`schema_version="2.0"`)
+
+Compatibility adapters keep existing callers working:
+
+- `RejectResultV2.to_legacy()` converts v2 to legacy `RejectResult`
+- `RejectResultV2.from_legacy(...)` (or `upgrade_reject_result(...)`) upgrades when
+  required metadata is present
 
 ## WrapCalibratedExplainer example
 
 The `WrapCalibratedExplainer` exposes the same two knobs (default + per-call). Pass
 `default_reject_policy` to `calibrate`, and specify `reject_policy` on `predict`
-or `explain`. The result is again returned as a `RejectResult`.
+or `explain`. Prediction calls return `RejectResult`; explanation calls return
+reject-aware explanation collections.
 
 ```python
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
@@ -181,6 +208,13 @@ classification.
 If `threshold` is not provided for a regression explainer, a `ValidationError` is raised
 immediately.
 
+### Threshold tie behavior
+
+Regression threshold binarization uses strict `< threshold` semantics on calibration
+targets (`y_cal < threshold`). Values equal to `threshold` are treated as the
+non-event class. This tie policy is deterministic and should be reflected in
+downstream analysis.
+
 ### Regression usage example
 
 ```python
@@ -231,10 +265,10 @@ are accepted.
 - Use `RejectPolicy.ONLY_ACCEPTED` when you only want to process confident predictions.
 - Keep `RejectPolicy.NONE` for fully backward compatible behaviour.
 
-Always inspect `RejectResult.policy` when consuming reject-aware outputs so the
+Always inspect `.policy` when consuming reject-aware outputs so the
 calling application can differentiate fallback and short-circuit cases.
 
-## ABI/API Guarantees for RejectResult
+## ABI/API Guarantees for RejectResult (prediction entrypoints)
 
 The `RejectResult` dataclass provides a stable contract for reject-aware consumers.
 These guarantees help you write robust production code that handles all scenarios.
@@ -347,8 +381,8 @@ predictions = result.prediction
 
 ### Example 2: Conservative Mode with ONLY_ACCEPTED
 
-Use `ONLY_ACCEPTED` when you only want to explain predictions the model is
-confident about. Rejected instances get predictions but no explanations.
+Use `ONLY_ACCEPTED` when you only want explanations for confident predictions.
+For explanation APIs the return object is a reject-aware explanation collection.
 
 ```python
 from calibrated_explanations import WrapCalibratedExplainer
@@ -361,13 +395,13 @@ wrapper.calibrate(x_cal, y_cal)
 # Only explain confident predictions
 result = wrapper.explain_factual(X_new, reject_policy=RejectPolicy.ONLY_ACCEPTED)
 
-if result.explanation is not None:
-    # Process explanations for confident predictions
-    for i, expl in enumerate(result.explanation):
-        if not result.rejected[i]:
-            print(f"Instance {i}: {expl}")
-else:
+if len(result.explanations) == 0:
     print("All instances were rejected - no explanations generated")
+else:
+    # Map explanation-local rows to original batch rows.
+    for local_idx, expl in enumerate(result.explanations):
+        global_idx = result.metadata["source_indices"][local_idx]
+        print(f"Original instance {global_idx}: {expl}")
 ```
 
 ### Example 3: Human-in-the-Loop with ONLY_REJECTED
@@ -388,14 +422,12 @@ result = wrapper.explain_factual(X_new, reject_policy=RejectPolicy.ONLY_REJECTED
 
 # Build review queue
 review_queue = []
-if result.rejected is not None:
-    for i, is_rejected in enumerate(result.rejected):
-        if is_rejected:
-            review_queue.append({
-                "index": i,
-                "prediction": result.prediction[i] if result.prediction is not None else None,
-                "needs_review": True,
-            })
+for local_idx, _expl in enumerate(result.explanations):
+    global_idx = result.metadata["source_indices"][local_idx]
+    review_queue.append({
+        "index": int(global_idx),
+        "needs_review": True,
+    })
 
 print(f"Review queue: {len(review_queue)} items need human review")
 print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
@@ -435,7 +467,7 @@ meta = res.metadata or {}
 ambiguity = meta.get("ambiguity_mask")  # boolean array
 novelty = meta.get("novelty_mask")  # boolean array
 set_sizes = meta.get("prediction_set_size")  # integer array
-eps = meta.get("epsilon")  # float array
+eps = meta.get("epsilon")  # scalar float
 
 # Example: indices that are ambiguous but not uncertain
 ambiguous_only = np.where(ambiguity & ~novelty)[0]
@@ -444,13 +476,13 @@ print("Ambiguous-only indices:", ambiguous_only)
 
 ### Handling Empty Subsets
 
-When using `ONLY_REJECTED` or `ONLY_ACCEPTED`, the explanation may be `None`
-if the relevant subset is empty:
+When using `ONLY_REJECTED` or `ONLY_ACCEPTED`, the explanation collection may
+be empty if the relevant subset is empty:
 
 ```python
 result = wrapper.explain_factual(X_new, reject_policy=RejectPolicy.ONLY_REJECTED)
 
-if result.explanation is None:
+if len(result.explanations) == 0:
     # No rejected instances to explain
     print("All predictions are confident - nothing to review")
 else:

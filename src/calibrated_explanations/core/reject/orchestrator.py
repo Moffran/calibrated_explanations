@@ -16,9 +16,13 @@ from crepes.extras import hinge
 
 from ...explanations.reject import (
     RejectContractWarning,
+    RejectDecisionArtifact,
+    RejectPayloadArtifact,
     RejectResult,
+    RejectResultV2,
     canonical_reject_ncf_w,
     normalize_reject_ncf_choice,
+    reject_result_v2_to_legacy,
 )
 from ...utils.exceptions import ValidationError
 from .policy import RejectPolicy
@@ -1081,6 +1085,71 @@ class RejectOrchestrator:
         )
         return metadata
 
+    @staticmethod
+    def _build_decision_artifact(
+        *,
+        rejected: np.ndarray,
+        breakdown: dict[str, Any],
+        confidence: float,
+        include_prediction_set: bool,
+        fallback_used: bool,
+        degraded_mode: tuple[str, ...],
+    ) -> RejectDecisionArtifact:
+        """Build strict decision artifact decoupled from payload-shaping policy."""
+        ambiguity = np.asarray(
+            breakdown.get("ambiguity", np.zeros(len(rejected), dtype=bool)),
+            dtype=bool,
+        )
+        novelty = np.asarray(
+            breakdown.get("novelty", np.zeros(len(rejected), dtype=bool)),
+            dtype=bool,
+        )
+        prediction_set_size = np.asarray(
+            breakdown.get("prediction_set_size", np.ones(len(rejected), dtype=int)),
+            dtype=int,
+        )
+        prediction_set = None
+        if include_prediction_set:
+            prediction_set_raw = breakdown.get("prediction_set")
+            if prediction_set_raw is not None:
+                prediction_set = np.asarray(prediction_set_raw, dtype=bool)
+        return RejectDecisionArtifact(
+            rejected=np.array(rejected, copy=True),
+            ambiguity_mask=np.array(ambiguity, copy=True),
+            novelty_mask=np.array(novelty, copy=True),
+            prediction_set_size=np.array(prediction_set_size, copy=True),
+            prediction_set=None if prediction_set is None else np.array(prediction_set, copy=True),
+            epsilon=float(breakdown.get("epsilon", 1.0 - confidence)),
+            confidence=float(confidence),
+            reject_rate=float(breakdown.get("reject_rate", 0.0)),
+            ambiguity_rate=float(breakdown.get("ambiguity_rate", 0.0)),
+            novelty_rate=float(breakdown.get("novelty_rate", 0.0)),
+            error_rate=float(breakdown.get("error_rate", 0.0)),
+            error_rate_defined=bool(breakdown.get("error_rate_defined", False)),
+            fallback_used=bool(fallback_used),
+            degraded_mode=tuple(degraded_mode),
+        )
+
+    @staticmethod
+    def _build_payload_artifact(
+        *,
+        policy: RejectPolicy,
+        source_indices: list[int],
+        original_count: int,
+        matched_count: int | None,
+        prediction: Any,
+        explanation: Any,
+    ) -> RejectPayloadArtifact:
+        """Build strict payload artifact decoupled from reject decision."""
+        return RejectPayloadArtifact(
+            policy=policy,
+            source_indices=tuple(int(v) for v in source_indices),
+            original_count=int(original_count),
+            matched_count=None if matched_count is None else int(matched_count),
+            prediction=prediction,
+            explanation=explanation,
+        )
+
     # --- Builtin strategy (preserve previous apply_policy impl) -----------
     def _builtin_strategy(
         self,
@@ -1093,6 +1162,11 @@ class RejectOrchestrator:
         **kwargs,
     ):
         """Builtin strategy that preserves the previous `apply_policy` semantics."""
+        result_schema_raw = kwargs.pop("result_schema", "legacy")
+        result_schema = str(result_schema_raw).strip().lower()
+        return_v2 = result_schema in {"v2", "2", "2.0"}
+        include_prediction_set_kw = kwargs.pop("include_prediction_set", None)
+        include_prediction_payload = kwargs.pop("include_prediction_payload", explain_fn is None)
         confidence = validate_reject_confidence(confidence)
         try:
             policy = RejectPolicy(policy)
@@ -1101,6 +1175,11 @@ class RejectOrchestrator:
 
         # If NONE, return a simple envelope indicating no action
         if policy is RejectPolicy.NONE:
+            if return_v2:
+                raise ValidationError(
+                    "RejectResultV2 is only available for non-NONE reject policies.",
+                    details={"policy": policy.value},
+                )
             return RejectResult(
                 prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
             )
@@ -1161,11 +1240,46 @@ class RejectOrchestrator:
                     ),
                 },
             )
-            return RejectResult(
+            legacy_result = RejectResult(
                 prediction=None,
                 explanation=None,
                 rejected=None,
                 policy=policy,
+                metadata=metadata,
+            )
+            if not return_v2:
+                return legacy_result
+            empty_rejected = np.zeros(original_count, dtype=bool)
+            decision = RejectDecisionArtifact(
+                rejected=empty_rejected,
+                ambiguity_mask=np.zeros(original_count, dtype=bool),
+                novelty_mask=np.zeros(original_count, dtype=bool),
+                prediction_set_size=np.zeros(original_count, dtype=int),
+                prediction_set=None,
+                epsilon=float(1.0 - confidence),
+                confidence=float(confidence),
+                reject_rate=0.0,
+                ambiguity_rate=0.0,
+                novelty_rate=0.0,
+                error_rate=0.0,
+                error_rate_defined=False,
+                fallback_used=True,
+                degraded_mode=tuple(_normalize_degraded_mode(degraded_mode_markers)),
+            )
+            payload = RejectPayloadArtifact(
+                policy=policy,
+                source_indices=(),
+                original_count=original_count,
+                matched_count=metadata.get("matched_count"),
+                prediction=None,
+                explanation=None,
+            )
+            metadata["schema_version"] = "2.0"
+            return RejectResultV2(
+                schema_version="2.0",
+                policy=policy,
+                decision=decision,
+                payload=payload,
                 metadata=metadata,
             )
 
@@ -1176,6 +1290,11 @@ class RejectOrchestrator:
             threshold=effective_threshold,
         )
         degraded_mode_markers.extend(list(breakdown.get("degraded_mode") or ()))
+        include_prediction_set = (
+            bool(include_prediction_set_kw)
+            if include_prediction_set_kw is not None
+            else (policy is RejectPolicy.FLAG)
+        )
         rejected = breakdown["rejected"]
         error_rate = breakdown["error_rate"]
         reject_rate = breakdown["reject_rate"]
@@ -1183,8 +1302,10 @@ class RejectOrchestrator:
         prediction = None
         explanation = None
 
-        # Obtain predictions when requested by policy (all non-NONE policies)
-        if policy in (
+        # Obtain predictions only when explicitly requested. Explanation-only
+        # reject paths do not require prediction payloads and can skip this
+        # expensive computation.
+        if include_prediction_payload and policy in (
             RejectPolicy.FLAG,
             RejectPolicy.ONLY_REJECTED,
             RejectPolicy.ONLY_ACCEPTED,
@@ -1283,7 +1404,9 @@ class RejectOrchestrator:
                 "ambiguity_mask": breakdown.get("ambiguity"),
                 "novelty_mask": breakdown.get("novelty"),
                 "prediction_set_size": breakdown.get("prediction_set_size"),
-                "prediction_set": breakdown.get("prediction_set"),
+                "prediction_set": (
+                    breakdown.get("prediction_set") if include_prediction_set else None
+                ),
                 "epsilon": breakdown.get("epsilon"),
                 "raw_total_examples": breakdown.get("raw_total_examples"),
                 "raw_reject_counts": breakdown.get("raw_reject_counts"),
@@ -1300,6 +1423,7 @@ class RejectOrchestrator:
                 "effective_confidence": confidence,
                 "effective_threshold": effective_threshold,
                 "threshold_source": threshold_source,
+                "schema_version": "2.0",
                 "effective_w": validate_reject_w(
                     getattr(self.explainer, "reject_ncf_w", 0.0)
                     if getattr(self.explainer, "reject_ncf_w", None) is not None
@@ -1307,10 +1431,29 @@ class RejectOrchestrator:
                 ),
             },
         )
-        return RejectResult(
+        decision = self._build_decision_artifact(
+            rejected=np.asarray(rejected, dtype=bool),
+            breakdown=breakdown,
+            confidence=confidence,
+            include_prediction_set=include_prediction_set,
+            fallback_used=bool(metadata.get("fallback_used", False)),
+            degraded_mode=tuple(metadata.get("degraded_mode", ())),
+        )
+        payload = self._build_payload_artifact(
+            policy=policy,
+            source_indices=source_indices,
+            original_count=len(rejected),
+            matched_count=matched_count,
             prediction=prediction,
             explanation=explanation,
-            rejected=rejected,
+        )
+        result_v2 = RejectResultV2(
+            schema_version="2.0",
             policy=policy,
+            decision=decision,
+            payload=payload,
             metadata=metadata,
         )
+        if return_v2:
+            return result_v2
+        return reject_result_v2_to_legacy(result_v2)

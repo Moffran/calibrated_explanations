@@ -1051,3 +1051,129 @@ def test_reject_wrapper_derives_source_indices_when_missing():
         )
     assert wrapped.metadata["source_indices"] == [1, 3]
     assert len(wrapped.rejected) == len(wrapped.explanations) == 2
+
+
+def test_apply_policy_result_schema_v2_returns_strict_artifacts(monkeypatch):
+    """`result_schema='v2'` returns strict split decision/payload artifacts."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+    from calibrated_explanations.explanations.reject import (
+        RejectDecisionArtifact,
+        RejectPayloadArtifact,
+        RejectResultV2,
+    )
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0.0], [1.0], [2.0]]),
+        explain_fn=lambda arr, **_: arr,
+        result_schema="v2",
+    )
+    assert isinstance(result, RejectResultV2)
+    assert result.schema_version == "2.0"
+    assert isinstance(result.decision, RejectDecisionArtifact)
+    assert isinstance(result.payload, RejectPayloadArtifact)
+    assert result.metadata["schema_version"] == "2.0"
+
+    legacy = result.to_legacy()
+    assert legacy.policy is RejectPolicy.FLAG
+    np.testing.assert_array_equal(legacy.rejected, result.decision.rejected)
+    assert legacy.metadata["schema_version"] == "2.0"
+
+
+def test_reject_result_v2_round_trip_from_legacy(monkeypatch):
+    """Legacy envelopes can be upgraded to strict v2 and downgraded back."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+    from calibrated_explanations.explanations.reject import RejectResultV2
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    legacy = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0.0], [1.0], [2.0]]),
+        explain_fn=lambda arr, **_: arr,
+    )
+    upgraded = RejectResultV2.from_legacy(legacy)
+    downgraded = upgraded.to_legacy()
+    np.testing.assert_array_equal(downgraded.rejected, legacy.rejected)
+    assert downgraded.policy is legacy.policy
+    assert downgraded.metadata["policy"] == legacy.metadata["policy"]
+
+
+def test_apply_policy_skips_prediction_payload_when_explain_fn_is_present(monkeypatch):
+    """Explanation reject paths should skip expensive prediction payload computation by default."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    calls = {"predict": 0}
+
+    def _predict(x, **kwargs):
+        calls["predict"] += 1
+        return np.zeros(len(x)), np.zeros(len(x)), np.ones(len(x)), None
+
+    orchestrator.explainer.prediction_orchestrator = SimpleNamespace(predict=_predict)
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0.0], [1.0], [2.0]]),
+        explain_fn=lambda arr, **_: arr,
+    )
+    assert calls["predict"] == 0
+    assert result.prediction is None
+
+
+def test_apply_policy_prediction_payload_opt_in_for_explain_paths(monkeypatch):
+    """Prediction payload computation can be re-enabled explicitly when needed."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    calls = {"predict": 0}
+
+    def _predict(x, **kwargs):
+        calls["predict"] += 1
+        return np.zeros(len(x)), np.zeros(len(x)), np.ones(len(x)), None
+
+    orchestrator.explainer.prediction_orchestrator = SimpleNamespace(predict=_predict)
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0.0], [1.0], [2.0]]),
+        explain_fn=lambda arr, **_: arr,
+        include_prediction_payload=True,
+    )
+    assert calls["predict"] == 1
+    assert result.prediction is not None
+
+
+def test_subset_policy_gates_full_prediction_set_payload_by_default(monkeypatch):
+    """Subset policies omit heavy `prediction_set` metadata unless explicitly requested."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    orchestrator.predict_reject_breakdown = lambda *args, **kwargs: {
+        "rejected": np.array([True, False, True, False]),
+        "error_rate": 0.0,
+        "reject_rate": 0.5,
+        "ambiguity_rate": 0.5,
+        "novelty_rate": 0.0,
+        "ambiguity": np.array([True, False, True, False]),
+        "novelty": np.array([False, False, False, False]),
+        "prediction_set_size": np.array([2, 1, 2, 1]),
+        "prediction_set": np.array([[1, 1], [1, 0], [1, 1], [1, 0]]),
+        "epsilon": 0.05,
+        "raw_total_examples": 4,
+        "raw_reject_counts": {"rejected": 2},
+        "error_rate_defined": True,
+    }
+
+    default_result = orchestrator.apply_policy(
+        RejectPolicy.ONLY_REJECTED,
+        np.array([[0.0], [1.0], [2.0], [3.0]]),
+        explain_fn=lambda arr, **_: arr,
+    )
+    assert default_result.metadata["prediction_set"] is None
+
+    full_result = orchestrator.apply_policy(
+        RejectPolicy.ONLY_REJECTED,
+        np.array([[0.0], [1.0], [2.0], [3.0]]),
+        explain_fn=lambda arr, **_: arr,
+        include_prediction_set=True,
+    )
+    assert full_result.metadata["prediction_set"] is not None

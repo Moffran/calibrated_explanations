@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import DataShapeError, ValidationError
 from .explanations import AlternativeExplanations, CalibratedExplanations
 
@@ -222,6 +223,23 @@ class RejectResult:
 
     Fields are intentionally optional to allow gradual rollout and
     compatibility with existing consumers.
+
+    Notes
+    -----
+    **Deprecation status:** ``RejectResult`` is the public return type only
+    during the v0.11.x transition period.  It will be replaced by
+    :class:`RejectResultV2` at v1.0.0-rc.  Do not add new fields to this
+    class; add them to the V2 artifacts instead.
+
+    **Synchronisation contract:** This class and :class:`RejectResultV2` must
+    be kept in sync whenever the reject envelope schema changes:
+
+    * Adding a diagnostic field → add it to :class:`RejectDecisionArtifact`
+      (or :class:`RejectPayloadArtifact`), then update
+      :func:`reject_result_v2_to_legacy` to carry it into the ``metadata``
+      dict, and update :func:`upgrade_reject_result` to extract it.
+    * Removing or renaming a field → apply the same three-site change and
+      bump ``schema_version`` in :class:`RejectResultV2`.
     """
 
     prediction: Optional[Any] = None
@@ -229,6 +247,230 @@ class RejectResult:
     rejected: Optional[Any] = None
     policy: RejectPolicy = RejectPolicy.NONE
     metadata: Dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class RejectDecisionArtifact:
+    """Strict decision artifact separating reject diagnostics from payload filtering.
+
+    Notes
+    -----
+    This artifact is independent of payload-shaping policy and always uses
+    original-batch cardinality.
+    """
+
+    rejected: np.ndarray
+    ambiguity_mask: np.ndarray
+    novelty_mask: np.ndarray
+    prediction_set_size: np.ndarray
+    prediction_set: np.ndarray | None
+    epsilon: float
+    confidence: float
+    reject_rate: float
+    ambiguity_rate: float
+    novelty_rate: float
+    error_rate: float
+    error_rate_defined: bool
+    fallback_used: bool
+    degraded_mode: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class RejectPayloadArtifact:
+    """Strict payload artifact separating policy filtering from decision logic."""
+
+    policy: RejectPolicy
+    source_indices: tuple[int, ...]
+    original_count: int
+    matched_count: int | None
+    prediction: Any
+    explanation: Any
+
+
+@dataclass(frozen=True)
+class RejectResultV2:
+    """Versioned strict reject envelope for non-NONE reject policies.
+
+    ``RejectResultV2`` intentionally decouples reject decision diagnostics from
+    payload-shaping policy effects through explicit ``decision`` and ``payload``
+    artifacts.
+
+    Notes
+    -----
+    **Synchronisation contract:** See :class:`RejectResult` for the full
+    change protocol.  Any field added here must also be reflected in
+    :func:`reject_result_v2_to_legacy` (downgrade path) and
+    :func:`upgrade_reject_result` (upgrade path).  Bump ``schema_version``
+    for any non-additive change.
+    """
+
+    schema_version: str
+    policy: RejectPolicy
+    decision: RejectDecisionArtifact
+    payload: RejectPayloadArtifact
+    metadata: Dict[str, Any]
+
+    def to_legacy(self) -> "RejectResult":
+        """Convert this strict schema to legacy `RejectResult` envelope."""
+        return reject_result_v2_to_legacy(self)
+
+    @classmethod
+    def from_legacy(cls, result: "RejectResult") -> "RejectResultV2":
+        """Upgrade a legacy reject envelope to strict v2 schema."""
+        return upgrade_reject_result(result)
+
+
+def reject_result_v2_to_legacy(result: RejectResultV2) -> RejectResult:
+    """Convert `RejectResultV2` to legacy `RejectResult` with additive metadata."""
+    # SYNC: If RejectResultV2 / RejectDecisionArtifact / RejectPayloadArtifact gain
+    # new fields, mirror them into `metadata` below and update upgrade_reject_result.
+    deprecate(
+        "RejectResult is deprecated and will be removed at v1.0.0-rc. "
+        "The public API will return RejectResultV2 directly. "
+        "Use result.decision / result.payload for structured access.",
+        key="RejectResult:legacy_return_type",
+    )
+    metadata = dict(result.metadata or {})
+    metadata.setdefault("schema_version", result.schema_version)
+    metadata.setdefault("source_indices", list(result.payload.source_indices))
+    metadata.setdefault("original_count", int(result.payload.original_count))
+    metadata.setdefault("policy", result.policy.value)
+    metadata.setdefault("reject_rate", float(result.decision.reject_rate))
+    metadata.setdefault(
+        "accepted_count", int(result.payload.original_count) - int(np.sum(result.decision.rejected))
+    )
+    metadata.setdefault("rejected_count", int(np.sum(result.decision.rejected)))
+    metadata.setdefault("effective_confidence", float(result.decision.confidence))
+    metadata.setdefault("fallback_used", bool(result.decision.fallback_used))
+    metadata.setdefault("degraded_mode", tuple(result.decision.degraded_mode))
+    metadata.setdefault("ambiguity_mask", np.array(result.decision.ambiguity_mask, copy=True))
+    metadata.setdefault("novelty_mask", np.array(result.decision.novelty_mask, copy=True))
+    metadata.setdefault(
+        "prediction_set_size", np.array(result.decision.prediction_set_size, copy=True)
+    )
+    metadata.setdefault(
+        "prediction_set",
+        None
+        if result.decision.prediction_set is None
+        else np.array(result.decision.prediction_set, copy=True),
+    )
+    metadata.setdefault("epsilon", float(result.decision.epsilon))
+    metadata.setdefault("error_rate", float(result.decision.error_rate))
+    metadata.setdefault("error_rate_defined", bool(result.decision.error_rate_defined))
+    metadata.setdefault("matched_count", result.payload.matched_count)
+    return RejectResult(
+        prediction=result.payload.prediction,
+        explanation=result.payload.explanation,
+        rejected=np.array(result.decision.rejected, copy=True),
+        policy=result.policy,
+        metadata=metadata,
+    )
+
+
+def _require_metadata_value(metadata: Dict[str, Any] | None, key: str, context: str) -> Any:
+    """Return required metadata value or raise `ValidationError`."""
+    if metadata is None or key not in metadata:
+        raise ValidationError(
+            f"RejectResultV2 upgrade requires metadata key '{key}'.",
+            details={"key": key, "context": context},
+        )
+    return metadata[key]
+
+
+def upgrade_reject_result(result: RejectResult) -> RejectResultV2:
+    """Upgrade legacy `RejectResult` to strict `RejectResultV2`.
+
+    Raises
+    ------
+    ValidationError
+        If the legacy envelope does not contain enough data to form strict
+        decision and payload artifacts.
+    """
+    # SYNC: Mirror of reject_result_v2_to_legacy — add extraction logic here
+    # whenever a new field is added to RejectDecisionArtifact or RejectPayloadArtifact.
+    if result.policy is RejectPolicy.NONE:
+        raise ValidationError(
+            "RejectResultV2 is only defined for non-NONE reject policies.",
+            details={"policy": result.policy.value},
+        )
+    if result.rejected is None:
+        raise ValidationError(
+            "RejectResultV2 upgrade requires a full rejected mask.",
+            details={"policy": result.policy.value},
+        )
+
+    rejected_arr = np.asarray(result.rejected, dtype=bool).reshape(-1)
+    metadata = dict(result.metadata or {})
+    ambiguity_mask = np.asarray(
+        _require_metadata_value(metadata, "ambiguity_mask", "decision"),
+        dtype=bool,
+    ).reshape(-1)
+    novelty_mask = np.asarray(
+        _require_metadata_value(metadata, "novelty_mask", "decision"),
+        dtype=bool,
+    ).reshape(-1)
+    prediction_set_size = np.asarray(
+        _require_metadata_value(metadata, "prediction_set_size", "decision"),
+        dtype=int,
+    ).reshape(-1)
+    prediction_set_raw = metadata.get("prediction_set")
+    prediction_set = (
+        None if prediction_set_raw is None else np.asarray(prediction_set_raw, dtype=bool)
+    )
+
+    if len(ambiguity_mask) != len(rejected_arr) or len(novelty_mask) != len(rejected_arr):
+        raise ValidationError(
+            "RejectResultV2 upgrade requires full-length decision masks.",
+            details={
+                "rejected_len": int(len(rejected_arr)),
+                "ambiguity_len": int(len(ambiguity_mask)),
+                "novelty_len": int(len(novelty_mask)),
+            },
+        )
+
+    source_indices_raw = _require_metadata_value(metadata, "source_indices", "payload")
+    source_indices = tuple(int(v) for v in np.asarray(source_indices_raw).tolist())
+    original_count = int(_require_metadata_value(metadata, "original_count", "payload"))
+    matched_count = metadata.get("matched_count")
+
+    decision = RejectDecisionArtifact(
+        rejected=np.array(rejected_arr, copy=True),
+        ambiguity_mask=np.array(ambiguity_mask, copy=True),
+        novelty_mask=np.array(novelty_mask, copy=True),
+        prediction_set_size=np.array(prediction_set_size, copy=True),
+        prediction_set=None if prediction_set is None else np.array(prediction_set, copy=True),
+        epsilon=float(_require_metadata_value(metadata, "epsilon", "decision")),
+        confidence=float(
+            metadata.get("effective_confidence", 1.0 - float(metadata.get("epsilon", 0.05)))
+        ),
+        reject_rate=float(_require_metadata_value(metadata, "reject_rate", "decision")),
+        ambiguity_rate=float(_require_metadata_value(metadata, "ambiguity_rate", "decision")),
+        novelty_rate=float(_require_metadata_value(metadata, "novelty_rate", "decision")),
+        error_rate=float(_require_metadata_value(metadata, "error_rate", "decision")),
+        error_rate_defined=bool(
+            _require_metadata_value(metadata, "error_rate_defined", "decision")
+        ),
+        fallback_used=bool(metadata.get("fallback_used", False)),
+        degraded_mode=_canonicalize_degraded_mode(metadata.get("degraded_mode")),
+    )
+
+    payload = RejectPayloadArtifact(
+        policy=result.policy,
+        source_indices=source_indices,
+        original_count=original_count,
+        matched_count=None if matched_count is None else int(matched_count),
+        prediction=result.prediction,
+        explanation=result.explanation,
+    )
+
+    metadata.setdefault("schema_version", "2.0")
+    return RejectResultV2(
+        schema_version=str(metadata["schema_version"]),
+        policy=result.policy,
+        decision=decision,
+        payload=payload,
+        metadata=metadata,
+    )
 
 
 @dataclass

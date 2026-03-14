@@ -27,7 +27,9 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 
+from calibrated_explanations import RejectPolicySpec
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
+from calibrated_explanations.core.reject.policy import RejectPolicy
 
 ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parent.parent
@@ -590,17 +592,183 @@ def reject_breakdown(
     ncf: str | None = None,
     w: float = 0.5,
 ) -> dict[str, Any]:
-    """Return the detailed reject breakdown through the supported orchestrator."""
-    assert wrapper.explainer is not None
-    if getattr(wrapper.explainer, "reject_learner", None) is None:
-        wrapper.explainer.reject_orchestrator.initialize_reject_learner(
-            threshold=threshold, ncf=ncf, w=w
-        )
-    return wrapper.explainer.reject_orchestrator.predict_reject_breakdown(
+    """Return reject breakdown from one policy-coupled execution path.
+
+    This helper intentionally avoids mixed semantics by deriving breakdown from
+    the same reject-enabled call that produced the output envelope.
+    """
+    explainer = getattr(wrapper, "explainer", None)
+    mode = getattr(explainer, "mode", "classification")
+    if mode == "regression":
+        # Regression reject requires call threshold; avoid default-policy spec
+        # initialization paths that cannot carry threshold.
+        policy: Any = RejectPolicy.FLAG
+    else:
+        policy = RejectPolicySpec.flag(ncf=ncf or "default", w=float(w))
+    result = wrapper.predict(
         inputs,
-        confidence=confidence,
+        reject_policy=policy,
+        confidence=float(confidence),
         threshold=threshold,
     )
+    return breakdown_from_reject_output(result, default_confidence=float(confidence))
+
+
+def breakdown_from_reject_output(
+    reject_output: Any,
+    *,
+    default_confidence: float | None = None,
+) -> dict[str, Any]:
+    """Build a normalized reject breakdown from a reject-aware output object."""
+    metadata = getattr(reject_output, "metadata", None) or {}
+    policy_value = str(metadata.get("policy", "")).strip().lower()
+    source_indices_raw = metadata.get("source_indices")
+    source_indices = None
+    if source_indices_raw is not None:
+        try:
+            source_indices_arr = np.asarray(source_indices_raw, dtype=int).reshape(-1)
+            if np.all(source_indices_arr >= 0):
+                source_indices = source_indices_arr
+        except Exception:  # pragma: no cover - defensive for third-party metadata types
+            source_indices = None
+    try:
+        original_count = int(metadata.get("original_count"))
+    except (TypeError, ValueError):
+        original_count = None
+
+    rejected_raw = getattr(reject_output, "rejected", None)
+    rejected = (
+        np.asarray(rejected_raw, dtype=bool).reshape(-1)
+        if rejected_raw is not None
+        else np.array([], dtype=bool)
+    )
+    if (
+        original_count is not None
+        and original_count >= 0
+        and len(rejected) != original_count
+        and source_indices is not None
+        and np.all(source_indices < original_count)
+    ):
+        if policy_value == RejectPolicy.ONLY_REJECTED.value:
+            full_rejected = np.zeros(original_count, dtype=bool)
+            full_rejected[source_indices] = True
+            rejected = full_rejected
+        elif policy_value == RejectPolicy.ONLY_ACCEPTED.value:
+            full_rejected = np.ones(original_count, dtype=bool)
+            full_rejected[source_indices] = False
+            rejected = full_rejected
+
+    full_count = len(rejected)
+
+    def _align_mask(
+        value: Any,
+        *,
+        default: np.ndarray,
+        dtype: Any,
+    ) -> np.ndarray:
+        if value is None:
+            return default
+        try:
+            arr = np.asarray(value, dtype=dtype).reshape(-1)
+        except Exception:  # pragma: no cover - defensive for third-party metadata types
+            return default
+        if len(arr) == full_count:
+            return arr
+        if (
+            source_indices is not None
+            and len(arr) == len(source_indices)
+            and np.all(source_indices < full_count)
+        ):
+            aligned = np.array(default, copy=True)
+            aligned[source_indices] = arr
+            return aligned
+        return default
+
+    ambiguity_mask = metadata.get("ambiguity_mask")
+    novelty_mask = metadata.get("novelty_mask")
+    prediction_set_size = metadata.get("prediction_set_size")
+    ambiguity_mask = _align_mask(
+        ambiguity_mask,
+        default=np.zeros(full_count, dtype=bool),
+        dtype=bool,
+    )
+    novelty_mask = _align_mask(
+        novelty_mask,
+        default=np.zeros(full_count, dtype=bool),
+        dtype=bool,
+    )
+    prediction_set_size = _align_mask(
+        prediction_set_size,
+        default=np.where(rejected, 0, 1).astype(int),
+        dtype=int,
+    )
+
+    effective_confidence = metadata.get("effective_confidence")
+    if effective_confidence is None:
+        epsilon = metadata.get("epsilon")
+        if epsilon is not None:
+            effective_confidence = 1.0 - float(epsilon)
+        elif default_confidence is not None:
+            effective_confidence = float(default_confidence)
+        else:
+            effective_confidence = float("nan")
+
+    prediction_set_raw = metadata.get("prediction_set")
+    prediction_set = None
+    if prediction_set_raw is not None:
+        try:
+            prediction_set_arr = np.asarray(prediction_set_raw, dtype=bool)
+            if prediction_set_arr.ndim == 1:
+                prediction_set_arr = prediction_set_arr.reshape(-1, 1)
+            if prediction_set_arr.shape[0] == full_count:
+                prediction_set = prediction_set_arr
+            elif (
+                source_indices is not None
+                and prediction_set_arr.shape[0] == len(source_indices)
+                and np.all(source_indices < full_count)
+            ):
+                aligned_set = np.zeros((full_count, prediction_set_arr.shape[1]), dtype=bool)
+                aligned_set[source_indices, :] = prediction_set_arr
+                prediction_set = aligned_set
+        except Exception:  # pragma: no cover - defensive for third-party metadata types
+            prediction_set = None
+
+    reject_rate = metadata.get("reject_rate")
+    if reject_rate is None:
+        reject_rate = float(np.mean(rejected)) if len(rejected) else 0.0
+    ambiguity_rate = metadata.get("ambiguity_rate")
+    if ambiguity_rate is None:
+        ambiguity_rate = (
+            float(np.mean(np.asarray(ambiguity_mask, dtype=bool)))
+            if len(rejected)
+            else 0.0
+        )
+    novelty_rate = metadata.get("novelty_rate")
+    if novelty_rate is None:
+        novelty_rate = (
+            float(np.mean(np.asarray(novelty_mask, dtype=bool)))
+            if len(rejected)
+            else 0.0
+        )
+
+    return {
+        "rejected": rejected,
+        "ambiguity": np.asarray(ambiguity_mask, dtype=bool),
+        "novelty": np.asarray(novelty_mask, dtype=bool),
+        "prediction_set_size": np.asarray(prediction_set_size, dtype=int),
+        "prediction_set": None if prediction_set is None else np.asarray(prediction_set, dtype=bool),
+        "reject_rate": float(reject_rate),
+        "ambiguity_rate": float(ambiguity_rate),
+        "novelty_rate": float(novelty_rate),
+        "error_rate": float(metadata.get("error_rate", 0.0)),
+        "error_rate_defined": bool(metadata.get("error_rate_defined", False)),
+        "epsilon": float(metadata.get("epsilon", 1.0 - float(effective_confidence))),
+        "effective_confidence": float(effective_confidence),
+        "effective_threshold": metadata.get("effective_threshold"),
+        "threshold_source": metadata.get("threshold_source"),
+        "fallback_used": bool(metadata.get("fallback_used", False)),
+        "degraded_mode": tuple(metadata.get("degraded_mode", ())),
+    }
 
 
 def select_best_row(

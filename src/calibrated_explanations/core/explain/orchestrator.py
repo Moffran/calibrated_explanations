@@ -98,6 +98,20 @@ def _warn_source_index_issue(message: str) -> None:
     warnings.warn(message, RejectContractWarning, stacklevel=3)
 
 
+def _coerce_legacy_reject_result(result: Any) -> Any:
+    """Convert strict v2 reject envelopes to legacy format for compatibility."""
+    try:
+        from ...explanations.reject import (
+            RejectResultV2,  # pylint: disable=import-outside-toplevel
+        )
+
+        if isinstance(result, RejectResultV2):
+            return result.to_legacy()
+    except Exception:  # adr002_allow
+        return result
+    return result
+
+
 def _resolve_source_indices_for_payload(
     *,
     policy: Any,
@@ -117,26 +131,26 @@ def _resolve_source_indices_for_payload(
         try:
             idx_arr = np.asarray(source_indices_raw)
             if idx_arr.ndim != 1 or not np.issubdtype(idx_arr.dtype, np.integer):
-                raise ValueError("source_indices must be a 1D integer sequence")
+                raise DataShapeError("source_indices must be a 1D integer sequence")
             idxs = [int(v) for v in idx_arr.tolist()]
             if len(idxs) != payload_count:
-                raise ValueError(
+                raise DataShapeError(
                     f"source_indices length {len(idxs)} does not match payload length {payload_count}"
                 )
             if any(i < 0 for i in idxs):
-                raise ValueError("source_indices must be non-negative")
+                raise DataShapeError("source_indices must be non-negative")
             if len(set(idxs)) != len(idxs):
-                raise ValueError("source_indices must be unique")
+                raise DataShapeError("source_indices must be unique")
             if any(curr >= nxt for curr, nxt in zip(idxs, idxs[1:], strict=False)):
-                raise ValueError("source_indices must preserve source order")
+                raise DataShapeError("source_indices must preserve source order")
             if isinstance(metadata, Mapping) and metadata.get("original_count") is not None:
                 original_count = int(metadata["original_count"])
                 if any(i >= original_count for i in idxs):
-                    raise ValueError(
+                    raise DataShapeError(
                         f"source_indices must be < original_count={original_count}; got {idxs!r}"
                     )
             return idxs
-        except (TypeError, ValueError) as exc:
+        except (TypeError, DataShapeError) as exc:
             _warn_source_index_issue(
                 f"Reject source_indices metadata is invalid ({exc!s}); attempting deterministic fallback."
             )
@@ -179,7 +193,7 @@ def _resolve_source_indices_for_payload(
             "Reject result is missing source_indices metadata; using deterministic fallback mapping."
         )
         return idxs
-    except (TypeError, ValueError) as exc:
+    except (TypeError, DataShapeError) as exc:
         _warn_source_index_issue(
             f"Unable to derive reject source indices from policy/mask ({exc!s}); "
             "reject context attachment skipped."
@@ -498,13 +512,15 @@ class ExplanationOrchestrator:
                     RejectResult,
                 )
 
-                res = self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy,
-                    x,
-                    explain_fn=_explain_fn,
-                    bins=bins,
-                    confidence=confidence,
-                    threshold=threshold,
+                res = _coerce_legacy_reject_result(
+                    self.explainer.reject_orchestrator.apply_policy(
+                        effective_policy,
+                        x,
+                        explain_fn=_explain_fn,
+                        bins=bins,
+                        confidence=confidence,
+                        threshold=threshold,
+                    )
                 )
 
                 # Attach RejectContext instances when possible. Be defensive
@@ -1022,13 +1038,15 @@ class ExplanationOrchestrator:
                 for cls in classes:
                     explain_fn = make_explain_fn_for_class(int(cls))
                     try:
-                        res = self.explainer.reject_orchestrator.apply_policy(
-                            effective_policy,
-                            x,
-                            explain_fn=explain_fn,
-                            bins=bins,
-                            confidence=confidence,
-                            threshold=threshold,
+                        res = _coerce_legacy_reject_result(
+                            self.explainer.reject_orchestrator.apply_policy(
+                                effective_policy,
+                                x,
+                                explain_fn=explain_fn,
+                                bins=bins,
+                                confidence=confidence,
+                                threshold=threshold,
+                            )
                         )
                     except Exception:  # adr002_allow
                         # Fallback to legacy explain if reject orchestration fails
@@ -1216,13 +1234,15 @@ class ExplanationOrchestrator:
                 for cls in classes:
                     explain_fn = make_explain_fn_for_class(int(cls))
                     try:
-                        res = self.explainer.reject_orchestrator.apply_policy(
-                            effective_policy,
-                            x,
-                            explain_fn=explain_fn,
-                            bins=bins,
-                            confidence=confidence,
-                            threshold=threshold,
+                        res = _coerce_legacy_reject_result(
+                            self.explainer.reject_orchestrator.apply_policy(
+                                effective_policy,
+                                x,
+                                explain_fn=explain_fn,
+                                bins=bins,
+                                confidence=confidence,
+                                threshold=threshold,
+                            )
                         )
                     except Exception:  # adr002_allow
                         labels = [cls for _ in range(len(x))]
@@ -1362,28 +1382,30 @@ class ExplanationOrchestrator:
             if effective_policy is not RejectPolicy.NONE:
                 with contextlib.suppress(Exception):
                     _ = self.explainer.reject_orchestrator
-                return self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy,
-                    x,
-                    explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_factual(
-                        x_subset,
+                return _coerce_legacy_reject_result(
+                    self.explainer.reject_orchestrator.apply_policy(
+                        effective_policy,
+                        x,
+                        explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_factual(
+                            x_subset,
+                            threshold=threshold,
+                            low_high_percentiles=low_high_percentiles,
+                            bins=inner_kw.get("bins", bins),
+                            features_to_ignore=features_to_ignore,
+                            per_instance_features_to_ignore=per_instance_features_to_ignore,
+                            reject_policy=RejectPolicy.NONE,
+                            significance=significance,
+                            use_bonferroni=use_bonferroni,
+                            merge_adjacent=merge_adjacent,
+                            n_neighbors=n_neighbors,
+                            normalize_guard=normalize_guard,
+                            verbose=verbose,
+                            _ce_skip_reject=True,
+                        ),
+                        bins=bins,
+                        confidence=confidence,
                         threshold=threshold,
-                        low_high_percentiles=low_high_percentiles,
-                        bins=inner_kw.get("bins", bins),
-                        features_to_ignore=features_to_ignore,
-                        per_instance_features_to_ignore=per_instance_features_to_ignore,
-                        reject_policy=RejectPolicy.NONE,
-                        significance=significance,
-                        use_bonferroni=use_bonferroni,
-                        merge_adjacent=merge_adjacent,
-                        n_neighbors=n_neighbors,
-                        normalize_guard=normalize_guard,
-                        verbose=verbose,
-                        _ce_skip_reject=True,
-                    ),
-                    bins=bins,
-                    confidence=confidence,
-                    threshold=threshold,
+                    )
                 )
 
         per_instance_ignore = per_instance_features_to_ignore
@@ -1531,28 +1553,30 @@ class ExplanationOrchestrator:
             if effective_policy is not RejectPolicy.NONE:
                 with contextlib.suppress(Exception):
                     _ = self.explainer.reject_orchestrator
-                return self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy,
-                    x,
-                    explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_alternative(
-                        x_subset,
+                return _coerce_legacy_reject_result(
+                    self.explainer.reject_orchestrator.apply_policy(
+                        effective_policy,
+                        x,
+                        explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_alternative(
+                            x_subset,
+                            threshold=threshold,
+                            low_high_percentiles=low_high_percentiles,
+                            bins=inner_kw.get("bins", bins),
+                            features_to_ignore=features_to_ignore,
+                            per_instance_features_to_ignore=per_instance_features_to_ignore,
+                            reject_policy=RejectPolicy.NONE,
+                            significance=significance,
+                            use_bonferroni=use_bonferroni,
+                            merge_adjacent=merge_adjacent,
+                            n_neighbors=n_neighbors,
+                            normalize_guard=normalize_guard,
+                            verbose=verbose,
+                            _ce_skip_reject=True,
+                        ),
+                        bins=bins,
+                        confidence=confidence,
                         threshold=threshold,
-                        low_high_percentiles=low_high_percentiles,
-                        bins=inner_kw.get("bins", bins),
-                        features_to_ignore=features_to_ignore,
-                        per_instance_features_to_ignore=per_instance_features_to_ignore,
-                        reject_policy=RejectPolicy.NONE,
-                        significance=significance,
-                        use_bonferroni=use_bonferroni,
-                        merge_adjacent=merge_adjacent,
-                        n_neighbors=n_neighbors,
-                        normalize_guard=normalize_guard,
-                        verbose=verbose,
-                        _ce_skip_reject=True,
-                    ),
-                    bins=bins,
-                    confidence=confidence,
-                    threshold=threshold,
+                    )
                 )
 
         per_instance_ignore = per_instance_features_to_ignore

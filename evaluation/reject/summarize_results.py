@@ -30,15 +30,15 @@ def summarize() -> None:
         "",
     ]
 
-    # RQ mapping for research scenarios
+    # RQ mapping for all scenarios (1–7)
     rq_map = {
-        "scenario_e_binary_coverage_sweep": ("RQ1", "Binary marginal coverage preservation", "formal"),
-        "scenario_f_multiclass_coverage": ("RQ2", "Multiclass correctness evaluation", "empirical"),
-        "scenario_g_regression_coverage": ("RQ3", "Threshold regression accepted-subset behaviour", "empirical"),
-        "scenario_h_ncf_grid": ("RQ4", "NCF selection and precision-coverage tradeoff", "empirical"),
-        "scenario_i_explanation_quality": ("RQ5", "Explanation quality on accepted instances", "empirical"),
-        "scenario_j_stress_tests": ("RQ6", "Finite-sample stress tests", "empirical"),
-        "scenario_k_mondrian_regression": ("RQ7", "Difficulty-normalised regression reject (K1)", "target_formal"),
+        "scenario_1_binary_coverage": ("RQ1", "Binary marginal coverage preservation", "formal_target"),
+        "scenario_2_multiclass_correctness": ("RQ2", "Multiclass correctness classifier", "empirical"),
+        "scenario_3_regression_threshold_baseline": ("RQ3", "Threshold regression heuristic baseline", "empirical"),
+        "scenario_4_ncf_weight_grid": ("RQ4", "NCF selection and precision-coverage tradeoff", "empirical"),
+        "scenario_5_explanation_quality": ("RQ5", "Explanation quality on accepted instances", "empirical"),
+        "scenario_6_finite_sample_stress": ("RQ6", "Finite-sample stress tests", "empirical"),
+        "scenario_7_ncf_coverage_validity": ("C1", "NCF coverage validity sweep (supplementary)", "empirical"),
     }
 
     # Collect artifacts
@@ -52,48 +52,59 @@ def summarize() -> None:
     if not scenarios:
         lines.append("_No scenario artifacts found._")
     else:
-        # Integration validation section (A-D)
-        lines.extend(["## Integration Validation (A–D)", ""])
+        # Core research evaluation section (Scenarios 1–6)
+        lines.extend(["## Core Research Scenarios (1–6)", ""])
         for stem, meta, df in scenarios:
-            if stem in ("scenario_a_policy_matrix", "scenario_b_ncf_sweep", "scenario_c_confidence_monotonicity", "scenario_d_regression_threshold"):
-                title = meta.get("display_name", stem)
-                lines.append(f"### {title}")
-                lines.append("")
-                lines.extend([f"- {item}" for item in (meta.get("highlights") or [])])
-                if meta.get("outcome"):
-                    lines.append("Outcome snapshot:")
-                    for key, value in (meta.get("outcome") or {}).items():
+            if stem not in rq_map:
+                continue
+            if meta.get("supplementary"):
+                continue
+            rq, title_short, formal_status = rq_map[stem]
+            title = meta.get("display_name", stem)
+            lines.append(f"### {title} — {rq}: {title_short}")
+            lines.append("")
+            lines.append(f"- **Status**: {formal_status}")
+            lines.append("")
+            lines.extend([f"- {item}" for item in (meta.get("highlights") or [])])
+            if meta.get("outcome"):
+                lines.append("Outcome snapshot:")
+                for key, value in (meta.get("outcome") or {}).items():
+                    if isinstance(value, dict):
+                        lines.append(f"- **{key}**: (see json artifact)")
+                    else:
                         lines.append(f"- **{key}**: {_format_value(value)}")
-                    lines.append("")
-                if df is not None:
-                    lines.append(f"Rows: {len(df)}")
-                    lines.append(f"Columns: {', '.join(df.columns)}")
-                    lines.append("")
+                lines.append("")
+            if df is not None:
+                lines.append(f"Rows: {len(df)}")
+                lines.append(f"Columns: {', '.join(df.columns)}")
+                lines.append("")
 
-        # Research evaluation section (E–K)
-        lines.extend(["## Research Evaluation (E–K)", ""])
+        # Supplementary section (Scenario 7)
+        lines.extend(["## Supplementary Scenarios", ""])
         for stem, meta, df in scenarios:
-            if stem in rq_map:
-                rq, title_short, formal_status = rq_map[stem]
-                title = meta.get("display_name", stem)
-                lines.append(f"### {title} — {rq}: {title_short}")
-                lines.append("")
-                # Formal/empirical annotation
-                lines.append(f"- **Status**: {formal_status}")
-                lines.append("")
-                lines.extend([f"- {item}" for item in (meta.get("highlights") or [])])
-                if meta.get("outcome"):
-                    lines.append("Outcome snapshot:")
-                    for key, value in (meta.get("outcome") or {}).items():
+            if stem not in rq_map:
+                continue
+            if not meta.get("supplementary"):
+                continue
+            rq, title_short, formal_status = rq_map[stem]
+            title = meta.get("display_name", stem)
+            lines.append(f"### {title} — {rq}: {title_short}")
+            lines.append("")
+            lines.append(f"- **Status**: {formal_status}")
+            lines.append("")
+            lines.extend([f"- {item}" for item in (meta.get("highlights") or [])])
+            if meta.get("outcome"):
+                lines.append("Outcome snapshot:")
+                for key, value in (meta.get("outcome") or {}).items():
+                    if isinstance(value, dict):
+                        lines.append(f"- **{key}**: (see json artifact)")
+                    else:
                         lines.append(f"- **{key}**: {_format_value(value)}")
-                    lines.append("")
-                if df is not None:
-                    lines.append(f"Rows: {len(df)}")
-                    lines.append(f"Columns: {', '.join(df.columns)}")
-                    lines.append("")
-                for plot in meta.get("plots") or []:
-                    lines.append(f"![{plot}]({plot})")
-                    lines.append("")
+                lines.append("")
+            if df is not None:
+                lines.append(f"Rows: {len(df)}")
+                lines.append(f"Columns: {', '.join(df.columns)}")
+                lines.append("")
 
     md = ART / "summary.md"
     md.write_text("\n".join(lines), encoding="utf-8")

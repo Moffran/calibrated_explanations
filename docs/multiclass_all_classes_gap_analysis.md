@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Multiclass all-classes plotting quality + gap analysis
 
 ## Scope reviewed

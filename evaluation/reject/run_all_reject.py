@@ -2,6 +2,10 @@
 
 Supports `--quick` for fast smoke runs, executes all reject scenarios, and
 regenerates the consolidated outcome summary at the end.
+
+All core scenarios (1–6) map directly to paper contributions (C1–C4) or research questions
+(RQ1–RQ6).  Scenario 7 is supplementary and requires the RT-2 sigma-normalisation fix.
+Run with ``--supplementary`` to include it.
 """
 from __future__ import annotations
 
@@ -12,32 +16,29 @@ from time import perf_counter
 from .common_reject import RunConfig
 from .summarize_results import summarize
 
-# Validation scenarios (integration / API validation)
-VALIDATION_SCENARIOS = [
-    "scenario_a_policy_matrix",
-    "scenario_b_ncf_sweep",
-    "scenario_c_confidence_monotonicity",
-    "scenario_d_regression_threshold",
+# Core research scenarios — directly map to paper RQs and contributions
+CORE_SCENARIOS = [
+    "scenario_1_binary_coverage",               # C1 / RQ1 — formal target
+    "scenario_2_multiclass_correctness",        # C2 / RQ2 — empirical
+    "scenario_3_regression_threshold_baseline", # RQ3 — empirical baseline
+    "scenario_4_ncf_weight_grid",               # C2 / RQ4 — empirical
+    "scenario_5_explanation_quality",           # C4 / RQ5 — empirical
+    "scenario_6_finite_sample_stress",          # RQ6 — empirical
 ]
 
-# Research scenarios (paper evaluation, RQ-mapped)
-RESEARCH_SCENARIOS = [
-    "scenario_e_binary_coverage_sweep",
-    "scenario_f_multiclass_coverage",
-    "scenario_g_regression_coverage",
-    "scenario_h_ncf_grid",
-    "scenario_i_explanation_quality",
-    "scenario_j_stress_tests",
-    "scenario_k_mondrian_regression",
+# Supplementary scenarios — depend on RT-2 K1 fix being complete
+SUPPLEMENTARY_SCENARIOS = [
+    "scenario_7_ncf_coverage_validity",         # Empirical companion to Proposition 1
 ]
 
-SCENARIOS = VALIDATION_SCENARIOS + RESEARCH_SCENARIOS
+SCENARIOS = CORE_SCENARIOS + SUPPLEMENTARY_SCENARIOS
 
 
-def run_all(quick: bool = True) -> None:
+def run_all(quick: bool = True, supplementary: bool = False) -> None:
     """Run every reject scenario and regenerate the top-level summary."""
+    to_run = CORE_SCENARIOS + (SUPPLEMENTARY_SCENARIOS if supplementary else [])
     cfg = RunConfig(seed=42, quick=quick)
-    for s in SCENARIOS:
+    for s in to_run:
         mod = importlib.import_module(f"evaluation.reject.{s}")
         print(f"Running {s} (quick={quick})...")
         started = perf_counter()
@@ -52,23 +53,13 @@ if __name__ == "__main__":
     parser.add_argument("--quick", action="store_true", help="Run the explicit quick dataset subsets")
     parser.add_argument("--full", action="store_true", help="Run the full dataset registry")
     parser.add_argument(
-        "--research-only",
+        "--supplementary",
         action="store_true",
-        help="Run only the research-tier scenarios (E--K)",
-    )
-    parser.add_argument(
-        "--validation-only",
-        action="store_true",
-        help="Run only the validation-tier scenarios (A--D)",
+        help="Also run supplementary scenarios (requires RT-2 K1 fix)",
     )
     arguments = parser.parse_args()
     quick_mode = not bool(arguments.full)
-    if arguments.research_only:
-        to_run = RESEARCH_SCENARIOS
-    elif arguments.validation_only:
-        to_run = VALIDATION_SCENARIOS
-    else:
-        to_run = SCENARIOS
+    to_run = CORE_SCENARIOS + (SUPPLEMENTARY_SCENARIOS if arguments.supplementary else [])
 
     cfg = RunConfig(seed=42, quick=quick_mode)
     for s in to_run:

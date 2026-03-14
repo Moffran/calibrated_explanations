@@ -15,10 +15,13 @@ from calibrated_explanations.core.reject import policy as reject_policy_module
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 from calibrated_explanations.explanations.reject import (
+    RejectDecisionArtifact,
     RejectCalibratedExplanations,
     RejectContext,
+    RejectPayloadArtifact,
     RejectPolicySpec,
     RejectResult,
+    RejectResultV2,
     _align_reject_field_to_payload,
     _canonicalize_degraded_mode,
     _normalize_contract_metadata,
@@ -710,3 +713,49 @@ def test_reject_context_materialize_prediction_set_variants():
 
     ctx_none = RejectContext(rejected=False)
     assert ctx_none.materialize_prediction_set(DummyExplainer()) is None
+
+
+def test_reject_result_v2_to_legacy_adapter_preserves_core_fields():
+    decision = RejectDecisionArtifact(
+        rejected=np.array([True, False], dtype=bool),
+        ambiguity_mask=np.array([True, False], dtype=bool),
+        novelty_mask=np.array([False, False], dtype=bool),
+        prediction_set_size=np.array([2, 1], dtype=int),
+        prediction_set=np.array([[1, 1], [1, 0]], dtype=bool),
+        epsilon=0.05,
+        confidence=0.95,
+        reject_rate=0.5,
+        ambiguity_rate=0.5,
+        novelty_rate=0.0,
+        error_rate=0.1,
+        error_rate_defined=True,
+        fallback_used=False,
+        degraded_mode=(),
+    )
+    payload = RejectPayloadArtifact(
+        policy=RejectPolicy.FLAG,
+        source_indices=(0, 1),
+        original_count=2,
+        matched_count=None,
+        prediction=("pred",),
+        explanation=("expl",),
+    )
+    result_v2 = RejectResultV2(
+        schema_version="2.0",
+        policy=RejectPolicy.FLAG,
+        decision=decision,
+        payload=payload,
+        metadata={"schema_version": "2.0"},
+    )
+    legacy = result_v2.to_legacy()
+    assert isinstance(legacy, RejectResult)
+    assert legacy.policy is RejectPolicy.FLAG
+    np.testing.assert_array_equal(legacy.rejected, np.array([True, False]))
+    assert legacy.metadata["schema_version"] == "2.0"
+    assert legacy.metadata["source_indices"] == [0, 1]
+
+
+def test_reject_result_v2_from_legacy_rejects_none_policy():
+    legacy = RejectResult(policy=RejectPolicy.NONE)
+    with pytest.raises(ValidationError, match="only defined for non-NONE"):
+        _ = RejectResultV2.from_legacy(legacy)

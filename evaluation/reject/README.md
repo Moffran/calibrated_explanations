@@ -3,43 +3,63 @@
 This directory evaluates the repository's implemented reject integration against
 the real `WrapCalibratedExplainer` runtime APIs described by ADR-029.
 
-This folder contains two tiers of scenarios:
+All scenarios map to a paper contribution (C1–C4) or research question (RQ1–RQ6) from the
+accompanying ESWA paper.  Results are labelled `formal_target` or `empirical` per the paper's
+guarantee map (Table 1).
 
-- Integration validation (A–D): quick, single-dataset checks that validate the
-  CE reject API integration and runtime contracts. These scenarios are intended
-  for continuous integration and developer sanity checks.
-- Research evaluation (E–K): multi-dataset experiments designed for the ESWA
-  paper. Each scenario maps to a research question (RQ1–RQ7); artifacts are
-  produced for empirical analysis and paper tables/plots.
+## Scenarios
 
-## What this suite measures
+### Core scenarios (run by default)
 
-### Integration validation (A–D)
+- **Scenario 1 — Binary marginal coverage** (`scenario_1_binary_coverage.py`, RQ1):
+  Multi-dataset test of marginal coverage preservation across 26 binary datasets at
+  epsilon in {0.01, 0.05, 0.10} with Clopper-Pearson CIs.  Directly tests C1 (Proposition 1).
+  Distinguishes finite-sample coverage shortfalls from structural violations (CI upper bound
+  below 1-epsilon).  Status: `formal_target`.
 
-- **Scenario A — Policy matrix:** compares `flag`, `only_rejected`, and
-  `only_accepted` across a confidence sweep on binary classification.
-- **Scenario B — NCF sweep:** compares the supported reject NCF variants via
-  `RejectPolicySpec.flag(...)` on multiclass classification.
-- **Scenario C — Confidence monotonicity:** checks whether coverage decreases and
-  accepted-set confidence increases as reject confidence rises.
-- **Scenario D — Regression threshold sweep:** evaluates thresholded regression
-  reject behavior, accepted-set binary accuracy, and interval miss rate.
+- **Scenario 2 — Multiclass correctness classifier** (`scenario_2_multiclass_correctness.py`, RQ2):
+  Empirical evaluation of CE multiclass reject as a conformal correctness classifier using
+  `hinge`, `margin`, and `ensured` NCFs across 20 multiclass datasets.  Tests C2.  Demonstrates
+  hinge collapse on small-n-class datasets (flagged via `expected_collapse`) and margin
+  selectivity.  Status: `empirical`.
 
-### Research evaluation (E–K)
+- **Scenario 3 — Threshold regression heuristic baseline** (`scenario_3_regression_threshold_baseline.py`, RQ3):
+  Multi-dataset empirical analysis of threshold-based regression reject.  Establishes the null
+  result: threshold reject does not select by uncertainty — accepted-subset interval width equals
+  full-set interval width (the threshold rejects by predicted value quantile, not interval
+  width).  Status: `empirical`.
 
-- **Scenario E — Binary coverage sweep (RQ1):** multi-dataset test of marginal
-  coverage preservation for binary classification (formal target + empirical).
-- **Scenario F — Multiclass correctness (RQ2):** empirical evaluation of the
-  CE multiclass correctness classifier semantics (empirical only).
-- **Scenario G — Threshold regression (RQ3):** empirical analysis of accepted-
-  subset coverage and error under threshold-based reject.
-- **Scenario H — NCF grid (RQ4):** NCF and blend-weight grid across task types.
-- **Scenario I — Explanation quality (RQ5):** does rejection improve
-  explanation metrics on the accepted set?
-- **Scenario J — Finite-sample stress tests (RQ6):** small-calibration and edge
-  case checks across datasets.
-- **Scenario K — Regression reject comparison (RQ7):** K1 (difficulty-normalised
-  conformal), K2 (threshold), and K3 (predicted-value-bin Mondrian) comparison.
+- **Scenario 4 — NCF and blend weight grid** (`scenario_4_ncf_weight_grid.py`, RQ4):
+  Grid of `hinge`, `margin`, `ensured` × w in {0.3, 0.5, 0.7, 1.0} across binary and
+  multiclass datasets.  Tests C2 NCF selection guidance.  Demonstrates that margin at w=0.3
+  collapses to near-zero accept rates and that w >= 0.7 converges NCFs to hinge-like behavior.
+  Column `accept_rate` is the fraction accepted — NOT ICP label-set coverage.
+  Status: `empirical`.
+
+- **Scenario 5 — Explanation quality on accepted instances** (`scenario_5_explanation_quality.py`, RQ5):
+  Accuracy delta and ECE delta between all-instance and accepted-instance subsets, segmented by
+  reject-rate regime (low ≤15%, moderate 15–40%, high >40%).  Tests C4.
+  Status: `empirical`.
+
+- **Scenario 6 — Finite-sample stress tests** (`scenario_6_finite_sample_stress.py`, RQ6):
+  Coverage violations at small n_cal in {10, 20, 50, 100, 200} and extreme confidence
+  (epsilon in {0.005, 0.01}) across binary datasets.  Violation is computed from actual
+  coverage on both probes.  Status: `empirical`.
+
+### Supplementary scenarios (pass `--supplementary` flag, requires RT-2 fix)
+
+- **Scenario 7 — NCF coverage validity sweep** (`scenario_7_ncf_coverage_validity.py`):
+  Empirical companion to Proposition 1.  Verifies coverage ≥ 1-epsilon at epsilon in {0.05, 0.10}
+  across the full (NCF, w) grid on binary datasets.  Separates coverage validity check from
+  accuracy analysis in Scenario 4.
+
+### What this suite does NOT measure
+
+- API routing behavior (FLAG vs ONLY_ACCEPTED vs ONLY_REJECTED) — CI integration concern only.
+- ICP monotonicity as a standalone scenario — implementation invariant for unit tests.
+- Confidence sweep on a single binary dataset — absorbed by Scenario 1 full mode.
+- Difficulty-normalised regression reject (C3) — deferred to a standalone scenario pending the
+  RT-2 sigma-normalisation-only calibration fix.
 
 ## Artifact layout
 
@@ -48,27 +68,26 @@ Each scenario writes a bundle under `evaluation/reject/artifacts/`:
 - `<scenario>.csv` — row-level metrics.
 - `<scenario>.json` — machine-readable metadata and top findings.
 - `<scenario>.md` — human-readable scenario summary.
-- `<scenario>_*.png` — plots for quick inspection.
 - `summary.md` — cross-scenario outcome summary regenerated by the runner.
 
 ## Run the suite
 
-Quick smoke run (both tiers):
+Quick smoke run (core scenarios):
 
 ```pwsh
 python -m evaluation.reject.run_all_reject --quick
 ```
 
-Run only the research tier:
+Full run (core scenarios):
 
 ```pwsh
-python -m evaluation.reject.run_all_reject --research-only --quick
+python -m evaluation.reject.run_all_reject --full
 ```
 
-Run only the validation tier:
+Include supplementary scenarios:
 
 ```pwsh
-python -m evaluation.reject.run_all_reject --validation-only --quick
+python -m evaluation.reject.run_all_reject --quick --supplementary
 ```
 
 Regenerate only the top-level summary:
@@ -80,10 +99,8 @@ python -m evaluation.reject.summarize_results
 Run an individual scenario directly:
 
 ```pwsh
-python -m evaluation.reject.scenario_a_policy_matrix --quick
-python -m evaluation.reject.scenario_b_ncf_sweep --quick
-python -m evaluation.reject.scenario_c_confidence_monotonicity --quick
-python -m evaluation.reject.scenario_d_regression_threshold --quick
+python -m evaluation.reject.scenario_1_binary_coverage --quick
+python -m evaluation.reject.scenario_2_multiclass_correctness --quick
 ```
 
 ## Interpretation notes
@@ -92,10 +109,10 @@ python -m evaluation.reject.scenario_d_regression_threshold --quick
   the reject gate.
 - Lower **ECE** on the accepted subset indicates better-calibrated decisions
   after rejection.
-- Higher **ambiguity** usually means more prediction-set overlap; higher
-  **novelty** means more out-of-support uncertainty.
-- For regression, lower **outside_fraction_accepted** indicates interval quality
-  is improving on the accepted subset.
+- For **Scenario 4**, the `accept_rate` column is fraction of test instances
+  accepted — not ICP label-set coverage.  Do not confuse the two.
+- For **Scenario 3**, the `interval_width_delta` near zero is the expected null
+  result: threshold reject does not select by uncertainty.
 
 ## Design constraints followed
 
@@ -105,3 +122,4 @@ python -m evaluation.reject.scenario_d_regression_threshold --quick
   split.
 - Uses the implemented `RejectPolicy`, `RejectPolicySpec`, and reject envelope
   contracts instead of synthetic placeholders.
+- NCF set: `hinge`, `margin`, `ensured` only.  Entropy is excluded.

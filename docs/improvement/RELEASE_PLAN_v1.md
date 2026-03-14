@@ -79,7 +79,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-028 - Logging and Governance Observability:** Accepted (2026-03-03); enforcement tooling for domain-logger naming and Standard-005 observability example alignment remain v0.11.1 open gaps.
 
-**ADR-029 - Reject Integration Strategy:** Accepted (2026-01-06); policy enum, strategy registry, and reject envelope direction documented in ADR-029.
+**ADR-029 - Reject Integration Strategy:** Accepted (2026-01-06); policy enum, strategy registry, and reject envelope direction documented in ADR-029. `RejectResult` → `RejectResultV2` public-API migration targeted for v1.0.0-rc; deprecation warning active from v0.11.x.
 
 **ADR-030 - Test Quality Priorities and Enforcement:** Accepted; v0.11.0 delivered full detector extension and CI check-mode enforcement (assertion + determinism checks). Zero-tolerance ratification (marker hygiene, mutation testing policy) targets v0.11.3.
 
@@ -348,7 +348,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   8. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
   9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry. → relocated to v0.11.2.
   10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan. → relocated to v0.11.2.
-  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v0.12.0/v1.0.0` remove).
+  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v1.0.0-rc` remove).
   12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
   13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
   14. Update the Reject Framework within Calibrated Explanations to include other forms of rejection beyond just binary conformal-based rejectors, such as uncertainty-based rejectors that leverage the uncertainty estimates from calibrated explanations to make informed decisions about when to abstain from making a prediction. Document the new rejector types and provide examples of how to implement and use them effectively in practice.
@@ -716,6 +716,7 @@ _Last gap analysis: 2026-03-03_
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Reject strategy expansion beyond binary conformal rejectors not yet implemented | 3 | 3 | 9 | Uncertainty-based and cost-sensitive strategies targeted for v0.11.1 Task 14. |
 | 2 | Strategy lifecycle hooks and configuration surface not finalized | 2 | 2 | 4 | Defer detailed strategy config API to v0.11.2. |
+| 3 | `RejectResult` public return type not yet migrated to strict `RejectResultV2`; `reject_result_v2_to_legacy()` downgrade active with no deprecation warning | 3 | 2 | 6 | ADR-011 two-minor-release rule: emit deprecation in v0.11.x; switch public return to `RejectResultV2` at v1.0.0-rc. |
 
 ### ADR-030 - Test Quality Priorities and Enforcement
 
@@ -745,7 +746,7 @@ _Last gap analysis: 2026-03-03_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | CLI `--modality` filtering not yet implemented | 3 | 3 | 9 | v0.11.1 Task 11. |
-| 2 | `vision.py`/`audio.py` shims not yet present (must raise `MissingExtensionError`) | 3 | 3 | 9 | v0.11.1 Task 11; shim removal v0.12.0. |
+| 2 | `vision.py`/`audio.py` shims not yet present (must raise `MissingExtensionError`) | 3 | 3 | 9 | v0.11.1 Task 11; shim removal v1.0.0-rc. |
 | 3 | Packaging smoke test (extension install + entry-point discovery) missing | 3 | 3 | 9 | v0.11.1 Task 13. |
 | 4 | Plugin contributor contract docs not updated for `plugin_api_version`/`data_modalities` requirements | 2 | 2 | 4 | v0.11.1 Task 12. |
 

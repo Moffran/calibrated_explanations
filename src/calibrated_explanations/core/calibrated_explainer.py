@@ -762,7 +762,7 @@ class CalibratedExplainer:
             with contextlib.suppress(Exception):
                 self.plugin_manager.initialize_orchestrators()
 
-        return self.reject_orchestrator.apply_policy(
+        result = self.reject_orchestrator.apply_policy(
             effective_policy,
             x,
             explain_fn=_explain_fn,
@@ -770,6 +770,20 @@ class CalibratedExplainer:
             confidence=confidence,
             threshold=threshold,
         )
+        try:
+            from ..explanations.reject import (
+                RejectResultV2,  # pylint: disable=import-outside-toplevel
+            )
+
+            if isinstance(result, RejectResultV2):
+                return result.to_legacy()
+        except Exception as exc:  # adr002_allow
+            logging.getLogger(__name__).debug(
+                "RejectResultV2 compatibility conversion failed in invoke_explanation_plugin: %s",
+                exc,
+                exc_info=True,
+            )
+        return result
 
     def ensure_interval_runtime_state(self) -> None:
         """Delegate to PredictionOrchestrator."""
@@ -2687,6 +2701,19 @@ class CalibratedExplainer:
         rr = self.reject_orchestrator.apply_policy(
             policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
         )
+        try:
+            from ..explanations.reject import (
+                RejectResultV2,  # pylint: disable=import-outside-toplevel
+            )
+
+            if isinstance(rr, RejectResultV2):
+                rr = rr.to_legacy()
+        except Exception as exc:  # adr002_allow
+            logging.getLogger(__name__).debug(
+                "RejectResultV2 compatibility conversion failed in predict: %s",
+                exc,
+                exc_info=True,
+            )
 
         # Format the legacy payload into rr.prediction for consumer ergonomics
         try:
@@ -2909,6 +2936,19 @@ class CalibratedExplainer:
             threshold=threshold,
             **kwargs,
         )
+        try:
+            from ..explanations.reject import (
+                RejectResultV2,  # pylint: disable=import-outside-toplevel
+            )
+
+            if isinstance(rr, RejectResultV2):
+                rr = rr.to_legacy()
+        except Exception as exc:  # adr002_allow
+            logging.getLogger(__name__).debug(
+                "RejectResultV2 compatibility conversion failed in predict_proba: %s",
+                exc,
+                exc_info=True,
+            )
         rr.prediction = proba_payload
 
         # Log once-per-call when an implicit default caused an envelope return
