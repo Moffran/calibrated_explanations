@@ -70,6 +70,10 @@ _LEGACY_NCF_SILENT_MAP = {"entropy": "default"}
 _REMOVED_EXPLICIT_NCF = frozenset({"hinge", "margin"})
 
 
+class RejectContractWarning(UserWarning):
+    """Visible warning for reject contract fallback/coercion paths."""
+
+
 def normalize_reject_ncf_choice(ncf: str) -> str:
     """Normalize a user-facing reject NCF choice.
 
@@ -306,6 +310,84 @@ def _normalize_raw_count_metadata(meta: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _canonicalize_degraded_mode(value: Any) -> tuple[str, ...]:
+    """Return deterministic degraded-mode tuple from arbitrary metadata payloads."""
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return (value,)
+    if isinstance(value, (list, tuple, set)):
+        return tuple(str(v) for v in value if v)
+    return (str(value),)
+
+
+def _normalize_contract_metadata(
+    *,
+    metadata: dict[str, Any] | None,
+    policy: RejectPolicy,
+    rejected: Any | None,
+    source_indices: Any | None,
+    original_count: int | None,
+) -> dict[str, Any]:
+    """Ensure required non-NONE reject metadata keys are present and coherent."""
+    normalized = _normalize_raw_count_metadata(dict(metadata or {}))
+
+    if original_count is None:
+        if normalized.get("original_count") is not None:
+            original_count_int = int(normalized["original_count"])
+        elif rejected is not None:
+            original_count_int = int(len(np.asarray(rejected)))
+        else:
+            original_count_int = 0
+    else:
+        original_count_int = int(original_count)
+
+    if source_indices is None:
+        if normalized.get("source_indices") is not None:
+            idxs = [int(v) for v in np.asarray(normalized.get("source_indices")).tolist()]
+        else:
+            idxs = list(range(original_count_int))
+    else:
+        idxs = [int(v) for v in np.asarray(source_indices).tolist()]
+
+    rejected_arr = None if rejected is None else np.asarray(rejected, dtype=bool)
+    rejected_count = normalized.get("rejected_count")
+    if rejected_count is None:
+        if rejected_arr is not None and len(rejected_arr) == original_count_int:
+            rejected_count = int(np.sum(rejected_arr))
+        else:
+            rejected_count = int(normalized.get("raw_reject_counts", {}).get("rejected", 0))
+    rejected_count = int(rejected_count)
+    accepted_count = int(
+        normalized.get("accepted_count", max(original_count_int - rejected_count, 0))
+    )
+    reject_rate = normalized.get("reject_rate")
+    if reject_rate is None:
+        reject_rate = float(rejected_count / original_count_int) if original_count_int > 0 else 0.0
+    degraded_mode = _canonicalize_degraded_mode(normalized.get("degraded_mode"))
+    init_error = bool(normalized.get("init_error", False))
+    init_ok = bool(normalized.get("init_ok", not init_error))
+    fallback_used = bool(normalized.get("fallback_used", bool(degraded_mode) or init_error))
+
+    normalized.update(
+        {
+            "policy": str(normalized.get("policy", policy.value)),
+            "reject_rate": float(reject_rate),
+            "accepted_count": accepted_count,
+            "rejected_count": rejected_count,
+            "effective_confidence": normalized.get("effective_confidence"),
+            "effective_threshold": normalized.get("effective_threshold"),
+            "source_indices": idxs,
+            "original_count": original_count_int,
+            "init_ok": init_ok,
+            "fallback_used": fallback_used,
+            "init_error": init_error,
+            "degraded_mode": degraded_mode,
+        }
+    )
+    return normalized
+
+
 class RejectMixin:
     """Mixin to hold global reject metadata on a CalibratedExplanations collection."""
 
@@ -362,8 +444,23 @@ class RejectMixin:
             }
         if self.rejected is not None:
             rejected = np.asarray(self.rejected)
-            meta["reject_rate"] = float(np.mean(rejected)) if len(rejected) else 0.0
-            meta["rejected_count"] = int(np.sum(rejected))
+            payload_rejected_count = int(np.sum(rejected))
+            payload_count = int(len(rejected))
+            payload_reject_rate = float(np.mean(rejected)) if payload_count else 0.0
+            meta.setdefault("rejected_count", payload_rejected_count)
+            meta.setdefault("accepted_count", max(payload_count - payload_rejected_count, 0))
+            meta.setdefault("reject_rate", payload_reject_rate)
+            meta["payload_rejected_count"] = payload_rejected_count
+            meta["payload_accepted_count"] = max(payload_count - payload_rejected_count, 0)
+            meta["payload_reject_rate"] = payload_reject_rate
+            meta["payload_count"] = payload_count
+        meta = _normalize_contract_metadata(
+            metadata=meta,
+            policy=getattr(self, "policy", RejectPolicy.NONE),
+            rejected=None,
+            source_indices=meta.get("source_indices"),
+            original_count=meta.get("original_count"),
+        )
         return meta
 
     def metadata_summary(self) -> Dict[str, Any]:
@@ -384,6 +481,13 @@ class RejectMixin:
             meta["rejected"] = np.asarray(self.rejected)
         if self.prediction_set is not None:
             meta["prediction_set"] = np.asarray(self.prediction_set)
+        meta = _normalize_contract_metadata(
+            metadata=meta,
+            policy=getattr(self, "policy", RejectPolicy.NONE),
+            rejected=None,
+            source_indices=meta.get("source_indices"),
+            original_count=meta.get("original_count"),
+        )
         return _to_json_safe(meta)
 
     def clear_reject_arrays(self, keep_summary: bool = True) -> None:
@@ -539,27 +643,54 @@ class RejectMixin:
         # Constant fields just copy
         self.policy = source.policy
         self.epsilon = source.epsilon
-        # Copy base metadata then recompute rates from sliced per-instance arrays
-        # so aggregate rates stay consistent with the slice rather than the original.
+        # Copy base metadata and preserve original-batch contract semantics.
         self._metadata = deepcopy(source._metadata) if source._metadata is not None else {}
         if self._metadata is not None:
             self._metadata = _normalize_raw_count_metadata(self._metadata)
             source_meta = (
                 source._metadata if isinstance(getattr(source, "_metadata", None), dict) else {}
             )
+            source_indices_meta = source_meta.get("source_indices")
+            try:
+                source_indices_arr = (
+                    np.asarray(source_indices_meta, dtype=int)
+                    if source_indices_meta is not None
+                    else np.arange(
+                        len(source.rejected)
+                        if source.rejected is not None
+                        else len(source.explanations)
+                    )
+                )
+                self._validate_key_indexing(key, len(source_indices_arr), "source_indices")
+                sliced_source_indices = np.asarray(source_indices_arr[key], dtype=int).reshape(-1)
+            except Exception:  # adr002_allow - best-effort metadata continuity
+                sliced_source_indices = np.arange(
+                    len(self.rejected) if self.rejected is not None else 0, dtype=int
+                )
+
             if source_meta.get("raw_total_examples") is not None:
                 self._metadata["raw_total_examples"] = int(source_meta["raw_total_examples"])
             else:
                 self._metadata["raw_total_examples"] = (
                     int(len(source.rejected)) if source.rejected is not None else 0
                 )
+            self._metadata["source_indices"] = [int(v) for v in sliced_source_indices.tolist()]
+            if source_meta.get("original_count") is not None:
+                self._metadata["original_count"] = int(source_meta["original_count"])
+            elif source.rejected is not None:
+                self._metadata["original_count"] = int(len(source.rejected))
+            else:
+                self._metadata["original_count"] = int(len(source.explanations))
             self._metadata.setdefault("raw_reject_counts", {})
             self._metadata["raw_reject_counts"].update(raw_counts)
             rejected_arr = np.asarray(self.rejected) if self.rejected is not None else None
             n = len(rejected_arr) if rejected_arr is not None else 0  # pylint: disable=invalid-name
             self._metadata["sliced_total_examples"] = int(n)
             recomputed: dict = {
-                "reject_rate": 0.0,
+                "payload_reject_rate": 0.0,
+                "payload_rejected_count": 0,
+                "payload_accepted_count": 0,
+                "payload_count": int(n),
                 "ambiguity_rate": 0.0,
                 "novelty_rate": 0.0,
                 "error_rate_defined": False,
@@ -567,7 +698,10 @@ class RejectMixin:
             }
             if n > 0:
                 if self.rejected is not None:
-                    recomputed["reject_rate"] = float(np.mean(self.rejected))
+                    payload_rejected_count = int(np.sum(self.rejected))
+                    recomputed["payload_reject_rate"] = float(np.mean(self.rejected))
+                    recomputed["payload_rejected_count"] = payload_rejected_count
+                    recomputed["payload_accepted_count"] = max(int(n) - payload_rejected_count, 0)
                 if self.ambiguity_mask is not None:
                     recomputed["ambiguity_rate"] = float(np.mean(self.ambiguity_mask))
                 if self.novelty_mask is not None:
@@ -589,6 +723,13 @@ class RejectMixin:
                         )
                         recomputed["error_rate_defined"] = True
             self._metadata = {**self._metadata, **recomputed}
+            self._metadata = _normalize_contract_metadata(
+                metadata=self._metadata,
+                policy=self.policy,
+                rejected=None,
+                source_indices=self._metadata.get("source_indices"),
+                original_count=self._metadata.get("original_count"),
+            )
 
 
 def _ensure_runtime_available(instance: Any) -> None:
@@ -772,7 +913,7 @@ def _resolve_source_indices_for_wrapper(
         )
     warnings.warn(
         "Reject result is missing source_indices metadata; derived mapping from policy/rejected mask.",
-        UserWarning,
+        RejectContractWarning,
         stacklevel=3,
     )
     logger.info("Derived source_indices fallback for reject wrapper alignment.")
@@ -860,15 +1001,19 @@ class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
             source_indices=source_indices,
             ensure_dtype=bool,
         )
-        # Stash the raw metadata
-        obj._metadata = _lightweight_reject_metadata(metadata)
-        obj._metadata["source_indices"] = source_indices.tolist()
         if metadata and metadata.get("original_count") is not None:
-            obj._metadata["original_count"] = int(metadata["original_count"])
+            original_count = int(metadata["original_count"])
         elif rejected_arr is not None:
-            obj._metadata["original_count"] = int(len(rejected_arr))
+            original_count = int(len(rejected_arr))
         else:
-            obj._metadata["original_count"] = int(payload_count)
+            original_count = int(payload_count)
+        obj._metadata = _normalize_contract_metadata(
+            metadata=_lightweight_reject_metadata(metadata),
+            policy=policy,
+            rejected=rejected_arr,
+            source_indices=source_indices,
+            original_count=original_count,
+        )
         # Unpack masks to fields for slicing
         obj.ambiguity_mask = _align_reject_field_to_payload(
             name="ambiguity_mask",
@@ -1012,14 +1157,19 @@ class RejectAlternativeExplanations(AlternativeExplanations, RejectMixin):
             source_indices=source_indices,
             ensure_dtype=bool,
         )
-        obj._metadata = _lightweight_reject_metadata(metadata)
-        obj._metadata["source_indices"] = source_indices.tolist()
         if metadata and metadata.get("original_count") is not None:
-            obj._metadata["original_count"] = int(metadata["original_count"])
+            original_count = int(metadata["original_count"])
         elif rejected_arr is not None:
-            obj._metadata["original_count"] = int(len(rejected_arr))
+            original_count = int(len(rejected_arr))
         else:
-            obj._metadata["original_count"] = int(payload_count)
+            original_count = int(payload_count)
+        obj._metadata = _normalize_contract_metadata(
+            metadata=_lightweight_reject_metadata(metadata),
+            policy=policy,
+            rejected=rejected_arr,
+            source_indices=source_indices,
+            original_count=original_count,
+        )
         obj.ambiguity_mask = _align_reject_field_to_payload(
             name="ambiguity_mask",
             value=metadata.get("ambiguity_mask") if metadata else None,

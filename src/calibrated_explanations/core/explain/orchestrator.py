@@ -90,8 +90,12 @@ def _resolve_effective_reject_policy(
 def _warn_source_index_issue(message: str) -> None:
     """Emit visible warning and diagnostic log for source-index resolution issues."""
     logger = logging.getLogger(__name__)
+    from ...explanations.reject import (
+        RejectContractWarning,  # pylint: disable=import-outside-toplevel
+    )
+
     logger.info(message)
-    warnings.warn(message, UserWarning, stacklevel=3)
+    warnings.warn(message, RejectContractWarning, stacklevel=3)
 
 
 def _resolve_source_indices_for_payload(

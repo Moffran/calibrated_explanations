@@ -60,7 +60,7 @@ envelope = explainer.explain_factual(
 )
 
 assert envelope.policy == RejectPolicy.FLAG
-if envelope.rejected:
+if envelope.rejected is not None and envelope.rejected.any():
     # The runtime evaluated a reject decision even though the legacy
     # `reject` parameter remained False.
     print("Some instances triggered the reject policy.")
@@ -108,7 +108,7 @@ reject_result = wrapper.predict(
 )
 
 assert reject_result.policy == RejectPolicy.ONLY_ACCEPTED
-if reject_result.rejected:
+if reject_result.rejected is not None and reject_result.rejected.any():
     print("The policy skipped processing on rejects.")
 ```
 
@@ -252,20 +252,31 @@ These guarantees help you write robust production code that handles all scenario
 
 ### Metadata Dictionary Contract
 
-When `metadata` is not `None`, it contains the following keys:
+For all non-`NONE` policies, `metadata` is always present and contains at least
+the required contract keys below.
 
 | Key | Type | Description |
 | --- | ---- | ----------- |
+| `policy` | `str` | Effective reject policy name (`"flag"`, `"only_rejected"`, `"only_accepted"`) |
 | `error_rate` | `float` | Estimated error rate on accepted samples (≥ 0.0; see `error_rate_defined`) |
 | `error_rate_defined` | `bool` | `False` when no singleton prediction sets exist (error_rate is 0.0 sentinel, not a real estimate) |
-| `reject_rate` | `float` | Proportion of instances rejected |
+| `reject_rate` | `float` | **Original-batch** proportion of rejected instances (`rejected_count / original_count`) |
+| `accepted_count` | `int` | **Original-batch** accepted count |
+| `rejected_count` | `int` | **Original-batch** rejected count |
 | `ambiguity_rate` | `float` | Proportion of instances with ambiguous (multi-label) prediction sets |
 | `novelty_rate` | `float` | Proportion of instances with empty prediction sets |
 | `reject_ncf` | `str` | NCF used for this result (`"default"` or `"ensured"`) |
 | `reject_ncf_w` | `float` | Effective/canonical NCF weight (operational for `ensured`) |
 | `reject_ncf_auto_selected` | `bool` | `True` when the NCF was auto-selected (not specified by the caller) |
-| `matched_count` | `int` | Number of instances matched by `ONLY_REJECTED` or `ONLY_ACCEPTED` (0 when subset is empty) |
-| `init_error` | `bool` (optional) | Present and `True` only when reject learner initialization failed |
+| `matched_count` | `int \| None` | Number of payload rows matched by `ONLY_REJECTED`/`ONLY_ACCEPTED` (`None` for `FLAG`) |
+| `effective_confidence` | `float \| None` | Runtime confidence used for reject decisions |
+| `effective_threshold` | `Any \| None` | Runtime threshold used for regression reject decisions |
+| `source_indices` | `list[int]` | Source-row mapping from returned payload rows to original input rows |
+| `original_count` | `int` | Number of rows in original input batch for this call |
+| `init_ok` | `bool` | `True` when reject initialization completed for this call |
+| `init_error` | `bool` | `True` when reject initialization failed |
+| `fallback_used` | `bool` | `True` when any degraded/fallback path was used |
+| `degraded_mode` | `tuple[str, ...]` | Deterministic list of degradation markers for this call |
 
 Additionally, when a per-call reject policy is active the `metadata` dictionary
 contains per-instance breakdowns that let you inspect ambiguity and
@@ -276,7 +287,7 @@ uncertainty without calling the orchestrator directly:
 | `ambiguity_mask` | `numpy.ndarray[bool]` | `True` for instances with ambiguous (multi-label) prediction sets |
 | `novelty_mask` | `numpy.ndarray[bool]` | `True` for instances with empty prediction sets (novelty) |
 | `prediction_set_size` | `numpy.ndarray[int]` | Size of the prediction set for each instance |
-| `epsilon` | `numpy.ndarray[float]` | Per-instance epsilon threshold used when constructing the prediction set |
+| `epsilon` | `float` | Scalar epsilon threshold (`1 - confidence`) used for prediction-set construction |
 
 ### Type Specifications
 
@@ -394,17 +405,25 @@ print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
 
 ### Detecting Initialization Failures
 
-When the reject learner fails to initialize (e.g., missing calibration data), the
-`metadata` dictionary contains `init_error: True`.
+Use `init_ok`, `init_error`, and `fallback_used` together to distinguish hard
+failure from successful-but-degraded execution.
 
 ```python
 result = wrapper.explain_factual(X_new, reject_policy=RejectPolicy.FLAG)
+meta = result.metadata or {}
 
-if result.metadata and result.metadata.get("init_error"):
+if meta.get("init_error"):
     logging.error("Reject learner initialization failed")
     # Fall back to non-reject behavior or raise an error
     raise RuntimeError("Cannot proceed without reject learner")
+
+if meta.get("fallback_used"):
+    logging.warning("Reject fallback path used: %s", meta.get("degraded_mode", ()))
 ```
+
+Contract-level fallback/coercion paths emit `RejectContractWarning`
+(a `UserWarning` subclass), so existing `pytest.warns(UserWarning, ...)`
+assertions remain valid.
 
 ### Reading per-instance breakdowns
 

@@ -46,20 +46,38 @@ def train_regression(seed=0):
 
 def test_classification_predict_and_explain_envelope_binary():
     w, Xq = train_classification(n_classes=2, seed=3)
+    required = {
+        "policy",
+        "reject_rate",
+        "accepted_count",
+        "rejected_count",
+        "effective_confidence",
+        "effective_threshold",
+        "source_indices",
+        "original_count",
+        "init_ok",
+        "fallback_used",
+        "init_error",
+        "degraded_mode",
+    }
     # predict
     res = w.predict(Xq, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res, RejectResult)
     assert "ambiguity_mask" in (res.metadata or {})
+    assert required.issubset((res.metadata or {}).keys())
     # explain
     res2 = w.explain_factual(Xq, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res2, RejectCalibratedExplanations)
     assert res2.ambiguity_mask is not None
+    assert required.issubset(res2.metadata.keys())
 
 
 def test_multiclass_predict_proba_envelope():
     w, Xq = train_classification(n_classes=3, seed=4)
     res = w.predict_proba(Xq, uq_interval=False, reject_policy=RejectPolicy.FLAG)
     assert isinstance(res, RejectResult)
+    assert "policy" in (res.metadata or {})
+    assert "degraded_mode" in (res.metadata or {})
     proba = res.prediction
     assert proba is not None
 
@@ -70,6 +88,7 @@ def test_regression_predict_uq_envelope():
     threshold = np.median(w.explainer.y_cal)
     res = w.predict(Xq, uq_interval=True, reject_policy=RejectPolicy.FLAG, threshold=threshold)
     assert isinstance(res, RejectResult)
+    assert (res.metadata or {}).get("effective_threshold") is not None
     # legacy regression payload (proba, (low, high)) must be preserved
     pred = res.prediction
     assert isinstance(pred, tuple) and len(pred) == 2

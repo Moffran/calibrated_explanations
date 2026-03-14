@@ -9,7 +9,7 @@ from calibrated_explanations.core.reject.orchestrator import (
     resolve_policy_spec,
 )
 from calibrated_explanations.core.reject.policy import RejectPolicy
-from calibrated_explanations.explanations.reject import RejectPolicySpec
+from calibrated_explanations.explanations.reject import RejectContractWarning, RejectPolicySpec
 from calibrated_explanations.utils.exceptions import ValidationError
 
 
@@ -155,7 +155,7 @@ def test_resolve_effective_reject_policy_invalid_explicit_fails_fast():
 
 def test_resolve_effective_reject_policy_invalid_default_falls_back_with_warning():
     explainer = DummyExplainer()
-    with pytest.warns(UserWarning, match="Invalid default_reject_policy"):
+    with pytest.warns(RejectContractWarning, match="Invalid default_reject_policy"):
         res = resolve_effective_reject_policy(
             None,
             explainer,

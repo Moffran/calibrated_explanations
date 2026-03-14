@@ -14,6 +14,16 @@ import pytest
 from calibrated_explanations.core.reject import orchestrator as orch
 
 
+def test_reject_input_validators_reject_non_numeric_payloads():
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    with pytest.raises(ValidationError, match="confidence must be a float"):
+        orch.validate_reject_confidence("bad")
+
+    with pytest.raises(ValidationError, match="w must be a float"):
+        orch.validate_reject_w("bad")
+
+
 def test_initialize_reject_learner_warns_on_low_w(monkeypatch):
     # Create a minimal explainer stub that the orchestrator expects.
     class StubIntervalLearner:
@@ -118,6 +128,58 @@ def test_predict_reject_breakdown_runs_for_all_ncfs(monkeypatch):
         ps = breakdown["prediction_set"]
         assert ps.ndim == 2
         assert ps.shape[0] == 3
+
+
+def test_multiclass_default_ncf_predict_breakdown_uses_public_path(monkeypatch):
+    class StubIntervalLearner:
+        def predict_proba(self, x, bins=None):
+            proba = np.tile(np.array([[0.1, 0.3, 0.6]]), (len(x), 1))
+            predicted_labels = np.argmax(proba, axis=1)
+            return proba, predicted_labels
+
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            return np.zeros(len(x)), None, None, None
+
+    class ExplainerStub(SimpleNamespace):
+        def __init__(self):
+            super().__init__()
+            self.mode = "classification"
+            self.x_cal = np.array([[0], [1], [2], [3], [4], [5]])
+            self.y_cal = np.array([0, 1, 2, 0, 1, 2])
+            self.bins = None
+            self.interval_learner = StubIntervalLearner()
+            self.reject_learner = None
+
+        def is_multiclass(self):
+            return True
+
+    class DummyConformal:
+        def fit(self, *args, **kwargs):
+            return self
+
+        def predict_p(self, alphas, **kwargs):
+            n = np.atleast_2d(alphas).shape[0]
+            return np.tile(np.array([[0.8, 0.7, 0.6]]), (n, 1))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
+    expl = ExplainerStub()
+    orchestrator = orch.RejectOrchestrator(expl)
+    orchestrator.initialize_reject_learner(ncf="default", w=0.5)
+
+    breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.95)
+    assert breakdown["prediction_set"].shape == (3, 3)
+    assert breakdown["rejected"].shape == (3,)
+
+
+def test_predict_reject_breakdown_legacy_non_numeric_error_rate_is_normalized():
+    class LegacyRejectOrchestrator(orch.RejectOrchestrator):
+        def predict_reject(self, x, bins=None, confidence=0.95, threshold=None):
+            return np.array([True, False]), "not-a-number", 0.5
+
+    orchestrator = LegacyRejectOrchestrator(SimpleNamespace())
+    breakdown = orchestrator.predict_reject_breakdown([[0], [1]], confidence=0.95)
+    assert breakdown["error_rate"] == 0.0
+    assert breakdown["error_rate_defined"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -400,6 +462,93 @@ def test_apply_policy_metadata_includes_effective_confidence_and_w(monkeypatch):
     assert result.metadata["effective_w"] == pytest.approx(
         float(getattr(orchestrator.explainer, "reject_ncf_w", 0.0))
     )
+
+
+def test_apply_policy_metadata_contains_required_contract_keys(monkeypatch):
+    """Non-NONE policy output always exposes required WP5 metadata keys."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    expl, orchestrator = make_stub(monkeypatch, singletons=True)
+    expl.prediction_orchestrator = SimpleNamespace(
+        predict=lambda x, **kwargs: (np.zeros(len(x)), np.zeros(len(x)), np.ones(len(x)), None)
+    )
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0], [1], [2]]),
+        explain_fn=None,
+        confidence=0.77,
+    )
+    required = {
+        "policy",
+        "reject_rate",
+        "accepted_count",
+        "rejected_count",
+        "effective_confidence",
+        "effective_threshold",
+        "source_indices",
+        "original_count",
+        "init_ok",
+        "fallback_used",
+        "init_error",
+        "degraded_mode",
+    }
+    assert result.metadata is not None
+    assert required.issubset(result.metadata.keys())
+    assert result.metadata["policy"] == RejectPolicy.FLAG.value
+    assert result.metadata["init_ok"] is True
+    assert result.metadata["init_error"] is False
+    assert isinstance(result.metadata["degraded_mode"], tuple)
+
+
+def test_apply_policy_metadata_contract_on_init_failure(monkeypatch):
+    """Init failures still return full contract metadata with explicit failure flags."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    expl = SimpleNamespace(
+        mode="classification",
+        x_cal=np.array([[0], [1]]),
+        y_cal=np.array([0, 1]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        reject_learner=None,
+        reject_threshold=None,
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        prediction_orchestrator=SimpleNamespace(predict=lambda x, **kwargs: None),
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+
+    def _fail_init(*args, **kwargs):
+        raise RuntimeError("init boom")
+
+    monkeypatch.setattr(orchestrator, "initialize_reject_learner", _fail_init)
+    result = orchestrator.apply_policy(RejectPolicy.FLAG, np.array([[0], [1]]))
+    assert result.metadata is not None
+    assert result.metadata["init_ok"] is False
+    assert result.metadata["init_error"] is True
+    assert result.metadata["fallback_used"] is True
+    assert "reject_init_failure" in result.metadata["degraded_mode"]
+    assert result.metadata["policy"] == RejectPolicy.FLAG.value
+    assert result.metadata["original_count"] == 2
+
+
+def test_apply_policy_prediction_fallback_sets_degraded_mode(monkeypatch):
+    """Prediction payload fallback must be visible in metadata."""
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+
+    expl, orchestrator = make_stub(monkeypatch, singletons=True)
+    expl.prediction_orchestrator = SimpleNamespace(
+        predict=lambda x, **kwargs: (_ for _ in ()).throw(RuntimeError("predict boom"))
+    )
+    result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        np.array([[0], [1], [2]]),
+        explain_fn=None,
+    )
+    assert result.metadata["fallback_used"] is True
+    assert "prediction_payload_failed" in result.metadata["degraded_mode"]
 
 
 def test_apply_policy_metadata_includes_source_indices_and_original_count(monkeypatch):
@@ -779,11 +928,8 @@ def test_regression_apply_policy_reinitializes_when_threshold_comparison_falls_b
 # ---------------------------------------------------------------------------
 
 
-def test_sliced_reject_rates_recomputed():
-    """After slicing, aggregate rates must reflect the sliced masks, not originals.
-
-    Uses the public __getitem__ slicing API and the public .metadata property.
-    """
+def test_sliced_reject_contract_preserves_original_batch_rates():
+    """Sliced wrappers keep contract rates on original-batch semantics."""
     from dataclasses import dataclass
 
     from calibrated_explanations.explanations.reject import (
@@ -823,18 +969,17 @@ def test_sliced_reject_rates_recomputed():
         base, metadata_full, RejectPolicy.FLAG, rejected=rejected_full
     )
 
-    # Slice to first 2 instances via public __getitem__
-    sliced = rce[0:2]
+    # Slice to rejected-only subset via public __getitem__
+    sliced = rce[[0, 2]]
     meta = sliced.metadata
 
-    # reject_rate for [True, False] = 0.5
+    # Contract rates/counts remain original-batch values
     assert abs(meta["reject_rate"] - 0.5) < 1e-9
-    # ambiguity_rate for [True, False] = 0.5
-    assert abs(meta["ambiguity_rate"] - 0.5) < 1e-9
-    # novelty_rate for [False, False] = 0.0
-    assert abs(meta["novelty_rate"] - 0.0) < 1e-9
-    # error_rate_defined must be False after slicing
-    assert meta["error_rate_defined"] is False
+    assert meta["rejected_count"] == 2
+    assert meta["accepted_count"] == 2
+    # Payload stats are exposed separately for sliced objects
+    assert abs(meta["payload_reject_rate"] - 1.0) < 1e-9
+    assert meta["payload_rejected_count"] == 2
 
 
 def test_reject_wrapper_raises_on_malformed_source_indices():

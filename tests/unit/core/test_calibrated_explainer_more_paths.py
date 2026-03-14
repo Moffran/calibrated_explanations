@@ -438,3 +438,49 @@ def test_regression_reject_without_threshold_raises_across_paths():
         ValidationError, match="reject learner unavailable for regression without threshold"
     ):
         cal_exp.explain_factual(x_test[:2], reject_policy=RejectPolicy.FLAG)
+
+
+def test_reject_metadata_contract_present_across_predict_proba_and_explain():
+    dataset = make_binary_dataset()
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = dataset
+
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
+
+    required = {
+        "policy",
+        "reject_rate",
+        "accepted_count",
+        "rejected_count",
+        "effective_confidence",
+        "effective_threshold",
+        "source_indices",
+        "original_count",
+        "init_ok",
+        "fallback_used",
+        "init_error",
+        "degraded_mode",
+    }
+
+    pred = cal_exp.predict(x_test[:6], reject_policy=RejectPolicy.FLAG)
+    proba = cal_exp.predict_proba(x_test[:6], reject_policy=RejectPolicy.FLAG, uq_interval=False)
+    expl = cal_exp.explain_factual(x_test[:6], reject_policy=RejectPolicy.FLAG)
+
+    assert isinstance(pred, RejectResult)
+    assert isinstance(proba, RejectResult)
+    assert required.issubset((pred.metadata or {}).keys())
+    assert required.issubset((proba.metadata or {}).keys())
+    assert required.issubset(expl.metadata.keys())

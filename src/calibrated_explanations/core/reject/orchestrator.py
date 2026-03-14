@@ -15,6 +15,7 @@ from crepes import ConformalClassifier
 from crepes.extras import hinge
 
 from ...explanations.reject import (
+    RejectContractWarning,
     RejectResult,
     canonical_reject_ncf_w,
     normalize_reject_ncf_choice,
@@ -23,6 +24,13 @@ from ...utils.exceptions import ValidationError
 from .policy import RejectPolicy
 
 _VALID_NCF = frozenset({"default", "ensured"})
+_DEGRADED_MODE_ORDER = (
+    "reject_init_failure",
+    "predict_p_to_predict_set_fallback",
+    "bulk_to_per_instance_fallback",
+    "prediction_payload_failed",
+    "explanation_payload_failed",
+)
 
 
 @dataclass(frozen=True)
@@ -33,6 +41,27 @@ class RejectPolicyResolution:
     used_default: bool
     fallback_used: bool
     reason: str | None = None
+
+
+def _safe_length(value: Any) -> int:
+    """Return a safe non-negative length for array-like values."""
+    try:
+        return max(int(len(value)), 0)
+    except Exception:  # adr002_allow - best-effort contract fallback
+        return 0
+
+
+def _normalize_degraded_mode(markers: Any) -> tuple[str, ...]:
+    """Return deterministic degraded-mode markers preserving canonical order."""
+    if markers is None:
+        return ()
+    raw = [str(m) for m in markers if m]
+    if not raw:
+        return ()
+    unique = list(dict.fromkeys(raw))
+    ordered: list[str] = [m for m in _DEGRADED_MODE_ORDER if m in unique]
+    ordered.extend([m for m in unique if m not in ordered])
+    return tuple(ordered)
 
 
 def validate_reject_confidence(confidence: Any) -> float:
@@ -364,7 +393,7 @@ def resolve_effective_reject_policy(
             raise
         message = "Invalid default_reject_policy; falling back to RejectPolicy.NONE."
         active_logger.info("%s %s", message, str(exc))
-        warnings.warn(f"{message} {exc!s}", UserWarning, stacklevel=3)
+        warnings.warn(f"{message} {exc!s}", RejectContractWarning, stacklevel=3)
         return RejectPolicyResolution(
             policy=RejectPolicy.NONE,
             used_default=True,
@@ -586,7 +615,7 @@ class RejectOrchestrator:
 
     def _compute_prediction_set(
         self, x, bins=None, confidence: float = 0.95, threshold=None
-    ) -> tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray, float, tuple[str, ...]]:
         confidence = validate_reject_confidence(confidence)
         if bins is not None:
             bins = np.asarray(bins)
@@ -615,6 +644,7 @@ class RejectOrchestrator:
 
         seed = getattr(self.explainer, "seed", None)
         epsilon = 1 - confidence
+        degraded_mode_markers: list[str] = []
 
         prediction_set = None
         # Preferred: compute p-values once (deterministic) and threshold at epsilon.
@@ -643,9 +673,10 @@ class RejectOrchestrator:
                         "Reject prediction fallback engaged: predict_p failed "
                         f"({exc!s}); using predict_set."
                     ),
-                    UserWarning,
+                    RejectContractWarning,
                     stacklevel=2,
                 )
+                degraded_mode_markers.append("predict_p_to_predict_set_fallback")
 
         # Fallback: use predict_set directly but force smoothing=False for determinism.
         if prediction_set is None:
@@ -685,10 +716,11 @@ class RejectOrchestrator:
                         "Reject prediction fallback engaged: bulk predict_set failed "
                         f"({exc!s}); using per-instance calls."
                     ),
-                    UserWarning,
+                    RejectContractWarning,
                     stacklevel=2,
                 )
                 prediction_set = None
+                degraded_mode_markers.append("bulk_to_per_instance_fallback")
 
         expected_rows = len(alphas_test)
         if (
@@ -706,9 +738,10 @@ class RejectOrchestrator:
                         "Reject prediction fallback engaged: predict_set returned unexpected "
                         "shape; using per-instance calls."
                     ),
-                    UserWarning,
+                    RejectContractWarning,
                     stacklevel=2,
                 )
+                degraded_mode_markers.append("bulk_to_per_instance_fallback")
             collected: list[np.ndarray] = []
             for i in range(expected_rows):
                 per_bins = None
@@ -750,7 +783,11 @@ class RejectOrchestrator:
                     collected.append(np.asarray(per_set, dtype=bool).reshape(-1))
             prediction_set = np.vstack(collected).astype(bool)
 
-        return prediction_set.astype(bool), float(epsilon)
+        return (
+            prediction_set.astype(bool),
+            float(epsilon),
+            _normalize_degraded_mode(degraded_mode_markers),
+        )
 
     def predict_reject_breakdown(
         self, x, bins=None, confidence: float = 0.95, threshold=None
@@ -846,6 +883,8 @@ class RejectOrchestrator:
                         "novelty_mask": int(np.sum(novelty)),
                         "prediction_set_size": int(np.sum(set_sizes)),
                     },
+                    "fallback_used": False,
+                    "degraded_mode": (),
                 }
             except Exception as exc:  # adr002_allow - graceful fallback for legacy override
                 # If the legacy override misbehaves, fall through to full computation
@@ -853,7 +892,7 @@ class RejectOrchestrator:
                     "Legacy predict_reject override misbehaved: %s", exc, exc_info=True
                 )
 
-        prediction_set, epsilon = self._compute_prediction_set(
+        prediction_set, epsilon, degraded_mode = self._compute_prediction_set(
             x, bins=bins, confidence=confidence, threshold=threshold
         )
         set_sizes = np.sum(prediction_set, axis=1)
@@ -901,6 +940,8 @@ class RejectOrchestrator:
                 "novelty_mask": int(np.sum(novelty)),
                 "prediction_set_size": int(np.sum(set_sizes)),
             },
+            "fallback_used": bool(degraded_mode),
+            "degraded_mode": degraded_mode,
         }
 
     def predict_reject(self, x, bins=None, confidence=0.95, threshold=None):
@@ -986,6 +1027,60 @@ class RejectOrchestrator:
                 return self._strategies[identifier]
             raise KeyError(f"Reject strategy '{identifier}' is not registered")
 
+    def _build_contract_metadata(
+        self,
+        *,
+        policy: RejectPolicy,
+        rejected: Any | None,
+        source_indices: list[int] | None,
+        original_count: int | None,
+        effective_confidence: float | None,
+        effective_threshold: Any | None,
+        init_ok: bool,
+        init_error: bool,
+        fallback_used: bool,
+        degraded_mode: Any,
+        base_metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build canonical reject metadata contract for non-NONE policies."""
+        metadata = dict(base_metadata or {})
+        normalized_modes = _normalize_degraded_mode(degraded_mode)
+        original_count_int = (
+            int(original_count) if original_count is not None else _safe_length(rejected)
+        )
+
+        rejected_count: int
+        if rejected is None:
+            rejected_count = int(metadata.get("rejected_count", 0) or 0)
+        else:
+            rejected_count = int(np.sum(np.asarray(rejected, dtype=bool)))
+        accepted_count = max(int(original_count_int) - int(rejected_count), 0)
+        reject_rate = (
+            float(rejected_count) / float(original_count_int) if original_count_int > 0 else 0.0
+        )
+
+        if source_indices is None:
+            source_indices = [] if rejected is None else list(range(original_count_int))
+
+        inferred_fallback = bool(fallback_used or normalized_modes or init_error or (not init_ok))
+        metadata.update(
+            {
+                "policy": policy.value,
+                "reject_rate": reject_rate,
+                "accepted_count": accepted_count,
+                "rejected_count": rejected_count,
+                "effective_confidence": effective_confidence,
+                "effective_threshold": effective_threshold,
+                "source_indices": [int(v) for v in source_indices],
+                "original_count": int(original_count_int),
+                "init_ok": bool(init_ok),
+                "fallback_used": inferred_fallback,
+                "init_error": bool(init_error),
+                "degraded_mode": normalized_modes,
+            }
+        )
+        return metadata
+
     # --- Builtin strategy (preserve previous apply_policy impl) -----------
     def _builtin_strategy(
         self,
@@ -1010,8 +1105,10 @@ class RejectOrchestrator:
                 prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
             )
 
+        original_count = _safe_length(x)
         effective_threshold = None
         threshold_source = None
+        degraded_mode_markers: list[str] = []
         try:
             explainer_mode = getattr(self.explainer, "mode", "classification")
             if explainer_mode == "regression":
@@ -1029,15 +1126,47 @@ class RejectOrchestrator:
             )
             warnings.warn(
                 f"Reject initialization failed; reject policy will not run ({exc!s}).",
-                UserWarning,
+                RejectContractWarning,
                 stacklevel=2,
+            )
+            degraded_mode_markers.append("reject_init_failure")
+            metadata = self._build_contract_metadata(
+                policy=policy,
+                rejected=None,
+                source_indices=[],
+                original_count=original_count,
+                effective_confidence=confidence,
+                effective_threshold=effective_threshold,
+                init_ok=False,
+                init_error=True,
+                fallback_used=True,
+                degraded_mode=degraded_mode_markers,
+                base_metadata={
+                    "error_message": str(exc),
+                    "error_rate": 0.0,
+                    "error_rate_defined": False,
+                    "ambiguity_rate": 0.0,
+                    "novelty_rate": 0.0,
+                    "matched_count": None,
+                    "threshold_source": threshold_source,
+                    "effective_w": validate_reject_w(
+                        getattr(self.explainer, "reject_ncf_w", 0.0)
+                        if getattr(self.explainer, "reject_ncf_w", None) is not None
+                        else 0.0
+                    ),
+                    "reject_ncf": getattr(self.explainer, "reject_ncf", None),
+                    "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
+                    "reject_ncf_auto_selected": getattr(
+                        self.explainer, "reject_ncf_auto_selected", None
+                    ),
+                },
             )
             return RejectResult(
                 prediction=None,
                 explanation=None,
                 rejected=None,
                 policy=policy,
-                metadata={"init_error": True, "error_message": str(exc)},
+                metadata=metadata,
             )
 
         breakdown = self.predict_reject_breakdown(
@@ -1046,6 +1175,7 @@ class RejectOrchestrator:
             confidence=confidence,
             threshold=effective_threshold,
         )
+        degraded_mode_markers.extend(list(breakdown.get("degraded_mode") or ()))
         rejected = breakdown["rejected"]
         error_rate = breakdown["error_rate"]
         reject_rate = breakdown["reject_rate"]
@@ -1074,10 +1204,11 @@ class RejectOrchestrator:
                 )
                 warnings.warn(
                     f"Reject policy prediction failed; returning prediction=None ({exc!s}).",
-                    UserWarning,
+                    RejectContractWarning,
                     stacklevel=2,
                 )
                 prediction = None
+                degraded_mode_markers.append("prediction_payload_failed")
 
         # matched_count records how many instances matched the policy filter;
         # None for FLAG (all instances processed), 0 when subset was empty.
@@ -1123,44 +1254,59 @@ class RejectOrchestrator:
                 )
                 warnings.warn(
                     f"Reject policy explanation failed; returning explanation=None ({exc!s}).",
-                    UserWarning,
+                    RejectContractWarning,
                     stacklevel=2,
                 )
                 explanation = None
+                degraded_mode_markers.append("explanation_payload_failed")
                 if kwargs.get("_reject_raise", False):
                     raise
 
-        metadata = {
-            "error_rate": error_rate,
-            "error_rate_defined": breakdown.get("error_rate_defined", True),
-            "reject_rate": reject_rate,
-            "ambiguity_rate": breakdown.get("ambiguity_rate"),
-            "novelty_rate": breakdown.get("novelty_rate"),
-            # Per-instance breakdown so callers can inspect ambiguity vs novelty
-            "ambiguity_mask": breakdown.get("ambiguity"),
-            "novelty_mask": breakdown.get("novelty"),
-            "prediction_set_size": breakdown.get("prediction_set_size"),
-            "prediction_set": breakdown.get("prediction_set"),
-            "epsilon": breakdown.get("epsilon"),
-            "raw_total_examples": breakdown.get("raw_total_examples"),
-            "raw_reject_counts": breakdown.get("raw_reject_counts"),
-            # NCF provenance: which function was used and whether it was auto-selected
-            "reject_ncf": getattr(self.explainer, "reject_ncf", None),
-            "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
-            "reject_ncf_auto_selected": getattr(self.explainer, "reject_ncf_auto_selected", None),
-            # How many instances matched the policy filter (None for FLAG, 0 when empty)
-            "matched_count": matched_count,
-            "source_indices": source_indices,
-            "original_count": int(len(rejected)),
-            "effective_confidence": confidence,
-            "effective_threshold": effective_threshold,
-            "threshold_source": threshold_source,
-            "effective_w": validate_reject_w(
-                getattr(self.explainer, "reject_ncf_w", 0.0)
-                if getattr(self.explainer, "reject_ncf_w", None) is not None
-                else 0.0
-            ),
-        }
+        metadata = self._build_contract_metadata(
+            policy=policy,
+            rejected=rejected,
+            source_indices=source_indices,
+            original_count=len(rejected),
+            effective_confidence=confidence,
+            effective_threshold=effective_threshold,
+            init_ok=True,
+            init_error=False,
+            fallback_used=bool(breakdown.get("fallback_used", False)),
+            degraded_mode=degraded_mode_markers,
+            base_metadata={
+                "error_rate": error_rate,
+                "error_rate_defined": breakdown.get("error_rate_defined", True),
+                "reject_rate": reject_rate,
+                "ambiguity_rate": breakdown.get("ambiguity_rate"),
+                "novelty_rate": breakdown.get("novelty_rate"),
+                # Per-instance breakdown so callers can inspect ambiguity vs novelty
+                "ambiguity_mask": breakdown.get("ambiguity"),
+                "novelty_mask": breakdown.get("novelty"),
+                "prediction_set_size": breakdown.get("prediction_set_size"),
+                "prediction_set": breakdown.get("prediction_set"),
+                "epsilon": breakdown.get("epsilon"),
+                "raw_total_examples": breakdown.get("raw_total_examples"),
+                "raw_reject_counts": breakdown.get("raw_reject_counts"),
+                # NCF provenance: which function was used and whether it was auto-selected
+                "reject_ncf": getattr(self.explainer, "reject_ncf", None),
+                "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
+                "reject_ncf_auto_selected": getattr(
+                    self.explainer, "reject_ncf_auto_selected", None
+                ),
+                # How many instances matched the policy filter (None for FLAG, 0 when empty)
+                "matched_count": matched_count,
+                "source_indices": source_indices,
+                "original_count": int(len(rejected)),
+                "effective_confidence": confidence,
+                "effective_threshold": effective_threshold,
+                "threshold_source": threshold_source,
+                "effective_w": validate_reject_w(
+                    getattr(self.explainer, "reject_ncf_w", 0.0)
+                    if getattr(self.explainer, "reject_ncf_w", None) is not None
+                    else 0.0
+                ),
+            },
+        )
         return RejectResult(
             prediction=prediction,
             explanation=explanation,

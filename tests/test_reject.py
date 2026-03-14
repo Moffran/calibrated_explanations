@@ -20,6 +20,8 @@ from calibrated_explanations.explanations.reject import (
     RejectPolicySpec,
     RejectResult,
     _align_reject_field_to_payload,
+    _canonicalize_degraded_mode,
+    _normalize_contract_metadata,
     _resolve_source_indices_for_wrapper,
 )
 from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
@@ -84,7 +86,8 @@ def test_slice_shapes_valid():
     res = wrapper.explain_factual(x_query, reject_policy=RejectPolicy.FLAG)
 
     sliced = res[:10]
-    assert pytest.approx(sliced.metadata["reject_rate"]) == float(np.mean(sliced.rejected))
+    assert sliced.metadata["reject_rate"] == res.metadata["reject_rate"]
+    assert pytest.approx(sliced.metadata["payload_reject_rate"]) == float(np.mean(sliced.rejected))
     assert sliced.metadata["raw_reject_counts"]["rejected"] == int(np.sum(sliced.rejected))
     assert "_raw_reject_counts" not in sliced.metadata
 
@@ -234,11 +237,76 @@ def test_resolve_source_indices_for_wrapper_raises_without_mapping_or_mask():
         )
 
 
+def test_resolve_source_indices_for_wrapper_empty_payload_without_mapping():
+    idxs = _resolve_source_indices_for_wrapper(
+        policy=RejectPolicy.ONLY_ACCEPTED,
+        metadata={},
+        rejected=None,
+        payload_count=0,
+    )
+    np.testing.assert_array_equal(idxs, np.array([], dtype=int))
+
+
+def test_reject_policy_spec_constructors_and_bounds():
+    assert RejectPolicySpec.only_rejected().policy is RejectPolicy.ONLY_REJECTED
+    assert RejectPolicySpec.only_accepted().policy is RejectPolicy.ONLY_ACCEPTED
+    with pytest.raises(ValueError, match="w must be in"):
+        RejectPolicySpec(RejectPolicy.FLAG, ncf="default", w=1.1)
+
+
+def test_reject_policy_invalid_non_string_raises_value_error():
+    with pytest.raises(ValueError):
+        RejectPolicy(123)
+
+
+def test_contract_metadata_normalization_canonicalizes_degraded_mode():
+    assert _canonicalize_degraded_mode(None) == ()
+    assert _canonicalize_degraded_mode("bulk_to_per_instance_fallback") == (
+        "bulk_to_per_instance_fallback",
+    )
+    assert _canonicalize_degraded_mode(["prediction_payload_failed", None, "custom"]) == (
+        "prediction_payload_failed",
+        "custom",
+    )
+
+    normalized = _normalize_contract_metadata(
+        metadata={
+            "raw_reject_counts": {"rejected": 2},
+            "degraded_mode": "prediction_payload_failed",
+        },
+        policy=RejectPolicy.FLAG,
+        rejected=np.array([True, False, True]),
+        source_indices=None,
+        original_count=None,
+    )
+    assert normalized["original_count"] == 3
+    assert normalized["source_indices"] == [0, 1, 2]
+    assert normalized["rejected_count"] == 2
+    assert normalized["accepted_count"] == 1
+    assert normalized["fallback_used"] is True
+
+
 def test_clear_reject_arrays_can_drop_summary_metadata():
     wrapper, x_query = train_wrapper()
     res = wrapper.explain_factual(x_query, reject_policy=RejectPolicy.FLAG)
     res.clear_reject_arrays(keep_summary=False)
-    assert res.metadata == {"raw_reject_counts": {}}
+    meta = res.metadata
+    assert meta["raw_reject_counts"] == {}
+    required = {
+        "policy",
+        "reject_rate",
+        "accepted_count",
+        "rejected_count",
+        "effective_confidence",
+        "effective_threshold",
+        "source_indices",
+        "original_count",
+        "init_ok",
+        "fallback_used",
+        "init_error",
+        "degraded_mode",
+    }
+    assert required.issubset(meta.keys())
 
 
 def test_slice_recomputes_error_rate_from_prediction_set_size():
@@ -268,6 +336,13 @@ def test_policy_spec_equality_and_serialization():
     restored = RejectPolicySpec.from_dict(payload)
     assert restored == spec_a
     assert hash(restored) == hash(spec_a)
+
+
+def test_policy_spec_eq_policy_and_notimplemented_paths():
+    spec = RejectPolicySpec.flag("default", 0.5)
+    assert spec == RejectPolicy.FLAG
+    assert spec.__eq__(object()) is NotImplemented
+    assert spec.value.startswith("flag[ncf=default,w=")
 
 
 def test_policy_spec_w_normalization_non_ensured_and_ensured_sensitivity():
@@ -311,6 +386,81 @@ def test_deprecation_warning():
     with pytest.warns(DeprecationWarning):
         deprecated = reject_policy_module.__getattr__("PREDICT_AND_FLAG")
     assert deprecated is RejectPolicy.FLAG
+
+
+def test_metadata_summary_alias_and_memory_profile_after_clear():
+    wrapper, x_query = train_wrapper()
+    res = wrapper.explain_factual(x_query, reject_policy=RejectPolicy.FLAG)
+    res.clear_reject_arrays(keep_summary=True)
+
+    assert res.metadata_summary() == res.metadata
+    profile = res.memory_profile()
+    assert profile["rejected"] == 0
+    assert profile["ambiguity_mask"] == 0
+    assert profile["novelty_mask"] == 0
+    assert profile["prediction_set_size"] == 0
+    assert profile["prediction_set"] == 0
+
+
+def test_getitem_with_unsupported_key_type_raises_data_shape_error():
+    wrapper, x_query = train_wrapper()
+    res = wrapper.explain_factual(x_query[:5], reject_policy=RejectPolicy.FLAG)
+    with pytest.raises(DataShapeError, match="Unsupported key type for reject slicing"):
+        _ = res[{"bad": "key"}]  # type: ignore[index]
+
+
+def test_resolve_source_indices_validation_errors_from_metadata():
+    with pytest.raises(DataShapeError, match="one-dimensional integer sequence"):
+        _resolve_source_indices_for_wrapper(
+            policy=RejectPolicy.FLAG,
+            metadata={"source_indices": [0.1, 2.5], "original_count": 3},
+            rejected=np.array([False, False, False]),
+            payload_count=2,
+        )
+
+    with pytest.raises(DataShapeError, match="must be unique"):
+        _resolve_source_indices_for_wrapper(
+            policy=RejectPolicy.FLAG,
+            metadata={"source_indices": [1, 1], "original_count": 3},
+            rejected=np.array([False, False, False]),
+            payload_count=2,
+        )
+
+    with pytest.raises(DataShapeError, match="must preserve source ordering"):
+        _resolve_source_indices_for_wrapper(
+            policy=RejectPolicy.FLAG,
+            metadata={"source_indices": [2, 1], "original_count": 3},
+            rejected=np.array([False, False, False]),
+            payload_count=2,
+        )
+
+    with pytest.raises(DataShapeError, match="must be < original_count"):
+        _resolve_source_indices_for_wrapper(
+            policy=RejectPolicy.FLAG,
+            metadata={"source_indices": [0, 4], "original_count": 4},
+            rejected=np.array([False, False, False, False]),
+            payload_count=2,
+        )
+
+
+def test_align_reject_field_to_payload_error_paths():
+    with pytest.raises(DataShapeError, match="cannot be aligned"):
+        _align_reject_field_to_payload(
+            name="prediction_set_size",
+            value=np.array(1),
+            payload_count=1,
+            source_indices=np.array([0]),
+            ensure_dtype=int,
+        )
+
+    with pytest.raises(DataShapeError, match="shorter than source_indices require"):
+        _align_reject_field_to_payload(
+            name="prediction_set",
+            value=np.array([True, False]),
+            payload_count=3,
+            source_indices=np.array([0, 1, 2]),
+            ensure_dtype=bool,
+        )
 
 
 def test_deprecated_explainer_reject_wrappers_delegate_to_orchestrator():
@@ -389,6 +539,38 @@ def test_metadata_is_lightweight():
         "prediction_set",
     }
     assert heavy_keys.isdisjoint(meta.keys())
+
+
+def test_wrapper_metadata_contains_required_contract_keys():
+    wrapper, x_query = train_wrapper()
+    res = wrapper.explain_factual(x_query[:10], reject_policy=RejectPolicy.ONLY_ACCEPTED)
+    required = {
+        "policy",
+        "reject_rate",
+        "accepted_count",
+        "rejected_count",
+        "effective_confidence",
+        "effective_threshold",
+        "source_indices",
+        "original_count",
+        "init_ok",
+        "fallback_used",
+        "init_error",
+        "degraded_mode",
+    }
+    assert required.issubset(res.metadata.keys())
+    assert res.metadata["original_count"] == 10
+    assert len(res.metadata["source_indices"]) == len(res.explanations)
+
+
+def test_wrapper_slice_preserves_original_batch_counts():
+    wrapper, x_query = train_wrapper()
+    res = wrapper.explain_factual(x_query[:12], reject_policy=RejectPolicy.FLAG)
+    sliced = res[:3]
+    assert sliced.metadata["original_count"] == res.metadata["original_count"]
+    assert sliced.metadata["rejected_count"] == res.metadata["rejected_count"]
+    assert sliced.metadata["accepted_count"] == res.metadata["accepted_count"]
+    assert sliced.metadata["reject_rate"] == res.metadata["reject_rate"]
 
 
 def test_getstate_prunes_runtime_objects():
