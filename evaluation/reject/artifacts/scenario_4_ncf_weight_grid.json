@@ -1,0 +1,29 @@
+{
+  "scenario": "scenario_4_ncf_weight_grid",
+  "display_name": "Scenario 4 \u2014 NCF and blend weight grid",
+  "paper_contribution": "C2",
+  "paper_rq": "RQ4",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "highlights": [
+    "NCFs tested: default, ensured. Entropy and explicit hinge/margin modes are excluded from this suite.",
+    "accept_rate is the fraction of accepted instances \u2014 NOT ICP label-set coverage.",
+    "w >= 0.7 converges NCF behavior; w=0.3 amplifies differences between NCFs where present.",
+    "Accepted accuracy delta is always empirical and benchmarked against the non-reject baseline."
+  ],
+  "outcome": {
+    "rows": 368,
+    "datasets": 46,
+    "best_accuracy_delta": 0.38095238095238093,
+    "ncfs_tested": [
+      "default",
+      "ensured"
+    ],
+    "w_values_tested": [
+      0.3,
+      0.5,
+      0.7,
+      1.0
+    ]
+  }
+}

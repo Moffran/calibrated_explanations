@@ -1,0 +1,63 @@
+{
+  "scenario": "scenario_5_explanation_quality",
+  "display_name": "Scenario 5 \u2014 Explanation quality on accepted instances",
+  "paper_contribution": "C4",
+  "paper_rq": "RQ5",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "regime_thresholds": {
+    "low_max": 0.15,
+    "high_min": 0.4
+  },
+  "regime_summary": {
+    "low": {
+      "n": 5,
+      "mean_accuracy_delta": 0.02230552841599498,
+      "mean_ece_delta": -0.017276155882782633,
+      "mean_reject_rate": 0.05860652570897099
+    },
+    "moderate": {
+      "n": 7,
+      "mean_accuracy_delta": 0.044176926729057105,
+      "mean_ece_delta": -0.03214269544410237,
+      "mean_reject_rate": 0.25941715669318577
+    },
+    "high": {
+      "n": 34,
+      "mean_accuracy_delta": 0.1357305498837686,
+      "mean_ece_delta": -0.14042452287327015,
+      "mean_reject_rate": 0.836226443922933
+    }
+  },
+  "highlights": [
+    "Explanation quality is evaluated only empirically; no conformal claim is attached.",
+    "Regime boundaries: low (<=15%), moderate (15%\u201340%), high (>40%) reject rate.",
+    "Paper finding: accuracy_delta is most reliable in the low regime.",
+    "mean_feature_weight_variance is not included \u2014 it is not a paper metric."
+  ],
+  "outcome": {
+    "datasets": 46,
+    "mean_accuracy_delta": 0.08926899336754365,
+    "mean_ece_delta": -0.08758934491340045,
+    "regime_summary": {
+      "low": {
+        "n": 5,
+        "mean_accuracy_delta": 0.02230552841599498,
+        "mean_ece_delta": -0.017276155882782633,
+        "mean_reject_rate": 0.05860652570897099
+      },
+      "moderate": {
+        "n": 7,
+        "mean_accuracy_delta": 0.044176926729057105,
+        "mean_ece_delta": -0.03214269544410237,
+        "mean_reject_rate": 0.25941715669318577
+      },
+      "high": {
+        "n": 34,
+        "mean_accuracy_delta": 0.1357305498837686,
+        "mean_ece_delta": -0.14042452287327015,
+        "mean_reject_rate": 0.836226443922933
+      }
+    }
+  }
+}

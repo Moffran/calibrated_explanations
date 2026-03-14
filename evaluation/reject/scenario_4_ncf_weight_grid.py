@@ -31,7 +31,7 @@ from .common_reject import (
     write_csv_json_md,
 )
 
-_NCFS = ("hinge", "margin", "ensured")
+_NCFS = ("default", "ensured")
 _W_VALUES = (0.3, 0.5, 0.7, 1.0)
 
 
@@ -76,10 +76,9 @@ def run(config: RunConfig) -> None:
         "guarantee_status": "empirical",
         "quick": config.quick,
         "highlights": [
-            "NCFs tested: hinge, margin, ensured.  Entropy is excluded from this suite.",
+            "NCFs tested: default, ensured. Entropy and explicit hinge/margin modes are excluded from this suite.",
             "accept_rate is the fraction of accepted instances — NOT ICP label-set coverage.",
-            "margin at w=0.3 may collapse to near-zero accept rate on some datasets.",
-            "w >= 0.7 converges NCF behavior; w=0.3 amplifies differences between NCFs.",
+            "w >= 0.7 converges NCF behavior; w=0.3 amplifies differences between NCFs where present.",
             "Accepted accuracy delta is always empirical and benchmarked against the non-reject baseline.",
         ],
         "outcome": {

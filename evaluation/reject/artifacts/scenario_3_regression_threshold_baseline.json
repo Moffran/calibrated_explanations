@@ -1,0 +1,20 @@
+{
+  "scenario": "scenario_3_regression_threshold_baseline",
+  "display_name": "Scenario 3 \u2014 Threshold regression heuristic baseline",
+  "paper_rq": "RQ3",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "highlights": [
+    "Headline finding: threshold reject does NOT select by uncertainty \u2014 accepted-subset interval width equals full-set interval width (~0 delta).",
+    "Mean interval_width_delta across all rows: -0.0000 (near zero confirms the null result).",
+    "Threshold-based regression reject remains explicitly heuristic in this suite.",
+    "Both interval width and MSE are tracked on the accepted subset to capture the trade-off.",
+    "The difficulty-normalised approach (C3) is deferred to a standalone scenario post-RT2."
+  ],
+  "outcome": {
+    "datasets": 22,
+    "mean_reject_rate": 0.20827303102409164,
+    "mean_accepted_mse_empirical": 0.009235536973170796,
+    "mean_interval_width_delta": -2.4286128663675298e-18
+  }
+}

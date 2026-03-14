@@ -11,6 +11,7 @@ sigma-normalisation bug is resolved in the core CE library.  Run with --suppleme
 
 Grid:
   NCFs    : hinge, margin, ensured
+    NCFs    : default, ensured
   w       : 0.3, 0.5, 0.7, 1.0
   epsilon : 0.05, 0.10
   datasets: all binary benchmark datasets
@@ -34,7 +35,7 @@ from .common_reject import (
     write_csv_json_md,
 )
 
-_NCFS = ("hinge", "margin", "ensured")
+_NCFS = ("default", "ensured")
 _W_VALUES = (0.3, 0.5, 0.7, 1.0)
 _EPSILONS = (0.05, 0.10)
 

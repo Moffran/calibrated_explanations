@@ -38,7 +38,7 @@ def run(config: RunConfig) -> None:
         bundle = build_classification_bundle(spec, config)
         for epsilon in (0.05, 0.10):
             confidence = 1.0 - float(epsilon)
-            for ncf in ("hinge", "margin", "ensured"):
+            for ncf in ("default", "ensured"):
                 result = bundle.wrapper.predict(
                     bundle.x_test,
                     reject_policy=RejectPolicySpec.flag(ncf=ncf, w=0.5),
@@ -49,9 +49,8 @@ def run(config: RunConfig) -> None:
                 accepted = ~rejected
                 reject_rate = float(np.mean(rejected))
                 top1_accuracy = accepted_accuracy(bundle.y_test, bundle.baseline_pred, accepted)
-                # Hinge collapse is expected on small-n-class datasets; flag it explicitly
-                # rather than treating it as a violation.
-                expected_collapse = bool(ncf == "hinge" and reject_rate > 0.95)
+                # No explicit hinge/margin modes are used in this runner; keep collapse flag off.
+                expected_collapse = False
                 rows.append(
                     {
                         "dataset": spec.name,
@@ -69,7 +68,7 @@ def run(config: RunConfig) -> None:
                 )
 
     df = pd.DataFrame(rows)
-    collapse_count = int(df["expected_collapse"].sum()) if not df.empty else 0
+    collapse_count = 0
     meta = {
         "scenario": "scenario_2_multiclass_correctness",
         "display_name": "Scenario 2 — Multiclass correctness classifier",
@@ -79,9 +78,6 @@ def run(config: RunConfig) -> None:
         "quick": config.quick,
         "highlights": [
             "Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.",
-            "hinge NCF: expected to collapse (>95% rejection) on small-n-class datasets — flagged via expected_collapse.",
-            "margin NCF: selective rejection with near-perfect accepted accuracy on larger datasets.",
-            f"Hinge collapse events observed: {collapse_count}.",
             "This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method.",
         ],
         "outcome": {
