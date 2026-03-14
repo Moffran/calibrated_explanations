@@ -1,27 +1,23 @@
 """Comprehensive unit tests for reject policy hardening.
 
-This module provides exhaustive testing of all RejectPolicy variants,
-edge cases, policy interactions, and metadata validation per v0.10.3 Task 9.
-
-Test Categories:
-1. Policy behavior verification (all 6 variants)
-2. Edge cases (empty, single, all-rejected, no-rejects)
-3. Policy interactions (override, combination)
-4. Metadata validation (error_rate, reject_rate)
+This module tests reject policy behavior, edge cases, policy interactions,
+and metadata/determinism invariants.
 """
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.reject.orchestrator import RejectOrchestrator
-from calibrated_explanations.core.reject.policy import RejectPolicy
-from calibrated_explanations.explanations.reject import RejectResult
+from calibrated_explanations.core.reject.orchestrator import (
+    RejectOrchestrator,
+    resolve_effective_reject_policy,
+)
+from calibrated_explanations.core.reject.policy import RejectPolicy, is_policy_enabled
+from calibrated_explanations.explanations.reject import RejectPolicySpec, RejectResult
 
 
 # ---------------------------------------------------------------------------
@@ -117,9 +113,64 @@ def make_explain_fn(return_value: Any = "EXPLANATION"):
 class TestPolicyBehavior:
     """Test each RejectPolicy variant produces correct behavior."""
 
+    def test_none_policy_returns_empty_legacy_envelope(self, mock_orchestrator):
+        result = mock_orchestrator.apply_policy(RejectPolicy.NONE, x=[[1, 2], [3, 4]])
+
+        assert result.policy is RejectPolicy.NONE
+        assert result.prediction is None
+        assert result.explanation is None
+        assert result.rejected is None
+        assert result.metadata is None
+
+    def test_flag_policy_processes_full_batch_and_emits_contract_metadata(self, mock_orchestrator):
+        explain_fn = make_explain_fn(return_value="ok")
+        x_input = [[0, 0], [1, 1], [2, 2], [3, 3]]
+
+        result = mock_orchestrator.apply_policy(RejectPolicy.FLAG, x=x_input, explain_fn=explain_fn)
+
+        assert result.policy is RejectPolicy.FLAG
+        assert len(explain_fn.calls) == 1
+        assert len(explain_fn.calls[0][0]) == len(x_input)
+        np.testing.assert_array_equal(result.rejected, np.array([False, True, False, True]))
+        assert result.metadata is not None
+        assert result.metadata["matched_count"] is None
+        assert result.metadata["source_indices"] == [0, 1, 2, 3]
+        assert result.metadata["original_count"] == len(x_input)
+
+    def test_subset_policy_tracks_source_indices_and_matched_count(self):
+        explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
+        orchestrator = MockRejectOrchestrator(explainer)
+        explain_fn = make_explain_fn(return_value="subset")
+        x_input = [[i, i] for i in range(4)]
+
+        result = orchestrator.apply_policy(
+            RejectPolicy.ONLY_REJECTED,
+            x=x_input,
+            explain_fn=explain_fn,
+        )
+
+        assert result.policy is RejectPolicy.ONLY_REJECTED
+        assert result.metadata is not None
+        assert result.metadata["matched_count"] == 2
+        assert result.metadata["source_indices"] == [1, 3]
+        assert len(explain_fn.calls) == 1
+        assert len(explain_fn.calls[0][0]) == 2
+        np.testing.assert_array_equal(result.rejected, np.array([False, True, False, True]))
+
 
 class TestIsPolicyEnabled:
     """Test the is_policy_enabled helper function."""
+
+    def test_is_policy_enabled_for_enum_and_spec_inputs(self):
+        assert is_policy_enabled(RejectPolicy.FLAG) is True
+        assert is_policy_enabled(RejectPolicy.ONLY_ACCEPTED) is True
+        assert is_policy_enabled(RejectPolicy.NONE) is False
+        assert is_policy_enabled(RejectPolicySpec.flag()) is True
+        assert is_policy_enabled(RejectPolicySpec(policy=RejectPolicy.NONE)) is False
+
+    def test_is_policy_enabled_returns_false_for_invalid_input(self):
+        assert is_policy_enabled("not-a-policy") is False
+        assert is_policy_enabled(object()) is False
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +230,42 @@ class TestEdgeCases:
         orchestrator.apply_policy(RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=explain_fn_non)
         assert len(explain_fn_non.calls[0][0]) == 2  # 2 non-rejected
 
+    @pytest.mark.parametrize(
+        ("policy", "mask"),
+        [
+            (RejectPolicy.ONLY_REJECTED, np.array([], dtype=bool)),
+            (RejectPolicy.ONLY_ACCEPTED, np.array([], dtype=bool)),
+            (RejectPolicy.ONLY_REJECTED, np.array([True], dtype=bool)),
+            (RejectPolicy.ONLY_ACCEPTED, np.array([True], dtype=bool)),
+            (RejectPolicy.ONLY_REJECTED, np.array([False], dtype=bool)),
+            (RejectPolicy.ONLY_ACCEPTED, np.array([False], dtype=bool)),
+            (RejectPolicy.ONLY_REJECTED, np.array([True, False, True], dtype=bool)),
+            (RejectPolicy.ONLY_ACCEPTED, np.array([True, False, True], dtype=bool)),
+        ],
+    )
+    def test_subset_policy_edge_case_matrix(self, policy, mask):
+        explainer = MockExplainer(rejected_mask=mask)
+        orchestrator = MockRejectOrchestrator(explainer)
+        explain_fn = make_explain_fn(return_value="subset")
+        x_input = [[int(i)] for i in range(len(mask))]
+
+        result = orchestrator.apply_policy(policy, x=x_input, explain_fn=explain_fn)
+
+        assert result.metadata is not None
+        expected_indices = (
+            np.flatnonzero(mask).tolist()
+            if policy is RejectPolicy.ONLY_REJECTED
+            else np.flatnonzero(~mask).tolist()
+        )
+        assert result.metadata["source_indices"] == expected_indices
+        assert result.metadata["matched_count"] == len(expected_indices)
+        if expected_indices:
+            assert len(explain_fn.calls) == 1
+            assert len(explain_fn.calls[0][0]) == len(expected_indices)
+        else:
+            assert result.explanation is None
+            assert len(explain_fn.calls) == 0
+
 
 # ---------------------------------------------------------------------------
 # 3. Policy Interaction Tests
@@ -189,28 +276,17 @@ class TestPolicyInteractions:
     """Test policy combination and override behavior."""
 
     def test_per_call_overrides_explainer_default(self):
-        """Per-call reject_policy should override explainer-level default."""
-
-        # Create a minimal mock to test the override logic
-        mock_self = SimpleNamespace()
-        mock_self.reject_orchestrator = MagicMock()
-        mock_self.reject_orchestrator.apply_policy = MagicMock(
-            return_value=RejectResult(
-                prediction=None,
-                explanation=None,
-                rejected=None,
-                policy=RejectPolicy.FLAG,
-                metadata={},
-            )
+        """Explicit policy should beat default policy in resolver output."""
+        explainer = MockExplainer()
+        resolution = resolve_effective_reject_policy(
+            RejectPolicy.ONLY_ACCEPTED,
+            explainer,
+            default_policy=RejectPolicy.FLAG,
         )
-        mock_self.default_reject_policy = RejectPolicy.FLAG
-        mock_self.plugin_manager = SimpleNamespace(initialize_orchestrators=lambda: None)
-        mock_self.explanation_orchestrator = MagicMock()
-
-        # The per-call policy should take precedence
-        # This tests the routing logic, not the full implementation
-        # Minimal assertion to satisfy test-quality checks
-        assert True
+        assert resolution.policy is RejectPolicy.ONLY_ACCEPTED
+        assert resolution.used_default is False
+        assert resolution.fallback_used is False
+        assert resolution.reason is None
 
     def test_strategy_resolution_error_handling(self, mock_orchestrator):
         """Unknown strategy should raise KeyError."""
@@ -266,6 +342,88 @@ class TestPolicyInteractions:
 
 class TestMetadataValidation:
     """Test that metadata fields are correctly populated."""
+
+    def test_non_none_policy_metadata_has_required_contract_keys(self, mock_orchestrator):
+        result = mock_orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            x=[[0, 0], [1, 1], [2, 2], [3, 3]],
+            explain_fn=make_explain_fn(),
+        )
+        assert result.metadata is not None
+        required = {
+            "policy",
+            "reject_rate",
+            "accepted_count",
+            "rejected_count",
+            "effective_confidence",
+            "effective_threshold",
+            "source_indices",
+            "original_count",
+            "init_ok",
+            "fallback_used",
+            "init_error",
+            "degraded_mode",
+        }
+        assert required.issubset(result.metadata.keys())
+
+    def test_repeated_calls_are_deterministic_for_same_policy(self):
+        explainer = MockExplainer(rejected_mask=np.array([False, True, False, True]))
+        orchestrator = MockRejectOrchestrator(explainer)
+        x_input = [[i, i] for i in range(4)]
+
+        res1 = orchestrator.apply_policy(
+            RejectPolicy.ONLY_ACCEPTED,
+            x=x_input,
+            explain_fn=make_explain_fn(return_value="first"),
+        )
+        res2 = orchestrator.apply_policy(
+            RejectPolicy.ONLY_ACCEPTED,
+            x=x_input,
+            explain_fn=make_explain_fn(return_value="second"),
+        )
+
+        np.testing.assert_array_equal(res1.rejected, res2.rejected)
+        assert res1.metadata is not None
+        assert res2.metadata is not None
+        assert res1.metadata["source_indices"] == res2.metadata["source_indices"]
+        assert res1.metadata["matched_count"] == res2.metadata["matched_count"]
+        assert res1.metadata["reject_rate"] == res2.metadata["reject_rate"]
+
+    def test_call_order_does_not_change_subset_results(self):
+        x_input = [[i, i] for i in range(4)]
+
+        first = MockRejectOrchestrator(
+            MockExplainer(rejected_mask=np.array([True, False, True, False]))
+        )
+        first_rejected = first.apply_policy(
+            RejectPolicy.ONLY_REJECTED, x=x_input, explain_fn=make_explain_fn()
+        )
+        first_accepted = first.apply_policy(
+            RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=make_explain_fn()
+        )
+
+        second = MockRejectOrchestrator(
+            MockExplainer(rejected_mask=np.array([True, False, True, False]))
+        )
+        second_accepted = second.apply_policy(
+            RejectPolicy.ONLY_ACCEPTED, x=x_input, explain_fn=make_explain_fn()
+        )
+        second_rejected = second.apply_policy(
+            RejectPolicy.ONLY_REJECTED, x=x_input, explain_fn=make_explain_fn()
+        )
+
+        assert first_rejected.metadata is not None
+        assert first_accepted.metadata is not None
+        assert second_rejected.metadata is not None
+        assert second_accepted.metadata is not None
+        assert (
+            first_rejected.metadata["source_indices"] == second_rejected.metadata["source_indices"]
+        )
+        assert (
+            first_accepted.metadata["source_indices"] == second_accepted.metadata["source_indices"]
+        )
+        np.testing.assert_array_equal(first_rejected.rejected, second_rejected.rejected)
+        np.testing.assert_array_equal(first_accepted.rejected, second_accepted.rejected)
 
 
 # ---------------------------------------------------------------------------
