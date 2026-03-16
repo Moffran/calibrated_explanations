@@ -245,6 +245,24 @@ class TestExplanationUnit:
         assert len(expl.rules["rule"]) == 1
         assert expl.rules["rule"][0] == "f0 > 8.00"
 
+    def test_get_rules_after_add_new_rule_condition_retains_added_rule(self):
+        """get_rules() must not discard rules added by add_new_rule_condition (regression)."""
+        expl = self.create_expl()
+
+        def predict_diff_effect(x, **kwargs):
+            n = len(x)
+            return (np.zeros(n) + 0.5, np.zeros(n) + 0.3, np.zeros(n) + 0.7, None)
+
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
+
+        expl.add_new_rule_condition(0, 8.0)
+        rules_after_add = expl.get_rules()  # must NOT rebuild from scratch
+
+        assert len(rules_after_add["rule"]) == 1
+        assert rules_after_add["rule"][0] == "f0 > 8.00"
+
     def test_add_new_rule_condition_identical_prediction(self):
         expl = self.create_expl()
 

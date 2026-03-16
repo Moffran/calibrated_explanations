@@ -1969,6 +1969,9 @@ class FactualExplanation(CalibratedExplanation):
         ):
             return self.conjunctive_rules
 
+        if getattr(self, "has_rules", False) and isinstance(self.rules, dict):
+            return self.rules
+
         # i = self.index
         instance = np.array(self.x_test, copy=True)
 
