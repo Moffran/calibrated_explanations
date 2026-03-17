@@ -207,3 +207,4 @@ evaluation/ensure/paper.tex
 evaluation/ensure/*tables/*
 .precommit-cache/
 evaluation/reject/paper/
+docs/contracts/*
