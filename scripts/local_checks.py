@@ -209,6 +209,17 @@ def main() -> int:
             ),
         ),
         Step(
+            "ADR-006 trust-mutation primitive guard",
+            _python_cmd(
+                "scripts/quality/check_trust_mutation_primitive.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/trust_mutation_inventory.json",
+                "--check",
+            ),
+        ),
+        Step(
             "ADR-030 marker hygiene",
             _python_cmd(
                 "scripts/quality/check_marker_hygiene.py",
@@ -370,6 +381,17 @@ def main() -> int:
                 "src/calibrated_explanations",
                 "--report",
                 "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
+            ),
+        ),
+        Step(
+            "ADR-006 trust-mutation primitive guard (main)",
+            _python_cmd(
+                "scripts/quality/check_trust_mutation_primitive.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/trust_mutation_inventory.json",
+                "--check",
             ),
         ),
         Step(

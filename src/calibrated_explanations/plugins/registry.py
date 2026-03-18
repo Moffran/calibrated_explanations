@@ -32,6 +32,12 @@ from .. import __version__ as package_version
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ValidationError
+from ._trust import (
+    clear_trusted_identifiers,
+    mutate_trust_atomic,
+    trust_debug_checks_enabled,
+    update_trusted_identifier,
+)
 from .base import ExplainerPlugin, validate_plugin_meta
 from .trust_policy import DefaultPluginTrustPolicy, PluginTrustPolicy
 
@@ -323,15 +329,13 @@ def plot_builders() -> Dict[str, Any]:
 def set_plot_builder(identifier: str, descriptor: Any, *, trusted: bool = False) -> None:
     """Set a plot builder descriptor and optionally mark trusted."""
     _PLOT_BUILDERS[identifier] = descriptor
-    if trusted:
-        _TRUSTED_PLOT_BUILDERS.add(identifier)
-    else:
-        _TRUSTED_PLOT_BUILDERS.discard(identifier)
+    update_trusted_identifier(_TRUSTED_PLOT_BUILDERS, identifier, trusted)
+    _verify_trust_invariants_if_enabled()
 
 
 def clear_plot_builders() -> None:
     _PLOT_BUILDERS.clear()
-    _TRUSTED_PLOT_BUILDERS.clear()
+    clear_trusted_identifiers(_TRUSTED_PLOT_BUILDERS)
 
 
 def plot_renderers() -> Dict[str, Any]:
@@ -342,15 +346,13 @@ def plot_renderers() -> Dict[str, Any]:
 def set_plot_renderer(identifier: str, descriptor: Any, *, trusted: bool = False) -> None:
     """Set a plot renderer descriptor and optionally mark trusted."""
     _PLOT_RENDERERS[identifier] = descriptor
-    if trusted:
-        _TRUSTED_PLOT_RENDERERS.add(identifier)
-    else:
-        _TRUSTED_PLOT_RENDERERS.discard(identifier)
+    update_trusted_identifier(_TRUSTED_PLOT_RENDERERS, identifier, trusted)
+    _verify_trust_invariants_if_enabled()
 
 
 def clear_plot_renderers() -> None:
     _PLOT_RENDERERS.clear()
-    _TRUSTED_PLOT_RENDERERS.clear()
+    clear_trusted_identifiers(_TRUSTED_PLOT_RENDERERS)
 
 
 def registry_snapshot() -> Tuple[ExplainerPlugin, ...]:
@@ -1039,24 +1041,78 @@ _TRUSTED_PLOT_RENDERERS: set[str] = set()
 _PLOT_STYLES: Dict[str, PlotStyleDescriptor] = {}
 
 
+def _assert_catalog_trust_consistency(
+    *,
+    kind: str,
+    store: Mapping[str, Any],
+    trusted_identifiers: set[str],
+) -> None:
+    """Assert descriptor trust flags and trusted-id membership stay aligned."""
+    missing = sorted(identifier for identifier in trusted_identifiers if identifier not in store)
+    if missing:
+        raise RuntimeError(
+            f"{kind} trusted identifier(s) missing descriptor entries: {', '.join(missing)}"
+        )
+    mismatched = sorted(
+        identifier
+        for identifier, descriptor in store.items()
+        if bool(getattr(descriptor, "trusted", False)) != (identifier in trusted_identifiers)
+    )
+    if mismatched:
+        raise RuntimeError(
+            f"{kind} trust mismatch between descriptor.trusted and trusted id set: "
+            + ", ".join(mismatched)
+        )
+
+
+def _assert_trust_invariants() -> None:
+    """Assert trust invariants across all plugin descriptor catalogs."""
+    _assert_catalog_trust_consistency(
+        kind="explanation",
+        store=_EXPLANATION_PLUGINS,
+        trusted_identifiers=_TRUSTED_EXPLANATIONS,
+    )
+    _assert_catalog_trust_consistency(
+        kind="interval",
+        store=_INTERVAL_PLUGINS,
+        trusted_identifiers=_TRUSTED_INTERVALS,
+    )
+    _assert_catalog_trust_consistency(
+        kind="plot_builder",
+        store=_PLOT_BUILDERS,
+        trusted_identifiers=_TRUSTED_PLOT_BUILDERS,
+    )
+    _assert_catalog_trust_consistency(
+        kind="plot_renderer",
+        store=_PLOT_RENDERERS,
+        trusted_identifiers=_TRUSTED_PLOT_RENDERERS,
+    )
+
+
+def _verify_trust_invariants_if_enabled() -> None:
+    """Run trust invariant checks in debug or test execution contexts."""
+    if trust_debug_checks_enabled() or os.getenv("PYTEST_CURRENT_TEST"):
+        _assert_trust_invariants()
+
+
 def _reset_explanation_plugin_catalog() -> None:
     """Clear explanation plugin descriptors and trust state."""
     _EXPLANATION_PLUGINS.clear()
-    _TRUSTED_EXPLANATIONS.clear()
+    clear_trusted_identifiers(_TRUSTED_EXPLANATIONS)
 
 
 def _reset_interval_plugin_catalog() -> None:
     """Clear interval plugin descriptors and trust state."""
     _INTERVAL_PLUGINS.clear()
-    _TRUSTED_INTERVALS.clear()
+    clear_trusted_identifiers(_TRUSTED_INTERVALS)
 
 
 def _reset_plot_plugin_catalog() -> None:
     """Clear plot builder/renderer/style descriptors and trust state."""
     _PLOT_BUILDERS.clear()
-    _TRUSTED_PLOT_BUILDERS.clear()
+    clear_trusted_identifiers(_TRUSTED_PLOT_BUILDERS)
     _PLOT_RENDERERS.clear()
-    _TRUSTED_PLOT_RENDERERS.clear()
+    clear_trusted_identifiers(_TRUSTED_PLOT_RENDERERS)
     _PLOT_STYLES.clear()
 
 
@@ -1176,11 +1232,21 @@ def register_explanation_plugin(
             trusted=trusted,
             source=source,
         )
-        _EXPLANATION_PLUGINS[identifier] = descriptor
-        if trusted:
-            _TRUSTED_EXPLANATIONS.add(identifier)
-        else:
-            _TRUSTED_EXPLANATIONS.discard(identifier)
+
+        def _mutation() -> ExplanationPluginDescriptor:
+            _EXPLANATION_PLUGINS[identifier] = descriptor
+            update_trusted_identifier(_TRUSTED_EXPLANATIONS, identifier, trusted)
+            return descriptor
+
+        descriptor = mutate_trust_atomic(
+            identifier=identifier,
+            trusted=trusted,
+            actor="register_explanation_plugin",
+            kind="explanation",
+            source=source,
+            mutation=_mutation,
+            verify=_verify_trust_invariants_if_enabled,
+        )
 
         # Maintain backwards compatibility with the legacy list registry.
         register(plugin, source=source, identifier=identifier)
@@ -1322,12 +1388,21 @@ def register_interval_plugin(
             trusted=trusted,
             source=source,
         )
-        _INTERVAL_PLUGINS[identifier] = descriptor
-        if trusted:
-            _TRUSTED_INTERVALS.add(identifier)
-        else:
-            _TRUSTED_INTERVALS.discard(identifier)
-        return descriptor
+
+        def _mutation() -> IntervalPluginDescriptor:
+            _INTERVAL_PLUGINS[identifier] = descriptor
+            update_trusted_identifier(_TRUSTED_INTERVALS, identifier, trusted)
+            return descriptor
+
+        return mutate_trust_atomic(
+            identifier=identifier,
+            trusted=trusted,
+            actor="register_interval_plugin",
+            kind="interval",
+            source=source,
+            mutation=_mutation,
+            verify=_verify_trust_invariants_if_enabled,
+        )
 
 
 def find_interval_descriptor(identifier: str) -> IntervalPluginDescriptor | None:
@@ -1395,12 +1470,21 @@ def register_plot_builder(
         trusted=trusted,
         source=source,
     )
-    _PLOT_BUILDERS[identifier] = descriptor
-    if trusted:
-        _TRUSTED_PLOT_BUILDERS.add(identifier)
-    else:
-        _TRUSTED_PLOT_BUILDERS.discard(identifier)
-    return descriptor
+
+    def _mutation() -> PlotBuilderDescriptor:
+        _PLOT_BUILDERS[identifier] = descriptor
+        update_trusted_identifier(_TRUSTED_PLOT_BUILDERS, identifier, trusted)
+        return descriptor
+
+    return mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="register_plot_builder",
+        kind="plot_builder",
+        source=source,
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def register_plot_renderer(
@@ -1449,12 +1533,21 @@ def register_plot_renderer(
         trusted=trusted,
         source=source,
     )
-    _PLOT_RENDERERS[identifier] = descriptor
-    if trusted:
-        _TRUSTED_PLOT_RENDERERS.add(identifier)
-    else:
-        _TRUSTED_PLOT_RENDERERS.discard(identifier)
-    return descriptor
+
+    def _mutation() -> PlotRendererDescriptor:
+        _PLOT_RENDERERS[identifier] = descriptor
+        update_trusted_identifier(_TRUSTED_PLOT_RENDERERS, identifier, trusted)
+        return descriptor
+
+    return mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="register_plot_renderer",
+        kind="plot_renderer",
+        source=source,
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def register_plot_style(
@@ -1909,12 +2002,20 @@ def _refresh_descriptor_trust(identifier: str, *, trusted: bool) -> ExplanationP
         trusted=trusted,
         source=descriptor.source,
     )
-    _EXPLANATION_PLUGINS[identifier] = updated
-    if trusted:
-        _TRUSTED_EXPLANATIONS.add(identifier)
-    else:
-        _TRUSTED_EXPLANATIONS.discard(identifier)
-    return updated
+    def _mutation() -> ExplanationPluginDescriptor:
+        _EXPLANATION_PLUGINS[identifier] = updated
+        update_trusted_identifier(_TRUSTED_EXPLANATIONS, identifier, trusted)
+        return updated
+
+    return mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="_refresh_descriptor_trust",
+        kind="explanation",
+        source="registry",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def mark_explanation_trusted(identifier: str) -> ExplanationPluginDescriptor:
@@ -1950,14 +2051,21 @@ def _refresh_interval_descriptor_trust(
         source=descriptor.source,
     )
 
-    _INTERVAL_PLUGINS[identifier] = updated
-    if trusted:
-        _TRUSTED_INTERVALS.add(identifier)
-    else:
-        _TRUSTED_INTERVALS.discard(identifier)
+    def _mutation() -> IntervalPluginDescriptor:
+        _INTERVAL_PLUGINS[identifier] = updated
+        update_trusted_identifier(_TRUSTED_INTERVALS, identifier, trusted)
+        _propagate_trust_metadata(descriptor.plugin, updated_meta)
+        return updated
 
-    _propagate_trust_metadata(descriptor.plugin, updated_meta)
-    return updated
+    return mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="_refresh_interval_descriptor_trust",
+        kind="interval",
+        source="registry",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def mark_interval_trusted(identifier: str) -> IntervalPluginDescriptor:
@@ -1987,14 +2095,21 @@ def _refresh_plot_builder_trust(identifier: str, *, trusted: bool) -> PlotBuilde
         source=descriptor.source,
     )
 
-    _PLOT_BUILDERS[identifier] = updated
-    if trusted:
-        _TRUSTED_PLOT_BUILDERS.add(identifier)
-    else:
-        _TRUSTED_PLOT_BUILDERS.discard(identifier)
+    def _mutation() -> PlotBuilderDescriptor:
+        _PLOT_BUILDERS[identifier] = updated
+        update_trusted_identifier(_TRUSTED_PLOT_BUILDERS, identifier, trusted)
+        _propagate_trust_metadata(descriptor.builder, updated_meta)
+        return updated
 
-    _propagate_trust_metadata(descriptor.builder, updated_meta)
-    return updated
+    return mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="_refresh_plot_builder_trust",
+        kind="plot_builder",
+        source="registry",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def mark_plot_builder_trusted(identifier: str) -> PlotBuilderDescriptor:
@@ -2024,14 +2139,21 @@ def _refresh_plot_renderer_trust(identifier: str, *, trusted: bool) -> PlotRende
         source=descriptor.source,
     )
 
-    _PLOT_RENDERERS[identifier] = updated
-    if trusted:
-        _TRUSTED_PLOT_RENDERERS.add(identifier)
-    else:
-        _TRUSTED_PLOT_RENDERERS.discard(identifier)
+    def _mutation() -> PlotRendererDescriptor:
+        _PLOT_RENDERERS[identifier] = updated
+        update_trusted_identifier(_TRUSTED_PLOT_RENDERERS, identifier, trusted)
+        _propagate_trust_metadata(descriptor.renderer, updated_meta)
+        return updated
 
-    _propagate_trust_metadata(descriptor.renderer, updated_meta)
-    return updated
+    return mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="_refresh_plot_renderer_trust",
+        kind="plot_renderer",
+        source="registry",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def mark_plot_renderer_trusted(identifier: str) -> PlotRendererDescriptor:
@@ -2042,6 +2164,68 @@ def mark_plot_renderer_trusted(identifier: str) -> PlotRendererDescriptor:
 def mark_plot_renderer_untrusted(identifier: str) -> PlotRendererDescriptor:
     """Remove the plot renderer *identifier* from the trusted set."""
     return _refresh_plot_renderer_trust(identifier, trusted=False)
+
+
+def _sync_descriptor_trust_for_plugin(plugin: ExplainerPlugin, *, trusted: bool) -> None:
+    """Synchronize descriptor trust state for all descriptors referencing *plugin*."""
+    for identifier, descriptor in list(_EXPLANATION_PLUGINS.items()):
+        if descriptor.plugin is not plugin:
+            continue
+        updated_meta = dict(descriptor.metadata)
+        _update_trust_keys(updated_meta, trusted)
+        _EXPLANATION_PLUGINS[identifier] = ExplanationPluginDescriptor(
+            identifier=descriptor.identifier,
+            plugin=descriptor.plugin,
+            metadata=updated_meta,
+            trusted=trusted,
+            source=descriptor.source,
+        )
+        update_trusted_identifier(_TRUSTED_EXPLANATIONS, identifier, trusted)
+
+    for identifier, descriptor in list(_INTERVAL_PLUGINS.items()):
+        if descriptor.plugin is not plugin:
+            continue
+        updated_meta = dict(descriptor.metadata)
+        _update_trust_keys(updated_meta, trusted)
+        _INTERVAL_PLUGINS[identifier] = IntervalPluginDescriptor(
+            identifier=descriptor.identifier,
+            plugin=descriptor.plugin,
+            metadata=updated_meta,
+            trusted=trusted,
+            source=descriptor.source,
+        )
+        update_trusted_identifier(_TRUSTED_INTERVALS, identifier, trusted)
+        _propagate_trust_metadata(descriptor.plugin, updated_meta)
+
+    for identifier, descriptor in list(_PLOT_BUILDERS.items()):
+        if descriptor.builder is not plugin:
+            continue
+        updated_meta = dict(descriptor.metadata)
+        _update_trust_keys(updated_meta, trusted)
+        _PLOT_BUILDERS[identifier] = PlotBuilderDescriptor(
+            identifier=descriptor.identifier,
+            builder=descriptor.builder,
+            metadata=updated_meta,
+            trusted=trusted,
+            source=descriptor.source,
+        )
+        update_trusted_identifier(_TRUSTED_PLOT_BUILDERS, identifier, trusted)
+        _propagate_trust_metadata(descriptor.builder, updated_meta)
+
+    for identifier, descriptor in list(_PLOT_RENDERERS.items()):
+        if descriptor.renderer is not plugin:
+            continue
+        updated_meta = dict(descriptor.metadata)
+        _update_trust_keys(updated_meta, trusted)
+        _PLOT_RENDERERS[identifier] = PlotRendererDescriptor(
+            identifier=descriptor.identifier,
+            renderer=descriptor.renderer,
+            metadata=updated_meta,
+            trusted=trusted,
+            source=descriptor.source,
+        )
+        update_trusted_identifier(_TRUSTED_PLOT_RENDERERS, identifier, trusted)
+        _propagate_trust_metadata(descriptor.renderer, updated_meta)
 
 
 def register(
@@ -2093,19 +2277,26 @@ def register(
                 plugin,
                 exc_info=True,
             )
-    if plugin in _REGISTRY:
+    def _mutation() -> None:
+        if plugin not in _REGISTRY:
+            _REGISTRY.append(plugin)
         if trusted and plugin not in _TRUSTED:
             _TRUSTED.append(plugin)
-        _log_plugin_registration_event(
-            identifier=identifier,
-            provider=meta.get("provider"),
-            source=source,
-            trusted=trusted,
-        )
-        return
-    _REGISTRY.append(plugin)
-    if trusted and plugin not in _TRUSTED:
-        _TRUSTED.append(plugin)
+        if not trusted and plugin in _TRUSTED:
+            with contextlib.suppress(ValueError):
+                _TRUSTED.remove(plugin)
+        _sync_descriptor_trust_for_plugin(plugin, trusted=trusted)
+
+    mutate_trust_atomic(
+        identifier=identifier,
+        trusted=trusted,
+        actor="register",
+        kind="legacy",
+        source=source,
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
+
     _log_plugin_registration_event(
         identifier=identifier,
         provider=meta.get("provider"),
@@ -2180,25 +2371,61 @@ def trust_plugin(plugin: ExplainerPlugin | str) -> None:
     raw_meta = getattr(plugin, "plugin_meta", None)
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
-    _update_trust_keys(meta, True)
-    if isinstance(raw_meta, dict):
-        raw_meta["trusted"] = True
-        raw_meta["trust"] = True
-    if plugin in _TRUSTED:
-        return
-    _TRUSTED.append(plugin)
+
+    identifier = str(meta.get("name") or getattr(plugin, "__name__", "<unknown>"))
+
+    def _mutation() -> None:
+        _update_trust_keys(meta, True)
+        if isinstance(raw_meta, dict):
+            raw_meta["trusted"] = True
+            raw_meta["trust"] = True
+        elif hasattr(raw_meta, "__setitem__"):
+            with contextlib.suppress(Exception):
+                raw_meta["trusted"] = True
+                raw_meta["trust"] = True
+        if plugin not in _TRUSTED:
+            _TRUSTED.append(plugin)
+        _sync_descriptor_trust_for_plugin(plugin, trusted=True)
+
+    mutate_trust_atomic(
+        identifier=identifier,
+        trusted=True,
+        actor="trust_plugin",
+        kind="legacy",
+        source="manual",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
     """Remove a plugin from the trusted set if present."""
     if isinstance(plugin, str):
         plugin = _resolve_plugin_from_name(plugin)
-    with contextlib.suppress(ValueError):
-        _TRUSTED.remove(plugin)
     raw_meta = getattr(plugin, "plugin_meta", None)
-    if isinstance(raw_meta, dict):
-        raw_meta["trusted"] = False
-        raw_meta["trust"] = False
+    identifier = str(getattr(raw_meta, "get", lambda _k, _d=None: None)("name", None) or getattr(plugin, "__name__", "<unknown>"))
+
+    def _mutation() -> None:
+        with contextlib.suppress(ValueError):
+            _TRUSTED.remove(plugin)
+        if isinstance(raw_meta, dict):
+            raw_meta["trusted"] = False
+            raw_meta["trust"] = False
+        elif hasattr(raw_meta, "__setitem__"):
+            with contextlib.suppress(Exception):
+                raw_meta["trusted"] = False
+                raw_meta["trust"] = False
+        _sync_descriptor_trust_for_plugin(plugin, trusted=False)
+
+    mutate_trust_atomic(
+        identifier=identifier,
+        trusted=False,
+        actor="untrust_plugin",
+        kind="legacy",
+        source="manual",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
