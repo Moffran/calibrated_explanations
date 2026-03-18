@@ -419,6 +419,17 @@ class CalibratedExplainer:
         self._enforce_feature_filter_plugin_preferences(manager)
         return manager
 
+    def _deprecate_nonessential_surface(self, symbol: str, replacement: str) -> None:
+        """Emit ADR-011 deprecation for compatibility delegators on explainer."""
+        deprecate(
+            f"CalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
+            f"{replacement} instead. This compatibility delegator will be removed "
+            "no earlier than v0.13.0 and only as a major-release change in v1.0.0+ "
+            "per ADR-020.",
+            key=f"CalibratedExplainer.{symbol}_delegator_deprecation",
+            stacklevel=3,
+        )
+
     def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
         cfg = getattr(self, "_feature_filter_config", None)
         enabled = getattr(cfg, "enabled", False)
@@ -674,6 +685,9 @@ class CalibratedExplainer:
         to :class:`PluginManager` to construct the chain when available and
         otherwise returns an empty tuple for minimal explainer stubs used in tests.
         """
+        self._deprecate_nonessential_surface(
+            "build_plot_style_chain", "plugin_manager.build_plot_chain"
+        )
         return self.plugin_manager.build_plot_chain()
 
     @property
@@ -686,6 +700,9 @@ class CalibratedExplainer:
 
     def instantiate_plugin(self, prototype: Any) -> Any:
         """Delegate to ExplanationOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "instantiate_plugin", "plugin_manager.explanation_orchestrator.instantiate_plugin"
+        )
         return self.plugin_manager.explanation_orchestrator.instantiate_plugin(prototype)
 
     def build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
@@ -709,6 +726,9 @@ class CalibratedExplainer:
         reject_policy: Any | None = None,
     ) -> Any:
         """Delegate to ExplanationOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "invoke_explanation_plugin", "explanation_orchestrator.invoke"
+        )
         # Reject integration (ADR-029):
         # - default remains RejectPolicy.NONE (no reject)
         # - per-call reject_policy overrides the explainer-level default_reject_policy
@@ -769,14 +789,16 @@ class CalibratedExplainer:
             bins=bins,
             confidence=confidence,
             threshold=threshold,
+            result_schema="v2",
         )
         try:
             from ..explanations.reject import (
                 RejectResultV2,  # pylint: disable=import-outside-toplevel
+                reject_result_v2_to_legacy,
             )
 
             if isinstance(result, RejectResultV2):
-                return result.to_legacy()
+                return reject_result_v2_to_legacy(result, emit_deprecation_warning=False)
         except Exception as exc:  # adr002_allow
             logging.getLogger(__name__).debug(
                 "RejectResultV2 compatibility conversion failed in invoke_explanation_plugin: %s",
@@ -787,10 +809,16 @@ class CalibratedExplainer:
 
     def ensure_interval_runtime_state(self) -> None:
         """Delegate to PredictionOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "ensure_interval_runtime_state", "prediction_orchestrator.ensure_interval_runtime_state"
+        )
         return self.prediction_orchestrator.ensure_interval_runtime_state()
 
     def gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
         """Delegate to PredictionOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "gather_interval_hints", "prediction_orchestrator.gather_interval_hints"
+        )
         return self.prediction_orchestrator.gather_interval_hints(fast=fast)
 
     # ===================================================================
@@ -978,6 +1006,9 @@ class CalibratedExplainer:
 
         Tests should use this instead of accessing the private attribute.
         """
+        self._deprecate_nonessential_surface(
+            "interval_plugin_hints", "plugin_manager.interval_plugin_hints"
+        )
         return self._interval_plugin_hints
 
     @interval_plugin_hints.setter
@@ -992,6 +1023,9 @@ class CalibratedExplainer:
     @property
     def interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
         """Public alias for `_interval_plugin_fallbacks`."""
+        self._deprecate_nonessential_surface(
+            "interval_plugin_fallbacks", "plugin_manager.interval_plugin_fallbacks"
+        )
         return self._interval_plugin_fallbacks
 
     @interval_plugin_fallbacks.setter
@@ -1006,6 +1040,9 @@ class CalibratedExplainer:
     @property
     def explanation_plugin_overrides(self) -> Dict[str, Any]:
         """Public alias for `_explanation_plugin_overrides`."""
+        self._deprecate_nonessential_surface(
+            "explanation_plugin_overrides", "plugin_manager.explanation_plugin_overrides"
+        )
         if hasattr(self, "plugin_manager"):
             return self._explanation_plugin_overrides
         return {}
@@ -1017,6 +1054,9 @@ class CalibratedExplainer:
     @property
     def interval_plugin_override(self) -> Any:
         """Public alias for `_interval_plugin_override`."""
+        self._deprecate_nonessential_surface(
+            "interval_plugin_override", "plugin_manager.interval_plugin_override"
+        )
         if hasattr(self, "plugin_manager"):
             return self._interval_plugin_override
         return None
@@ -1030,6 +1070,9 @@ class CalibratedExplainer:
     @property
     def fast_interval_plugin_override(self) -> Any:
         """Public alias for `_fast_interval_plugin_override`."""
+        self._deprecate_nonessential_surface(
+            "fast_interval_plugin_override", "plugin_manager.fast_interval_plugin_override"
+        )
         return self._fast_interval_plugin_override
 
     @fast_interval_plugin_override.setter
@@ -1039,6 +1082,9 @@ class CalibratedExplainer:
     @property
     def plot_style_override(self) -> Any:
         """Public alias for `_plot_style_override`."""
+        self._deprecate_nonessential_surface(
+            "plot_style_override", "plugin_manager.plot_style_override"
+        )
         return self._plot_style_override
 
     @plot_style_override.setter
@@ -1048,6 +1094,9 @@ class CalibratedExplainer:
     @property
     def interval_preferred_identifier(self) -> Dict[str, str | None]:
         """Public alias for `_interval_preferred_identifier`."""
+        self._deprecate_nonessential_surface(
+            "interval_preferred_identifier", "plugin_manager.interval_preferred_identifier"
+        )
         return self._interval_preferred_identifier
 
     @interval_preferred_identifier.setter
@@ -1062,6 +1111,9 @@ class CalibratedExplainer:
     @property
     def telemetry_interval_sources(self) -> Dict[str, str | None]:
         """Public alias for `_telemetry_interval_sources`."""
+        self._deprecate_nonessential_surface(
+            "telemetry_interval_sources", "plugin_manager.telemetry_interval_sources"
+        )
         return self._telemetry_interval_sources
 
     @telemetry_interval_sources.setter
@@ -1076,6 +1128,9 @@ class CalibratedExplainer:
     @property
     def interval_plugin_identifiers(self) -> Dict[str, str | None]:
         """Public alias for `_interval_plugin_identifiers`."""
+        self._deprecate_nonessential_surface(
+            "interval_plugin_identifiers", "plugin_manager.interval_plugin_identifiers"
+        )
         return self._interval_plugin_identifiers
 
     @interval_plugin_identifiers.setter
@@ -1132,6 +1187,9 @@ class CalibratedExplainer:
     @property
     def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
         """Public alias for `_interval_context_metadata`."""
+        self._deprecate_nonessential_surface(
+            "interval_context_metadata", "plugin_manager.interval_context_metadata"
+        )
         return self._interval_context_metadata
 
     @interval_context_metadata.setter
@@ -2185,7 +2243,7 @@ class CalibratedExplainer:
         if bins is None and self.is_mondrian():
             bins = self.bins
         if _use_plugin:
-            return self._invoke_explanation_plugin(
+            return self.explanation_orchestrator.invoke(
                 "fast",
                 x,
                 threshold,
@@ -2699,15 +2757,22 @@ class CalibratedExplainer:
         bins_arg = kwargs.pop("bins", None)
         confidence_arg = kwargs.pop("confidence", 0.95)
         rr = self.reject_orchestrator.apply_policy(
-            policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
+            policy,
+            x,
+            explain_fn=None,
+            bins=bins_arg,
+            confidence=confidence_arg,
+            result_schema="v2",
+            **kwargs,
         )
         try:
             from ..explanations.reject import (
                 RejectResultV2,  # pylint: disable=import-outside-toplevel
+                reject_result_v2_to_legacy,
             )
 
             if isinstance(rr, RejectResultV2):
-                rr = rr.to_legacy()
+                rr = reject_result_v2_to_legacy(rr, emit_deprecation_warning=False)
         except Exception as exc:  # adr002_allow
             logging.getLogger(__name__).debug(
                 "RejectResultV2 compatibility conversion failed in predict: %s",
@@ -2934,15 +2999,17 @@ class CalibratedExplainer:
             bins=bins_arg,
             confidence=confidence_arg,
             threshold=threshold,
+            result_schema="v2",
             **kwargs,
         )
         try:
             from ..explanations.reject import (
                 RejectResultV2,  # pylint: disable=import-outside-toplevel
+                reject_result_v2_to_legacy,
             )
 
             if isinstance(rr, RejectResultV2):
-                rr = rr.to_legacy()
+                rr = reject_result_v2_to_legacy(rr, emit_deprecation_warning=False)
         except Exception as exc:  # adr002_allow
             logging.getLogger(__name__).debug(
                 "RejectResultV2 compatibility conversion failed in predict_proba: %s",

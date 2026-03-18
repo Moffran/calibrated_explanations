@@ -190,6 +190,11 @@ def _resolve_explainer_from_explanation(explanation: Any) -> Any:
 
 def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
     """Determine the ordered style fallback chain for plot builders/renderers."""
+    manager = getattr(explainer, "plugin_manager", None)
+    resolver = getattr(manager, "resolve_plot_style_chain", None)
+    if callable(resolver):
+        return resolver(explicit_style=explicit_style)
+
     chain: List[str] = []
     if isinstance(explicit_style, str) and explicit_style:
         chain.append(explicit_style)
@@ -1557,61 +1562,25 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     from .plugins import (
         PlotRenderContext,
         ensure_builtin_plugins,
-        find_plot_plugin,
     )
-    from .plugins.registry import find_plot_plugin_trusted, find_plot_renderer
+    from .utils.exceptions import ConfigurationError as _PlotConfigurationError
 
     ensure_builtin_plugins()
 
-    chain = _resolve_plot_style_chain(explainer, style)
-    # Resolve renderer override from kwargs/env/pyproject
-    renderer_override = kwargs.get("renderer")
-    if not renderer_override:
-        renderer_override = os.environ.get("CE_PLOT_RENDERER")
-    if not renderer_override:
-        py_settings = _read_plot_pyproject()
-        renderer_override = py_settings.get("renderer")
+    manager = getattr(explainer, "plugin_manager", None)
+    resolve_plot_plugin = getattr(manager, "resolve_plot_plugin", None)
+    if not callable(resolve_plot_plugin):
+        raise _PlotConfigurationError(
+            "PluginManager.resolve_plot_plugin is unavailable; cannot resolve plot plugin."
+        )
+
+    plugin, identifier, chain = resolve_plot_plugin(
+        explicit_style=style,
+        renderer_override=kwargs.get("renderer"),
+    )
+
     errors: List[str] = []
-
-    for identifier in chain:
-        plugin = find_plot_plugin_trusted(identifier)
-        if plugin is None:
-            plugin = find_plot_plugin(identifier)
-        if plugin is None:
-            errors.append(f"{identifier}: not registered")
-            continue
-        # If no renderer override, use default_renderer from builder metadata
-        effective_renderer_override = renderer_override
-        if not effective_renderer_override:
-            builder_meta = getattr(plugin.builder, "plugin_meta", {})
-            effective_renderer_override = builder_meta.get("default_renderer")
-        # If a renderer override is specified, try to substitute the renderer
-        if effective_renderer_override:
-            try:
-                override_renderer = find_plot_renderer(effective_renderer_override)
-            except Exception:  # adr002_allow
-                import logging
-                import warnings
-
-                logging.getLogger(__name__).info(
-                    "Failed to find plot renderer '%s'; falling back to default",
-                    effective_renderer_override,
-                )
-                warnings.warn(
-                    f"Failed to find plot renderer '{effective_renderer_override}'; falling back to default",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                override_renderer = None
-            if override_renderer is not None:
-                # Combined plugin returned by registry exposes .builder and .renderer
-                # best-effort: ignore substitution failures
-                with contextlib.suppress(Exception):
-                    plugin.renderer = override_renderer
-        if not hasattr(plugin, "build") or not hasattr(plugin, "render"):
-            errors.append(f"{identifier}: missing build/render implementation")
-            continue
-
+    for identifier, plugin in ((identifier, plugin),):
         if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
             __require_matplotlib()
         elif show and plt is None:  # pragma: no cover - optional dep path
@@ -1642,8 +1611,6 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             errors.append(f"{identifier}: {sys.exc_info()[1]}")
             continue
         return result
-
-    from .utils.exceptions import ConfigurationError as _PlotConfigurationError
 
     raise _PlotConfigurationError(
         "Unable to resolve plot plugin for global explanations; "

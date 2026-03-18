@@ -14,6 +14,16 @@ matplotlib = pytest.importorskip(
 matplotlib.use("Agg", force=True)
 
 
+@pytest.fixture(autouse=True)
+def force_legacy_plotting_agg_backend(monkeypatch):
+    import matplotlib.colors as mcolors
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+    monkeypatch.setattr(plotting, "mcolors", mcolors, raising=False)
+    monkeypatch.setattr(plotting, "plt", plt, raising=False)
+
+
 class CalibratedStub:
     def __init__(self, confidence=95):
         self.confidence = confidence

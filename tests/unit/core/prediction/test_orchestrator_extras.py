@@ -97,11 +97,6 @@ def test_resolve_interval_plugin_object_override(orchestrator, mock_explainer):
 
 def test_resolve_interval_plugin_missing_in_chain(orchestrator, mock_explainer):
     """Test _resolve_interval_plugin with missing plugin in chain (lines 560-565)."""
-    # Setup a chain where the first one is missing, second one works
-    mock_explainer.plugin_manager.interval_plugin_fallbacks = {
-        "default": ["missing_plugin", "valid_plugin"]
-    }
-
     valid_plugin_mock = MagicMock()
     valid_plugin_mock.plugin_meta = {
         "name": "valid_plugin",
@@ -109,32 +104,16 @@ def test_resolve_interval_plugin_missing_in_chain(orchestrator, mock_explainer):
         "modes": ("classification",),
         "capabilities": ("interval:classification",),
     }
+    mock_explainer.instantiate_plugin.side_effect = lambda plugin: plugin
+    mock_explainer.plugin_manager.resolve_interval_plugin.return_value = (
+        valid_plugin_mock,
+        "valid_plugin",
+    )
 
-    with (
-        patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
-            return_value=None,
-        ),
-        patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
-            side_effect=[None, valid_plugin_mock],
-        ),
-        patch(
-            "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-            return_value=False,
-        ),
-    ):
-        # We need the second one to be found
-        # The first call to find_interval_plugin_trusted returns None (for missing_plugin)
-        # The second call returns a mock (for valid_plugin)
+    plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
 
-        plugin, identifier = orchestrator.resolve_interval_plugin(fast=False)
-
-        assert identifier == "valid_plugin"
+    assert identifier == "valid_plugin"
+    assert plugin is not None
 
 
 def test_obtain_interval_calibrator_fast_metadata(orchestrator, mock_explainer):

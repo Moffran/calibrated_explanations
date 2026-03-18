@@ -36,7 +36,6 @@ from ...plugins import (
     ExplanationRequest,
     ensure_builtin_plugins,
     find_explanation_descriptor,
-    is_identifier_denied,
     validate_explanation_batch,
 )
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
@@ -64,6 +63,11 @@ def _resolve_reject_policy_spec(candidate_policy: Any, explainer: Any) -> Any:
     return resolve_policy_spec(candidate_policy, explainer)
 
 
+def resolve_reject_policy_spec(candidate_policy: Any, explainer: Any) -> Any:
+    """Public wrapper for reject policy specification resolution."""
+    return _resolve_reject_policy_spec(candidate_policy, explainer)
+
+
 def _resolve_effective_reject_policy(
     candidate_policy: Any,
     explainer: Any,
@@ -87,6 +91,20 @@ def _resolve_effective_reject_policy(
     )
 
 
+def resolve_effective_reject_policy(
+    candidate_policy: Any,
+    explainer: Any,
+    *,
+    default_policy: Any,
+) -> Any:
+    """Public wrapper for reject policy resolution with defaults."""
+    return _resolve_effective_reject_policy(
+        candidate_policy,
+        explainer,
+        default_policy=default_policy,
+    )
+
+
 def _warn_source_index_issue(message: str) -> None:
     """Emit visible warning and diagnostic log for source-index resolution issues."""
     logger = logging.getLogger(__name__)
@@ -103,13 +121,19 @@ def _coerce_legacy_reject_result(result: Any) -> Any:
     try:
         from ...explanations.reject import (
             RejectResultV2,  # pylint: disable=import-outside-toplevel
+            reject_result_v2_to_legacy,
         )
 
         if isinstance(result, RejectResultV2):
-            return result.to_legacy()
+            return reject_result_v2_to_legacy(result, emit_deprecation_warning=False)
     except Exception:  # adr002_allow
         return result
     return result
+
+
+def coerce_legacy_reject_result(result: Any) -> Any:
+    """Public wrapper for coercing reject envelopes to legacy format."""
+    return _coerce_legacy_reject_result(result)
 
 
 def _resolve_source_indices_for_payload(
@@ -199,6 +223,22 @@ def _resolve_source_indices_for_payload(
             "reject context attachment skipped."
         )
         return None
+
+
+def resolve_source_indices_for_payload(
+    *,
+    policy: Any,
+    metadata: Any,
+    rejected_mask: Any,
+    payload_count: int,
+) -> list[int] | None:
+    """Public wrapper for reject payload/source index mapping."""
+    return _resolve_source_indices_for_payload(
+        policy=policy,
+        metadata=metadata,
+        rejected_mask=rejected_mask,
+        payload_count=payload_count,
+    )
 
 
 class ExplanationOrchestrator:
@@ -520,6 +560,7 @@ class ExplanationOrchestrator:
                         bins=bins,
                         confidence=confidence,
                         threshold=threshold,
+                        result_schema="v2",
                     )
                 )
 
@@ -1046,6 +1087,7 @@ class ExplanationOrchestrator:
                                 bins=bins,
                                 confidence=confidence,
                                 threshold=threshold,
+                                result_schema="v2",
                             )
                         )
                     except Exception:  # adr002_allow
@@ -1242,6 +1284,7 @@ class ExplanationOrchestrator:
                                 bins=bins,
                                 confidence=confidence,
                                 threshold=threshold,
+                                result_schema="v2",
                             )
                         )
                     except Exception:  # adr002_allow
@@ -1405,6 +1448,7 @@ class ExplanationOrchestrator:
                         bins=bins,
                         confidence=confidence,
                         threshold=threshold,
+                        result_schema="v2",
                     )
                 )
 
@@ -1576,6 +1620,7 @@ class ExplanationOrchestrator:
                         bins=bins,
                         confidence=confidence,
                         threshold=threshold,
+                        result_schema="v2",
                     )
                 )
 
@@ -1752,138 +1797,13 @@ class ExplanationOrchestrator:
                 with contextlib.suppress(CalibratedError):
                     pm.initialize_chains()
 
-        raw_override = self.explainer.plugin_manager.explanation_plugin_overrides.get(mode)
-        override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
-        if override is not None and not isinstance(override, str):
-            plugin = override
-            identifier = getattr(plugin, "plugin_meta", {}).get("name")
-            meta = getattr(plugin, "plugin_meta", {})
-            if isinstance(meta, Mapping):
-                trusted = meta.get("trusted", meta.get("trust", True))
-                if not bool(trusted):
-                    warnings.warn(
-                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
-                        "Ensure you trust the source of this plugin.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-            return plugin, identifier
-
-        explicit_override_identifier = raw_override if isinstance(raw_override, str) else None
-        preferred_identifier = (
-            explicit_override_identifier
-            or self.explainer.plugin_manager.explanation_preferred_identifier.get(mode)
+        plugin, identifier = self.explainer.plugin_manager.resolve_explanation_plugin_for_mode(
+            mode,
+            task=self.explainer.mode,
+            metadata_validator=self.check_metadata,
+            instantiate_plugin=self.instantiate_plugin,
         )
-        allow_untrusted = explicit_override_identifier is not None
-        chain = self.explainer.plugin_manager.explanation_plugin_fallbacks.get(mode, ())
-        if not chain and mode == "fast":
-            msg = (
-                "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                "Install the external plugins extra with "
-                '``pip install "calibrated-explanations[external-plugins]"`` '
-                "and call ``external_plugins.fast_explanations.register()`` or rerun "
-                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
-            )
-            raise ConfigurationError(msg)
-
-        errors: List[str] = []
-        for identifier in chain:
-            is_preferred = preferred_identifier is not None and identifier == preferred_identifier
-            is_explicit_override = (
-                explicit_override_identifier is not None
-                and identifier == explicit_override_identifier
-            )
-            if is_identifier_denied(identifier):
-                message = f"{identifier}: denied via CE_DENY_PLUGIN"
-                if is_preferred:
-                    prefix = (
-                        "Explanation plugin override failed: "
-                        if is_explicit_override
-                        else "Explanation plugin configuration failed: "
-                    )
-                    raise ConfigurationError(prefix + message) from None
-                errors.append(message)
-                continue
-
-            plugin, metadata, reason = self.explainer.plugin_manager.resolve_explanation_plugin(
-                identifier,
-                allow_untrusted=allow_untrusted,
-                is_preferred=is_preferred,
-                is_explicit_override=is_explicit_override,
-            )
-            if reason == "untrusted":
-                raise ConfigurationError(
-                    "Explanation plugin configuration failed: "
-                    + identifier
-                    + " is untrusted; explicitly trust the plugin or pass an explicit override"
-                ) from None
-            if plugin is None:
-                message = f"{identifier}: not registered"
-                if is_preferred:
-                    prefix = (
-                        "Explanation plugin override failed: "
-                        if is_explicit_override
-                        else "Explanation plugin configuration failed: "
-                    )
-                    raise ConfigurationError(prefix + message) from None
-                errors.append(message)
-                continue
-
-            meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self.check_metadata(
-                meta_source,
-                identifier=identifier,
-                mode=mode,
-            )
-            if error:
-                if is_preferred:
-                    prefix = (
-                        "Explanation plugin override failed: "
-                        if is_explicit_override
-                        else "Explanation plugin configuration failed: "
-                    )
-                    raise ConfigurationError(prefix + error) from None
-                errors.append(error)
-                continue
-
-            plugin = self.instantiate_plugin(plugin)
-            try:
-                supports = plugin.supports_mode
-            except AttributeError as exc:
-                errors.append(f"{identifier}: missing supports_mode ({exc})")
-                continue
-            try:
-                if not supports(mode, task=self.explainer.mode):
-                    errors.append(
-                        f"{identifier}: mode '{mode}' "
-                        f"unsupported for task {self.explainer.mode}"
-                    )
-                    continue
-            except (
-                Exception
-            ) as exc:  # ADR002_ALLOW: defensive catch for third-party plugins.  # pragma: no cover
-                # pragma: no cover - defensive
-                errors.append(f"{identifier}: error during supports_mode ({exc})")
-                continue
-            return plugin, identifier
-
-        if mode == "fast" and "core.explanation.fast" in chain:
-            msg = (
-                "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                "Install the external plugins extra with "
-                '``pip install "calibrated-explanations[external-plugins]"`` '
-                "and call ``external_plugins.fast_explanations.register()`` or rerun "
-                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
-            )
-            raise ConfigurationError(msg)
-
-        raise ConfigurationError(
-            "Unable to resolve explanation plugin for mode '"
-            + mode
-            + "'. Tried: "
-            + ", ".join(chain or ("<none>",))
-            + ("; errors: " + "; ".join(errors) if errors else "")
-        )
+        return plugin, identifier
 
     def check_metadata(
         self,

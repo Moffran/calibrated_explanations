@@ -119,20 +119,23 @@ def testinstantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
     y_cal = np.array([0, 1])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    assert explainer.instantiate_plugin(None) is None
+    with pytest.warns(DeprecationWarning):
+        assert explainer.instantiate_plugin(None) is None
 
     def plugin_factory() -> str:
         return "plugin"
 
     plugin_factory.plugin_meta = {"name": "factory"}  # type: ignore[attr-defined]
-    assert explainer.instantiate_plugin(plugin_factory) is plugin_factory
+    with pytest.warns(DeprecationWarning):
+        assert explainer.instantiate_plugin(plugin_factory) is plugin_factory
 
     class Prototype:
         def __init__(self) -> None:
             self.value = "fresh"
 
     proto = Prototype()
-    inst = explainer.instantiate_plugin(proto)
+    with pytest.warns(DeprecationWarning):
+        inst = explainer.instantiate_plugin(proto)
     assert isinstance(inst, Prototype)
     assert inst is not proto
 

@@ -22,10 +22,10 @@ from calibrated_explanations.explanations.reject import (
     RejectPolicySpec,
     RejectResult,
     RejectResultV2,
-    _align_reject_field_to_payload,
-    _canonicalize_degraded_mode,
-    _normalize_contract_metadata,
-    _resolve_source_indices_for_wrapper,
+    align_reject_field_to_payload,
+    canonicalize_degraded_mode,
+    normalize_contract_metadata,
+    resolve_source_indices_for_wrapper,
 )
 from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 
@@ -199,7 +199,7 @@ def test_reject_getitem_wraps_plain_collection_result(monkeypatch):
 
 
 def test_resolve_source_indices_for_wrapper_accepts_valid_metadata():
-    idxs = _resolve_source_indices_for_wrapper(
+    idxs = resolve_source_indices_for_wrapper(
         policy=RejectPolicy.ONLY_ACCEPTED,
         metadata={"source_indices": [1, 3], "original_count": 4},
         rejected=np.array([True, False, True, False]),
@@ -210,7 +210,7 @@ def test_resolve_source_indices_for_wrapper_accepts_valid_metadata():
 
 def test_resolve_source_indices_for_wrapper_fallback_from_rejected_mask_warns():
     with pytest.warns(UserWarning, match="missing source_indices"):
-        idxs = _resolve_source_indices_for_wrapper(
+        idxs = resolve_source_indices_for_wrapper(
             policy=RejectPolicy.ONLY_REJECTED,
             metadata={},
             rejected=np.array([True, False, True, False]),
@@ -220,7 +220,7 @@ def test_resolve_source_indices_for_wrapper_fallback_from_rejected_mask_warns():
 
 
 def test_align_reject_field_to_payload_slices_by_source_indices():
-    aligned = _align_reject_field_to_payload(
+    aligned = align_reject_field_to_payload(
         name="ambiguity_mask",
         value=np.array([True, False, True, False]),
         payload_count=2,
@@ -232,7 +232,7 @@ def test_align_reject_field_to_payload_slices_by_source_indices():
 
 def test_resolve_source_indices_for_wrapper_raises_without_mapping_or_mask():
     with pytest.raises(DataShapeError, match="Cannot align filtered reject payload"):
-        _resolve_source_indices_for_wrapper(
+        resolve_source_indices_for_wrapper(
             policy=RejectPolicy.ONLY_ACCEPTED,
             metadata={},
             rejected=None,
@@ -241,7 +241,7 @@ def test_resolve_source_indices_for_wrapper_raises_without_mapping_or_mask():
 
 
 def test_resolve_source_indices_for_wrapper_empty_payload_without_mapping():
-    idxs = _resolve_source_indices_for_wrapper(
+    idxs = resolve_source_indices_for_wrapper(
         policy=RejectPolicy.ONLY_ACCEPTED,
         metadata={},
         rejected=None,
@@ -263,16 +263,16 @@ def test_reject_policy_invalid_non_string_raises_value_error():
 
 
 def test_contract_metadata_normalization_canonicalizes_degraded_mode():
-    assert _canonicalize_degraded_mode(None) == ()
-    assert _canonicalize_degraded_mode("bulk_to_per_instance_fallback") == (
+    assert canonicalize_degraded_mode(None) == ()
+    assert canonicalize_degraded_mode("bulk_to_per_instance_fallback") == (
         "bulk_to_per_instance_fallback",
     )
-    assert _canonicalize_degraded_mode(["prediction_payload_failed", None, "custom"]) == (
+    assert canonicalize_degraded_mode(["prediction_payload_failed", None, "custom"]) == (
         "prediction_payload_failed",
         "custom",
     )
 
-    normalized = _normalize_contract_metadata(
+    normalized = normalize_contract_metadata(
         metadata={
             "raw_reject_counts": {"rejected": 2},
             "degraded_mode": "prediction_payload_failed",
@@ -414,7 +414,7 @@ def test_getitem_with_unsupported_key_type_raises_data_shape_error():
 
 def test_resolve_source_indices_validation_errors_from_metadata():
     with pytest.raises(DataShapeError, match="one-dimensional integer sequence"):
-        _resolve_source_indices_for_wrapper(
+        resolve_source_indices_for_wrapper(
             policy=RejectPolicy.FLAG,
             metadata={"source_indices": [0.1, 2.5], "original_count": 3},
             rejected=np.array([False, False, False]),
@@ -422,7 +422,7 @@ def test_resolve_source_indices_validation_errors_from_metadata():
         )
 
     with pytest.raises(DataShapeError, match="must be unique"):
-        _resolve_source_indices_for_wrapper(
+        resolve_source_indices_for_wrapper(
             policy=RejectPolicy.FLAG,
             metadata={"source_indices": [1, 1], "original_count": 3},
             rejected=np.array([False, False, False]),
@@ -430,7 +430,7 @@ def test_resolve_source_indices_validation_errors_from_metadata():
         )
 
     with pytest.raises(DataShapeError, match="must preserve source ordering"):
-        _resolve_source_indices_for_wrapper(
+        resolve_source_indices_for_wrapper(
             policy=RejectPolicy.FLAG,
             metadata={"source_indices": [2, 1], "original_count": 3},
             rejected=np.array([False, False, False]),
@@ -438,7 +438,7 @@ def test_resolve_source_indices_validation_errors_from_metadata():
         )
 
     with pytest.raises(DataShapeError, match="must be < original_count"):
-        _resolve_source_indices_for_wrapper(
+        resolve_source_indices_for_wrapper(
             policy=RejectPolicy.FLAG,
             metadata={"source_indices": [0, 4], "original_count": 4},
             rejected=np.array([False, False, False, False]),
@@ -448,7 +448,7 @@ def test_resolve_source_indices_validation_errors_from_metadata():
 
 def test_align_reject_field_to_payload_error_paths():
     with pytest.raises(DataShapeError, match="cannot be aligned"):
-        _align_reject_field_to_payload(
+        align_reject_field_to_payload(
             name="prediction_set_size",
             value=np.array(1),
             payload_count=1,
@@ -457,7 +457,7 @@ def test_align_reject_field_to_payload_error_paths():
         )
 
     with pytest.raises(DataShapeError, match="shorter than source_indices require"):
-        _align_reject_field_to_payload(
+        align_reject_field_to_payload(
             name="prediction_set",
             value=np.array([True, False]),
             payload_count=3,
@@ -747,7 +747,8 @@ def test_reject_result_v2_to_legacy_adapter_preserves_core_fields():
         payload=payload,
         metadata={"schema_version": "2.0"},
     )
-    legacy = result_v2.to_legacy()
+    with pytest.warns(DeprecationWarning):
+        legacy = result_v2.to_legacy()
     assert isinstance(legacy, RejectResult)
     assert legacy.policy is RejectPolicy.FLAG
     np.testing.assert_array_equal(legacy.rejected, np.array([True, False]))

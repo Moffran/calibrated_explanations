@@ -208,3 +208,4 @@ evaluation/ensure/*tables/*
 .precommit-cache/
 evaluation/reject/paper/
 docs/contracts/*
+scripts/contracts/*

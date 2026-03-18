@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
 
@@ -264,9 +265,9 @@ def testensure_plugin_init_failure(orchestrator, mock_explainer):
 
 def test_resolve_plugin_fast_missing(orchestrator, mock_explainer):
     """Test _resolve_plugin fast mode missing error."""
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"fast": []}
+    mock_explainer.plugin_manager.resolve_explanation_plugin_for_mode.side_effect = (
+        ConfigurationError("Fast explanation plugin 'core.explanation.fast' is not registered")
+    )
 
     with pytest.raises(
         ConfigurationError,
@@ -277,43 +278,19 @@ def test_resolve_plugin_fast_missing(orchestrator, mock_explainer):
 
 def test_resolve_plugin_denied(orchestrator, mock_explainer):
     """Test _resolve_plugin with denied plugin."""
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {"factual": ["denied_plugin"]}
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=True,
-        ),
-        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
-    ):
+    mock_explainer.plugin_manager.resolve_explanation_plugin_for_mode.side_effect = (
+        ConfigurationError("Unable to resolve explanation plugin")
+    )
+    with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
         orchestrator.resolve_plugin("factual")
 
 
 def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
     """Test _resolve_plugin with metadata error."""
-    mock_explainer.plugin_manager.explanation_plugin_overrides = {}
-    mock_explainer.plugin_manager.coerce_plugin_override.return_value = None
-    mock_explainer.plugin_manager.explanation_plugin_fallbacks = {
-        "factual": ["bad_metadata_plugin"]
-    }
-
-    mock_plugin = MagicMock()
-    mock_plugin.plugin_meta = {}  # Empty metadata causes error
-    mock_explainer.plugin_manager.resolve_explanation_plugin.return_value = (
-        mock_plugin,
-        None,
-        None,
+    mock_explainer.plugin_manager.resolve_explanation_plugin_for_mode.side_effect = (
+        ConfigurationError("Unable to resolve explanation plugin")
     )
-
-    with (
-        patch(
-            "calibrated_explanations.core.explain.orchestrator.is_identifier_denied",
-            return_value=False,
-        ),
-        pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"),
-    ):
+    with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
         orchestrator.resolve_plugin("factual")
 
 
@@ -452,3 +429,128 @@ def test_should_include_interval_dependency_telemetry_in_single_and_batch_paths(
 
     assert result.telemetry["interval_dependencies"] == ("core.interval.legacy",)
     assert result.telemetry["interval_source"] == "core.interval.legacy"
+
+
+def test_invoke_warns_and_drops_unknown_feature_names(orchestrator, mock_explainer):
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+    mock_explainer.feature_names = ["f0", "f1", "f2"]
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_container.from_batch.return_value = MagicMock()
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+        pytest.warns(UserWarning, match="Unknown feature names in features_to_ignore"),
+    ):
+        orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=["f1", "unknown"],
+        )
+
+    args, _ = mock_plugin.explain_batch.call_args
+    request = args[1]
+    assert request.features_to_ignore == (1,)
+
+
+def test_invoke_handles_per_instance_ignore_with_unknown_names(orchestrator, mock_explainer):
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+    mock_explainer.feature_names = ["f0", "f1", "f2"]
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_container.from_batch.return_value = MagicMock()
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+        pytest.warns(UserWarning, match="Unknown feature names in features_to_ignore"),
+    ):
+        orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2], [3, 4]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=[["f0", "missing"], ["1"]],
+        )
+
+    args, _ = mock_plugin.explain_batch.call_args
+    request = args[1]
+    assert request.feature_filter_per_instance_ignore == ((0,), (1,))
+    assert set(request.features_to_ignore) == {0, 1}
+
+
+def test_invoke_fast_filter_failure_falls_back_to_baseline_ignores(orchestrator, mock_explainer):
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+    mock_explainer.feature_filter_config = SimpleNamespace(enabled=True)
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_container.from_batch.return_value = MagicMock()
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch(
+            "calibrated_explanations.core.explain._feature_filter.compute_filtered_features_to_ignore",
+            side_effect=RuntimeError("fast failed"),
+        ),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+        pytest.warns(UserWarning, match="Auto-selecting experimental 'fast' explanation mode"),
+    ):
+        result = orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=[0],
+            _ce_skip_reject=True,
+        )
+
+    assert result is not None
+
+
+def test_invoke_raises_when_batch_container_cannot_materialize(orchestrator, mock_explainer):
+    mock_explainer.plugin_manager.get_bridge_monitor.return_value = None
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_batch.container_cls = object()
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orchestrator, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        pytest.raises(ConfigurationError, match="cannot be materialised"),
+    ):
+        orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+            _ce_skip_reject=True,
+        )

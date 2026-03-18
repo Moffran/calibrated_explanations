@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
+import warnings
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.exceptions import ValidationError, DataShapeError
 
@@ -90,44 +91,52 @@ def test_plugin_delegations_and_aliases(mock_learner, mock_plugin_manager):
     plugin_manager = explainer.plugin_manager
 
     plugin_manager.build_plot_chain.return_value = ("default",)
-    assert explainer.build_plot_style_chain() == ("default",)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.build_plot_style_chain() == ("default",)
 
     explainer.prediction_orchestrator.ensure_interval_runtime_state.return_value = "ok"
-    assert explainer.ensure_interval_runtime_state() == "ok"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.ensure_interval_runtime_state() == "ok"
     explainer.prediction_orchestrator.gather_interval_hints.return_value = ("hint",)
-    assert explainer.gather_interval_hints(fast=True) == ("hint",)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.gather_interval_hints(fast=True) == ("hint",)
 
-    plugin_manager.interval_plugin_hints = {"a": ("b",)}
-    assert explainer.interval_plugin_hints == {"a": ("b",)}
-    explainer.interval_plugin_hints = {"c": ("d",)}
-    assert plugin_manager.interval_plugin_hints == {"c": ("d",)}
-    assert explainer.interval_plugin_hints == {"c": ("d",)}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        plugin_manager.interval_plugin_hints = {"a": ("b",)}
+        assert explainer.interval_plugin_hints == {"a": ("b",)}
+        explainer.interval_plugin_hints = {"c": ("d",)}
+        assert plugin_manager.interval_plugin_hints == {"c": ("d",)}
+        assert explainer.interval_plugin_hints == {"c": ("d",)}
 
-    plugin_manager.interval_plugin_fallbacks = {"a": ("b",)}
-    assert explainer.interval_plugin_fallbacks == {"a": ("b",)}
-    explainer.interval_plugin_fallbacks = {"c": ("d",)}
-    assert plugin_manager.interval_plugin_fallbacks == {"c": ("d",)}
-    assert explainer.interval_plugin_fallbacks == {"c": ("d",)}
+        plugin_manager.interval_plugin_fallbacks = {"a": ("b",)}
+        assert explainer.interval_plugin_fallbacks == {"a": ("b",)}
+        explainer.interval_plugin_fallbacks = {"c": ("d",)}
+        assert plugin_manager.interval_plugin_fallbacks == {"c": ("d",)}
+        assert explainer.interval_plugin_fallbacks == {"c": ("d",)}
 
-    plugin_manager.interval_preferred_identifier = {"x": "y"}
-    assert explainer.interval_preferred_identifier == {"x": "y"}
-    explainer.interval_preferred_identifier = {"z": None}
-    assert plugin_manager.interval_preferred_identifier == {"z": None}
+        plugin_manager.interval_preferred_identifier = {"x": "y"}
+        assert explainer.interval_preferred_identifier == {"x": "y"}
+        explainer.interval_preferred_identifier = {"z": None}
+        assert plugin_manager.interval_preferred_identifier == {"z": None}
 
-    plugin_manager.telemetry_interval_sources = {"x": "y"}
-    assert explainer.telemetry_interval_sources == {"x": "y"}
-    explainer.telemetry_interval_sources = {"z": "w"}
-    assert plugin_manager.telemetry_interval_sources == {"z": "w"}
+        plugin_manager.telemetry_interval_sources = {"x": "y"}
+        assert explainer.telemetry_interval_sources == {"x": "y"}
+        explainer.telemetry_interval_sources = {"z": "w"}
+        assert plugin_manager.telemetry_interval_sources == {"z": "w"}
 
-    plugin_manager.interval_plugin_identifiers = {"x": "y"}
-    assert explainer.interval_plugin_identifiers == {"x": "y"}
-    explainer.interval_plugin_identifiers = {"z": "w"}
-    assert plugin_manager.interval_plugin_identifiers == {"z": "w"}
+        plugin_manager.interval_plugin_identifiers = {"x": "y"}
+        assert explainer.interval_plugin_identifiers == {"x": "y"}
+        explainer.interval_plugin_identifiers = {"z": "w"}
+        assert plugin_manager.interval_plugin_identifiers == {"z": "w"}
 
-    plugin_manager.interval_context_metadata = {"x": {"y": 1}}
-    assert explainer.interval_context_metadata == {"x": {"y": 1}}
-    explainer.interval_context_metadata = {"z": {"w": 2}}
-    assert plugin_manager.interval_context_metadata == {"z": {"w": 2}}
+        plugin_manager.interval_context_metadata = {"x": {"y": 1}}
+        assert explainer.interval_context_metadata == {"x": {"y": 1}}
+        explainer.interval_context_metadata = {"z": {"w": 2}}
+        assert plugin_manager.interval_context_metadata == {"z": {"w": 2}}
 
     explainer.plot_plugin_fallbacks = {"plot": ("fallback",)}
     assert plugin_manager.plot_plugin_fallbacks == {"plot": ("fallback",)}
@@ -136,10 +145,14 @@ def test_plugin_delegations_and_aliases(mock_learner, mock_plugin_manager):
     assert plugin_manager.explanation_plugin_instances == explainer.explanation_plugin_instances
 
     explainer.interval_plugin_override = "override"
-    assert explainer.interval_plugin_override == "override"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.interval_plugin_override == "override"
 
     explainer.fast_interval_plugin_override = "fast"
-    assert explainer.fast_interval_plugin_override == "fast"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.fast_interval_plugin_override == "fast"
 
     explainer.initialized = True
     assert explainer.is_initialized is True
@@ -216,11 +229,15 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     # properties
     explainer.plugin_manager = mock_plugin_manager
     _ = explainer.plot_plugin_fallbacks
-    _ = explainer.plot_style_override
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        _ = explainer.plot_style_override
     _ = explainer.explanation_plugin_instances
-    _ = explainer.explanation_plugin_overrides
-    _ = explainer.interval_plugin_override
-    _ = explainer.plot_style_override
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        _ = explainer.explanation_plugin_overrides
+        _ = explainer.interval_plugin_override
+        _ = explainer.plot_style_override
     _ = explainer.shap_helper
     _ = explainer.feature_filter_per_instance_ignore
     _ = explainer.runtime_telemetry

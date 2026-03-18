@@ -558,17 +558,26 @@ def testplot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
-    monkeypatch.setattr(
-        plotting,
-        "_resolve_plot_style_chain",
-        lambda explainer, style: ("plot_spec.default",),
-    )
+
+    class DummyPlugin:
+        def build(self, _context):
+            return {"plot_spec": {"kind": "global_regression"}}
+
+        def render(self, artifact, *, context=None):
+            return SimpleNamespace(artifact=artifact, context=context)
 
     class DummyExplainer:
         def __init__(self):
             self.learner = SimpleNamespace()
             self.last_explanation_mode = "factual"
             self.latest_explanation = SimpleNamespace()
+            self.plugin_manager = SimpleNamespace(
+                resolve_plot_plugin=lambda explicit_style, renderer_override=None: (
+                    DummyPlugin(),
+                    explicit_style or "plot_spec.default",
+                    ("plot_spec.default", "legacy"),
+                )
+            )
 
         def predict(self, x, uq_interval=True, bins=None):
             return [0.42], ([0.1], [0.9])

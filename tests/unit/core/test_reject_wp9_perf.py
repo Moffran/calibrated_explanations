@@ -33,7 +33,7 @@ from calibrated_explanations.core.reject.policy import RejectPolicy
 # ---------------------------------------------------------------------------
 
 
-def _make_stub(monkeypatch, *, rejection_mask: np.ndarray):
+def make_stub(monkeypatch, *, rejection_mask: np.ndarray):
     """Return (expl, RejectOrchestrator) wired to a deterministic breakdown.
 
     ``rejection_mask`` controls which instances are reported as rejected.
@@ -41,27 +41,27 @@ def _make_stub(monkeypatch, *, rejection_mask: np.ndarray):
     that returns a fixed dict whose ``rejected`` key matches the mask.
     """
 
-    class _IntervalLearner:
+    class IntervalLearner:
         def predict_proba(self, x, bins=None):
             return np.tile(np.array([[0.5, 0.5]]), (len(x), 1))
 
         def predict_probability(self, x, y_threshold=None, bins=None):
             return np.zeros(len(x)), None, None, None
 
-    class _ExplainerStub(SimpleNamespace):
+    class ExplainerStub(SimpleNamespace):
         def __init__(self):
             super().__init__()
             self.mode = "classification"
             self.x_cal = np.zeros((4, 1))
             self.y_cal = np.array([0, 1, 0, 1])
             self.bins = None
-            self.interval_learner = _IntervalLearner()
+            self.interval_learner = IntervalLearner()
             self.reject_learner = None
 
         def is_multiclass(self):
             return False
 
-    class _DummyConformal:
+    class DummyConformal:
         def fit(self, *args, **kwargs):
             return self
 
@@ -69,8 +69,8 @@ def _make_stub(monkeypatch, *, rejection_mask: np.ndarray):
             n = np.atleast_2d(alphas).shape[0]
             return np.full((n, 2), 0.9)
 
-    monkeypatch.setattr(orch, "ConformalClassifier", lambda: _DummyConformal())
-    expl = _ExplainerStub()
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
+    expl = ExplainerStub()
     o = orch.RejectOrchestrator(expl)
     o.initialize_reject_learner(ncf="default", w=1.0)
 
@@ -104,7 +104,7 @@ _HALF_REJECTED = np.array([True, False, True, False, True, False, True, False], 
 
 def test_only_rejected_explain_fn_receives_subset_rows(monkeypatch):
     """ONLY_REJECTED must pass exactly the rejected rows to explain_fn (F16)."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.arange(len(_HALF_REJECTED)).reshape(-1, 1).astype(float)
 
     received_sizes = []
@@ -117,14 +117,13 @@ def test_only_rejected_explain_fn_receives_subset_rows(monkeypatch):
 
     expected = int(_HALF_REJECTED.sum())
     assert received_sizes == [expected], (
-        f"ONLY_REJECTED: explain_fn should have received {expected} rows, "
-        f"got {received_sizes}"
+        f"ONLY_REJECTED: explain_fn should have received {expected} rows, " f"got {received_sizes}"
     )
 
 
 def test_only_accepted_explain_fn_receives_subset_rows(monkeypatch):
     """ONLY_ACCEPTED must pass exactly the accepted rows to explain_fn (F16)."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.arange(len(_HALF_REJECTED)).reshape(-1, 1).astype(float)
 
     received_sizes = []
@@ -137,14 +136,13 @@ def test_only_accepted_explain_fn_receives_subset_rows(monkeypatch):
 
     expected = int((~_HALF_REJECTED).sum())
     assert received_sizes == [expected], (
-        f"ONLY_ACCEPTED: explain_fn should have received {expected} rows, "
-        f"got {received_sizes}"
+        f"ONLY_ACCEPTED: explain_fn should have received {expected} rows, " f"got {received_sizes}"
     )
 
 
 def test_flag_explain_fn_receives_all_rows(monkeypatch):
     """FLAG must pass all rows to explain_fn (semantic drift control)."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.arange(len(_HALF_REJECTED)).reshape(-1, 1).astype(float)
 
     received_sizes = []
@@ -155,9 +153,9 @@ def test_flag_explain_fn_receives_all_rows(monkeypatch):
 
     o.apply_policy(RejectPolicy.FLAG, x, explain_fn=_explain_fn)
 
-    assert received_sizes == [len(x)], (
-        f"FLAG: explain_fn should have received all {len(x)} rows, got {received_sizes}"
-    )
+    assert received_sizes == [
+        len(x)
+    ], f"FLAG: explain_fn should have received all {len(x)} rows, got {received_sizes}"
 
 
 def test_subset_explain_row_count_scales_with_rejection_rate(monkeypatch):
@@ -165,7 +163,7 @@ def test_subset_explain_row_count_scales_with_rejection_rate(monkeypatch):
     n = 20
     # High rejection (80%)
     high_mask = np.array([i % 5 != 0 for i in range(n)])
-    _, o_high = _make_stub(monkeypatch, rejection_mask=high_mask)
+    _, o_high = make_stub(monkeypatch, rejection_mask=high_mask)
     x = np.zeros((n, 1))
 
     rows_high = []
@@ -175,16 +173,16 @@ def test_subset_explain_row_count_scales_with_rejection_rate(monkeypatch):
 
     # Low rejection (20%)
     low_mask = np.array([i % 5 == 0 for i in range(n)])
-    _, o_low = _make_stub(monkeypatch, rejection_mask=low_mask)
+    _, o_low = make_stub(monkeypatch, rejection_mask=low_mask)
 
     rows_low = []
     o_low.apply_policy(
         RejectPolicy.ONLY_REJECTED, x, explain_fn=lambda a, **_: rows_low.append(len(a)) or a
     )
 
-    assert rows_high[0] > rows_low[0], (
-        "Higher rejection rate must cause explain_fn to receive more rows for ONLY_REJECTED"
-    )
+    assert (
+        rows_high[0] > rows_low[0]
+    ), "Higher rejection rate must cause explain_fn to receive more rows for ONLY_REJECTED"
     assert rows_high[0] == int(high_mask.sum())
     assert rows_low[0] == int(low_mask.sum())
 
@@ -196,7 +194,7 @@ def test_subset_explain_row_count_scales_with_rejection_rate(monkeypatch):
 
 def test_prediction_set_absent_by_default_for_only_rejected(monkeypatch):
     """prediction_set metadata is None by default for ONLY_REJECTED (WP9 gate)."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.zeros((len(_HALF_REJECTED), 1))
 
     result = o.apply_policy(RejectPolicy.ONLY_REJECTED, x, explain_fn=lambda a, **_: a)
@@ -205,7 +203,7 @@ def test_prediction_set_absent_by_default_for_only_rejected(monkeypatch):
 
 def test_prediction_set_absent_by_default_for_only_accepted(monkeypatch):
     """prediction_set metadata is None by default for ONLY_ACCEPTED (WP9 gate)."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.zeros((len(_HALF_REJECTED), 1))
 
     result = o.apply_policy(RejectPolicy.ONLY_ACCEPTED, x, explain_fn=lambda a, **_: a)
@@ -214,7 +212,7 @@ def test_prediction_set_absent_by_default_for_only_accepted(monkeypatch):
 
 def test_prediction_set_present_for_flag_by_default(monkeypatch):
     """prediction_set metadata is populated by default for FLAG (no gating)."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.zeros((len(_HALF_REJECTED), 1))
 
     result = o.apply_policy(RejectPolicy.FLAG, x, explain_fn=lambda a, **_: a)
@@ -223,16 +221,14 @@ def test_prediction_set_present_for_flag_by_default(monkeypatch):
 
 def test_prediction_set_opt_in_populates_for_subset_policies(monkeypatch):
     """include_prediction_set=True restores prediction_set for subset policies."""
-    _, o = _make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
+    _, o = make_stub(monkeypatch, rejection_mask=_HALF_REJECTED)
     x = np.zeros((len(_HALF_REJECTED), 1))
 
     for policy in (RejectPolicy.ONLY_REJECTED, RejectPolicy.ONLY_ACCEPTED):
-        result = o.apply_policy(
-            policy, x, explain_fn=lambda a, **_: a, include_prediction_set=True
-        )
-        assert result.metadata["prediction_set"] is not None, (
-            f"{policy}: prediction_set should be populated when include_prediction_set=True"
-        )
+        result = o.apply_policy(policy, x, explain_fn=lambda a, **_: a, include_prediction_set=True)
+        assert (
+            result.metadata["prediction_set"] is not None
+        ), f"{policy}: prediction_set should be populated when include_prediction_set=True"
 
 
 # ---------------------------------------------------------------------------
@@ -240,14 +236,14 @@ def test_prediction_set_opt_in_populates_for_subset_policies(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def _make_timed_explain(row_cost_s: float):
+def make_timed_explain(row_cost_s: float):
     """Return an explain_fn whose cost is proportional to the number of input rows."""
 
-    def _fn(arr, **_):
+    def timed_explain(arr, **_):
         time.sleep(row_cost_s * len(arr))
         return arr
 
-    return _fn
+    return timed_explain
 
 
 @pytest.mark.parametrize("rejection_frac", [0.25, 0.5, 0.75])
@@ -262,22 +258,20 @@ def test_subset_policy_faster_than_flag_proportionally(monkeypatch, rejection_fr
     k = round(n * rejection_frac)
     mask = np.array([i < k for i in range(n)], dtype=bool)  # first k rejected
 
-    _, o_subset = _make_stub(monkeypatch, rejection_mask=mask)
-    _, o_flag = _make_stub(monkeypatch, rejection_mask=mask)
+    _, o_subset = make_stub(monkeypatch, rejection_mask=mask)
+    _, o_flag = make_stub(monkeypatch, rejection_mask=mask)
 
     x = np.zeros((n, 1))
     row_cost = 0.002  # 2 ms per row — fast enough for CI, slow enough to measure
 
     # Time ONLY_REJECTED
     t0 = time.perf_counter()
-    o_subset.apply_policy(
-        RejectPolicy.ONLY_REJECTED, x, explain_fn=_make_timed_explain(row_cost)
-    )
+    o_subset.apply_policy(RejectPolicy.ONLY_REJECTED, x, explain_fn=make_timed_explain(row_cost))
     t_subset = time.perf_counter() - t0
 
     # Time FLAG (all rows)
     t0 = time.perf_counter()
-    o_flag.apply_policy(RejectPolicy.FLAG, x, explain_fn=_make_timed_explain(row_cost))
+    o_flag.apply_policy(RejectPolicy.FLAG, x, explain_fn=make_timed_explain(row_cost))
     t_flag = time.perf_counter() - t0
 
     # Subset must be cheaper. Allow 20 % timing slack for scheduler noise.

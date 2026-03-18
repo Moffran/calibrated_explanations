@@ -123,6 +123,11 @@ def _interval_width_score(proba: np.ndarray) -> np.ndarray:
     return proba[:, 1] - proba[:, 0]
 
 
+def interval_width_score(proba: np.ndarray) -> np.ndarray:
+    """Public wrapper for interval-width reject scoring."""
+    return _interval_width_score(proba)
+
+
 def _margin_score(proba: np.ndarray) -> np.ndarray:
     """Compute instance-level margin score (higher means less conforming)."""
     proba = np.asarray(proba, dtype=float)
@@ -130,6 +135,11 @@ def _margin_score(proba: np.ndarray) -> np.ndarray:
         return np.zeros(len(proba))
     sorted_proba = np.sort(proba, axis=1)[:, ::-1]
     return 1.0 - (sorted_proba[:, 0] - sorted_proba[:, 1])
+
+
+def margin_score(proba: np.ndarray) -> np.ndarray:
+    """Public wrapper for margin-based reject scoring."""
+    return _margin_score(proba)
 
 
 def _default_ncf_kind(is_multiclass: bool) -> str:
@@ -154,6 +164,16 @@ def _default_score_cal(
     )
 
 
+def default_score_cal(
+    proba: np.ndarray,
+    classes: np.ndarray,
+    labels: np.ndarray,
+    default_kind: str,
+) -> np.ndarray:
+    """Public wrapper for default calibration-score computation."""
+    return _default_score_cal(proba, classes, labels, default_kind)
+
+
 def _default_score_test(proba: np.ndarray, default_kind: str) -> np.ndarray:
     """Compute 2-D test scores for the internal default reject score."""
     if default_kind == "hinge":
@@ -168,6 +188,11 @@ def _default_score_test(proba: np.ndarray, default_kind: str) -> np.ndarray:
     )
 
 
+def default_score_test(proba: np.ndarray, default_kind: str) -> np.ndarray:
+    """Public wrapper for default test-score computation."""
+    return _default_score_test(proba, default_kind)
+
+
 def _normalize_stored_ncf(value: Any) -> str | None:
     """Normalize persisted/legacy NCF names for re-init equality checks."""
     if value is None:
@@ -178,6 +203,11 @@ def _normalize_stored_ncf(value: Any) -> str | None:
     if lowered == "ensured":
         return "ensured"
     return lowered
+
+
+def normalize_stored_ncf(value: Any) -> str | None:
+    """Public wrapper for persisted NCF normalization."""
+    return _normalize_stored_ncf(value)
 
 
 def _legacy_base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
@@ -221,6 +251,11 @@ def _legacy_base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
         f"Unsupported ncf type {ncf!r}; expected one of {sorted(_VALID_NCF)!r}",
         details={"ncf": ncf},
     )
+
+
+def legacy_base_ncf(proba: np.ndarray, ncf: str) -> np.ndarray:
+    """Public wrapper for legacy reject NCF score computation."""
+    return _legacy_base_ncf(proba, ncf)
 
 
 def _ncf_scores_cal(  # pylint: disable=invalid-name
@@ -1456,4 +1491,4 @@ class RejectOrchestrator:
         )
         if return_v2:
             return result_v2
-        return reject_result_v2_to_legacy(result_v2)
+        return reject_result_v2_to_legacy(result_v2, emit_deprecation_warning=False)

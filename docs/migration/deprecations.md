@@ -116,6 +116,21 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.13.0/v1.0.0 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
 | `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.13.0/v1.0.0 | Wrapper parity deprecation aligned with explainer-level deprecation. |
 | `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.13.0/v1.0.0 | Wrapper parity deprecation aligned with explainer-level deprecation. |
+| `CalibratedExplainer.build_plot_style_chain(...)` | `explainer.plugin_manager.build_plot_chain(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.instantiate_plugin(...)` | `explainer.plugin_manager.explanation_orchestrator.instantiate_plugin(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.invoke_explanation_plugin(...)` | `explainer.explanation_orchestrator.invoke(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.ensure_interval_runtime_state(...)` | `explainer.prediction_orchestrator.ensure_interval_runtime_state(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.gather_interval_hints(...)` | `explainer.prediction_orchestrator.gather_interval_hints(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.interval_plugin_hints` | `explainer.plugin_manager.interval_plugin_hints` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_fallbacks` | `explainer.plugin_manager.interval_plugin_fallbacks` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.explanation_plugin_overrides` | `explainer.plugin_manager.explanation_plugin_overrides` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_override` | `explainer.plugin_manager.interval_plugin_override` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.fast_interval_plugin_override` | `explainer.plugin_manager.fast_interval_plugin_override` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.plot_style_override` | `explainer.plugin_manager.plot_style_override` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_preferred_identifier` | `explainer.plugin_manager.interval_preferred_identifier` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 
 ### Removed deprecations (history)
 

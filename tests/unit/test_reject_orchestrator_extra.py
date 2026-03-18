@@ -4,12 +4,12 @@ from types import SimpleNamespace
 
 from calibrated_explanations.core.reject.orchestrator import (
     RejectOrchestrator,
-    _default_score_cal,
-    _default_score_test,
-    _interval_width_score,
-    _legacy_base_ncf,
-    _margin_score,
-    _normalize_stored_ncf,
+    default_score_cal,
+    default_score_test,
+    interval_width_score,
+    legacy_base_ncf,
+    margin_score,
+    normalize_stored_ncf,
 )
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectResult
@@ -54,22 +54,22 @@ def test_register_strategy_validation_errors():
 
 def test_reject_score_helpers_cover_edge_and_error_paths():
     proba_single = np.array([[0.7], [0.2]])
-    assert np.allclose(_interval_width_score(proba_single), np.array([0.0, 0.0]))
-    assert np.allclose(_margin_score(proba_single), np.array([0.0, 0.0]))
+    assert np.allclose(interval_width_score(proba_single), np.array([0.0, 0.0]))
+    assert np.allclose(margin_score(proba_single), np.array([0.0, 0.0]))
 
     proba = np.array([[0.2, 0.8], [0.6, 0.4]])
     classes = np.array([0, 1])
     labels = np.array([1, 0])
 
     with pytest.raises(ValidationError, match="Unsupported internal default score kind"):
-        _default_score_cal(proba, classes, labels, "unknown")
+        default_score_cal(proba, classes, labels, "unknown")
     with pytest.raises(ValidationError, match="Unsupported internal default score kind"):
-        _default_score_test(proba, "unknown")
+        default_score_test(proba, "unknown")
     with pytest.raises(ValidationError, match="Unsupported ncf type"):
-        _legacy_base_ncf(proba, "unknown")
+        legacy_base_ncf(proba, "unknown")
 
-    assert _normalize_stored_ncf(" custom ") == "custom"
-    assert _normalize_stored_ncf(None) is None
+    assert normalize_stored_ncf(" custom ") == "custom"
+    assert normalize_stored_ncf(None) is None
 
 
 def test_predict_reject_breakdown_uses_predict_p_per_instance_fallback():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, Callable
@@ -184,6 +185,21 @@ def test_plot_global__should_warn_and_log_when_renderer_override_missing(
             self.latest_explanation = None
             self.last_explanation_mode = None
             self.plot_plugin_fallbacks = {}
+
+            def _resolve_plot_plugin(explicit_style, renderer_override=None):
+                if renderer_override:
+                    logging.getLogger("calibrated_explanations.plotting").info(
+                        "Failed to find plot renderer '%s'; falling back to default",
+                        renderer_override,
+                    )
+                    warnings.warn(
+                        f"Failed to find plot renderer '{renderer_override}'; falling back to default",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                return dummy, explicit_style or "dummy-style", ("dummy-style", "legacy")
+
+            self.plugin_manager = SimpleNamespace(resolve_plot_plugin=_resolve_plot_plugin)
 
         def predict_proba(self, _x: Any, *, uq_interval: bool, threshold: Any, bins: Any):
             return [0.2, 0.8], ([0.1, 0.7], [0.3, 0.9])

@@ -1,3 +1,4 @@
+import warnings
 from unittest.mock import MagicMock
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
@@ -24,71 +25,73 @@ def make_stub_explainer_with_mock_pm():
 def test_property_delegators_to_plugin_manager():
     expl, pm = make_stub_explainer_with_mock_pm()
 
-    # interval_plugin_hints
-    _ = expl.interval_plugin_hints
-    pm.interval_plugin_hints.__class__
-    expl.interval_plugin_hints = {"a": ("b",)}
-    assert pm.interval_plugin_hints == {"a": ("b",)}
-    del expl.interval_plugin_hints
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        # interval_plugin_hints
+        _ = expl.interval_plugin_hints
+        pm.interval_plugin_hints.__class__
+        expl.interval_plugin_hints = {"a": ("b",)}
+        assert pm.interval_plugin_hints == {"a": ("b",)}
+        del expl.interval_plugin_hints
 
-    # interval_plugin_fallbacks
-    _ = expl.interval_plugin_fallbacks
-    expl.interval_plugin_fallbacks = {}
-    del expl.interval_plugin_fallbacks
+        # interval_plugin_fallbacks
+        _ = expl.interval_plugin_fallbacks
+        expl.interval_plugin_fallbacks = {}
+        del expl.interval_plugin_fallbacks
 
-    # explanation_plugin_overrides
-    _ = expl.explanation_plugin_overrides
-    expl.explanation_plugin_overrides = {}
+        # explanation_plugin_overrides
+        _ = expl.explanation_plugin_overrides
+        expl.explanation_plugin_overrides = {}
 
-    # interval_plugin_override
-    _ = expl.interval_plugin_override
-    expl.interval_plugin_override = "foo"
+        # interval_plugin_override
+        _ = expl.interval_plugin_override
+        expl.interval_plugin_override = "foo"
 
-    # fast_interval_plugin_override
-    _ = expl.fast_interval_plugin_override
-    expl.fast_interval_plugin_override = "bar"
+        # fast_interval_plugin_override
+        _ = expl.fast_interval_plugin_override
+        expl.fast_interval_plugin_override = "bar"
 
-    # plot_style_override
-    _ = expl.plot_style_override
-    expl.plot_style_override = "style"
+        # plot_style_override
+        _ = expl.plot_style_override
+        expl.plot_style_override = "style"
 
-    # interval_preferred_identifier
-    _ = expl.interval_preferred_identifier
-    expl.interval_preferred_identifier = {}
-    del expl.interval_preferred_identifier
+        # interval_preferred_identifier
+        _ = expl.interval_preferred_identifier
+        expl.interval_preferred_identifier = {}
+        del expl.interval_preferred_identifier
 
-    # telemetry_interval_sources
-    _ = expl.telemetry_interval_sources
-    expl.telemetry_interval_sources = {}
-    del expl.telemetry_interval_sources
+        # telemetry_interval_sources
+        _ = expl.telemetry_interval_sources
+        expl.telemetry_interval_sources = {}
+        del expl.telemetry_interval_sources
 
-    # interval_plugin_identifiers
-    _ = expl.interval_plugin_identifiers
-    expl.interval_plugin_identifiers = {}
-    del expl.interval_plugin_identifiers
+        # interval_plugin_identifiers
+        _ = expl.interval_plugin_identifiers
+        expl.interval_plugin_identifiers = {}
+        del expl.interval_plugin_identifiers
 
-    # interval_context_metadata
-    _ = expl.interval_context_metadata
-    expl.interval_context_metadata = {}
-    del expl.interval_context_metadata
+        # interval_context_metadata
+        _ = expl.interval_context_metadata
+        expl.interval_context_metadata = {}
+        del expl.interval_context_metadata
 
-    # bridge_monitors
-    _ = expl.bridge_monitors
-    expl.bridge_monitors = {}
+        # bridge_monitors
+        _ = expl.bridge_monitors
+        expl.bridge_monitors = {}
 
-    # explanation_plugin_instances
-    _ = expl.explanation_plugin_instances
-    expl.explanation_plugin_instances = {}
+        # explanation_plugin_instances
+        _ = expl.explanation_plugin_instances
+        expl.explanation_plugin_instances = {}
 
-    # pyproject_explanations/intervals/plots
-    _ = expl.pyproject_explanations
-    expl.pyproject_explanations = {}
+        # pyproject_explanations/intervals/plots
+        _ = expl.pyproject_explanations
+        expl.pyproject_explanations = {}
 
-    _ = expl.pyproject_intervals
-    expl.pyproject_intervals = {}
+        _ = expl.pyproject_intervals
+        expl.pyproject_intervals = {}
 
-    _ = expl.pyproject_plots
-    expl.pyproject_plots = {}
+        _ = expl.pyproject_plots
+        expl.pyproject_plots = {}
 
 
 def test_feature_names_internal_alias():

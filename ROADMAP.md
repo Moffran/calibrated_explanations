@@ -8,6 +8,10 @@ vx.y.z specifics).
 
 ## Milestone summaries
 
+- **v0.11.0 (domain model & preprocessing finalisation)** – Make the ADR-008
+  domain model the canonical runtime story, finalise ADR-009 preprocessing and
+  Standard-001 cleanup, extend governance dashboards, and shift
+  `condition_source` defaults to prediction with documented upgrade guidance.
 - **v0.10.1 (schema & visualization contracts)** – Finalise the v1 explanation
   schema contract, refresh fixtures/docs, stabilise PlotSpec metadata/validation,
   ship the finished visualization plugin architecture (with legacy fallback),
@@ -20,10 +24,6 @@ vx.y.z specifics).
   controls, close ADR-013/ADR-015 protocol gaps (FAST integration and CLI
   diagnostics), split optional dependencies per ADR-010, surface interval/FAST
   metadata in telemetry, and bake CI rules to ban new private-member tests.
-- **v0.11.0 (domain model & preprocessing finalisation)** – Make the ADR-008
-  domain model the canonical runtime story, finalise ADR-009 preprocessing and
-  Standard-001 cleanup, extend governance dashboards, and shift
-  `condition_source` defaults to prediction with documented upgrade guidance.
 - **v1.0.0-rc (release candidate readiness)** – Freeze schema/PlotSpec contracts,
   reconfirm wrap/exception contracts, close Standard-001/018 guardrails,
   validate caching/parallel toggles (with telemetry), cement Standard-003

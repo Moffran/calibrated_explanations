@@ -320,16 +320,21 @@ class RejectResultV2:
         return upgrade_reject_result(result)
 
 
-def reject_result_v2_to_legacy(result: RejectResultV2) -> RejectResult:
+def reject_result_v2_to_legacy(
+    result: RejectResultV2,
+    *,
+    emit_deprecation_warning: bool = True,
+) -> RejectResult:
     """Convert `RejectResultV2` to legacy `RejectResult` with additive metadata."""
     # SYNC: If RejectResultV2 / RejectDecisionArtifact / RejectPayloadArtifact gain
     # new fields, mirror them into `metadata` below and update upgrade_reject_result.
-    deprecate(
-        "RejectResult is deprecated and will be removed at v1.0.0-rc. "
-        "The public API will return RejectResultV2 directly. "
-        "Use result.decision / result.payload for structured access.",
-        key="RejectResult:legacy_return_type",
-    )
+    if emit_deprecation_warning:
+        deprecate(
+            "RejectResult is deprecated and will be removed at v1.0.0-rc. "
+            "The public API will return RejectResultV2 directly. "
+            "Use result.decision / result.payload for structured access.",
+            key="RejectResult:legacy_return_type",
+        )
     metadata = dict(result.metadata or {})
     metadata.setdefault("schema_version", result.schema_version)
     metadata.setdefault("source_indices", list(result.payload.source_indices))
@@ -563,6 +568,11 @@ def _canonicalize_degraded_mode(value: Any) -> tuple[str, ...]:
     return (str(value),)
 
 
+def canonicalize_degraded_mode(value: Any) -> tuple[str, ...]:
+    """Public wrapper for reject degraded-mode normalization."""
+    return _canonicalize_degraded_mode(value)
+
+
 def _normalize_contract_metadata(
     *,
     metadata: dict[str, Any] | None,
@@ -628,6 +638,24 @@ def _normalize_contract_metadata(
         }
     )
     return normalized
+
+
+def normalize_contract_metadata(
+    *,
+    metadata: dict[str, Any] | None,
+    policy: RejectPolicy,
+    rejected: Any | None,
+    source_indices: Any | None,
+    original_count: int | None,
+) -> dict[str, Any]:
+    """Public wrapper for reject metadata contract normalization."""
+    return _normalize_contract_metadata(
+        metadata=metadata,
+        policy=policy,
+        rejected=rejected,
+        source_indices=source_indices,
+        original_count=original_count,
+    )
 
 
 class RejectMixin:
@@ -1162,6 +1190,22 @@ def _resolve_source_indices_for_wrapper(
     return np.array(idxs, dtype=int)
 
 
+def resolve_source_indices_for_wrapper(
+    *,
+    policy: RejectPolicy,
+    metadata: Dict[str, Any] | None,
+    rejected: np.ndarray | None,
+    payload_count: int,
+) -> np.ndarray:
+    """Public wrapper for strict reject payload/source index alignment."""
+    return _resolve_source_indices_for_wrapper(
+        policy=policy,
+        metadata=metadata,
+        rejected=rejected,
+        payload_count=payload_count,
+    )
+
+
 def _align_reject_field_to_payload(
     *,
     name: str,
@@ -1191,6 +1235,24 @@ def _align_reject_field_to_payload(
             },
         )
     return np.array(arr[source_indices], copy=True)
+
+
+def align_reject_field_to_payload(
+    *,
+    name: str,
+    value: Any,
+    payload_count: int,
+    source_indices: np.ndarray,
+    ensure_dtype: Any | None = None,
+) -> np.ndarray | None:
+    """Public wrapper for aligning reject fields to payload rows."""
+    return _align_reject_field_to_payload(
+        name=name,
+        value=value,
+        payload_count=payload_count,
+        source_indices=source_indices,
+        ensure_dtype=ensure_dtype,
+    )
 
 
 def _prune_unpickleable_state(state: dict[str, Any]) -> dict[str, Any]:

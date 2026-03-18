@@ -41,7 +41,7 @@ def test_reject_policy_doc_contract_sections_exist() -> None:
         "`predict` / `predict_proba`: returns `RejectResult`",
         "### Threshold tie behavior",
         "`y_cal < threshold`",
-        "eps = meta.get(\"epsilon\")  # scalar float",
+        'eps = meta.get("epsilon")  # scalar float',
         "if len(result.explanations) == 0:",
         'result.metadata["source_indices"]',
     )
