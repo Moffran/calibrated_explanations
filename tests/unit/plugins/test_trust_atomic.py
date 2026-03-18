@@ -9,6 +9,7 @@ from tests.support.registry_helpers import (
     clear_explanation_plugins,
     clear_interval_plugins,
     clear_plot_plugins,
+    set_plot_renderer,
 )
 
 
@@ -64,7 +65,7 @@ def test_should_keep_renderer_trust_state_consistent_when_toggled_concurrently()
         trusted=False,
         source="manual",
     )
-    registry.set_plot_renderer("tests.renderer.atomic", descriptor, trusted=False)
+    set_plot_renderer("tests.renderer.atomic", descriptor, trusted=False)
 
     def _toggle_many() -> None:
         for _ in range(60):
@@ -91,7 +92,7 @@ def test_should_preserve_idempotent_state_on_repeated_trust_calls() -> None:
         trusted=False,
         source="manual",
     )
-    registry.set_plot_renderer("tests.renderer.idempotent", descriptor, trusted=False)
+    set_plot_renderer("tests.renderer.idempotent", descriptor, trusted=False)
 
     first = registry.mark_plot_renderer_trusted("tests.renderer.idempotent")
     second = registry.mark_plot_renderer_trusted("tests.renderer.idempotent")
@@ -114,7 +115,7 @@ def test_should_hold_invariants_when_two_identifiers_toggled_concurrently() -> N
             trusted=False,
             source="manual",
         )
-        registry.set_plot_renderer(identifier, descriptor, trusted=False)
+        set_plot_renderer(identifier, descriptor, trusted=False)
 
     def _toggle_alpha() -> None:
         for _ in range(60):
@@ -156,7 +157,4 @@ def test_should_sync_descriptor_trust_state_when_using_legacy_trust_api(caplog) 
     descriptor_after = registry.find_explanation_descriptor("tests.trust.atomic.explanation")
     assert descriptor_after is not None
     assert descriptor_after.trusted is False
-    assert any(
-        getattr(record, "event_name", None) == "trust.mutation"
-        for record in caplog.records
-    )
+    assert any(getattr(record, "event_name", None) == "trust.mutation" for record in caplog.records)

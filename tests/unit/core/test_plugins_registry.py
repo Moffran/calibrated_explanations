@@ -10,8 +10,11 @@ from calibrated_explanations.plugins import registry
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 from tests.support.registry_helpers import (
     clear_explanation_plugins,
+    clear_env_trust_cache,
     clear_interval_plugins,
     clear_plot_plugins,
+    clear_trust_warnings,
+    get_entrypoint_group,
 )
 
 
@@ -20,7 +23,7 @@ class FakeEntryPoint:
         self.name = plugin.plugin_meta["name"]
         self.module = "tests.plugins.fake"
         self.attr = None
-        self.group = registry.get_entrypoint_group()
+        self.group = get_entrypoint_group()
         self.plugin_instance = plugin
 
     def load(self):
@@ -471,8 +474,8 @@ def test_list_descriptors_and_trust_management(monkeypatch):
 
 def test_load_entrypoint_plugins_error_branches(monkeypatch):
     registry.clear()
-    registry.clear_trust_warnings()
-    registry.clear_env_trust_cache()
+    clear_trust_warnings()
+    clear_env_trust_cache()
 
     class NoMetaPlugin:
         pass
@@ -513,7 +516,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             self.name = name
             self.module = module or "tests.plugins.fake"
             self.attr = attr
-            self.group = registry.get_entrypoint_group()
+            self.group = get_entrypoint_group()
             self.loader_func = loader
 
         def load(self):
@@ -534,7 +537,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
     entry_points = FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entry_points)
     monkeypatch.setenv("CE_TRUST_PLUGIN", "trusted,attr")
-    registry.clear_env_trust_cache()
+    clear_env_trust_cache()
 
     try:
         with pytest.warns(UserWarning):
@@ -544,6 +547,6 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
         assert all(plugin in registry.list_plugins(include_untrusted=False) for plugin in loaded)
     finally:
         registry.clear()
-        registry.clear_trust_warnings()
-        registry.clear_env_trust_cache()
+        clear_trust_warnings()
+        clear_env_trust_cache()
         sys.modules.pop(attr_module_name, None)

@@ -68,7 +68,9 @@ def mutate_trust_atomic(
         return result
 
 
-def update_trusted_identifier(trusted_identifiers: set[str], identifier: str, trusted: bool) -> None:
+def update_trusted_identifier(
+    trusted_identifiers: set[str], identifier: str, trusted: bool
+) -> None:
     """Update trusted identifier membership for *identifier*."""
     if trusted:
         trusted_identifiers.add(identifier)

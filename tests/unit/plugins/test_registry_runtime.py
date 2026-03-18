@@ -5,6 +5,7 @@ import pytest
 
 from calibrated_explanations.plugins import registry
 from tests.support.registry_helpers import clear_explanation_plugins
+from tests.support.registry_helpers import clear_plot_renderers, set_plot_renderer
 
 
 @pytest.fixture(autouse=True)
@@ -14,10 +15,10 @@ def isolate_registry(monkeypatch):
     clear_explanation_plugins()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None)
     # Also clear plot renderers for the new tests using public helpers
-    registry.clear_plot_renderers()
+    clear_plot_renderers()
     yield
     clear_explanation_plugins()
-    registry.clear_plot_renderers()
+    clear_plot_renderers()
 
 
 def make_metadata(name: str, trusted: bool) -> dict[str, object]:
@@ -50,7 +51,7 @@ def test_mark_plot_renderer_trusted_untrusted():
     )
 
     # Mock the internal registry lists
-    registry.set_plot_renderer("test.renderer", descriptor, trusted=False)
+    set_plot_renderer("test.renderer", descriptor, trusted=False)
 
     # Mark trusted
     updated_descriptor = registry.mark_plot_renderer_trusted("test.renderer")
