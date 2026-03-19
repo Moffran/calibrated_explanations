@@ -62,4 +62,3 @@ explanation = explainer.explain_factual(
 * **Rule Intervals:** The explanation envelopes on feature weights in `explain_factual` rules are also derived from the underlying CPS calibration.
 
 Entry-point tier: Tier 2.
-

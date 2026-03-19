@@ -76,4 +76,3 @@ Next steps:
 - {doc}`../citing`
 
 Entry-point tier: Tier 2.
-

@@ -38,4 +38,3 @@ explainer. The `threshold` argument selects probabilistic mode.
 - {doc}`../../tasks/probabilistic_regression`
 
 Entry-point tier: Tier 3.
-

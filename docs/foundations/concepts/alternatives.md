@@ -42,4 +42,3 @@ alt0.plot(style="triangular", show=False)
 - {doc}`guarded_explanations`
 
 Entry-point tier: Tier 3.
-

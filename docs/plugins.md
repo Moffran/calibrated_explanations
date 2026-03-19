@@ -22,4 +22,3 @@ Contributor-facing ADR links:
 - `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
 Entry-point tier: Tier 1.
-

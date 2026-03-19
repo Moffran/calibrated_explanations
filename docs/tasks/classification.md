@@ -96,4 +96,3 @@ multi_alternative = explainer.explore_alternatives(x_test, multi_labels_enabled=
 * **`uq_interval`**: Set to `True` to receive uncertainty intervals (tuples of lower/upper bounds).
 
 Entry-point tier: Tier 2.
-

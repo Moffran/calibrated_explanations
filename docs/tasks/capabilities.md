@@ -25,4 +25,3 @@ prerequisites, guarantees, assumptions, and non-guarantees.
 - Contributors: {doc}`../contributor/index`
 
 Entry-point tier: Tier 2.
-

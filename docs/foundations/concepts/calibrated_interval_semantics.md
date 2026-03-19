@@ -90,4 +90,3 @@ Do not merge these into one guarantee statement.
 - `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
 Entry-point tier: Tier 3.
-

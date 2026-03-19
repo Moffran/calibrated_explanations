@@ -72,4 +72,3 @@ explanation = explainer.explain_factual(
 - **`uq_interval`**: Returns the uncertainty bound on the **probability estimate** itself (aleatoric + epistemic uncertainty on the score).
 
 Entry-point tier: Tier 2.
-

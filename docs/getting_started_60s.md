@@ -32,4 +32,3 @@ explanations = explainer.explain_factual(X_query)
 ```
 
 Entry-point tier: Tier 1.
-

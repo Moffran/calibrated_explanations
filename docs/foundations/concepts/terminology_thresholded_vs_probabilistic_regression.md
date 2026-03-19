@@ -145,4 +145,3 @@ Control: keep this mapping in Tier 3 reference pages and keep Tier 1 and Tier 2 
 - {doc}`terminology`
 
 Entry-point tier: Tier 3.
-

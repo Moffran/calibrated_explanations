@@ -26,4 +26,3 @@ troubleshooting
 ```
 
 Entry-point tier: Tier 1.
-

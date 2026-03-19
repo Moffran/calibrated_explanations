@@ -68,4 +68,3 @@ p, (plo, phi) = explainer.predict_proba(X_sample, uq_interval=True, threshold=12
 ```
 
 Entry-point tier: Tier 2.
-
