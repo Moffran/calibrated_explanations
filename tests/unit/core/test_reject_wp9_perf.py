@@ -258,6 +258,17 @@ def test_subset_policy_faster_than_flag_proportionally(monkeypatch, rejection_fr
     k = round(n * rejection_frac)
     mask = np.array([i < k for i in range(n)], dtype=bool)  # first k rejected
 
+    fake_clock = {"now": 0.0}
+
+    def _fake_sleep(duration: float) -> None:
+        fake_clock["now"] += max(0.0, duration)
+
+    def _fake_perf_counter() -> float:
+        return fake_clock["now"]
+
+    monkeypatch.setattr(time, "sleep", _fake_sleep)
+    monkeypatch.setattr(time, "perf_counter", _fake_perf_counter)
+
     _, o_subset = make_stub(monkeypatch, rejection_mask=mask)
     _, o_flag = make_stub(monkeypatch, rejection_mask=mask)
 

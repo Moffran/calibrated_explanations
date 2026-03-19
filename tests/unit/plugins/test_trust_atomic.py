@@ -13,7 +13,7 @@ from tests.support.registry_helpers import (
 )
 
 
-class _ExplanationPlugin:
+class ExplanationPluginStub:
     plugin_meta = {
         "schema_version": 1,
         "name": "tests.trust.atomic.explanation",
@@ -33,7 +33,7 @@ class _ExplanationPlugin:
         return {}
 
 
-def _assert_renderer_invariants() -> None:
+def assert_renderer_invariants() -> None:
     descriptors = registry.list_plot_renderer_descriptors(trusted_only=False)
     trusted_ids = {
         descriptor.identifier
@@ -81,7 +81,7 @@ def test_should_keep_renderer_trust_state_consistent_when_toggled_concurrently()
     final_descriptor = registry.find_plot_renderer_descriptor("tests.renderer.atomic")
     assert final_descriptor is not None
     assert final_descriptor.trusted is True
-    _assert_renderer_invariants()
+    assert_renderer_invariants()
 
 
 def test_should_preserve_idempotent_state_on_repeated_trust_calls() -> None:
@@ -135,7 +135,7 @@ def test_should_hold_invariants_when_two_identifiers_toggled_concurrently() -> N
     for identifier in ids:
         registry.mark_plot_renderer_trusted(identifier)
 
-    _assert_renderer_invariants()
+    assert_renderer_invariants()
     for identifier in ids:
         final = registry.find_plot_renderer_descriptor(identifier)
         assert final is not None
@@ -143,7 +143,7 @@ def test_should_hold_invariants_when_two_identifiers_toggled_concurrently() -> N
 
 
 def test_should_sync_descriptor_trust_state_when_using_legacy_trust_api(caplog) -> None:
-    plugin = _ExplanationPlugin()
+    plugin = ExplanationPluginStub()
     registry.register_explanation_plugin("tests.trust.atomic.explanation", plugin)
 
     descriptor = registry.find_explanation_descriptor("tests.trust.atomic.explanation")

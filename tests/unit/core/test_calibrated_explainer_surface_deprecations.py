@@ -108,9 +108,12 @@ def test_nonessential_alias_property_getters_emit() -> None:
         ("interval_context_metadata is deprecated", lambda: explainer.interval_context_metadata),
     ]
 
+    observed = 0
     for match, accessor in assertions:
         with warns_or_raises(match=match):
             _ = accessor()
+        observed += 1
+    assert observed == len(assertions)
 
 
 def test_deprecation_strict_mode_raises(monkeypatch: pytest.MonkeyPatch) -> None:

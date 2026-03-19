@@ -31,7 +31,7 @@ from typing import Any, Dict, Iterable, List, Literal, Mapping, Tuple
 from .. import __version__ as package_version
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
 from ..logging import ensure_logging_context_filter, logging_context
-from ..utils.exceptions import ValidationError
+from ..utils.exceptions import ConfigurationError, ValidationError
 from ._trust import (
     clear_trusted_identifiers,
     mutate_trust_atomic,
@@ -862,8 +862,13 @@ def _assert_catalog_trust_consistency(
     """Assert descriptor trust flags and trusted-id membership stay aligned."""
     missing = sorted(identifier for identifier in trusted_identifiers if identifier not in store)
     if missing:
-        raise RuntimeError(
-            f"{kind} trusted identifier(s) missing descriptor entries: {', '.join(missing)}"
+        raise ConfigurationError(
+            f"{kind} trusted identifier(s) missing descriptor entries: {', '.join(missing)}",
+            details={
+                "kind": kind,
+                "issue": "missing_descriptor_entries",
+                "identifiers": tuple(missing),
+            },
         )
     mismatched = sorted(
         identifier
@@ -871,9 +876,14 @@ def _assert_catalog_trust_consistency(
         if bool(getattr(descriptor, "trusted", False)) != (identifier in trusted_identifiers)
     )
     if mismatched:
-        raise RuntimeError(
+        raise ConfigurationError(
             f"{kind} trust mismatch between descriptor.trusted and trusted id set: "
-            + ", ".join(mismatched)
+            + ", ".join(mismatched),
+            details={
+                "kind": kind,
+                "issue": "trusted_flag_mismatch",
+                "identifiers": tuple(mismatched),
+            },
         )
 
 

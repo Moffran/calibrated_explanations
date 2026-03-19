@@ -1580,13 +1580,11 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     )
 
     errors: List[str] = []
-    for identifier, plugin in ((identifier, plugin),):
-        if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
-            __require_matplotlib()
-        elif show and plt is None:  # pragma: no cover - optional dep path
-            errors.append(f"{identifier}: matplotlib backend unavailable")
-            continue
-
+    if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
+        __require_matplotlib()
+    elif show and plt is None:  # pragma: no cover - optional dep path
+        errors.append(f"{identifier}: matplotlib backend unavailable")
+    else:
         context = PlotRenderContext(
             explanation=getattr(explainer, "latest_explanation", None),
             instance_metadata=MappingProxyType({"type": "global"}),
@@ -1609,8 +1607,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             errors.append(f"{identifier}: {sys.exc_info()[1]}")
-            continue
-        return result
+        else:
+            return result
 
     raise _PlotConfigurationError(
         "Unable to resolve plot plugin for global explanations; "
