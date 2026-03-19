@@ -4,6 +4,15 @@ Probabilistic regression allows you to ask probability questions about a real-va
 
 This is technically implemented as **Thresholded Regression**: you supply a `threshold`, and CE returns the calibrated probability that the outcome satisfies that threshold condition.
 
+## Probabilistic or thresholded regression semantics note
+
+- **Calibration prerequisites**: fit on `x_proper, y_proper` and calibrate on held-out `x_cal, y_cal`.
+- **Mode-specific guarantees**: threshold queries use CPS with Venn-Abers calibrated event probabilities.
+- **Assumptions**: calibration and deployment data are exchangeable or distribution-matched.
+- **Explicit non-guarantees**: no guarantee under drift or causal actionability from threshold probabilities.
+- **Explanation-envelope limits**: feature-level probability shifts summarize model behavior under perturbation.
+- **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics`.
+
 ## Supported signatures
 
 | Method | Description |
@@ -61,3 +70,6 @@ explanation = explainer.explain_factual(
   - Scalar `t`: treated as a binary classification boundary.
   - Tuple `(low, high)`: treated as an interval containment query.
 - **`uq_interval`**: Returns the uncertainty bound on the **probability estimate** itself (aleatoric + epistemic uncertainty on the score).
+
+Entry-point tier: Tier 2.
+

@@ -1,8 +1,6 @@
 # Classification quickstart
 
-Run calibrated explanations for binary and multiclass classification without any
-optional telemetry or plugins. The flow mirrors the README snippet and powers
-the practitioner notebook set.
+Run calibrated explanations for binary or multiclass classification.
 
 ## Prerequisites
 
@@ -10,22 +8,14 @@ the practitioner notebook set.
 pip install calibrated-explanations scikit-learn
 ```
 
-```{admonition} Tested environments
-:class: tip
+## Classification semantics note
 
-The docs smoke suite executes this quickstart via
-``pytest tests/docs/test_quickstarts.py::test_classification_quickstart`` on
-CPython 3.8–3.11 for Linux runners.
-```
-
-```{admonition} Guarantees & Assumptions
-:class: important
-
-* Calibrated probabilities require a held-out calibration set (the `x_cal`, `y_cal` split below)
-* Venn-Abers calibration provides valid probability intervals under exchangeability
-* Feature weights include explanation envelopes reflecting calibration quality
-* See [ADR-021 formal semantics (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
-```
+- **Calibration prerequisites**: fit on `x_proper, y_proper` and calibrate on held-out `x_cal, y_cal`.
+- **Mode-specific guarantees**: Venn-Abers provides calibrated probability intervals for class predictions.
+- **Assumptions**: calibration and deployment data are exchangeable or distribution-matched.
+- **Explicit non-guarantees**: no guarantee under drift or regime shift.
+- **Explanation-envelope limits**: feature-level intervals are model-behavior summaries, not causal guarantees.
+- **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics`.
 
 ## 1. Load data and split sets
 
@@ -33,7 +23,6 @@ CPython 3.8–3.11 for Linux runners.
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
-# Binary classification dataset (malignant vs benign tumours)
 dataset = load_breast_cancer()
 x = dataset.data
 y = dataset.target
@@ -45,10 +34,6 @@ x_proper, x_cal, y_proper, y_cal = train_test_split(
     x_train, y_train, test_size=0.25, stratify=y_train, random_state=0
 )
 ```
-
-> 🧪 **Multiclass variation:** Swap `load_breast_cancer` for `load_wine` to see
-> calibrated explanations across three classes. The remaining steps stay
-> identical.
 
 ## 2. Fit and calibrate the explainer
 
@@ -67,29 +52,11 @@ explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 factual = explainer.explain_factual(x_test[:5])
 ```
 
-For a true multiclass explanation (all classes instead of predicted-class-only), call:
+For multiclass all-class explanations:
 
 ```python
 multi_factual = explainer.explain_factual(x_test[:5], multi_labels_enabled=True)
 ```
-
-```{admonition} Sample output (truncated)
-:class: hint
-
-```text
-Prediction [ Low ,  High]
-0.077 [0.000, 0.083]
-Value : Feature                                  Weight [ Low  ,  High ]
-0.07  : mean concave points > 0.05               -0.418 [-0.576, -0.256]
-0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
-```
-
-The first column shows the instance value, followed by the matching feature and
-its calibrated contribution with explanation envelopes.
-```
-
-Use the [interpretation guide](../foundations/how-to/interpret_explanations.md) to understand
-how calibrated predictions, intervals, and rule tables translate into actions.
 
 ## 4. Explore calibrated alternatives
 
@@ -97,15 +64,10 @@ how calibrated predictions, intervals, and rule tables translate into actions.
 alternatives = explainer.explore_alternatives(x_test[:2])
 ```
 
-See the [Alternatives concept guide](../foundations/concepts/alternatives.md) for visual and
-interpretation walkthroughs.
+Next steps:
+- {doc}`../foundations/how-to/interpret_explanations`
+- {doc}`../foundations/concepts/alternatives`
+- {doc}`../citing`
 
-> 📝 **Citing calibrated explanations:** Reference {doc}`../citing` when you
-> publish results using the binary, multiclass, probabilistic, or interval
-> regression workflows showcased here.
+Entry-point tier: Tier 2.
 
-> 🔬 **Research hub:** Visit {doc}`../researcher/index` for the flagship
-> {doc}`../researcher/advanced/theory_and_literature` papers—especially the Expert Systems
-> with Applications (2024) evaluation and the PMLR 230 (2024) multiclass
-> tutorial—that document the datasets and calibration proofs underpinning this
-> quickstart.

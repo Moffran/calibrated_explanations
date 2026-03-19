@@ -1,111 +1,149 @@
 # Standard-004: Documentation Audience Standard
 
-> **Status note (2025-12-23):** Last edited 2025-12-23 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Completed (see Adoption Plan).
+> **Status note (2026-03-18):** Last edited 2026-03-18 · Retain indefinitely as an engineering standard.
 
 Formerly ADR-027. Reclassified as an engineering standard to keep ADRs scoped to
 architectural or contract decisions.
 
-Status: Active (2025-10-28)
+Status: Active
 
-## Context
+## 1. Purpose
 
-The documentation set drifted into a mix of telemetry walkthroughs, plugin mechanics, and governance policies that obscured the calibrated explanations contract. Practitioners struggle to find runnable factual and alternative examples, probabilistic and interval regression guidance is hidden, and contributors wade through optional tooling before learning the plugin guardrails. Researchers must hop between duplicated hubs to reconstruct methodology. A new, audience-first standard is required to enforce clarity, parity between classification and regression, and an explanations-first narrative.
+This standard keeps documentation audience-first while making guarantee/assumption
+language precise, mode-specific, and reviewable.
 
-## Decision
+## 2. Normative language
 
-Adopt an audience-led documentation structure anchored on three journeys—practitioners, researchers, and contributors/maintainers—with the following rules:
+The key words **MUST**, **SHOULD**, and **MAY** are to be interpreted as described in RFC 2119.
 
-1. **Getting started first:** The docs landing page and navigation begin with a getting started section containing installation, classification quickstart with links to task api comparison and troubleshooting.
-2. **Explanations first:** Every audience hub opens with factual and alternative workflows, highlighting calibrated probabilities, uncertainty intervals, and interpretation checkpoints before any optional tooling.
-3. **Classification and regression parity:** Binary and multiclass classification content appears alongside interval and probabilistic regression guidance wherever workflows are described.
-4. **Interpretation emphasis:** Quickstarts and practitioner content link immediately to interpretation guides that translate calibrated outputs into decisions.
-5. **Audience hubs with advanced tracks:**
-   - **Practitioners:** Core page focuses on deployment-ready explanations; an advanced page collects telemetry, performance, PlotSpec, and other optional operational aids.
-   - **Researchers:** Hub consolidates theory summaries, replication steps, benchmark manifests, and a future work ledger tied to published literature.
-   - **Contributors/Maintainers:** Landing content foregrounds the plugin contract, registry guardrails, and extension checklist; an advanced page houses telemetry hooks, performance tuning, and PlotSpec instrumentation guidance.
-6. **Shared foundations:** Concepts, reference material, schemas, governance, and citing instructions live under a shared "Foundations" grouping linked from every hub.
-7. **External plugin boundaries:** Core docs reference fast explanations and other optional bundles only as external plugins, pointing to the external plugin index and aggregated installation extras.
+## 3. Scope and entry-point taxonomy
 
-## Consequences
+An **entry point** is any page that users are expected to open first for a task,
+workflow, or conceptual understanding. Entry points are grouped into three tiers:
 
-### Positive
-- Streamlined navigation anchored on audience intent, reducing time to the first calibrated explanation.
-- Equal visibility for classification and regression ensures practitioners adopt the full calibrated toolkit.
-- Contributors encounter the plugin contract and guardrails before optional telemetry/performance tooling, protecting the calibrated explanations contract.
-- Research collateral lives in a single hub, simplifying replication and future work tracking.
+| Tier | Page types | Primary audience goal |
+| --- | --- | --- |
+| Tier 1 | README, landing pages, decision-tree pages, 60-second pages | Fast orientation and next step |
+| Tier 2 | Quickstarts, task pages, playbooks | Execute a concrete workflow correctly |
+| Tier 3 | Foundations, reference, contributor-facing semantics pages | Understand formal semantics, assumptions, and limits |
 
-### Risks / Mitigations
-- **Migration churn:** Moving files into the new structure may break links. Mitigation: run `make -C docs html` with linkcheck and update redirects where necessary.
-- **Content ownership:** Audience hubs require dedicated maintainers. Mitigation: assign owners per hub in the governance index and review quarterly.
+## 4. Audience-first structure requirements
 
-## Adoption Plan
-1. Archive superseded improvement docs (`component_diagram.md`, `documentation_information_architecture.md`, `documentation_review.md`) and replace them with a unified blueprint.
-2. Rebuild the Sphinx navigation so Getting Started leads, followed by the practitioner, researcher, and contributor hubs, then shared foundations.
-3. Refresh audience landing pages and create advanced-path documents per this ADR.
-4. Consolidate research content under `docs/researcher/` and update cross-links across the repository.
-5. Maintain parity in future changes by requiring PR reviewers to verify classification/regression coverage and interpretation-first framing.
+1. Documentation navigation **MUST** start with getting-started and audience hubs
+   (practitioner, researcher, contributor/maintainer) before deep architecture.
+2. Tier 1 pages **MUST** stay brief and action-oriented; they are not the place for
+   full semantics prose.
+3. Tier 2 pages **MUST** include runnable guidance for the task they cover.
+4. Tier 3 pages **MUST** hold the full semantics and non-guarantees detail.
+5. Every entry-point page **MUST** include an explicit tier label at the bottom
+   of the page in the form `Entry-point tier: Tier 1|2|3`.
 
-## Capability Coverage Rule
+## 5. Guarantees/assumptions policy (tiered and mode-specific)
 
-Every documented capability MUST have:
+### 5.1 Global rules
 
-1. An entry in the **Capability Manifest** ({doc}`../tasks/capabilities`)
-2. An **audience tag** (Practitioner, Researcher, or Advanced)
-3. A **link to the primary entry point** documentation
-4. At least one **code example** in a quickstart or playbook
+1. Guarantee language **MUST** be consistent with ADR-021.
+2. Pages **MUST NOT** collapse all model modes into one undifferentiated semantics
+   statement.
+3. When semantics are stated, pages **MUST** separate these labels explicitly:
+   - **Calibration prerequisites**
+   - **Mode-specific guarantees**
+   - **Assumptions**
+   - **Explicit non-guarantees**
+   - **Explanation-envelope / feature-level interval limits**
+4. User-facing pages (Tier 1 and Tier 2) **MUST** link first to an internal RTD
+   semantics page under `docs/foundations/` (or equivalent RTD route), not directly
+   to raw GitHub ADR URLs.
+5. Tier 3 pages **MAY** additionally link directly to ADR-021 on GitHub.
 
-### Capability Audit Checklist
+### 5.2 Tier-specific requirements
 
-When adding a new capability:
+#### Tier 1 (README / landing / decision-tree / 60-second)
 
-- [ ] Add row to Capability Manifest with description and audience tag
-- [ ] Create or update entry point documentation
-- [ ] Add cross-references from relevant audience hubs
-- [ ] Ensure at least one runnable code example exists
+Tier 1 pages **MUST** include a short semantics pointer (1-3 lines) that:
+- identifies that guarantees are mode-specific,
+- names the internal RTD semantics page, and
+- avoids detailed guarantee text.
 
-### Coverage Verification
+Tier 1 pages **MUST NOT** include a full "Guarantees & Assumptions" block unless the
+page itself is designated Tier 3.
 
-PR reviewers should verify:
+#### Tier 2 (quickstart / task / playbook)
 
-- New capabilities appear in the Capability Manifest
-- Existing capabilities remain linked and documented
-- Audience tags are accurate and consistent
+Tier 2 pages **MUST** contain a **mode-specific semantics note** for the workflow
+shown. The note **MUST** specify the applicable mode:
+- **Classification** (Venn-Abers probability intervals)
+- **Percentile/interval regression** (CPS percentile intervals, no threshold)
+- **Probabilistic/thresholded regression** (CPS + Venn-Abers event probabilities)
 
-## Terminology Governance
+For the chosen mode, the note **MUST** include concise bullets for:
+- calibration prerequisites,
+- guarantees,
+- assumptions,
+- explicit non-guarantees,
+- explanation-envelope / feature-level interval limits,
+- link to internal RTD semantics page.
 
-### Canonical Terms
+Tier 2 pages **SHOULD** keep this note to about 6-12 lines total.
 
-Use these terms consistently in user-facing documentation:
+#### Tier 3 (foundations / reference / contributor semantics)
 
-| Canonical Term | Avoid | Rationale |
-|----------------|-------|-----------|
-| uncertainty interval | credible interval | Frequentist construct, not Bayesian |
-| probabilistic regression | thresholded regression (user-facing) | User clarity; internal code may use either |
-| calibrated probability | raw probability | Emphasizes the calibration step |
-| prediction interval | confidence interval (for predictions) | Avoids confusion with parameter CIs |
+Tier 3 **semantics-source pages** **MUST** provide full mode-specific semantics
+coverage for all three modes and **MUST** include ADR-021-aligned non-guarantees, including:
+- dependence on exchangeability/distribution match,
+- no guarantee under drift or regime shift,
+- limits on propagated feature-level interval claims.
 
-### Enforcement
+Other Tier 3 pages **MAY** stay scope-limited if they link to the canonical Tier 3
+semantics-source page.
 
-- README, PyPI description, and quickstarts use canonical terms only
-- ADRs and technical architecture docs may use implementation terms with clarifying notes
-- PR reviews should flag terminology drift in user-facing content
-- The terminology guide ({doc}`../foundations/concepts/terminology`) is the authoritative reference
+Tier 3 semantics-source pages **MUST** be the normative target that Tier 1 and Tier 2 pages link to.
 
-### Guarantees & Assumptions
+## 6. Anti-bloat controls
 
-Every entry point (README, quickstarts, task pages) should include a "Guarantees & Assumptions" box that clarifies:
+1. Tier 1 pages **MUST NOT** duplicate Tier 3 semantics prose.
+2. Tier 2 pages **MUST NOT** copy large semantics blocks from Tier 3; they should
+   summarize only what is needed for the demonstrated mode.
+3. Repeated semantics text across multiple Tier 2 pages **SHOULD** be replaced with a
+   shared include or a common RTD subsection.
 
-- What calibration requirements apply
-- What the intervals guarantee (coverage, bounds)
-- What assumptions must hold (exchangeability, distribution match)
-- Links to formal semantics (ADR-021)
+## 7. Reviewer acceptance criteria (pass/fail)
 
-## References
+A PR changing docs passes this standard only if all applicable checks pass:
 
-- Documentation Overhaul Blueprint (docs/improvement/documentation_overhaul.md)
-- ADR-012: Documentation & Gallery Build Policy
-- Standard-002: Code Documentation Standard
-- ADR-026: Explanation Plugin Semantics
+1. **Tier identified:** Each changed entry point has a bottom-of-page label
+   indicating Tier 1, 2, or 3.
+2. **Correct semantics depth:**
+   - Tier 1 has pointer-only semantics text.
+   - Tier 2 has mode-specific note with required labeled elements.
+   - Tier 3 semantics-source pages have full three-mode treatment; other Tier 3
+     pages provide scoped content plus explicit pointer to the semantics-source page.
+3. **No semantics flattening:** No page presents one combined guarantee statement for
+   classification + interval regression + probabilistic regression.
+4. **Non-guarantees present where required:** Tier 2 and Tier 3 include explicit
+   non-guarantees aligned with ADR-021.
+5. **Link routing correct:** Tier 1/2 link first to internal RTD semantics page;
+   direct raw GitHub ADR links are only in Tier 3 or deeper technical pages.
+6. **Audience-first preserved:** Navigation and page order keep getting-started and
+   audience hubs ahead of deep architecture references.
+7. **Bloat check:** Tier 1 remains concise; Tier 2 semantics note remains concise and
+   scoped to the workflow mode.
+
+## 8. Migration requirements by page type
+
+- **README / landing / decision-tree pages:** replace generic guarantee boxes with a
+  short mode-aware semantics pointer and internal RTD link.
+- **Quickstarts / task pages / playbooks:** replace generic all-mode guarantee text
+  with one mode-specific semantics note using required labels.
+- **Foundations / reference / contributor semantics pages:** consolidate full
+  semantics, assumptions, and non-guarantees as the canonical source; include
+  ADR-021 links as supporting references.
+
+## 9. References
+
 - ADR-021: Calibrated Interval Semantics
+- ADR-012: Documentation & Gallery Build Policy
+- ADR-026: Explanation Plugin Semantics
+- STD-002: Code Documentation Standard
 - Capability Manifest: {doc}`../tasks/capabilities`
 - Terminology Guide: {doc}`../foundations/concepts/terminology`

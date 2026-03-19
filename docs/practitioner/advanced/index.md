@@ -15,6 +15,8 @@ explanation workflow without introducing mandatory dependencies.
   and envelopes for reject-aware predictions and explanations.
 * {doc}`parallel_execution_playbook` - Heuristics for switching between
   sequential, feature-, and instance-parallel explain strategies.
+* {doc}`explanation_retrieval` - Retrieve explanations by rule patterns and
+  metadata filters for audits and analysis.
 * {doc}`../../foundations/how-to/plot_with_plotspec` - Optional PlotSpec and
   triangular plot tooling to visualise factual vs. alternative trade-offs.
 * {doc}`../../foundations/concepts/telemetry` - Conceptual framing for the
@@ -30,6 +32,7 @@ normalization-guide
 ../../foundations/how-to/tune_runtime_performance
 reject-policy
 parallel_execution_playbook
+explanation_retrieval
 ../../foundations/how-to/plot_with_plotspec
 ../../foundations/concepts/telemetry
 ../performance-tuning

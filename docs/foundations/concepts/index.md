@@ -18,6 +18,7 @@ guides.
 | [Error handling](error_handling.md) | Summarises runtime safeguards and expected exceptions. |
 | [Explanation structures](explanation_structures.md) | Documents the internal data structures used by CalibratedExplanation classes. |
 | [Guarded explanations](guarded_explanations.md) | In-distribution filtering via conformal anomaly detection for trustworthy rules. |
+| [Calibrated interval semantics](calibrated_interval_semantics.md) | Canonical semantics, assumptions, and non-guarantees for all three modes. |
 | [Terminology standardization](terminology.md) | Summarises the shift to probabilistic regression terminology and compatibility guarantees. |
 | [Terminology: thresholded vs probabilistic regression](terminology_thresholded_vs_probabilistic_regression.md) | Clarifies language used across ADR-021 and user-facing regression docs. |
 
@@ -30,6 +31,10 @@ architecture
 error_handling
 explanation_structures
 guarded_explanations
+calibrated_interval_semantics
 terminology
 terminology_thresholded_vs_probabilistic_regression
 ```
+
+Entry-point tier: Tier 3.
+

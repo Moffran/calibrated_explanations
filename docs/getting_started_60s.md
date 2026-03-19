@@ -1,41 +1,26 @@
 # 60-second decision tree
 
-Use this quick path to get calibrated explanations running fast.
+Use this page to pick the correct first quickstart.
 
-## 1) Do you have a scikit-learn compatible model?
-- **Yes** → continue.
-- **No** → wrap or convert your model so it exposes `fit`, `predict`, and/or `predict_proba`.
+## 1. Model compatibility
 
-## 2) Do you have a calibration split?
-- **Yes** → continue.
-- **No** → split your training data: `x_proper, x_cal, y_proper, y_cal = train_test_split(...)`.
+Need a scikit-learn compatible estimator with `fit` and prediction methods.
 
-## 3) Pick your task (and the control knob)
+## 2. Calibration split
 
-All tasks support:
-- `predict(x[, ...])` and `predict(x, uq_interval=True[, ...])`
-- `explain_factual(x[, ...])` and `explore_alternatives(x[, ...])`
+Need a held-out calibration split: `x_cal, y_cal`.
 
-### Classification (binary / multiclass)
-- Calibrated probabilities: `predict_proba(x[, ...])`
-- Probabilities + UQ: `predict_proba(x, uq_interval=True[, ...])`
+## 3. Choose mode
 
-### Conformal interval regression (CPS)  ← CE "regression"
-Regression in Calibrated Explanations is **conformal interval regression** via **Conformal Predictive Systems (CPS)**:
-point regression + calibrated uncertainty intervals = (conformal) interval regression.
-- Point + CPS interval: `predict(x, uq_interval=True, low_high_percentiles=(5, 95)[, ...])`
-- You can also request CPS-controlled intervals from explanations:
-	`explain_factual(x, low_high_percentiles=(5, 95)[, ...])`
+- Classification: {doc}`get-started/quickstart_classification`
+- Percentile or interval regression: {doc}`get-started/quickstart_regression`
+- Probabilistic or thresholded regression: {doc}`get-started/quickstart_regression`
+- Guarded explanations: {doc}`get-started/quickstart_guarded`
 
-### Probabilistic regression (thresholded probabilities for y)
-Probabilistic regression answers probability queries for a real-valued target by assigning a `threshold`:
-- Threshold probability P(y <= t): `predict_proba(x, threshold=t[, ...])`
-- Threshold probability P(y <= t) + UQ: `predict_proba(x, uq_interval=True, threshold=t[, ...])`
-- Interval event probability: `predict_proba(x, threshold=(low, high)[, ...])` → P(low < y <= high)
+Semantics are mode-specific. Use
+{doc}`foundations/concepts/calibrated_interval_semantics`.
 
-Reject policy note: You can opt into reject-aware behavior per-call via the `reject_policy` parameter (e.g., `explain_factual(X, reject_policy=RejectPolicy.PREDICT_AND_FLAG)`). When a non-`NONE` policy is active the API returns a `RejectResult` envelope whose `prediction` field mirrors the legacy return shape (including regression UQ tuples like `(proba, (low, high))`). Per-instance breakdowns are available in `RejectResult.metadata` under `ambiguity_mask`, `novelty_mask`, `prediction_set_size`, and `epsilon`. The `explanation` field contains the explanation object or `None` if no explanation was produced.
-
-## 4) Run the minimal CE-first flow
+## 4. Minimal flow
 
 ```python
 from calibrated_explanations import WrapCalibratedExplainer
@@ -46,8 +31,5 @@ explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
 explanations = explainer.explain_factual(X_query)
 ```
 
-## 5) Need alternatives or uncertainty intervals?
-- Alternatives: `explainer.explore_alternatives(X_query)`
-- Probabilities + intervals: `explainer.predict_proba(X_query, uq_interval=True)`
+Entry-point tier: Tier 1.
 
-Return both point estimates and intervals, and include the rule table for traceability.

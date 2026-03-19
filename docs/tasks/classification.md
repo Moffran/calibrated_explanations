@@ -2,6 +2,15 @@
 
 Calibrated Explanations wraps standard scikit-learn classifiers to produce uncertainty-aware predictions and explanations.
 
+## Classification semantics note
+
+- **Calibration prerequisites**: fit on `x_proper, y_proper` and calibrate on held-out `x_cal, y_cal`.
+- **Mode-specific guarantees**: Venn-Abers provides calibrated class probabilities with interval bounds.
+- **Assumptions**: calibration and deployment data are exchangeable or distribution-matched.
+- **Explicit non-guarantees**: no guarantee under drift or regime shift.
+- **Explanation-envelope limits**: rule and feature-level intervals summarize model behavior, not causal effects.
+- **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics`.
+
 ## Supported signatures
 
 | Method | Description |
@@ -85,3 +94,6 @@ multi_alternative = explainer.explore_alternatives(x_test, multi_labels_enabled=
 
 * **`bins`**: Supply Mondrian categories/bins for conditional calibration.
 * **`uq_interval`**: Set to `True` to receive uncertainty intervals (tuples of lower/upper bounds).
+
+Entry-point tier: Tier 2.
+

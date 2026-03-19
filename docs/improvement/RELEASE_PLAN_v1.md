@@ -366,20 +366,6 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 
    Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations (including `governance.config` events from ConfigManager); test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green; ADR-020 and ADR-028 promoted to Accepted; `ConfigManager` is the authoritative configuration entry point with precedence and migration tests green; and core package import/public API no longer hard-depends on LIME/SHAP adapters (plugin-only).
 
-#### v1.0.0 API-bloat red-team candidate inventory (scope lock)
-
-The following candidates are intentionally tracked as removal/migration targets before v1.0.0 GA. Status must be reported per item in the release checklist:
-
-1. Top-level `lime`/`shap` imports in core modules (`core`, wrappers, or package root) → remove from core import graph.
-2. Core wrapper classes that adapt CE to LIME/SHAP (`CalibratedAsLimeTabularExplainer`, `CalibratedAsShapExplainer`) → plugin modules only.
-3. `CalibratedExplainer` LIME/SHAP preload flags and enablement state APIs (`preload_LIME`, `preload_SHAP`, `is_*_enabled`) → remove from core.
-4. `CalibratedExplanation.as_lime()` / `.as_shap()` core methods → replace with plugin adapters.
-5. Plotting-heavy runtime surface in core explanation objects (matplotlib-backed plotting helpers) → move to visualization plugin path.
-6. Progress-bar dependency coupling (`tqdm`) in core paths → optionalize/lazy-load or plugin-scope.
-7. Core dependency list includes optional-heavy libs (`lime`, `shap`, `matplotlib`, `tqdm`) → move to optional extras.
-8. Package root exports plugin adapters/wrappers in `__init__` → keep package root core-only.
-9. Plugin-dependent tests in core test gates → split to plugin/parity job.
-10. Demo notebooks/results artifacts bundled as core-release surface → relocate to `legacy/` or `examples/` packaging boundary.
 ### v0.11.2 (config hardening and ADR governance sweep)
 
   1. Migrate `cache/cache.py`, `parallel/parallel.py`,
