@@ -11,7 +11,7 @@ import contextlib
 from typing import Any, Iterable, Mapping
 
 from . import registry
-from ._trust import clear_trusted_identifiers, update_trusted_identifier
+from ._trust import clear_trusted_identifiers, mutate_trust_atomic, update_trusted_identifier
 from .base import ExplainerPlugin
 
 
@@ -93,15 +93,38 @@ def plot_builders() -> dict[str, Any]:
 
 def set_plot_builder(identifier: str, descriptor: Any, *, trusted: bool = False) -> None:
     """Register a plot builder descriptor and synchronize trusted identifier state."""
-    registry._PLOT_BUILDERS[identifier] = descriptor
-    update_trusted_identifier(registry._TRUSTED_PLOT_BUILDERS, identifier, trusted)
-    registry._verify_trust_invariants_if_enabled()
+
+    def _mutation() -> None:
+        registry._PLOT_BUILDERS[identifier] = descriptor
+        update_trusted_identifier(registry._TRUSTED_PLOT_BUILDERS, identifier, trusted)
+
+    mutate_trust_atomic(
+        identifier=identifier,
+        trusted=bool(trusted),
+        actor="testing.set_plot_builder",
+        kind="plot_builder",
+        source="tests",
+        mutation=_mutation,
+        verify=registry._verify_trust_invariants_if_enabled,
+    )
 
 
 def clear_plot_builders() -> None:
     """Clear registered plot builders and trusted-builder identifiers."""
-    registry._PLOT_BUILDERS.clear()
-    clear_trusted_identifiers(registry._TRUSTED_PLOT_BUILDERS)
+
+    def _mutation() -> None:
+        registry._PLOT_BUILDERS.clear()
+        clear_trusted_identifiers(registry._TRUSTED_PLOT_BUILDERS)
+
+    mutate_trust_atomic(
+        identifier="testing.plot_builders.clear",
+        trusted=False,
+        actor="testing.clear_plot_builders",
+        kind="plot_builder",
+        source="tests",
+        mutation=_mutation,
+        verify=registry._verify_trust_invariants_if_enabled,
+    )
 
 
 def plot_renderers() -> dict[str, Any]:
@@ -111,15 +134,38 @@ def plot_renderers() -> dict[str, Any]:
 
 def set_plot_renderer(identifier: str, descriptor: Any, *, trusted: bool = False) -> None:
     """Register a plot renderer descriptor and synchronize trust state."""
-    registry._PLOT_RENDERERS[identifier] = descriptor
-    update_trusted_identifier(registry._TRUSTED_PLOT_RENDERERS, identifier, trusted)
-    registry._verify_trust_invariants_if_enabled()
+
+    def _mutation() -> None:
+        registry._PLOT_RENDERERS[identifier] = descriptor
+        update_trusted_identifier(registry._TRUSTED_PLOT_RENDERERS, identifier, trusted)
+
+    mutate_trust_atomic(
+        identifier=identifier,
+        trusted=bool(trusted),
+        actor="testing.set_plot_renderer",
+        kind="plot_renderer",
+        source="tests",
+        mutation=_mutation,
+        verify=registry._verify_trust_invariants_if_enabled,
+    )
 
 
 def clear_plot_renderers() -> None:
     """Clear registered plot renderers and trusted-renderer identifiers."""
-    registry._PLOT_RENDERERS.clear()
-    clear_trusted_identifiers(registry._TRUSTED_PLOT_RENDERERS)
+
+    def _mutation() -> None:
+        registry._PLOT_RENDERERS.clear()
+        clear_trusted_identifiers(registry._TRUSTED_PLOT_RENDERERS)
+
+    mutate_trust_atomic(
+        identifier="testing.plot_renderers.clear",
+        trusted=False,
+        actor="testing.clear_plot_renderers",
+        kind="plot_renderer",
+        source="tests",
+        mutation=_mutation,
+        verify=registry._verify_trust_invariants_if_enabled,
+    )
 
 
 def registry_snapshot():

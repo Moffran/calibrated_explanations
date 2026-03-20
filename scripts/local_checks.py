@@ -166,6 +166,10 @@ def main() -> int:
         Step("ADR-001 boundary check", _python_cmd("scripts/quality/check_import_graph.py")),
         Step("ADR-002 compliance check", _python_cmd("scripts/quality/check_adr002_compliance.py")),
         Step(
+            "ADR-028 governance event schema check",
+            _python_cmd("scripts/quality/check_governance_event_schema.py"),
+        ),
+        Step(
             "Agent instruction consistency",
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
@@ -404,6 +408,10 @@ def main() -> int:
                 "--baseline",
                 ".github/marker-hygiene-baseline.json",
             ),
+        ),
+        Step(
+            "ADR-028 governance event schema check (main)",
+            _python_cmd("scripts/quality/check_governance_event_schema.py"),
         ),
         Step(
             "Over-testing coverage contexts",

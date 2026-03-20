@@ -5,10 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 
 from calibrated_explanations.plugins import registry
+from calibrated_explanations.plugins._trust import update_trusted_identifier
+from calibrated_explanations.utils.exceptions import ValidationError
 from tests.support.registry_helpers import (
     clear_explanation_plugins,
     clear_interval_plugins,
     clear_plot_plugins,
+    set_plot_builder,
     set_plot_renderer,
 )
 
@@ -31,6 +34,51 @@ class ExplanationPluginStub:
 
     def explain(self, *_args, **_kwargs):
         return {}
+
+
+class IntervalPluginStub:
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "tests.trust.atomic.interval",
+        "version": "0.1",
+        "provider": "tests",
+        "capabilities": ("interval",),
+        "modes": ("classification",),
+        "dependencies": (),
+        "fast_compatible": True,
+        "requires_bins": False,
+        "confidence_source": "posterior",
+        "trust": {"trusted": False},
+    }
+
+    def supports(self, _model):
+        return True
+
+    def calibrate(self, *_args, **_kwargs):
+        return {}
+
+
+def assert_catalog_invariants() -> None:
+    for descriptor in registry.list_explanation_descriptors(trusted_only=False):
+        trusted_ids = {
+            item.identifier for item in registry.list_explanation_descriptors(trusted_only=True)
+        }
+        assert descriptor.trusted is (descriptor.identifier in trusted_ids)
+    for descriptor in registry.list_interval_descriptors(trusted_only=False):
+        trusted_ids = {
+            item.identifier for item in registry.list_interval_descriptors(trusted_only=True)
+        }
+        assert descriptor.trusted is (descriptor.identifier in trusted_ids)
+    for descriptor in registry.list_plot_builder_descriptors(trusted_only=False):
+        trusted_ids = {
+            item.identifier for item in registry.list_plot_builder_descriptors(trusted_only=True)
+        }
+        assert descriptor.trusted is (descriptor.identifier in trusted_ids)
+    for descriptor in registry.list_plot_renderer_descriptors(trusted_only=False):
+        trusted_ids = {
+            item.identifier for item in registry.list_plot_renderer_descriptors(trusted_only=True)
+        }
+        assert descriptor.trusted is (descriptor.identifier in trusted_ids)
 
 
 def assert_renderer_invariants() -> None:
@@ -158,3 +206,88 @@ def test_should_sync_descriptor_trust_state_when_using_legacy_trust_api(caplog) 
     assert descriptor_after is not None
     assert descriptor_after.trusted is False
     assert any(getattr(record, "event_name", None) == "trust.mutation" for record in caplog.records)
+
+
+def test_should_machine_check_invariants_for_all_plugin_kinds() -> None:
+    explanation = ExplanationPluginStub()
+    interval = IntervalPluginStub()
+    registry.register_explanation_plugin("tests.trust.atomic.explanation", explanation)
+    registry.register_interval_plugin("tests.trust.atomic.interval", interval)
+
+    builder_descriptor = registry.PlotBuilderDescriptor(
+        identifier="tests.builder.atomic",
+        builder=object(),
+        metadata={"name": "tests.builder.atomic", "trust": {"trusted": False}},
+        trusted=False,
+        source="manual",
+    )
+    renderer_descriptor = registry.PlotRendererDescriptor(
+        identifier="tests.renderer.atomic.catalog",
+        renderer=object(),
+        metadata={"name": "tests.renderer.atomic.catalog", "trust": {"trusted": False}},
+        trusted=False,
+        source="manual",
+    )
+    set_plot_builder("tests.builder.atomic", builder_descriptor, trusted=False)
+    set_plot_renderer("tests.renderer.atomic.catalog", renderer_descriptor, trusted=False)
+
+    registry.mark_explanation_trusted("tests.trust.atomic.explanation")
+    registry.mark_interval_trusted("tests.trust.atomic.interval")
+    registry.mark_plot_builder_trusted("tests.builder.atomic")
+    registry.mark_plot_renderer_trusted("tests.renderer.atomic.catalog")
+    assert_catalog_invariants()
+
+    registry.mark_explanation_untrusted("tests.trust.atomic.explanation")
+    registry.mark_interval_untrusted("tests.trust.atomic.interval")
+    registry.mark_plot_builder_untrusted("tests.builder.atomic")
+    registry.mark_plot_renderer_untrusted("tests.renderer.atomic.catalog")
+    assert_catalog_invariants()
+
+
+def test_should_emit_structured_trust_mutation_event_for_each_mutation_path(caplog) -> None:
+    explanation = ExplanationPluginStub()
+    interval = IntervalPluginStub()
+    registry.register_explanation_plugin("tests.trust.mutation.explanation", explanation)
+    registry.register_interval_plugin("tests.trust.mutation.interval", interval)
+
+    builder_descriptor = registry.PlotBuilderDescriptor(
+        identifier="tests.builder.mutation",
+        builder=object(),
+        metadata={"name": "tests.builder.mutation", "trust": {"trusted": False}},
+        trusted=False,
+        source="manual",
+    )
+    renderer_descriptor = registry.PlotRendererDescriptor(
+        identifier="tests.renderer.mutation",
+        renderer=object(),
+        metadata={"name": "tests.renderer.mutation", "trust": {"trusted": False}},
+        trusted=False,
+        source="manual",
+    )
+    set_plot_builder("tests.builder.mutation", builder_descriptor, trusted=False)
+    set_plot_renderer("tests.renderer.mutation", renderer_descriptor, trusted=False)
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.registry"):
+        registry.mark_explanation_trusted("tests.trust.mutation.explanation")
+        registry.mark_interval_trusted("tests.trust.mutation.interval")
+        registry.mark_plot_builder_trusted("tests.builder.mutation")
+        registry.mark_plot_renderer_trusted("tests.renderer.mutation")
+        registry.reset_plugin_catalog(kind="plot")
+
+    records = [
+        record
+        for record in caplog.records
+        if getattr(record, "event_name", None) == "trust.mutation"
+    ]
+    assert len(records) >= 5
+    for record in records:
+        assert isinstance(getattr(record, "identifier", None), str)
+        assert isinstance(getattr(record, "trusted", None), bool)
+        assert isinstance(getattr(record, "kind", None), str)
+        assert isinstance(getattr(record, "source", None), str)
+        assert isinstance(getattr(record, "actor", None), str)
+
+
+def test_should_raise_when_trusted_identifier_helper_called_outside_atomic_context() -> None:
+    with pytest.raises(ValidationError, match="outside mutate_trust_atomic context"):
+        update_trusted_identifier(set(), "tests.illegal.mutation", True)

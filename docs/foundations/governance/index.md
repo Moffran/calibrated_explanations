@@ -9,8 +9,11 @@ section_owners
 release_checklist
 nav_crosswalk
 optional_telemetry
+governance_events
 test_policy
 waivers_inventory
 release_notes
 pr_guide
 ```
+
+Entry-point tier: Tier 3

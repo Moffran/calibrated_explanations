@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import logging
 import os
-from threading import RLock
+from threading import RLock, local
 from typing import Any, Callable
 
 from ..logging import ensure_logging_context_filter, logging_context
+from ..utils.exceptions import ValidationError
 
 _TRUST_LOCK = RLock()
+_TRUST_CONTEXT = local()
 _LOGGER = logging.getLogger("calibrated_explanations.governance.registry")
 ensure_logging_context_filter("calibrated_explanations.governance.registry")
 
@@ -50,28 +52,42 @@ def mutate_trust_atomic(
         Optional invariant check callback executed before releasing the lock.
     """
     with _TRUST_LOCK:
-        result = mutation()
-        if verify is not None:
-            verify()
-        with logging_context(plugin_identifier=identifier):
-            _LOGGER.info(
-                "Plugin trust state mutated",
-                extra={
-                    "event_name": "trust.mutation",
-                    "identifier": identifier,
-                    "trusted": bool(trusted),
-                    "kind": kind,
-                    "source": source,
-                    "actor": actor or "unknown",
-                },
-            )
-        return result
+        _TRUST_CONTEXT.depth = getattr(_TRUST_CONTEXT, "depth", 0) + 1
+        try:
+            result = mutation()
+            if verify is not None:
+                verify()
+            with logging_context(plugin_identifier=identifier):
+                _LOGGER.info(
+                    "Plugin trust state mutated",
+                    extra={
+                        "event_name": "trust.mutation",
+                        "identifier": identifier,
+                        "trusted": bool(trusted),
+                        "kind": kind,
+                        "source": source,
+                        "actor": actor or "unknown",
+                    },
+                )
+            return result
+        finally:
+            _TRUST_CONTEXT.depth = max(getattr(_TRUST_CONTEXT, "depth", 1) - 1, 0)
+
+
+def _assert_mutation_context() -> None:
+    depth = getattr(_TRUST_CONTEXT, "depth", 0)
+    if depth <= 0:
+        raise ValidationError(
+            "Trust-state mutation helper called outside mutate_trust_atomic context.",
+            details={"helper": "_assert_mutation_context"},
+        )
 
 
 def update_trusted_identifier(
     trusted_identifiers: set[str], identifier: str, trusted: bool
 ) -> None:
     """Update trusted identifier membership for *identifier*."""
+    _assert_mutation_context()
     if trusted:
         trusted_identifiers.add(identifier)
     else:
@@ -80,4 +96,5 @@ def update_trusted_identifier(
 
 def clear_trusted_identifiers(trusted_identifiers: set[str]) -> None:
     """Clear trusted identifier membership in-place."""
+    _assert_mutation_context()
     trusted_identifiers.clear()

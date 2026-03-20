@@ -30,6 +30,7 @@ from typing import Any, Dict, Iterable, List, Literal, Mapping, Tuple
 
 from .. import __version__ as package_version
 from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
+from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ConfigurationError, ValidationError
 from ._trust import (
@@ -194,29 +195,26 @@ def _propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
 def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     """Emit a warning about an untrusted plugin once."""
     name = meta.get("name", "<unknown>")
-    if name in _WARNED_UNTRUSTED:
-        return
     provider = meta.get("provider", "<unknown provider>")
-    warnings.warn(
-        "Skipping untrusted plugin '%s' from %s discovered via %s. "
-        "Set CE_TRUST_PLUGIN, add it to [tool.calibrated_explanations.plugins].trusted, "
-        "or call trust_plugin('%s') to load it." % (name, provider, source, name),
-        UserWarning,
-        stacklevel=3,
-    )
-    # Governance log for plugin trust decision
-    governance_logger = logging.getLogger("calibrated_explanations.governance.plugins")
-    ensure_logging_context_filter("calibrated_explanations.governance.plugins")
-    with logging_context(plugin_identifier=name):
-        governance_logger.info(
-            "Plugin trust decision: skipped untrusted plugin",
-            extra={
-                "provider": provider,
-                "source": source,
-                "decision": "skipped_untrusted",
-            },
+    if name not in _WARNED_UNTRUSTED:
+        warnings.warn(
+            "Skipping untrusted plugin '%s' from %s discovered via %s. "
+            "Set CE_TRUST_PLUGIN, add it to [tool.calibrated_explanations.plugins].trusted, "
+            "or call trust_plugin('%s') to load it." % (name, provider, source, name),
+            UserWarning,
+            stacklevel=3,
         )
-    _WARNED_UNTRUSTED.add(name)
+        _WARNED_UNTRUSTED.add(name)
+    emit_plugin_governance_event(
+        decision="skipped_untrusted",
+        identifier=name,
+        provider=provider,
+        source=source,
+        trusted=False,
+        actor="_warn_untrusted_plugin",
+        reason_code="untrusted",
+        reason="Plugin was discovered but not explicitly trusted by policy",
+    )
 
 
 def _log_plugin_registration_event(
@@ -227,18 +225,16 @@ def _log_plugin_registration_event(
     trusted: bool,
 ) -> None:
     """Emit a structured governance event for accepted plugin registrations."""
-    governance_logger = logging.getLogger("calibrated_explanations.governance.plugins")
-    ensure_logging_context_filter("calibrated_explanations.governance.plugins")
-    with logging_context(plugin_identifier=identifier):
-        governance_logger.info(
-            "Plugin trust decision: accepted plugin registration",
-            extra={
-                "provider": provider,
-                "source": source,
-                "decision": "accepted_registration",
-                "trusted": bool(trusted),
-            },
-        )
+    emit_plugin_governance_event(
+        decision="accepted_registration",
+        identifier=identifier,
+        provider=provider if isinstance(provider, str) else None,
+        source=source,
+        trusted=bool(trusted),
+        actor="_log_plugin_registration_event",
+        reason_code="accepted",
+        reason="Plugin registration accepted",
+    )
 
 
 def _resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
@@ -919,23 +915,59 @@ def _verify_trust_invariants_if_enabled() -> None:
 
 def _reset_explanation_plugin_catalog() -> None:
     """Clear explanation plugin descriptors and trust state."""
-    _EXPLANATION_PLUGINS.clear()
-    clear_trusted_identifiers(_TRUSTED_EXPLANATIONS)
+
+    def _mutation() -> None:
+        _EXPLANATION_PLUGINS.clear()
+        clear_trusted_identifiers(_TRUSTED_EXPLANATIONS)
+
+    mutate_trust_atomic(
+        identifier="catalog.explanation",
+        trusted=False,
+        actor="_reset_explanation_plugin_catalog",
+        kind="explanation",
+        source="registry.reset",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def _reset_interval_plugin_catalog() -> None:
     """Clear interval plugin descriptors and trust state."""
-    _INTERVAL_PLUGINS.clear()
-    clear_trusted_identifiers(_TRUSTED_INTERVALS)
+
+    def _mutation() -> None:
+        _INTERVAL_PLUGINS.clear()
+        clear_trusted_identifiers(_TRUSTED_INTERVALS)
+
+    mutate_trust_atomic(
+        identifier="catalog.interval",
+        trusted=False,
+        actor="_reset_interval_plugin_catalog",
+        kind="interval",
+        source="registry.reset",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def _reset_plot_plugin_catalog() -> None:
     """Clear plot builder/renderer/style descriptors and trust state."""
-    _PLOT_BUILDERS.clear()
-    clear_trusted_identifiers(_TRUSTED_PLOT_BUILDERS)
-    _PLOT_RENDERERS.clear()
-    clear_trusted_identifiers(_TRUSTED_PLOT_RENDERERS)
-    _PLOT_STYLES.clear()
+
+    def _mutation() -> None:
+        _PLOT_BUILDERS.clear()
+        clear_trusted_identifiers(_TRUSTED_PLOT_BUILDERS)
+        _PLOT_RENDERERS.clear()
+        clear_trusted_identifiers(_TRUSTED_PLOT_RENDERERS)
+        _PLOT_STYLES.clear()
+
+    mutate_trust_atomic(
+        identifier="catalog.plot",
+        trusted=False,
+        actor="_reset_plot_plugin_catalog",
+        kind="plot",
+        source="registry.reset",
+        mutation=_mutation,
+        verify=_verify_trust_invariants_if_enabled,
+    )
 
 
 def reset_plugin_catalog(
@@ -1024,6 +1056,16 @@ def register_explanation_plugin(
                 },
             )
         if is_identifier_denied(identifier):
+            emit_plugin_governance_event(
+                decision="denied_registration",
+                identifier=identifier,
+                provider=None,
+                source=source,
+                trusted=False,
+                actor="register_explanation_plugin",
+                reason_code="denylist",
+                reason="Plugin identifier is denied via CE_DENY_PLUGIN",
+            )
             raise ValidationError(
                 f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
                 details={"param": "identifier", "identifier": identifier},
@@ -1039,7 +1081,20 @@ def register_explanation_plugin(
         meta = validate_explanation_metadata(meta)
         trusted = _should_trust(meta, identifier=identifier, source=source)
         _update_trust_keys(meta, trusted)
-        _verify_plugin_checksum(plugin, meta)
+        try:
+            _verify_plugin_checksum(plugin, meta)
+        except ValidationError as exc:
+            emit_plugin_governance_event(
+                decision="checksum_failure",
+                identifier=identifier,
+                provider=meta.get("provider"),
+                source=source,
+                trusted=bool(trusted),
+                actor="register_explanation_plugin",
+                reason_code="checksum_validation_failed",
+                reason=str(exc),
+            )
+            raise
         if "checksum" in meta:
             trusted = True
             _update_trust_keys(meta, trusted)
@@ -1183,6 +1238,16 @@ def register_interval_plugin(
                 },
             )
         if is_identifier_denied(identifier):
+            emit_plugin_governance_event(
+                decision="denied_registration",
+                identifier=identifier,
+                provider=None,
+                source=source,
+                trusted=False,
+                actor="register_interval_plugin",
+                reason_code="denylist",
+                reason="Plugin identifier is denied via CE_DENY_PLUGIN",
+            )
             raise ValidationError(
                 f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
                 details={"param": "identifier", "identifier": identifier},
@@ -1198,7 +1263,20 @@ def register_interval_plugin(
         validate_interval_metadata(meta)
         trusted = _should_trust(meta, identifier=identifier, source=source)
         _update_trust_keys(meta, trusted)
-        _verify_plugin_checksum(plugin, meta)
+        try:
+            _verify_plugin_checksum(plugin, meta)
+        except ValidationError as exc:
+            emit_plugin_governance_event(
+                decision="checksum_failure",
+                identifier=identifier,
+                provider=meta.get("provider"),
+                source=source,
+                trusted=bool(trusted),
+                actor="register_interval_plugin",
+                reason_code="checksum_validation_failed",
+                reason=str(exc),
+            )
+            raise
         if isinstance(raw_meta, dict):
             raw_meta["trusted"] = meta["trusted"]
             raw_meta["trust"] = meta["trust"]
@@ -1265,6 +1343,16 @@ def register_plot_builder(
             },
         )
     if is_identifier_denied(identifier):
+        emit_plugin_governance_event(
+            decision="denied_registration",
+            identifier=identifier,
+            provider=None,
+            source=source,
+            trusted=False,
+            actor="register_plot_builder",
+            reason_code="denylist",
+            reason="Plugin identifier is denied via CE_DENY_PLUGIN",
+        )
         raise ValidationError(
             f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
             details={"param": "identifier", "identifier": identifier},
@@ -1280,7 +1368,20 @@ def register_plot_builder(
     validate_plot_builder_metadata(meta)
     trusted = _should_trust(meta, identifier=identifier, source=source)
     _update_trust_keys(meta, trusted)
-    _verify_plugin_checksum(builder, meta)
+    try:
+        _verify_plugin_checksum(builder, meta)
+    except ValidationError as exc:
+        emit_plugin_governance_event(
+            decision="checksum_failure",
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=bool(trusted),
+            actor="register_plot_builder",
+            reason_code="checksum_validation_failed",
+            reason=str(exc),
+        )
+        raise
     if isinstance(raw_meta, dict):
         raw_meta["trusted"] = meta["trusted"]
         raw_meta["trust"] = meta["trust"]
@@ -1328,6 +1429,16 @@ def register_plot_renderer(
             },
         )
     if is_identifier_denied(identifier):
+        emit_plugin_governance_event(
+            decision="denied_registration",
+            identifier=identifier,
+            provider=None,
+            source=source,
+            trusted=False,
+            actor="register_plot_renderer",
+            reason_code="denylist",
+            reason="Plugin identifier is denied via CE_DENY_PLUGIN",
+        )
         raise ValidationError(
             f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
             details={"param": "identifier", "identifier": identifier},
@@ -1343,7 +1454,20 @@ def register_plot_renderer(
     validate_plot_renderer_metadata(meta)
     trusted = _should_trust(meta, identifier=identifier, source=source)
     _update_trust_keys(meta, trusted)
-    _verify_plugin_checksum(renderer, meta)
+    try:
+        _verify_plugin_checksum(renderer, meta)
+    except ValidationError as exc:
+        emit_plugin_governance_event(
+            decision="checksum_failure",
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=bool(trusted),
+            actor="register_plot_renderer",
+            reason_code="checksum_validation_failed",
+            reason=str(exc),
+        )
+        raise
     if isinstance(raw_meta, dict):
         raw_meta["trusted"] = meta["trusted"]
         raw_meta["trust"] = meta["trust"]
@@ -1637,6 +1761,16 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 UserWarning,
                 stacklevel=2,
             )
+            emit_plugin_governance_event(
+                decision="skipped_denied",
+                identifier=identifier,
+                provider=provider,
+                source="entrypoint",
+                trusted=False,
+                actor="load_entrypoint_plugins",
+                reason_code="denylist",
+                reason="Plugin identifier is denied via CE_DENY_PLUGIN",
+            )
             continue
         plugin = None
         try:
@@ -1710,26 +1844,24 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 UserWarning,
                 stacklevel=2,
             )
-            # Governance log for plugin deny decision
-            governance_logger = logging.getLogger("calibrated_explanations.governance.plugins")
-            ensure_logging_context_filter("calibrated_explanations.governance.plugins")
-            with logging_context(plugin_identifier=meta_name):
-                governance_logger.info(
-                    "Plugin trust decision: skipped denied plugin",
-                    extra={
-                        "provider": meta.get("provider", provider),
-                        "source": "entrypoint",
-                        "decision": "skipped_denied",
-                        "deny_source": "CE_DENY_PLUGIN",
-                    },
-                )
+            emit_plugin_governance_event(
+                decision="skipped_denied",
+                identifier=meta_name,
+                provider=meta.get("provider", provider),
+                source="entrypoint",
+                trusted=False,
+                actor="load_entrypoint_plugins",
+                reason_code="denylist",
+                reason="plugin_meta name is denied via CE_DENY_PLUGIN",
+                details={"entrypoint_identifier": identifier},
+            )
             continue
 
         trusted = _should_trust(meta, identifier=identifier, source="entrypoint")
         _update_trust_keys(meta, trusted)
 
         if not trusted and not include_untrusted:
-            _warn_untrusted_plugin(meta, source="entry point")
+            _warn_untrusted_plugin(meta, source="entrypoint")
             report.skipped_untrusted.append(
                 PluginDiscoveryRecord(
                     identifier=identifier,
@@ -1757,6 +1889,16 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 f"Checksum validation failed for plugin {identifier!r}: {exc}",
                 UserWarning,
                 stacklevel=2,
+            )
+            emit_plugin_governance_event(
+                decision="checksum_failure",
+                identifier=identifier,
+                provider=meta.get("provider", provider),
+                source="entrypoint",
+                trusted=bool(trusted),
+                actor="load_entrypoint_plugins",
+                reason_code="checksum_validation_failed",
+                reason=str(exc),
             )
             continue
         register(plugin, source="entrypoint", identifier=identifier)
@@ -2077,13 +2219,36 @@ def register(
             details={"param": "name", "expected_type": "str", "source": source},
         )
     if is_identifier_denied(identifier):
+        emit_plugin_governance_event(
+            decision="denied_registration",
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=False,
+            actor="register",
+            reason_code="denylist",
+            reason="Plugin identifier is denied via CE_DENY_PLUGIN",
+        )
         raise ValidationError(
             f"Plugin '{identifier}' is denied via CE_DENY_PLUGIN",
             details={"param": "identifier", "identifier": identifier},
         )
     trusted = _should_trust(meta, identifier=identifier, source=source)
     _update_trust_keys(meta, trusted)
-    _verify_plugin_checksum(plugin, meta)
+    try:
+        _verify_plugin_checksum(plugin, meta)
+    except ValidationError as exc:
+        emit_plugin_governance_event(
+            decision="checksum_failure",
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=bool(trusted),
+            actor="register",
+            reason_code="checksum_validation_failed",
+            reason=str(exc),
+        )
+        raise
     if isinstance(raw_meta, dict):
         raw_meta.setdefault("version", meta.get("version", package_version))
         raw_meta.setdefault("provider", meta.get("provider"))

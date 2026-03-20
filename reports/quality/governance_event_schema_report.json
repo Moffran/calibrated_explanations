@@ -1,0 +1,11 @@
+{
+  "findings": [
+    {
+      "level": "info",
+      "message": "Governance event schema validation passed."
+    }
+  ],
+  "generated_at": "2026-03-20T07:25:42+00:00",
+  "ok": true,
+  "version": 1
+}
