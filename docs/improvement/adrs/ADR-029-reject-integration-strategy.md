@@ -10,7 +10,7 @@ Authors: Core maintainers
 
 Supersedes: N/A
 
-Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy, ADR-015-explanation-plugin, ADR-020-legacy-user-api-stability
+Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-037-visualization-extension-and-rendering-governance, ADR-015-explanation-plugin, ADR-020-legacy-user-api-stability
 
 ## Context
 

@@ -14,8 +14,9 @@ explanation, interval, and plot builders/renderers.
 - **Plugin IDs** are dot-delimited strings (`core.explanation.factual`).
 - **Trusted vs. untrusted plugins** control which plugins are allowed to load by
   default.
-- **Metadata validation** enforces required fields such as versioning and (for
-  plots) the default renderer.
+- **Metadata validation** enforces deterministic governance fields (stable
+  identifier, extension type, supported kinds/modes, capability/version markers,
+  and trust/provenance metadata).
 
 ## Trust model
 
@@ -27,5 +28,5 @@ metadata for auditability.
 ## Related ADRs
 
 - ADR-006 (trust model)
-- ADR-014 (plot plugin strategy)
+- ADR-037 (visualization extension and rendering governance)
 - ADR-010 (core vs. evaluation split)

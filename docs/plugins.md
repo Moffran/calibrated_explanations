@@ -17,7 +17,7 @@ Plugins are optional extensions. Core calibrated explanations work without them.
 Contributor-facing ADR links:
 - `docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md` (maintainer-only docs set)
 - `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-014-plot-plugin-strategy.md` (maintainer-only docs set)
+- `docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md` (maintainer-only docs set)
 - `docs/improvement/adrs/ADR-015-explanation-plugin.md` (maintainer-only docs set)
 - `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 

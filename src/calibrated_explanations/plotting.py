@@ -233,11 +233,7 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
             ordered.append(identifier)
             seen.add(identifier)
     if "plot_spec.default" not in seen:
-        if "legacy" in ordered:
-            legacy_index = ordered.index("legacy")
-            ordered.insert(legacy_index, "plot_spec.default")
-        else:
-            ordered.append("plot_spec.default")
+        ordered.append("plot_spec.default")
     if "legacy" not in ordered:
         ordered.append("legacy")
     return tuple(ordered)
@@ -934,16 +930,15 @@ def plot_triangular(
     if not show and (save_ext is None or len(save_ext) == 0):
         return
 
-    # Build triangular PlotSpec dict via the builder and delegate rendering to the adapter.
-    # This ensures the adapter emits canonical primitives (triangle_background,
-    # quiver/scatter, save_fig) matching ADR-016 and keeps a single rendering path.
-    from .viz.builders import build_triangular_plotspec_dict
+    # Build canonical triangular PlotSpec via the builder and delegate rendering
+    # to the adapter.
+    from .viz.builders import build_triangular_plotspec
     from .viz.matplotlib_adapter import render as render_plotspec
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
 
-    spec = build_triangular_plotspec_dict(
+    spec = build_triangular_plotspec(
         title=title,
         proba=proba,
         uncertainty=uncertainty,
@@ -960,17 +955,7 @@ def plot_triangular(
     # if matplotlib is available).
     if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
         for ext in save_ext:
-            render_plotspec(
-                {
-                    **spec,
-                    "plot_spec": {
-                        **spec.get("plot_spec", {}),
-                        "save_behavior": {"default_exts": [ext]},
-                    },
-                },
-                show=False,
-                save_path=_format_save_path(path, title + ext),
-            )
+            render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
     return
 
 

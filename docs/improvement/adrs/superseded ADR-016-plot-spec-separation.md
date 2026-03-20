@@ -1,8 +1,11 @@
+> **Supersession note (2026-03-20):** This ADR is retained as a historical record. Canonical PlotSpec contract and validation authority moved to ADR-036. Visualization extension and renderer governance boundaries moved to ADR-037.
+
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-016: PlotSpec separation and legacy parity
 
-Status: Accepted (scoped)
+Status: Superseded
+Superseded-by: ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-037-visualization-extension-and-rendering-governance
 
 ## Context
 The 0.5.x plotting stack mixed multiple responsibilities inside a handful of matplotlib-heavy functions. As part of the visualization refactor we introduced `PlotSpec` builders and a renderer adapter so that plots can be expressed in a backend-agnostic format. Subsequent revisions of this ADR attempted to document every primitive, colour, and axis detail. That level of prescription has proven counter-productive: the implementation has drifted, tests cannot meet the exhaustive requirements, and the document no longer reflects the hybrid reality where the legacy renderer is still the default code path.

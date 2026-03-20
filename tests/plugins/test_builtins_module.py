@@ -296,9 +296,23 @@ def test_plot_builder_and_renderer_behaviour(monkeypatch: pytest.MonkeyPatch):
         fake_render,
         raising=False,
     )
+    from calibrated_explanations.viz.plotspec import GlobalPlotSpec, GlobalSpec
+
     renderer = PlotSpecDefaultRenderer()
     ctx = make_local_plot_context(save_ext=[".png", ".svg"], path="/tmp/output", show=True)
-    result = renderer.render({"spec": 1}, context=ctx)
+    artifact = GlobalPlotSpec(
+        title="demo",
+        kind="global_probabilistic",
+        mode="classification",
+        global_entries=GlobalSpec(
+            proba=[0.2, 0.8],
+            low=[0.1, 0.7],
+            high=[0.3, 0.9],
+            uncertainty=[0.1, 0.1],
+            y_test=[0, 1],
+        ),
+    )
+    result = renderer.render(artifact, context=ctx)
 
     assert len(renderer_calls) == 3
     assert result.saved_paths == ("/tmp/output.png", "/tmp/output.svg")
@@ -306,16 +320,11 @@ def test_plot_builder_and_renderer_behaviour(monkeypatch: pytest.MonkeyPatch):
 
 def test_plot_spec_builder_global_and_error_paths(monkeypatch: pytest.MonkeyPatch):
     builder = PlotSpecDefaultBuilder()
-    monkeypatch.setattr(
-        "calibrated_explanations.viz.builders.build_global_plotspec_dict",
-        lambda **kwargs: kwargs,
-        raising=False,
-    )
     ctx = make_local_plot_context()
     payload = builder.build(ctx)
-    assert isinstance(payload, dict)
-    assert "y_test" in payload
-    assert payload.get("title") == "demo"
+    assert payload.title == "demo"
+    assert payload.global_entries is not None
+    assert list(payload.global_entries.y_test) == [1, 2, 3]
 
     bad_ctx = make_local_plot_context(
         options=MappingProxyType({"payload": 1}), intent=MappingProxyType({"type": "global"})

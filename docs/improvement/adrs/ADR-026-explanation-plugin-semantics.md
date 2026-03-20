@@ -183,7 +183,7 @@ The validator must check:
   failures.【F:src/calibrated_explanations/plugins/builtins.py†L353-L442】
 * Additional metadata fields (such as `dependencies` or `trusted`) are primarily
   advisory. The runtime currently inspects `interval_dependency`,
-  `plot_dependency`, and trust settings to enforce ADR-006/ADR-013/ADR-014, so
+  `plot_dependency`, and trust settings to enforce ADR-006/ADR-013/ADR-037, so
   authors should keep those aligned with the calibrators and plotters they
   expect to use.
 

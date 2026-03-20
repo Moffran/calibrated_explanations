@@ -30,15 +30,12 @@ def test_alternative_probabilistic_cross_primitives():
 
 def test_global_probabilistic_multiclass_saved(tmp_path):
     spec = global_probabilistic_multiclass()
-    # builder returns a dict PlotSpec; ensure global entries exist and we can attach save behavior
-    assert isinstance(spec, dict)
-    ps = spec.get("plot_spec", {})
-    ps.setdefault("save_behavior", {})["path"] = str(tmp_path)
-    # must include global_entries for plotting
-    assert "global_entries" in ps
-    # default_exts should be configurable on save_behavior when present
-    ps["save_behavior"].setdefault("default_exts", ["svg", "png"])
-    assert isinstance(ps["save_behavior"].get("default_exts"), list)
+    # builder returns canonical dataclass; save behavior is configured on the
+    # dataclass and converted at serializer boundary.
+    assert spec.global_entries is not None
+    spec.save_behavior.path = str(tmp_path)
+    assert spec.save_behavior is not None
+    assert tuple(spec.save_behavior.default_exts or ()) == ("svg", "png")
 
 
 def test_adapter_returns_normalized_and_legacy_for_plotspec():
@@ -61,12 +58,6 @@ def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
 
     def fake_render(spec, *, show=False, save_path=None, **kwargs):
         calls.append({"spec": spec, "show": show, "save_path": save_path})
-        # return shim-like wrapper when dict passed
-        if isinstance(spec, dict):
-            return {
-                "plot_spec": spec.get("plot_spec", {}),
-                "primitives": [{"type": "quiver"}],
-            }
         return {}
 
     monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)

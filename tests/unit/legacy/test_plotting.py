@@ -7,6 +7,8 @@ import pytest
 
 from calibrated_explanations.legacy import plotting
 
+pytestmark = pytest.mark.viz
+
 matplotlib = pytest.importorskip(
     "matplotlib", reason="matplotlib is required for legacy plotting tests"
 )

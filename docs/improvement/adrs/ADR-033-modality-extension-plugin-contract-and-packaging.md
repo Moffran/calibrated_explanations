@@ -26,7 +26,7 @@ Related ADRs:
 3. ADR-010 (core vs optional distribution split)
 4. ADR-011 (deprecation/migration policy)
 5. ADR-013 (interval plugin strategy)
-6. ADR-014 (plot plugin strategy)
+6. ADR-037 (visualization extension and rendering governance)
 7. ADR-015 (explanation plugin architecture)
 8. ADR-020 (legacy user API stability)
 9. ADR-026 (explanation plugin semantics)

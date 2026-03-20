@@ -1234,10 +1234,17 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             payload_dict.pop("threshold", None)  # legacy-only field
             if "y" in payload_dict and "y_test" not in payload_dict:
                 payload_dict["y_test"] = payload_dict.pop("y")
-            from ..viz.builders import build_global_plotspec_dict
+            # Keep builder resilient for sparse payloads in tests and plugin probes.
+            payload_dict.setdefault("proba", None)
+            payload_dict.setdefault("predict", None)
+            payload_dict.setdefault("low", ())
+            payload_dict.setdefault("high", ())
+            payload_dict.setdefault("uncertainty", ())
+            payload_dict.setdefault("is_regularized", True)
+            from ..viz.builders import build_global_plotspec
 
             title = intent.get("title") if isinstance(intent, Mapping) else None
-            return build_global_plotspec_dict(title=title, **payload_dict)
+            return build_global_plotspec(title=title, **payload_dict)
 
         if intent_type == "alternative":
             options = context.options if isinstance(context.options, Mapping) else {}
@@ -1522,26 +1529,63 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         "supports_interactive": False,
     }
 
-    def render(
-        self, artifact: Mapping[str, Any], *, context: PlotRenderContext
-    ) -> PlotRenderResult:
+    def render(self, artifact: Any, *, context: PlotRenderContext) -> PlotRenderResult:
         """Render a PlotSpec artefact via the matplotlib adapter."""
         from ..viz.matplotlib_adapter import render as render_plotspec
+        from ..viz.plotspec import GlobalPlotSpec, PlotSpec, TriangularPlotSpec
+        from ..viz.serializers import (
+            canonical_plotspec_to_dict,
+            global_plotspec_from_dict,
+            plotspec_from_dict,
+            triangular_plotspec_from_dict,
+            validate_canonical_plotspec,
+        )
 
         saved: list[str] = []
         save_ext = context.save_ext
         base_path = context.path
 
         try:
+            canonical_artifact: PlotSpec | TriangularPlotSpec | GlobalPlotSpec
+            if isinstance(artifact, (PlotSpec, TriangularPlotSpec, GlobalPlotSpec)):
+                canonical_artifact = artifact
+            elif isinstance(artifact, Mapping):
+                payload = dict(artifact)
+                kind: str | None = None
+                if isinstance(payload.get("plot_spec"), Mapping):
+                    kind = payload["plot_spec"].get("kind")  # type: ignore[index]
+                else:
+                    kind = payload.get("kind") if isinstance(payload.get("kind"), str) else None
+
+                if kind == "triangular":
+                    canonical_artifact = triangular_plotspec_from_dict(payload)
+                elif isinstance(kind, str) and kind.startswith("global"):
+                    canonical_artifact = global_plotspec_from_dict(payload)
+                else:
+                    canonical_artifact = plotspec_from_dict(payload)
+            else:
+                raise ConfigurationError(
+                    "PlotSpec renderer requires canonical PlotSpec dataclass input",
+                    details={"actual_type": type(artifact).__name__},
+                )
+
+            validate_canonical_plotspec(canonical_artifact)
+        except (ValidationError, ConfigurationError, TypeError, ValueError, KeyError) as exc:
+            raise ConfigurationError(
+                f"PlotSpec renderer failed: {exc}",
+                details={"context": "plot_rendering", "original_error": str(exc)},
+            ) from exc
+
+        try:
             if save_ext:
                 for ext in save_ext if isinstance(save_ext, (list, tuple)) else (save_ext,):
                     target = f"{base_path}{ext}" if base_path else ext
-                    render_plotspec(artifact, show=False, save_path=target)
+                    render_plotspec(canonical_artifact, show=False, save_path=target)
                     saved.append(target)
                 if context.show:
-                    render_plotspec(artifact, show=True, save_path=None)
+                    render_plotspec(canonical_artifact, show=True, save_path=None)
             else:
-                render_plotspec(artifact, show=context.show, save_path=base_path)
+                render_plotspec(canonical_artifact, show=context.show, save_path=base_path)
         except (
             Exception
         ) as exc:  # ADR002_ALLOW: bubble up renderer failures as config errors.  # pragma: no cover
@@ -1549,7 +1593,12 @@ class PlotSpecDefaultRenderer(PlotRenderer):
                 f"PlotSpec renderer failed: {exc}",
                 details={"context": "plot_rendering", "original_error": str(exc)},
             ) from exc
-        return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(saved), extras={})
+        return PlotRenderResult(
+            artifact=canonical_plotspec_to_dict(canonical_artifact),
+            figure=None,
+            saved_paths=tuple(saved),
+            extras={},
+        )
 
 
 def _register_builtin_fast_plugins() -> None:
@@ -1773,8 +1822,8 @@ def _register_builtins() -> None:
             "renderer_id": "core.plot.legacy",
             "fallbacks": (),
             "legacy_compatible": True,
-            "is_default": False,
-            "default_for": (),
+            "is_default": True,
+            "default_for": ("global", "alternative"),
         },
     )
 
@@ -1798,8 +1847,8 @@ def _register_builtins() -> None:
             "renderer_id": "core.plot.plot_spec.default",
             "fallbacks": ("legacy",),
             "legacy_compatible": True,
-            "is_default": True,
-            "default_for": ("global", "alternative"),
+            "is_default": False,
+            "default_for": (),
         },
     )
 

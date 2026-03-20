@@ -10,7 +10,7 @@ Authors: Core maintainers
 
 Supersedes: N/A
 
-Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy, ADR-026-explanation-plugin-semantics
+Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-037-visualization-extension-and-rendering-governance, ADR-026-explanation-plugin-semantics
 
 ## Context
 
@@ -27,7 +27,7 @@ that method while routing through a separate finaliser.
 
 This tight coupling prevents explanation strategies from being authored as
 plugins that integrate with the registry trust model (ADR-006) or that can
-signal dependencies to the interval (ADR-013) and plot (ADR-014) plugin
+signal dependencies to the interval (ADR-013) and plot (ADR-037) plugin
 resolvers. It also makes it difficult to refactor the 400+ line
 `CalibratedExplainer.explain` pipeline or to introduce new explanation
 collections without rewriting the container finalisation logic that sits deep
@@ -335,7 +335,7 @@ export CE_EXPLANATION_PLUGIN_FACTUAL="core.explanation.factual.feature_parallel"
   live in `CalibratedExplainer` and `plugins.builtins`, matching the protocol
   described above.【F:src/calibrated_explanations/core/calibrated_explainer.py†L324-L606】【F:src/calibrated_explanations/plugins/builtins.py†L120-L318】
 - Interval and plot dependency chains now honour metadata hints, environment
-  overrides, and project configuration, keeping ADR-013/ADR-014 selections in
+  overrides, and project configuration, keeping ADR-013/ADR-037 selections in
   sync with explanation plugins.【F:src/calibrated_explanations/core/calibrated_explainer.py†L652-L737】
 - The `ce.plugins` console script surfaces registry state for explanations,
   intervals, and plots, enabling operators to audit trust and dependencies from

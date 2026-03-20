@@ -115,7 +115,8 @@ def test_plotting_config_helpers_and_style_chain(
     chain = plotting.resolve_plot_style_chain(explainer, explicit_style="explicit.primary")
     assert chain[0] == "explicit.primary"
     assert "plot_spec.default" in chain
-    assert chain[-1] == "legacy"
+    assert "legacy" in chain
+    assert chain.index("legacy") < chain.index("plot_spec.default")
     assert "mode.one" in chain
 
     monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
@@ -127,7 +128,8 @@ def test_plotting_config_helpers_and_style_chain(
     )
     chain2 = plotting.resolve_plot_style_chain(SimpleNamespace(last_explanation_mode=None))
     assert "registry.default" in chain2
-    assert chain2[-1] == "legacy"
+    assert "legacy" in chain2
+    assert chain2.index("legacy") < chain2.index("plot_spec.default")
 
 
 def test_plotting_update_plot_config_writes_normalized_file(
@@ -143,17 +145,20 @@ def test_plotting_update_plot_config_writes_normalized_file(
     assert text.endswith("\n")
 
 
-def test_plotspec_mapping_compat_helpers() -> None:
+def test_plotspec_serializer_boundary_helpers() -> None:
     plotspec = importlib.import_module("calibrated_explanations.viz.plotspec")
-    spec = plotspec.GlobalPlotSpec(title="demo", kind="global")
+    serializers = importlib.import_module("calibrated_explanations.viz.serializers")
 
-    env = spec.setdefault("plot_spec", {})
-    assert isinstance(env, dict)
-    assert spec.setdefault("title", "fallback") == "demo"
-    assert spec.setdefault("missing", "fallback") == "fallback"
-    assert isinstance(spec["plot_spec"], dict)
-    assert spec.get("plot_spec") is not None
-    assert spec.get("missing", 123) == 123
+    spec = plotspec.GlobalPlotSpec(
+        title="demo",
+        kind="global_probabilistic",
+        mode="classification",
+        global_entries=plotspec.GlobalSpec(proba=[0.2, 0.8], uncertainty=[0.1, 0.2]),
+    )
+
+    envelope = serializers.global_plotspec_to_dict(spec)
+    assert isinstance(envelope, dict)
+    assert envelope.get("plot_spec", {}).get("kind") == "global_probabilistic"
 
 
 def test_base_explain_executor_abstract_method_bodies_are_callable() -> None:

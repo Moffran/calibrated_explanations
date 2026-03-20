@@ -1,4 +1,5 @@
 import numpy as np
+from calibrated_explanations.viz.plotspec import SaveBehavior
 from calibrated_explanations.viz import (
     build_probabilistic_bars_spec,
     build_regression_bars_spec,
@@ -178,14 +179,8 @@ def global_probabilistic_multiclass():
         y_test=y_test,
         is_regularized=True,
     )
-    # attach save behavior metadata post-build (builder does not accept save_behavior kw)
-    spec.setdefault("plot_spec", {}).setdefault("save_behavior", {})
-    spec["plot_spec"]["save_behavior"].update(
-        {
-            "path": "plots/global",
-            "title": "global_multi",
-            "default_exts": ["svg", "png"],
-            "save_global": True,
-        }
+    # attach save behavior metadata on canonical dataclass
+    spec.save_behavior = SaveBehavior(
+        path="plots/global", title="global_multi", default_exts=("svg", "png")
     )
     return spec

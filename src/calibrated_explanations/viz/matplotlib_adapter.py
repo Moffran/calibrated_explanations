@@ -21,6 +21,7 @@ from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
 from ..plotting import __setup_plot_style as _setup_style
 from ..utils.exceptions import ValidationError
 from .plotspec import BarHPanelSpec, GlobalPlotSpec, PlotSpec, TriangularPlotSpec
+from .serializers import global_plotspec_to_dict, triangular_plotspec_to_dict
 
 
 def _import_pyplot_with_retries() -> object:
@@ -111,6 +112,7 @@ def render(
     return_fig: bool = False,
     draw_intervals: bool = True,
     export_drawn_primitives: bool = False,
+    _allow_serialized_envelope: bool = False,
 ):
     """Render a PlotSpec via matplotlib.
 
@@ -118,6 +120,41 @@ def render(
     """
     # allow tests to request the created figure or primitives even when not showing/saving
     # However, allow headless export if SaveBehavior requests in-memory default_exts
+
+    # Normalize non-panel canonical PlotSpec variants through boundary serializers so
+    # the adapter keeps one rendering/primitive shim path for triangular/global payloads.
+    if isinstance(spec, TriangularPlotSpec):
+        return render(
+            triangular_plotspec_to_dict(spec),
+            show=show,
+            save_path=save_path,
+            return_fig=return_fig,
+            draw_intervals=draw_intervals,
+            export_drawn_primitives=export_drawn_primitives,
+            _allow_serialized_envelope=True,
+        )
+    if isinstance(spec, GlobalPlotSpec):
+        return render(
+            global_plotspec_to_dict(spec),
+            show=show,
+            save_path=save_path,
+            return_fig=return_fig,
+            draw_intervals=draw_intervals,
+            export_drawn_primitives=export_drawn_primitives,
+            _allow_serialized_envelope=True,
+        )
+    if isinstance(spec, dict) and not _allow_serialized_envelope:
+        raise ValidationError(
+            "Renderer requires canonical PlotSpec dataclass input. "
+            "Convert boundary dict payloads via serializers first.",
+            details={"actual_type": "dict", "expected_type": "canonical_plotspec_dataclass"},
+        )
+    if not isinstance(spec, (PlotSpec, dict)):
+        raise ValidationError(
+            "Renderer requires PlotSpec/TriangularPlotSpec/GlobalPlotSpec dataclass input",
+            details={"actual_type": type(spec).__name__},
+        )
+
     if not show and not save_path and not return_fig and not export_drawn_primitives:
         allow_headless = False
         if isinstance(spec, dict):

@@ -1,14 +1,16 @@
+> **Supersession note (2026-03-20):** This ADR is retained as a historical record. Visualization extension and rendering governance authority moved to ADR-037; canonical PlotSpec semantics and validation moved to ADR-036.
+
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-014: Plot Plugin Strategy
 
-Status: Accepted (scoped)
+Status: Superseded
 Date: 2025-09-16 (updated 2025-10-02)
 Deciders: Core maintainers
 Reviewers: TBD
 Supersedes: ADR-013-interval-and-plot-plugin-strategy
-Superseded-by: None
-Related: ADR-006-plugin-registry-trust-model, ADR-007-visualization-abstraction-layer, ADR-016-plot-spec-separation
+Superseded-by: ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-037-visualization-extension-and-rendering-governance
+Related: ADR-006-plugin-registry-trust-model, ADR-036-plot-spec-canonical-contract-and-validation-boundary, ADR-037-visualization-extension-and-rendering-governance
 
 ## Context
 Explanation objects expose `.plot()` methods that currently delegate to helpers in `src/calibrated_explanations/viz/plots.py`. The helpers can either call the legacy matplotlib routines (`legacy/plotting.py`) or build a PlotSpec and render it with the `viz` adapter stack. Demand for alternative renderers exists, but plotting must remain an optional subsystem and must not expand the core API surface beyond what explanation users already rely on.

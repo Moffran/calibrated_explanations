@@ -1228,14 +1228,10 @@ class PluginManager:
                 ordered.append(identifier)
                 seen.add(identifier)
 
-        # Keep legacy as terminal fallback regardless of where it appears in
-        # upstream chains.
-        ordered = [identifier for identifier in ordered if identifier != "legacy"]
-        seen.discard("legacy")
-
         if "plot_spec.default" not in seen:
             ordered.append("plot_spec.default")
-        ordered.append("legacy")
+        if "legacy" not in seen:
+            ordered.append("legacy")
         return tuple(ordered)
 
     def resolve_plot_plugin(

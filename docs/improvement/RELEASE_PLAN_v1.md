@@ -41,7 +41,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-006 - Plugin Trust Model:** Partially complete; v0.11.0 includes `PluginManager` shell, `PluginTrustPolicy`, public-surface cleanup, and accepted-registration audit events. Trust-state atomicity unification and legacy-list deprecation remain v0.11.1.
 
-**ADR-007 - PlotSpec Abstraction:** Partially complete; v0.11.0 target is docs/implementation alignment on `kind` behavior. Runtime `kind` registration extensibility remains v0.11.1+.
+**ADR-007 - PlotSpec Abstraction:** Superseded by ADR-036/ADR-037; use ADR-036 for PlotSpec canonical contract and ADR-037 for visualization extension governance.
 
 **ADR-008 - Explanation Domain Model:** Partially complete; major domain-authoritative migration and full round-trip/golden parity remain v0.11.1+ due cross-cutting scope.
 
@@ -55,11 +55,11 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-013 - Interval Calibrator Plugin Strategy:** Partially complete; protocol/signature alignment and fallback-chain strictness remain v0.11.1+.
 
-**ADR-014 - Visualization Plugin Architecture:** Partially complete; v0.11.0 target is plugin authoring guidance and docs closure. Runtime plot-kind extension remains v0.11.1+.
+**ADR-014 - Visualization Plugin Architecture:** Superseded by ADR-037; use ADR-037 for builder/renderer governance and runtime kind-extension policy.
 
 **ADR-015 - Explanation Plugin Integration:** Partially complete; v0.11.0 target is invariant-enforcement consistency and bridge-surface hardening in line with ADR-026 tasking.
 
-**ADR-016 - PlotSpec Separation and Schema:** Completed; no open appendix gaps.
+**ADR-016 - PlotSpec Separation and Schema:** Superseded by ADR-036/ADR-037; use ADR-036 for semantic contract and ADR-037 for rendering governance.
 
 **ADR-020 - Legacy User API Stability:** Accepted (2026-03-03); `legacy_user_api_contract.md` updated for v0.11.0 removals. Remaining open appendix gaps (parity assertions, contributor workflow guidance) targeted v0.11.1.
 
@@ -91,6 +91,10 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-034 - Centralized Configuration Management:** Proposed (2026-03-03); Phase A complete in v0.11.1 (ConfigManager established, plugin/registry/logging paths migrated). Phase B in v0.11.2: migrate `cache`, `parallel`, `_feature_filter`, `orchestrator` and close allowlist. Promoted to Accepted after Phase B verification.
 
+**ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up: PlotSpec default-promotion readiness-gate definition and policy decision.
+
+**ADR-037 - Visualization Extension and Rendering Governance:** Accepted (2026-03-20); builder/renderer contracts, deterministic extension metadata requirements, and default-path posture established. Legacy plotting remains default and PlotSpec opt-in in v0.11.1. Runtime plot-kind extension explicitly deferred. v0.11.2 follow-up: revisit default-path promotion and tighten readiness gate; runtime kind-extension policy decision.
+
 **Standard-001 - Nomenclature Standardization:** Partially complete; v0.11.0 delivered naming guardrail automation and private-member allowlist emptied. Double-underscore mutation cleanup targets v0.11.1; final transitional shim removal targets v0.11.3.
 
 **Standard-002 - Code Documentation Standardisation:** Partially complete; v0.11.0 target is wrapper/public numpydoc closure. Known gap (WrapCalibratedExplainer numpydoc blocks) targets v0.11.3.
@@ -115,7 +119,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 | v0.10.3 | Domain model (ADR-008), Schema (ADR-005), Defaults, Plugin docs (Standard-004), Legacy stability (ADR-020). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure part 1: ADR-005/008/010/020 + Standard-004. |
 | v0.11.0 | Modality extension breaking contract/resolver changes (ADR-033); ADR-027 observability policy/examples updates and ADR-028 docs alignment to Standard-005. | Wrapper/public numpydoc closure target (Standard-002). | ADR-030 detector + CI enforcement and ADR-010 core-only vs extras parity checks. | Naming guardrail automation where feasible (Standard-001). | ADR gap-closure maximization milestone: close ADR-004/005/006(partial)/009/011/014/015/020/026/030/031/033; keep only architecture-heavy migrations deferred. |
 | v0.11.1 | Notebook execution + runtime ceilings (ADR-012); remaining ADR-027/028 enforcement hardening; ADR-033 additive modality rollout follow-through. | No major new code-doc initiative planned beyond maintenance. | No major new coverage initiative planned beyond maintenance. | Double-underscore mutation cleanup completion tasks (Standard-001). | Registry hardening deferred from v0.11.0: full PluginManager resolution migration, trust-state atomicity unification, governance audit completion, and legacy list deprecation. CI upgrade: decommission legacy workflows. |
-| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, and deep memory audit (retention/leak fixes). |
+| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, deep memory audit (retention/leak fixes), and PlotSpec default-promotion follow-up decision (ADR-036/ADR-037). |
 | v0.11.3 | Minimal docs-build changes; Standard-002 numpydoc gap closure. | Close WrapCalibratedExplainer numpydoc blocks (Standard-002). | No new coverage work planned. | Final transitional shim removal (Standard-001). | RC readiness: Standard-001 shim closure, Standard-002 gap, ADR-030 zero-tolerance ratification, OSS perf harness (stretch). |
 | v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled. |
 
@@ -199,7 +203,7 @@ achieved via ADR-023 exemption.
 2. **Ship audience-specific landing pages.** Implement practitioner, researcher, and contributor hubs per the information architecture update: add probabilistic regression quickstart + concept guide, interpretation guides mirroring notebooks (factual and alternatives with triangular plots), and a researcher "theory & literature" page with published papers and benchmark references.【F:docs/improvement/documentation_information_architecture.md†L5-L118】
 3. **Clarify plugin extensibility narrative.** Revise docs/plugins.md to open with a "hello, calibrated plugin" example that demonstrates preserving calibration semantics, move telemetry/CLI details into optional appendices, and document guardrails tying plugins back to calibrated explanations. Include a prominent pointer to the new `external_plugins/` folder and aggregated installation extras for community plugins.【F:docs/improvement/documentation_review.md†L9-L49】
 
-   - 2025-11-06 – Consolidated the plugin story into a Plugins hub (`docs/plugins.md`), added a practitioner-focused "Use external plugins" guide (`docs/practitioner/advanced/use_plugins.md`), and surfaced the curated `external-plugins` extra in installation docs. Cross-linked the appendix index and ensured practitioner/contributor flows are consistent with Standard-004/ADR-006/ADR-014/ADR-026.
+   - 2025-11-06 – Consolidated the plugin story into a Plugins hub (`docs/plugins.md`), added a practitioner-focused "Use external plugins" guide (`docs/practitioner/advanced/use_plugins.md`), and surfaced the curated `external-plugins` extra in installation docs. Cross-linked the appendix index and ensured practitioner/contributor flows are consistent with Standard-004/ADR-006/ADR-037/ADR-026.
 4. **Label telemetry and performance scaffolding as optional tooling.** Move telemetry schema/how-to material into contributor governance sections, ensure practitioner guides mention telemetry only for compliance scenarios, and audit navigation labels to avoid implying these extras are mandatory.【F:docs/improvement/documentation_information_architecture.md†L70-L113】
 5. **Highlight research pedigree throughout.** Keep the existing research hub mentions in the Overview, practitioner quickstarts, and probabilistic regression concept pages; ensure they cross-link citing.md and key publications in the relevant sections without introducing new banner UI.【F:docs/improvement/documentation_review.md†L15-L34】
 6. **Triangular alternatives plots everywhere alternatives appear.** Update explanation guides, PlotSpec docs, and runtime examples so `explore_alternatives` also introduces the triangular plot and its interpretation.
@@ -256,8 +260,8 @@ Release gate: Package boundaries, validation/caching/parallel tests, interval in
 ### v0.10.1 (schema & visualization contracts)
 
 1. Confirm the v1 payload schema as the canonical contract — validate existing `explanation_schema_v1.json`, align validation helpers to payload semantics, and refresh fixtures/docs to reflect payload-first guidance (see ADR-005 status appendix).
-2. Finish ADR-007 and ADR-016 schema work: enhance `PlotSpec` dataclasses, registries, validation coverage, JSON round-trips, and headless export paths (see ADR status appendix in this document).
-3. Restore ADR-014 visualization plugin architecture with working fallback builders, helper base classes, metadata/default renderers, override handling, validation, CLI utilities, and documentation (see ADR status appendix in this document).
+2. Finish ADR-036 PlotSpec canonical-contract work: enhance `PlotSpec` dataclasses, validation coverage, and JSON boundary round-trips while preserving canonical dataclass authority (see ADR status appendix in this document).
+3. Finish ADR-037 visualization governance work: harden builder/renderer contracts, metadata/default renderer governance, override handling, validation, CLI utilities, and documentation (see ADR status appendix in this document).
 4. Maintain legacy plotting in the maintenance reference — ensure `docs/maintenance/legacy-plotting-reference.md` is authoritative for legacy behavior; avoid treating ADR-024/ADR-025 as active design gates (see ADR status appendix).
 5. Document dynamically generated visualization classes to close the remaining Standard-002 docstring gap tied to plugin guides (see ADR status appendix in this document).
 6. Prototype streaming-friendly explanation delivery (opt-in) — implement an opt-in, non-breaking generator API for large exports (e.g., `CalibratedExplanations.to_json_stream(chunk_size=256)` or `to_json(stream=True)`) that yields JSON Lines or safe chunked JSON pieces. Collect minimal export telemetry (`export_rows`, `chunk_size`, `mode` (`batch`|`stream`), `peak_memory_mb`, `elapsed_seconds`, `schema_version`, `feature_branch`) and validate the memory profile (reference target: 10k rows < 200 MB at `chunk_size=256`). Mark streaming as experimental until prototype validation completes and record follow-up actions in the release notes.
@@ -329,7 +333,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   7. Implement ADR-033 contract hardening in core: enforce `plugin_api_version` semver parsing with major-hard/minor-soft compatibility checks, enforce `data_modalities` canonical taxonomy + alias normalization + `x-*` namespace, and ship modality-aware resolver tie-break rules (`priority` then explicit ambiguity failure).
   8. Publish ADR-033 migration notes for v0.11.0 API-breaking behavior (metadata contract enforcement and resolver ambiguity handling), with explicit upgrade guidance.
   9. Registry improvements (ADR-006): introduce the `PluginManager` class as the single source of truth for plugin resolution; define the `PluginTrustPolicy` protocol for operator-replaceable trust decisions.
-  10. Clean up `registry.py` public surface: remove over-scoped plot trust management API (`mark_plot_builder_trusted`, `mark_plot_builder_untrusted`, `mark_plot_renderer_trusted`, `mark_plot_renderer_untrusted`, `find_plot_plugin_trusted`, `find_plot_renderer_trusted`) from `__all__` per ADR-014's "thin and optional" mandate; remove ~30 test-helper wrappers from `__all__`; fix `find_plot_renderer_trusted` return-type inconsistency and dead `include_untrusted` parameters on `list_plot_descriptors` / `_list_descriptors`.
+  10. Clean up `registry.py` public surface: remove over-scoped plot trust management API (`mark_plot_builder_trusted`, `mark_plot_builder_untrusted`, `mark_plot_renderer_trusted`, `mark_plot_renderer_untrusted`, `find_plot_plugin_trusted`, `find_plot_renderer_trusted`) from `__all__` per ADR-037's extension-governance mandate; remove ~30 test-helper wrappers from `__all__`; fix `find_plot_renderer_trusted` return-type inconsistency and dead `include_untrusted` parameters on `list_plot_descriptors` / `_list_descriptors`.
   11. Pattern 1 hardening: empty the private member allow-list (.github/private_member_allowlist.json) as part of the final remediation, and remove production test-helper wrapper exports/re-exports (starting with `plugins/registry.py` and `plugins/__init__.py`) so tests cannot bypass public contracts via runtime scaffolding. CI must block this class of regression via `scripts/quality/check_no_test_helper_exports.py`.
   12. Perform a final ADR, standards, and improvement docs gap closure sweep and update any remaining gaps, ensuring the release appendix reflects reality.
   13. Extend alternative Pareto filtering with a selectable non-dominance cost dimension via `pareto_cost` (default `uncertainty_width`, optional `rule_size`).
@@ -362,9 +366,10 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
    19. Add Standard-005 to ADR/Standards roadmap summary table in `RELEASE_PLAN_v1.md` and confirm v0.11.1 enforcement gate.
       - 2026-03-03 – Standard-005 row added to roadmap summary and Standards appendix; observability gaps assigned to v0.11.1 Task 7.
   20. Extend `GovernanceEvent` schema (introduced in Task 3 for plugin events) to cover `calibrated_explanations.governance.config` lifecycle events (resolve, export, validation-failure) per ADR-034 §4 + ADR-028; add caplog tests and CI governance-event schema gate.
-  21. API-bloat removal program for v1.0.0 (ADR-011 + ADR-014 + ADR-020): keep LIME/SHAP as plugin-only surfaces by removing `explain_lime`/`explain_shap` and related wrapper/export hooks from core imports/public API, move adapters to plugin modules with lazy imports, and split heavy dependencies into optional extras. Execute under the deprecation protocol: add explicit deprecation warnings + migration docs in v0.11.1, enforce warning coverage and `CE_DEPRECATIONS=error` on deprecated-core paths, then remove the deprecated core entry points before cutting v1.0.0.
+  21. API-bloat removal program for v1.0.0 (ADR-011 + ADR-037 + ADR-020): keep LIME/SHAP as plugin-only surfaces by removing `explain_lime`/`explain_shap` and related wrapper/export hooks from core imports/public API, move adapters to plugin modules with lazy imports, and split heavy dependencies into optional extras. Execute under the deprecation protocol: add explicit deprecation warnings + migration docs in v0.11.1, enforce warning coverage and `CE_DEPRECATIONS=error` on deprecated-core paths, then remove the deprecated core entry points before cutting v1.0.0.
+  22. PlotSpec hardening + ADR revisioning (ADR-036/ADR-037): harden PlotSpec as a canonical semantic IR by enforcing dataclass-only canonical in-memory representation, strengthening validator boundaries, unifying builder outputs to canonical PlotSpec, splitting rendering/normalization/export/test instrumentation responsibilities, and isolating compatibility handling to explicit serializer/translator boundaries. In the same task, publish and adopt ADR-036 + ADR-037 as the authoritative source of truth and supersede ADR-007/ADR-014/ADR-016 as historical records. Keep legacy plotting as the default public `.plot()` path in v0.11.1 and keep runtime plot-kind extension out of scope for this release.
 
-   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations (including `governance.config` events from ConfigManager); test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green; ADR-020 and ADR-028 promoted to Accepted; `ConfigManager` is the authoritative configuration entry point with precedence and migration tests green; and core package import/public API no longer hard-depends on LIME/SHAP adapters (plugin-only).
+   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations (including `governance.config` events from ConfigManager); test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green; ADR-020 and ADR-028 promoted to Accepted; `ConfigManager` is the authoritative configuration entry point with precedence and migration tests green; core package import/public API no longer hard-depends on LIME/SHAP adapters (plugin-only); PlotSpec canonical-contract hardening is implemented with boundary-only compatibility translation; ADR-036/ADR-037 are authoritative and ADR-007/014/016 are superseded; legacy plotting remains default in v0.11.1; and runtime plot-kind extension remains disabled.
 
 ### v0.11.2 (config hardening and ADR governance sweep)
 
@@ -384,8 +389,9 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3 and 7 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
   5. CI workflow decommissioning (relocated from v0.11.1 Task 10; depends on v0.11.1 Task 6 replacement workflows stabilizing): remove legacy wrapper workflows (`test.yml`, `coverage.yml`, `examples.yml`) and update branch protection references. ADR-011 does not apply (CI wrappers are not public API).
   6. Deep memory audit and retention hardening.
+  7. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 status promoted to Accepted; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated; legacy CI wrapper workflows removed with replacement workflows confirmed green; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 status promoted to Accepted; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated; legacy CI wrapper workflows removed with replacement workflows confirmed green; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
@@ -541,15 +547,9 @@ _Last gap analysis: 2026-02-27_
 | 2 | Accepted registrations emit no governance audit event | 2 | 3 | 6 | Deny/skip paths emit logs; accepted/trusted registrations currently lack structured audit events. |
 | 3 | Legacy `_REGISTRY`/`_TRUSTED` lists lack deprecation path | 3 | 2 | 6 | Legacy list-based registry remains; plan deprecations and shims targeted for v0.11.1. |
 
-### ADR-007 - PlotSpec Abstraction
+### ADR-007 - PlotSpec Abstraction (superseded; see ADR-036/ADR-037)
 
-_Last gap analysis: 2026-02-27_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Lack of runtime `kind` registration API | 3 | 3 | 9 | `PlotKindRegistry` is static; add `register_kind()` or wire plugin registration to extend supported kinds. |
-| 2 | Documentation vs implementation mismatch for `kind` registration | 2 | 2 | 4 | Docs claim plugin-based registration; update docs or implement linkage. |
-| 3 | No top-level `viz.render(..., backend=...)` dispatcher (ergonomics) | 1 | 2 | 2 | Low-priority convenience API; consider adding a thin dispatcher. |
+**Superseded routing note (2026-03-20):** ADR-007 is superseded by ADR-036 and ADR-037. Route canonical PlotSpec contract and validation questions to ADR-036, and visualization extension/rendering governance questions to ADR-037.
 
 ### ADR-008 - Explanation Domain Model
 
@@ -612,15 +612,9 @@ _Last gap analysis: 2026-02-27_
 | 3 | FAST calibrator may be implicitly included in fallback chains | 3 | 3 | 9 | Prevent FAST-style ids being automatically used in non-fast fallback chains unless explicitly selected. |
 | 4 | Protocol enforcement relies on `isinstance` only | 2 | 2 | 4 | Add deeper signature/runtime harness or integration test for third-party plugins. |
 
-### ADR-014 - Visualization Plugin Architecture
+### ADR-014 - Visualization Plugin Architecture (superseded; see ADR-037)
 
-_Last gap analysis: 2026-02-27_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Docs & discoverability for plugin authoring incomplete | 2 | 2 | 4 | Flesh out plugin authoring guide and examples in RTD. |
-| 2 | Static `PlotKindRegistry` prevents runtime `kind` extension | 3 | 3 | 9 | Add `register_kind()` or wire plugin registration into the kind registry. |
-| 3 | Missing top-level render dispatcher (convenience) | 1 | 2 | 2 | Low-priority ergonomics improvement. |
+**Superseded routing note (2026-03-20):** ADR-014 is superseded by ADR-037. Route builder/renderer governance and extension metadata requirements to ADR-037; route canonical PlotSpec semantics to ADR-036.
 
 ### ADR-015 - Explanation Plugin Integration
 
@@ -632,9 +626,9 @@ _Last gap analysis: 2026-02-27_
 | 2 | Explainer handle exposes direct `learner` (bypass bridge) | 4 | 2 | 8 | Restrict direct learner access or document as escape hatch with warnings. |
 | 3 | Task-scoped enforcement divergence | 3 | 2 | 6 | Ensure interval invariant enforcement is consistent across task types and codepaths. |
 
-### ADR-016 - PlotSpec Separation and Schema
+### ADR-016 - PlotSpec Separation and Schema (superseded; see ADR-036/ADR-037)
 
-**Compliance verification (2026-02-27):** Reviewed code and RTD - no ADR-016 gaps found; ADR-016 is fully compliant. No further action required.
+**Superseded routing note (2026-03-20):** ADR-016 is superseded by ADR-036 and ADR-037. Route new work to ADR-036 (canonical PlotSpec contract) and ADR-037 (visualization extension governance).
 
 ### ADR-020 - Legacy User API Stability
 

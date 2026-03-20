@@ -1,19 +1,9 @@
 {
   "baseline_path": ".github/marker-hygiene-baseline.json",
-  "findings": [
-    {
-      "detail": "File imports matplotlib but lacks @pytest.mark.viz or pytestmark",
-      "file": "unit/legacy/test_plotting.py",
-      "file_hash": "sha256:5cc2c9e17bb01343ad0e71cff70754568509e1f23e551d646cfa801f4cc14c67",
-      "id": "sha256:ba9aaac4e4b7eebc9b7f4e778de1e0a1fb8aeeda012aaf9a3f3c3e4aa8368569",
-      "is_new": false,
-      "line": 1,
-      "pattern": "missing-viz-marker"
-    }
-  ],
-  "generated_at": "2026-03-20T07:28:18+00:00",
+  "findings": [],
+  "generated_at": "2026-03-20T09:41:00+00:00",
   "new_violations": 0,
   "tests_dir": "tests",
-  "total_findings": 1,
+  "total_findings": 0,
   "version": 1
 }

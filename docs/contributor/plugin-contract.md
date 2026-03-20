@@ -230,7 +230,7 @@ Explanation plugins support mode-specific selection:
 ## Hello, plot plugin
 
 Follow these steps to build a plot plugin (builder and renderer pair) that respects the
-contract defined by ADR-014 and ADR-016.
+contract defined by ADR-037 and ADR-036.
 
 ### 1. Scaffold the plot builder and renderer
 
@@ -537,12 +537,12 @@ Use these decision records when designing new plugins:
   defines explicit trust controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and governance expectations for third-party plugins.
 - [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
-- [ADR-014 - plot plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-014-plot-plugin-strategy.md)
-  defines optional/explicit plot plugin extension boundaries and default behavior.
+- [ADR-037 - visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+  defines builder/renderer governance, deterministic metadata requirements, and default behavior.
 - [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-016 - PlotSpec separation](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-016-plot-spec-separation.md)
-  documents PlotSpec semantics and validation responsibilities for builders/renderers.
+- [ADR-036 - PlotSpec canonical contract and validation boundary](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
+  documents canonical PlotSpec semantics, validation boundaries, and compatibility rules.
 - [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval
   plugins.

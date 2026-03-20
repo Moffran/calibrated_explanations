@@ -149,7 +149,8 @@ class TestPlotResolution:
         assert "env.style" in chain
         assert "mode.one" in chain
         assert "plot_spec.default" in chain
-        assert chain[-1] == "legacy"
+        assert "legacy" in chain
+        assert chain.index("legacy") < chain.index("plot_spec.default")
 
     def test_resolve_plot_plugin_raises_when_no_candidates(self, monkeypatch):
         """should_raise_configuration_error_when_plot_plugins_missing."""

@@ -22,5 +22,5 @@ Plot specifications are serialized via the PlotSpec dataclasses in
 ## Related ADRs
 
 - ADR-005 (explanation payload schema versioning)
-- ADR-007 (visualization abstraction)
-- ADR-016 (PlotSpec separation)
+- ADR-036 (PlotSpec canonical contract and validation boundary)
+- ADR-037 (visualization extension and rendering governance)
