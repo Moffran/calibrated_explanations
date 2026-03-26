@@ -70,7 +70,7 @@ def _setup_wrapper(
     x_all, y_all = make_gaussian_classification(n=n_train + n_cal, n_dim=n_dim, seed=seed)
     x_tr, y_tr = x_all[:n_train], y_all[:n_train]
     x_cal, y_cal = x_all[n_train:], y_all[n_train:]
-    model = RandomForestClassifier(n_estimators=80, max_depth=5, random_state=seed, n_jobs=-1)
+    model = RandomForestClassifier(n_estimators=80, max_depth=5, random_state=seed, n_jobs=1)
     wrapper = ensure_ce_first_wrapper(model)
     fit_and_calibrate(wrapper, x_tr, y_tr, x_cal, y_cal)
     return wrapper, x_cal
@@ -167,7 +167,7 @@ def case_e2_unsmoothed_p_values() -> CaseResult:
         x_all, y_all = make_gaussian_classification(n=500 + n_cal, n_dim=4, seed=2)
         x_tr, y_tr = x_all[:500], y_all[:500]
         x_cal, y_cal = x_all[500:], y_all[500:]
-        model = RandomForestClassifier(n_estimators=80, random_state=2, n_jobs=-1)
+        model = RandomForestClassifier(n_estimators=80, random_state=2, n_jobs=1)
         wrapper = ensure_ce_first_wrapper(model)
         fit_and_calibrate(wrapper, x_tr, y_tr, x_cal, y_cal)
 
@@ -237,17 +237,31 @@ def case_e3_n_neighbors_1() -> CaseResult:
 
 
 def case_e4_n_neighbors_saturated() -> CaseResult:
-    """n_neighbors >= n_cal: k_actual saturates; no crash expected."""
+    """n_neighbors >= n_cal: guard must fail open (remove nothing), not crash.
+
+    When k_actual is clamped to n_cal, every test instance has all calibration
+    points as neighbours.  The p-value estimator then counts all n_cal calibration
+    distances, so the test distance is never more extreme → p ≈ 1 for all
+    intervals → the guard removes nothing.  This is the correct saturating
+    behaviour, but it means the guard is silently disabled — users must be warned.
+    """
+    # Maximum fraction of intervals the guard may remove when k >= n_cal.
+    # With saturated k every instance looks fully in-distribution, so removal
+    # should be near zero.  Allow a small margin for edge cases where k_actual
+    # still finds a few extreme distances even after saturation.
+    _SATURATION_MAX_REMOVAL_FRACTION = 0.10
+
     expected = (
         "No exception when n_neighbors equals or exceeds n_cal. "
-        "p-values may be uniformly high (everything looks in-distribution)."
+        "Guard must fail open: fraction_removed ≤ "
+        f"{_SATURATION_MAX_REMOVAL_FRACTION} (guard is effectively disabled)."
     )
     n_cal = 30
     try:
         x_all, y_all = make_gaussian_classification(n=200 + n_cal, n_dim=4, seed=4)
         x_tr, y_tr = x_all[:200], y_all[:200]
         x_cal, y_cal = x_all[200:], y_all[200:]
-        model = RandomForestClassifier(n_estimators=80, random_state=4, n_jobs=-1)
+        model = RandomForestClassifier(n_estimators=80, random_state=4, n_jobs=1)
         wrapper = ensure_ce_first_wrapper(model)
         fit_and_calibrate(wrapper, x_tr, y_tr, x_cal, y_cal)
 
@@ -260,13 +274,34 @@ def case_e4_n_neighbors_saturated() -> CaseResult:
         )
         audit_df = extract_audit_rows(guarded_expl)
 
+        # Compute fraction of guard-removed intervals
+        if not audit_df.empty and "emission_reason" in audit_df.columns:
+            total = len(audit_df)
+            n_removed = int((audit_df["emission_reason"] == "removed_guard").sum())
+            frac_removed = n_removed / total if total > 0 else 0.0
+        else:
+            frac_removed = 0.0
+
+        if frac_removed > _SATURATION_MAX_REMOVAL_FRACTION:
+            return CaseResult(
+                "E4", "FAIL",
+                f"n_neighbors={n_cal + 10} > n_cal={n_cal}. "
+                f"fraction_removed={frac_removed:.3f} exceeds the expected maximum "
+                f"{_SATURATION_MAX_REMOVAL_FRACTION} for saturated k. "
+                "Guard should fail open (remove nothing) when all calibration "
+                "points are included as neighbours.",
+                expected,
+                extra={"n_cal": n_cal, "n_neighbors_requested": n_cal + 10,
+                       "fraction_removed": frac_removed},
+            )
         return CaseResult(
             "E4", "PASS",
             f"n_neighbors={n_cal + 10} > n_cal={n_cal}. No crash. "
-            f"Audit rows: {len(audit_df)}. "
-            "Note: with saturated k, all p-values may be uniformly high.",
+            f"fraction_removed={frac_removed:.3f} ≤ {_SATURATION_MAX_REMOVAL_FRACTION} "
+            "— guard correctly fails open with saturated k.",
             expected,
-            extra={"n_cal": n_cal, "n_neighbors_requested": n_cal + 10},
+            extra={"n_cal": n_cal, "n_neighbors_requested": n_cal + 10,
+                   "fraction_removed": frac_removed},
         )
     except Exception:  # noqa: BLE001
         return CaseResult("E4", "FAIL", traceback.format_exc().splitlines()[-1], expected)
@@ -303,25 +338,42 @@ def case_e5_merge_adjacent_barrier() -> CaseResult:
                 expected,
             )
 
-        # Non-conforming bins must not be tagged is_merged=True
-        bad_rows = audit_df[
-            (audit_df.get("conforming", pd.Series(True, index=audit_df.index)) == False)  # noqa: E712
-            & (audit_df.get("is_merged", pd.Series(False, index=audit_df.index)) == True)  # noqa: E712
-        ]
-        if len(bad_rows) == 0:
-            return CaseResult(
-                "E5", "PASS",
-                "No non-conforming bins tagged as is_merged=True. "
-                f"Total merged bins: {int(audit_df['is_merged'].sum())}.",
-                expected,
-            )
-        else:
+        conforming_col = audit_df.get(
+            "conforming", pd.Series(True, index=audit_df.index)
+        ).astype(bool)
+        is_merged_col = audit_df.get(
+            "is_merged", pd.Series(False, index=audit_df.index)
+        ).astype(bool)
+
+        # Negative assertion: non-conforming bins must NOT be tagged is_merged=True.
+        bad_rows = audit_df[~conforming_col & is_merged_col]
+        if len(bad_rows) > 0:
             return CaseResult(
                 "E5", "FAIL",
-                f"{len(bad_rows)} non-conforming interval(s) incorrectly tagged is_merged=True. "
-                "This suggests the merge logic bridges across OOD bins.",
+                f"{len(bad_rows)} non-conforming interval(s) incorrectly tagged "
+                "is_merged=True. Merge logic is bridging across OOD bins.",
                 expected,
             )
+
+        # Positive assertion: if any merged bins exist, every one must be conforming.
+        merged_rows = audit_df[is_merged_col]
+        if not merged_rows.empty:
+            bad_merged = merged_rows[~conforming_col.loc[merged_rows.index]]
+            if not bad_merged.empty:
+                return CaseResult(
+                    "E5", "FAIL",
+                    f"{len(bad_merged)} is_merged=True row(s) are not conforming. "
+                    "Merged bins must always be conforming.",
+                    expected,
+                )
+
+        n_merged = int(is_merged_col.sum())
+        return CaseResult(
+            "E5", "PASS",
+            f"Merge integrity confirmed. Total merged bins: {n_merged}. "
+            "All merged bins are conforming; no non-conforming bin is merged.",
+            expected,
+        )
     except Exception:  # noqa: BLE001
         return CaseResult("E5", "FAIL", traceback.format_exc().splitlines()[-1], expected)
 
@@ -337,7 +389,7 @@ def case_e6_single_feature() -> CaseResult:
         x_tr, y_tr = x_all[:300], y_all[:300]
         x_cal, y_cal = x_all[300:400], y_all[300:400]
         x_test = x_all[400:]
-        model = RandomForestClassifier(n_estimators=60, random_state=6, n_jobs=-1)
+        model = RandomForestClassifier(n_estimators=60, random_state=6, n_jobs=1)
         wrapper = ensure_ce_first_wrapper(model)
         fit_and_calibrate(wrapper, x_tr, y_tr, x_cal, y_cal)
 
@@ -381,20 +433,103 @@ def case_e7_identical_test_instances() -> CaseResult:
         audit_df = extract_audit_rows(guarded_expl)
         no_nan = _no_nan_in_p_values(audit_df)
 
-        if no_nan:
-            return CaseResult(
-                "E7", "PASS",
-                "10 identical test instances processed. No NaN/inf in p-values.",
-                expected,
-            )
-        else:
+        if not no_nan:
             return CaseResult(
                 "E7", "FAIL",
                 "NaN or inf detected in p-values when all test instances are identical.",
                 expected,
             )
+
+        # Sanity check: test instance == x_cal[0] is a calibration-set member, so
+        # it is in-distribution.  Its p-values should be > 0 for most intervals
+        # (the calibration distance is not more extreme than all n_cal cal distances).
+        # If > 50% of p-values are exactly 0, the guard is treating a calibration
+        # point as maximally OOD — a sign of a distance-computation error.
+        if not audit_df.empty and "p_value" in audit_df.columns:
+            p_vals = audit_df["p_value"].dropna().astype(float)
+            if not p_vals.empty:
+                frac_zero = float((p_vals == 0.0).mean())
+                if frac_zero > 0.5:
+                    return CaseResult(
+                        "E7", "FAIL",
+                        f"frac_zero_p={frac_zero:.3f} > 0.5 for a calibration-set "
+                        "test instance. A cal-set member should appear in-distribution "
+                        "(p > 0), not maximally OOD. Possible distance-computation error.",
+                        expected,
+                    )
+
+        return CaseResult(
+            "E7", "PASS",
+            "10 identical calibration-set instances processed. "
+            "No NaN/inf. p-values are > 0 for the majority of intervals "
+            "(instance is in-distribution as expected).",
+            expected,
+        )
     except Exception:  # noqa: BLE001
         return CaseResult("E7", "FAIL", traceback.format_exc().splitlines()[-1], expected)
+
+
+def case_e8_nan_test_features() -> CaseResult:
+    """NaN in test features: guard must not silently propagate NaN into p-values.
+
+    If the guard passes NaN distances into the p-value estimator, the resulting
+    p-values are either NaN (silent data corruption) or the guard crashes.
+    Either is a defect.  The expected behaviour is a ValueError or UserWarning
+    raised before the KNN step, OR the guard crashes with a clear message.
+    A silent NaN p-value in a non-NaN row is a FAIL.
+    """
+    expected = (
+        "Guard raises ValueError or UserWarning on NaN-containing input, "
+        "OR crashes with a descriptive error — but must NOT silently produce "
+        "NaN p-values in the audit for rows that have no NaN features."
+    )
+    try:
+        wrapper, _ = _setup_wrapper(n_train=300, n_cal=100, n_dim=4, seed=8)
+        rng = np.random.default_rng(8)
+
+        # Mix: first 3 rows are clean in-distribution; last 2 rows have NaN features.
+        x_clean = rng.standard_normal((3, 4))
+        x_nan = rng.standard_normal((2, 4))
+        x_nan[0, 1] = float("nan")   # single NaN in first OOD row
+        x_nan[1, :] = float("nan")   # all NaN in second row
+        x_test = np.vstack([x_clean, x_nan])
+
+        try:
+            guarded_expl = wrapper.explain_guarded_factual(
+                x_test, significance=0.10, n_neighbors=5, normalize_guard=True
+            )
+            audit_df = extract_audit_rows(guarded_expl)
+
+            # Clean rows (indices 0-2) must not have NaN p-values — NaN should not
+            # propagate from the NaN-feature rows into clean rows.
+            if not audit_df.empty and "p_value" in audit_df.columns:
+                clean_rows = audit_df[audit_df["instance_index"] < 3]
+                nan_in_clean = clean_rows["p_value"].isna().any()
+                if nan_in_clean:
+                    return CaseResult(
+                        "E8", "FAIL",
+                        "NaN p-values detected in clean (non-NaN feature) rows "
+                        "after processing a batch that includes NaN-feature rows. "
+                        "NaN contamination propagated across instances.",
+                        expected,
+                    )
+
+            return CaseResult(
+                "E8", "PASS",
+                "Guard processed mixed NaN/clean batch without NaN contamination "
+                "in clean rows. NaN-feature rows were handled without crashing.",
+                expected,
+            )
+        except (ValueError, TypeError) as exc:
+            # A clear exception on NaN input is acceptable guarded behaviour.
+            return CaseResult(
+                "E8", "PASS",
+                f"Guard raised {type(exc).__name__} on NaN-feature input: {exc}. "
+                "This is the preferred fail-fast behaviour.",
+                expected,
+            )
+    except Exception:  # noqa: BLE001
+        return CaseResult("E8", "FAIL", traceback.format_exc().splitlines()[-1], expected)
 
 
 # ---------------------------------------------------------------------------
@@ -409,10 +544,21 @@ CASES = [
     case_e5_merge_adjacent_barrier,
     case_e6_single_feature,
     case_e7_identical_test_instances,
+    case_e8_nan_test_features,
 ]
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse Scenario E command-line arguments.
+
+    Parameters exposed to the caller
+    --------------------------------
+    --output-dir : pathlib.Path
+        Destination for the PASS/FAIL CSV and markdown report.
+    --quick : bool
+        Accepted for interface consistency with the other scenarios. It is a
+        no-op because all edge cases are already short-running.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--output-dir",
@@ -469,7 +615,15 @@ def main() -> None:
 
     report_sections = [
         (
-            "What this scenario tests",
+            "Setup",
+            (
+                f"- Cases: {', '.join(r.case_id for r in results)}\n"
+                "- Scope: parameter-space boundaries and failure-mode checks\n"
+                "- Output: PASS/FAIL regression artifact, not a paper-facing benchmark"
+            ),
+        ),
+        (
+            "Purpose",
             (
                 "Scenario E asks: does the guard's API behave predictably at the extremes "
                 "of its parameter space — without exceptions, with documented behavior?\n\n"
@@ -477,6 +631,19 @@ def main() -> None:
                 "behavior matches what is expected or documented. Cases E2 and E4 have "
                 "expected behavior that may seem surprising (guard does nothing, or "
                 "saturates) — these are design boundaries, not bugs."
+            ),
+        ),
+        (
+            "How to read this report",
+            (
+                "This scenario is intentionally case-based rather than aggregate. The "
+                "question is not whether the average metric looks good; it is whether the "
+                "implementation fails in specific brittle situations that users will hit in "
+                "practice.\n\n"
+                "A FAIL indicates either a crash, silent corruption, or behavior that "
+                "contradicts the documented contract for that edge case. A PASS means the "
+                "observed behavior is acceptable, even if that behavior is a known "
+                "limitation rather than a strength."
             ),
         ),
         (
@@ -488,14 +655,24 @@ def main() -> None:
             fail_details if fail_details else "No failures.",
         ),
         (
-            "Design boundaries documented by PASS cases",
+            "Interpretation",
             (
                 "**E2 (significance < 1/n_cal)**: p-values are discrete with step 1/n_cal. "
-                "When significance < 1/n_cal, the guard can never reject any interval — it "
-                "silently behaves as significance=0. Users must be warned about this.\n\n"
+                "Very small significance settings therefore stop being meaningful on finite "
+                "calibration sets. This is a configuration boundary users need documented.\n\n"
                 "**E4 (n_neighbors >= n_cal)**: The guard saturates k_actual at n_cal. "
-                "With all calibration points included as neighbors, all test instances may "
-                "appear in-distribution. This is the correct saturating behavior."
+                "With all calibration points included as neighbours, all test instances "
+                "appear in-distribution (guard fails open). Verified by fraction_removed "
+                "check: must be ≤ 10% when saturated.\n\n"
+                "**E5 (merge_adjacent)**: Both negative (non-conforming not merged) and "
+                "positive (merged bins are conforming) integrity checks are enforced.\n\n"
+                "**E7 (identical instances)**: Calibration-set member must yield p > 0 "
+                "for the majority of intervals; all-zero p is treated as a FAIL.\n\n"
+                "**E8 (NaN features)**: Guard must either raise a clear exception or "
+                "process without NaN contamination propagating into clean rows.\n\n"
+                "Scenario E should stay in the engineering suite. It is useful because it "
+                "defines the operational envelope of the guard, not because it provides a "
+                "headline effectiveness result."
             ),
         ),
     ]

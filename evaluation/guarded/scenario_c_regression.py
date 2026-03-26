@@ -44,7 +44,9 @@ from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_
 
 from common_guarded import (
     GuardConfig,
+    OOD_RESPONSIVENESS_MIN_DELTA,
     check_interval_invariant,
+    check_ood_responsiveness,
     extract_audit_rows,
     extract_audit_summary_rows,
     make_splits,
@@ -172,6 +174,19 @@ def _plot_fraction_removed(df: pd.DataFrame, out_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def parse_args() -> argparse.Namespace:
+    """Parse Scenario C command-line arguments.
+
+    Parameters exposed to the caller
+    --------------------------------
+    --output-dir : pathlib.Path
+        Destination for invariant reports, CSVs, and plots.
+    --num-seeds : int, default=5
+        Number of repeated train/cal/test splits for both the synthetic and the
+        diabetes dataset. Useful range: 5-10 for full checks, 2 for smoke runs.
+    --quick : bool
+        Reduces the significance and neighbor grids to a single representative
+        value. Suitable for fast regression checks only.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--output-dir",
@@ -224,7 +239,7 @@ def main() -> None:
             x_tr, y_tr = x_syn[:n_train_syn], y_syn[:n_train_syn]
             x_cal, y_cal = x_syn[n_train_syn:n_train_syn + n_cal_syn], y_syn[n_train_syn:n_train_syn + n_cal_syn]
 
-        for model_name, model in [("rf_reg", RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)),
+        for model_name, model in [("rf_reg", RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=1)),
                                     ("ridge", Ridge(alpha=1.0))]:
             wrapper = ensure_ce_first_wrapper(model)
             fit_and_calibrate(wrapper, x_tr, y_tr, x_cal, y_cal)
@@ -260,7 +275,7 @@ def main() -> None:
             y_cal_d = y_dia[n_train_dia:n_train_dia + n_cal_dia]
             x_test_d = x_dia[n_train_dia + n_cal_dia:n_train_dia + n_cal_dia + n_test_dia]
 
-        for model_name, model in [("rf_reg", RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1))]:
+        for model_name, model in [("rf_reg", RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=1))]:
             wrapper = ensure_ce_first_wrapper(model)
             fit_and_calibrate(wrapper, x_tr_d, y_tr_d, x_cal_d, y_cal_d)
 
@@ -298,6 +313,18 @@ def main() -> None:
         int(summary_all["n_invariant_warnings"].sum())
         if "n_invariant_warnings" in summary_all.columns else 0
     )
+
+    # OOD responsiveness — promoted to primary pass/fail metric.
+    # The guard is useless for regression if it cannot discriminate OOD from ID.
+    synth_summary = (
+        summary_all[summary_all["dataset"] == "synthetic_1d"]
+        if "dataset" in summary_all.columns else summary_all
+    )
+    ood_passes, ood_frac, id_frac = check_ood_responsiveness(synth_summary)
+    ood_delta = ood_frac - id_frac if not (
+        pd.isna(ood_frac) or pd.isna(id_frac)
+    ) else float("nan")
+
     frac_removed_by_split = (
         summary_all.groupby(["dataset", "is_ood"])["intervals_removed_guard"].mean()
         if "is_ood" in summary_all.columns else None
@@ -305,10 +332,20 @@ def main() -> None:
 
     report_sections = [
         (
-            "What this scenario tests",
+            "Setup",
+            (
+                f"- Seeds: {args.num_seeds}\n"
+                f"- Datasets: synthetic_1d, diabetes\n"
+                f"- Models: RandomForestRegressor, Ridge (synthetic only), RandomForestRegressor (diabetes)\n"
+                f"- Guard grid: significance={list(sig_grid)}, n_neighbors={list(nn_grid)}"
+            ),
+        ),
+        (
+            "Purpose",
             (
                 "Scenario C asks: does the regression-specific code path preserve "
-                "the interval invariant (low ≤ predict ≤ high)?\n\n"
+                "the interval invariant (low ≤ predict ≤ high), AND does the guard "
+                "respond to actual OOD shift?\n\n"
                 "Two datasets: (1) synthetic sin(x) + noise with known OOD boundary "
                 "at |x| > 3.5; (2) sklearn diabetes dataset.\n"
                 "Models: RandomForestRegressor and Ridge.\n"
@@ -316,7 +353,19 @@ def main() -> None:
             ),
         ),
         (
-            "Primary metric: interval invariant violations",
+            "Metric contract",
+            (
+                "The paper-relevant result in this scenario is binary: either the "
+                "regression path preserves the interval invariant everywhere or it does "
+                "not. Any non-zero invariant violation count is a correctness bug.\n\n"
+                "The OOD-responsiveness check is retained as a secondary engineering "
+                "diagnostic. It answers whether the regression guard is merely "
+                "well-formed or also directionally sensible when test inputs move "
+                "outside the calibration support."
+            ),
+        ),
+        (
+            "Interval invariant violations",
             (
                 f"**n_invariant_violations = {n_violations}**\n\n"
                 + (
@@ -335,12 +384,34 @@ def main() -> None:
         (
             "Secondary diagnostic: guard responsiveness to OOD",
             (
-                "Mean intervals_removed_guard for ID vs OOD instances on synthetic dataset.\n\n"
-                + (frac_removed_by_split.to_markdown() if frac_removed_by_split is not None else "N/A")
-                + "\n\nOOD instances (|x| > 3.5) are expected to have more intervals "
-                "removed than ID instances (|x| ≤ 3). A non-zero difference supports "
-                "guard responsiveness; zero for both may indicate the OOD shift is "
-                "insufficient relative to the calibration distribution at this significance."
+                f"Required: mean_frac_removed_ood − mean_frac_removed_id "
+                f"≥ {OOD_RESPONSIVENESS_MIN_DELTA} on synthetic_1d dataset.\n\n"
+                f"Observed: OOD={ood_frac:.3f}, ID={id_frac:.3f}, "
+                f"delta={ood_delta:.3f}\n\n"
+                + (
+                    f"PASS: guard removes {ood_delta:.3f} more of OOD intervals "
+                    "than ID intervals — confirming guard discriminates OOD in regression."
+                    if ood_passes else
+                    f"FAIL: delta={ood_delta:.3f} < {OOD_RESPONSIVENESS_MIN_DELTA}. "
+                    "The guard is not discriminating OOD from in-distribution in "
+                    "regression — it is either over-filtering ID or under-filtering OOD. "
+                    "Check calibration set size and significance level."
+                )
+                + "\n\nFull breakdown by dataset and OOD flag:\n\n"
+                + (frac_removed_by_split.to_markdown()
+                   if frac_removed_by_split is not None else "N/A")
+            ),
+        ),
+        (
+            "Interpretation",
+            (
+                "Scenario C is not meant to show that regression is a separate flagship "
+                "result. Its role is to ensure the regression-specific implementation is "
+                "not silently broken while the classification scenarios pass.\n\n"
+                "A clean run here supports a narrow claim: the guarded regression path "
+                "maintains interval semantics and reacts in the right direction under a "
+                "simple synthetic OOD shift. It should be treated as appendix-strength "
+                "validation unless the paper explicitly argues about regression."
             ),
         ),
     ]

@@ -1,4 +1,4 @@
-"""Unit tests for guarded interval audit payloads."""
+"""Contract tests for guarded audit payloads."""
 
 import json
 
@@ -91,6 +91,8 @@ def test_guarded_factual_audit_returns_full_interval_table():
         "feature_name",
         "lower",
         "upper",
+        "emitted_lower",
+        "emitted_upper",
         "representative",
         "p_value",
         "conforming",
@@ -117,6 +119,7 @@ def test_guarded_alternative_audit_returns_full_interval_table():
 
 
 def test_guarded_audit_removed_count_equals_nonconforming_count():
+    """Removed-guard counts should track candidates rejected by the shipped guard rule."""
     explainer, x_cal = make_classification_explainer(seed=33)
     res = explainer.explain_guarded_factual(x_cal[:1], significance=0.2)
     audit = res.explanations[0].get_guarded_audit()
@@ -265,6 +268,38 @@ def test_guarded_audit_merge_adjacent_marks_is_merged_and_retains_p_values():
     rec = audit["intervals"][0]
     assert rec["is_merged"] is True
     assert rec["p_value"] == pytest.approx(0.42)
+
+
+def test_guarded_audit_uses_emitted_bounds_in_condition_strings():
+    payload = minimal_payload()
+    expl = GuardedAlternativeExplanation(
+        DummyCollection(),
+        0,
+        np.array([0.1, 0.2]),
+        guarded_bins={
+            0: [
+                GuardedBin(
+                    lower=0.0,
+                    upper=1.0,
+                    representative=0.5,
+                    predict=0.3,
+                    low=0.2,
+                    high=0.4,
+                    conforming=True,
+                    p_value=0.42,
+                    is_factual=False,
+                    emitted_lower=0.25,
+                    emitted_upper=0.75,
+                )
+            ]
+        },
+        feature_names=["f0", "f1"],
+        **payload,
+    )
+    rec = expl.get_guarded_audit()["intervals"][0]
+    assert rec["emitted_lower"] == pytest.approx(0.25)
+    assert rec["emitted_upper"] == pytest.approx(0.75)
+    assert rec["condition"] == "0.25 < f0 <= 0.75"
 
 
 def test_guarded_audit_serialization_smoke():

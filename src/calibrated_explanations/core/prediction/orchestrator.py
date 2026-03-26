@@ -106,6 +106,7 @@ class PredictionOrchestrator:
 
         self.interval_registry = IntervalRegistry(explainer)
         self._logger = logging.getLogger(__name__)
+        self._interval_calibration_features: dict[str, np.ndarray] = {}
 
     def initialize_chains(self) -> None:
         """Delegate to PluginManager for chain initialization.
@@ -613,6 +614,72 @@ class PredictionOrchestrator:
             bins=self.explainer.bins,
         )
 
+    def _record_interval_calibration_features(
+        self,
+        *,
+        context: IntervalCalibratorContext,
+        fast: bool,
+    ) -> None:
+        """Capture the calibration feature matrix used to build the active interval learner."""
+        calibration_splits = getattr(context, "calibration_splits", ())
+        if not calibration_splits:
+            return
+        try:
+            features = calibration_splits[0][0]
+        except (IndexError, TypeError):  # pragma: no cover - defensive
+            return
+        if features is None:
+            return
+        key = "fast" if fast else "default"
+        self._interval_calibration_features[key] = np.asarray(features).copy()
+
+    def get_interval_calibration_features(self, *, fast: bool | None = None) -> np.ndarray | None:
+        """Return the feature matrix used to initialize the active interval learner.
+
+        Parameters
+        ----------
+        fast : bool or None, optional
+            When ``None`` (default) the current ``explainer.is_fast()`` state is
+            used to determine the key.  Pass ``True`` or ``False`` to query a
+            specific mode explicitly.
+
+        Returns
+        -------
+        np.ndarray or None
+            The calibration feature matrix snapshot recorded when the active
+            interval learner was last built, or ``None`` if no snapshot exists
+            yet for the requested mode.  No cross-key fallback is applied: if
+            the requested mode key is absent the method returns ``None``.
+        """
+        if fast is None:
+            is_fast = getattr(self.explainer, "is_fast", None)
+            if callable(is_fast):
+                with contextlib.suppress(TypeError):
+                    fast = bool(is_fast())
+            if fast is None:
+                fast = bool(is_fast) if is_fast is not None else False
+
+        key = "fast" if fast else "default"
+        return self._interval_calibration_features.get(key)
+
+    def refresh_interval_calibration_snapshot(self) -> None:
+        """Refresh the calibration-feature snapshot from the current ``explainer.x_cal``.
+
+        Call this after in-place interval learner updates (e.g. regression
+        ``insert_calibration``) so that guarded entrypoints see the up-to-date
+        calibration data rather than the stale pre-update snapshot recorded at
+        the time the learner was last built via ``obtain_interval_calibrator``.
+
+        Notes
+        -----
+        Only the ``"default"`` (non-fast) key is refreshed.  Fast mode does not
+        go through this update path and is not supported by guarded entrypoints.
+        """
+        x_cal = getattr(self.explainer, "x_cal", None)
+        if x_cal is None:
+            return
+        self._interval_calibration_features["default"] = np.asarray(x_cal).copy()
+
     def resolve_interval_plugin(
         self,
         *,
@@ -742,6 +809,7 @@ class PredictionOrchestrator:
             calibrator=calibrator,
             fast=fast,
         )
+        self._record_interval_calibration_features(context=context, fast=fast)
         key = "fast" if fast else "default"
         self.explainer.plugin_manager.interval_plugin_identifiers[key] = identifier
         self.explainer.plugin_manager.telemetry_interval_sources[key] = identifier

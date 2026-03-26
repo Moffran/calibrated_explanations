@@ -1,5 +1,5 @@
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals, too-many-branches, too-many-statements, line-too-long
-"""Core computation for guarded (in-distribution) explanations.
+"""Core computation for guarded explanations.
 
 This module implements :func:`guarded_explain`, the single entry-point called
 by :meth:`~calibrated_explanations.CalibratedExplainer.explain_guarded_factual`
@@ -12,21 +12,28 @@ For each instance *x* and each feature *f*:
 1. Use the multi-bin discretiser (``EntropyDiscretizer`` / ``RegressorDiscretizer``
    with ``max_depth=3``) to enumerate leaves for *f*.
 2. For each leaf, compute the median of calibration samples inside the leaf as
-   the representative value, build a perturbed instance
-   ``x_pert = x`` with ``x_pert[f] = representative``, and test whether
-   ``x_pert`` is in-distribution via :class:`~...utils.distribution_guard.InDistributionGuard`.
-   Conformity is determined by comparing the conformal p-value against a
-   feature significance level (optionally Bonferroni-adjusted).
+   the representative value used for prediction payloads. Sparse numerical
+   leaves are guarded at that representative point. Dense numerical leaves are
+   guarded conservatively using `q10` and `q90`, with the decision p-value
+   defined as the minimum of the two probe p-values. Categorical leaves are
+   guarded at the candidate value directly.
 3. Collect perturbed instances from all leaves and features, run a single
    batched call to ``prediction_orchestrator.predict_internal``, then scatter
    results back into per-bin prediction records.
 4. Optionally merge adjacent conforming bins into wider interval conditions.
-   Merged representatives are re-tested via the guard; merges that fail are
-   skipped.
-5. Wrap results into a standard explanation container
-    (:class:`~calibrated_explanations.explanations.explanations.CalibratedExplanations` or
-    :class:`~calibrated_explanations.explanations.explanations.AlternativeExplanations`)
-    whose per-instance explanations are guarded subclasses.
+   Dense merged intervals are re-tested with the same conservative two-probe
+   rule; merges that fail are skipped.
+5. Wrap results into CE-compatible explanation containers and guarded
+   subclasses. These containers reuse standard helper surfaces (plotting,
+   narratives, conjunctions, reject integration) via compatibility shims, but
+   guarded outputs are not contracted to be semantically identical to standard
+   CE internals or perturbation math.
+6. Audit counts and emitted rules refer to the shipped guard-rule decision for
+   each interval candidate. A conforming candidate does not certify that every
+   point inside the emitted interval would also pass the guard.
+
+This is therefore a CE-compatible guarded extension rather than "standard CE
+with fewer perturbations."
 """
 
 from __future__ import annotations
@@ -37,7 +44,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
-from ...utils.exceptions import ValidationError
+from ...utils.exceptions import ConfigurationError, NotFittedError, ValidationError
 
 if TYPE_CHECKING:
     from ...utils.distribution_guard import InDistributionGuard
@@ -46,24 +53,85 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Minimum calibration samples per bin to enable the two-probe (q10/q90) strategy.
+# Bins with fewer samples fall back to a single median probe.
+_SPARSE_THRESHOLD = 10
 
-def _warn_on_calibration_identity_mismatch(explainer: "CalibratedExplainer") -> None:
-    """Warn when guarded OOD checks appear to use a different calibration reference."""
+
+def _require_guarded_calibration_alignment(explainer: "CalibratedExplainer") -> None:
+    """Fail fast unless guarded checks and interval predictions share calibration features.
+
+    Raises
+    ------
+    NotFittedError
+        If the explainer has not been initialized (``initialized`` is falsy). This
+        preserves the standard uninitialized-explainer error contract so callers
+        catching ``NotFittedError`` are not silently broken.
+    ConfigurationError
+        If the explainer is in fast mode.  Fast interval calibrators are trained on
+        per-feature blends of ``scaled_x_cal`` / ``fast_x_cal``, not on
+        ``explainer.x_cal`` directly, so the alignment precondition below cannot
+        be reliably enforced.  Guarded entrypoints are not supported for fast
+        explainers (ADR-032 decision 7).
+    ValidationError
+        If the prediction orchestrator does not expose calibration-feature
+        provenance, or if the recorded snapshot diverges from ``explainer.x_cal``.
+    """
+    # Preserve the standard error contract: an uninitialized explainer must raise
+    # NotFittedError, not a calibration-alignment error.  Check this before
+    # anything else so callers who catch NotFittedError are not broken.
+    if not getattr(explainer, "initialized", False):
+        raise NotFittedError(
+            "The learner must be initialized before calling guarded entrypoints."
+        )
+
+    # Fast explainers use per-feature blends of scaled_x_cal / fast_x_cal for
+    # their interval calibrators, while InDistributionGuard always references
+    # explainer.x_cal.  These two distributions cannot be aligned, so the ADR-032
+    # exchangeability precondition cannot be reliably enforced for fast explainers.
+    # Hard-fail immediately — this is not subject to configuration or opt-out.
+    is_fast_fn = getattr(explainer, "is_fast", None)
+    if callable(is_fast_fn) and is_fast_fn():
+        raise ConfigurationError(
+            "Guarded explanations are not supported for fast explainers. "
+            "Use a standard (non-fast) explainer for guarded entrypoints.",
+        )
+
     orchestrator = getattr(explainer, "prediction_orchestrator", None)
-    backend_cal = getattr(orchestrator, "y_cal_x", None)
+    if orchestrator is None or not hasattr(orchestrator, "get_interval_calibration_features"):
+        raise ValidationError(
+            "Guarded explanations require the prediction backend to expose the interval "
+            "calibration features used for the active learner. Recalibrate the explainer "
+            "before calling guarded entrypoints.",
+        )
+
+    backend_cal = orchestrator.get_interval_calibration_features()
     if backend_cal is None:
-        return
+        raise ValidationError(
+            "Guarded explanations require interval calibration features for the active "
+            "prediction backend, but none were available. Recalibrate the explainer before "
+            "calling guarded entrypoints.",
+        )
+
     try:
         explainer_cal = np.asarray(explainer.x_cal)
         backend_cal = np.asarray(backend_cal)
-    except (TypeError, ValueError):  # pragma: no cover - defensive
-        return
+    except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
+        raise ValidationError(
+            "Guarded explanations could not validate calibration-feature alignment for the "
+            "prediction backend. Recalibrate the explainer before calling guarded "
+            "entrypoints.",
+        ) from exc
+
     if explainer_cal.shape != backend_cal.shape or not np.array_equal(explainer_cal, backend_cal):
-        warnings.warn(
-            "Calibration set identity mismatch between guarded filter and prediction backend; "
-            "exchangeability assumptions may be violated.",
-            UserWarning,
-            stacklevel=2,
+        raise ValidationError(
+            "Guarded explanations require the prediction backend to use the same calibration "
+            "features as explainer.x_cal. Recalibrate the explainer so guarded filtering and "
+            "interval predictions share the same calibration data.",
+            details={
+                "explainer_x_cal_shape": tuple(explainer_cal.shape),
+                "backend_x_cal_shape": tuple(backend_cal.shape),
+            },
         )
 
 
@@ -85,9 +153,11 @@ def _merge_adjacent_bins(
     Two bins are *eligible* to be merged when they are numerically adjacent
     (``prev.upper == nxt.lower``) and both are conforming.
 
-    In **factual** mode all adjacent conforming bins are merged freely,
-    potentially yielding a single wide interval that spans the factual bin
-    together with neighbouring in-distribution regions.
+    In **factual** mode merging is anchored on the emitted factual rule. The
+    factual bin is expanded iteratively by attempting to absorb the immediate
+    left and right adjacent conforming bins until no further adjacent bin can be
+    included. This permits partial factual expansion when the full conforming
+    run would fail the merged guard re-check.
 
     In **alternative** mode the factual bin acts as a barrier: non-factual
     conforming bins to the left of the factual bin are merged among themselves,
@@ -175,8 +245,7 @@ def _merge_adjacent_bins(
         )
         return merged_left + factual_bins + merged_right
     else:
-        # Factual mode: merge all adjacent conforming bins freely
-        return _merge_run(
+        return _merge_factual_anchor(
             sorted_bins,
             current_value,
             explainer,
@@ -187,6 +256,41 @@ def _merge_adjacent_bins(
             mondrian_bins,
             **merge_kwargs,
         )
+
+
+def _guarded_bin_dedupe_key(gbin) -> tuple[Any, ...]:
+    """Return a deterministic structural key for guarded-bin deduplication.
+
+    The key intentionally excludes internal object identity and keeps only
+    emitted interval bounds plus prediction payloads and guard-role flags.
+    """
+    return (
+        gbin.emitted_lower,
+        gbin.emitted_upper,
+        gbin.predict,
+        gbin.low,
+        gbin.high,
+        gbin.conforming,
+        gbin.is_factual,
+    )
+
+
+def _dedupe_guarded_bins(bins):
+    """Drop exact duplicate guarded bins while preserving first-seen order.
+
+    This function is used in the pre-explanation guarded pipeline stage so
+    explanation classes consume finalized bins and do not perform merge/dedupe
+    corrections during rule creation.
+    """
+    deduped = []
+    seen: set[tuple[Any, ...]] = set()
+    for gbin in bins:
+        key = _guarded_bin_dedupe_key(gbin)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(gbin)
+    return deduped
 
 
 def _merge_run(
@@ -252,6 +356,112 @@ def _merge_run(
     return merged
 
 
+def _merge_factual_anchor(
+    bins,
+    current_value: float,
+    explainer: "CalibratedExplainer",
+    x_instance: np.ndarray,
+    feature_idx: int,
+    threshold: Any,
+    low_high_percentiles: tuple,
+    mondrian_bins: Any,
+    guard: Optional["InDistributionGuard"] = None,
+    adjusted_sig: Optional[float] = None,
+) -> list:
+    """Iteratively expand the factual emitted rule across adjacent conforming bins."""
+    if not bins:
+        return []
+
+    factual_idx = next((idx for idx, gbin in enumerate(bins) if gbin.is_factual), None)
+    if factual_idx is None:
+        return _merge_run(
+            bins,
+            current_value,
+            explainer,
+            x_instance,
+            feature_idx,
+            threshold,
+            low_high_percentiles,
+            mondrian_bins,
+            guard=guard,
+            adjusted_sig=adjusted_sig,
+        )
+
+    merged_group = [bins[factual_idx]]
+    left_idx = factual_idx - 1
+    right_idx = factual_idx + 1
+
+    while True:
+        expanded = False
+
+        if left_idx >= 0 and bins[left_idx].conforming:
+            candidate = [bins[left_idx], *merged_group]
+            result = _finalise_group(
+                candidate,
+                current_value,
+                explainer,
+                x_instance,
+                feature_idx,
+                threshold,
+                low_high_percentiles,
+                mondrian_bins,
+                guard=guard,
+                adjusted_sig=adjusted_sig,
+            )
+            if not isinstance(result, list):
+                merged_group = [result]
+                left_idx -= 1
+                expanded = True
+
+        if right_idx < len(bins) and bins[right_idx].conforming:
+            candidate = [*merged_group, bins[right_idx]]
+            result = _finalise_group(
+                candidate,
+                current_value,
+                explainer,
+                x_instance,
+                feature_idx,
+                threshold,
+                low_high_percentiles,
+                mondrian_bins,
+                guard=guard,
+                adjusted_sig=adjusted_sig,
+            )
+            if not isinstance(result, list):
+                merged_group = [result]
+                right_idx += 1
+                expanded = True
+
+        if not expanded:
+            break
+
+    prefix = _merge_run(
+        bins[: left_idx + 1],
+        current_value,
+        explainer,
+        x_instance,
+        feature_idx,
+        threshold,
+        low_high_percentiles,
+        mondrian_bins,
+        guard=guard,
+        adjusted_sig=adjusted_sig,
+    )
+    suffix = _merge_run(
+        bins[right_idx:],
+        current_value,
+        explainer,
+        x_instance,
+        feature_idx,
+        threshold,
+        low_high_percentiles,
+        mondrian_bins,
+        guard=guard,
+        adjusted_sig=adjusted_sig,
+    )
+    return prefix + merged_group + suffix
+
+
 def _finalise_group(
     group,
     current_value: float,
@@ -291,27 +501,45 @@ def _finalise_group(
         in_range = feat_vals[(feat_vals > lo) & (feat_vals <= hi)]
 
     if in_range.size == 0:
-        representative = (
-            (lo if lo != -np.inf else 0.0)
-            if hi == np.inf
-            else (hi if lo == -np.inf else (lo + hi) / 2)
-        )
-    else:
-        representative = float(np.median(in_range))
+        # Empty merged range: reject merge, return original unmerged bins
+        return group
 
-    x_pert = x_instance.copy()
-    x_pert[feature_idx] = representative
+    representative = float(np.median(in_range))
 
-    # Re-test merged representative via guard (Issue 1d)
+    # Re-test merged range via guard using q10/q90 or sparse fallback
     if guard is not None and adjusted_sig is not None:
-        p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-        conforming = p_val >= adjusted_sig
+        if in_range.size >= _SPARSE_THRESHOLD:
+            q10 = float(np.percentile(in_range, 10))
+            q90 = float(np.percentile(in_range, 90))
+            adj_probe = adjusted_sig / 2
+            x_pert1 = x_instance.copy()
+            x_pert1[feature_idx] = q10
+            x_pert2 = x_instance.copy()
+            x_pert2[feature_idx] = q90
+            p_val = min(
+                float(guard.p_values(x_pert1.reshape(1, -1))[0]),
+                float(guard.p_values(x_pert2.reshape(1, -1))[0]),
+            )
+            emitted_lo, emitted_hi = q10, q90
+        else:
+            q10 = None
+            q90 = None
+            adj_probe = adjusted_sig
+            x_pert = x_instance.copy()
+            x_pert[feature_idx] = representative
+            p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
+            emitted_lo, emitted_hi = lo, hi
+        conforming = p_val >= adj_probe
         if not conforming:
             # Merge failed — return original unmerged bins
             return group
     else:
         p_val = float(np.mean([b.p_value for b in group]))
         conforming = True
+        emitted_lo, emitted_hi = lo, hi
+
+    x_pert = x_instance.copy()
+    x_pert[feature_idx] = representative
 
     pred, low, high, _ = explainer.prediction_orchestrator.predict_internal(
         x_pert.reshape(1, -1),
@@ -358,6 +586,8 @@ def _finalise_group(
         p_value=p_val,
         is_factual=is_factual,
         is_merged=True,
+        emitted_lower=emitted_lo,
+        emitted_upper=emitted_hi,
     )
 
 
@@ -378,7 +608,7 @@ def guarded_explain(
     normalize_guard: bool = True,
     verbose: bool = False,
 ) -> Any:
-    """Generate guarded (in-distribution) explanations for a batch of instances.
+    """Generate representative-point guarded explanations for a batch of instances.
 
     Parameters
     ----------
@@ -399,16 +629,18 @@ def guarded_explain(
     features_to_ignore : sequence of int or None
         Feature indices to skip.
     significance : float, default=0.1
-        Conformity significance level.  A larger value yields a stricter
+        Conformity significance level. A larger value yields a stricter
         test (fewer bins accepted as in-distribution), because the
-        conforming predicate is ``p_value >= significance``.
+        conforming predicate compares the shipped decision p-value against
+        ``significance`` (or an adjusted threshold for dense-bin probes).
     use_bonferroni : bool, default=False
         When ``True``, apply per-feature Bonferroni correction and test each
         bin of feature ``f`` at ``significance / n_bins(f)``.
     merge_adjacent : bool, default=False
         Merge adjacent conforming bins into wider interval conditions.
         Merged representatives are re-tested via the guard; merges that fail
-        conformity are skipped.
+        conformity are skipped. This is a heuristic compaction step and can
+        emit interval rules standard factual CE would not produce.
     n_neighbors : int, default=5
         KNN parameter for :class:`~...utils.distribution_guard.InDistributionGuard`.
     normalize_guard : bool, default=True
@@ -419,11 +651,12 @@ def guarded_explain(
     Returns
     -------
     CalibratedExplanations
-        A container whose ``.explanations`` list holds
+        A CE-compatible container whose ``.explanations`` list holds
         :class:`GuardedFactualExplanation` or
-        :class:`GuardedAlternativeExplanation` objects.
+        :class:`GuardedAlternativeExplanation` objects. Guarded conformity is
+        assessed on representative perturbed points for interval candidates,
+        not on every point within an emitted interval.
     """
-    from ...core.exceptions import ValidationError
     from ...explanations.explanations import (  # local to avoid cycles
         AlternativeExplanations,
         CalibratedExplanations,
@@ -447,7 +680,7 @@ def guarded_explain(
             "n_neighbors must be >= 1",
             details={"n_neighbors": n_neighbors},
         )
-    _warn_on_calibration_identity_mismatch(explainer)
+    _require_guarded_calibration_alignment(explainer)
 
     # ------------------------------------------------------------------ #
     # Set up multi-bin discretiser (same depth as explore_alternatives)
@@ -566,41 +799,16 @@ def guarded_explain(
                             val,  # Removed float(val) cast to prevent string category crashes
                             adj_sig,
                             is_factual,
+                            -np.inf,  # emitted_lo: categorical uses value directly
+                            np.inf,   # emitted_hi: categorical uses value directly
                         )
                     )
             else:
                 disc_bins = feature_disc_bins.get(f, [])
                 for b_idx, (lo, hi, cal_indices) in enumerate(disc_bins):
-                    # Representative: median of calibration samples in this leaf
                     feat_vals = (
                         explainer.x_cal[cal_indices, f] if len(cal_indices) > 0 else np.array([])
                     )
-                    if feat_vals.size > 0:
-                        representative = float(np.median(feat_vals))
-                    else:
-                        # Leaf has no calibration samples – use midpoint heuristic
-                        if verbose:
-                            warnings.warn(
-                                f"Feature {f}, bin ({lo}, {hi}] has no calibration "
-                                "samples; using heuristic representative value",
-                                UserWarning,
-                                stacklevel=2,
-                            )
-                        if lo == -np.inf and hi == np.inf:
-                            representative = float(x_instance[f])
-                        elif lo == -np.inf:
-                            representative = float(hi)
-                        elif hi == np.inf:
-                            representative = float(lo)
-                        else:
-                            representative = float((lo + hi) / 2)
-
-                    # Build perturbed instance and get p-value directly
-                    x_pert = x_instance.copy()
-                    x_pert[f] = representative
-                    p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-
-                    conforming = p_val >= adj_sig
 
                     # Determine if this is the factual bin
                     cur = float(x_instance[f])
@@ -613,6 +821,58 @@ def guarded_explain(
                     else:
                         is_factual = (cur > lo) and (cur <= hi)
 
+                    if feat_vals.size == 0:
+                        # Empty bin: reject unconditionally
+                        if verbose:
+                            warnings.warn(
+                                f"Feature {f}, bin ({lo}, {hi}] has no calibration "
+                                "samples; rejecting bin unconditionally",
+                                UserWarning,
+                                stacklevel=2,
+                            )
+                        if lo == -np.inf and hi == np.inf:
+                            representative = float(x_instance[f])
+                        elif lo == -np.inf:
+                            representative = float(hi)
+                        elif hi == np.inf:
+                            representative = float(lo)
+                        else:
+                            representative = float((lo + hi) / 2)
+                        p_val = 0.0
+                        adj_probe = adj_sig
+                        emitted_lo, emitted_hi = lo, hi
+                        x_pert = x_instance.copy()
+                        x_pert[f] = representative
+
+                    elif feat_vals.size >= _SPARSE_THRESHOLD:
+                        # Two-probe: q10 and q90 with Bonferroni-corrected threshold
+                        q10 = float(np.percentile(feat_vals, 10))
+                        q90 = float(np.percentile(feat_vals, 90))
+                        representative = float(np.median(feat_vals))
+                        adj_probe = adj_sig / 2
+                        x_pert1 = x_instance.copy()
+                        x_pert1[f] = q10
+                        x_pert2 = x_instance.copy()
+                        x_pert2[f] = q90
+                        p1 = float(guard.p_values(x_pert1.reshape(1, -1))[0])
+                        p2 = float(guard.p_values(x_pert2.reshape(1, -1))[0])
+                        p_val = min(p1, p2)
+                        emitted_lo, emitted_hi = q10, q90
+                        # Use median representative for calibrated prediction
+                        x_pert = x_instance.copy()
+                        x_pert[f] = representative
+
+                    else:
+                        # Sparse bin: single median probe, no condition truncation
+                        representative = float(np.median(feat_vals))
+                        x_pert = x_instance.copy()
+                        x_pert[f] = representative
+                        p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
+                        adj_probe = adj_sig
+                        emitted_lo, emitted_hi = lo, hi
+
+                    conforming = p_val >= adj_probe
+
                     total_bins_tested += 1
                     if conforming:
                         total_bins_conforming += 1
@@ -623,7 +883,7 @@ def guarded_explain(
 
                     perturbed_rows.append(x_pert)
                     pert_metadata.append(
-                        (inst_idx, f, b_idx, lo, hi, p_val, representative, adj_sig, is_factual)
+                        (inst_idx, f, b_idx, lo, hi, p_val, representative, adj_probe, is_factual, emitted_lo, emitted_hi)
                     )
 
     # ------------------------------------------------------------------ #
@@ -675,16 +935,14 @@ def guarded_explain(
         pert_low = np.array([])
         pert_high = np.array([])
 
-    # Backward compatibility for mocked predictors in unit tests: when the mock
-    # returns fewer rows than requested perturbed instances, tile predictions.
-    is_mock_backend = type(
-        getattr(explainer, "prediction_orchestrator", None)
-    ).__module__.startswith("unittest.mock")
-    if is_mock_backend and 0 < len(pert_predict) < len(pert_metadata):
-        repeats = int(np.ceil(len(pert_metadata) / len(pert_predict)))
-        pert_predict = np.tile(pert_predict, repeats)[: len(pert_metadata)]
-        pert_low = np.tile(pert_low, repeats)[: len(pert_metadata)]
-        pert_high = np.tile(pert_high, repeats)[: len(pert_metadata)]
+    if len(pert_predict) != len(pert_metadata):
+        raise ValidationError(
+            "Guarded perturbed prediction batch length mismatch",
+            details={
+                "n_predicted": int(len(pert_predict)),
+                "n_expected": int(len(pert_metadata)),
+            },
+        )
 
     # ------------------------------------------------------------------ #
     # Phase 3: Scatter predictions back into per-instance structures
@@ -703,7 +961,7 @@ def guarded_explain(
     inst_feat_bins: dict[int, dict[int, list[GuardedBin]]] = {i: {} for i in range(n_instances)}
 
     for row_idx, meta in enumerate(pert_metadata):
-        inst_idx, feat_idx, b_idx, lo, hi, p_val, representative, adj_sig, is_factual = meta
+        inst_idx, feat_idx, b_idx, lo, hi, p_val, representative, adj_sig, is_factual, emitted_lo, emitted_hi = meta
         conforming = p_val >= adj_sig
 
         # Validate interval invariant: low <= predict <= high
@@ -772,6 +1030,8 @@ def guarded_explain(
             p_value=p_val,
             is_factual=bool(is_factual),
             is_merged=False,
+            emitted_lower=emitted_lo,
+            emitted_upper=emitted_hi,
         )
         feat_dict = inst_feat_bins[inst_idx]
         if feat_idx not in feat_dict:
@@ -795,8 +1055,8 @@ def guarded_explain(
     )
     container.low_high_percentiles = low_high_percentiles
 
-    # Minimal binned payload for compatibility with CalibratedExplanation helpers
-    # (e.g. add_new_rule_condition expects binned['rule_values'][feature][0][0]).
+    # Minimal binned payload for CE helper compatibility shims.
+    # For example, add_new_rule_condition expects binned['rule_values'][feature][0][0].
     binned_predict: dict[str, list[Any]] = {"rule_values": []}
 
     # Build prediction dict (shared across all instances, indexed by [inst_idx])
@@ -822,7 +1082,8 @@ def guarded_explain(
         # which is the probability of the predicted class (or matrix for some plugins).
         prediction["prob"] = base_predict
 
-    # Populate feature weights/predictions for conjunction/plugin compatibility.
+    # Populate feature weights/predictions so CE helper surfaces can operate on
+    # guarded outputs without claiming metric identity with standard CE.
     feature_predict: dict[str, list[np.ndarray]] = {"predict": [], "low": [], "high": []}
     feature_weights: dict[str, list[np.ndarray]] = {"predict": [], "low": [], "high": []}
 
@@ -886,6 +1147,8 @@ def guarded_explain(
                         guard=guard,
                         adjusted_sig=feature_adjusted_sig[f],
                     )
+
+            bins_for_feature = _dedupe_guarded_bins(bins_for_feature)
 
             guarded_bins[f] = bins_for_feature
 

@@ -85,7 +85,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-031 - Calibrator Serialization & State Persistence:** Completed in v0.11.0; versioned `to_primitive`/`from_primitive` contracts plus `WrapCalibratedExplainer` save/load delivered. No open appendix gaps.
 
-**ADR-032 - Guarded Explanation Semantics:** Accepted; semantic identity and guarded auditability contract are now authoritative, with full rollout/closure tracked in v0.11.x.
+**ADR-032 - Guarded Explanation Semantics:** Accepted (scoped); schema-compatible representative-point guarded semantics and guarded auditability are authoritative for v0.11.x. Semantic identity, plugin-path identity, and whole-interval certification are explicitly out of scope.
 
 **ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
 
@@ -713,11 +713,7 @@ _Last gap analysis: 2026-03-03_
 
 ### ADR-032 - Guarded Explanation Semantics
 
-_Last gap analysis: 2026-03-03_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Full rollout/closure of guarded auditability is tracked generically as “v0.11.x” with no concrete milestone | 3 | 3 | 9 | Assign closure to v0.11.2 governance sweep (ADR-032 open items). |
+**Compliance verification (2026-03-20):** ADR-032 now scopes guarded mode to schema-compatible representative-point guarded interval candidates, hard-fail calibration-feature alignment, and audit-field semantics that no longer overclaim semantic identity. No open appendix gaps.
 
 ### ADR-033 - Modality Extension Plugin Contract and Packaging Strategy
 

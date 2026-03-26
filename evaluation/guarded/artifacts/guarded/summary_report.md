@@ -1,17 +1,21 @@
-# Guarded Explanation Evaluation — Summary Report
+# Guarded Explanation Evaluation Summary
 
-**5 PASS / 0 FAIL** across 5 scenario(s).
-Total runtime: 1785.2s
+This file is an engineering dashboard, not a paper summary.
+For the paper, use Scenario A and Scenario B only.
+Treat Scenarios C, D, and E as implementation checks.
+
+1 PASS / 4 FAIL across 5 scenario(s).
+Total runtime: 3215.2s
 
 ## Results by Scenario
 
 | Scenario | Status | Runtime (s) |
 |---|---|---|
-| Scenario A — Domain plausibility (synthetic constraint) | ✓ PASS | 1533.0 |
-| Scenario B — OOD detection quality | ✓ PASS | 53.5 |
-| Scenario C — Regression invariants | ✓ PASS | 21.1 |
-| Scenario D — Real dataset correctness | ✓ PASS | 162.9 |
-| Scenario E — Edge case behavior | ✓ PASS | 14.7 |
+| Scenario A: Domain plausibility (synthetic constraint) | ✗ FAIL | 9.2 |
+| Scenario B: OOD detection quality | ✗ FAIL | 2568.2 |
+| Scenario C: Regression invariants | ✗ FAIL | 305.1 |
+| Scenario D: Real dataset correctness | ✗ FAIL | 315.7 |
+| Scenario E: Edge case behavior | ✓ PASS | 17.0 |
 
 ## Per-Scenario Reports
 
@@ -29,3 +33,10 @@ See those files for metric details and interpretation.
 | `audit_field_completeness` | D | Correctness | True always | Any False = bug |
 | `fraction_instances_fully_filtered` | D | Usability | < 0.05 at α=0.10 | > 0.10 |
 | Edge case PASS/FAIL | E | Correctness | All PASS | Any unexpected FAIL |
+
+## Failed Scenarios
+
+- Scenario A: Domain plausibility (synthetic constraint) (exit code 3228369023)
+- Scenario B: OOD detection quality (exit code 1)
+- Scenario C: Regression invariants (exit code 1)
+- Scenario D: Real dataset correctness (exit code 1)

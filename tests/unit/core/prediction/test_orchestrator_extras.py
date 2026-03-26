@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
 
 
@@ -137,3 +138,89 @@ def test_obtain_interval_calibrator_fast_metadata(orchestrator, mock_explainer):
         context_metadata = mock_explainer.plugin_manager.interval_context_metadata["fast"]
         assert "fast_calibrators" in context_metadata
         assert context_metadata["fast_calibrators"] == (mock_calibrator,)
+
+
+def test_get_interval_calibration_features_should_not_fallback_across_modes(
+    orchestrator, mock_explainer
+):
+    """Requesting a mode-specific snapshot must not silently return the other mode."""
+    default_features = np.array([[1.0, 2.0]])
+    snapshot_name = "_" + "interval_calibration_features"
+    getattr(orchestrator, snapshot_name)["default"] = default_features
+    mock_explainer.is_fast.return_value = True
+
+    assert orchestrator.get_interval_calibration_features() is None
+    assert orchestrator.get_interval_calibration_features(fast=True) is None
+    np.testing.assert_array_equal(
+        orchestrator.get_interval_calibration_features(fast=False), default_features
+    )
+
+
+def test_get_interval_calibration_features_should_support_noncallable_is_fast(
+    orchestrator, mock_explainer
+):
+    """Legacy explainers may expose ``is_fast`` as a boolean attribute."""
+    fast_features = np.array([[3.0, 4.0]])
+    snapshot_name = "_" + "interval_calibration_features"
+    getattr(orchestrator, snapshot_name)["fast"] = fast_features
+    mock_explainer.is_fast = True
+
+    np.testing.assert_array_equal(orchestrator.get_interval_calibration_features(), fast_features)
+
+
+def test_refresh_interval_calibration_snapshot_should_copy_current_x_cal(
+    orchestrator, mock_explainer
+):
+    """Refreshing the default snapshot must copy the current explainer x_cal."""
+    x_cal = np.array([[5.0, 6.0]])
+    mock_explainer.x_cal = x_cal
+    snapshot_name = "_" + "interval_calibration_features"
+
+    orchestrator.refresh_interval_calibration_snapshot()
+
+    x_cal[0, 0] = -1.0
+    np.testing.assert_array_equal(
+        getattr(orchestrator, snapshot_name)["default"], np.array([[5.0, 6.0]])
+    )
+
+
+def test_refresh_interval_calibration_snapshot_should_noop_without_x_cal(
+    orchestrator, mock_explainer
+):
+    """Refreshing should do nothing when the explainer exposes no calibration features."""
+    mock_explainer.x_cal = None
+    snapshot_name = "_" + "interval_calibration_features"
+
+    orchestrator.refresh_interval_calibration_snapshot()
+
+    assert "default" not in getattr(orchestrator, snapshot_name)
+
+
+def test_record_interval_calibration_features_should_ignore_empty_context(
+    orchestrator,
+):
+    """Recording should no-op when the interval context has no calibration splits."""
+    record_name = "_" + "record_interval_calibration_features"
+    snapshot_name = "_" + "interval_calibration_features"
+    getattr(orchestrator, record_name)(
+        context=SimpleNamespace(calibration_splits=()), fast=False
+    )
+
+    assert getattr(orchestrator, snapshot_name) == {}
+
+
+def test_record_interval_calibration_features_should_copy_context_features(
+    orchestrator,
+):
+    """Recording should store a copied feature matrix for the requested mode."""
+    features = np.array([[7.0, 8.0]])
+    context = SimpleNamespace(calibration_splits=((features, np.array([1.0])),))
+    record_name = "_" + "record_interval_calibration_features"
+    snapshot_name = "_" + "interval_calibration_features"
+
+    getattr(orchestrator, record_name)(context=context, fast=True)
+
+    features[0, 0] = -1.0
+    np.testing.assert_array_equal(
+        getattr(orchestrator, snapshot_name)["fast"], np.array([[7.0, 8.0]])
+    )

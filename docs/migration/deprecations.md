@@ -149,6 +149,20 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 
 ## Breaking changes
 
+### Guarded entrypoints now fail on calibration-feature divergence (v0.11.1+)
+
+`explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` now raise
+`ValidationError` when the active prediction backend is not using the same
+calibration feature matrix as `explainer.x_cal`.
+
+**Why:** Guarded filtering and interval predictions must share the same
+calibration-feature values to preserve the guarded exchangeability assumption.
+
+**Migration:**
+
+- Recalibrate the explainer before calling guarded entrypoints if you have rebuilt or swapped interval learners.
+- Do not mutate or replace the backend calibration features independently of `explainer.x_cal`.
+
 ### Reject NCF public contract simplified (v0.11.1+)
 
 Reject NCF user-facing inputs are now limited to `default` and `ensured`.

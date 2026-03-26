@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
+DEFAULT_OUTPUT_DIR = Path(__file__).parent / "artifacts" / "guarded"
 
 SCENARIO_SCRIPTS: Dict[str, str] = {
     "a": "scenario_a_guarded_vs_standard.py",
@@ -37,6 +38,21 @@ SCENARIO_LABELS: Dict[str, str] = {
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse master-runner command-line arguments.
+
+    Parameters exposed to the caller
+    --------------------------------
+    --scenarios : str, default="all"
+        Comma-separated scenario letters (`a,b,c,d,e`) or ``all``. Use this to
+        narrow execution to a subset while keeping the common reporting logic.
+    --quick : bool
+        Forwards ``--quick`` to each selected scenario. Useful for smoke checks
+        and CI, not for paper-quality artifacts.
+    --output-dir : pathlib.Path
+        Root directory for the summary report. When this differs from the
+        default artifact root, each scenario is redirected into a sibling
+        subdirectory such as ``scenario_a``.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--scenarios",
@@ -51,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path(__file__).parent / "artifacts" / "guarded",
+        default=DEFAULT_OUTPUT_DIR,
         help="Root output directory for the summary report.",
     )
     return parser.parse_args()
@@ -62,11 +78,14 @@ def _run_scenario(
     script: str,
     quick: bool,
     script_dir: Path,
+    output_dir: Optional[Path] = None,
 ) -> Dict:
     """Run one scenario script as a subprocess. Returns a result dict."""
     cmd = [sys.executable, str(script_dir / script)]
     if quick:
         cmd.append("--quick")
+    if output_dir is not None:
+        cmd.extend(["--output-dir", str(output_dir)])
 
     label = SCENARIO_LABELS.get(key, key)
     print(f"\n{'='*60}")
@@ -83,7 +102,7 @@ def _run_scenario(
 
     elapsed = time.perf_counter() - t0
     status = "PASS" if exit_code == 0 else "FAIL"
-    print(f"  → {status} (exit={exit_code}, {elapsed:.1f}s)")
+    print(f"  -> {status} (exit={exit_code}, {elapsed:.1f}s)")
 
     return {
         "scenario": key,
@@ -119,10 +138,16 @@ def _write_summary_report(results: List[Dict], out_dir: Path) -> None:
 
     lines += [
         "",
+        "## Guarded Semantics Note",
+        "",
+        "These evaluations operate on representative-point guarded interval candidates.",
+        "A candidate counted as conforming or removed_guard reflects the guard result for its representative perturbation, not certification of every point in an emitted interval.",
+        "",
         "## Per-Scenario Reports",
         "",
-        "Each scenario writes its own `report.md` under `artifacts/guarded/scenario_*/`.",
-        "See those files for metric details and interpretation.",
+        "When `--output-dir` is provided, the runner redirects each scenario to a sibling `scenario_*` directory under that root.",
+        "Without `--output-dir`, scenario scripts use their own default artifact directories.",
+        "See those per-scenario `report.md` files for metric details and interpretation.",
         "",
         "## Metrics Quick Reference",
         "",
@@ -154,6 +179,9 @@ def _write_summary_report(results: List[Dict], out_dir: Path) -> None:
 def main() -> None:
     args = parse_args()
     script_dir = Path(__file__).parent
+    args.output_dir = args.output_dir.resolve()
+    default_output_dir = DEFAULT_OUTPUT_DIR.resolve()
+    redirect_scenario_outputs = args.output_dir != default_output_dir
 
     if args.scenarios.strip().lower() == "all":
         selected = list(SCENARIO_SCRIPTS.keys())
@@ -167,7 +195,10 @@ def main() -> None:
     results: List[Dict] = []
     for key in selected:
         script = SCENARIO_SCRIPTS[key]
-        result = _run_scenario(key, script, args.quick, script_dir)
+        scenario_output_dir = (
+            args.output_dir / f"scenario_{key}" if redirect_scenario_outputs else None
+        )
+        result = _run_scenario(key, script, args.quick, script_dir, scenario_output_dir)
         results.append(result)
 
     _write_summary_report(results, args.output_dir)

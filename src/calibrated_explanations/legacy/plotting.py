@@ -29,13 +29,14 @@ def __require_matplotlib():
     prevents import-time failures; call this before performing plotting.
     """
     global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
-    if plt is None and _MATPLOTLIB_IMPORT_ERROR is None:
+    if plt is None:
         try:
             import matplotlib.colors as mcolors_local
             import matplotlib.pyplot as plt_local
 
             mcolors = mcolors_local
             plt = plt_local
+            _MATPLOTLIB_IMPORT_ERROR = None
         except ImportError:
             _e = sys.exc_info()[1]
             if not isinstance(_e, Exception):

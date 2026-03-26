@@ -65,20 +65,20 @@ def __require_matplotlib() -> None:
     from .utils.exceptions import ConfigurationError
 
     if plt is None or mcolors is None:
-        if _MATPLOTLIB_IMPORT_ERROR is None:
-            try:
-                import matplotlib.artist  # noqa: F401
-                import matplotlib.axes  # noqa: F401
-                import matplotlib.colors as mcolors_local
+        try:
+            import matplotlib.artist  # noqa: F401
+            import matplotlib.axes  # noqa: F401
+            import matplotlib.colors as mcolors_local
 
-                # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
-                import matplotlib.image  # noqa: F401
-                import matplotlib.pyplot as plt_local
+            # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
+            import matplotlib.image  # noqa: F401
+            import matplotlib.pyplot as plt_local
 
-                mcolors = mcolors_local
-                plt = plt_local
-            except Exception:  # adr002_allow
-                _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
+            mcolors = mcolors_local
+            plt = plt_local
+            _MATPLOTLIB_IMPORT_ERROR = None
+        except Exception:  # adr002_allow
+            _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
 
         if plt is None or mcolors is None:
             msg = (

@@ -27,10 +27,16 @@ class GuardConfig:
     normalize_guard: bool = True
 
 
+# Minimum absolute difference in mean fraction_removed between OOD and ID instances
+# required for the guard to be considered "responsive" in Scenario C.
+OOD_RESPONSIVENESS_MIN_DELTA: float = 0.05
+
 # Fields that must appear in every interval record of get_guarded_audit().
 # Defined by ADR-032 Addendum.
 REQUIRED_AUDIT_FIELDS: frozenset[str] = frozenset({
-    "feature", "feature_name", "lower", "upper", "representative",
+    "feature", "feature_name", "lower", "upper",
+    "emitted_lower", "emitted_upper",
+    "representative",
     "p_value", "conforming", "emitted", "emission_reason",
     "condition", "predict", "low", "high",
 })
@@ -193,16 +199,14 @@ def check_audit_field_completeness(
 def compute_ood_detection_metrics(
     p_values_id: Sequence[float],
     p_values_ood: Sequence[float],
-    significance: float,
 ) -> dict:
-    """Compute AUROC and FPR@significance from per-instance p-value lists.
+    """Compute AUROC from per-instance combined p-value lists.
 
-    p_values_id: mean guard p-value per in-distribution instance.
-    p_values_ood: mean guard p-value per OOD instance.
-    significance: the significance level used as the FPR threshold.
+    ``p_values_id`` and ``p_values_ood`` are instance-level combined p-values,
+    for example from ``fisher_p_value_per_instance``.
 
-    Returns a dict with: auroc, fpr_at_significance, n_id, n_ood,
-    median_p_id, median_p_ood.
+    Returns a dict with: auroc, n_id, n_ood, median_combined_p_id,
+    median_combined_p_ood.
     """
     from sklearn.metrics import roc_auc_score  # lazy import
 
@@ -218,21 +222,24 @@ def compute_ood_detection_metrics(
     else:
         auroc = float(roc_auc_score(labels, scores))
 
-    # FPR = fraction of ID intervals flagged as OOD (p_value < significance)
-    fpr = float(np.mean(arr_id < significance)) if len(arr_id) > 0 else float("nan")
-
     return {
         "auroc": auroc,
-        "fpr_at_significance": fpr,
         "n_id": len(arr_id),
         "n_ood": len(arr_ood),
-        "median_p_id": float(np.median(arr_id)) if len(arr_id) > 0 else float("nan"),
-        "median_p_ood": float(np.median(arr_ood)) if len(arr_ood) > 0 else float("nan"),
+        "median_combined_p_id": float(np.median(arr_id)) if len(arr_id) > 0 else float("nan"),
+        "median_combined_p_ood": float(np.median(arr_ood)) if len(arr_ood) > 0 else float("nan"),
     }
 
 
 def mean_p_value_per_instance(audit_df: pd.DataFrame) -> pd.Series:
-    """Aggregate p_values to one mean p-value per instance_index."""
+    """Aggregate p_values to one mean p-value per instance_index.
+
+    .. deprecated::
+        Arithmetic mean of p-values is not a valid combining method: a single
+        interval with p≈0 (strong OOD signal) is diluted by other p≈0.5
+        intervals, masking the detection signal.  Prefer
+        ``fisher_p_value_per_instance`` for AUROC computation.
+    """
     if audit_df.empty or "p_value" not in audit_df.columns:
         return pd.Series(dtype=float)
     return (
@@ -240,6 +247,68 @@ def mean_p_value_per_instance(audit_df: pd.DataFrame) -> pd.Series:
         .groupby("instance_index")["p_value"]
         .mean()
     )
+
+
+def fisher_p_value_per_instance(audit_df: pd.DataFrame) -> pd.Series:
+    """Aggregate p_values per instance using Fisher's combined test.
+
+    Fisher's method: statistic = -2 * sum(ln(p_i)) ~ chi2(2k) under H0
+    (all p_i are Uniform[0,1], i.e. every interval is in-distribution).
+
+    Returns the combined p-value per ``instance_index``.  A low value
+    means the instance is likely OOD; a high value means in-distribution.
+    This is the correct quantity to use as the anomaly score for AUROC
+    computation — arithmetic mean is not.
+
+    Edge cases:
+    - Any p_i == 0  →  combined p = 0  (definite OOD dominates).
+    - All p_i missing  →  NaN.
+    """
+    from scipy.stats import chi2  # lazy import
+
+    if audit_df.empty or "p_value" not in audit_df.columns:
+        return pd.Series(dtype=float)
+
+    def _combine(p_vals: pd.Series) -> float:
+        vals = p_vals.dropna().astype(float)
+        if len(vals) == 0:
+            return float("nan")
+        if (vals == 0.0).any():
+            return 0.0
+        stat = -2.0 * float(np.sum(np.log(vals.clip(lower=1e-300))))
+        return float(1.0 - chi2.cdf(stat, df=2 * len(vals)))
+
+    return (
+        audit_df.dropna(subset=["p_value"])
+        .groupby("instance_index")["p_value"]
+        .apply(_combine)
+    )
+
+
+def check_ood_responsiveness(
+    summary_df: pd.DataFrame,
+    min_delta: float = OOD_RESPONSIVENESS_MIN_DELTA,
+) -> Tuple[bool, float, float]:
+    """Check whether the guard removes significantly more intervals for OOD vs ID.
+
+    Requires ``summary_df`` to have columns: ``is_ood``,
+    ``intervals_removed_guard``, ``intervals_tested``.
+
+    Returns ``(passes, mean_frac_ood, mean_frac_id)`` where ``passes`` is
+    True iff ``mean_frac_ood - mean_frac_id >= min_delta``.
+    """
+    if summary_df.empty or "is_ood" not in summary_df.columns:
+        return False, float("nan"), float("nan")
+    if not {"intervals_removed_guard", "intervals_tested"}.issubset(summary_df.columns):
+        return False, float("nan"), float("nan")
+    frame = summary_df.copy()
+    is_ood = frame["is_ood"].astype(bool)
+    frame["fraction_removed"] = (
+        frame["intervals_removed_guard"] / frame["intervals_tested"].clip(lower=1)
+    )
+    ood_frac = float(frame[is_ood]["fraction_removed"].mean())
+    id_frac = float(frame[~is_ood]["fraction_removed"].mean())
+    return (ood_frac - id_frac) >= min_delta, ood_frac, id_frac
 
 
 # ---------------------------------------------------------------------------

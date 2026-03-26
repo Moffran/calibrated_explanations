@@ -1,25 +1,26 @@
-"""Scenario B — OOD Detection Quality.
+"""Scenario B: OOD Detection Quality.
 
 Question: Do the guard's p-values reliably separate out-of-distribution
 perturbations from in-distribution perturbations?
 
 This is the most fundamental test of the guarded feature. If p-values cannot
-discriminate OOD from in-distribution, the guard filters arbitrarily — users
+discriminate OOD from in-distribution, the guard filters arbitrarily and users
 get "fewer rules" without the "better" guarantee from ADR-032.
 
 Two metrics are reported:
 
   auroc
-    AUROC of (1 − mean_p_value_per_instance) as a binary OOD classifier
-    against the ground-truth label (0 = in-distribution, 1 = OOD).
-    AUROC is threshold-free, so it does not depend on the chosen significance.
+    AUROC of (1 - fisher_combined_p_value_per_instance) as a binary OOD
+    classifier against the ground-truth label (0 = in-distribution,
+    1 = OOD). AUROC is threshold-free, so it does not depend on the chosen
+    significance.
     Healthy: > 0.80 for moderate+ shift. Red flag: < 0.60 for extreme shift.
 
   fpr_at_significance
-    Fraction of in-distribution instance intervals where p_value < significance
-    (i.e., the guard wrongly rejects an in-distribution perturbation).
-    By conformal prediction theory this must be ≤ α. Values materially larger
-    than α indicate a calibration mismatch or implementation error.
+    Fraction of in-distribution audit intervals where raw p_value < significance.
+    This is an interval-level rejection rate, not a rejection rate on combined
+    instance scores. Values materially larger than significance indicate that
+    the empirical interval-level behaviour is more aggressive than intended.
 
 Run with --quick for a fast smoke-test (2 seeds, reduced grid).
 """
@@ -41,9 +42,9 @@ from common_guarded import (
     GuardConfig,
     compute_ood_detection_metrics,
     extract_audit_rows,
+    fisher_p_value_per_instance,
     make_gaussian_classification,
     make_ood_shift,
-    mean_p_value_per_instance,
     write_report,
 )
 
@@ -61,6 +62,11 @@ DEFAULT_SHIFT_LEVELS = {
 DEFAULT_NORMALIZE = (True, False)
 DEFAULT_SIGNIFICANCE = 0.10  # fixed for FPR reporting; AUROC is threshold-free
 
+# FPR is allowed to exceed significance by at most this factor before being
+# flagged as a red-flag (conformal guarantee allows slight over-coverage on
+# finite calibration sets, but material excess signals an implementation error).
+FPR_TOLERANCE_FACTOR: float = 1.5
+
 N_CAL = 300
 N_TRAIN = 500
 N_ID_TEST = 100   # in-distribution test instances
@@ -74,23 +80,6 @@ N_OOD_TEST = 100  # OOD test instances per shift level
 def _build_shift_vector(shift_magnitude: float, n_dim: int) -> np.ndarray:
     """Shift uniformly in all directions so no single feature dominates."""
     return np.ones(n_dim) * (shift_magnitude / np.sqrt(n_dim))
-
-
-def _instance_p_values(
-    guarded_expl: Any,
-    n_instances: int,
-) -> List[float]:
-    """Mean guard p-value per instance from a batch guarded explanation."""
-    audit_df = extract_audit_rows(guarded_expl)
-    if audit_df.empty:
-        return [float("nan")] * n_instances
-    mean_p = mean_p_value_per_instance(audit_df)
-    # Align by instance index (0..n_instances-1 within this batch).
-    result: List[float] = []
-    for i in range(n_instances):
-        val = mean_p.get(i, float("nan"))
-        result.append(float(val))
-    return result
 
 
 def _run_one_config(
@@ -117,26 +106,33 @@ def _run_one_config(
 
     audit_df = extract_audit_rows(guarded_expl)
 
-    # Split audit rows by ID vs OOD instance index
+    # Split audit rows by ID vs OOD instance index; combine with Fisher's method.
     p_id_series = (
-        audit_df[audit_df["instance_index"] < n_id]
-        .dropna(subset=["p_value"])
-        .groupby("instance_index")["p_value"]
-        .mean()
+        fisher_p_value_per_instance(audit_df[audit_df["instance_index"] < n_id])
         if not audit_df.empty else pd.Series(dtype=float)
     )
     p_ood_series = (
-        audit_df[audit_df["instance_index"] >= n_id]
-        .dropna(subset=["p_value"])
-        .groupby("instance_index")["p_value"]
-        .mean()
+        fisher_p_value_per_instance(audit_df[audit_df["instance_index"] >= n_id])
         if not audit_df.empty else pd.Series(dtype=float)
     )
 
     p_id = p_id_series.tolist()
     p_ood = p_ood_series.tolist()
 
-    metrics = compute_ood_detection_metrics(p_id, p_ood, significance)
+    metrics = compute_ood_detection_metrics(p_id, p_ood)
+    id_interval_p = (
+        pd.to_numeric(
+            audit_df.loc[audit_df["instance_index"] < n_id, "p_value"],
+            errors="coerce",
+        ).dropna().to_numpy()
+        if not audit_df.empty and "p_value" in audit_df.columns
+        else np.array([], dtype=float)
+    )
+    metrics["fpr_at_significance"] = (
+        float(np.mean(id_interval_p < significance))
+        if len(id_interval_p) > 0 else float("nan")
+    )
+    metrics["n_id_intervals"] = int(len(id_interval_p))
     metrics["runtime_ms_per_instance"] = runtime_ms / len(x_all) if len(x_all) > 0 else 0.0
     return metrics
 
@@ -171,7 +167,7 @@ def _plot_auroc_by_dim_and_shift(df: pd.DataFrame, out_dir: Path) -> None:
 
 
 def _plot_fpr_vs_significance(df: pd.DataFrame, out_dir: Path) -> None:
-    """FPR vs significance: shows whether the conformal validity guarantee holds."""
+    """Plot interval-level rejection rate at the configured significance."""
     # Compute FPR at a range of significance levels post-hoc from stored p-values
     # We use the fixed significance column available in the stored metrics
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -212,6 +208,19 @@ def _plot_normalize_comparison(df: pd.DataFrame, out_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def parse_args() -> argparse.Namespace:
+    """Parse Scenario B command-line arguments.
+
+    Parameters exposed to the caller
+    --------------------------------
+    --output-dir : pathlib.Path
+        Destination for the OOD metrics CSV, plots, and report.
+    --num-seeds : int, default=5
+        Number of repeated synthetic draws per grid point. Useful range: 5-20
+        for stable AUROC trends, 2 for smoke runs.
+    --quick : bool
+        Uses a reduced grid over dimensionality, shift size, and neighbors.
+        Appropriate for CI smoke checks only.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--output-dir",
@@ -255,7 +264,7 @@ def main() -> None:
             x_id_test = x_all[N_TRAIN + N_CAL:]
 
             model = RandomForestClassifier(
-                n_estimators=100, max_depth=6, random_state=seed, n_jobs=-1
+                n_estimators=100, max_depth=6, random_state=seed, n_jobs=1
             )
             wrapper = ensure_ce_first_wrapper(model)
             fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
@@ -281,8 +290,9 @@ def main() -> None:
                                 "fpr_at_significance": float("nan"),
                                 "n_id": len(x_id_test),
                                 "n_ood": len(x_ood_test),
-                                "median_p_id": float("nan"),
-                                "median_p_ood": float("nan"),
+                                "median_combined_p_id": float("nan"),
+                                "median_combined_p_ood": float("nan"),
+                                "n_id_intervals": 0,
                                 "runtime_ms_per_instance": float("nan"),
                                 "error": str(exc),
                             }
@@ -309,13 +319,39 @@ def main() -> None:
     _plot_fpr_vs_significance(df, out_dir)
     print(f"Wrote plots to: {out_dir}")
 
+    paper_df = df[(df["normalize_guard"] == True) & (df["n_neighbors"] == 5)].copy()  # noqa: E712
+    if paper_df.empty:
+        paper_df = df[df["normalize_guard"] == True].copy()  # noqa: E712
+    if paper_df.empty:
+        paper_df = df.copy()
+
+    # Interval-level rejection-rate check on the default paper-facing slice.
+    fpr_threshold = DEFAULT_SIGNIFICANCE * FPR_TOLERANCE_FACTOR
+    fpr_violations = paper_df[
+        paper_df["fpr_at_significance"].notna()
+        & (paper_df["fpr_at_significance"] > fpr_threshold)
+    ]
+    fpr_red_flag = len(fpr_violations) > 0
+
     # Report
-    by_shift = df.groupby(["shift_level", "n_dim"])[["auroc", "fpr_at_significance"]].mean()
-    norm_comp = df.groupby("normalize_guard")["auroc"].mean()
+    by_shift = paper_df.groupby(["shift_level", "n_dim"])[["auroc"]].mean()
+    fpr_by_dim = paper_df.groupby("n_dim")["fpr_at_significance"].mean()
+    paper_n_neighbors = sorted(paper_df["n_neighbors"].dropna().unique().tolist())
 
     report_sections = [
         (
-            "What this scenario tests",
+            "Setup",
+            (
+                f"- Seeds: {args.num_seeds}\n"
+                f"- Calibration size: {N_CAL}\n"
+                f"- Train size: {N_TRAIN}\n"
+                f"- ID test size: {N_ID_TEST}\n"
+                f"- OOD test size per shift level: {N_OOD_TEST}\n"
+                f"- Paper-facing slice: normalize_guard=True, n_neighbors={paper_n_neighbors}, significance={DEFAULT_SIGNIFICANCE}"
+            ),
+        ),
+        (
+            "Purpose",
             (
                 "Scenario B asks: can the guard's p-values reliably distinguish "
                 "out-of-distribution perturbations from in-distribution perturbations?\n\n"
@@ -324,47 +360,64 @@ def main() -> None:
                 "OOD instances are N(0, I_d) + shift_vector, with shift magnitude "
                 "= 1σ (mild), 2σ (moderate), 5σ (extreme).\n\n"
                 "For each test instance, explain_guarded_factual is called and the "
-                "mean p-value across all audit intervals is extracted per instance. "
-                "AUROC treats (1 − mean_p_value) as the anomaly score against the "
-                "ground-truth OOD label. FPR is measured at the instance level: "
-                "the fraction of in-distribution instances whose mean interval "
-                "p-value falls below significance."
+                "interval-level guard p-values are combined into one Fisher "
+                "p-value per instance. AUROC treats 1 - p_combined as the anomaly "
+                "score against the ground-truth OOD label. The rejection-rate "
+                "diagnostic is computed separately from raw interval-level p-values "
+                "on in-distribution audit rows.\n\n"
+                f"The paper-facing slice of this scenario uses normalize_guard=True "
+                f"and n_neighbors={paper_n_neighbors}."
+            ),
+        ),
+        (
+            "Metric contract",
+            (
+                "The primary metric is AUROC computed from Fisher-combined per-instance "
+                "guard p-values. This is the direct detection-quality result because it "
+                "measures ranking quality without depending on a specific threshold.\n\n"
+                "The secondary diagnostic is the interval-level rejection rate on "
+                "in-distribution audit rows at the configured significance. It is not a "
+                "valid statement about Fisher-combined instance scores and should be read "
+                "only as a calibration-style sanity check for raw interval decisions."
             ),
         ),
         (
             "AUROC by shift level and dimensionality",
-            f"Mean AUROC (averaged over seeds and n_neighbors, normalize_guard=True):\n\n"
+            f"Mean AUROC on the paper-facing slice:\n\n"
             f"{by_shift.to_markdown()}\n\n"
-            "AUROC > 0.80: guard is reliably detecting OOD perturbations for this config.\n"
-            "AUROC < 0.60: guard is near-random — flagging OOD and in-distribution alike.",
+            "AUROC above 0.80 for moderate or extreme shift indicates useful "
+            "separation. AUROC near 0.50 indicates that the guard is close to "
+            "random on this synthetic shift task.",
         ),
         (
-            "Effect of normalize_guard",
-            f"Mean AUROC by normalize_guard (all dims and shifts):\n\n"
-            f"{norm_comp.to_markdown()}\n\n"
-            "If normalize_guard=False substantially lowers AUROC, features at different "
-            "scales dominate the KNN distance and destroy detection quality.",
+            "Interval-level rejection rate on in-distribution rows",
+            f"Mean rejection rate at significance={DEFAULT_SIGNIFICANCE} on the "
+            f"paper-facing slice:\n\n"
+            f"{fpr_by_dim.to_markdown()}\n\n"
+            f"We flag configurations where the empirical interval-level rejection "
+            f"rate exceeds {FPR_TOLERANCE_FACTOR:.1f} times the nominal threshold "
+            f"({fpr_threshold:.3f}). "
+            + (
+                f"{len(fpr_violations)} configuration(s) exceeded that bound in the "
+                "paper-facing slice."
+                if fpr_red_flag else
+                "No configuration in the paper-facing slice exceeded that bound."
+            ),
         ),
         (
-            "FPR at significance",
-            f"Mean FPR@{DEFAULT_SIGNIFICANCE} across all configurations:\n\n"
-            f"{df.groupby('n_dim')['fpr_at_significance'].mean().to_markdown()}\n\n"
-            f"By conformal validity, FPR should be ≤ {DEFAULT_SIGNIFICANCE}. "
-            "Values materially higher indicate the guard rejects more in-distribution "
-            "perturbations than the theory guarantees.",
-        ),
-        (
-            "Known blind spots exposed by this scenario",
+            "Interpretation",
             (
-                "1. **Curse of dimensionality**: AUROC degrades as n_dim increases because "
-                "KNN distances concentrate. This defines where the guard's design breaks down.\n"
-                "2. **normalize_guard=False**: If a dominant-scale feature swamps the distance "
-                "metric, AUROC will be near 0.5 even for large shifts.\n"
-                "3. **n_neighbors=1 instability**: High AUROC variance across seeds signals "
-                "unreliable guard behavior.\n"
-                "4. **Minimum p-value granularity**: p-values are discrete with step 1/n_cal. "
-                "With n_cal=300 the minimum possible p-value is ~0.003. Setting significance < "
-                "1/n_cal means the guard can never reject anything — FPR will be exactly 0."
+                "Higher dimensionality makes KNN distance concentration more severe, so "
+                "AUROC should be expected to degrade as n_dim grows. Mild shifts are "
+                "allowed to be difficult; the important question is whether moderate and "
+                "extreme shifts remain separable.\n\n"
+                "normalize_guard=False and n_neighbors=1 remain in the CSV and plots as "
+                "engineering stress tests. They are useful for understanding failure "
+                "modes, but they should not be promoted to headline evidence because the "
+                "paper claim is about the default guarded configuration.\n\n"
+                "p-values are discrete with step 1/n_cal. Extremely small significance "
+                "levels can therefore make the raw interval-level rejection diagnostic "
+                "look artificially inactive even when AUROC remains informative."
             ),
         ),
     ]

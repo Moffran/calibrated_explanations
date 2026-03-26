@@ -1,4 +1,6 @@
-"""Unit tests for guarded explanation APIs and guard utilities."""
+"""Contract tests for guarded explanation APIs and guard utilities."""
+
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -475,3 +477,81 @@ def test_guarded_alternative_explanation__should_join_conditions_and_skip_baseli
     rules = explanation.get_rules()
     assert rules["base_predict"] == [0.8]
     assert len(rules["rule"]) == 1
+
+
+def test_guarded_pipeline__should_emit_unique_interval_records_when_merge_enabled():
+    """Guarded pipeline should produce unique interval records when merging is enabled."""
+    explainer, x_cal = make_classification_explainer(seed=17)
+    result = explainer.explore_guarded_alternatives(
+        x_cal[:1],
+        significance=0.2,
+        merge_adjacent=True,
+        n_neighbors=3,
+        normalize_guard=True,
+    )
+
+    audit = result.explanations[0].get_guarded_audit()
+    keys = [
+        (
+            rec["feature"],
+            rec["emitted_lower"],
+            rec["emitted_upper"],
+            rec["predict"],
+            rec["low"],
+            rec["high"],
+            rec["conforming"],
+            rec["is_factual"],
+        )
+        for rec in audit["intervals"]
+    ]
+    assert len(keys) == len(set(keys))
+
+
+def test_guarded_alternative_explanation__should_not_deduplicate_bins_during_rule_creation():
+    """Alternative explanation should consume preprocessed bins without late dedupe."""
+    calibrated_explanations = DummyCalibratedExplanations(DummyExplainer())
+    x_instance = np.array([0.5, 2.0])
+    duplicated_bin = GuardedBin(
+        lower=1.0,
+        upper=np.inf,
+        representative=1.5,
+        predict=0.9,
+        low=0.85,
+        high=0.95,
+        conforming=True,
+        p_value=0.9,
+        is_factual=False,
+    )
+
+    explanation = GuardedAlternativeExplanation(
+        calibrated_explanations,
+        0,
+        x_instance,
+        binned={},
+        feature_weights={},
+        feature_predict={},
+        prediction={
+            "predict": np.array([0.8]),
+            "low": np.array([0.7]),
+            "high": np.array([0.9]),
+        },
+        guarded_bins={0: [duplicated_bin, duplicated_bin]},
+        feature_names=["f0", "f1"],
+    )
+
+    rules = explanation.get_rules()
+    assert len(rules["rule"]) == 2
+
+
+def test_guarded_docs__should_keep_significance_wording_aligned_with_api_contract():
+    repo_root = Path(__file__).resolve().parents[4]
+    concepts = (repo_root / "docs" / "foundations" / "concepts" / "guarded_explanations.md").read_text(
+        encoding="utf-8"
+    )
+    quickstart = (repo_root / "docs" / "get-started" / "quickstart_guarded.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Lower values apply stricter filtering." not in concepts
+    assert "Larger values apply stricter filtering." in concepts
+    assert "representative perturbation passed the guard" not in quickstart

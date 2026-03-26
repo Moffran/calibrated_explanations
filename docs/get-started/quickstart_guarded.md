@@ -11,9 +11,9 @@ pip install calibrated-explanations scikit-learn
 ## Classification guarded semantics note
 
 - **Calibration prerequisites**: fit on proper split and calibrate on held-out calibration split.
-- **Mode-specific guarantees**: guarded outputs preserve classification calibrated semantics with conforming perturbations only.
+- **Mode-specific guarantees**: guarded outputs are schema-compatible with CE helpers while filtering interval candidates through the shipped mixed guard rule.
 - **Assumptions**: exchangeability or calibration-deployment distribution match.
-- **Explicit non-guarantees**: no guarantee under drift and no causal guarantee for suggested changes.
+- **Explicit non-guarantees**: no whole-interval guard certification, no metric identity with standard CE, no guarantee under drift, and no causal guarantee for suggested changes.
 - **Explanation-envelope limits**: rule intervals remain model-response summaries.
 - **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics` and
   {doc}`../foundations/concepts/guarded_explanations`.
@@ -64,6 +64,11 @@ guarded_alts = explainer.explore_guarded_alternatives(x_test[:2], significance=0
 ```python
 audit = guarded_factual.get_guarded_audit()
 ```
+
+Key audit fields:
+- `intervals_conforming`: candidate intervals accepted by the shipped guard rule.
+- `intervals_removed_guard`: candidate intervals rejected by the shipped guard rule.
+- `emitted_lower` / `emitted_upper`: the displayed interval condition when dense-bin guarding narrows the raw bin bounds.
 
 Next steps:
 - {doc}`../foundations/concepts/guarded_explanations`

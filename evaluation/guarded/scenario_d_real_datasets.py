@@ -27,6 +27,7 @@ Run with --quick for a fast smoke-test (2 seeds, reduced grid, 2 datasets).
 from __future__ import annotations
 
 import argparse
+import sys
 import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -34,8 +35,9 @@ from typing import Any, Dict, List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_breast_cancer, load_iris, load_wine
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
 
@@ -43,8 +45,28 @@ from common_guarded import (
     GuardConfig,
     check_audit_field_completeness,
     extract_audit_summary_rows,
-    make_splits,
     write_report,
+)
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from evaluation.ensure.common_ensure import (  # noqa: E402
+    EnsureRunConfig,
+    _safe_calibration_pool_size,
+    _safe_test_size,
+    can_run_dataset,
+    subsample_calibration,
+)
+from evaluation.ensure.datasets_ensure import (  # noqa: E402
+    BINARY_CLASSIFICATION_DATASETS,
+    MULTICLASS_DATASETS,
+    list_regression_txt_datasets,
+    load_binary_dataset,
+    load_multiclass_dataset,
+    load_regression_dataset_from_txt,
 )
 
 
@@ -55,37 +77,40 @@ from common_guarded import (
 DEFAULT_SIGNIFICANCE = (0.05, 0.10, 0.20)
 DEFAULT_N_NEIGHBORS = (3, 5)
 DEFAULT_BONFERRONI = (False, True)
+DEFAULT_TEST_SIZE = EnsureRunConfig.test_size
+DEFAULT_CALIBRATION_SIZES = EnsureRunConfig.calibration_sizes
 
 
 # ---------------------------------------------------------------------------
 # Dataset registry
 # ---------------------------------------------------------------------------
 
-def load_datasets(quick: bool) -> List[Tuple[str, np.ndarray, np.ndarray, int, int, int]]:
-    """Return list of (name, x, y, n_train, n_cal, n_test) tuples."""
-    datasets = []
+def load_dataset_specs(quick: bool) -> List[Tuple[str, str]]:
+    """Return ``(task, dataset_name)`` pairs from the ensured dataset registry."""
+    binary = list(BINARY_CLASSIFICATION_DATASETS)
+    multiclass = list(MULTICLASS_DATASETS)
+    regression = list_regression_txt_datasets()
 
-    # breast_cancer: 569 samples, 30 features, binary
-    bc = load_breast_cancer()
-    datasets.append(("breast_cancer", bc.data, bc.target, 280, 140, 100))
+    if quick:
+        binary = binary[:2]
+        multiclass = multiclass[:2]
+        regression = regression[:2]
 
-    # iris: 150 samples, 4 features, 3-class
-    ir = load_iris()
-    datasets.append(("iris", ir.data, ir.target, 70, 30, 30))
+    specs: List[Tuple[str, str]] = []
+    specs.extend([("binary", name) for name in binary])
+    specs.extend([("multiclass", name) for name in multiclass])
+    specs.extend([("regression", name) for name in regression])
+    return specs
 
-    if not quick:
-        # wine: 178 samples, 13 features, 3-class
-        wi = load_wine()
-        datasets.append(("wine", wi.data, wi.target, 80, 40, 40))
 
-        # digits (classes 0 vs 1 only): 360 samples, 64 features
-        from sklearn.datasets import load_digits  # noqa: PLC0415
-        dg = load_digits()
-        mask = dg.target <= 1
-        x_dg, y_dg = dg.data[mask], dg.target[mask]
-        datasets.append(("digits_01", x_dg, y_dg, 170, 80, 60))
-
-    return datasets
+def _load_dataset(task: str, name: str) -> Any:
+    if task == "binary":
+        return load_binary_dataset(name)
+    if task == "multiclass":
+        return load_multiclass_dataset(name)
+    if task == "regression":
+        return load_regression_dataset_from_txt(name)
+    raise ValueError(f"Unsupported task: {task}")
 
 
 # ---------------------------------------------------------------------------
@@ -93,130 +118,260 @@ def load_datasets(quick: bool) -> List[Tuple[str, np.ndarray, np.ndarray, int, i
 # ---------------------------------------------------------------------------
 
 def _evaluate_dataset(
+    task: str,
     name: str,
-    x: np.ndarray,
-    y: np.ndarray,
-    n_train: int,
-    n_cal: int,
-    n_test: int,
     configs: List[GuardConfig],
     seed: int,
+    ensure_config: EnsureRunConfig,
 ) -> Tuple[List[Dict], List[Dict]]:
     """Run all configs on one dataset / seed pair.
 
     Returns (summary_rows, completeness_rows).
     """
+    ds = _load_dataset(task, name)
+    n_classes = int(len(np.unique(ds.y))) if task != "regression" else None
+    ok, reason = can_run_dataset(
+        n_samples=int(ds.X.shape[0]),
+        task=task,
+        config=ensure_config,
+        n_classes=n_classes,
+    )
+    if not ok:
+        return (
+            [{
+                "task": task,
+                "dataset": name,
+                "n_features": int(ds.X.shape[1]),
+                "n_classes": n_classes,
+                "n_cal": 0,
+                "seed": seed,
+                "significance": np.nan,
+                "n_neighbors": np.nan,
+                "use_bonferroni": np.nan,
+                "audit_field_completeness": False,
+                "fraction_instances_fully_filtered": float("nan"),
+                "n_instances_fully_filtered": -1,
+                "mean_intervals_removed_per_instance": float("nan"),
+                "n_test_instances": 0,
+                "task_skipped": True,
+                "skip_reason": reason,
+                "error": None,
+            }],
+            [],
+        )
+
+    test_size = _safe_test_size(int(ds.X.shape[0]), ensure_config.test_size)
+    split_kwargs: Dict[str, Any] = {
+        "test_size": test_size,
+        "random_state": seed,
+    }
+    if task != "regression":
+        split_kwargs["stratify"] = ds.y
     try:
-        x_tr, y_tr, x_cal, y_cal, x_test, _ = make_splits(
-            x, y, n_train=n_train, n_cal=n_cal, n_test=n_test,
-            seed=seed, stratify=True,
+        x_train, x_test, y_train, y_test = train_test_split(
+            ds.X,
+            ds.y,
+            **split_kwargs,
         )
     except ValueError:
-        # Dataset too small for requested split sizes; reduce proportionally
-        n_total = len(x)
-        frac_cal = n_cal / (n_train + n_cal + n_test)
-        frac_test = n_test / (n_train + n_cal + n_test)
-        n_cal_adj = max(5, int(n_total * frac_cal))
-        n_test_adj = max(5, int(n_total * frac_test))
-        n_train_adj = n_total - n_cal_adj - n_test_adj
-        x_tr, y_tr, x_cal, y_cal, x_test, _ = make_splits(
-            x, y, n_train=n_train_adj, n_cal=n_cal_adj, n_test=n_test_adj,
-            seed=seed, stratify=True,
+        return (
+            [{
+                "task": task,
+                "dataset": name,
+                "n_features": int(ds.X.shape[1]),
+                "n_classes": n_classes,
+                "n_cal": 0,
+                "seed": seed,
+                "significance": np.nan,
+                "n_neighbors": np.nan,
+                "use_bonferroni": np.nan,
+                "audit_field_completeness": False,
+                "fraction_instances_fully_filtered": float("nan"),
+                "n_instances_fully_filtered": -1,
+                "mean_intervals_removed_per_instance": float("nan"),
+                "n_test_instances": 0,
+                "task_skipped": True,
+                "skip_reason": "train/test split failed",
+                "error": traceback.format_exc().splitlines()[-1],
+            }],
+            [],
         )
 
-    model = RandomForestClassifier(n_estimators=100, max_depth=8, random_state=seed, n_jobs=-1)
-    wrapper = ensure_ce_first_wrapper(model)
-    fit_and_calibrate(wrapper, x_tr, y_tr, x_cal, y_cal)
+    min_remaining = max(100, int(n_classes)) if task != "regression" and n_classes is not None else 100
+    cal_pool_size = _safe_calibration_pool_size(
+        len(x_train),
+        max(DEFAULT_CALIBRATION_SIZES),
+        min_remaining=min_remaining,
+    )
+    cal_split_kwargs: Dict[str, Any] = {
+        "test_size": cal_pool_size,
+        "random_state": seed,
+    }
+    if task != "regression":
+        cal_split_kwargs["stratify"] = y_train
+    x_tr, x_cal_pool, y_tr, y_cal_pool = train_test_split(
+        x_train,
+        y_train,
+        **cal_split_kwargs,
+    )
 
-    n_features = x.shape[1]
-    n_classes = len(np.unique(y))
-    summary_rows: List[Dict] = []
-    completeness_rows: List[Dict] = []
+    if task != "regression":
+        assert n_classes is not None
+        effective_cal_sizes = [
+            size
+            for size in DEFAULT_CALIBRATION_SIZES
+            if size <= len(x_cal_pool) and int(size) >= n_classes
+        ]
+        if not effective_cal_sizes and len(x_cal_pool) >= n_classes:
+            effective_cal_sizes = [len(x_cal_pool)]
+    else:
+        effective_cal_sizes = [
+            size for size in DEFAULT_CALIBRATION_SIZES if size <= len(x_cal_pool)
+        ]
+        if not effective_cal_sizes:
+            effective_cal_sizes = [len(x_cal_pool)]
 
-    for cfg in configs:
-        # Cap n_neighbors at calibration set size
-        safe_nn = min(cfg.n_neighbors, len(x_cal) - 1)
-        safe_cfg = GuardConfig(
-            significance=cfg.significance,
-            n_neighbors=safe_nn,
-            merge_adjacent=cfg.merge_adjacent,
-            use_bonferroni=cfg.use_bonferroni,
-            normalize_guard=cfg.normalize_guard,
-        )
-
-        try:
-            guarded_expl = wrapper.explain_guarded_factual(
-                x_test,
-                significance=safe_cfg.significance,
-                n_neighbors=safe_cfg.n_neighbors,
-                merge_adjacent=safe_cfg.merge_adjacent,
-                use_bonferroni=safe_cfg.use_bonferroni,
-                normalize_guard=safe_cfg.normalize_guard,
-            )
-
-            # Field completeness check
-            all_complete, missing_list = check_audit_field_completeness(guarded_expl)
-            for missing_entry in missing_list:
-                completeness_rows.append({
-                    "dataset": name,
-                    "seed": seed,
-                    "significance": safe_cfg.significance,
-                    "n_neighbors": safe_cfg.n_neighbors,
-                    "use_bonferroni": safe_cfg.use_bonferroni,
-                    **missing_entry,
-                })
-
-            # Summary metrics
-            summary_df = extract_audit_summary_rows(guarded_expl)
-            if summary_df.empty:
-                continue
-
-            n_test_actual = len(x_test)
-            n_fully_filtered = int(
-                (summary_df["intervals_emitted"] == 0).sum()
-                if "intervals_emitted" in summary_df.columns else 0
-            )
-            fraction_fully_filtered = n_fully_filtered / max(1, n_test_actual)
-
-            mean_removed = (
-                summary_df["intervals_removed_guard"].mean()
-                if "intervals_removed_guard" in summary_df.columns else float("nan")
-            )
-
-            summary_rows.append({
+    if not effective_cal_sizes:
+        return (
+            [{
+                "task": task,
                 "dataset": name,
-                "n_features": n_features,
+                "n_features": int(ds.X.shape[1]),
                 "n_classes": n_classes,
-                "n_cal": len(x_cal),
+                "n_cal": 0,
                 "seed": seed,
-                "significance": safe_cfg.significance,
-                "n_neighbors": safe_cfg.n_neighbors,
-                "use_bonferroni": safe_cfg.use_bonferroni,
-                "audit_field_completeness": all_complete,
-                "fraction_instances_fully_filtered": fraction_fully_filtered,
-                "n_instances_fully_filtered": n_fully_filtered,
-                "mean_intervals_removed_per_instance": mean_removed,
-                "n_test_instances": n_test_actual,
-                "error": None,
-            })
-
-        except Exception:  # noqa: BLE001
-            summary_rows.append({
-                "dataset": name,
-                "n_features": n_features,
-                "n_classes": n_classes,
-                "n_cal": len(x_cal),
-                "seed": seed,
-                "significance": cfg.significance,
-                "n_neighbors": cfg.n_neighbors,
-                "use_bonferroni": cfg.use_bonferroni,
+                "significance": np.nan,
+                "n_neighbors": np.nan,
+                "use_bonferroni": np.nan,
                 "audit_field_completeness": False,
                 "fraction_instances_fully_filtered": float("nan"),
                 "n_instances_fully_filtered": -1,
                 "mean_intervals_removed_per_instance": float("nan"),
                 "n_test_instances": len(x_test),
-                "error": traceback.format_exc().splitlines()[-1],
-            })
+                "task_skipped": True,
+                "skip_reason": "calibration pool too small",
+                "error": None,
+            }],
+            [],
+        )
+
+    n_features = ds.X.shape[1]
+    summary_rows: List[Dict] = []
+    completeness_rows: List[Dict] = []
+
+    for cal_size in effective_cal_sizes:
+        x_cal, y_cal = subsample_calibration(
+            x_cal_pool,
+            y_cal_pool,
+            cal_size,
+            random_state=seed + int(cal_size),
+        )
+        for cfg in configs:
+            safe_nn = min(cfg.n_neighbors, max(1, len(x_cal) - 1))
+            safe_cfg = GuardConfig(
+                significance=cfg.significance,
+                n_neighbors=safe_nn,
+                merge_adjacent=cfg.merge_adjacent,
+                use_bonferroni=cfg.use_bonferroni,
+                normalize_guard=cfg.normalize_guard,
+            )
+            model = (
+                RandomForestClassifier(n_estimators=100, max_depth=8, random_state=seed, n_jobs=1)
+                if task != "regression"
+                else RandomForestRegressor(n_estimators=100, max_depth=8, random_state=seed, n_jobs=1)
+            )
+            wrapper = ensure_ce_first_wrapper(model)
+            calibrate_mode = "classification" if task != "regression" else "regression"
+            try:
+                fit_and_calibrate(
+                    wrapper,
+                    x_tr,
+                    y_tr,
+                    x_cal,
+                    y_cal,
+                    explainer={
+                        "mode": calibrate_mode,
+                        "feature_names": ds.feature_names,
+                        "categorical_features": ds.categorical_features,
+                    },
+                )
+                guarded_expl = wrapper.explain_guarded_factual(
+                    x_test,
+                    significance=safe_cfg.significance,
+                    n_neighbors=safe_cfg.n_neighbors,
+                    merge_adjacent=safe_cfg.merge_adjacent,
+                    use_bonferroni=safe_cfg.use_bonferroni,
+                    normalize_guard=safe_cfg.normalize_guard,
+                )
+
+                all_complete, missing_list = check_audit_field_completeness(guarded_expl)
+                for missing_entry in missing_list:
+                    completeness_rows.append({
+                        "task": task,
+                        "dataset": name,
+                        "seed": seed,
+                        "n_cal": len(x_cal),
+                        "significance": safe_cfg.significance,
+                        "n_neighbors": safe_cfg.n_neighbors,
+                        "use_bonferroni": safe_cfg.use_bonferroni,
+                        **missing_entry,
+                    })
+
+                summary_df = extract_audit_summary_rows(guarded_expl)
+                if summary_df.empty:
+                    continue
+
+                n_test_actual = len(x_test)
+                n_fully_filtered = int(
+                    (summary_df["intervals_emitted"] == 0).sum()
+                    if "intervals_emitted" in summary_df.columns else 0
+                )
+                fraction_fully_filtered = n_fully_filtered / max(1, n_test_actual)
+                mean_removed = (
+                    summary_df["intervals_removed_guard"].mean()
+                    if "intervals_removed_guard" in summary_df.columns else float("nan")
+                )
+
+                summary_rows.append({
+                    "task": task,
+                    "dataset": name,
+                    "n_features": n_features,
+                    "n_classes": n_classes,
+                    "n_cal": len(x_cal),
+                    "seed": seed,
+                    "significance": safe_cfg.significance,
+                    "n_neighbors": safe_cfg.n_neighbors,
+                    "use_bonferroni": safe_cfg.use_bonferroni,
+                    "audit_field_completeness": all_complete,
+                    "fraction_instances_fully_filtered": fraction_fully_filtered,
+                    "n_instances_fully_filtered": n_fully_filtered,
+                    "mean_intervals_removed_per_instance": mean_removed,
+                    "n_test_instances": n_test_actual,
+                    "task_skipped": False,
+                    "skip_reason": None,
+                    "error": None,
+                })
+
+            except Exception:  # noqa: BLE001
+                summary_rows.append({
+                    "task": task,
+                    "dataset": name,
+                    "n_features": n_features,
+                    "n_classes": n_classes,
+                    "n_cal": len(x_cal),
+                    "seed": seed,
+                    "significance": cfg.significance,
+                    "n_neighbors": cfg.n_neighbors,
+                    "use_bonferroni": cfg.use_bonferroni,
+                    "audit_field_completeness": False,
+                    "fraction_instances_fully_filtered": float("nan"),
+                    "n_instances_fully_filtered": -1,
+                    "mean_intervals_removed_per_instance": float("nan"),
+                    "n_test_instances": len(x_test),
+                    "task_skipped": False,
+                    "skip_reason": None,
+                    "error": traceback.format_exc().splitlines()[-1],
+                })
 
     return summary_rows, completeness_rows
 
@@ -226,16 +381,18 @@ def _evaluate_dataset(
 # ---------------------------------------------------------------------------
 
 def _plot_fraction_filtered(df: pd.DataFrame, out_dir: Path) -> None:
-    """Bar chart: fraction_instances_fully_filtered by dataset at significance=0.10."""
-    sub = df[(df["significance"] == 0.10) & (~df["use_bonferroni"])].copy()
+    """Bar chart: fraction_instances_fully_filtered by task at significance=0.10."""
+    bonf = df["use_bonferroni"].eq(True)
+    sub = df[(df["significance"] == 0.10) & (~bonf)].copy()
     if sub.empty:
         return
-    means = sub.groupby("dataset")["fraction_instances_fully_filtered"].mean()
+    sub = sub[sub["task_skipped"] == False]  # noqa: E712
+    means = sub.groupby("task")["fraction_instances_fully_filtered"].mean()
     fig, ax = plt.subplots(figsize=(7, 4))
     means.plot(kind="bar", ax=ax, color="steelblue")
     ax.axhline(0.10, linestyle="--", color="orange", label="significance=0.10")
     ax.set_ylabel("fraction instances with 0 emitted rules")
-    ax.set_title("Fraction Fully Filtered by Dataset (significance=0.10, no Bonferroni)")
+    ax.set_title("Fraction Fully Filtered by Task (significance=0.10, no Bonferroni)")
     ax.set_xlabel("")
     ax.legend()
     plt.xticks(rotation=30, ha="right")
@@ -245,17 +402,19 @@ def _plot_fraction_filtered(df: pd.DataFrame, out_dir: Path) -> None:
 
 
 def _plot_bonferroni_comparison(df: pd.DataFrame, out_dir: Path) -> None:
-    """Side-by-side: mean_intervals_removed with vs without Bonferroni."""
+    """Side-by-side: mean_intervals_removed with vs without Bonferroni by task."""
     sub = df[df["significance"] == 0.10].copy()
     if sub.empty:
         return
-    pivot = sub.groupby(["dataset", "use_bonferroni"])["mean_intervals_removed_per_instance"].mean().unstack()
+    sub = sub[sub["task_skipped"] == False]  # noqa: E712
+    sub["use_bonferroni"] = sub["use_bonferroni"].eq(True)
+    pivot = sub.groupby(["task", "use_bonferroni"])["mean_intervals_removed_per_instance"].mean().unstack()
     if pivot.empty:
         return
     fig, ax = plt.subplots(figsize=(7, 4))
     pivot.plot(kind="bar", ax=ax)
     ax.set_ylabel("mean intervals removed per instance")
-    ax.set_title("Effect of use_bonferroni on Guard Aggressiveness (significance=0.10)")
+    ax.set_title("Effect of use_bonferroni on Guard Aggressiveness by Task")
     ax.set_xlabel("")
     ax.legend(title="use_bonferroni")
     plt.xticks(rotation=30, ha="right")
@@ -269,6 +428,22 @@ def _plot_bonferroni_comparison(df: pd.DataFrame, out_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def parse_args() -> argparse.Namespace:
+    """Parse Scenario D command-line arguments.
+
+    Parameters exposed to the caller
+    --------------------------------
+    --output-dir : pathlib.Path
+        Destination for real-dataset metrics, completeness details, plots, and
+        report.
+    --num-seeds : int, default=5
+        Number of repeated split draws per dataset. Useful range: 1-3 for the
+        full ensured-style dataset universe; higher values increase runtime
+        materially because Scenario D now covers binary, multiclass, and
+        regression datasets.
+    --quick : bool
+        Restricts the dataset list and configuration grid to a smoke-test
+        subset. Useful for CI and local sanity checks.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--output-dir",
@@ -295,7 +470,11 @@ def main() -> None:
     out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    datasets = load_datasets(quick=args.quick)
+    ensure_config = EnsureRunConfig(
+        test_size=DEFAULT_TEST_SIZE,
+        calibration_sizes=DEFAULT_CALIBRATION_SIZES,
+    )
+    dataset_specs = load_dataset_specs(quick=args.quick)
     configs = [
         GuardConfig(significance=s, n_neighbors=nn, use_bonferroni=b)
         for s in sig_grid
@@ -307,9 +486,9 @@ def main() -> None:
     all_completeness: List[Dict] = []
 
     for seed in range(args.num_seeds):
-        for name, x, y, n_train, n_cal, n_test in datasets:
+        for task, name in dataset_specs:
             summary_rows, completeness_rows = _evaluate_dataset(
-                name, x, y, n_train, n_cal, n_test, configs, seed
+                task, name, configs, seed, ensure_config
             )
             all_summary.extend(summary_rows)
             all_completeness.extend(completeness_rows)
@@ -332,36 +511,70 @@ def main() -> None:
     _plot_bonferroni_comparison(summary_df, out_dir)
     print(f"Wrote plots to: {out_dir}")
 
-    # Build dataset summary string from what was actually loaded
-    dataset_desc = ", ".join(
-        f"{name} ({x.shape[1]} features, {len(np.unique(y))}-class)"
-        for name, x, y, *_ in datasets
+    task_counts = pd.Series([task for task, _ in dataset_specs]).value_counts().to_dict()
+    dataset_desc = (
+        f"{task_counts.get('binary', 0)} binary, "
+        f"{task_counts.get('multiclass', 0)} multiclass, "
+        f"{task_counts.get('regression', 0)} regression datasets"
     )
 
     # Summary stats for report
     n_missing_fields = len(completeness_df)
     error_rows = summary_df[summary_df["error"].notna()] if "error" in summary_df.columns else pd.DataFrame()
+    skipped_rows = summary_df[summary_df["task_skipped"] == True] if "task_skipped" in summary_df.columns else pd.DataFrame()  # noqa: E712
+    skipped_unique = (
+        skipped_rows[["task", "dataset", "skip_reason"]].drop_duplicates()
+        if not skipped_rows.empty else pd.DataFrame()
+    )
     fully_filtered_table = (
-        summary_df[summary_df["significance"] == 0.10]
-        .groupby("dataset")[["fraction_instances_fully_filtered", "audit_field_completeness"]]
+        summary_df[
+            (summary_df["significance"] == 0.10)
+            & (summary_df["task_skipped"] == False)  # noqa: E712
+        ]
+        .groupby(["task", "dataset", "n_cal"])[["fraction_instances_fully_filtered", "audit_field_completeness"]]
         .mean()
         if not summary_df.empty else pd.DataFrame()
     )
 
     report_sections = [
         (
-            "What this scenario tests",
+            "Setup",
             (
-                "Scenario D asks: does the guard's API remain correct across the full "
-                "variety of real-world task types — multiclass classification, "
-                "high-dimensional data, and small calibration sets?\n\n"
-                f"Datasets: {dataset_desc}.\n"
-                "Model: RandomForestClassifier.\n"
-                "Grid includes use_bonferroni=True, which is untested in Scenario A."
+                f"- Seeds: {args.num_seeds}\n"
+                f"- Dataset universe: {dataset_desc}\n"
+                f"- Ensure-style split policy: test_size={ensure_config.test_size}, calibration_sizes={list(ensure_config.calibration_sizes)}\n"
+                f"- Models: RandomForestClassifier (binary/multiclass), RandomForestRegressor (regression)\n"
+                f"- Guard grid: significance={list(sig_grid)}, n_neighbors={list(nn_grid)}, use_bonferroni={list(bonferroni_grid)}"
             ),
         ),
         (
-            "Primary metric 1: audit_field_completeness",
+            "Purpose",
+            (
+                "Scenario D asks: does the guard's API remain correct across the full "
+                "variety of real-world task types — binary classification, "
+                "multiclass classification, regression, high-dimensional inputs, "
+                "and small calibration sets?\n\n"
+                f"This run draws from the same dataset registry used by the ensured "
+                f"evaluation suite: {dataset_desc}.\n"
+                "The configuration grid can include use_bonferroni=True, which is "
+                "untested in Scenario A and is retained here as an engineering stress setting."
+            ),
+        ),
+        (
+            "Metric contract",
+            (
+                "This scenario is about API correctness and usability, not about proving "
+                "that guarded explanations improve scientific quality on real datasets. "
+                "The two key questions are whether the audit payload is structurally "
+                "complete and whether the guard remains usable rather than filtering away "
+                "nearly every explanation.\n\n"
+                "Accordingly, missing audit fields are correctness failures, while high "
+                "fully-filtered rates are practicality warnings. Neither metric should be "
+                "overstated as a standalone scientific result."
+            ),
+        ),
+        (
+            "Audit field completeness",
             (
                 f"Total interval records with missing fields: **{n_missing_fields}**\n\n"
                 + (
@@ -375,7 +588,18 @@ def main() -> None:
             ),
         ),
         (
-            "Primary metric 2: fraction_instances_fully_filtered",
+            "Dataset coverage",
+            (
+                f"Unique datasets skipped by the ensured-style safety checks: **{len(skipped_unique)}**\n\n"
+                + (
+                    skipped_unique.to_markdown(index=False)
+                    if not skipped_unique.empty else
+                    "No datasets were skipped."
+                )
+            ),
+        ),
+        (
+            "Fraction of instances fully filtered",
             (
                 "At significance=0.10, fraction of instances with 0 emitted rules:\n\n"
                 + (fully_filtered_table.to_markdown() if not fully_filtered_table.empty else "N/A")
@@ -396,19 +620,19 @@ def main() -> None:
             ),
         ),
         (
-            "Known blind spots exposed by this scenario",
+            "Interpretation",
             (
-                "1. **Multiclass payload shape**: iris and wine exercise the multiclass "
-                "code path. Any bug in how prediction[\"classes\"] is stored in audit "
-                "interval records will appear as a missing field.\n"
-                "2. **use_bonferroni=True**: with max_depth=3 and many bins per feature, "
-                "Bonferroni divides significance by n_bins, making the guard dramatically "
-                "stricter. The bonferroni_comparison.png plot quantifies this effect.\n"
-                "3. **Tiny calibration sets**: iris with ~30 calibration instances has "
-                "p-value granularity of 1/30 ≈ 0.033. At significance=0.05 only 1-2 "
-                "discrete p-value levels separate filtered from kept intervals.\n"
-                "4. **High-dimensional data**: digits_01 with 64 features tests KNN "
-                "guard behavior in high dimensions with a small calibration set."
+                "Binary and multiclass datasets stress the payload shape, class handling, "
+                "and empty-rule behavior under guarded filtering. Regression datasets stress "
+                "the separate guarded regression path and confirm the audit contract holds "
+                "outside classification.\n\n"
+                "use_bonferroni=True is intentionally included because it makes the guard "
+                "much stricter and therefore exposes edge cases in the audit and empty-rule "
+                "paths. That sensitivity is valuable for engineering hardening, but it "
+                "should not become a headline comparison against the default configuration.\n\n"
+                "Scenario D supports an engineering claim: the guarded API behaves "
+                "correctly across realistic dataset shapes. It does not by itself justify "
+                "a broad real-world effectiveness claim."
             ),
         ),
     ]

@@ -1,3 +1,46 @@
+"""Scenario A: guarded vs standard rule usefulness under a known constraint.
+
+Question: do guarded explanations emit rules that violate a known domain
+constraint less often than standard CE, and what is the tradeoff in retained
+rules and runtime?
+
+This scenario builds a synthetic two-feature classification problem where valid
+points satisfy ``x[:, 1] <= 2 * x[:, 0] + 3``. Standard and guarded
+explanations are compared on the same fitted models and test instances.
+
+Primary paper-facing metric:
+  violation_rate
+    Fraction of emitted factual rules whose one-feature perturbation violates
+    the known domain constraint.
+
+Secondary paper-facing metric:
+  rule_count
+    Number of emitted factual rules, used as a compactness and coverage
+    tradeoff.
+
+Additional CSV-only diagnostics:
+  runtime_ms, stability_jaccard, prediction_abs_diff, interval-overlap checks.
+
+Parameter guidance:
+  --num-seeds
+    Repetitions for seed-level statistics. Useful range: 10-30 for reporting,
+    2-4 for smoke tests.
+  --bootstrap-draws
+    Resampled calibration refits used for rule-stability diagnostics.
+    Useful range: 20-50 full runs, 2-5 quick checks.
+  --sample-test
+    Number of test instances evaluated per seed. Useful range: 100-300 for
+    stable means, 16-32 for quick runs.
+  --n-train / --n-cal / --n-test
+    Synthetic split sizes. Keep ``n_cal`` large enough that guarded p-values
+    are not too coarse; practical range is roughly 500-3000 for calibration in
+    full runs.
+  --top-k-alternatives
+    Truncates alternative-mode summaries only. Useful range: 5-10.
+  --quick
+    Reduces the grid to a small smoke-test and must not be used for paper
+    artifacts.
+"""
 from __future__ import annotations
 
 import argparse
@@ -25,6 +68,8 @@ MODES = ("factual", "alternative")
 
 @dataclass(frozen=True)
 class ExplainConfig:
+    """Configuration for one guarded explanation setting in Scenario A."""
+
     significance: float
     n_neighbors: int
     merge_adjacent: bool
@@ -32,6 +77,38 @@ class ExplainConfig:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse Scenario A command-line arguments.
+
+    Parameters exposed to the caller
+    --------------------------------
+    --output-dir : pathlib.Path
+        Destination for CSVs, figures, and the markdown report. Use a fresh
+        directory when comparing multiple runs.
+    --num-seeds : int, default=30
+        Number of independently generated train/cal/test splits. Useful range:
+        10-30 for paper tables, 2-4 for smoke runs.
+    --bootstrap-draws : int, default=30
+        Number of bootstrap calibration resamples used for stability metrics.
+        Useful range: 20-50 for full analysis, 2-5 for quick checks.
+    --sample-test : int, default=200
+        Test instances sampled per seed and model. Useful range: 100-300 for
+        stable means; lower values reduce runtime.
+    --n-train : int, default=3000
+        Synthetic training size. Useful range: 1000-5000; larger values reduce
+        model variance more than guard variance.
+    --n-cal : int, default=1000
+        Calibration size. Useful range: 500-3000. Very small values make guard
+        p-values too coarse for reliable comparison.
+    --n-test : int, default=500
+        Size of the synthetic test pool before sampling. Keep above
+        ``sample-test`` so per-seed sampling is not degenerate.
+    --top-k-alternatives : int, default=8
+        Maximum alternative rules retained in alternative-mode summaries.
+        Useful range: 5-10; larger values mostly add clutter.
+    --quick : bool
+        Enables a smoke-test configuration with fewer seeds, bootstrap draws,
+        and sampled instances. Not suitable for paper artifacts.
+    """
     parser = argparse.ArgumentParser(
         description="Scenario A guarded vs standard CE comparison (factual + alternatives)."
     )
@@ -76,7 +153,7 @@ def build_splits(seed: int, n_train: int, n_cal: int, n_test: int) -> Tuple[np.n
 def get_models(seed: int) -> Dict[str, Any]:
     return {
         "logreg": LogisticRegression(max_iter=1200, random_state=seed),
-        "rf": RandomForestClassifier(n_estimators=240, max_depth=8, random_state=seed, n_jobs=-1),
+        "rf": RandomForestClassifier(n_estimators=240, max_depth=8, random_state=seed, n_jobs=1),
     }
 
 
@@ -100,6 +177,41 @@ def _extract_rule_representative(sampled_values: Any) -> Optional[float]:
     if arr.size == 0:
         return None
     return float(arr[-1])
+
+
+def _scenario_a_guarded_rule_plausibility(
+    x_instance: np.ndarray,
+    feature: int,
+    emitted_lower: Any,
+    emitted_upper: Any,
+    representative: Any,
+) -> bool:
+    """Return whether the emitted guarded rule format stays inside Scenario A.
+
+    Scenario A changes only one feature at a time while keeping the remaining
+    coordinates fixed. For guarded rows we therefore score the emitted interval
+    condition itself rather than only the median representative.
+    """
+    candidate = np.array(x_instance, copy=True)
+    representative_f = _to_float(representative)
+    if representative_f is None:
+        return True
+
+    emitted_low = _to_float(emitted_lower)
+    emitted_high = _to_float(emitted_upper)
+    if feature == 0:
+        if emitted_low is None or not np.isfinite(emitted_low):
+            return False
+        candidate[feature] = emitted_low
+        return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
+    if feature == 1:
+        if emitted_high is None or not np.isfinite(emitted_high):
+            return False
+        candidate[feature] = emitted_high
+        return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
+
+    candidate[feature] = representative_f
+    return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
 
 
 def _assert_interval_invariant(low: Any, point: Any, high: Any, *, where: str) -> None:
@@ -200,9 +312,13 @@ def _rule_rows_from_guarded_audit(
     for idx, rec in enumerate(emitted):
         feature = int(rec["feature"])
         representative = rec["representative"]
-        candidate = np.array(x_instance, copy=True)
-        candidate[feature] = representative
-        plausibility = bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
+        plausibility = _scenario_a_guarded_rule_plausibility(
+            x_instance,
+            feature,
+            rec.get("emitted_lower"),
+            rec.get("emitted_upper"),
+            representative,
+        )
         _assert_interval_invariant(
             rec["low"],
             rec["predict"],
@@ -224,6 +340,8 @@ def _rule_rows_from_guarded_audit(
                 "feature": feature,
                 "condition": rec["condition"],
                 "representative_value": representative,
+                "emitted_lower": _to_float(rec.get("emitted_lower")),
+                "emitted_upper": _to_float(rec.get("emitted_upper")),
                 "p_value_guard": rec["p_value"],
                 "prediction_point": rec["predict"],
                 "prediction_low": rec["low"],
@@ -281,7 +399,7 @@ def _extract_rule_conditions(explanations: Any, mode: str, top_k: int) -> List[L
 
 def _wilcoxon_from_group(group: pd.DataFrame, left: str, right: str) -> Tuple[float, float]:
     paired = group.pivot_table(
-        index=["dataset", "model", "seed", "instance_id", "mode", "significance"],
+        index=["dataset", "model", "seed", "mode", "significance"],
         columns="method",
         values="value",
         aggfunc="mean",
@@ -359,32 +477,60 @@ def _plot_outputs(metrics_df: pd.DataFrame, out_dir: Path) -> None:
 
 
 def _build_summary_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
+    """Build seed-level per-metric summary with Wilcoxon tests stratified by model.
+
+    The paper-facing summary uses one value per seed, model, metric, mode, and
+    significance. This avoids treating many per-instance rows from the same
+    fitted model as independent observations.
+    """
+    seed_level = (
+        metrics_df.groupby(
+            ["dataset", "model", "seed", "method", "mode", "significance", "metric"],
+            as_index=False,
+        )["value"].mean()
+    )
     rows: List[Dict[str, Any]] = []
-    metrics = sorted(metrics_df["metric"].unique())
+    metrics = sorted(seed_level["metric"].unique())
     for metric in metrics:
-        subset = metrics_df[metrics_df["metric"] == metric]
+        subset = seed_level[seed_level["metric"] == metric]
         for mode in sorted(subset["mode"].dropna().unique()):
             mode_subset = subset[subset["mode"] == mode]
             for significance in sorted(mode_subset["significance"].dropna().unique()):
-                g = mode_subset[mode_subset["significance"] == significance]
-                p_value, median_diff = _wilcoxon_from_group(g, "guarded", "standard")
-                rows.append(
-                    {
-                        "metric": metric,
-                        "mode": mode,
-                        "significance": significance,
-                        "guarded_mean": g[g["method"] == "guarded"]["value"].mean(),
-                        "standard_mean": g[g["method"] == "standard"]["value"].mean(),
-                        "median_difference_guarded_minus_standard": median_diff,
-                        "wilcoxon_p_value": p_value,
-                    }
-                )
+                sig_subset = mode_subset[mode_subset["significance"] == significance]
+                for model in sorted(sig_subset["model"].dropna().unique()):
+                    model_subset = sig_subset[sig_subset["model"] == model]
+                    p_value, median_diff = _wilcoxon_from_group(
+                        model_subset, "guarded", "standard"
+                    )
+                    rows.append(
+                        {
+                            "metric": metric,
+                            "model": model,
+                            "mode": mode,
+                            "significance": significance,
+                            "guarded_mean": model_subset[
+                                model_subset["method"] == "guarded"
+                            ]["value"].mean(),
+                            "standard_mean": model_subset[
+                                model_subset["method"] == "standard"
+                            ]["value"].mean(),
+                            "median_difference_guarded_minus_standard": median_diff,
+                            "wilcoxon_p_value": p_value,
+                        }
+                    )
     return pd.DataFrame(rows)
 
 
 def _write_report(summary_df: pd.DataFrame, run_config: Dict[str, Any], out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    vr_rows = summary_df[summary_df["metric"] == "violation_rate"].copy()
+    vr_rows = summary_df[
+        (summary_df["metric"] == "violation_rate")
+        & (summary_df["mode"] == "factual")
+    ].copy()
+    rule_rows = summary_df[
+        (summary_df["metric"] == "rule_count")
+        & (summary_df["mode"] == "factual")
+    ].copy()
     if not vr_rows.empty and "guarded_mean" in vr_rows.columns and "standard_mean" in vr_rows.columns:
         vr_rows = vr_rows.assign(
             _mean_reduction=vr_rows["standard_mean"] - vr_rows["guarded_mean"]
@@ -401,18 +547,21 @@ def _write_report(summary_df: pd.DataFrame, run_config: Dict[str, Any], out_path
         f"- Test instances sampled per seed: {run_config['sample_test']}",
         f"- Guard grid: significance={run_config['significance']}, n_neighbors={run_config['n_neighbors']}, merge_adjacent={run_config['merge_adjacent']}",
         "",
-        "## Key observations",
-        "- Guarded explanations reduce plausibility violations on Scenario A in most settings.",
-        "- Rule retention decreases as significance increases (stricter guard).",
-        "- Runtime overhead is present for guarded mode due to conformity checks.",
-        "- Prediction differences on shared rules are generally small but non-zero.",
+        "## Purpose",
+        "This report keeps only the paper-facing metrics for Scenario A.",
+        "The main comparison is the factual-mode violation rate under the emitted guarded rule format and the known domain constraint.",
+        "A secondary tradeoff metric is the factual-mode rule count.",
         "",
-        "## Statistical summary (Wilcoxon paired tests)",
-        summary_df.to_markdown(index=False),
+        "## Factual violation rate",
+        (vr_rows.to_markdown(index=False) if not vr_rows.empty else "No factual violation-rate rows found."),
         "",
-        "## Practical recommendation",
-        f"- Start with `significance={recommendation}` and adjust upward only if plausibility violations are still too high.",
-        "- Prefer `n_neighbors=5` as a stable default and enable `merge_adjacent=True` only when rule compactness is a priority.",
+        "## Factual rule count",
+        (rule_rows.to_markdown(index=False) if not rule_rows.empty else "No factual rule-count rows found."),
+        "",
+        "## Notes",
+        "The CSV outputs retain additional diagnostics for engineering use.",
+        "They are not intended as main paper evidence.",
+        f"A practical starting point from the factual violation-rate table is significance={recommendation}.",
     ]
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
