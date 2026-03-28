@@ -492,11 +492,27 @@ def format_guarded_audit_table(
         return text
 
     def _fmt_interval(lower: Any, upper: Any) -> str:
-        lo = _fmt_num(lower, decimals=bound_decimals)
-        hi = _fmt_num(upper, decimals=bound_decimals)
-        return f"({lo}, {hi}]"
+        lower_str = _fmt_num(lower, decimals=bound_decimals)
+        upper_str = _fmt_num(upper, decimals=bound_decimals)
+        return f"({lower_str}, {upper_str}]"
 
-    header = "inst feat name                interval                  p      conf emit reason"
+    def _interval_bounds(rec: Mapping[str, Any]) -> tuple:
+        """Return (lower, upper) to display, preferring emitted bounds when they differ."""
+        lo_raw = rec.get("lower")
+        hi_raw = rec.get("upper")
+        lo_emit = rec.get("emitted_lower")
+        hi_emit = rec.get("emitted_upper")
+        if lo_emit is not None and hi_emit is not None:
+            try:
+                lo_diff = abs(float(lo_emit) - float(lo_raw)) > 1e-9
+                hi_diff = abs(float(hi_emit) - float(hi_raw)) > 1e-9
+            except (TypeError, ValueError):
+                lo_diff = hi_diff = False
+            if lo_diff or hi_diff:
+                return lo_emit, hi_emit
+        return lo_raw, hi_raw
+
+    header = "inst feat name                interval                  p      conf emit mrg  reason"
     divider = "-" * len(header)
     lines = [
         "Guarded Audit Summary",
@@ -514,11 +530,13 @@ def format_guarded_audit_table(
     limited = rows[: max(0, int(max_rows))]
     for rec in limited:
         name = str(rec.get("feature_name", ""))[:18]
-        interval = _fmt_interval(rec.get("lower"), rec.get("upper"))[:24]
+        disp_lower, disp_upper = _interval_bounds(rec)
+        interval = _fmt_interval(disp_lower, disp_upper)[:24]
         p_val = rec.get("p_value", "")
         p_str = _fmt_num(p_val, decimals=pvalue_decimals) if p_val not in ("", None) else ""
         conf = "Y" if rec.get("conforming") else "N"
         emit = "Y" if rec.get("emitted") else "N"
+        mrg = "Y" if rec.get("is_merged") else "N"
         reason = str(rec.get("emission_reason", ""))[:18]
         lines.append(
             f"{int(rec.get('instance_index', -1)):>4} "
@@ -528,6 +546,7 @@ def format_guarded_audit_table(
             f"{p_str:>6} "
             f"{conf:^4} "
             f"{emit:^4} "
+            f"{mrg:^4} "
             f"{reason}"
         )
 
@@ -547,9 +566,12 @@ def format_guarded_audit_table(
         if counts:
             lines.append("reason_counts: " + ", ".join(counts))
         lines.append(
-            "legend: emitted=rule kept; removed_guard=non-conforming interval removed by guard; "
-            "design_excluded=interval not eligible in this mode; baseline_equal=no prediction/interval change; "
-            "zero_impact=factual interval equals base prediction; ignored_feature=feature explicitly ignored"
+            "legend: emitted=rule kept; removed_guard=non-conforming; "
+            "design_excluded=not eligible in this mode; "
+            "baseline_equal=no prediction change; "
+            "zero_impact=factual equals base; "
+            "ignored_feature=explicitly ignored; "
+            "mrg=Y: merged adjacent bins; emitted bounds shown"
         )
     return "\n".join(lines)
 

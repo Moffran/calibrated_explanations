@@ -10,6 +10,36 @@ from tests.helpers.model_utils import get_classification_model, get_regression_m
 pytestmark = pytest.mark.integration
 
 
+def test_multiclass_guarded_audit_presence(multiclass_dataset):
+    """Guarded factual explanations work for 3-class multiclass classification.
+
+    Exercises conformal p-value semantics with one p-value per class and
+    verifies that the guarded audit API is usable on multiclass CE outputs.
+    """
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _,
+        _,
+        _,
+        categorical_features,
+        _,
+        _,
+        feature_names,
+    ) = multiclass_dataset
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
+    )
+    explanations = cal_exp.explain_guarded_factual(x_test[:2], significance=0.1)
+    audit = explanations.get_guarded_audit()
+    assert audit["summary"]["n_instances"] == len(explanations)
+    assert len(audit["instances"]) == len(explanations)
+
+
 def test_classification_guarded_audit_presence(binary_dataset):
     """Guarded factual classification explanations should expose collection audit."""
     (

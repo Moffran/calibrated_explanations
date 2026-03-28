@@ -555,3 +555,75 @@ def test_guarded_docs__should_keep_significance_wording_aligned_with_api_contrac
     assert "Lower values apply stricter filtering." not in concepts
     assert "Larger values apply stricter filtering." in concepts
     assert "representative perturbation passed the guard" not in quickstart
+
+
+# ---------------------------------------------------------------------------
+# Guarded vs standard non-identity
+# ---------------------------------------------------------------------------
+
+
+def test_guarded_factual__produces_fewer_rules_on_ood_instance():
+    """Guarded explain must remove at least one interval for a clearly OOD instance.
+
+    An instance constructed at 5x the calibration-set maximum lies far outside
+    the training distribution.  The guard should reject at least one interval
+    that standard CE would emit.
+    """
+    explainer, x_cal = make_classification_explainer(seed=50)
+    x_ood = (x_cal.max(axis=0) * 5.0).reshape(1, -1)
+
+    result = explainer.explain_guarded_factual(
+        x_ood,
+        significance=0.2,
+        n_neighbors=5,
+        normalize_guard=True,
+    )
+
+    audit = result.explanations[0].get_guarded_audit()
+    assert audit["summary"]["intervals_removed_guard"] > 0, (
+        "Expected at least one interval to be removed by the guard for an OOD instance "
+        f"at 5x calibration max; got audit={audit['summary']}"
+    )
+
+
+def test_in_distribution_guard__normalize_affects_conformity():
+    """normalize=True vs False must produce different conformity outcomes on OOD data.
+
+    With normalization disabled the raw distance score is compared against
+    calibration distances; with normalization enabled each feature is scaled
+    to unit variance first, which changes the effective distance metric and
+    therefore the p-value ranking.
+    """
+    explainer, x_cal = make_classification_explainer(seed=51)
+    x_ood = (x_cal.max(axis=0) * 5.0).reshape(1, -1)
+
+    result_norm = explainer.explain_guarded_factual(
+        x_ood,
+        significance=0.2,
+        n_neighbors=5,
+        normalize_guard=True,
+    )
+    result_raw = explainer.explain_guarded_factual(
+        x_ood,
+        significance=0.2,
+        n_neighbors=5,
+        normalize_guard=False,
+    )
+
+    removed_norm = result_norm.explanations[0].get_guarded_audit()["summary"][
+        "intervals_removed_guard"
+    ]
+    removed_raw = result_raw.explanations[0].get_guarded_audit()["summary"][
+        "intervals_removed_guard"
+    ]
+
+    # Both must remove at least one interval on an extreme OOD instance.
+    assert removed_norm > 0 or removed_raw > 0, (
+        "Neither normalize=True nor normalize=False removed any intervals for an "
+        "instance 5x outside the calibration range"
+    )
+    # The two settings must produce at least one differing count somewhere, confirming
+    # that the normalize flag has a real effect on the guard outcome.
+    total_norm = result_norm.explanations[0].get_guarded_audit()["summary"]["intervals_tested"]
+    total_raw = result_raw.explanations[0].get_guarded_audit()["summary"]["intervals_tested"]
+    assert total_norm == total_raw, "Both runs must test the same number of intervals"

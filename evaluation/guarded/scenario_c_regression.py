@@ -18,11 +18,18 @@ One metric is reported:
     warnings.warn instead of raise, violations silently pass in normal use.
 
 Secondary diagnostic (recorded in CSV, not elevated as a finding):
-  fraction_removed_ood vs fraction_removed_id
-    For the synthetic dataset, instances with |x| > 3.5 are OOD relative
-    to the calibration range |x| ≤ 3. The guard should remove more intervals
-    for OOD instances than for in-distribution ones, confirming responsiveness
-    to actual distributional shift in regression.
+  guard_direct_ood_auroc
+    Direct test of InDistributionGuard.is_conforming() on raw test instances
+    (before any feature substitution).  For instances with |x| > 3.5 the guard
+    should flag more as non-conforming than for |x| ≤ 3 instances.
+
+    NOTE: the guarded *explain loop* tests perturbed instances (one feature
+    replaced by a calibration representative), so it cannot detect OOD-ness
+    when that replacement covers the only source of distributional shift.  For
+    a 1-feature dataset the explain-loop removal rate is mathematically
+    identical for OOD and ID instances regardless of guard correctness.
+    The direct is_conforming() check bypasses this structural limitation and
+    is the correct test for input-OOD sensitivity.
 
 Run with --quick for a fast smoke-test (2 seeds, reduced grid).
 """
@@ -41,12 +48,11 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge
 
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
+from calibrated_explanations.utils.distribution_guard import InDistributionGuard
 
 from common_guarded import (
     GuardConfig,
-    OOD_RESPONSIVENESS_MIN_DELTA,
     check_interval_invariant,
-    check_ood_responsiveness,
     extract_audit_rows,
     extract_audit_summary_rows,
     make_splits,
@@ -87,6 +93,47 @@ def make_ood_regression_test(
     x_test = np.vstack([x_id, x_ood_pos, x_ood_neg])
     is_ood = np.array([False] * n_id + [True] * n_ood)
     return x_test, is_ood
+
+
+# ---------------------------------------------------------------------------
+# Direct guard OOD sensitivity check
+# ---------------------------------------------------------------------------
+
+def _direct_guard_ood_sensitivity(
+    x_cal: np.ndarray,
+    x_test: np.ndarray,
+    is_ood: np.ndarray,
+    significance: float,
+    n_neighbors: int,
+) -> Tuple[float, float, bool]:
+    """Test InDistributionGuard.is_conforming() on raw (unperturbed) instances.
+
+    The guarded explain loop tests perturbed instances (one feature replaced
+    by a cal representative), so it cannot detect OOD-ness when that replacement
+    covers the only source of distributional shift.  This function bypasses
+    the explain loop and calls is_conforming() directly on the raw test vectors,
+    which is the correct test for input-OOD sensitivity.
+
+    Returns
+    -------
+    frac_conforming_ood : float
+        Fraction of OOD instances accepted as in-distribution by the guard.
+    frac_conforming_id : float
+        Fraction of ID instances accepted as in-distribution by the guard.
+    ood_is_stricter : bool
+        True iff OOD instances are accepted at a lower rate than ID ones.
+    """
+    guard = InDistributionGuard(x_cal, n_neighbors=n_neighbors)
+    conforming = guard.is_conforming(x_test, significance=significance)
+    ood_mask = is_ood.astype(bool)
+    frac_ood = float(conforming[ood_mask].mean()) if ood_mask.any() else float("nan")
+    frac_id = float(conforming[~ood_mask].mean()) if (~ood_mask).any() else float("nan")
+    ood_stricter = (
+        (not pd.isna(frac_ood))
+        and (not pd.isna(frac_id))
+        and frac_ood < frac_id
+    )
+    return frac_ood, frac_id, ood_stricter
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +260,7 @@ def main() -> None:
 
     all_audit_rows: List[pd.DataFrame] = []
     all_summary_rows: List[pd.DataFrame] = []
+    direct_guard_rows: List[dict] = []
 
     configs = [
         GuardConfig(significance=s, n_neighbors=nn)
@@ -238,6 +286,23 @@ def main() -> None:
         except ValueError:
             x_tr, y_tr = x_syn[:n_train_syn], y_syn[:n_train_syn]
             x_cal, y_cal = x_syn[n_train_syn:n_train_syn + n_cal_syn], y_syn[n_train_syn:n_train_syn + n_cal_syn]
+
+        # Direct guard OOD check — tests raw instances, not explain-loop probes.
+        # Done once per seed per config (model-independent: uses x_cal directly).
+        for cfg in configs:
+            frac_ood, frac_id, ood_stricter = _direct_guard_ood_sensitivity(
+                x_cal, x_test_syn, is_ood_syn,
+                significance=cfg.significance,
+                n_neighbors=cfg.n_neighbors,
+            )
+            direct_guard_rows.append({
+                "seed": seed,
+                "significance": cfg.significance,
+                "n_neighbors": cfg.n_neighbors,
+                "frac_conforming_ood": frac_ood,
+                "frac_conforming_id": frac_id,
+                "ood_is_stricter": ood_stricter,
+            })
 
         for model_name, model in [("rf_reg", RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=1)),
                                     ("ridge", Ridge(alpha=1.0))]:
@@ -314,21 +379,19 @@ def main() -> None:
         if "n_invariant_warnings" in summary_all.columns else 0
     )
 
-    # OOD responsiveness — promoted to primary pass/fail metric.
-    # The guard is useless for regression if it cannot discriminate OOD from ID.
-    synth_summary = (
-        summary_all[summary_all["dataset"] == "synthetic_1d"]
-        if "dataset" in summary_all.columns else summary_all
-    )
-    ood_passes, ood_frac, id_frac = check_ood_responsiveness(synth_summary)
-    ood_delta = ood_frac - id_frac if not (
-        pd.isna(ood_frac) or pd.isna(id_frac)
-    ) else float("nan")
+    # Direct guard OOD sensitivity — aggregated across seeds and configs.
+    direct_guard_df = pd.DataFrame(direct_guard_rows)
+    direct_guard_path = out_dir / "direct_guard_ood.csv"
+    direct_guard_df.to_csv(direct_guard_path, index=False)
+    print(f"Wrote: {direct_guard_path}")
 
-    frac_removed_by_split = (
-        summary_all.groupby(["dataset", "is_ood"])["intervals_removed_guard"].mean()
-        if "is_ood" in summary_all.columns else None
-    )
+    if not direct_guard_df.empty:
+        mean_frac_ood = float(direct_guard_df["frac_conforming_ood"].mean())
+        mean_frac_id = float(direct_guard_df["frac_conforming_id"].mean())
+        direct_ood_passes = bool(direct_guard_df["ood_is_stricter"].mean() >= 0.5)
+    else:
+        mean_frac_ood = mean_frac_id = float("nan")
+        direct_ood_passes = False
 
     report_sections = [
         (
@@ -382,24 +445,25 @@ def main() -> None:
             ),
         ),
         (
-            "Secondary diagnostic: guard responsiveness to OOD",
+            "Secondary diagnostic: direct guard OOD sensitivity",
             (
-                f"Required: mean_frac_removed_ood − mean_frac_removed_id "
-                f"≥ {OOD_RESPONSIVENESS_MIN_DELTA} on synthetic_1d dataset.\n\n"
-                f"Observed: OOD={ood_frac:.3f}, ID={id_frac:.3f}, "
-                f"delta={ood_delta:.3f}\n\n"
+                "Test: InDistributionGuard.is_conforming(x_raw) on synthetic_1d.\n"
+                "OOD instances (|x| > 3.5) must be accepted at a lower rate than "
+                "ID instances (|x| <= 3.0) in the majority of seed/config runs.\n\n"
+                f"Mean frac conforming — OOD: {mean_frac_ood:.3f}, "
+                f"ID: {mean_frac_id:.3f}\n\n"
                 + (
-                    f"PASS: guard removes {ood_delta:.3f} more of OOD intervals "
-                    "than ID intervals — confirming guard discriminates OOD in regression."
-                    if ood_passes else
-                    f"FAIL: delta={ood_delta:.3f} < {OOD_RESPONSIVENESS_MIN_DELTA}. "
-                    "The guard is not discriminating OOD from in-distribution in "
-                    "regression — it is either over-filtering ID or under-filtering OOD. "
-                    "Check calibration set size and significance level."
+                    "PASS: guard accepts OOD instances less often than ID instances "
+                    "in the majority of runs — direct OOD sensitivity confirmed."
+                    if direct_ood_passes else
+                    "FAIL: guard does not consistently accept OOD instances less than "
+                    "ID instances. Check n_neighbors, significance, and normalization."
                 )
-                + "\n\nFull breakdown by dataset and OOD flag:\n\n"
-                + (frac_removed_by_split.to_markdown()
-                   if frac_removed_by_split is not None else "N/A")
+                + "\n\nNote: the explain-loop removal rate (intervals_removed_guard) "
+                "is structurally identical for OOD and ID on 1D data because every "
+                "non-factual probe replaces the single feature with a calibration "
+                "representative, making it in-distribution by construction. "
+                "See direct_guard_ood.csv for full per-seed breakdown."
             ),
         ),
         (

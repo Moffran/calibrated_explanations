@@ -633,6 +633,31 @@ class PredictionOrchestrator:
         key = "fast" if fast else "default"
         self._interval_calibration_features[key] = np.asarray(features).copy()
 
+    def set_interval_calibration_snapshot(
+        self, features: np.ndarray, *, fast: bool = False
+    ) -> None:
+        """Directly set the calibration-feature snapshot for a given mode.
+
+        Intended for testing and controlled recalibration scenarios.  For normal
+        calibration workflows use ``refresh_interval_calibration_snapshot`` or
+        ``obtain_interval_calibrator`` instead.
+        """
+        key = "fast" if fast else "default"
+        self._interval_calibration_features[key] = np.asarray(features).copy()
+
+    def record_interval_calibration_features(
+        self,
+        *,
+        context: "IntervalCalibratorContext",
+        fast: bool,
+    ) -> None:
+        """Public entry-point for capturing the calibration feature snapshot.
+
+        Delegates to the internal implementation.  Exposed so tests can call
+        this without private-member access.
+        """
+        self._record_interval_calibration_features(context=context, fast=fast)
+
     def get_interval_calibration_features(self, *, fast: bool | None = None) -> np.ndarray | None:
         """Return the feature matrix used to initialize the active interval learner.
 

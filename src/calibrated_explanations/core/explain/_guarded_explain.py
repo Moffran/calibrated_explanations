@@ -1174,6 +1174,16 @@ def guarded_explain(
                 f_weights["low"][f] = float(base_predict[inst_idx] - avg_h)
                 f_weights["high"][f] = float(base_predict[inst_idx] - avg_l)
 
+        if guarded_bins and not any(
+            b.conforming for bins in guarded_bins.values() for b in bins
+        ):
+            warnings.warn(
+                f"All interval candidates for guarded instance {inst_idx} were removed "
+                "by the guard. No rules will be emitted for this instance.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         for key in ["predict", "low", "high"]:
             feature_predict[key].append(f_predict[key])
             feature_weights[key].append(f_weights[key])

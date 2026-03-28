@@ -18,6 +18,16 @@ pip install calibrated-explanations scikit-learn
 - **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics` and
   {doc}`../foundations/concepts/guarded_explanations`.
 
+```{admonition} Fast explainers are not supported in guarded mode
+:class: warning
+
+Guarded mode requires a standard (non-fast) `CalibratedExplainer`.
+Passing a fast explainer — one initialised with `CalibratedExplainer(..., fast=True)` or
+retrieved via `WrapCalibratedExplainer` with fast mode enabled — raises a
+`ConfigurationError` at the `explain_guarded_factual` / `explore_guarded_alternatives`
+call site.  See ADR-032, decision 7 for the rationale.
+```
+
 For guarded regression workflows, start from {doc}`quickstart_regression`.
 The only workflow difference is the explanation call:
 
