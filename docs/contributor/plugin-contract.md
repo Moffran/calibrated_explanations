@@ -216,6 +216,42 @@ validate_plugin_meta(dict(plugin.plugin_meta))
 register_explanation_plugin("external.hello.explanation", plugin)
 ```
 
+### Pitfall: two prediction paths — do not mix them
+
+Inside `explain_batch` there are **two separate prediction paths** with different
+responsibilities. Confusing them produces a `TypeError` that surfaces as an opaque
+`ENGINE_FAILURE` to the caller.
+
+| Path | How to call | What it does |
+|---|---|---|
+| `bridge.predict(x, mode=..., task=..., bins=...)` | Via `context.predict_bridge` | Lifecycle contract check; uses **default percentiles (5, 95)** internally; return value is often discarded |
+| `explainer.predict(x, uq_interval=True, low_high_percentiles=..., bins=...)` | Via `context.helper_handles["explainer"]` | Full inference; honours any custom `low_high_percentiles` from the `ExplanationRequest` |
+
+**The `PredictBridge` protocol does not accept `low_high_percentiles`.** If a
+caller forwards `request.low_high_percentiles` into `bridge.predict()` it gets a
+`TypeError` on every call where that field is non-`None`. The fix is to send
+interval-shaping parameters to the explainer handle instead:
+
+```python
+def explain_batch(self, x, request):
+    # Step 1 — honour the bridge lifecycle contract (protocol-defined params only)
+    self._bridge.predict(x, mode=self._mode, task=self.context.task, bins=request.bins)
+
+    # Step 2 — full inference with custom percentiles goes to the explainer handle
+    explainer = self.context.helper_handles["explainer"]
+    prediction, (low, high) = explainer.predict(
+        x,
+        uq_interval=True,
+        low_high_percentiles=request.low_high_percentiles,  # safe here
+        bins=request.bins,
+    )
+    ...
+```
+
+This distinction is not obvious because the bridge's `predict()` return value
+contains `low` and `high` arrays, which makes it look like the interval-shaping
+surface. It is not — it is a narrowly-scoped lifecycle shim.
+
 ### Override precedence for explanation plugins
 
 Explanation plugins support mode-specific selection:

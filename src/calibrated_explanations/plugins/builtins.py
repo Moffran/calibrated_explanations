@@ -100,7 +100,24 @@ class LegacyPredictBridge(PredictBridge):
         task: str,
         bins: Any | None = None,
     ) -> Mapping[str, Any]:
-        """Return calibrated predictions routed through the wrapped explainer."""
+        """Return calibrated predictions routed through the wrapped explainer.
+
+        Notes
+        -----
+        This implementation always uses the explainer's default percentiles
+        (5, 95) when producing uncertainty bounds.  It intentionally mirrors
+        the narrow ``PredictBridge`` protocol, which does not accept a
+        ``low_high_percentiles`` parameter.
+
+        Plugin code that needs to honour a custom ``low_high_percentiles``
+        value from an ``ExplanationRequest`` must call the explainer handle
+        directly via ``context.helper_handles["explainer"].predict()``, not
+        through this bridge.  Passing ``low_high_percentiles`` to
+        ``bridge.predict()`` will raise ``TypeError`` and surface as
+        ``ENGINE_FAILURE`` to callers.
+
+        See ``PredictBridge.predict`` Notes section for the correct pattern.
+        """
         prediction = self.explainer.predict(x, uq_interval=True, bins=bins)
         if isinstance(prediction, tuple):
             preds, interval = prediction
@@ -339,8 +356,21 @@ class _LegacyExplanationBase(ExplanationPlugin):
                 details={"context": "legacy_explanation", "requirement": "initialize()"},
             )
 
-        # Exercise the predict bridge lifecycle. The results are not used further
-        # but calling the bridge ensures the contract is honoured.
+        # Exercise the predict bridge lifecycle contract (ADR-015).
+        # IMPORTANT: pass only the parameters defined by the PredictBridge
+        # protocol (mode, task, bins).  Do NOT forward request.low_high_percentiles
+        # here — the bridge protocol does not accept it and doing so produces a
+        # deterministic TypeError.  The bridge always uses default percentiles
+        # (5, 95) internally; if you need custom percentiles use the explainer
+        # handle instead:
+        #   explainer = self._context.helper_handles["explainer"]
+        #   preds, (low, high) = explainer.predict(
+        #       x, uq_interval=True,
+        #       low_high_percentiles=request.low_high_percentiles,
+        #       bins=request.bins,
+        #   )
+        # The bridge return value is intentionally not consumed here; interval
+        # shaping happens below through the explanation callable.
         self._bridge.predict(
             x,
             mode=self._mode,
