@@ -168,16 +168,14 @@ def test_should_raise_not_fitted_error_when_guarded_called_on_uninitialized_expl
         guarded_explain(explainer, np.array([[0.5, 0.5]]))
 
 
-def test_should_use_dense_two_probe_guard_rule_instead_of_median_only():
-    """Dense bins should conform from the q10/q90 decision rule, not the median alone."""
+def test_should_use_single_median_probe_for_guard_conformity():
+    """All bins should be probed via the single median representative."""
 
     class FakeGuard:
         def p_values(self, x: np.ndarray) -> np.ndarray:
             value = float(np.asarray(x)[0, 0])
-            if np.isclose(value, 1.9) or np.isclose(value, 9.1):
-                return np.array([0.7])
             if np.isclose(value, 5.5):
-                return np.array([0.1])
+                return np.array([0.7])
             raise AssertionError(f"Unexpected probe value: {value}")
 
     explainer, orchestrator, discretizer = make_guarded_mock_explainer(
@@ -200,8 +198,8 @@ def test_should_use_dense_two_probe_guard_rule_instead_of_median_only():
     assert rec["conforming"] is True
     assert rec["representative"] == pytest.approx(5.5)
     assert rec["p_value"] == pytest.approx(0.7)
-    assert rec["emitted_lower"] == pytest.approx(1.9)
-    assert rec["emitted_upper"] == pytest.approx(9.1)
+    assert rec["lower"] == pytest.approx(0.0)
+    assert rec["upper"] == pytest.approx(10.0)
 
 
 def test_should_keep_sparse_bins_on_single_median_probe():
@@ -233,17 +231,17 @@ def test_should_keep_sparse_bins_on_single_median_probe():
     rec = result.explanations[0].get_guarded_audit()["intervals"][0]
     assert rec["conforming"] is False
     assert rec["representative"] == pytest.approx(3.0)
-    assert rec["emitted_lower"] == pytest.approx(0.0)
-    assert rec["emitted_upper"] == pytest.approx(5.0)
+    assert rec["lower"] == pytest.approx(0.0)
+    assert rec["upper"] == pytest.approx(5.0)
 
 
-def test_should_keep_original_bins_when_dense_merge_recheck_fails():
-    """Merged dense intervals must revert to the original bins when the re-check fails."""
+def test_should_keep_original_bins_when_merge_recheck_fails():
+    """Merged intervals must revert to the original bins when the median re-check fails."""
 
     class FakeGuard:
         def p_values(self, x: np.ndarray) -> np.ndarray:
             value = float(np.asarray(x)[0, 0])
-            if np.isclose(value, 1.9) or np.isclose(value, 9.1):
+            if np.isclose(value, 5.5):
                 return np.array([0.2])
             raise AssertionError(f"Unexpected merge probe value: {value}")
 
@@ -373,16 +371,16 @@ def test_should_leave_nonrejected_but_nonadjacent_to_factual_rule_unmerged_when_
     orchestrator.predict_internal.assert_called_once()
 
 
-def test_should_evaluate_scenario_a_guarded_rows_with_emitted_interval_semantics():
-    """Scenario A should score the emitted guarded rule, not only the representative."""
+def test_should_evaluate_scenario_a_guarded_rows_with_interval_semantics():
+    """Scenario A should score the guarded rule using lower/upper."""
     rows = _rule_rows_from_guarded_audit(
         {
             "intervals": [
                 {
                     "feature": 0,
                     "representative": 2.0,
-                    "emitted_lower": 1.0,
-                    "emitted_upper": 2.0,
+                    "lower": 1.0,
+                    "upper": 2.0,
                     "p_value": 0.7,
                     "predict": 0.6,
                     "low": 0.5,

@@ -83,45 +83,6 @@ def test_explain_guarded_factual__get_rules_returns_dict():
     assert "weight" in rules
 
 
-def test_explain_guarded_factual__defaults_use_bonferroni_to_false(monkeypatch):
-    """Guarded factual should pass use_bonferroni=False by default."""
-    explainer, x_cal = make_classification_explainer(seed=13)
-    captured: dict[str, object] = {}
-
-    def _fake_invoke(**kwargs):
-        captured.update(kwargs)
-        return "ok"
-
-    monkeypatch.setattr(explainer.explanation_orchestrator, "invoke_guarded_factual", _fake_invoke)
-
-    result = explainer.explain_guarded_factual(x_cal[:1], significance=0.2)
-
-    assert result == "ok"
-    assert captured["use_bonferroni"] is False
-
-
-def test_explore_guarded_alternatives__allows_enabling_bonferroni(monkeypatch):
-    """Guarded alternatives should pass through explicit Bonferroni opt-in."""
-    explainer, x_cal = make_classification_explainer(seed=14)
-    captured: dict[str, object] = {}
-
-    def _fake_invoke(**kwargs):
-        captured.update(kwargs)
-        return "ok"
-
-    monkeypatch.setattr(
-        explainer.explanation_orchestrator,
-        "invoke_guarded_alternative",
-        _fake_invoke,
-    )
-
-    result = explainer.explore_guarded_alternatives(
-        x_cal[:1], significance=0.2, use_bonferroni=True
-    )
-
-    assert result == "ok"
-    assert captured["use_bonferroni"] is True
-
 
 # ---------------------------------------------------------------------------
 # Alternative guarded explanations
@@ -494,8 +455,8 @@ def test_guarded_pipeline__should_emit_unique_interval_records_when_merge_enable
     keys = [
         (
             rec["feature"],
-            rec["emitted_lower"],
-            rec["emitted_upper"],
+            rec["lower"],
+            rec["upper"],
             rec["predict"],
             rec["low"],
             rec["high"],
@@ -627,3 +588,158 @@ def test_in_distribution_guard__normalize_affects_conformity():
     total_norm = result_norm.explanations[0].get_guarded_audit()["summary"]["intervals_tested"]
     total_raw = result_raw.explanations[0].get_guarded_audit()["summary"]["intervals_tested"]
     assert total_norm == total_raw, "Both runs must test the same number of intervals"
+
+
+# ---------------------------------------------------------------------------
+# Red-team hardening tests — significance validation
+# ---------------------------------------------------------------------------
+
+
+def test_should_accept_significance_of_one():
+    """significance=1.0 is allowed (interval is (0, 1])."""
+    explainer, x_cal = make_classification_explainer(seed=50)
+    # Should not raise — 1.0 is a valid significance
+    result = explainer.explain_guarded_factual(x_cal[:1], significance=1.0)
+    assert result is not None
+
+
+def test_should_reject_significance_of_zero():
+    """significance=0.0 must be rejected."""
+    explainer, x_cal = make_classification_explainer(seed=51)
+
+    with pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"):
+        explainer.explain_guarded_factual(x_cal[:1], significance=0.0)
+
+
+def test_should_reject_negative_significance():
+    """Negative significance must be rejected."""
+    explainer, x_cal = make_classification_explainer(seed=52)
+
+    with pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"):
+        explainer.explain_guarded_factual(x_cal[:1], significance=-0.1)
+
+
+def test_should_reject_significance_above_one():
+    """significance>1 must be rejected."""
+    explainer, x_cal = make_classification_explainer(seed=53)
+
+    with pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"):
+        explainer.explain_guarded_factual(x_cal[:1], significance=1.5)
+
+
+# ---------------------------------------------------------------------------
+# Red-team hardening tests — WrapExplainer guarded preconditions
+# ---------------------------------------------------------------------------
+
+
+def test_should_raise_not_fitted_when_wrap_guarded_factual_called_unfitted():
+    """WrapCalibratedExplainer.explain_guarded_factual must fail when not fitted."""
+    from calibrated_explanations import WrapCalibratedExplainer
+    from calibrated_explanations.utils.exceptions import NotFittedError as CENotFitted
+    from sklearn.ensemble import RandomForestClassifier
+
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier())
+    with pytest.raises(CENotFitted):
+        wrapper.explain_guarded_factual(np.array([[1.0, 2.0]]), significance=0.2)
+
+
+def test_should_raise_not_fitted_when_wrap_guarded_alternatives_called_unfitted():
+    """WrapCalibratedExplainer.explore_guarded_alternatives must fail when not fitted."""
+    from calibrated_explanations import WrapCalibratedExplainer
+    from calibrated_explanations.utils.exceptions import NotFittedError as CENotFitted
+    from sklearn.ensemble import RandomForestClassifier
+
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier())
+    with pytest.raises(CENotFitted):
+        wrapper.explore_guarded_alternatives(np.array([[1.0, 2.0]]), significance=0.2)
+
+
+# ---------------------------------------------------------------------------
+# Red-team hardening tests — verbose factual_bin=None path
+# ---------------------------------------------------------------------------
+
+
+def test_should_warn_when_factual_bin_is_none_in_verbose_mode():
+    """get_rules must emit UserWarning (not crash) when factual_bin is None and verbose=True."""
+
+    # Minimal stub explainer and collection for direct construction
+    class _StubExplainer:
+        y_cal = np.array([0, 1])
+        mode = "classification"
+        feature_names = ["f0", "f1"]
+        class_labels = [0, 1]
+        categorical_features = []
+        categorical_labels = None
+
+        def is_multiclass(self):
+            return False
+
+    class _StubCollection:
+        def __init__(self):
+            self.explainer = _StubExplainer()
+            self.features_to_ignore = []
+            self.feature_filter_per_instance_ignore = None
+
+        def get_explainer(self):
+            return self.explainer
+
+    # Build a GuardedFactualExplanation where feature 0 has a non-factual bin only.
+    non_factual_bin = GuardedBin(
+        lower=-np.inf, upper=np.inf, representative=0.5,
+        predict=0.3, low=0.2, high=0.4,
+        conforming=True, p_value=0.8, is_factual=False,
+    )
+    factual_bin_f1 = GuardedBin(
+        lower=-np.inf, upper=np.inf, representative=0.2,
+        predict=0.8, low=0.7, high=0.9,
+        conforming=True, p_value=0.9, is_factual=True,
+    )
+    payload = {
+        "binned": {"rule_values": [{0: ([0.1], 0.1, 0.1), 1: ([0.2], 0.2, 0.2)}]},
+        "feature_weights": {
+            "predict": np.array([[0.0, 0.0]]),
+            "low": np.array([[0.0, 0.0]]),
+            "high": np.array([[0.0, 0.0]]),
+        },
+        "feature_predict": {
+            "predict": np.array([[0.3, 0.4]]),
+            "low": np.array([[0.2, 0.3]]),
+            "high": np.array([[0.4, 0.5]]),
+        },
+        "prediction": {
+            "predict": np.array([0.8]),
+            "low": np.array([0.7]),
+            "high": np.array([0.9]),
+            "classes": np.array([1.0]),
+        },
+    }
+
+    expl = GuardedFactualExplanation(
+        _StubCollection(),
+        0,
+        np.array([0.1, 0.2]),
+        guarded_bins={0: [non_factual_bin], 1: [factual_bin_f1]},
+        feature_names=["f0", "f1"],
+        verbose=True,
+        **payload,
+    )
+
+    with pytest.warns(UserWarning, match="No factual bin found"):
+        expl.get_rules()
+
+
+# ---------------------------------------------------------------------------
+# Red-team hardening tests — InDistributionGuard boundary
+# ---------------------------------------------------------------------------
+
+
+def test_guard_should_reject_significance_boundary_values():
+    """InDistributionGuard.is_conforming must reject 0.0 and 1.0."""
+    x_cal = np.random.default_rng(42).standard_normal((20, 3))
+    guard = InDistributionGuard(x_cal, n_neighbors=3, normalize=False)
+
+    with pytest.raises(ValidationError, match="strictly between 0 and 1"):
+        guard.is_conforming(x_cal[:1], significance=0.0)
+
+    with pytest.raises(ValidationError, match="strictly between 0 and 1"):
+        guard.is_conforming(x_cal[:1], significance=1.0)

@@ -497,20 +497,8 @@ def format_guarded_audit_table(
         return f"({lower_str}, {upper_str}]"
 
     def _interval_bounds(rec: Mapping[str, Any]) -> tuple:
-        """Return (lower, upper) to display, preferring emitted bounds when they differ."""
-        lo_raw = rec.get("lower")
-        hi_raw = rec.get("upper")
-        lo_emit = rec.get("emitted_lower")
-        hi_emit = rec.get("emitted_upper")
-        if lo_emit is not None and hi_emit is not None:
-            try:
-                lo_diff = abs(float(lo_emit) - float(lo_raw)) > 1e-9
-                hi_diff = abs(float(hi_emit) - float(hi_raw)) > 1e-9
-            except (TypeError, ValueError):
-                lo_diff = hi_diff = False
-            if lo_diff or hi_diff:
-                return lo_emit, hi_emit
-        return lo_raw, hi_raw
+        """Return (lower, upper) to display."""
+        return rec.get("lower"), rec.get("upper")
 
     header = "inst feat name                interval                  p      conf emit mrg  reason"
     divider = "-" * len(header)

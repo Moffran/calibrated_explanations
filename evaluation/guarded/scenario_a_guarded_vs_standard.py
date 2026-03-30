@@ -182,14 +182,14 @@ def _extract_rule_representative(sampled_values: Any) -> Optional[float]:
 def _scenario_a_guarded_rule_plausibility(
     x_instance: np.ndarray,
     feature: int,
-    emitted_lower: Any,
-    emitted_upper: Any,
+    lower: Any,
+    upper: Any,
     representative: Any,
 ) -> bool:
-    """Return whether the emitted guarded rule format stays inside Scenario A.
+    """Return whether the guarded rule format stays inside Scenario A.
 
     Scenario A changes only one feature at a time while keeping the remaining
-    coordinates fixed. For guarded rows we therefore score the emitted interval
+    coordinates fixed. For guarded rows we score the interval
     condition itself rather than only the median representative.
     """
     candidate = np.array(x_instance, copy=True)
@@ -197,17 +197,17 @@ def _scenario_a_guarded_rule_plausibility(
     if representative_f is None:
         return True
 
-    emitted_low = _to_float(emitted_lower)
-    emitted_high = _to_float(emitted_upper)
+    lo = _to_float(lower)
+    hi = _to_float(upper)
     if feature == 0:
-        if emitted_low is None or not np.isfinite(emitted_low):
+        if lo is None or not np.isfinite(lo):
             return False
-        candidate[feature] = emitted_low
+        candidate[feature] = lo
         return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
     if feature == 1:
-        if emitted_high is None or not np.isfinite(emitted_high):
+        if hi is None or not np.isfinite(hi):
             return False
-        candidate[feature] = emitted_high
+        candidate[feature] = hi
         return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
 
     candidate[feature] = representative_f
@@ -315,8 +315,8 @@ def _rule_rows_from_guarded_audit(
         plausibility = _scenario_a_guarded_rule_plausibility(
             x_instance,
             feature,
-            rec.get("emitted_lower"),
-            rec.get("emitted_upper"),
+            rec.get("lower"),
+            rec.get("upper"),
             representative,
         )
         _assert_interval_invariant(
@@ -340,8 +340,8 @@ def _rule_rows_from_guarded_audit(
                 "feature": feature,
                 "condition": rec["condition"],
                 "representative_value": representative,
-                "emitted_lower": _to_float(rec.get("emitted_lower")),
-                "emitted_upper": _to_float(rec.get("emitted_upper")),
+                "lower": _to_float(rec.get("lower")),
+                "upper": _to_float(rec.get("upper")),
                 "p_value_guard": rec["p_value"],
                 "prediction_point": rec["predict"],
                 "prediction_low": rec["low"],

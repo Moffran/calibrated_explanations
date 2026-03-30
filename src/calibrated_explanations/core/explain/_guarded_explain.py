@@ -11,18 +11,17 @@ For each instance *x* and each feature *f*:
 
 1. Use the multi-bin discretiser (``EntropyDiscretizer`` / ``RegressorDiscretizer``
    with ``max_depth=3``) to enumerate leaves for *f*.
-2. For each leaf, compute the median of calibration samples inside the leaf as
-   the representative value used for prediction payloads. Sparse numerical
-   leaves are guarded at that representative point. Dense numerical leaves are
-   guarded conservatively using `q10` and `q90`, with the decision p-value
-   defined as the minimum of the two probe p-values. Categorical leaves are
-   guarded at the candidate value directly.
+2. For each non-empty numerical leaf, compute the median of calibration samples
+   inside the leaf as the representative value.  Guard this representative
+   point via a single KNN-based conformity probe at the raw ``significance``
+   threshold.  Categorical leaves are guarded at the candidate value directly.
+   Empty leaves are rejected unconditionally.
 3. Collect perturbed instances from all leaves and features, run a single
    batched call to ``prediction_orchestrator.predict_internal``, then scatter
    results back into per-bin prediction records.
 4. Optionally merge adjacent conforming bins into wider interval conditions.
-   Dense merged intervals are re-tested with the same conservative two-probe
-   rule; merges that fail are skipped.
+   Merged intervals are re-tested via a single median probe; merges that
+   fail the conformity check are skipped.
 5. Wrap results into CE-compatible explanation containers and guarded
    subclasses. These containers reuse standard helper surfaces (plotting,
    narratives, conjunctions, reject integration) via compatibility shims, but
@@ -52,10 +51,6 @@ if TYPE_CHECKING:
 
 
 _LOGGER = logging.getLogger(__name__)
-
-# Minimum calibration samples per bin to enable the two-probe (q10/q90) strategy.
-# Bins with fewer samples fall back to a single median probe.
-_SPARSE_THRESHOLD = 10
 
 
 def _require_guarded_calibration_alignment(explainer: "CalibratedExplainer") -> None:
@@ -265,8 +260,8 @@ def _guarded_bin_dedupe_key(gbin) -> tuple[Any, ...]:
     emitted interval bounds plus prediction payloads and guard-role flags.
     """
     return (
-        gbin.emitted_lower,
-        gbin.emitted_upper,
+        gbin.lower,
+        gbin.upper,
         gbin.predict,
         gbin.low,
         gbin.high,
@@ -506,37 +501,18 @@ def _finalise_group(
 
     representative = float(np.median(in_range))
 
-    # Re-test merged range via guard using q10/q90 or sparse fallback
+    # Re-test merged range via single median probe
     if guard is not None and adjusted_sig is not None:
-        if in_range.size >= _SPARSE_THRESHOLD:
-            q10 = float(np.percentile(in_range, 10))
-            q90 = float(np.percentile(in_range, 90))
-            adj_probe = adjusted_sig / 2
-            x_pert1 = x_instance.copy()
-            x_pert1[feature_idx] = q10
-            x_pert2 = x_instance.copy()
-            x_pert2[feature_idx] = q90
-            p_val = min(
-                float(guard.p_values(x_pert1.reshape(1, -1))[0]),
-                float(guard.p_values(x_pert2.reshape(1, -1))[0]),
-            )
-            emitted_lo, emitted_hi = q10, q90
-        else:
-            q10 = None
-            q90 = None
-            adj_probe = adjusted_sig
-            x_pert = x_instance.copy()
-            x_pert[feature_idx] = representative
-            p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-            emitted_lo, emitted_hi = lo, hi
-        conforming = p_val >= adj_probe
+        x_pert = x_instance.copy()
+        x_pert[feature_idx] = representative
+        p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
+        conforming = p_val >= adjusted_sig
         if not conforming:
             # Merge failed — return original unmerged bins
             return group
     else:
         p_val = float(np.mean([b.p_value for b in group]))
         conforming = True
-        emitted_lo, emitted_hi = lo, hi
 
     x_pert = x_instance.copy()
     x_pert[feature_idx] = representative
@@ -586,8 +562,6 @@ def _finalise_group(
         p_value=p_val,
         is_factual=is_factual,
         is_merged=True,
-        emitted_lower=emitted_lo,
-        emitted_upper=emitted_hi,
     )
 
 
@@ -602,7 +576,6 @@ def guarded_explain(
     features_to_ignore: Any = None,
     per_instance_features_to_ignore: Any = None,
     significance: float = 0.1,
-    use_bonferroni: bool = False,
     merge_adjacent: bool = False,
     n_neighbors: int = 5,
     normalize_guard: bool = True,
@@ -632,10 +605,7 @@ def guarded_explain(
         Conformity significance level. A larger value yields a stricter
         test (fewer bins accepted as in-distribution), because the
         conforming predicate compares the shipped decision p-value against
-        ``significance`` (or an adjusted threshold for dense-bin probes).
-    use_bonferroni : bool, default=False
-        When ``True``, apply per-feature Bonferroni correction and test each
-        bin of feature ``f`` at ``significance / n_bins(f)``.
+        ``significance``.
     merge_adjacent : bool, default=False
         Merge adjacent conforming bins into wider interval conditions.
         Merged representatives are re-tested via the guard; merges that fail
@@ -738,23 +708,16 @@ def guarded_explain(
     # Metadata: (inst_idx, feat_idx, bin_idx, lo, hi, p_val, rep, adjusted_sig, is_factual)
     pert_metadata: list[tuple] = []
 
-    # Cache per-feature bin lists (shared across instances for numerical features)
-    # and compute per-feature significance threshold.
+    # Cache per-feature bin lists (shared across instances for numerical features).
     feature_disc_bins: dict[int, list] = {}
-    feature_adjusted_sig: dict[int, float] = {}
     for f in range(n_features):
         if f in ignore_set:
             continue
-        if f in categorical_features:
-            n_bins_f = max(len(getattr(explainer, "feature_values", {}).get(f, [])), 1)
-            feature_adjusted_sig[f] = significance / n_bins_f if use_bonferroni else significance
-        else:
+        if f not in categorical_features:
             if discretizer is not None:
                 feature_disc_bins[f] = discretizer.get_bins_with_cal_indices(f, explainer.x_cal)
             else:
                 feature_disc_bins[f] = []
-            n_bins_f = max(len(feature_disc_bins[f]), 1)
-            feature_adjusted_sig[f] = significance / n_bins_f if use_bonferroni else significance
 
     for inst_idx in range(n_instances):
         x_instance = x[inst_idx]
@@ -767,8 +730,6 @@ def guarded_explain(
             if f in inst_ignore:
                 continue
 
-            adj_sig = feature_adjusted_sig[f]
-
             if f in categorical_features:
                 feature_values = getattr(explainer, "feature_values", {}).get(f, [])
                 for val in feature_values:
@@ -776,7 +737,7 @@ def guarded_explain(
                     x_pert[f] = val
                     # Guard p-value for this categorical value
                     p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-                    conforming = p_val >= adj_sig
+                    conforming = p_val >= significance
                     is_factual = bool(val == x_instance[f])
 
                     total_bins_tested += 1
@@ -797,10 +758,8 @@ def guarded_explain(
                             np.inf,
                             p_val,
                             val,  # Removed float(val) cast to prevent string category crashes
-                            adj_sig,
+                            significance,
                             is_factual,
-                            -np.inf,  # emitted_lo: categorical uses value directly
-                            np.inf,   # emitted_hi: categorical uses value directly
                         )
                     )
             else:
@@ -839,39 +798,17 @@ def guarded_explain(
                         else:
                             representative = float((lo + hi) / 2)
                         p_val = 0.0
-                        adj_probe = adj_sig
-                        emitted_lo, emitted_hi = lo, hi
-                        x_pert = x_instance.copy()
-                        x_pert[f] = representative
-
-                    elif feat_vals.size >= _SPARSE_THRESHOLD:
-                        # Two-probe: q10 and q90 with Bonferroni-corrected threshold
-                        q10 = float(np.percentile(feat_vals, 10))
-                        q90 = float(np.percentile(feat_vals, 90))
-                        representative = float(np.median(feat_vals))
-                        adj_probe = adj_sig / 2
-                        x_pert1 = x_instance.copy()
-                        x_pert1[f] = q10
-                        x_pert2 = x_instance.copy()
-                        x_pert2[f] = q90
-                        p1 = float(guard.p_values(x_pert1.reshape(1, -1))[0])
-                        p2 = float(guard.p_values(x_pert2.reshape(1, -1))[0])
-                        p_val = min(p1, p2)
-                        emitted_lo, emitted_hi = q10, q90
-                        # Use median representative for calibrated prediction
                         x_pert = x_instance.copy()
                         x_pert[f] = representative
 
                     else:
-                        # Sparse bin: single median probe, no condition truncation
+                        # Non-empty bin: single median probe
                         representative = float(np.median(feat_vals))
                         x_pert = x_instance.copy()
                         x_pert[f] = representative
                         p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-                        adj_probe = adj_sig
-                        emitted_lo, emitted_hi = lo, hi
 
-                    conforming = p_val >= adj_probe
+                    conforming = p_val >= significance
 
                     total_bins_tested += 1
                     if conforming:
@@ -883,7 +820,7 @@ def guarded_explain(
 
                     perturbed_rows.append(x_pert)
                     pert_metadata.append(
-                        (inst_idx, f, b_idx, lo, hi, p_val, representative, adj_probe, is_factual, emitted_lo, emitted_hi)
+                        (inst_idx, f, b_idx, lo, hi, p_val, representative, significance, is_factual)
                     )
 
     # ------------------------------------------------------------------ #
@@ -961,7 +898,7 @@ def guarded_explain(
     inst_feat_bins: dict[int, dict[int, list[GuardedBin]]] = {i: {} for i in range(n_instances)}
 
     for row_idx, meta in enumerate(pert_metadata):
-        inst_idx, feat_idx, b_idx, lo, hi, p_val, representative, adj_sig, is_factual, emitted_lo, emitted_hi = meta
+        inst_idx, feat_idx, b_idx, lo, hi, p_val, representative, adj_sig, is_factual = meta
         conforming = p_val >= adj_sig
 
         # Validate interval invariant: low <= predict <= high
@@ -1030,8 +967,6 @@ def guarded_explain(
             p_value=p_val,
             is_factual=bool(is_factual),
             is_merged=False,
-            emitted_lower=emitted_lo,
-            emitted_upper=emitted_hi,
         )
         feat_dict = inst_feat_bins[inst_idx]
         if feat_idx not in feat_dict:
@@ -1145,7 +1080,7 @@ def guarded_explain(
                         mondrian_bins=mondrian_bins,
                         mode=mode,
                         guard=guard,
-                        adjusted_sig=feature_adjusted_sig[f],
+                        adjusted_sig=significance,
                     )
 
             bins_for_feature = _dedupe_guarded_bins(bins_for_feature)

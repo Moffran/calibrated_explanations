@@ -323,7 +323,7 @@ def _summarize_scenario_d(dirs: dict, failures: List[Failure]) -> Tuple[List[str
         md.append("*Not run yet — no artifacts found.*")
         return term, md
 
-    params = _param_grid(metrics, ["significance", "n_neighbors", "use_bonferroni"])
+    params = _param_grid(metrics, ["significance", "n_neighbors"])
     seeds = metrics["seed"].nunique() if "seed" in metrics.columns else "?"
     datasets = list(metrics["dataset"].unique()) if "dataset" in metrics.columns else []
     term.append(f"  Params: seeds={seeds}  datasets={datasets}  {params}")
@@ -342,14 +342,14 @@ def _summarize_scenario_d(dirs: dict, failures: List[Failure]) -> Tuple[List[str
 
     # Fraction fully filtered per dataset at sig=0.10
     sub = metrics[
-        (np.isclose(metrics["significance"], 0.10)) & (~metrics["use_bonferroni"])
-    ] if "significance" in metrics.columns and "use_bonferroni" in metrics.columns else metrics
+        np.isclose(metrics["significance"], 0.10)
+    ] if "significance" in metrics.columns else metrics
 
     if not sub.empty and "fraction_instances_fully_filtered" in sub.columns:
         by_ds = sub.groupby("dataset")[["fraction_instances_fully_filtered",
                                         "mean_intervals_removed_per_instance",
                                         "n_features", "n_classes", "n_cal"]].mean()
-        term.append("  fraction_instances_fully_filtered (sig=0.10, no Bonferroni):")
+        term.append("  fraction_instances_fully_filtered (sig=0.10):")
         term.append(f"    {'dataset':<18}  {'n_feat':>6}  {'n_cls':>5}  {'n_cal':>5}  {'frac_filtered':>14}  {'mean_removed':>12}  status")
         term.append("    " + "-" * 80)
 

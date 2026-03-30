@@ -86,14 +86,6 @@ class GuardedBin:
     p_value: float
     is_factual: bool
     is_merged: bool = False
-    emitted_lower: Optional[float] = None
-    emitted_upper: Optional[float] = None
-
-    def __post_init__(self) -> None:
-        if self.emitted_lower is None:
-            object.__setattr__(self, "emitted_lower", self.lower)
-        if self.emitted_upper is None:
-            object.__setattr__(self, "emitted_upper", self.upper)
 
 
 def _guarded_condition_str(
@@ -112,8 +104,8 @@ def _guarded_condition_str(
     """
     if is_categorical:
         return f"{feature_name} = {gbin.representative}"
-    lo = gbin.emitted_lower
-    hi = gbin.emitted_upper
+    lo = gbin.lower
+    hi = gbin.upper
     if lo == -np.inf and hi == np.inf:
         return f"{feature_name} (any value)"
     if lo == -np.inf:
@@ -270,12 +262,19 @@ class GuardedFactualExplanation(FactualExplanation):
                     else str(f)
                 )
                 if self._guarded_verbose:
-                    warnings.warn(
-                        f"Dropping non-conforming factual bin for feature '{name}' "
-                        f"(p_value={factual_bin.p_value:.4f}).",
-                        UserWarning,
-                        stacklevel=2,
-                    )
+                    if factual_bin is None:
+                        warnings.warn(
+                            f"No factual bin found for feature '{name}'; skipping.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        warnings.warn(
+                            f"Dropping non-conforming factual bin for feature '{name}' "
+                            f"(p_value={factual_bin.p_value:.4f}).",
+                            UserWarning,
+                            stacklevel=2,
+                        )
                 continue
 
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
@@ -362,8 +361,6 @@ class GuardedFactualExplanation(FactualExplanation):
                     "feature_name": str(name),
                     "lower": _to_python(gbin.lower),
                     "upper": _to_python(gbin.upper),
-                    "emitted_lower": _to_python(gbin.emitted_lower),
-                    "emitted_upper": _to_python(gbin.emitted_upper),
                     "representative": _to_python(gbin.representative),
                     "p_value": _to_python(gbin.p_value),
                     "conforming": bool(gbin.conforming),
@@ -582,8 +579,6 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
                     "feature_name": str(name),
                     "lower": _to_python(gbin.lower),
                     "upper": _to_python(gbin.upper),
-                    "emitted_lower": _to_python(gbin.emitted_lower),
-                    "emitted_upper": _to_python(gbin.emitted_upper),
                     "representative": _to_python(gbin.representative),
                     "p_value": _to_python(gbin.p_value),
                     "conforming": bool(gbin.conforming),

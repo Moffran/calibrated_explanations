@@ -209,3 +209,5 @@ evaluation/ensure/*tables/*
 evaluation/reject/paper/
 docs/contracts/*
 scripts/contracts/*
+evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/per_instance_records.csv
+evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/metrics_records.csv

@@ -1897,7 +1897,6 @@ class CalibratedExplainer:
         *,
         _use_plugin: bool = True,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1934,9 +1933,6 @@ class CalibratedExplainer:
             Acceptable false-OOD rate. Bins are considered conforming when
             ``p_value >= significance``; bins below that threshold are
             treated as out-of-distribution and not included.
-        use_bonferroni : bool, default=False
-            When ``True``, apply per-feature Bonferroni correction and test
-            each bin of feature ``f`` at ``significance / n_bins(f)``.
         merge_adjacent : bool, default=False
             When ``True``, merge adjacent conforming bins into a single wider
             interval condition.
@@ -1978,7 +1974,6 @@ class CalibratedExplainer:
                 features_to_ignore=features_to_ignore,
                 reject_policy=reject_policy,
                 significance=significance,
-                use_bonferroni=use_bonferroni,
                 merge_adjacent=merge_adjacent,
                 n_neighbors=n_neighbors,
                 normalize_guard=normalize_guard,
@@ -1996,7 +1991,6 @@ class CalibratedExplainer:
         *,
         _use_plugin: bool = True,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -2033,9 +2027,6 @@ class CalibratedExplainer:
             Acceptable false-OOD rate. Bins are considered conforming when
             ``p_value >= significance``; bins below that threshold are
             treated as out-of-distribution and not included as alternatives.
-        use_bonferroni : bool, default=False
-            When ``True``, apply per-feature Bonferroni correction and test
-            each bin of feature ``f`` at ``significance / n_bins(f)``.
         merge_adjacent : bool, default=False
             When ``True``, merge adjacent conforming bins into a single wider
             interval condition.
@@ -2077,7 +2068,6 @@ class CalibratedExplainer:
                 features_to_ignore=features_to_ignore,
                 reject_policy=reject_policy,
                 significance=significance,
-                use_bonferroni=use_bonferroni,
                 merge_adjacent=merge_adjacent,
                 n_neighbors=n_neighbors,
                 normalize_guard=normalize_guard,

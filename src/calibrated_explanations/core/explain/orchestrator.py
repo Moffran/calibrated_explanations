@@ -1362,7 +1362,6 @@ class ExplanationOrchestrator:
         per_instance_features_to_ignore: Any = None,
         reject_policy: Any | None = None,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1391,8 +1390,6 @@ class ExplanationOrchestrator:
             Feature indices to exclude.
         significance : float, default=0.1
             Conformity significance level.
-        use_bonferroni : bool, default=False
-            Whether to apply per-feature Bonferroni correction.
         merge_adjacent : bool, default=False
             Merge adjacent conforming bins into wider intervals.
         n_neighbors : int, default=5
@@ -1438,7 +1435,6 @@ class ExplanationOrchestrator:
                             per_instance_features_to_ignore=per_instance_features_to_ignore,
                             reject_policy=RejectPolicy.NONE,
                             significance=significance,
-                            use_bonferroni=use_bonferroni,
                             merge_adjacent=merge_adjacent,
                             n_neighbors=n_neighbors,
                             normalize_guard=normalize_guard,
@@ -1516,7 +1512,6 @@ class ExplanationOrchestrator:
             features_to_ignore=features_to_ignore_flat,
             per_instance_features_to_ignore=per_instance_ignore,
             significance=significance,
-            use_bonferroni=use_bonferroni,
             merge_adjacent=merge_adjacent,
             n_neighbors=n_neighbors,
             normalize_guard=normalize_guard,
@@ -1533,7 +1528,6 @@ class ExplanationOrchestrator:
         per_instance_features_to_ignore: Any = None,
         reject_policy: Any | None = None,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1563,8 +1557,6 @@ class ExplanationOrchestrator:
             Feature indices to exclude.
         significance : float, default=0.1
             Conformity significance level.
-        use_bonferroni : bool, default=False
-            Whether to apply per-feature Bonferroni correction.
         merge_adjacent : bool, default=False
             Merge adjacent conforming bins into wider intervals.
         n_neighbors : int, default=5
@@ -1610,7 +1602,6 @@ class ExplanationOrchestrator:
                             per_instance_features_to_ignore=per_instance_features_to_ignore,
                             reject_policy=RejectPolicy.NONE,
                             significance=significance,
-                            use_bonferroni=use_bonferroni,
                             merge_adjacent=merge_adjacent,
                             n_neighbors=n_neighbors,
                             normalize_guard=normalize_guard,
@@ -1688,7 +1679,6 @@ class ExplanationOrchestrator:
             features_to_ignore=features_to_ignore_flat,
             per_instance_features_to_ignore=per_instance_ignore,
             significance=significance,
-            use_bonferroni=use_bonferroni,
             merge_adjacent=merge_adjacent,
             n_neighbors=n_neighbors,
             normalize_guard=normalize_guard,

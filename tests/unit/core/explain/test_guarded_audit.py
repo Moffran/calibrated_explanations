@@ -91,8 +91,6 @@ def test_guarded_factual_audit_returns_full_interval_table():
         "feature_name",
         "lower",
         "upper",
-        "emitted_lower",
-        "emitted_upper",
         "representative",
         "p_value",
         "conforming",
@@ -288,8 +286,6 @@ def test_guarded_audit_uses_emitted_bounds_in_condition_strings():
                     conforming=True,
                     p_value=0.42,
                     is_factual=False,
-                    emitted_lower=0.25,
-                    emitted_upper=0.75,
                 )
             ]
         },
@@ -297,9 +293,9 @@ def test_guarded_audit_uses_emitted_bounds_in_condition_strings():
         **payload,
     )
     rec = expl.get_guarded_audit()["intervals"][0]
-    assert rec["emitted_lower"] == pytest.approx(0.25)
-    assert rec["emitted_upper"] == pytest.approx(0.75)
-    assert rec["condition"] == "0.25 < f0 <= 0.75"
+    assert rec["lower"] == pytest.approx(0.0)
+    assert rec["upper"] == pytest.approx(1.0)
+    assert rec["condition"] == "0 < f0 <= 1"
 
 
 def test_guarded_audit_serialization_smoke():

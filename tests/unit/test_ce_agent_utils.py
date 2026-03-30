@@ -747,8 +747,6 @@ def test_format_guarded_audit_table_mrg_column_present():
                 "feature_name": "f0",
                 "lower": 0.0,
                 "upper": 4.0,
-                "emitted_lower": 1.0,
-                "emitted_upper": 3.0,
                 "p_value": 0.9,
                 "conforming": True,
                 "is_merged": True,
@@ -760,8 +758,6 @@ def test_format_guarded_audit_table_mrg_column_present():
                 "feature_name": "f1",
                 "lower": 0.0,
                 "upper": 1.0,
-                "emitted_lower": 0.0,
-                "emitted_upper": 1.0,
                 "p_value": 0.8,
                 "conforming": True,
                 "is_merged": False,
@@ -782,8 +778,8 @@ def test_format_guarded_audit_table_mrg_column_present():
     assert " N " in data_lines[1]
 
 
-def test_format_guarded_audit_table_merged_uses_emitted_bounds():
-    """A merged row must display emitted_lower/emitted_upper, not raw lower/upper."""
+def test_format_guarded_audit_table_merged_shows_lower_upper():
+    """A merged row must display lower/upper bounds."""
     payload = {
         "instance_index": 0,
         "summary": {
@@ -796,10 +792,8 @@ def test_format_guarded_audit_table_merged_uses_emitted_bounds():
             {
                 "feature": 0,
                 "feature_name": "f0",
-                "lower": 0.0,
-                "upper": 4.0,
-                "emitted_lower": 1.0,
-                "emitted_upper": 3.0,
+                "lower": 1.0,
+                "upper": 3.0,
                 "p_value": 0.9,
                 "conforming": True,
                 "is_merged": True,
@@ -810,11 +804,10 @@ def test_format_guarded_audit_table_merged_uses_emitted_bounds():
     }
     text = format_guarded_audit_table(payload)
     assert "(1, 3]" in text
-    assert "(0, 4]" not in text
 
 
-def test_format_guarded_audit_table_non_merged_uses_raw_bounds_when_equal():
-    """A non-merged row where emitted bounds equal raw bounds shows raw bounds."""
+def test_format_guarded_audit_table_non_merged_uses_lower_upper():
+    """A non-merged row shows lower/upper bounds."""
     payload = {
         "instance_index": 0,
         "summary": {
@@ -829,8 +822,6 @@ def test_format_guarded_audit_table_non_merged_uses_raw_bounds_when_equal():
                 "feature_name": "f0",
                 "lower": 0.0,
                 "upper": 2.0,
-                "emitted_lower": 0.0,
-                "emitted_upper": 2.0,
                 "p_value": 0.7,
                 "conforming": True,
                 "is_merged": False,

@@ -76,7 +76,6 @@ from evaluation.ensure.datasets_ensure import (  # noqa: E402
 
 DEFAULT_SIGNIFICANCE = (0.05, 0.10, 0.20)
 DEFAULT_N_NEIGHBORS = (3, 5)
-DEFAULT_BONFERRONI = (False, True)
 DEFAULT_TEST_SIZE = EnsureRunConfig.test_size
 DEFAULT_CALIBRATION_SIZES = EnsureRunConfig.calibration_sizes
 
@@ -147,7 +146,6 @@ def _evaluate_dataset(
                 "seed": seed,
                 "significance": np.nan,
                 "n_neighbors": np.nan,
-                "use_bonferroni": np.nan,
                 "audit_field_completeness": False,
                 "fraction_instances_fully_filtered": float("nan"),
                 "n_instances_fully_filtered": -1,
@@ -184,7 +182,6 @@ def _evaluate_dataset(
                 "seed": seed,
                 "significance": np.nan,
                 "n_neighbors": np.nan,
-                "use_bonferroni": np.nan,
                 "audit_field_completeness": False,
                 "fraction_instances_fully_filtered": float("nan"),
                 "n_instances_fully_filtered": -1,
@@ -242,7 +239,6 @@ def _evaluate_dataset(
                 "seed": seed,
                 "significance": np.nan,
                 "n_neighbors": np.nan,
-                "use_bonferroni": np.nan,
                 "audit_field_completeness": False,
                 "fraction_instances_fully_filtered": float("nan"),
                 "n_instances_fully_filtered": -1,
@@ -272,7 +268,6 @@ def _evaluate_dataset(
                 significance=cfg.significance,
                 n_neighbors=safe_nn,
                 merge_adjacent=cfg.merge_adjacent,
-                use_bonferroni=cfg.use_bonferroni,
                 normalize_guard=cfg.normalize_guard,
             )
             model = (
@@ -300,7 +295,6 @@ def _evaluate_dataset(
                     significance=safe_cfg.significance,
                     n_neighbors=safe_cfg.n_neighbors,
                     merge_adjacent=safe_cfg.merge_adjacent,
-                    use_bonferroni=safe_cfg.use_bonferroni,
                     normalize_guard=safe_cfg.normalize_guard,
                 )
 
@@ -313,7 +307,6 @@ def _evaluate_dataset(
                         "n_cal": len(x_cal),
                         "significance": safe_cfg.significance,
                         "n_neighbors": safe_cfg.n_neighbors,
-                        "use_bonferroni": safe_cfg.use_bonferroni,
                         **missing_entry,
                     })
 
@@ -341,7 +334,6 @@ def _evaluate_dataset(
                     "seed": seed,
                     "significance": safe_cfg.significance,
                     "n_neighbors": safe_cfg.n_neighbors,
-                    "use_bonferroni": safe_cfg.use_bonferroni,
                     "audit_field_completeness": all_complete,
                     "fraction_instances_fully_filtered": fraction_fully_filtered,
                     "n_instances_fully_filtered": n_fully_filtered,
@@ -362,7 +354,6 @@ def _evaluate_dataset(
                     "seed": seed,
                     "significance": cfg.significance,
                     "n_neighbors": cfg.n_neighbors,
-                    "use_bonferroni": cfg.use_bonferroni,
                     "audit_field_completeness": False,
                     "fraction_instances_fully_filtered": float("nan"),
                     "n_instances_fully_filtered": -1,
@@ -382,8 +373,7 @@ def _evaluate_dataset(
 
 def _plot_fraction_filtered(df: pd.DataFrame, out_dir: Path) -> None:
     """Bar chart: fraction_instances_fully_filtered by task at significance=0.10."""
-    bonf = df["use_bonferroni"].eq(True)
-    sub = df[(df["significance"] == 0.10) & (~bonf)].copy()
+    sub = df[df["significance"] == 0.10].copy()
     if sub.empty:
         return
     sub = sub[sub["task_skipped"] == False]  # noqa: E712
@@ -392,34 +382,12 @@ def _plot_fraction_filtered(df: pd.DataFrame, out_dir: Path) -> None:
     means.plot(kind="bar", ax=ax, color="steelblue")
     ax.axhline(0.10, linestyle="--", color="orange", label="significance=0.10")
     ax.set_ylabel("fraction instances with 0 emitted rules")
-    ax.set_title("Fraction Fully Filtered by Task (significance=0.10, no Bonferroni)")
+    ax.set_title("Fraction Fully Filtered by Task (significance=0.10)")
     ax.set_xlabel("")
     ax.legend()
     plt.xticks(rotation=30, ha="right")
     fig.tight_layout()
     fig.savefig(out_dir / "fraction_filtered_by_dataset.png", dpi=160)
-    plt.close(fig)
-
-
-def _plot_bonferroni_comparison(df: pd.DataFrame, out_dir: Path) -> None:
-    """Side-by-side: mean_intervals_removed with vs without Bonferroni by task."""
-    sub = df[df["significance"] == 0.10].copy()
-    if sub.empty:
-        return
-    sub = sub[sub["task_skipped"] == False]  # noqa: E712
-    sub["use_bonferroni"] = sub["use_bonferroni"].eq(True)
-    pivot = sub.groupby(["task", "use_bonferroni"])["mean_intervals_removed_per_instance"].mean().unstack()
-    if pivot.empty:
-        return
-    fig, ax = plt.subplots(figsize=(7, 4))
-    pivot.plot(kind="bar", ax=ax)
-    ax.set_ylabel("mean intervals removed per instance")
-    ax.set_title("Effect of use_bonferroni on Guard Aggressiveness by Task")
-    ax.set_xlabel("")
-    ax.legend(title="use_bonferroni")
-    plt.xticks(rotation=30, ha="right")
-    fig.tight_layout()
-    fig.savefig(out_dir / "bonferroni_comparison.png", dpi=160)
     plt.close(fig)
 
 
@@ -461,11 +429,9 @@ def main() -> None:
         args.num_seeds = 2
         sig_grid = (0.10,)
         nn_grid = (5,)
-        bonferroni_grid = (False,)
     else:
         sig_grid = DEFAULT_SIGNIFICANCE
         nn_grid = DEFAULT_N_NEIGHBORS
-        bonferroni_grid = DEFAULT_BONFERRONI
 
     out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -476,10 +442,9 @@ def main() -> None:
     )
     dataset_specs = load_dataset_specs(quick=args.quick)
     configs = [
-        GuardConfig(significance=s, n_neighbors=nn, use_bonferroni=b)
+        GuardConfig(significance=s, n_neighbors=nn)
         for s in sig_grid
         for nn in nn_grid
-        for b in bonferroni_grid
     ]
 
     all_summary: List[Dict] = []
@@ -508,7 +473,6 @@ def main() -> None:
         print(f"Wrote: {completeness_path} ({len(completeness_df)} missing-field records)")
 
     _plot_fraction_filtered(summary_df, out_dir)
-    _plot_bonferroni_comparison(summary_df, out_dir)
     print(f"Wrote plots to: {out_dir}")
 
     task_counts = pd.Series([task for task, _ in dataset_specs]).value_counts().to_dict()
@@ -544,7 +508,7 @@ def main() -> None:
                 f"- Dataset universe: {dataset_desc}\n"
                 f"- Ensure-style split policy: test_size={ensure_config.test_size}, calibration_sizes={list(ensure_config.calibration_sizes)}\n"
                 f"- Models: RandomForestClassifier (binary/multiclass), RandomForestRegressor (regression)\n"
-                f"- Guard grid: significance={list(sig_grid)}, n_neighbors={list(nn_grid)}, use_bonferroni={list(bonferroni_grid)}"
+                f"- Guard grid: significance={list(sig_grid)}, n_neighbors={list(nn_grid)}"
             ),
         ),
         (
@@ -555,9 +519,7 @@ def main() -> None:
                 "multiclass classification, regression, high-dimensional inputs, "
                 "and small calibration sets?\n\n"
                 f"This run draws from the same dataset registry used by the ensured "
-                f"evaluation suite: {dataset_desc}.\n"
-                "The configuration grid can include use_bonferroni=True, which is "
-                "untested in Scenario A and is retained here as an engineering stress setting."
+                f"evaluation suite: {dataset_desc}."
             ),
         ),
         (
@@ -626,10 +588,6 @@ def main() -> None:
                 "and empty-rule behavior under guarded filtering. Regression datasets stress "
                 "the separate guarded regression path and confirm the audit contract holds "
                 "outside classification.\n\n"
-                "use_bonferroni=True is intentionally included because it makes the guard "
-                "much stricter and therefore exposes edge cases in the audit and empty-rule "
-                "paths. That sensitivity is valuable for engineering hardening, but it "
-                "should not become a headline comparison against the default configuration.\n\n"
                 "Scenario D supports an engineering claim: the guarded API behaves "
                 "correctly across realistic dataset shapes. It does not by itself justify "
                 "a broad real-world effectiveness claim."

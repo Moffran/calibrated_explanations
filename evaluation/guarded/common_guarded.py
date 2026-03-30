@@ -23,7 +23,6 @@ class GuardConfig:
     significance: float = 0.1
     n_neighbors: int = 5
     merge_adjacent: bool = False
-    use_bonferroni: bool = False
     normalize_guard: bool = True
 
 
@@ -35,7 +34,6 @@ OOD_RESPONSIVENESS_MIN_DELTA: float = 0.05
 # Defined by ADR-032 Addendum.
 REQUIRED_AUDIT_FIELDS: frozenset[str] = frozenset({
     "feature", "feature_name", "lower", "upper",
-    "emitted_lower", "emitted_upper",
     "representative",
     "p_value", "conforming", "emitted", "emission_reason",
     "condition", "predict", "low", "high",

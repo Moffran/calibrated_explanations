@@ -65,7 +65,6 @@ guarded interval candidates.
 
 - `intervals_conforming`: candidates accepted by the shipped guard rule.
 - `intervals_removed_guard`: candidates rejected by the shipped guard rule.
-- `emitted_lower` / `emitted_upper`: the displayed interval condition when dense-bin guarding narrows the raw bin bounds.
 
 ## Parameters
 

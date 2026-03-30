@@ -479,14 +479,9 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explain_guarded_factual` : Refer to the docstring for full parameter documentation.
         """
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-            )
-            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-            .explainer
-            is not None
-        )
+        self._assert_fitted(
+            "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+        )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
@@ -505,14 +500,9 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explore_guarded_alternatives` : Refer to the docstring for full parameter documentation.
         """
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-            )
-            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-            .explainer
-            is not None
-        )
+        self._assert_fitted(
+            "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+        )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)

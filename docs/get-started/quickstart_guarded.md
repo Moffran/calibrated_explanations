@@ -78,7 +78,6 @@ audit = guarded_factual.get_guarded_audit()
 Key audit fields:
 - `intervals_conforming`: candidate intervals accepted by the shipped guard rule.
 - `intervals_removed_guard`: candidate intervals rejected by the shipped guard rule.
-- `emitted_lower` / `emitted_upper`: the displayed interval condition when dense-bin guarding narrows the raw bin bounds.
 
 Next steps:
 - {doc}`../foundations/concepts/guarded_explanations`
