@@ -168,6 +168,11 @@ def clear_plot_renderers() -> None:
     )
 
 
+def clear_legacy_registry() -> None:
+    """Clear the legacy _REGISTRY and _TRUSTED lists for test isolation."""
+    registry.clear()
+
+
 def registry_snapshot():
     """Return an immutable snapshot of the legacy registry list."""
     return tuple(registry._REGISTRY)

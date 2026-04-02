@@ -15,6 +15,11 @@ from calibrated_explanations.plugins.base import ExplainerPlugin
 registry_testing = importlib.import_module("calibrated_explanations.plugins._testing")
 
 
+def clear_legacy_registry() -> None:
+    """Clear the legacy _REGISTRY and _TRUSTED lists for test isolation."""
+    registry_testing.clear_legacy_registry()
+
+
 def clear_explanation_plugins() -> None:
     """Reset explanation plugin catalog for isolated tests."""
     registry.reset_plugin_catalog(kind="explanation")

@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+import logging
+
+import numpy as np
 import pytest
 
+from calibrated_explanations.core.explain._feature_filter import (
+    FeatureFilterConfig,
+    compute_filtered_features_to_ignore,
+    emit_feature_filter_governance_event,
+)
 from calibrated_explanations.governance.events import validate_governance_event
 from calibrated_explanations.logging import logging_context
 from calibrated_explanations.plugins import registry
@@ -258,6 +266,85 @@ def test_governance_events_are_side_effect_only_and_payload_safe(
     payload = {key: getattr(record, key) for key in record.__dict__}
     validate_governance_event(payload)
 
+
+def test_should_emit_feature_filter_governance_record_with_context_when_event_logged(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with (
+        logging_context(request_id="req-feature-filter", tenant_id="tenant-a", mode="factual"),
+        caplog.at_level(logging.INFO, logger="calibrated_explanations.governance.feature_filter"),
+    ):
+        emit_feature_filter_governance_event(
+            decision="filter_skipped",
+            reason="unit-test reason",
+            strict=True,
+            mode="factual",
+        )
+
+    record = caplog.records[-1]
+    assert record.name == "calibrated_explanations.governance.feature_filter"
+    assert record.decision == "filter_skipped"
+    assert record.reason == "unit-test reason"
+    assert record.strict_observability is True
+    assert record.mode == "factual"
+    assert record.request_id == "req-feature-filter"
+    assert record.tenant_id == "tenant-a"
+
+
+def test_should_emit_operational_and_governance_feature_filter_records_when_strict_path_triggers(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class ExplanationStub:
+        def __init__(self, feature_weights: object) -> None:
+            self.feature_weights = feature_weights
+
+    class CollectionStub:
+        def __init__(self, explanations: list[object]) -> None:
+            self.explanations = explanations
+
+    collection = CollectionStub([ExplanationStub({"predict": None})])
+    config = FeatureFilterConfig(enabled=True, per_instance_top_k=2, strict_observability=True)
+
+    with (
+        logging_context(request_id="req-strict", tenant_id="tenant-b"),
+        caplog.at_level(logging.DEBUG),
+    ):
+        result = compute_filtered_features_to_ignore(
+            collection,
+            num_features=None,
+            base_ignore=np.asarray([0], dtype=int),
+            config=config,
+        )
+
+    assert result.global_ignore.tolist() == [0]
+
+    operational_records = [
+        record
+        for record in caplog.records
+        if record.name == "calibrated_explanations.core.explain.feature_filter"
+    ]
+    assert operational_records
+    operational_record = operational_records[-1]
+    assert operational_record.levelno == logging.WARNING
+    assert operational_record.inferred == 0
+    assert operational_record.provided == 0
+    assert "unable to infer feature count" in operational_record.getMessage()
+
+    governance_records = [
+        record
+        for record in caplog.records
+        if record.name == "calibrated_explanations.governance.feature_filter"
+    ]
+    assert governance_records
+    governance_record = governance_records[-1]
+    assert governance_record.levelno == logging.WARNING
+    assert governance_record.decision == "feature_filter_missing_feature_count"
+    assert governance_record.strict_observability is True
+    assert governance_record.request_id == "req-strict"
+    assert governance_record.tenant_id == "tenant-b"
+    assert governance_record.num_instances == 1
+
     # Ensure event payload is audit-focused and does not include sensitive/raw data blobs.
+    payload = {key: getattr(governance_record, key) for key in governance_record.__dict__}
     forbidden_keys = {"features", "labels", "prediction", "plugin_meta", "raw_input", "X", "y"}
     assert forbidden_keys.isdisjoint(payload.keys())

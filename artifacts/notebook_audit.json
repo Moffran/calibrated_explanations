@@ -36,8 +36,7 @@
         "learner",
         "plot",
         "predict",
-        "predict_proba",
-        "remove_conjunctions"
+        "predict_proba"
       ]
     },
     {

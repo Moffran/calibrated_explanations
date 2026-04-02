@@ -147,7 +147,9 @@ def test_setup_plot_style_should_warn_for_unknown_override_section(monkeypatch):
     monkeypatch.setattr(plotting, require_name, lambda: None)
 
     with pytest.warns(Warning, match='Unknown style section "custom"'):
-        config = getattr(plotting, setup_name)({"custom": {"alpha": 1}, "style": {"base": "ggplot"}})
+        config = getattr(plotting, setup_name)(
+            {"custom": {"alpha": 1}, "style": {"base": "ggplot"}}
+        )
 
     assert config["custom"]["alpha"] == "1"
     assert fake_plt.rcParams["grid.linestyle"] == config["grid"]["style"]

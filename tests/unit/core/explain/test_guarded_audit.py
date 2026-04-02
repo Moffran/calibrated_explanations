@@ -326,12 +326,12 @@ def test_guarded_audit__merge_fails_rerenders_original_bins():
     all_records = [r for inst in audit["instances"] for r in inst["intervals"]]
     assert all_records, "At least some interval records must be present"
     for rec in all_records:
-        assert isinstance(rec["is_merged"], bool), (
-            f"is_merged must be bool, got {rec['is_merged']!r}"
-        )
+        assert isinstance(
+            rec["is_merged"], bool
+        ), f"is_merged must be bool, got {rec['is_merged']!r}"
         assert isinstance(rec["p_value"], float), f"p_value must be float, got {rec['p_value']!r}"
         assert 0.0 <= rec["p_value"] <= 1.0, f"p_value out of [0, 1]: {rec['p_value']}"
     # At this strict significance level no merged bins should survive the re-check.
-    assert not any(r["is_merged"] for r in all_records), (
-        "No merged records expected at significance=0.95; merge rollback should have fired"
-    )
+    assert not any(
+        r["is_merged"] for r in all_records
+    ), "No merged records expected at significance=0.95; merge rollback should have fired"

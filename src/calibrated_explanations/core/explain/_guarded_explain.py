@@ -76,9 +76,7 @@ def _require_guarded_calibration_alignment(explainer: "CalibratedExplainer") -> 
     # NotFittedError, not a calibration-alignment error.  Check this before
     # anything else so callers who catch NotFittedError are not broken.
     if not getattr(explainer, "initialized", False):
-        raise NotFittedError(
-            "The learner must be initialized before calling guarded entrypoints."
-        )
+        raise NotFittedError("The learner must be initialized before calling guarded entrypoints.")
 
     # Fast explainers use per-feature blends of scaled_x_cal / fast_x_cal for
     # their interval calibrators, while InDistributionGuard always references
@@ -363,7 +361,7 @@ def _merge_factual_anchor(
     guard: Optional["InDistributionGuard"] = None,
     adjusted_sig: Optional[float] = None,
 ) -> list:
-    """Iteratively expand the factual emitted rule across adjacent conforming bins."""
+    """Expand the factual emitted rule across adjacent conforming bins."""
     if not bins:
         return []
 
@@ -563,6 +561,16 @@ def _finalise_group(
         is_factual=is_factual,
         is_merged=True,
     )
+
+
+def merge_adjacent_bins_for_testing(*args: Any, **kwargs: Any) -> list:
+    """Return merged guarded bins without importing a private helper in tests."""
+    return _merge_adjacent_bins(*args, **kwargs)
+
+
+def finalise_guarded_group_for_testing(*args: Any, **kwargs: Any) -> list:
+    """Return finalized guarded bins without importing a private helper in tests."""
+    return _finalise_group(*args, **kwargs)
 
 
 def guarded_explain(
@@ -820,7 +828,17 @@ def guarded_explain(
 
                     perturbed_rows.append(x_pert)
                     pert_metadata.append(
-                        (inst_idx, f, b_idx, lo, hi, p_val, representative, significance, is_factual)
+                        (
+                            inst_idx,
+                            f,
+                            b_idx,
+                            lo,
+                            hi,
+                            p_val,
+                            representative,
+                            significance,
+                            is_factual,
+                        )
                     )
 
     # ------------------------------------------------------------------ #
@@ -1109,9 +1127,7 @@ def guarded_explain(
                 f_weights["low"][f] = float(base_predict[inst_idx] - avg_h)
                 f_weights["high"][f] = float(base_predict[inst_idx] - avg_l)
 
-        if guarded_bins and not any(
-            b.conforming for bins in guarded_bins.values() for b in bins
-        ):
+        if guarded_bins and not any(b.conforming for bins in guarded_bins.values() for b in bins):
             warnings.warn(
                 f"All interval candidates for guarded instance {inst_idx} were removed "
                 "by the guard. No rules will be emitted for this instance.",

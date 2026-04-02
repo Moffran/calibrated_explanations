@@ -2303,7 +2303,7 @@ def unregister(plugin: ExplainerPlugin) -> None:
 
 
 def clear() -> None:
-    """Clear all registered plugins (testing convenience)."""
+    """Clear all registered plugins from the legacy registry and trusted list."""
     _REGISTRY.clear()
     _TRUSTED.clear()
 

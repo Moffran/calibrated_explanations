@@ -83,7 +83,6 @@ def test_explain_guarded_factual__get_rules_returns_dict():
     assert "weight" in rules
 
 
-
 # ---------------------------------------------------------------------------
 # Alternative guarded explanations
 # ---------------------------------------------------------------------------
@@ -506,9 +505,9 @@ def test_guarded_alternative_explanation__should_not_deduplicate_bins_during_rul
 
 def test_guarded_docs__should_keep_significance_wording_aligned_with_api_contract():
     repo_root = Path(__file__).resolve().parents[4]
-    concepts = (repo_root / "docs" / "foundations" / "concepts" / "guarded_explanations.md").read_text(
-        encoding="utf-8"
-    )
+    concepts = (
+        repo_root / "docs" / "foundations" / "concepts" / "guarded_explanations.md"
+    ).read_text(encoding="utf-8")
     quickstart = (repo_root / "docs" / "get-started" / "quickstart_guarded.md").read_text(
         encoding="utf-8"
     )
@@ -663,7 +662,7 @@ def test_should_warn_when_factual_bin_is_none_in_verbose_mode():
     """get_rules must emit UserWarning (not crash) when factual_bin is None and verbose=True."""
 
     # Minimal stub explainer and collection for direct construction
-    class _StubExplainer:
+    class StubExplainer:
         y_cal = np.array([0, 1])
         mode = "classification"
         feature_names = ["f0", "f1"]
@@ -674,9 +673,9 @@ def test_should_warn_when_factual_bin_is_none_in_verbose_mode():
         def is_multiclass(self):
             return False
 
-    class _StubCollection:
+    class StubCollection:
         def __init__(self):
-            self.explainer = _StubExplainer()
+            self.explainer = StubExplainer()
             self.features_to_ignore = []
             self.feature_filter_per_instance_ignore = None
 
@@ -685,14 +684,26 @@ def test_should_warn_when_factual_bin_is_none_in_verbose_mode():
 
     # Build a GuardedFactualExplanation where feature 0 has a non-factual bin only.
     non_factual_bin = GuardedBin(
-        lower=-np.inf, upper=np.inf, representative=0.5,
-        predict=0.3, low=0.2, high=0.4,
-        conforming=True, p_value=0.8, is_factual=False,
+        lower=-np.inf,
+        upper=np.inf,
+        representative=0.5,
+        predict=0.3,
+        low=0.2,
+        high=0.4,
+        conforming=True,
+        p_value=0.8,
+        is_factual=False,
     )
     factual_bin_f1 = GuardedBin(
-        lower=-np.inf, upper=np.inf, representative=0.2,
-        predict=0.8, low=0.7, high=0.9,
-        conforming=True, p_value=0.9, is_factual=True,
+        lower=-np.inf,
+        upper=np.inf,
+        representative=0.2,
+        predict=0.8,
+        low=0.7,
+        high=0.9,
+        conforming=True,
+        p_value=0.9,
+        is_factual=True,
     )
     payload = {
         "binned": {"rule_values": [{0: ([0.1], 0.1, 0.1), 1: ([0.2], 0.2, 0.2)}]},
@@ -715,7 +726,7 @@ def test_should_warn_when_factual_bin_is_none_in_verbose_mode():
     }
 
     expl = GuardedFactualExplanation(
-        _StubCollection(),
+        StubCollection(),
         0,
         np.array([0.1, 0.2]),
         guarded_bins={0: [non_factual_bin], 1: [factual_bin_f1]},

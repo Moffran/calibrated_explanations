@@ -170,6 +170,16 @@ def main() -> int:
             _python_cmd("scripts/quality/check_governance_event_schema.py"),
         ),
         Step(
+            "STD-005 logger domain enforcement",
+            _python_cmd(
+                "scripts/quality/check_logging_domains.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/quality/logging_domain_report.json",
+            ),
+        ),
+        Step(
             "Agent instruction consistency",
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
@@ -412,6 +422,16 @@ def main() -> int:
         Step(
             "ADR-028 governance event schema check (main)",
             _python_cmd("scripts/quality/check_governance_event_schema.py"),
+        ),
+        Step(
+            "STD-005 logger domain enforcement (main)",
+            _python_cmd(
+                "scripts/quality/check_logging_domains.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/quality/logging_domain_report.json",
+            ),
         ),
         Step(
             "Over-testing coverage contexts",

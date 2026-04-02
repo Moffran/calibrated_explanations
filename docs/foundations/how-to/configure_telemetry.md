@@ -114,3 +114,79 @@ python scripts/quality/check_logging_domains.py \
 The check accepts `logging.getLogger(__name__)` and explicit
 `calibrated_explanations.<domain>...` literals, and fails if non-project logger
 literals are introduced in library code.
+
+## Text and JSON logging examples
+
+For local debugging, route the main library tree to a human-readable formatter:
+
+```python
+import logging.config
+
+logging.config.dictConfig({
+  "version": 1,
+  "formatters": {
+    "text": {
+      "format": "%(levelname)s %(name)s request_id=%(request_id)s mode=%(mode)s %(message)s",
+    },
+  },
+  "handlers": {
+    "stderr": {
+      "class": "logging.StreamHandler",
+      "formatter": "text",
+      "stream": "ext://sys.stderr",
+    },
+  },
+  "loggers": {
+    "calibrated_explanations": {
+      "handlers": ["stderr"],
+      "level": "INFO",
+    },
+  },
+})
+```
+
+When governance teams need a dedicated audit sink, route the governance subtree
+separately while keeping the rest of the runtime on text logs:
+
+```python
+import logging.config
+
+logging.config.dictConfig({
+  "version": 1,
+  "formatters": {
+    "text": {
+      "format": "%(levelname)s %(name)s %(message)s",
+    },
+    "json": {
+      "format": "%(message)s",
+    },
+  },
+  "handlers": {
+    "runtime": {
+      "class": "logging.StreamHandler",
+      "formatter": "text",
+      "stream": "ext://sys.stderr",
+    },
+    "governance": {
+      "class": "logging.StreamHandler",
+      "formatter": "json",
+      "stream": "ext://sys.stderr",
+    },
+  },
+  "loggers": {
+    "calibrated_explanations": {
+      "handlers": ["runtime"],
+      "level": "INFO",
+    },
+    "calibrated_explanations.governance": {
+      "handlers": ["governance"],
+      "level": "INFO",
+      "propagate": False,
+    },
+  },
+})
+```
+
+The second configuration keeps audit-relevant `governance.*` records isolated
+without changing the operational logger hierarchy used by the rest of the
+library.
