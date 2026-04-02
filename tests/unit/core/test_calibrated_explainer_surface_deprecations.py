@@ -7,7 +7,7 @@ import pytest
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
-from tests.helpers.deprecation import warns_or_raises
+from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 def build_stub_explainer() -> CalibratedExplainer:
@@ -41,9 +41,13 @@ def test_nonessential_method_deprecations_emit() -> None:
     explainer.prediction_orchestrator.ensure_interval_runtime_state.return_value = None
     explainer.prediction_orchestrator.gather_interval_hints.return_value = ("hint",)
 
-    with warns_or_raises(match="build_plot_style_chain is deprecated"):
-        chain = explainer.build_plot_style_chain()
-    assert chain == ("legacy",)
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning, match="build_plot_style_chain is deprecated"):
+            explainer.build_plot_style_chain()
+    else:
+        with warns_or_raises(match="build_plot_style_chain is deprecated"):
+            chain = explainer.build_plot_style_chain()
+        assert chain == ("legacy",)
 
     with warns_or_raises(match="instantiate_plugin is deprecated"):
         _ = explainer.instantiate_plugin(MagicMock())
@@ -51,9 +55,13 @@ def test_nonessential_method_deprecations_emit() -> None:
     with warns_or_raises(match="ensure_interval_runtime_state is deprecated"):
         explainer.ensure_interval_runtime_state()
 
-    with warns_or_raises(match="gather_interval_hints is deprecated"):
-        hints = explainer.gather_interval_hints(fast=True)
-    assert hints == ("hint",)
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning, match="gather_interval_hints is deprecated"):
+            explainer.gather_interval_hints(fast=True)
+    else:
+        with warns_or_raises(match="gather_interval_hints is deprecated"):
+            hints = explainer.gather_interval_hints(fast=True)
+        assert hints == ("hint",)
 
 
 def test_invoke_explanation_plugin_deprecation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,17 +76,29 @@ def test_invoke_explanation_plugin_deprecation(monkeypatch: pytest.MonkeyPatch) 
         resolve_effective_reject_policy_test_stub,
     )
 
-    with warns_or_raises(match="invoke_explanation_plugin is deprecated"):
-        result = explainer.invoke_explanation_plugin(
-            mode="factual",
-            x=[[0.0]],
-            threshold=None,
-            low_high_percentiles=None,
-            bins=None,
-            features_to_ignore=None,
-            extras={},
-        )
-    assert result == "invoke-result"
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning, match="invoke_explanation_plugin is deprecated"):
+            explainer.invoke_explanation_plugin(
+                mode="factual",
+                x=[[0.0]],
+                threshold=None,
+                low_high_percentiles=None,
+                bins=None,
+                features_to_ignore=None,
+                extras={},
+            )
+    else:
+        with warns_or_raises(match="invoke_explanation_plugin is deprecated"):
+            result = explainer.invoke_explanation_plugin(
+                mode="factual",
+                x=[[0.0]],
+                threshold=None,
+                low_high_percentiles=None,
+                bins=None,
+                features_to_ignore=None,
+                extras={},
+            )
+        assert result == "invoke-result"
 
 
 def test_nonessential_alias_property_getters_emit() -> None:

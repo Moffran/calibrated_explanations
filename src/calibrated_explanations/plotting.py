@@ -1052,12 +1052,8 @@ def plot_alternative(
         )
         return
 
-    # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if (
-        not return_plot_spec and not show and plt is None
-    ):  # lightweight path for tests/CI without viz extra
-        return
-    # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
+    # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib.
+    # Saving still requires the renderer/backend to be available.
     if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
         return
 
