@@ -225,6 +225,10 @@ The repository planning/control hierarchy is authoritative and must be preserved
 2. Concrete implementation plans in `vX.Y.Z_plan.md`
 3. Governance via ADRs (`docs/improvement/adrs/`) and Standards (`docs/standards/`)
 
+Conflict rule: ADRs and Standards govern design, behavior, architecture, and
+engineering standards. If any plan text conflicts with an ADR/Standard, the
+ADR/Standard is authoritative and must win.
+
 Do not redesign, replace, or create a parallel planning hierarchy unless one of these
 is true:
 
@@ -238,6 +242,17 @@ When a shared instruction must be added or updated, `CONTRIBUTOR_INSTRUCTIONS.md
 is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
 repository-wide engineering rules.
+
+Default execution posture for plan/instruction edits:
+
+- If no concrete contradiction, missing required rule, or execution blocker
+  exists, make no structural documentation changes.
+- Apply minimum-diff edits only; preserve existing headings, numbering,
+  milestone-plan structure, and future-milestone detail unless a concrete
+  conflict requires local clarification.
+- Do not create new plan/policy/checklist files by default; prefer resolving
+  shared guidance in this file with short cross-references from plans only when
+  necessary.
 
 ---
 

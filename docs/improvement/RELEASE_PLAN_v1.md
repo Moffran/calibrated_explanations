@@ -57,7 +57,8 @@ A milestone cannot close while any of the following remains open:
   - **Next action:** Re-baseline future milestone statuses only when the active milestone boundary is reached.
 - **Boundary-update policy**
   - **Status:** Governance/planning docs are updated at milestone boundaries, not on every PR.
-  - **Next action:** Apply batched updates at milestone close/open checkpoints to keep process overhead low.
+  - **Next action:** Apply batched plan-grooming updates at milestone close/open checkpoints to keep process overhead low.
+  - **Scope clarification:** This boundary policy applies to milestone plan grooming only; it does not override required same-PR updates to `CONTRIBUTOR_INSTRUCTIONS.md` or other mandated control/checklist files when code/API/governance changes require them.
 - **Traceability of completed work**
   - **Status:** Completed items remain in plan/checklist artifacts and are marked complete rather than removed.
   - **Next action:** Continue preserving completed entries for release audit traceability.
