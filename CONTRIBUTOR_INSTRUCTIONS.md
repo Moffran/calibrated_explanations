@@ -217,6 +217,28 @@ Before any implementation work:
 1. Read `docs/improvement/RELEASE_PLAN_v1.md` to identify the active milestone.
 2. Check `docs/improvement/adrs/` for ADRs governing the area being changed.
 
+### 7A. Engineering planning hierarchy authority (mandatory)
+
+The repository planning/control hierarchy is authoritative and must be preserved:
+
+1. `docs/improvement/RELEASE_PLAN_v1.md` (release-level plan and control gates)
+2. Concrete implementation plans in `vX.Y.Z_plan.md`
+3. Governance via ADRs (`docs/improvement/adrs/`) and Standards (`docs/standards/`)
+
+Do not redesign, replace, or create a parallel planning hierarchy unless one of these
+is true:
+
+- The current documents directly contradict each other.
+- A required engineering rule is missing and safe execution is impossible without it.
+- The current structure causes a concrete execution failure (not a stylistic concern).
+- A repository-wide instruction for all agents and human contributors has no suitable
+  existing home elsewhere.
+
+When a shared instruction must be added or updated, `CONTRIBUTOR_INSTRUCTIONS.md`
+is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
+repository-wide engineering rules.
+
 ---
 
 ## 8. Design Patterns & TDD
