@@ -3,6 +3,8 @@
 This checklist tracks compliance with release gates defined in `docs/improvement/RELEASE_PLAN_v1.md`.
 It must be reviewed and completed for every pull request that touches the user-facing API or documentation.
 
+Boundary policy: keep checklist structure stable within a milestone; adjust gates and wording at milestone boundaries to reduce process overhead.
+
 ## Legacy Stability (ADR-020)
 
 - **Legacy contract touched?**
