@@ -10,6 +10,7 @@ from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 from calibrated_explanations.explanations.reject import RejectCalibratedExplanations
 from calibrated_explanations.explanations.explanation import FactualExplanation
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 pytestmark = pytest.mark.integration
 
@@ -67,6 +68,10 @@ def test_should_return_rejected_collection_subclass_when_explain_factual_called_
     # Check plot support (inherited)
     try:
         res.plot(show=False)
+    except ConfigurationError as e:
+        if "matplotlib" in str(e):
+            pytest.skip("matplotlib not installed in core test environment")
+        raise
     except Exception as e:
         pytest.fail(f"plot() failed on RejectCalibratedExplanations: {e}")
 
