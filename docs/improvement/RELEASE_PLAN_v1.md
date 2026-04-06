@@ -13,7 +13,16 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
 ## Repository authority
 
 - `kristinebergs/calibrated_explanations` is an active development mirror.
+- CI in the development mirror is responsible for validation and artifact build verification only.
 - `Moffran/calibrated_explanations` is authoritative for versions, tags, GitHub releases, PyPI publication, changelog, security advisories, and documentation.
+
+### CI operating scope (mirror repository)
+
+- Required PR path: lint, mypy, core tests, private-member scan, anti-pattern audit, and touched-path governance schema checks.
+- Heavy checks (perf, notebook execution, full viz-focused checks, over-testing density, and other heavy/manual/scheduled jobs) stay off the critical PR path unless explicitly promoted by milestone policy.
+- Packaging in the development mirror is verification-only: build wheel/sdist, install from built artifacts, and inspect artifact contents.
+- Notebook execution is blocking on release branches and advisory/non-blocking outside release-boundary contexts unless explicitly promoted.
+- Local reproduction model: `make local-checks-pr` for routine work, `make local-checks` before milestone closure or branch-gate changes.
 
 ## Lightweight release control (master)
 
@@ -395,7 +404,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   7. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
   8. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
   9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry. → relocated to v0.11.2.
-  10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan. → relocated to v0.11.2.
+  10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan. → completed in v0.11.1.
   11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v1.0.0-rc` remove).
   12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
   13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
@@ -431,11 +440,10 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      dates older than 60 days, and close any quick-win gaps that require no feature
      work (e.g., remaining ADR-026 observability gaps).
   4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3 and 7 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
-  5. CI workflow decommissioning (relocated from v0.11.1 Task 10; depends on v0.11.1 Task 6 replacement workflows stabilizing): remove legacy wrapper workflows (`test.yml`, `coverage.yml`, `examples.yml`) and update branch protection references. ADR-011 does not apply (CI wrappers are not public API).
-  6. Deep memory audit and retention hardening.
-  7. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
+  5. Deep memory audit and retention hardening.
+  6. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 status promoted to Accepted; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated; legacy CI wrapper workflows removed with replacement workflows confirmed green; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 status promoted to Accepted; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
