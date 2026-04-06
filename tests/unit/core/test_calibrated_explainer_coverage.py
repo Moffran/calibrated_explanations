@@ -84,7 +84,10 @@ def test_preloads(mock_learner, mock_plugin_manager):
     assert True
 
 
-def test_plugin_delegations_and_aliases(mock_learner, mock_plugin_manager):
+def test_plugin_delegations_and_aliases(
+    monkeypatch: pytest.MonkeyPatch, mock_learner, mock_plugin_manager
+):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
@@ -203,7 +206,10 @@ def test_explain_mondrian_bins_and_legacy_path(mock_learner, mock_plugin_manager
         assert mock_legacy.call_args.kwargs["bins"] is explainer.bins
 
 
-def test_additional_coverage(mock_learner, mock_plugin_manager):
+def test_additional_coverage(
+    monkeypatch: pytest.MonkeyPatch, mock_learner, mock_plugin_manager
+):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
 

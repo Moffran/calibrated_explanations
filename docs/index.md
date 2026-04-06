@@ -2,6 +2,10 @@
 
 Use this site by audience and by task.
 
+Repository authority:
+- `kristinebergs/calibrated_explanations` is an active development mirror.
+- `Moffran/calibrated_explanations` is authoritative for versions, tags, GitHub releases, PyPI publication, changelog, security advisories, and published documentation.
+
 - New users start in {doc}`get-started/index`.
 - Practitioners use {doc}`practitioner/index`.
 - Researchers use {doc}`researcher/index`.
