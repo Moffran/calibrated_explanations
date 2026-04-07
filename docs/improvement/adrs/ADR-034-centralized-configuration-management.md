@@ -1,10 +1,10 @@
-> **Status note (2026-04-02):** Last edited 2026-04-02
+> **Status note (2026-04-07):** Last edited 2026-04-07 to update status to Accepted.
 > Archive after: Retain indefinitely as architectural record
 > Implementation window: v0.11.1–v1.0.0
 
 # ADR-034: Centralized Configuration Management
 
-Status: Proposed
+Status: Accepted
 Date: 2026-03-03
 Deciders: Core maintainers
 Reviewers: Runtime, Plugin, and Governance maintainers
