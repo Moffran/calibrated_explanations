@@ -66,6 +66,11 @@ def test_predict_caching_miss(orchestrator, mock_explainer):
 
 
 def testpredict_impl_regression_crepes_error(orchestrator, mock_explainer, enable_fallbacks):
+    with patch(
+        "calibrated_explanations.core.prediction.interval_registry.IntervalRegistry"
+    ) as mock_registry:
+        orchestrator = PredictionOrchestrator(mock_explainer)
+        orchestrator.interval_registry = mock_registry.return_value
     mock_explainer.mode = "regression"
     mock_explainer.is_fast.return_value = False
     mock_explainer.suppress_crepes_errors = True
@@ -100,6 +105,11 @@ def testpredict_impl_regression_crepes_error_reraise(orchestrator, mock_explaine
 def testpredict_impl_regression_probabilistic_crepes_error_suppress(
     orchestrator, mock_explainer, enable_fallbacks
 ):
+    with patch(
+        "calibrated_explanations.core.prediction.interval_registry.IntervalRegistry"
+    ) as mock_registry:
+        orchestrator = PredictionOrchestrator(mock_explainer)
+        orchestrator.interval_registry = mock_registry.return_value
     mock_explainer.mode = "regression"
     mock_explainer.is_fast.return_value = False
     mock_explainer.suppress_crepes_errors = True

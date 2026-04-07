@@ -19,6 +19,23 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
+from .core.config_manager import ConfigManager
+
+_plotting_config_manager: ConfigManager | None = None
+
+
+def _get_plotting_config_manager() -> ConfigManager:
+    global _plotting_config_manager
+    if _plotting_config_manager is None:
+        _plotting_config_manager = ConfigManager.from_sources()
+    return _plotting_config_manager
+
+
+def reset_plotting_config_manager() -> None:
+    """Reset plotting module config singleton (tests only)."""
+    global _plotting_config_manager
+    _plotting_config_manager = None
+
 
 def __getattr__(name: str) -> Any:
     """Lazily load legacy plotting module."""
@@ -100,36 +117,7 @@ def __require_matplotlib() -> None:
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
-    # Import tomllib/tomli lazily to avoid a top-level hard dependency
-    try:
-        import tomllib as _plot_tomllib
-    except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
-        try:  # pragma: no cover - optional dependency path
-            import tomli as _plot_tomllib  # type: ignore[assignment]
-        except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
-            _plot_tomllib = None  # type: ignore[assignment]
-
-    if _plot_tomllib is None:
-        return {}
-
-    candidate = Path.cwd() / "pyproject.toml"
-    if not candidate.exists():
-        return {}
-    try:
-        with candidate.open("rb") as fh:  # type: ignore[arg-type]
-            data = _plot_tomllib.load(fh)
-    except Exception:  # adr002_allow
-        return {}
-
-    cursor: Any = data
-    for key in ("tool", "calibrated_explanations", "plots"):
-        if isinstance(cursor, dict) and key in cursor:
-            cursor = cursor[key]
-        else:
-            return {}
-    if isinstance(cursor, dict):
-        return dict(cursor)
-    return {}
+    return _get_plotting_config_manager().pyproject_section("plots")
 
 
 def read_plot_pyproject() -> Dict[str, Any]:
@@ -212,10 +200,11 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
     if isinstance(explicit_style, str) and explicit_style:
         chain.append(explicit_style)
 
-    env_style = os.environ.get("CE_PLOT_STYLE")
+    config_manager = _get_plotting_config_manager()
+    env_style = config_manager.env("CE_PLOT_STYLE")
     if env_style:
         chain.append(env_style.strip())
-    chain.extend(split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+    chain.extend(split_csv(config_manager.env("CE_PLOT_STYLE_FALLBACKS")))
 
     py_settings = _read_plot_pyproject()
     py_style = py_settings.get("style")

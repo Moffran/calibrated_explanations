@@ -14,6 +14,13 @@ import calibrated_explanations.plotting as plotting
 pytest.importorskip("matplotlib")
 
 
+@pytest.fixture(autouse=True)
+def _reset_plotting_config_manager():
+    plotting.reset_plotting_config_manager()
+    yield
+    plotting.reset_plotting_config_manager()
+
+
 def test_split_csv_coverage():
     assert plotting.split_csv(None) == ()
     assert plotting.split_csv("") == ()

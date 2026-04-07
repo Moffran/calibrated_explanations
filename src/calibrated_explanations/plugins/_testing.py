@@ -19,6 +19,7 @@ def clear_env_trust_cache() -> None:
     """Clear cached trust identifiers loaded from environment and pyproject."""
     registry._ENV_TRUST_CACHE = None
     registry._PYPROJECT_TRUST_CACHE = None
+    registry._reset_config_manager_for_testing()
 
 
 def set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None:

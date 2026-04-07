@@ -142,7 +142,7 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 
 **ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
 
-**ADR-034 - Centralized Configuration Management:** Accepted (2026-04-07); ADR-034 defines the centralized configuration architecture, snapshot semantics, ownership model, boundary rules, validation posture, and CLI/export contract. Delivery sequencing is governed by the versioned release plans: v0.11.1 Task 15 owns Phase A authority/migration completion, v0.11.1 Task 20 owns schema-backed `governance.config` lifecycle-event closure, and v0.11.2 completes the remaining allowlisted module migrations.
+**ADR-034 - Centralized Configuration Management:** Accepted (2026-04-07); ADR-034 defines the centralized configuration architecture, snapshot semantics, ownership model, boundary rules, validation posture, and CLI/export contract. Delivery sequencing is governed by the versioned release plans: v0.11.1 Task 15 owns Phase A authority/migration closure, v0.11.1 Task 20 owns schema-backed `governance.config` lifecycle-event closure, and v0.11.2 closes remaining post-Phase-A migration and governance follow-through.
 
 **ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up: PlotSpec default-promotion readiness-gate definition and policy decision.
 

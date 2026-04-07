@@ -257,6 +257,19 @@ def main() -> int:
             ),
         ),
         Step(
+            "ADR-034 ConfigManager usage guard",
+            _python_cmd(
+                "scripts/quality/check_config_manager_usage.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--scope",
+                "runtime",
+                "--report",
+                "reports/quality/config_manager_usage_report.json",
+                "--check",
+            ),
+        ),
+        Step(
             "ADR-030 marker hygiene",
             _python_cmd(
                 "scripts/quality/check_marker_hygiene.py",

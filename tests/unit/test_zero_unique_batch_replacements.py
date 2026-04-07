@@ -96,6 +96,7 @@ def test_plotting_config_helpers_and_style_chain(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     plotting = importlib.import_module("calibrated_explanations.plotting")
+    plotting.reset_plotting_config_manager()
 
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
@@ -126,8 +127,10 @@ def test_plotting_config_helpers_and_style_chain(
         "calibrated_explanations.plugins.registry.list_plot_style_descriptors",
         lambda: [SimpleNamespace(identifier="registry.default", metadata={"is_default": True})],
     )
+    plotting.reset_plotting_config_manager()
     chain2 = plotting.resolve_plot_style_chain(SimpleNamespace(last_explanation_mode=None))
     assert "registry.default" in chain2
+    plotting.reset_plotting_config_manager()
     assert "legacy" in chain2
     assert chain2.index("legacy") < chain2.index("plot_spec.default")
 

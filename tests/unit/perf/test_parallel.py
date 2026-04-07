@@ -408,14 +408,25 @@ def fake_path_factory(entries: dict[str, str]):
 def test_get_cgroup_cpu_quota_reads_v2(monkeypatch):
     entries = {"/sys/fs/cgroup/cpu.max": "200000 100000"}
     fake_path = fake_path_factory(entries)
+    class MockOS:
+        name = "posix"
+
+        @staticmethod
+        def cpu_count():
+            return None
+
+        @staticmethod
+        def getenv(key, default=None):
+            return default
+
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel.Path",
         fake_path,
         raising=False,
     )
     monkeypatch.setattr(
-        "calibrated_explanations.parallel.parallel.os.name",
-        "posix",
+        "calibrated_explanations.parallel.parallel.os",
+        MockOS,
         raising=False,
     )
     quota = ParallelExecutor.get_cgroup_cpu_quota()
@@ -428,14 +439,25 @@ def test_get_cgroup_cpu_quota_reads_v1(monkeypatch):
         "/sys/fs/cgroup/cpu/cpu.cfs_period_us": "100000",
     }
     fake_path = fake_path_factory(entries)
+    class MockOS:
+        name = "posix"
+
+        @staticmethod
+        def cpu_count():
+            return None
+
+        @staticmethod
+        def getenv(key, default=None):
+            return default
+
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel.Path",
         fake_path,
         raising=False,
     )
     monkeypatch.setattr(
-        "calibrated_explanations.parallel.parallel.os.name",
-        "posix",
+        "calibrated_explanations.parallel.parallel.os",
+        MockOS,
         raising=False,
     )
     assert ParallelExecutor.get_cgroup_cpu_quota() == 5
@@ -449,6 +471,17 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
     def capture(event, payload):
         events.append(payload)
 
+    class MockOS:
+        name = "posix"
+
+        @staticmethod
+        def cpu_count():
+            return 8
+
+        @staticmethod
+        def getenv(key, default=None):
+            return default
+
     monkeypatch.setattr(executor, "_emit", capture)
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel._JoblibParallel",
@@ -456,13 +489,8 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
         raising=False,
     )
     monkeypatch.setattr(
-        "calibrated_explanations.parallel.parallel.os.name",
-        "posix",
-        raising=False,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.parallel.parallel.os.cpu_count",
-        lambda: 8,
+        "calibrated_explanations.parallel.parallel.os",
+        MockOS,
         raising=False,
     )
     monkeypatch.setattr(

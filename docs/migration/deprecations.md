@@ -23,6 +23,16 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 2. If you rely on third-party libraries that emit deprecation warnings, pin those libraries or file an issue requesting they adopt the central helper.
 3. For CI enforcement, set `CE_DEPRECATIONS=error` temporarily to catch any remaining deprecation uses during migration.
 
+### ADR-034 centralized configuration migration (v0.11.1)
+
+- Runtime modules now resolve environment and `pyproject.toml` config through
+  `ConfigManager` snapshots, not live ad-hoc reads.
+- Snapshot behavior is intentional: changes to process env vars after manager
+  construction are only visible after reconstructing the owning runtime object.
+- CLI configuration diagnostics are available via:
+  - `ce config show`
+  - `ce config export`
+
 ## Common deprecated items and migration examples
 
 - `CalibratedExplanations.get_explanation(index)` was removed → Use indexing: `explanations[index]`.

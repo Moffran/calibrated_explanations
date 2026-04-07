@@ -7,7 +7,7 @@ import pprint
 from collections.abc import Mapping
 from typing import Any, Sequence
 
-from ..core.config_helpers import coerce_string_tuple as _coerce_string_tuple
+from ..core.config_manager import ConfigManager
 from ..core.config_helpers import write_pyproject_section
 from .intervals import IntervalCalibratorPlugin
 from .registry import (
@@ -75,7 +75,8 @@ def coerce_string_tuple(value: object) -> tuple[str, ...]:
             elif item:
                 result.append(str(item))
         return tuple(result)
-    return _coerce_string_tuple(value)
+    text = str(value).strip()
+    return (text,) if text else ()
 
 
 def _emit_header(title: str) -> None:
@@ -438,10 +439,8 @@ def _cmd_trust(args: argparse.Namespace) -> int:
     print(f"Marked '{descriptor.identifier}' as {state}")
 
     # Persist to pyproject.toml if possible
-    from ..core.config_helpers import read_pyproject_section
-
     current_trusted = set(
-        read_pyproject_section(("tool", "calibrated_explanations", "plugins")).get("trusted", [])
+        ConfigManager.from_sources().pyproject_section("plugins").get("trusted", [])
     )
     if action == "trust":
         current_trusted.add(identifier)
@@ -615,8 +614,6 @@ cmd_report = _cmd_report
 cmd_validate_plot = _cmd_validate_plot
 cmd_validate_interval = _cmd_validate_interval
 cmd_set_default = _cmd_set_default
-
-
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
     import sys
 

@@ -20,7 +20,6 @@ import importlib
 import importlib.metadata as importlib_metadata
 import inspect
 import logging
-import os
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -29,7 +28,7 @@ from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Literal, Mapping, Tuple
 
 from .. import __version__ as package_version
-from ..core.config_helpers import coerce_string_tuple, read_pyproject_section
+from ..core.config_manager import ConfigManager
 from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ConfigurationError, ValidationError
@@ -59,6 +58,22 @@ ensure_logging_context_filter()
 _TRUST_POLICY: PluginTrustPolicy = DefaultPluginTrustPolicy()
 
 
+_registry_config_manager: ConfigManager | None = None
+
+
+def _config_manager() -> ConfigManager:
+    global _registry_config_manager
+    if _registry_config_manager is None:
+        _registry_config_manager = ConfigManager.from_sources()
+    return _registry_config_manager
+
+
+def _reset_config_manager_for_testing() -> None:
+    """Reset module-level config manager singleton (tests only)."""
+    global _registry_config_manager
+    _registry_config_manager = None
+
+
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Return an immutable copy of plugin metadata."""
     return MappingProxyType(dict(meta))
@@ -85,7 +100,7 @@ def _env_trusted_names() -> set[str]:
     if _ENV_TRUST_CACHE is not None:
         return set(_ENV_TRUST_CACHE)
 
-    raw = os.getenv("CE_TRUST_PLUGIN", "")
+    raw = _config_manager().env("CE_TRUST_PLUGIN") or ""
     names: set[str] = set()
     for chunk in raw.replace(";", ",").split(","):
         name = chunk.strip()
@@ -101,8 +116,14 @@ def _pyproject_trusted_identifiers() -> set[str]:
     if _PYPROJECT_TRUST_CACHE is not None:
         return set(_PYPROJECT_TRUST_CACHE)
 
-    config = read_pyproject_section(("tool", "calibrated_explanations", "plugins"))
-    trusted = coerce_string_tuple(config.get("trusted"))
+    config = _config_manager().pyproject_section("plugins")
+    value = config.get("trusted")
+    if isinstance(value, str):
+        trusted = (value,) if value else ()
+    elif isinstance(value, Iterable):
+        trusted = tuple(str(item).strip() for item in value if str(item).strip())
+    else:
+        trusted = ()
     _PYPROJECT_TRUST_CACHE = set(trusted)
     return set(_PYPROJECT_TRUST_CACHE)
 
@@ -114,7 +135,7 @@ def _trusted_identifiers() -> set[str]:
 
 def _env_denylist() -> set[str]:
     """Return plugin identifiers blocked via ``CE_DENY_PLUGIN``."""
-    raw = os.getenv("CE_DENY_PLUGIN", "")
+    raw = _config_manager().env("CE_DENY_PLUGIN") or ""
     names: set[str] = set()
     for chunk in raw.replace(";", ",").split(","):
         name = chunk.strip()
@@ -909,7 +930,7 @@ def _assert_trust_invariants() -> None:
 
 def _verify_trust_invariants_if_enabled() -> None:
     """Run trust invariant checks in debug or test execution contexts."""
-    if trust_debug_checks_enabled() or os.getenv("PYTEST_CURRENT_TEST"):
+    if trust_debug_checks_enabled():
         _assert_trust_invariants()
 
 

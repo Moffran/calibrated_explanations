@@ -94,18 +94,15 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
         assert ident == identifier
 
 
-def test_env_var_precedence_for_explanation_selection():
-    mgr = PluginManager(object())
+def test_env_var_precedence_for_explanation_selection(monkeypatch):
     # Global env wins over mode-specific per current manager logic
-    os.environ["CE_EXPLANATION_PLUGIN"] = "global.plugin"
-    os.environ["CE_EXPLANATION_PLUGIN_FACTUAL"] = "mode.plugin"
+    monkeypatch.setenv("CE_EXPLANATION_PLUGIN", "global.plugin")
+    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "mode.plugin")
+    mgr = PluginManager(object())
     chain = mgr.build_explanation_chain("factual", "core.explanation.factual")
     # first entry should be the global env value (preferred_identifier selection favors it)
     assert "global.plugin" in chain
     assert chain[0] == "global.plugin"
-    # cleanup
-    del os.environ["CE_EXPLANATION_PLUGIN"]
-    del os.environ["CE_EXPLANATION_PLUGIN_FACTUAL"]
 
 
 def test_explainerhandle_metadata_is_immutable():

@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import os
 import sys
 import warnings
 from collections.abc import Mapping, MutableMapping, Sequence
@@ -41,6 +40,7 @@ from ...utils.exceptions import (
     NotFittedError,
     ValidationError,
 )
+from ..config_manager import ConfigManager
 from .interval_summary import coerce_interval_summary
 from .validation import check_interval_runtime_metadata
 
@@ -107,6 +107,11 @@ class PredictionOrchestrator:
         self.interval_registry = IntervalRegistry(explainer)
         self._logger = logging.getLogger(__name__)
         self._interval_calibration_features: dict[str, np.ndarray] = {}
+        self._config_manager = ConfigManager.from_sources()
+
+    def _config_env(self, key: str) -> str | None:
+        """Resolve runtime config for fallback-sensitive behavior checks."""
+        return self._config_manager.env(key)
 
     def initialize_chains(self) -> None:
         """Delegate to PluginManager for chain initialization.
@@ -502,7 +507,7 @@ class PredictionOrchestrator:
                         # deletes the env var set by the disable fixture). When
                         # fallbacks remain disabled we log info instead to avoid
                         # triggering the runtime fallback enforcement.
-                        if os.getenv("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
+                        if self._config_env("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
                             warnings.warn(
                                 "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded fallback.",
                                 UserWarning,
@@ -537,7 +542,7 @@ class PredictionOrchestrator:
                     raise
 
                 if self.explainer.suppress_crepes_errors:
-                    if os.getenv("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
+                    if self._config_env("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
                         warnings.warn(
                             "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded fallback.",
                             UserWarning,
