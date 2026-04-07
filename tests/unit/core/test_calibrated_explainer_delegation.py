@@ -1,5 +1,7 @@
 import warnings
 from unittest.mock import MagicMock
+
+import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
@@ -22,7 +24,8 @@ def make_stub_explainer_with_mock_pm():
     return expl, pm
 
 
-def test_property_delegators_to_plugin_manager():
+def test_property_delegators_to_plugin_manager(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     expl, pm = make_stub_explainer_with_mock_pm()
 
     with warnings.catch_warnings():

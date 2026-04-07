@@ -2,6 +2,12 @@
 
 This project separates a lean core install from optional extras for visualization, notebooks and evaluation. The guidelines below explain how to work with the extras and run tests with or without them.
 
+Repository authority
+--------------------
+
+- `kristinebergs/calibrated_explanations` is an active development mirror for implementation work.
+- `Moffran/calibrated_explanations` is authoritative for versions, tags, GitHub releases, PyPI publication, changelog, security advisories, and published documentation.
+
 - Core install (recommended for development of core features):
 
 ```powershell

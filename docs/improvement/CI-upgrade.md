@@ -1,81 +1,130 @@
-# CI Upgrade Plan
+# CI Upgrade Operations Guide
 
-This document describes the planned reorganization of GitHub Actions workflows for the project, the steps to decommission older workflows, and the branch-protection flip procedure to be executed before the v1.0.0-rc release.
+## Scope and authority
 
-Summary
-- Move to a modular CI layout using reusable workflows at the top level of `.github/workflows/` (GitHub Actions requires this for `workflow_call`) and thin entrypoints under `.github/workflows/`.
-- Preserve current capabilities: PR fast checks, full PR checks (viz), parity reference, nightly/perf runs, audits, and maintenance tasks.
-- Run old CI in parallel with the new layout during validation; remove old workflows before the `v1.0.0-rc` freeze.
+- `kristinebergs/calibrated_explanations` CI is a **validation + artifact build verification** surface.
+- `Moffran/calibrated_explanations` remains authoritative for versions, tags, GitHub releases, PyPI publication, changelog, security advisories, and documentation.
+- Nothing in this document changes release authority allocation.
 
-Design and rationale
-- Reusable workflows centralize Python setup, cache keys, and installation rules (always using `-c constraints.txt` where pip installs occur).
-- Top-level entrypoints are small orchestration nodes that call the reusables; this reduces repeated install and matrix logic.
-- Path filters and `concurrency` groups reduce unnecessary runs and cancel in-progress superseded runs.
-- Jobs run with least-privilege `permissions` (default `contents: read`), escalating to `write` only in maintenance/update workflows.
+## Current architecture (state as of 2026-04-06)
 
-Implementation notes (local trial)
-- Pip caching is standardized via `actions/setup-python` with `cache: pip` and explicit `cache-dependency-path` entries.
-- `CI — Full PR checks (includes viz)` is path-gated for viz/plot-related changes and can always be run manually via `workflow_dispatch`.
-- The manual maintenance baseline task generates micro benchmark baselines via `scripts/micro_bench_perf.py` and can optionally open a PR.
+Modular CI is the current architecture, not a future target.
 
-Workflows introduced
-- `.github/workflows/reusable-python-test.yml` — canonical python setup + pytest runner.
-- `.github/workflows/reusable-run-make.yml` — standardized `make` target runner.
-- `.github/workflows/reusable-build-docs.yml` — Sphinx/linkcheck builder.
-- `.github/workflows/ci-pr.yml` — fast PR checks (lint, mypy, core tests matrix).
-- `.github/workflows/ci-full.yml` — viz-focused PR checks (path-gated) + manual parity run.
-- `.github/workflows/ci-nightly.yml` — scheduled heavy jobs (parity, notebook audits, example smoke runs).
-- `.github/workflows/ci-main.yml` — main-branch gates (coverage upload placeholder, perf-guard, anti-pattern audits).
-- `.github/workflows/maintenance.yml` — manual maintenance actions (update-baseline via micro benchmarks, regen-docs).
+- Fast PR lane: `.github/workflows/ci-pr.yml`
+- Full PR viz/parity lane (path/manual): `.github/workflows/ci-full.yml`
+- Main-branch safety and drift detection: `.github/workflows/ci-main.yml`
+- Nightly/scheduled heavy jobs: `.github/workflows/ci-nightly.yml`
+- Legacy duplicate wrappers have been decommissioned; the mapping table below is retained as migration evidence.
 
-Workflows to be decommissioned before v1.0.0-rc
-(note: names refer to files in `.github/workflows/`)
-- `test.yml` — replaced by `ci-pr.yml` + `ci-full.yml`; kept as a compat wrapper during rollout but scheduled for removal.
-- `coverage.yml` — replaced by `ci-main.yml`/coverage wrapper; remove when coverage upload + gates confirmed working in new pipeline.
-- `examples.yml` — functionality moved into `ci-nightly.yml` / top-level example checks; remove old file after validation.
-- `docs.yml` — replaced by new `docs` entrypoint (already cleaned); old variants removed.
-- `dependency-audit.yml`, `notebook-audit.yml`, `scan-private-members.yml`, `update_baseline.yml` — keep as scheduled/manual wrappers but unify to use reusables; remove legacy duplicates.
+## Required PR path (critical lane)
 
-Rollback & validation window
-1. Deploy new workflows in a feature branch and/or to `main` with no branch-protection changes.
-2. Let both old and new pipelines run in parallel for at least 3 full dev cycles (recommended: 2 weeks) to surface differences and flaky tests.
-3. Fix any issues; iterate on reusables where per-job needs diverge.
-4. When new pipelines are stable and produce the same artifacts and checks, schedule branch-protection flip (see below).
+The required PR lane is intentionally narrow and fast. Required checks are:
 
-Branch-protection flip checklist (flip to new CI)
-- Identify required checks to replace: typically `test (compat wrapper)`, `lint`, `mypy`, `coverage`, `examples`, `docs`.
-- Create an explicit mapping from old check names to new check names and verify exact job names appearing in GitHub Actions UI.
-- In a maintenance window:
-  1. Add new required checks to branch protection (do not remove old yet).
-  2. Wait for two green runs of the new checks on `main`.
-  3. Remove old checks from branch protection.
-  4. Monitor for 48 hours; if any regressions occur, revert branch-protection changes and investigate.
-- Communicate the change via README/CHANGELOG and create a short PR template note describing the new checks.
+1. Lint
+2. MyPy
+3. Core tests
+4. Private-member scan
+5. Anti-pattern audit
+6. Governance-event schema checks **only when governance paths are touched**
 
-Removal schedule
-- Immediately after successful validation and after branch-protection flip: delete the old workflow files listed above in a single PR that documents the removal and references this `CI-upgrade.md` and the release plan.
-- Tag the removal PR with `ci:cleanup` and require one approving review from core maintainers.
+Heavy/manual/scheduled checks stay off the critical PR path unless explicitly promoted in planning docs:
 
-Operational notes
-- Always use `-c constraints.txt` for pip installs in CI to avoid dependency drift in the runner environment.
-- Keep heavy workloads (parity, perf) scheduled or manual where sensible; avoid running them on every PR unless path filters / labels request it.
-- Keep `workflow_dispatch` available on heavy jobs to assist debugging.
-- Ensure all reusables emit informative logs and warnings for fallback paths (per the repo's fallback visibility policy).
+- perf guard
+- notebook execution
+- full viz-focused checks
+- over-testing density
+- other heavy/manual/scheduled jobs
 
-Local-runner maintenance
-------------------------
+## Notebook execution policy
 
-The repository includes a local stacked-checks runner at `scripts/local_checks.py` and a Makefile target `make local-checks` which mirror CI workflow steps for fast, reproducible local validation.
+- Blocking on release branches only.
+- Advisory/manual/non-blocking outside release-boundary contexts unless explicitly promoted by a milestone plan.
+- `notebook-audit` strict mode (`--check`) is release-branch enforcement; non-release contexts remain advisory.
 
-Policy: whenever CI workflows or job entrypoints are added, removed, or extended under `.github/workflows/`, the corresponding local runner must be updated to reflect those changes. This ensures contributors can reproduce CI checks locally and prevents drift between local and CI validation paths.
+## Packaging verification policy (validation only)
 
-Practical checklist when updating CI:
-- Add a matching Step to `scripts/local_checks.py` for any new CI job that contributors should be able to run locally (mark heavy/scheduled jobs as `optional=True`).
-- Update the `Makefile` targets if the new job should be reachable via `make local-checks` or a new `make` shorthand.
-- Document the change in the PR description and update `CONTRIBUTING.md` and the local-checks script if the change affects contributor workflows.
-- Run `make local-checks` locally to validate parity before merging the CI workflow change.
+For the development-mirror CI role, packaging verification means:
 
-The local runner is intentionally conservative: heavy jobs (docs build, notebook audit, perf) may be included as advisory optional steps so they don't block fast developer loops but remain available for reproducing CI behaviour.
+1. Build wheel and sdist.
+2. Install from built artifacts in a clean environment.
+3. Inspect built artifact contents.
 
-Contact
-- For questions or to request the validation window be extended, contact the release manager and CI owner listed in `GOVERNANCE.md`.
+This is a verification gate only and does not authorize publication.
+
+## Local reproduction policy
+
+Two-tier local reproduction is mandatory:
+
+- Routine work: `make local-checks-pr`
+- Milestone closure or branch-gate changes: `make local-checks`
+
+CI/planning changes must keep local checks aligned (`scripts/local_checks.py` + Make targets).
+
+## Branch protection policy
+
+Branch protection should require:
+
+- fast PR lane checks
+- selected safety checks
+
+Do **not** require nearly every non-nightly job. Keep required checks practical and stable.
+
+## Workflow/check-name freeze policy during migration
+
+- Workflow names and required check names are frozen during migration.
+- Any rename must include, in the same change:
+  1. branch-protection update,
+  2. mapping-table update in this document,
+  3. validation evidence that required checks still map 1:1.
+
+## Legacy migration and decommission policy
+
+1. Legacy workflows fall into two classes:
+   - **Removal-eligible duplicates**: wrappers with complete replacement and no active parity purpose.
+   - **Parity-retained legacy workflows**: intentionally retained for comparison/evidence.
+2. Parity-retained legacy workflows **MUST NOT** be removed until their parity purpose is formally retired in planning docs.
+3. CI migration readiness requires:
+   - quantitative evidence, and
+   - maintainer judgment.
+
+Quantitative evidence is necessary but not sufficient on its own.
+
+## Legacy → replacement mapping (mandatory control table)
+
+| Legacy workflow file | Legacy required check name(s) | Replacement workflow file | Replacement required check name(s) | Retained for parity? | Artifact/check parity expectation | Validation status | Removal eligibility |
+|---|---|---|---|---|---|---|---|
+| `.github/workflows/test.yml` | `test (compat wrapper)`; `Anti-pattern Audit` | `.github/workflows/ci-pr.yml`, `.github/workflows/ci-main.yml`, `.github/workflows/ci-full.yml` | `CI — Pull Request checks / core-tests`; `CI — Pull Request checks / Anti-pattern Audit (ADR-030)`; `CI — Main branch gates / perf-guard`; `CI — Full PR checks (includes viz)` | No | Required PR + selected safety checks fully covered by modular workflows. | Completed | Removed |
+| `.github/workflows/coverage.yml` | `Coverage (wrapper) / coverage` | `.github/workflows/ci-main.yml` | `CI — Main branch gates / core-with-coverage` and per-module coverage gate jobs | No | Coverage thresholds and reports matched branch-gate expectations. | Completed | Removed |
+| `.github/workflows/examples.yml` | `Examples QA / examples` | `.github/workflows/ci-nightly.yml` | `CI — Nightly heavy jobs / examples-smoke` | No | Example smoke validity retained on nightly/manual schedule. | Completed | Removed |
+| `.github/workflows/scan-private-members.yml` | `Scan Private Members in Tests / scan-private-members` | `.github/workflows/ci-pr.yml` | `CI — Pull Request checks / private-member-scan` | No | PR-path private-member enforcement parity confirmed. | Completed | Removed |
+| `.github/workflows/notebook-audit.yml` | `notebook-audit / audit` | `.github/workflows/ci-nightly.yml` + release-branch notebook blocking policy | `CI — Nightly heavy jobs / notebook-audit` (advisory outside release boundary) | No | Release-branch blocking + non-release advisory split preserved. | Completed | Removed |
+| `.github/workflows/docs.yml` | `docs / build` | `.github/workflows/ci-main.yml` and local milestone docs gates | `CI — Main branch gates / core-with-coverage` plus milestone docs gating policy | No | Docs gate retained without standalone duplicate wrapper. | Completed | Removed |
+| `.github/workflows/lint.yml` | `Lint / lint` | `.github/workflows/ci-pr.yml` | `CI — Pull Request checks / lint` | No | Same lint stack and ADR checks covered in required PR lane. | Completed | Removed |
+| `.github/workflows/mypy.yml` | `mypy / typecheck` | `.github/workflows/ci-pr.yml` | `CI — Pull Request checks / mypy` | No | Same typed-scope check retained in required PR lane. | Completed | Removed |
+| `.github/workflows/dependency-audit.yml` | `dependency-audit / pip-audit` | `.github/workflows/ci-main.yml` local/milestone safety checks | Dependency audit retained as non-critical safety check outside required PR lane | No | Safety check retained without duplicate standalone wrapper. | Completed | Removed |
+
+## Migration exit criteria (evidence-based)
+
+A removal-eligible legacy wrapper may be removed only when all criteria below are met:
+
+1. **Consecutive green runs:** at least 10 consecutive green replacement runs.
+2. **Representative PR coverage:** evidence across at least 5 PRs spanning docs, runtime, tests, and workflow-touching changes.
+3. **Check-name parity:** required check names are present and match branch protection expectations.
+4. **Artifact/check parity:** expected artifacts and gate outcomes match legacy behavior for the same change set.
+5. **No open parity defects:** any mismatch tickets are resolved or explicitly waived with dated rationale.
+6. **Maintainer judgment recorded:** explicit go/no-go call recorded in the active milestone plan.
+
+## Operational process
+
+1. Keep mapping table current with every workflow/check change.
+2. Do not reintroduce standalone duplicate wrappers once modular replacements exist.
+3. Update branch-protection requirements only after replacement checks are proven and names are frozen.
+4. Any new parity-retention exception must be explicitly approved in planning docs before adding a duplicate workflow.
+
+## Local/CI parity maintenance
+
+When workflow entrypoints change under `.github/workflows/`:
+
+- update `scripts/local_checks.py` for equivalent local reproduction,
+- keep `make local-checks-pr` and `make local-checks` behavior aligned,
+- document changed commands in the milestone plan/checklist.

@@ -50,14 +50,21 @@ def _run_step(step: Step) -> int:
     print(f"$ {cmd_text}")
     env = dict(os.environ)
     env.setdefault("PRE_COMMIT_HOME", str(Path(".cache/pre-commit").resolve()))
-    if _is_pre_commit_step(step):
-        result = subprocess.run(step.command, check=False, env=env, capture_output=True, text=True)
-        if result.stdout:
-            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
-        if result.stderr:
-            print(result.stderr, end="" if result.stderr.endswith("\n") else "\n")
-    else:
-        result = subprocess.run(step.command, check=False, env=env)
+    try:
+        if _is_pre_commit_step(step):
+            result = subprocess.run(step.command, check=False, env=env, capture_output=True, text=True)
+            if result.stdout:
+                print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+            if result.stderr:
+                print(result.stderr, end="" if result.stderr.endswith("\n") else "\n")
+        else:
+            result = subprocess.run(step.command, check=False, env=env)
+    except FileNotFoundError as exc:
+        if step.optional:
+            print(f"Step skipped (optional command unavailable): {step.name} ({exc})")
+            return 0
+        print(f"ERROR: required command unavailable for step '{step.name}': {exc}")
+        return 127
     if result.returncode == 0:
         return 0
     # Pre-commit may fail due to network fetch issues in restricted/offline
@@ -109,6 +116,12 @@ def _is_network_fetch_failure(stderr: str) -> bool:
     return False
 
 
+def _pytest_supports_no_cov() -> bool:
+    """Return True if pytest supports the --no-cov option."""
+    result = subprocess.run(["pytest", "--help"], check=False, capture_output=True, text=True)
+    return "--no-cov" in (result.stdout or "")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run CI-equivalent checks locally in current env.")
     parser.add_argument(
@@ -146,19 +159,29 @@ def main() -> int:
     if shutil.which("mypy") is None:
         print("ERROR: mypy not found in current environment.")
         return 2
-    if shutil.which("pre-commit") is None:
-        print("ERROR: pre-commit not found in current environment.")
-        return 2
+    pre_commit_available = shutil.which("pre-commit") is not None
+    if not pre_commit_available:
+        print("WARNING: pre-commit not found in current environment; skipping pre-commit step.")
 
     mypy_targets = _mypy_targets()
     if not mypy_targets:
         print("No mypy target files found; skipping mypy step.")
 
+    nbqa_available = shutil.which("nbqa") is not None
+    pydocstyle_available = shutil.which("pydocstyle") is not None
+    if not nbqa_available:
+        print("WARNING: nbqa not found in current environment; skipping notebook naming lint step.")
+    if not pydocstyle_available:
+        print("WARNING: pydocstyle not found in current environment; skipping pydocstyle step.")
+
+    core_test_command = ["pytest", "-q", "-m", "not viz", "-o", "addopts="]
+    if _pytest_supports_no_cov():
+        core_test_command.append("--no-cov")
+    else:
+        print("WARNING: pytest-cov/--no-cov unavailable; running core tests without --no-cov.")
+
     pr_steps: list[Step] = [
-        Step("Pre-commit", ["pre-commit", "run", "--all-files"]),
         Step("Ruff naming", ["ruff", "check", "--select", "N"]),
-        Step("Notebook naming lint", _python_cmd("-m", "nbqa", "ruff", "notebooks", "--select", "N")),
-        Step("Pydocstyle", ["pydocstyle", "src", "tests"]),
         Step(
             "Docstring coverage",
             _python_cmd("scripts/quality/check_docstring_coverage.py", "--fail-under", "94.0"),
@@ -195,7 +218,7 @@ def main() -> int:
             ),
             optional=True,
         ),
-        Step("Core tests (no viz/no cov)", ["pytest", "-q", "-m", "not viz", "--no-cov"]),
+        Step("Core tests (no viz/no cov)", core_test_command),
         Step("Private-member scan", _python_cmd("scripts/anti-pattern-analysis/scan_private_usage.py", "tests", "--check")),
         Step(
             "ADR-030 anti-pattern detector",
@@ -246,6 +269,14 @@ def main() -> int:
         ),
     ]
 
+    if pre_commit_available:
+        pr_steps.insert(0, Step("Pre-commit", ["pre-commit", "run", "--all-files"]))
+    if nbqa_available:
+        pr_steps.insert(2 if pre_commit_available else 1, Step("Notebook naming lint", _python_cmd("-m", "nbqa", "ruff", "notebooks", "--select", "N")))
+    if pydocstyle_available:
+        insert_at = 3 if pre_commit_available and nbqa_available else 2 if (pre_commit_available or nbqa_available) else 1
+        pr_steps.insert(insert_at, Step("Pydocstyle", ["pydocstyle", "src", "tests"]))
+
     if mypy_targets:
         pr_steps.insert(
             6,
@@ -256,6 +287,10 @@ def main() -> int:
         )
 
     # Additional PR-scoped CI checks mirrored from workflows
+    deprecation_test_args = ["pytest", "tests/unit", "-m", "not viz", "-q", "--maxfail=1"]
+    if _pytest_supports_no_cov():
+        deprecation_test_args.append("--no-cov")
+
     optional_pr_steps: list[Step] = [
             # Deprecation-sensitive tests (treat deprecations as errors)
             Step(
@@ -265,7 +300,7 @@ def main() -> int:
                     (
                         "import os,sys,subprocess;"
                         "os.environ.setdefault('CE_DEPRECATIONS','error');"
-                        "sys.exit(subprocess.call(['pytest','tests/unit','-m','not viz','-q','--maxfail=1','--no-cov']))"
+                        f"sys.exit(subprocess.call({deprecation_test_args!r}))"
                     ),
                 ),
                 optional=True,
@@ -472,10 +507,11 @@ def main() -> int:
             return rc
 
     if args.skip_main:
-        final_precommit = Step("Pre-commit (final verification)", ["pre-commit", "run", "--all-files"])
-        rc = _run_step(final_precommit)
-        if rc != 0:
-            return rc
+        if pre_commit_available:
+            final_precommit = Step("Pre-commit (final verification)", ["pre-commit", "run", "--all-files"])
+            rc = _run_step(final_precommit)
+            if rc != 0:
+                return rc
         print("\nLocal checks completed (PR scope).")
         return 0
 
@@ -488,10 +524,11 @@ def main() -> int:
         if rc != 0:
             return rc
 
-    final_precommit = Step("Pre-commit (final verification)", ["pre-commit", "run", "--all-files"])
-    rc = _run_step(final_precommit)
-    if rc != 0:
-        return rc
+    if pre_commit_available:
+        final_precommit = Step("Pre-commit (final verification)", ["pre-commit", "run", "--all-files"])
+        rc = _run_step(final_precommit)
+        if rc != 0:
+            return rc
 
     print("\nLocal checks completed (PR + main scope).")
     return 0

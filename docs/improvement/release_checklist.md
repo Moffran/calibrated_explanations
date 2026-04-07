@@ -3,6 +3,26 @@
 This checklist tracks compliance with release gates defined in `docs/improvement/RELEASE_PLAN_v1.md`.
 It must be reviewed and completed for every pull request that touches the user-facing API or documentation.
 
+Boundary policy: keep checklist structure stable within a milestone; adjust gates and wording at milestone boundaries to reduce process overhead.
+
+## CI role and local reproduction
+
+- **Mirror CI scope confirmed?**
+  - [ ] Yes — validation + artifact build verification only
+  - [ ] Yes — authoritative release/publication remains `Moffran/calibrated_explanations`
+- **Local checks run with correct tier?**
+  - [ ] `make local-checks-pr` (routine PR validation)
+  - [ ] `make local-checks` (milestone closure or branch-gate changes)
+
+## Packaging verification (validation only)
+
+- **Build artifacts produced?**
+  - [ ] Yes (wheel + sdist)
+- **Install from built artifacts in clean environment?**
+  - [ ] Yes
+- **Artifact contents inspected?**
+  - [ ] Yes
+
 ## Legacy Stability (ADR-020)
 
 - **Legacy contract touched?**
@@ -21,6 +41,9 @@ It must be reviewed and completed for every pull request that touches the user-f
   - [ ] Yes - without warnings
 - **Gallery examples execute? (within time ceilings)**
   - [ ] Yes
+- **Notebook execution policy applied correctly?**
+  - [ ] Yes — release branches blocking
+  - [ ] Yes — non-release contexts advisory/non-blocking unless explicitly promoted
 
 ## Test Quality (ADR-030) (run `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --check --baseline .github/test-quality-baseline.json`)
 

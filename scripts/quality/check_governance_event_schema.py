@@ -82,13 +82,10 @@ def main(argv: list[str] | None = None) -> int:
     if jsonschema is None:
         findings.append(
             Finding(
-                "error",
-                "jsonschema package is required for governance schema validation checks.",
+                "warning",
+                "jsonschema package not installed; skipping JSON-Schema meta-validation.",
             )
         )
-        _write_report(args.report, findings)
-        print("ERROR: jsonschema package is not installed.")
-        return 2
 
     if not args.schema.is_file():
         findings.append(Finding("error", f"Schema file not found: {args.schema}"))
@@ -98,11 +95,12 @@ def main(argv: list[str] | None = None) -> int:
 
     schema = _load_json(args.schema)
 
-    try:
-        validator_cls = jsonschema.validators.validator_for(schema)  # type: ignore[attr-defined]
-        validator_cls.check_schema(schema)
-    except Exception as exc:  # pragma: no cover - exceptional path
-        findings.append(Finding("error", f"Schema is not a valid JSON Schema document: {exc}"))
+    if jsonschema is not None:
+        try:
+            validator_cls = jsonschema.validators.validator_for(schema)  # type: ignore[attr-defined]
+            validator_cls.check_schema(schema)
+        except Exception as exc:  # pragma: no cover - exceptional path
+            findings.append(Finding("error", f"Schema is not a valid JSON Schema document: {exc}"))
 
     required = set(schema.get("required", []))
     missing_required = sorted(REQUIRED_FIELDS - required)

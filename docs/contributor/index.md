@@ -2,6 +2,10 @@
 
 Use this hub to change code or docs without breaking CE semantics.
 
+Repository authority:
+- `kristinebergs/calibrated_explanations` is the active development mirror.
+- `Moffran/calibrated_explanations` is authoritative for releases, tags, PyPI publication, changelog, security advisories, and published docs.
+
 ## Core path
 
 1. Read {doc}`plugin-contract`.

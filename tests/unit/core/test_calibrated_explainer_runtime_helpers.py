@@ -35,6 +35,7 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
 
 
 def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     explainer = stub_explainer(explainer_factory)
 
     class CallableWithMeta:
