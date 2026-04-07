@@ -89,7 +89,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 
 **ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
 
-**ADR-034 - Centralized Configuration Management:** Proposed (2026-03-03); Phase A complete in v0.11.1 (ConfigManager established, plugin/registry/logging paths migrated). Phase B in v0.11.2: migrate `cache`, `parallel`, `_feature_filter`, `orchestrator` and close allowlist. Promoted to Accepted after Phase B verification.
+**ADR-034 - Centralized Configuration Management:** Proposed (2026-03-03); ADR-034 defines the centralized configuration architecture, snapshot semantics, ownership model, boundary rules, validation posture, and CLI/export contract. Delivery sequencing is governed by the versioned release plans: v0.11.1 Task 15 owns Phase A recovery/completion work, v0.11.1 Task 20 owns config lifecycle-event schema closure, and v0.11.2 completes the remaining allowlisted module migrations before ADR acceptance.
 
 **ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up: PlotSpec default-promotion readiness-gate definition and policy decision.
 
@@ -365,7 +365,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
       - 2026-03-03 – Removed-in-v0.11.0 section added; `.get_explanation(i)` note corrected; status note updated.
    19. Add Standard-005 to ADR/Standards roadmap summary table in `RELEASE_PLAN_v1.md` and confirm v0.11.1 enforcement gate.
       - 2026-03-03 – Standard-005 row added to roadmap summary and Standards appendix; observability gaps assigned to v0.11.1 Task 7.
-  20. Extend `GovernanceEvent` schema (introduced in Task 3 for plugin events) to cover `calibrated_explanations.governance.config` lifecycle events (resolve, export, validation-failure) per ADR-034 §4 + ADR-028; add caplog tests and CI governance-event schema gate.
+  20. Extend `GovernanceEvent` schema (introduced in Task 3 for plugin events) to cover `calibrated_explanations.governance.config` lifecycle events (resolve, export, validation-failure) per ADR-034's observability/task-boundary decision and ADR-028; add caplog tests and CI governance-event schema gate.
   21. API-bloat removal program for v1.0.0 (ADR-011 + ADR-037 + ADR-020): keep LIME/SHAP as plugin-only surfaces by removing `explain_lime`/`explain_shap` and related wrapper/export hooks from core imports/public API, move adapters to plugin modules with lazy imports, and split heavy dependencies into optional extras. Execute under the deprecation protocol: add explicit deprecation warnings + migration docs in v0.11.1, enforce warning coverage and `CE_DEPRECATIONS=error` on deprecated-core paths, then remove the deprecated core entry points before cutting v1.0.0.
   22. PlotSpec hardening + ADR revisioning (ADR-036/ADR-037): harden PlotSpec as a canonical semantic IR by enforcing dataclass-only canonical in-memory representation, strengthening validator boundaries, unifying builder outputs to canonical PlotSpec, splitting rendering/normalization/export/test instrumentation responsibilities, and isolating compatibility handling to explicit serializer/translator boundaries. In the same task, publish and adopt ADR-036 + ADR-037 as the authoritative source of truth and supersede ADR-007/ADR-014/ADR-016 as historical records. Keep legacy plotting as the default public `.plot()` path in v0.11.1 and keep runtime plot-kind extension out of scope for this release.
 
@@ -732,9 +732,9 @@ _Last gap analysis: 2026-03-03_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Phase A remaining: allowlisted modules not fully migrated; status not yet Accepted | 4 | 3 | 12 | v0.11.1 Task 15; gate is CI allowlist reduced to zero or documented boundary. |
+| 1 | Phase A recovery/completion still required: `ConfigManager` contract, ownership, CLI surfaces, and named v0.11.1 migrations are not yet implemented in the live workspace | 4 | 3 | 12 | v0.11.1 Task 15; gate is snapshot semantics implemented, `plugins/manager`/`plugins/registry`/`logging`/`plugins/cli`/`plotting` migrated, and the CI checker active. |
 | 2 | Phase B: `cache/cache.py`, `parallel/parallel.py`, `_feature_filter.py`, `orchestrator.py` use direct env/pyproject reads | 4 | 3 | 12 | v0.11.2 Task 1; done when all four removed from CI allowlist. |
-| 3 | `GovernanceEvent` schema not yet extended to `governance.config` lifecycle events | 3 | 2 | 6 | v0.11.1 Task 20; ADR-034 §4 + ADR-028 requirement. |
+| 3 | `GovernanceEvent` schema not yet extended to `governance.config` lifecycle events | 3 | 2 | 6 | v0.11.1 Task 20; ADR-034 observability/task-boundary decision + ADR-028 requirement. |
 | 4 | Phase C: remaining direct env/pyproject readers (allowlist not closed) | 2 | 2 | 4 | v0.11.3. |
 | 5 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Deferred to v1.0.0; interim: document that no redaction exists until post-GA. |
 | 6 | `export_effective()` payload schema not versioned for external consumers (Open Item 2) | 3 | 2 | 6 | v1.0.0-rc gate; must be versioned before external tooling can rely on export. |

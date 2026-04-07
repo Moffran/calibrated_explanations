@@ -1325,6 +1325,19 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if style == "ensured":
             style = "triangular"
 
+        custom_plot_style = isinstance(style, str) and style not in {
+            "regular",
+            "triangular",
+            "ensured",
+            "narrative",
+        }
+        if index is None and custom_plot_style:
+            selected_instance_index = kwargs.get("instance_index")
+            if isinstance(selected_instance_index, int):
+                kwargs = dict(kwargs)
+                kwargs.pop("instance_index", None)
+                index = selected_instance_index
+
         if style == "narrative":
             from ..viz.narrative_plugin import NarrativePlotPlugin
 
@@ -1355,6 +1368,27 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         if len(filename) > 0:
             path, filename, title, ext = prepare_for_saving(filename)
+            plugin_path = filename
+            plugin_save_ext = ext
+        else:
+            plugin_path = None
+            plugin_save_ext = None
+
+        if index is None and custom_plot_style:
+            from ..plotting import _render_collection_plot_plugin
+
+            plugin_result = _render_collection_plot_plugin(
+                self,
+                explicit_style=style_override if isinstance(style_override, str) and style_override else style,
+                show=show,
+                path=plugin_path,
+                save_ext=plugin_save_ext,
+                renderer_override=kwargs.get("renderer"),
+                intent_type="alternative" if self.is_alternative() else "factual",
+                options=kwargs,
+            )
+            if plugin_result is not None:
+                return plugin_result
 
         if index is not None:
             if len(filename) > 0:
@@ -1389,6 +1423,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     )
                 )
             if kwargs.get("return_plot_spec"):
+                return results[0] if len(results) == 1 else results
+            non_null_results = [result for result in results if result is not None]
+            if non_null_results:
                 return results[0] if len(results) == 1 else results
 
     def to_narrative(

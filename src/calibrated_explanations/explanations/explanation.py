@@ -2342,11 +2342,20 @@ class FactualExplanation(CalibratedExplanation):
             - rnk_weight (float): default=0.5. The weight of the uncertainty in
               the ranking. Used with the 'ensured' ranking metric.
         """
+        requested_style = kwargs.get("style")
+        custom_plot_style = isinstance(requested_style, str) and requested_style not in {
+            "regular",
+            "triangular",
+            "ensured",
+            "narrative",
+        }
         # Ensure style_override gets passed through
         style_override = kwargs.pop("style_override", None)
         plot_use_legacy = kwargs.pop("use_legacy", None)
         # PlotSpec request forces new renderer
         if kwargs.get("return_plot_spec"):
+            plot_use_legacy = False
+        elif custom_plot_style:
             plot_use_legacy = False
         # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
         elif plot_use_legacy is None:
@@ -3831,11 +3840,20 @@ class AlternativeExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
+        requested_style = kwargs.get("style")
+        custom_plot_style = isinstance(requested_style, str) and requested_style not in {
+            "regular",
+            "triangular",
+            "ensured",
+            "narrative",
+        }
         # Ensure style_override gets passed through
         style_override = kwargs.pop("style_override", None)
         plot_use_legacy = kwargs.pop("use_legacy", None)
         # PlotSpec request forces new renderer
         if kwargs.get("return_plot_spec"):
+            plot_use_legacy = False
+        elif custom_plot_style:
             plot_use_legacy = False
         # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
         elif plot_use_legacy is None:
