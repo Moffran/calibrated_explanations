@@ -8,6 +8,8 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.config_manager import ConfigManager
+from calibrated_explanations.parallel import ParallelConfig
 
 
 @pytest.fixture
@@ -28,7 +30,14 @@ class TestCalibratedExplainerParallelEnv:
         learner, x, y = simple_learner_and_data
 
         with patch.dict(os.environ, {"CE_PARALLEL": "enable,threads"}):
-            explainer = CalibratedExplainer(learner, x, y)
+            original_from_env = ParallelConfig.from_env
+
+            def fresh_from_env(base=None, *, config_manager=None):
+                manager = config_manager or ConfigManager.from_sources()
+                return original_from_env(base, config_manager=manager)
+
+            with patch.object(ParallelConfig, "from_env", side_effect=fresh_from_env):
+                explainer = CalibratedExplainer(learner, x, y)
 
             assert explainer.parallel_executor is not None
             assert explainer.parallel_executor.config.enabled is True

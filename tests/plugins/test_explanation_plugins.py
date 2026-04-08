@@ -1,4 +1,3 @@
-import os
 from types import MappingProxyType
 
 import pytest
@@ -15,7 +14,7 @@ from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.explanations import ExplainerHandle
 from calibrated_explanations.plugins import ExplanationBatch
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
-from tests.support.registry_helpers import clear_explanation_plugins
+from tests.support.registry_helpers import clear_env_trust_cache, clear_explanation_plugins
 
 
 def test_core_fast_plugin_registered_and_trusted():
@@ -28,7 +27,9 @@ def test_core_fast_plugin_registered_and_trusted():
     assert plugin is not None
 
 
-def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_untrusted():
+def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_untrusted(
+    monkeypatch,
+):
     """When identifier is denied via CE_DENY_PLUGIN resolution must fail; explicit override warns but allows."""
     # Ensure a clean registry
     clear_explanation_plugins()
@@ -65,6 +66,10 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
     # Register the plugin (untrusted by default since not builtin and no operator trust)
     register_explanation_plugin(identifier, DummyPlugin(), source="external")
 
+    # Denylist must be set before manager construction due ConfigManager snapshot semantics.
+    monkeypatch.setenv("CE_DENY_PLUGIN", identifier)
+    clear_env_trust_cache()
+
     # Create dummy explainer with plugin manager and orchestrator
     class DummyExplainerObj:
         def __init__(self):
@@ -83,10 +88,11 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
     orch = ExplanationOrchestrator(expl)
 
     # Deny via env should cause ConfigurationError when resolving preferred identifier
-    os.environ["CE_DENY_PLUGIN"] = identifier
     with pytest.raises(ConfigurationError):
         orch.resolve_plugin("fast")
-    del os.environ["CE_DENY_PLUGIN"]
+
+    monkeypatch.delenv("CE_DENY_PLUGIN")
+    clear_env_trust_cache()
 
     # Explicit override should allow untrusted plugin with a UserWarning
     with pytest.warns(UserWarning):

@@ -7,8 +7,8 @@ import pprint
 from collections.abc import Mapping
 from typing import Any, Sequence
 
-from ..core.config_manager import ConfigManager
 from ..core.config_helpers import write_pyproject_section
+from ..core.config_manager import ConfigManager
 from .intervals import IntervalCalibratorPlugin
 from .registry import (
     find_explanation_descriptor,

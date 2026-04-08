@@ -54,6 +54,7 @@ def _reset_parallel_config_manager_for_testing() -> None:
     global _parallel_config_manager
     _parallel_config_manager = None
 
+
 T = TypeVar("T")
 R = TypeVar("R")
 
@@ -192,7 +193,9 @@ class ParallelExecutor:
         self.active_strategy_name: str | None = None
         self._warned_min_batch: bool = False
         self._warned_tiny_workload: bool = False
-        self._config_manager = config_manager if config_manager is not None else ConfigManager.from_sources()
+        self._config_manager = (
+            config_manager if config_manager is not None else ConfigManager.from_sources()
+        )
 
     def __getstate__(self) -> dict[str, Any]:
         """Return state for pickling, excluding the pool."""
@@ -539,10 +542,9 @@ class ParallelExecutor:
 
     def _is_ci_environment(self) -> bool:
         """Detect if running in a CI environment."""
-        return (
-            (self._config_manager.env("CI") or "").lower() == "true"
-            or (self._config_manager.env("GITHUB_ACTIONS") or "").lower() == "true"
-        )
+        return (self._config_manager.env("CI") or "").lower() == "true" or (
+            self._config_manager.env("GITHUB_ACTIONS") or ""
+        ).lower() == "true"
 
     def _auto_strategy(self, *, work_items: int | None = None) -> str:
         """Backwards-compatible alias for auto_strategy."""

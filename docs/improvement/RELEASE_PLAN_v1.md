@@ -419,7 +419,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
       - 2026-03-03 – Removed-in-v0.11.0 section added; `.get_explanation(i)` note corrected; status note updated.
    19. Add Standard-005 to ADR/Standards roadmap summary table in `RELEASE_PLAN_v1.md` and confirm v0.11.1 enforcement gate.
       - 2026-03-03 – Standard-005 row added to roadmap summary and Standards appendix; observability gaps assigned to v0.11.1 Task 7.
-  20. Extend `GovernanceEvent` schema (introduced in Task 3 for plugin events) to cover `calibrated_explanations.governance.config` lifecycle events (resolve, export, validation-failure) per ADR-034's observability/task-boundary decision and ADR-028; add caplog tests and CI governance-event schema gate.
+  20. Add a separate `governance_config_event_schema_v1.json` for `calibrated_explanations.governance.config` lifecycle events (`config.resolve`, `config.export`, `config.validation_failure`) — do NOT modify `governance_event_schema_v1.json` (its `event_name: const` and `decision: enum` are plugin-specific); wire emission into `ConfigManager` at snapshot lifecycle boundaries only; add structured log-capture tests and a CI schema gate against the new config-event schema.
   21. API-bloat removal program for v1.0.0 (ADR-011 + ADR-037 + ADR-020): keep LIME/SHAP as plugin-only surfaces by removing `explain_lime`/`explain_shap` and related wrapper/export hooks from core imports/public API, move adapters to plugin modules with lazy imports, and split heavy dependencies into optional extras. Execute under the deprecation protocol: add explicit deprecation warnings + migration docs in v0.11.1, enforce warning coverage and `CE_DEPRECATIONS=error` on deprecated-core paths, then remove the deprecated core entry points before cutting v1.0.0.
   22. PlotSpec hardening + ADR revisioning (ADR-036/ADR-037): harden PlotSpec as a canonical semantic IR by enforcing dataclass-only canonical in-memory representation, strengthening validator boundaries, unifying builder outputs to canonical PlotSpec, splitting rendering/normalization/export/test instrumentation responsibilities, and isolating compatibility handling to explicit serializer/translator boundaries. In the same task, publish and adopt ADR-036 + ADR-037 as the authoritative source of truth and supersede ADR-007/ADR-014/ADR-016 as historical records. Keep legacy plotting as the default public `.plot()` path in v0.11.1 and keep runtime plot-kind extension out of scope for this release.
 
@@ -433,18 +433,18 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      (ADR-034 Phase B).
   2. Finalize ADR-034 (pulled forward from v1.0.0-rc; no RC dependency): confirm
      CI allowlist reaches zero or documents any remaining sanctioned boundaries;
-     promote ADR-034 status from Proposed to Accepted with an implementation summary.
+     synchronize ADR-034 implementation status and summary text with the now-accepted ADR.
      Depends on task 1 completing green.
   3. ADR and standards governance sweep (pulled forward from v1.0.0-rc; rolling audit;
      no RC dependency): audit all open gaps in the RELEASE_PLAN_v1.md appendix, confirm
      every gap is assigned to a milestone or marked superseded, refresh gap-analysis
      dates older than 60 days, and close any quick-win gaps that require no feature
      work (e.g., remaining ADR-026 observability gaps).
-  4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3 and 7 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
+  4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3, 7, and 20 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. This artifact is a derived CI/reporting surface and must not replace the runtime governance event contracts defined for plugin/config lifecycle events. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
   5. Deep memory audit and retention hardening.
   6. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 status promoted to Accepted; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
@@ -475,7 +475,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   - #12 ADR-030 tooling extension → DONE: delivered in v0.11.0 CHANGELOG (assertion + determinism checks; script reorganized to scripts/quality/)
   - #13 ADR-031 calibrator persistence → DONE: delivered in v0.11.0 CHANGELOG (to_primitive/from_primitive + WrapCalibratedExplainer save/load)
   - #15 ADR/standards docs gap closure → moved to v0.11.2
-  - #16 ADR-034 finalization → moved to v0.11.2
+  - #16 ADR-034 post-acceptance conformance closure → moved to v0.11.2
   Items #3 (Standard-001 shim removal) and #4 (Standard-002 gap closure) moved to v0.11.3.
   Item #14 (OSS performance harness) moved to v0.11.3.
 -->

@@ -1,7 +1,7 @@
 {
   "baseline_path": ".github/marker-hygiene-baseline.json",
   "findings": [],
-  "generated_at": "2026-04-02T06:28:25+00:00",
+  "generated_at": "2026-04-08T20:14:30+00:00",
   "new_violations": 0,
   "tests_dir": "tests",
   "total_findings": 0,

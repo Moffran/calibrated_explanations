@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.core.explain._feature_filter import (
     FeatureFilterConfig,
     compute_filtered_features_to_ignore,
@@ -25,25 +26,25 @@ def test_feature_filter_config_env_parsing(monkeypatch: pytest.MonkeyPatch) -> N
 
     monkeypatch.setenv("CE_STRICT_OBSERVABILITY", "true")
     monkeypatch.setenv("CE_FEATURE_FILTER", "on,top_k=3")
-    cfg = FeatureFilterConfig.from_base_and_env(base)
+    cfg = FeatureFilterConfig.from_base_and_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.enabled is True
     assert cfg.per_instance_top_k == 3
     assert cfg.strict_observability is True
 
     monkeypatch.setenv("CE_FEATURE_FILTER", "off")
-    cfg = FeatureFilterConfig.from_base_and_env(base)
+    cfg = FeatureFilterConfig.from_base_and_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.enabled is False
 
     monkeypatch.setenv("CE_FEATURE_FILTER", "on")
-    cfg = FeatureFilterConfig.from_base_and_env(base)
+    cfg = FeatureFilterConfig.from_base_and_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.enabled is True
 
     monkeypatch.setenv("CE_FEATURE_FILTER", " , ")
-    cfg = FeatureFilterConfig.from_base_and_env(base)
+    cfg = FeatureFilterConfig.from_base_and_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.per_instance_top_k == 8
 
     monkeypatch.setenv("CE_FEATURE_FILTER", "enable,top_k=-0,top_k=xyz")
-    cfg = FeatureFilterConfig.from_base_and_env(base)
+    cfg = FeatureFilterConfig.from_base_and_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.enabled is True
     assert cfg.per_instance_top_k == 1
 

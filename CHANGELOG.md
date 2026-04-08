@@ -43,6 +43,7 @@
 
 ### Documentation / Governance
 
+- **ADR-034 closure (v0.11.1 Tasks 15 & 20):** Completed ConfigManager Phase A authority and `governance.config` lifecycle-event schema. Fixed snapshot semantics by injecting fresh ConfigManager instances in cache, parallel, and feature-filter tests; added pytest probe exemption and extended schema validation gates. All 10 affected tests stabilized with full ADR-034 audit compliance.
 - **ADR-035 proposed:** Added `docs/improvement/adrs/ADR-035-ci-workflow-governance.md` to codify CI workflow governance and merge-blocking policy, with explicit advisory rollout and exception handling.
 - **ADR-011 reject wrapper deprecations aligned:** Deprecated `initialize_reject_learner` and `predict_reject` from both `CalibratedExplainer` and `WrapCalibratedExplainer`, and routed all four through the central `deprecate()` helper, and documented removal ETA (`v0.13.0/v1.0.0`) in `docs/migration/deprecations.md` and `docs/improvement/RELEASE_PLAN_v1.md`.
 - **CI policy validator introduced:** Added `.github/workflows/ci-policy.yml`, local composite action `.github/actions/ci-policy/action.yml`, and `scripts/quality/validate_ci_policy.py` with targeted tests to enforce reusable workflows, constraints usage, permission posture, and CI PR metadata.
@@ -51,7 +52,6 @@
 - **ADR-028 promoted to Accepted:** `ADR-028-logging-and-governance-observability.md` status promoted from Draft to Accepted. Remaining open gaps (enforcement tooling, Standard-005 observability example alignment) are assigned to v0.11.1 Task 7.
 - **Standard-005 added to release plan:** `RELEASE_PLAN_v1.md` roadmap summary and Standards appendix updated to include Standard-005 (Logging and Observability Standard). Two open gap entries targeting v0.11.1 Task 7 recorded.
 - **ADR-029–034 appendix entries added:** `RELEASE_PLAN_v1.md` ADR status appendix extended with entries for ADR-029 (Reject Integration Strategy), ADR-030 (Test Quality Priorities), ADR-031 (Calibrator Serialization — no gaps), ADR-032 (Guarded Explanation Semantics), ADR-033 (Modality Extension Plugin Contract), and ADR-034 (Centralized Configuration Management) with unified severity gap tables.
-- **v0.11.1 tasks 16–19 added and closed:** `v0.11.1_plan.md` and `RELEASE_PLAN_v1.md` extended with Tasks 16–19 (governance doc work completed this date) and Task 20 (GovernanceEvent config lifecycle extension, planned).
 
 ## [v0.11.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.0)  - 2026-03-02
 

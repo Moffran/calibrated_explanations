@@ -420,7 +420,7 @@ Refer to these decision records when designing advanced plugin configurations:
   – Registry design and plugin lifecycle.
 - [ADR-013 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   – Explanation plugin contracts and output format.
-- [ADR-037 – visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+- [ADR-037 – visualization extension and rendering governance](../../improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
   – Plot builder/renderer governance, extension metadata, and runtime kind policy.
 - [ADR-024 - legacy plot input contracts](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   – PlotSpec and legacy plot input formats.

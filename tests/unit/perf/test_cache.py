@@ -12,6 +12,7 @@ from calibrated_explanations.cache import (
     default_size_estimator,
     hash_part,
 )
+from calibrated_explanations.core.config_manager import ConfigManager
 
 
 def test_lru_cache_rejects_invalid_limits() -> None:
@@ -164,7 +165,7 @@ def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) ->
         "enable,namespace=prod,version=v9,max_items=0,max_bytes=2,ttl=5.5,off",
     )
     base = CacheConfig(enabled=False, namespace="dev", version="v1", max_items=5, ttl_seconds=1.0)
-    config = CacheConfig.from_env(base)
+    config = CacheConfig.from_env(base, config_manager=ConfigManager.from_sources())
 
     assert config.enabled is False  # last toggle wins
     assert config.namespace == "prod"
@@ -174,7 +175,7 @@ def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) ->
     assert config.ttl_seconds == 5.5
 
     monkeypatch.setenv("CE_CACHE", "1")
-    config_enabled = CacheConfig.from_env(base)
+    config_enabled = CacheConfig.from_env(base, config_manager=ConfigManager.from_sources())
     assert config_enabled.enabled is True
 
 

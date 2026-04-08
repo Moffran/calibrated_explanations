@@ -339,4 +339,3 @@ _Last gap analysis: 2026-03-03_
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | ADR-028 gap 1; v0.11.1 Task 7. Add lint/test to confirm all loggers use approved `calibrated_explanations.*` domain prefixes. |
 | 2 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | ADR-028 gap 2; v0.11.1 Task 7. Update docs/examples to match Standard-005 guidance. |
-

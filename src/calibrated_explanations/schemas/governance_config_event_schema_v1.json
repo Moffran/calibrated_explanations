@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://calibrated-explanations.readthedocs.io/schemas/governance_config_event_schema_v1.json",
+  "title": "ConfigGovernanceEventV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_name",
+    "event_type",
+    "profile_id",
+    "config_schema_version",
+    "strict",
+    "source_count",
+    "validation_issue_count",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_name": {
+      "type": "string",
+      "const": "config.lifecycle"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "resolve",
+        "export",
+        "validation_failure"
+      ]
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "config_schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strict": {
+      "type": "boolean"
+    },
+    "source_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "validation_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "details": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "event_type",
+        "details"
+      ],
+      "properties": {
+        "event_type": {
+          "const": "resolve"
+        },
+        "details": {
+          "type": "null"
+        }
+      }
+    },
+    {
+      "required": [
+        "event_type",
+        "details"
+      ],
+      "properties": {
+        "event_type": {
+          "const": "export"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "diagnostic_only"
+          ],
+          "properties": {
+            "diagnostic_only": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "required": [
+        "event_type",
+        "details"
+      ],
+      "properties": {
+        "event_type": {
+          "const": "validation_failure"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "location",
+            "issue_count"
+          ],
+          "properties": {
+            "location": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "issue_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

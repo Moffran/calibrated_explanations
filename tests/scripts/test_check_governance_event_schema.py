@@ -52,11 +52,50 @@ def minimal_valid_schema() -> dict:
     }
 
 
+def minimal_valid_config_schema() -> dict:
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "schema_version",
+            "event_id",
+            "event_name",
+            "event_type",
+            "profile_id",
+            "config_schema_version",
+            "strict",
+            "source_count",
+            "validation_issue_count",
+            "timestamp",
+        ],
+        "properties": {
+            "schema_version": {"type": "string", "const": "1.0"},
+            "event_id": {"type": "string"},
+            "event_name": {"type": "string", "const": "config.lifecycle"},
+            "event_type": {
+                "type": "string",
+                "enum": ["resolve", "export", "validation_failure"],
+            },
+            "profile_id": {"type": "string"},
+            "config_schema_version": {"type": "string"},
+            "strict": {"type": "boolean"},
+            "source_count": {"type": "integer"},
+            "validation_issue_count": {"type": "integer"},
+            "timestamp": {"type": "string"},
+            "details": {"type": ["object", "null"]},
+        },
+    }
+
+
 def test_should_pass_when_schema_contains_required_fields_and_decisions(tmp_path: Path) -> None:
     schema = minimal_valid_schema()
+    config_schema = minimal_valid_config_schema()
     schema_path = tmp_path / "governance_schema.json"
+    config_schema_path = tmp_path / "governance_config_schema.json"
     report_path = tmp_path / "report.json"
     write_json(schema_path, schema)
+    write_json(config_schema_path, config_schema)
 
     result = subprocess.run(
         [
@@ -64,6 +103,8 @@ def test_should_pass_when_schema_contains_required_fields_and_decisions(tmp_path
             str(SCRIPT),
             "--schema",
             str(schema_path),
+            "--config-schema",
+            str(config_schema_path),
             "--report",
             str(report_path),
         ],
@@ -74,20 +115,22 @@ def test_should_pass_when_schema_contains_required_fields_and_decisions(tmp_path
 
     assert result.returncode == 0
     assert (
-        "Governance event schema check passed" in result.stdout
+        "Governance event schema checks passed" in result.stdout
         or "jsonschema package not installed" in result.stdout
     )
 
 
-def test_should_fail_when_required_decision_is_missing(tmp_path: Path) -> None:
+def test_should_fail_when_config_schema_is_not_strict_about_additional_properties(
+    tmp_path: Path,
+) -> None:
     schema = minimal_valid_schema()
-    schema["properties"]["decision"]["enum"] = [  # type: ignore[index]
-        "accepted_registration",
-        "skipped_untrusted",
-    ]
+    config_schema = minimal_valid_config_schema()
+    config_schema.pop("additionalProperties")
     schema_path = tmp_path / "governance_schema.json"
+    config_schema_path = tmp_path / "governance_config_schema.json"
     report_path = tmp_path / "report.json"
     write_json(schema_path, schema)
+    write_json(config_schema_path, config_schema)
 
     result = subprocess.run(
         [
@@ -95,6 +138,41 @@ def test_should_fail_when_required_decision_is_missing(tmp_path: Path) -> None:
             str(SCRIPT),
             "--schema",
             str(schema_path),
+            "--config-schema",
+            str(config_schema_path),
+            "--report",
+            str(report_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert "Config schema must set additionalProperties to false" in result.stdout
+
+
+def test_should_fail_when_required_decision_is_missing(tmp_path: Path) -> None:
+    schema = minimal_valid_schema()
+    config_schema = minimal_valid_config_schema()
+    schema["properties"]["decision"]["enum"] = [  # type: ignore[index]
+        "accepted_registration",
+        "skipped_untrusted",
+    ]
+    schema_path = tmp_path / "governance_schema.json"
+    config_schema_path = tmp_path / "governance_config_schema.json"
+    report_path = tmp_path / "report.json"
+    write_json(schema_path, schema)
+    write_json(config_schema_path, config_schema)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--schema",
+            str(schema_path),
+            "--config-schema",
+            str(config_schema_path),
             "--report",
             str(report_path),
         ],

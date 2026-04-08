@@ -573,11 +573,11 @@ Use these decision records when designing new plugins:
   defines explicit trust controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and governance expectations for third-party plugins.
 - [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
-- [ADR-037 - visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+- [ADR-037 - visualization extension and rendering governance](../improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
   defines builder/renderer governance, deterministic metadata requirements, and default behavior.
 - [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-036 - PlotSpec canonical contract and validation boundary](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
+- [ADR-036 - PlotSpec canonical contract and validation boundary](../improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
   documents canonical PlotSpec semantics, validation boundaries, and compatibility rules.
 - [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval

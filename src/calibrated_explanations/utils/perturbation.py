@@ -23,10 +23,10 @@ perturb_dataset(x_cal, y_cal, categorical_features=None, noise_type='uniform', s
 
 # Import Libraries
 # import configparser
+import os
 from typing import Optional
 
 import numpy as np
-import os
 
 # from calibrated_explanations.core import ValidationError
 # # Create a ConfigParser object
@@ -92,7 +92,10 @@ def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random
         # Emit a UserWarning only when fallback chains are enabled (tests opt-in
         # via the `enable_fallbacks` fixture which removes the disabling env
         # vars). Otherwise log info to avoid triggering test-suite enforcement.
-        if _get_perturbation_config_manager().env("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS") is None:
+        if (
+            _get_perturbation_config_manager().env("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS")
+            is None
+        ):
             import warnings as _warnings
 
             _warnings.warn(

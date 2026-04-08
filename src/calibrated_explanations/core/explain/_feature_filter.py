@@ -54,9 +54,7 @@ class FeatureFilterConfig:
         config_manager: ConfigManager | None = None,
     ) -> "FeatureFilterConfig":
         """Merge CE_FEATURE_FILTER overrides with an optional base configuration."""
-        mgr = (
-            config_manager if config_manager is not None else _get_feature_filter_config_manager()
-        )
+        mgr = config_manager if config_manager is not None else _get_feature_filter_config_manager()
         cfg = FeatureFilterConfig(
             **(base.__dict__ if base is not None else {})
         )  # shallow copy to avoid mutating base

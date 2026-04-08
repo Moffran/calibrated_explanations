@@ -2353,9 +2353,7 @@ class FactualExplanation(CalibratedExplanation):
         style_override = kwargs.pop("style_override", None)
         plot_use_legacy = kwargs.pop("use_legacy", None)
         # PlotSpec request forces new renderer
-        if kwargs.get("return_plot_spec"):
-            plot_use_legacy = False
-        elif custom_plot_style:
+        if kwargs.get("return_plot_spec") or custom_plot_style:
             plot_use_legacy = False
         # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
         elif plot_use_legacy is None:
@@ -3851,9 +3849,7 @@ class AlternativeExplanation(CalibratedExplanation):
         style_override = kwargs.pop("style_override", None)
         plot_use_legacy = kwargs.pop("use_legacy", None)
         # PlotSpec request forces new renderer
-        if kwargs.get("return_plot_spec"):
-            plot_use_legacy = False
-        elif custom_plot_style:
+        if kwargs.get("return_plot_spec") or custom_plot_style:
             plot_use_legacy = False
         # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
         elif plot_use_legacy is None:

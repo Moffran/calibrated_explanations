@@ -1379,7 +1379,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
             plugin_result = _render_collection_plot_plugin(
                 self,
-                explicit_style=style_override if isinstance(style_override, str) and style_override else style,
+                explicit_style=style_override
+                if isinstance(style_override, str) and style_override
+                else style,
                 show=show,
                 path=plugin_path,
                 save_ext=plugin_save_ext,

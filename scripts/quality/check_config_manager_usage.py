@@ -125,6 +125,16 @@ def _is_os_getenv_call(node: ast.Call) -> bool:
     return isinstance(value, ast.Name) and value.id == "os"
 
 
+def _is_pytest_current_test_probe(node: ast.Call) -> bool:
+    """Return True for explicit pytest harness probe via os.getenv('PYTEST_CURRENT_TEST')."""
+    if not _is_os_getenv_call(node):
+        return False
+    if not node.args:
+        return False
+    first_arg = node.args[0]
+    return isinstance(first_arg, ast.Constant) and first_arg.value == "PYTEST_CURRENT_TEST"
+
+
 def _is_read_pyproject_section_call(node: ast.Call) -> bool:
     func = node.func
     if isinstance(func, ast.Name):
@@ -215,6 +225,8 @@ def scan_package(package_root: Path, *, scope: str = "targeted") -> list[Violati
             if isinstance(node, ast.Attribute) and _is_os_env_access(node):
                 violations.append(Violation(rel, getattr(node, "lineno", 1), "os.environ"))
             elif isinstance(node, ast.Call) and _is_os_getenv_call(node):
+                if _is_pytest_current_test_probe(node):
+                    continue
                 violations.append(Violation(rel, getattr(node, "lineno", 1), "os.getenv"))
             elif isinstance(node, ast.Call) and _is_read_pyproject_section_call(node):
                 violations.append(

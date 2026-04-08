@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
-from .config_helpers import read_pyproject_section
 from ..utils.exceptions import ConfigurationError
+from .config_helpers import read_pyproject_section
 
 _PROFILE_ID = "default"
 _SCHEMA_VERSION = "1"
@@ -226,6 +226,10 @@ class ConfigManager:
         self._profile_id = profile_id
         self._schema_version = schema_version
         self._strict = strict
+        self._source_count = self._compute_source_count(
+            env_snapshot=self._env_snapshot,
+            pyproject_snapshot=self._pyproject_snapshot,
+        )
         self._validation_report = ConfigValidationReport()
         self._validate_sections()
 
@@ -258,7 +262,42 @@ class ConfigManager:
             "plots": read_pyproject_section(("tool", "calibrated_explanations", "plots")),
             "telemetry": read_pyproject_section(("tool", "calibrated_explanations", "telemetry")),
         }
-        return cls(env_snapshot=env_snapshot, pyproject_snapshot=pyproject_snapshot, strict=strict)
+        manager = cls(
+            env_snapshot=env_snapshot, pyproject_snapshot=pyproject_snapshot, strict=strict
+        )
+        manager._emit_config_governance_event(
+            event_type="resolve",
+            validation_issue_count=0,
+        )
+        return manager
+
+    @staticmethod
+    def _compute_source_count(
+        *,
+        env_snapshot: Mapping[str, str],
+        pyproject_snapshot: Mapping[str, Mapping[str, Any]],
+    ) -> int:
+        return len(env_snapshot) + sum(len(values) for values in pyproject_snapshot.values())
+
+    def _emit_config_governance_event(
+        self,
+        *,
+        event_type: str,
+        validation_issue_count: int,
+        details: Mapping[str, Any] | None = None,
+    ) -> None:
+        # Import lazily to avoid module-import cycles between logging/config/governance.
+        from ..governance.events import emit_config_governance_event
+
+        emit_config_governance_event(
+            event_type=event_type,
+            profile_id=self._profile_id,
+            config_schema_version=self._schema_version,
+            strict=self._strict,
+            source_count=self._source_count,
+            validation_issue_count=validation_issue_count,
+            details=details,
+        )
 
     def _validate_sections(self) -> None:
         issues: list[ConfigValidationIssue] = []
@@ -301,6 +340,12 @@ class ConfigManager:
         self._validation_report = ConfigValidationReport(tuple(issues))
         if not issues:
             return
+        details = {"location": issues[0].location, "issue_count": len(issues)}
+        self._emit_config_governance_event(
+            event_type="validation_failure",
+            validation_issue_count=len(issues),
+            details=details,
+        )
         if self._strict:
             raise ConfigurationError(issues[0].message)
 
@@ -359,12 +404,18 @@ class ConfigManager:
             values[f"effective.{key}"] = resolved_value
             sources[f"effective.{key}"] = resolved_source
 
-        return ResolvedConfigSnapshot(
+        snapshot = ResolvedConfigSnapshot(
             values=MappingProxyType(values),
             sources=MappingProxyType(sources),
             profile_id=self._profile_id,
             schema_version=self._schema_version,
         )
+        self._emit_config_governance_event(
+            event_type="export",
+            validation_issue_count=0,
+            details={"diagnostic_only": True},
+        )
+        return snapshot
 
     def _resolve_effective_key(
         self,

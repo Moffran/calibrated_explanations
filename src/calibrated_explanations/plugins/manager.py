@@ -24,8 +24,8 @@ import warnings
 from types import MappingProxyType
 from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
-from .predict_monitor import PredictBridgeMonitor
 from ..core.config_manager import ConfigManager
+from .predict_monitor import PredictBridgeMonitor
 from .registry import (
     ensure_builtin_plugins,
     find_explanation_descriptor,

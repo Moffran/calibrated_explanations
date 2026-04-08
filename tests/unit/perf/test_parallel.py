@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
 from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
@@ -61,11 +62,11 @@ def test_parallel_config_from_env_extended_tokens(monkeypatch):
         with pytest.raises(
             DeprecationWarning, match="Feature parallelism is deprecated and removed"
         ):
-            ParallelConfig.from_env(base)
+            ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
         return
 
     with warns_or_raises("Feature parallelism is deprecated and removed"):
-        cfg = ParallelConfig.from_env(base)
+        cfg = ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.min_instances_for_parallel == 3
     assert cfg.instance_chunk_size == 5
     assert cfg.feature_chunk_size == 7
@@ -166,7 +167,9 @@ def test_auto_strategy_work_items(monkeypatch):
 
         @staticmethod
         def getenv(key, default=None):
-            return default
+            import os as _real_os
+
+            return _real_os.environ.get(key, default)
 
     monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
 
@@ -408,6 +411,7 @@ def fake_path_factory(entries: dict[str, str]):
 def test_get_cgroup_cpu_quota_reads_v2(monkeypatch):
     entries = {"/sys/fs/cgroup/cpu.max": "200000 100000"}
     fake_path = fake_path_factory(entries)
+
     class MockOS:
         name = "posix"
 
@@ -439,6 +443,7 @@ def test_get_cgroup_cpu_quota_reads_v1(monkeypatch):
         "/sys/fs/cgroup/cpu/cpu.cfs_period_us": "100000",
     }
     fake_path = fake_path_factory(entries)
+
     class MockOS:
         name = "posix"
 
@@ -480,7 +485,9 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
 
         @staticmethod
         def getenv(key, default=None):
-            return default
+            import os as _real_os
+
+            return _real_os.environ.get(key, default)
 
     monkeypatch.setattr(executor, "_emit", capture)
     monkeypatch.setattr(
@@ -498,16 +505,18 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
         "get_cgroup_cpu_quota",
         staticmethod(lambda: None),
     )
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
 
     assert executor.auto_strategy(work_items=1) == "sequential"
     assert events[-1]["reason"] == "tiny_workload"
 
-    monkeypatch.setenv("CI", "true")
+    monkeypatch.setattr(executor, "_is_ci_environment", lambda: True)
     assert executor.auto_strategy() == "sequential"
     assert events[-1]["reason"] == "ci_environment"
-    monkeypatch.delenv("CI")
-    # Also ensure GITHUB_ACTIONS is not interfering if running in real CI
-    monkeypatch.setattr(ParallelExecutor, "_is_ci_environment", staticmethod(lambda: False))
+
+    # Ensure CI branch is disabled for remaining workload-based assertions.
+    monkeypatch.setattr(executor, "_is_ci_environment", lambda: False)
 
     cfg.task_size_hint_bytes = 12 * 1024 * 1024
     assert executor.auto_strategy() == "threads"
