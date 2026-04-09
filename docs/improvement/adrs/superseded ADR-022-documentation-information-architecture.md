@@ -9,7 +9,7 @@ Date: 2025-10-12
 Deciders: Documentation Working Group
 Reviewers: Core maintainers
 Supersedes: None
-Superseded-by: ADR-027-documentation-standard
+Superseded-by: ADR-027-documentation-standard (renamed as STD-004-documentation-audience-standard)
 
 ## Context
 

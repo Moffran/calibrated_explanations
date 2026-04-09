@@ -1,10 +1,10 @@
-> **Status note (2026-03-08):** Last edited 2026-03-08
+> **Status note (2026-04-09):** Last edited 2026-04-09
 > Archive after: Retain indefinitely as architectural record
 > Implementation window: v0.11.1–v1.0.0
 
 # ADR-035: CI Workflow Governance — CI Upgrade & Enforcement
 
-Status: Proposed
+Status: Accepted
 Date: 2026-03-08
 Deciders: Core maintainers
 Reviewers: CI owners and governance maintainers
