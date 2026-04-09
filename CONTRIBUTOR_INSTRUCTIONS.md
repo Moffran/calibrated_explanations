@@ -115,6 +115,13 @@ Every fallback must be visible to users. No silent fallbacks.
 | `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
 | `Makefile` | Entry points: `make test`, `make ci-local` |
 
+### Root-directory policy
+
+**No new root-level directories may be created** without explicit maintainer approval.
+Artifact and report outputs must be placed under an existing top-level directory:
+`reports/`, `artifacts/`, `docs/`, `scripts/`, or `tests/`.
+Proposing a new root directory requires a PR rationale and an update to this file.
+
 ---
 
 ## 6A. Shared Skill Registry (Cross-Agent)
