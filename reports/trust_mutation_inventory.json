@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-04-08T20:14:27+00:00",
-  "package_root": "C:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/src/calibrated_explanations",
+  "generated_at": "2026-04-09T09:20:39+00:00",
+  "package_root": "src/calibrated_explanations",
   "records": [
     {
       "file": "calibrated_explanations/plugins/_testing.py",
@@ -68,77 +68,77 @@
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 1315,
+      "line": 1320,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 1420,
+      "line": 1425,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 1506,
+      "line": 1511,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 1993,
+      "line": 2006,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2042,
+      "line": 2055,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2086,
+      "line": 2099,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2130,
+      "line": 2143,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2169,
+      "line": 2182,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2183,
+      "line": 2196,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2198,
+      "line": 2211,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     },
     {
       "file": "calibrated_explanations/plugins/registry.py",
       "is_allowed": true,
-      "line": 2213,
+      "line": 2226,
       "mutation_kind": "primitive_call.update_trusted_identifier",
       "symbol": "update_trusted_identifier"
     }

@@ -386,6 +386,16 @@ def run_script_block(
                 pass
 
 
+def _summary_cwd(cwd: Optional[str]) -> str:
+    """Return a report-safe working-directory summary."""
+    candidate = Path(cwd or ".")
+    try:
+        rel = candidate.resolve().relative_to(Path.cwd().resolve())
+        return rel.as_posix() or "."
+    except ValueError:
+        return candidate.as_posix() or "."
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Run CI workflow steps locally")
     parser.add_argument("--workflow", action="append", help="Workflow basename to run (without extension)")
@@ -556,7 +566,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         summary_path = os.path.join(reports_dir, "ci_local_summary.json")
         summary = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "cwd": os.path.abspath(args.cwd or "."),
+            "cwd": _summary_cwd(args.cwd),
             "shell": args.shell,
             "workflows": list(collected.keys()),
             "total_steps": total,

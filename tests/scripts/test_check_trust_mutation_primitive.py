@@ -63,3 +63,4 @@ def test_checker_allows_mutation_in_primitive_module(tmp_path: Path) -> None:
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     assert report["total_violations"] == 0
     assert report["total_records"] == 1
+    assert report["package_root"] == "src/calibrated_explanations"

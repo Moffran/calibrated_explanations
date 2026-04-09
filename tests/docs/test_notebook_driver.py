@@ -14,7 +14,6 @@ from __future__ import annotations
 import importlib
 import json
 import sys
-import warnings
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -26,8 +25,6 @@ import pytest
 # ---------------------------------------------------------------------------
 import scripts.docs.run_notebooks as driver
 from scripts.docs.run_notebooks import (
-    KNOWN_SKIP_TAGS,
-    REQUIRED_RECORD_FIELDS,
     VALID_STATUSES,
     discover_notebooks,
     extract_errors,
@@ -41,7 +38,10 @@ from scripts.docs.run_notebooks import (
 # Helper factories
 # ---------------------------------------------------------------------------
 
-def nb_dict(cells: list[dict[str, Any]] | None = None, ce_skip: str | None = None) -> dict[str, Any]:
+
+def nb_dict(
+    cells: list[dict[str, Any]] | None = None, ce_skip: str | None = None
+) -> dict[str, Any]:
     """Return a minimal notebook dict."""
     nb: dict[str, Any] = {
         "nbformat": 4,
@@ -69,6 +69,7 @@ def write_nb(path: Path, nb: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 # Fixture: inject mock nbformat + nbconvert into sys.modules
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def fake_nbconvert() -> Any:
@@ -120,6 +121,7 @@ def fake_nbconvert() -> Any:
 # ===========================================================================
 # Pure-helper tests (no nbconvert required)
 # ===========================================================================
+
 
 class TestReadSkipTag:
     def test_should_return_tag_value_when_ce_skip_present(self) -> None:
@@ -257,6 +259,7 @@ class TestValidateReportSchema:
 # run_notebooks integration tests (mocked nbconvert)
 # ===========================================================================
 
+
 class TestRunNotebooksSkipTags:
     """Skip-tag handling — exercises the pre-execution path."""
 
@@ -333,7 +336,9 @@ class TestRunNotebooksSkipTags:
 
         # Act
         with pytest.warns(UserWarning, match="Unknown ce_skip tag 'undocumented'"):
-            rc = run_notebooks(tmp_path, output, cell_timeout=30, notebook_timeout=300, mode="advisory")
+            rc = run_notebooks(
+                tmp_path, output, cell_timeout=30, notebook_timeout=300, mode="advisory"
+            )
 
         # Assert — advisory does NOT fail; execution proceeds
         assert rc == 0
@@ -443,7 +448,7 @@ class TestRunNotebooksExecution:
     def test_should_report_timed_out_when_cell_timeout_error_raised(
         self, tmp_path: Path, fake_nbconvert: dict[str, Any]
     ) -> None:
-        # Arrange — simulate nbconvert's own CellTimeoutError  
+        # Arrange — simulate nbconvert's own CellTimeoutError
         nb_path = tmp_path / "slow.ipynb"
         write_nb(nb_path, nb_dict())
         fake_nbconvert["nbformat"].read.return_value = nb_dict()
@@ -652,9 +657,7 @@ class TestRunNotebooksExtractErrors:
     ) -> None:
         # Arrange — execution "succeeds" (no exception) but the returned
         # notebook node contains an error output in one cell.
-        nb_with_error = nb_dict(
-            cells=[code_cell(outputs=[error_output("RuntimeError", "boom")])]
-        )
+        nb_with_error = nb_dict(cells=[code_cell(outputs=[error_output("RuntimeError", "boom")])])
         write_nb(tmp_path / "nb.ipynb", nb_dict())
         fake_nbconvert["nbformat"].read.return_value = nb_dict()
         # preprocess returns a notebook that has an error in cell 0
@@ -674,9 +677,7 @@ class TestRunNotebooksExtractErrors:
     def test_should_exit_1_in_blocking_mode_when_cell_error_output_present(
         self, tmp_path: Path, fake_nbconvert: dict[str, Any]
     ) -> None:
-        nb_with_error = nb_dict(
-            cells=[code_cell(outputs=[error_output("ValueError", "x")])]
-        )
+        nb_with_error = nb_dict(cells=[code_cell(outputs=[error_output("ValueError", "x")])])
         write_nb(tmp_path / "nb.ipynb", nb_dict())
         fake_nbconvert["nbformat"].read.return_value = nb_dict()
         fake_nbconvert["ep_instance"].preprocess.return_value = (nb_with_error, {})
@@ -696,7 +697,9 @@ class TestRunNotebooksZeroDir:
         output = tmp_path / "report.json"
 
         with pytest.warns(UserWarning, match="No notebooks found"):
-            rc = run_notebooks(tmp_path, output, cell_timeout=30, notebook_timeout=300, mode="advisory")
+            rc = run_notebooks(
+                tmp_path, output, cell_timeout=30, notebook_timeout=300, mode="advisory"
+            )
 
         assert rc == 0
 

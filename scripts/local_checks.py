@@ -280,6 +280,15 @@ def main() -> int:
                 ".github/marker-hygiene-baseline.json",
             ),
         ),
+        Step(
+            "Generated report local-path guard",
+            _python_cmd(
+                "scripts/quality/check_no_local_paths_in_reports.py",
+                "--check",
+                "--report",
+                "reports/quality/no_local_paths_report.json",
+            ),
+        ),
     ]
 
     if pre_commit_available:
@@ -478,6 +487,15 @@ def main() -> int:
                 "reports/marker-hygiene/marker_hygiene_report.json",
                 "--baseline",
                 ".github/marker-hygiene-baseline.json",
+            ),
+        ),
+        Step(
+            "Generated report local-path guard (main)",
+            _python_cmd(
+                "scripts/quality/check_no_local_paths_in_reports.py",
+                "--check",
+                "--report",
+                "reports/quality/no_local_paths_report.json",
             ),
         ),
         Step(

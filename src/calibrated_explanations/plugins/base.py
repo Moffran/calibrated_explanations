@@ -30,6 +30,8 @@ _MODALITY_ALIASES = {
     "time-series": "timeseries",
     "time_series": "timeseries",
     "time series": "timeseries",
+    "multi-modal": "multimodal",
+    "multi_modal": "multimodal",
 }
 
 

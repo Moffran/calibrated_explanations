@@ -40,6 +40,11 @@ jobs:
           python scripts/quality/check_logging_domains.py \
             --root src/calibrated_explanations \
             --report reports/quality/logging_domain_report.json
+      - name: Generated report local-path guard
+        run: |
+          python scripts/quality/check_no_local_paths_in_reports.py \
+            --check \
+            --report reports/quality/no_local_paths_report.json
       - name: Run core tests with coverage (context-aware for over-testing analysis)
         run: |
           pytest -q -o addopts= \
@@ -113,6 +118,11 @@ jobs:
             --check \
             --report reports/marker-hygiene/marker_hygiene_report.json \
             --baseline .github/marker-hygiene-baseline.json
+      - name: Run generated report local-path guard
+        run: |
+          python scripts/quality/check_no_local_paths_in_reports.py \
+            --check \
+            --report reports/quality/no_local_paths_report.json
       - name: Upload quality reports
         if: always()
         uses: actions/upload-artifact@v7
@@ -123,6 +133,7 @@ jobs:
             reports/anti-pattern-analysis/test_quality_report.json
             reports/anti-pattern-analysis/test_helper_wrapper_report.json
             reports/marker-hygiene/marker_hygiene_report.json
+            reports/quality/no_local_paths_report.json
 
   parity-core-vs-extras:
     needs: coverage-and-gates

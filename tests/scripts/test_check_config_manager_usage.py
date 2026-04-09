@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import textwrap
@@ -62,6 +63,8 @@ def test_checker_passes_when_no_direct_reads(tmp_path: Path) -> None:
     result = run_checker(tmp_path)
     assert result.returncode == 0
     assert "ConfigManager usage check passed" in result.stdout
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["package_root"] == "src/calibrated_explanations"
 
 
 def test_checker_allows_pytest_current_test_probe(tmp_path: Path) -> None:
@@ -74,6 +77,8 @@ def test_checker_allows_pytest_current_test_probe(tmp_path: Path) -> None:
     )
     result = run_checker(tmp_path)
     assert result.returncode == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["package_root"] == "src/calibrated_explanations"
 
 
 def test_checker_blocks_from_sources_in_non_init_method(tmp_path: Path) -> None:

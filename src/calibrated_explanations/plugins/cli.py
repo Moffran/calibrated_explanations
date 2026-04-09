@@ -9,6 +9,8 @@ from typing import Any, Sequence
 
 from ..core.config_helpers import write_pyproject_section
 from ..core.config_manager import ConfigManager
+from ..utils.exceptions import ValidationError
+from .base import _normalise_modality
 from .intervals import IntervalCalibratorPlugin
 from .registry import (
     find_explanation_descriptor,
@@ -199,12 +201,38 @@ def _emit_discovery_report(report) -> None:
     _emit_records("Discovery skipped: checksum failures", report.checksum_failures)
 
 
+def _parse_modality_filter(raw: str | None) -> tuple[str, ...] | None:
+    """Parse and normalize comma-separated modality filters."""
+    if raw is None or not isinstance(raw, str):
+        return None
+    tokens = [chunk.strip() for chunk in raw.split(",") if chunk.strip()]
+    if not tokens:
+        print("Invalid --modality value: expected one or more comma-separated modality names.")
+        raise SystemExit(1)
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        try:
+            value = _normalise_modality(token)
+        except ValidationError:
+            print(
+                f"Invalid --modality token {token!r}. Use canonical values or aliases such as "
+                "tabular, vision/image, audio, text, timeseries, multimodal."
+            )
+            raise SystemExit(1) from None
+        if value not in seen:
+            seen.add(value)
+            normalized.append(value)
+    return tuple(normalized)
+
+
 def _cmd_list(args: argparse.Namespace) -> int:
     """Handle the `plugins list` subcommand."""
     # Honor the convenience `--plots` flag which acts as an alias for `kind=plots`
     kind = "plots" if getattr(args, "plots", False) else args.kind
     trusted_only = args.trusted_only
     verbose = args.verbose
+    requested_modalities = _parse_modality_filter(getattr(args, "modality", None))
 
     # Trigger discovery when verbose or when the user explicitly requests skipped entries
     if verbose or getattr(args, "include_skipped", False):
@@ -212,6 +240,14 @@ def _cmd_list(args: argparse.Namespace) -> int:
 
     if kind in ("explanations", "all"):
         descriptors = list_explanation_descriptors(trusted_only=trusted_only)
+        if requested_modalities is not None:
+            requested = set(requested_modalities)
+            descriptors = [
+                descriptor
+                for descriptor in descriptors
+                if requested
+                & set(coerce_string_tuple(descriptor.metadata.get("data_modalities", ("tabular",))))
+            ]
         _emit_header("Explanation plugins")
         if not descriptors:
             print("  <none>")
@@ -499,6 +535,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--include-skipped",
         action="store_true",
         help="Include skipped discovery entries (denied/untrusted) in the output",
+    )
+    list_parser.add_argument(
+        "--modality",
+        default=None,
+        help=(
+            "Filter explanation plugins by comma-separated modality names "
+            "(aliases allowed, e.g. image for vision)"
+        ),
     )
     list_parser.set_defaults(func=_cmd_list)
 

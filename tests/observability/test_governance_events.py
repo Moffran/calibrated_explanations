@@ -44,6 +44,7 @@ def base_meta(**extra: object) -> dict[str, object]:
         "version": "0.0-test",
         "provider": "tests",
         "capabilities": ["explain"],
+        "data_modalities": ("tabular",),
     }
     meta.update(extra)
     return meta

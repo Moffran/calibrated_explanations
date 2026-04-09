@@ -75,6 +75,7 @@ def test_load_entrypoint_plugins_skips_when_meta_name_denied(monkeypatch):
             "version": "0.0",
             "provider": "x",
             "capabilities": ["explain"],
+            "data_modalities": ("tabular",),
         }
         return p
 

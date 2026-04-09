@@ -23,6 +23,8 @@ REQUIRED_CHECKLIST_ITEMS = (
     "Heavy job(s) are path-gated, scheduled, or `workflow_dispatch` present",
     "`scripts/local_checks.py` / `Makefile` updated for local reproduction",
 )
+REPORT_PATH_GUARD_SCRIPT = "scripts/quality/check_no_local_paths_in_reports.py"
+REPORT_PATH_GUARD_REPORT = "reports/quality/no_local_paths_report.json"
 
 
 @dataclass
@@ -100,6 +102,48 @@ def _check_heavy_gating(file_path: Path, text: str, errors: list[str]) -> None:
         errors.append(f"{file_path.as_posix()}: heavy workflow requires schedule/workflow_dispatch or path filters.")
 
 
+def _check_report_path_guard_sync(
+    changed_files: list[Path],
+    repo_root: Path,
+    errors: list[str],
+) -> None:
+    """Require local reproduction updates when the report-path guard changes in CI."""
+    workflow_files = [
+        path
+        for path in changed_files
+        if path.as_posix().startswith(".github/workflows/") and path.suffix in {".yml", ".yaml"}
+    ]
+    if not workflow_files:
+        return
+
+    guard_changed = False
+    for rel_path in workflow_files:
+        abs_path = repo_root / rel_path
+        if not abs_path.exists():
+            continue
+        text = abs_path.read_text(encoding="utf-8")
+        if REPORT_PATH_GUARD_SCRIPT in text or REPORT_PATH_GUARD_REPORT in text:
+            guard_changed = True
+            break
+
+    if not guard_changed:
+        return
+
+    local_checks = repo_root / "scripts/local_checks.py"
+    makefile = repo_root / "Makefile"
+    local_text = local_checks.read_text(encoding="utf-8") if local_checks.exists() else ""
+    makefile_text = makefile.read_text(encoding="utf-8") if makefile.exists() else ""
+
+    if REPORT_PATH_GUARD_SCRIPT not in local_text or REPORT_PATH_GUARD_REPORT not in local_text:
+        errors.append(
+            "Workflow changes that add/remove the no-local-path report guard must update scripts/local_checks.py."
+        )
+    if REPORT_PATH_GUARD_SCRIPT not in makefile_text:
+        errors.append(
+            "Workflow changes that add/remove the no-local-path report guard must update Makefile."
+        )
+
+
 def _load_event(event_path: Path | None) -> dict:
     if event_path is None or not event_path.is_file():
         return {}
@@ -157,6 +201,7 @@ def validate_policy(base_sha: str, head_sha: str, repo_root: Path, event_path: P
         errors.append("CI workflow files changed without updating scripts/local_checks.py.")
     if strict_workflow_change_detected and "Makefile" not in changed:
         errors.append("CI workflow files changed without updating Makefile.")
+    _check_report_path_guard_sync(changed_files, repo_root, errors)
 
     _check_pr_metadata(changed_files, _load_event(event_path), errors, warnings)
     return ValidationResult(errors=errors, warnings=warnings)

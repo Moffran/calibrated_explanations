@@ -80,3 +80,4 @@ def test_checker_passes_for_clean_exports(tmp_path: Path) -> None:
 
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     assert report["total_violations"] == 0
+    assert report["package_root"] == "src/calibrated_explanations"

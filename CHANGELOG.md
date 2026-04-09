@@ -5,6 +5,17 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
 
+### ADR-033 Additive UX/Migration Gates
+
+#### Added
+
+- ADR-033: Added top-level modality shim modules `calibrated_explanations.vision` and `calibrated_explanations.audio`, delegating to `ce_vision`/`ce_audio` when installed and raising `MissingExtensionError` with install guidance otherwise.
+- ADR-033: Added `--modality` filtering support to `ce plugins list`, including modality alias normalization (`image` -> `vision`).
+
+#### Deprecated
+
+- ADR-033: Deprecated entry-point plugins that omit explicit `data_modalities` metadata. Discovery now emits `DeprecationWarning`; explicit declaration becomes required in `v0.12.0/v1.0.0-rc`.
+
 ### ADR-012 Notebook Execution Driver (v0.11.1 Task 6)
 
 #### Added

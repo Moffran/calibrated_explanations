@@ -53,6 +53,10 @@ check-private-members:
 check-agent-instructions:
 	python scripts/quality/check_agent_instruction_consistency.py
 
+.PHONY: check-report-paths
+check-report-paths:
+	python scripts/quality/check_no_local_paths_in_reports.py --check --report reports/quality/no_local_paths_report.json
+
 .PHONY: check-ci-policy
 check-ci-policy:
 	python scripts/quality/validate_ci_policy.py --base-sha HEAD~1 --head-sha HEAD --advisory

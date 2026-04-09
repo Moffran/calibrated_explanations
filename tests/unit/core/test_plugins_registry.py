@@ -481,7 +481,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
         pass
 
     class InvalidPlugin:
-        plugin_meta = {"name": "invalid"}
+        plugin_meta = {"name": "invalid", "data_modalities": ("tabular",)}
 
     class UntrustedPlugin:
         plugin_meta = {
@@ -491,6 +491,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             "version": "0.0-test",
             "provider": "tests",
             "dependencies": [],
+            "data_modalities": ("tabular",),
             "trust": False,
         }
 
@@ -502,6 +503,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             "version": "0.0-test",
             "provider": "tests",
             "dependencies": [],
+            "data_modalities": ("tabular",),
             "trust": True,
         }
 

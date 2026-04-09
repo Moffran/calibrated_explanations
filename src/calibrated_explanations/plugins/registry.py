@@ -38,7 +38,7 @@ from ._trust import (
     trust_debug_checks_enabled,
     update_trusted_identifier,
 )
-from .base import ExplainerPlugin, validate_plugin_meta
+from .base import ExplainerPlugin, _normalise_modality, validate_plugin_meta
 from .trust_policy import DefaultPluginTrustPolicy, PluginTrustPolicy
 
 _REGISTRY: List[ExplainerPlugin] = []
@@ -1184,9 +1184,14 @@ def find_explanation_plugin_for(
 ) -> tuple[str, ExplainerPlugin]:
     """Resolve an explanation plugin for a modality/mode/task combination.
 
+    The ``modality`` argument is normalised through the same alias map used at
+    plugin registration time (e.g. ``"image"`` resolves to ``"vision"``), so
+    callers may pass either canonical names or their declared aliases.
+
     Resolution order is trust -> kind -> modality -> mode/task -> supports(model)
     -> priority. Ambiguous top-priority matches raise ``ValidationError``.
     """
+    modality = _normalise_modality(modality)
     if identifier:
         plugin = (
             find_explanation_plugin_trusted(identifier)
@@ -1831,6 +1836,14 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 stacklevel=2,
             )
             continue
+
+        if isinstance(raw_meta, Mapping) and "data_modalities" not in raw_meta:
+            warnings.warn(
+                f"Plugin '{identifier}' does not declare 'data_modalities'; defaulting to "
+                "('tabular',). Explicit declaration will be required in v0.12.0/v1.0.0-rc.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         meta: Dict[str, Any] = dict(raw_meta)
         try:

@@ -44,27 +44,32 @@ Adopt a staged architecture for modality extensions split across `v0.11.0` and `
       1. reject major mismatch;
       2. accept higher minor/patch with `UserWarning` + governance log to expose forward-compatibility risk.
    5. `data_modalities` is normalized to lowercase and validated against:
-      1. canonical modalities: `tabular`, `image`, `audio`, `text`, `timeseries`, `multimodal`;
-      2. aliases: `vision -> image`, `time_series -> timeseries`, `multi-modal -> multimodal`;
+      1. canonical modalities: `tabular`, `vision`, `audio`, `text`, `timeseries`, `multimodal`;
+      2. aliases: `image -> vision`, `images -> vision`, `img -> vision`, `time_series -> timeseries`, `time-series -> timeseries`, `multi-modal -> multimodal`, `multi_modal -> multimodal`;
       3. custom extension namespace: `x-<vendor>-<name>`.
+      4. The `modality` argument to `find_explanation_plugin_for` is passed through the same alias map, so callers may use either canonical names or any declared alias.
 2. Add plugin API compatibility checks in registry/discovery paths using the major-hard/minor-soft policy.
 3. Add modality-aware plugin selection helper in registry:
    1. Selection order: trust -> kind -> modality -> mode/task -> supports(model) -> priority.
    2. `priority` defaults to `0` and sorts descending.
    3. If multiple plugins remain tied after priority, raise `ValidationError` requiring explicit plugin identifier selection.
 4. Keep CE core dependency-light and add thin shim modules for modality namespaces:
-   1. `calibrated_explanations.vision`
-   2. `calibrated_explanations.audio`
-   3. These shims will raise a custom `MissingExtensionError` (inheriting from CE's base exception and `ImportError`) if the external package is missing.
+   1. `calibrated_explanations.vision` at `src/calibrated_explanations/vision.py`.
+   2. `calibrated_explanations.audio` at `src/calibrated_explanations/audio.py`.
+   3. Each shim first attempts to import from its companion package (`ce_vision` for vision, `ce_audio` for audio). When the companion is installed the shim re-exports it transparently. When it is absent the shim raises `MissingExtensionError` (subclass of both `CalibratedError` and `ImportError`) with an explicit `pip install` instruction. This try-import pattern ensures the shim behaves correctly in both the installed and missing states without requiring two packages to own the same file path.
+   4. `MissingExtensionError` is defined in `utils/exceptions.py` before any shim references it.
+   5. The shims are NOT auto-imported by `calibrated_explanations/__init__.py`; they are triggered only by an explicit `import calibrated_explanations.vision` or `import calibrated_explanations.audio`. The standard availability check pattern is `try/except ImportError`; `MissingExtensionError` is a subclass so both forms catch it.
 5. Update the CE CLI to support `--modality` filtering.
-6. Keep legacy behavior additive-only in first release with a version-pinned shim/deprecation timeline:
-   1. `v0.11.1`: emit `DeprecationWarning` and migration guidance.
-   2. `v0.12.0`: remove legacy shim import paths unless superseded by a newer ADR.
+6. Keep legacy behavior additive-only in first release with a version-pinned deprecation timeline:
+   1. `v0.11.1`: emit `DeprecationWarning` for plugins discovered via entry points that do not carry an explicit `data_modalities` key in their raw `plugin_meta` (they receive the `("tabular",)` default silently in `v0.11.0` but authors must add an explicit declaration). The warning message must name the plugin and cite the `v0.12.0/v1.0.0-rc` deadline.
+   2. `v0.12.0/v1.0.0-rc`: remove the `data_modalities` default-fallback behaviour; plugins without an explicit declaration will fail `validate_plugin_meta` unless superseded by a newer ADR. The shim modules (`calibrated_explanations.vision`, `calibrated_explanations.audio`) are permanent integration paths and are not deprecated.
 7. Default to monorepo multi-package extension structure first, using independent versioning (e.g., Core `v0.11.0`, Vision `v0.1.0`).
 8. Validate the contract in CI using:
-   1. a lightweight "dummy" modality package inside `tests/`;
-   2. one packaging smoke test that installs a fixture extension package and validates entry-point discovery/import behavior.
+   1. a lightweight "dummy" modality package in `tests/fixtures/ce_mock_modality_plugin/` (no network or subprocess install required);
+   2. one packaging smoke test using `unittest.mock.patch` on `importlib.metadata.entry_points` that validates entry-point discovery, `plugin_api_version` contract enforcement, `data_modalities` normalization, and major-version mismatch rejection. The entry-point group name is `calibrated_explanations.plugins`. The entry point must resolve to an object with a `plugin_meta` attribute (class or instance); `load_entrypoint_plugins` calls `.load()` and then reads `plugin_meta` from the result.
+   3. Note: when `validate_plugin_meta` rejects a plugin during discovery (e.g., wrong `plugin_api_version`), the registry emits a `UserWarning` and skips the plugin but does NOT add a record to `PluginDiscoveryReport`. Tests that verify rejection must use `pytest.warns(UserWarning)`, not a report-record assertion.
 9. Promote first-party modality packages from rough draft to active release commitments no earlier than the `v0.12.0` planning gate, contingent on `v0.11.0` contract stabilization.
+10. Preserve CE-first invariant: all existing `CalibratedExplainer` tabular workflows are unaffected by modality extension. `find_explanation_plugin_for` is an opt-in helper and is NOT called by `CalibratedExplainer` itself. Registering a non-tabular modality plugin does not alter any existing explanation flow.
 
 Release split:
 
@@ -117,10 +122,10 @@ Negative / Risks:
 1. Land contract additions and compatibility checks as staged behavior.
 2. Add resolver helper and tests.
 3. Land metadata parser/taxonomy enforcement and resolver ambiguity handling in `v0.11.0`.
-4. Add shim modules with actionable install errors in `v0.11.1`.
-5. Update contributor and practitioner docs in `v0.11.1`.
-6. Add a packaging smoke test gate for extension install/discovery behavior in `v0.11.1`.
-7. Track shim sunset per ADR-011 policy in release planning artifacts using the `v0.11.1` -> `v0.12.0` schedule.
+4. Add `MissingExtensionError` to `utils/exceptions.py` and shim modules at `src/calibrated_explanations/vision.py` and `src/calibrated_explanations/audio.py` in `v0.11.1`. Each shim tries to import from its companion package and raises `MissingExtensionError` only when the companion is absent.
+5. Update contributor and practitioner docs in `v0.11.1`; correct §1.v canonical/alias text to match code convention (`vision` canonical, `image` alias).
+6. Add a packaging smoke test in `tests/unit/plugins/test_adr033_packaging_smoke.py` using `unittest.mock.patch` on `importlib.metadata.entry_points` — no subprocess or network access required.
+7. Track shim sunset per ADR-011 policy in release planning artifacts using the `v0.11.1` -> `v0.12.0/v1.0.0-rc` schedule.
 8. Synchronize `RELEASE_PLAN_v1.md` milestones with ADR-033 rollout tasks.
 
 ## Open Questions
