@@ -25,6 +25,7 @@ Contributor-facing semantics references:
 :hidden:
 
 plugin-contract
+notebook_policy
 extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced

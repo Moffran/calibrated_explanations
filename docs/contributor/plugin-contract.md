@@ -25,6 +25,47 @@ All plugin types follow a consistent override hierarchy for selection and config
 
 For detailed wiring examples, see {doc}`./extending/plugin-advanced-contract`.
 
+## Modality contract
+
+ADR-033 defines the modality metadata required for entry-point plugins and the
+resolver behavior used by modality-aware selection helpers.
+
+### Canonical modalities and aliases
+
+`data_modalities` values are normalised to canonical names:
+
+- `tabular`
+- `vision` (aliases: `image`, `images`, `img`)
+- `audio`
+- `text`
+- `timeseries` (aliases: `time_series`, `time-series`)
+- `multimodal` (aliases: `multi-modal`, `multi_modal`)
+
+Custom extension names must use an `x-<vendor>-<name>` namespace.
+
+### Metadata requirements
+
+Entry-point explanation plugins should publish these metadata fields:
+
+- `data_modalities`: tuple of canonical modality names
+- `plugin_api_version`: `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`
+
+Compatibility policy is major-hard/minor-soft:
+
+- major mismatch is rejected at discovery time
+- higher minor/patch can load with `UserWarning` plus governance logging
+
+### v0.11.1 deprecation timeline
+
+- `v0.11.0`: missing `data_modalities` defaults to `("tabular",)` silently
+- `v0.11.1`: missing `data_modalities` on entry-point metadata emits
+    `DeprecationWarning`
+- `v0.12.0/v1.0.0-rc`: explicit `data_modalities` is required; fallback default
+    is removed
+
+See {doc}`../practitioner/advanced/modality-plugins` for user-facing selection
+examples and migration guidance.
+
 ## Hello, calibrated plugin (minimal explanation plugin)
 
 Use this minimal example when you want to wrap a model that already exposes
@@ -573,11 +614,11 @@ Use these decision records when designing new plugins:
   defines explicit trust controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and governance expectations for third-party plugins.
 - [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
-- [ADR-037 - visualization extension and rendering governance](../improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+- [ADR-037 - visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
   defines builder/renderer governance, deterministic metadata requirements, and default behavior.
 - [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-036 - PlotSpec canonical contract and validation boundary](../improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
+- [ADR-036 - PlotSpec canonical contract and validation boundary](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
   documents canonical PlotSpec semantics, validation boundaries, and compatibility rules.
 - [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval

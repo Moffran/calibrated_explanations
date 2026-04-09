@@ -15,6 +15,47 @@ There are five primary methods to wire plugins into calibrated explanations:
 | **D** | pyproject.toml | 3 | Project-level defaults; distribution with package |
 | **E** | Explanation plugin metadata | 4 | Plugin-declared preferences; automatic dependency seeding |
 
+## Extension packaging
+
+ADR-033 extension packages should publish plugins through the entry-point group
+`calibrated_explanations.plugins`.
+
+### Entry-point contract
+
+- Entry-point group: `calibrated_explanations.plugins`
+- Entry-point target: importable object with a `plugin_meta` attribute (class or
+    instance)
+- `plugin_meta` must declare `plugin_api_version` and should declare
+    `data_modalities`
+
+Example `pyproject.toml` snippet:
+
+```toml
+[project.entry-points."calibrated_explanations.plugins"]
+ce_demo_modality = "ce_demo_modality.plugin:DemoPlugin"
+```
+
+Example plugin metadata placement:
+
+```python
+class DemoPlugin:
+        plugin_meta = {
+                "schema_version": 1,
+                "name": "ce-demo-modality",
+                "version": "0.1.0",
+                "provider": "demo",
+                "capabilities": ("explain",),
+                "modes": ("factual",),
+                "tasks": ("classification",),
+                "data_modalities": ("vision",),
+                "plugin_api_version": "1.0",
+                "trusted": False,
+        }
+```
+
+The packaging contract and discovery behavior are exercised by
+`tests/unit/plugins/test_adr033_packaging_smoke.py`.
+
 ---
 
 ## Method C: Environment variable configuration
@@ -420,7 +461,7 @@ Refer to these decision records when designing advanced plugin configurations:
   – Registry design and plugin lifecycle.
 - [ADR-013 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   – Explanation plugin contracts and output format.
-- [ADR-037 – visualization extension and rendering governance](../../improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+- [ADR-037 – visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
   – Plot builder/renderer governance, extension metadata, and runtime kind policy.
 - [ADR-024 - legacy plot input contracts](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/superseded%20ADR-024-legacy-plot-input-contracts.md)
   – PlotSpec and legacy plot input formats.

@@ -11,6 +11,7 @@
 
 - ADR-033: Added top-level modality shim modules `calibrated_explanations.vision` and `calibrated_explanations.audio`, delegating to `ce_vision`/`ce_audio` when installed and raising `MissingExtensionError` with install guidance otherwise.
 - ADR-033: Added `--modality` filtering support to `ce plugins list`, including modality alias normalization (`image` -> `vision`).
+- ADR-033: Added practitioner modality plugin guide and contributor modality/packaging contract documentation.
 
 #### Deprecated
 

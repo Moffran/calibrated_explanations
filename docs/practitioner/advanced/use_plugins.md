@@ -77,6 +77,9 @@ Prefer explicit, local configuration for development, and use environment variab
 
 ### Method A — Explainer parameters (highest priority)
 
+For modality-aware plugin selection (for example `vision` and `audio` plugin
+discovery), see {doc}`./modality-plugins`.
+
 ```python
 from calibrated_explanations import CalibratedExplainer
 
