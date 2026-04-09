@@ -338,6 +338,19 @@ def main() -> int:
                 _python_cmd("scripts/quality/audit_notebook_api.py", "notebooks", "--json", "artifacts/notebook_audit.json"),
                 optional=True,
             ),
+            # Notebook execution report (advisory locally — mirrors nightly CI job)
+            # Requires calibrated_explanations[notebooks,viz].
+            Step(
+                "Notebook execution report",
+                _python_cmd(
+                    "scripts/docs/run_notebooks.py",
+                    "--mode",
+                    "advisory",
+                    "--output",
+                    "reports/docs/notebook_execution_report.json",
+                ),
+                optional=True,
+            ),
             # Docs build (advisory locally)
             Step(
                 "Docs build (HTML)",

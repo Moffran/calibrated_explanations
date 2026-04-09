@@ -172,6 +172,7 @@ notebooks/additional_notebooks/catboost_info/learn/events.out.tfevents
 *catboost_info/*
 docs/improvement/ignore/*
 reports/ci_local_summary.json
+reports/docs/
 perf_diff.txt
 micro_current.json
 tests/benchmarks/micro_.json

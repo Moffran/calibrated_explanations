@@ -5,6 +5,15 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
 
+### ADR-012 Notebook Execution Driver (v0.11.1 Task 6)
+
+#### Added
+
+- **`scripts/docs/run_notebooks.py`:** Deterministic notebook execution with per-cell (30 s) and per-notebook (300 s) timeouts; supports `"noexec"` and `"slow"` skip tags; emits `reports/docs/notebook_execution_report.json`.
+- **`notebook-exec-report` job** in `ci-nightly.yml`: advisory execution with `[notebooks,viz]` extras.
+- **`docs/contributor/notebook_policy.md`:** Contribution rules for notebooks (skip tags, timeouts, headless, seed).
+- **32 tests** in `tests/docs/test_notebook_driver.py` validating execution contract and schema.
+
 ### Reject Framework Upgrade (since v0.11.0)
 
 #### Added
