@@ -11,7 +11,7 @@ Superseded-by: None
 
 ## Context
 
-CE already has mature plugin trust/discovery mechanics and mode-aware plugin architecture for explanations, intervals, and plots. However, CE lacks an explicit modality-level contract and compatibility signal for external modality packages (image/audio/text/timeseries/multimodal). This creates three architecture risks:
+CE already has mature plugin trust/discovery mechanics and mode-aware plugin architecture for explanations, intervals, and plots. However, CE lacks an explicit modality-level contract and compatibility signal for external modality packages (image/audio/text/multimodal). This creates three architecture risks:
 
 1. Core bloat risk if modality-specific runtime code is added directly to `calibrated_explanations`.
 2. Plugin compatibility ambiguity when third-party packages evolve independently.
@@ -44,8 +44,8 @@ Adopt a staged architecture for modality extensions split across `v0.11.0` and `
       1. reject major mismatch;
       2. accept higher minor/patch with `UserWarning` + governance log to expose forward-compatibility risk.
    5. `data_modalities` is normalized to lowercase and validated against:
-      1. canonical modalities: `tabular`, `vision`, `audio`, `text`, `timeseries`, `multimodal`;
-      2. aliases: `image -> vision`, `images -> vision`, `img -> vision`, `time_series -> timeseries`, `time-series -> timeseries`, `multi-modal -> multimodal`, `multi_modal -> multimodal`;
+      1. canonical modalities: `tabular`, `vision`, `audio`, `text`, `multimodal`;
+      2. aliases: `image -> vision`, `images -> vision`, `img -> vision`, `multi-modal -> multimodal`, `multi_modal -> multimodal`;
       3. custom extension namespace: `x-<vendor>-<name>`.
       4. The `modality` argument to `find_explanation_plugin_for` is passed through the same alias map, so callers may use either canonical names or any declared alias.
 2. Add plugin API compatibility checks in registry/discovery paths using the major-hard/minor-soft policy.
@@ -90,6 +90,7 @@ Release split:
 4. Creates a clear compatibility contract that can be validated in CI and at runtime.
 5. Reduces resolver ambiguity and plugin ecosystem drift with deterministic selection and a controlled modality taxonomy.
 6. Aligns release content with a breaking-first / additive-follow-up cadence to reduce release risk.
+7. **Timeseries is excluded from this ADR's scope.** Time-ordered data requires ordered-input semantics, temporal feature indexing, and perturbation strategies that are fundamentally incompatible with the tabular/non-tabular extension contract modelled here. A separate ADR will govern timeseries modality support if and when it is needed.
 
 ## Alternatives Considered
 

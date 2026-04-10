@@ -217,7 +217,7 @@ def _parse_modality_filter(raw: str | None) -> tuple[str, ...] | None:
         except ValidationError:
             print(
                 f"Invalid --modality token {token!r}. Use canonical values or aliases such as "
-                "tabular, vision/image, audio, text, timeseries, multimodal."
+                "tabular, vision/image, audio, text, multimodal."
             )
             raise SystemExit(1) from None
         if value not in seen:

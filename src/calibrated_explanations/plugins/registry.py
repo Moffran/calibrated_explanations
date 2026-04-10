@@ -1851,7 +1851,7 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         except (
             ValueError,
             ValidationError,
-        ) as exc:  # ADR002_ALLOW: warn and skip invalid metadata.  # pragma: no cover
+        ) as exc:  # ADR002_ALLOW: warn and skip invalid metadata.
             warnings.warn(
                 f"Invalid metadata for plugin {identifier!r}: {exc}",
                 UserWarning,
@@ -1935,7 +1935,21 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 reason=str(exc),
             )
             continue
-        register(plugin, source="entrypoint", identifier=identifier)
+        if "modes" in meta:
+            # ADR-033: plugins that declare explanation modes are routed into the descriptor
+            # catalog so they are discoverable via find_explanation_descriptor /
+            # find_explanation_plugin_for.
+            try:
+                register_explanation_plugin(
+                    identifier,
+                    plugin,
+                    metadata=dict(meta),
+                    source="entrypoint",
+                )
+            except (ValueError, ValidationError) as _exc:  # ADR002_ALLOW: fall back to legacy catalog
+                register(plugin, source="entrypoint", identifier=identifier)
+        else:
+            register(plugin, source="entrypoint", identifier=identifier)
         if trusted:
             trust_plugin(plugin)
         loaded.append(plugin)

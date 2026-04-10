@@ -13,7 +13,6 @@ The modality resolver accepts canonical names and normalises aliases:
 | `vision` | `image`, `images`, `img` |
 | `audio` | none |
 | `text` | none |
-| `timeseries` | `time_series`, `time-series` |
 | `multimodal` | `multi-modal`, `multi_modal` |
 
 The same alias map applies to API and CLI modality inputs.

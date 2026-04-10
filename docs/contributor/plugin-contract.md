@@ -38,7 +38,6 @@ resolver behavior used by modality-aware selection helpers.
 - `vision` (aliases: `image`, `images`, `img`)
 - `audio`
 - `text`
-- `timeseries` (aliases: `time_series`, `time-series`)
 - `multimodal` (aliases: `multi-modal`, `multi_modal`)
 
 Custom extension names must use an `x-<vendor>-<name>` namespace.

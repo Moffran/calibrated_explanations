@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import re
+import warnings
 from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence
 
 from ..utils.exceptions import ValidationError
@@ -14,22 +16,21 @@ except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
 
 PluginMeta: TypeAlias = Mapping[str, Any]
 _RUNTIME_PLUGIN_API_MAJOR = 1
+_RUNTIME_PLUGIN_API_MINOR = 0
+_RUNTIME_PLUGIN_API_PATCH = 0
 _SEMVER_RE = re.compile(r"^\d+\.\d+(?:\.\d+)?$")
+_GOVERNANCE_LOGGER = logging.getLogger("calibrated_explanations.governance.plugins")
 _CANONICAL_MODALITIES = {
     "tabular",
     "vision",
     "audio",
     "text",
-    "timeseries",
     "multimodal",
 }
 _MODALITY_ALIASES = {
     "image": "vision",
     "images": "vision",
     "img": "vision",
-    "time-series": "timeseries",
-    "time_series": "timeseries",
-    "time series": "timeseries",
     "multi-modal": "multimodal",
     "multi_modal": "multimodal",
 }
@@ -66,7 +67,7 @@ def _ensure_sequence_of_strings(value: Any, *, key: str) -> Sequence[str]:
     return tuple(result)
 
 
-def _parse_plugin_api_version(raw: Any) -> str:
+def _parse_plugin_api_version(raw: Any, *, plugin_name: str | None = None) -> str:
     """Parse and validate plugin API version string."""
     if not isinstance(raw, str) or not raw:
         raise ValidationError("plugin_meta['plugin_api_version'] must be a non-empty string")
@@ -78,6 +79,32 @@ def _parse_plugin_api_version(raw: Any) -> str:
     if major != _RUNTIME_PLUGIN_API_MAJOR:
         raise ValidationError(
             "plugin_meta['plugin_api_version'] major is incompatible with runtime"
+        )
+
+    parts = [int(part) for part in raw.split(".")]
+    minor = parts[1]
+    patch = parts[2] if len(parts) > 2 else 0
+    runtime_minor_patch = (_RUNTIME_PLUGIN_API_MINOR, _RUNTIME_PLUGIN_API_PATCH)
+    declared_minor_patch = (minor, patch)
+    if declared_minor_patch > runtime_minor_patch:
+        warnings.warn(
+            "plugin_meta['plugin_api_version'] declares a newer minor/patch than runtime "
+            f"{_RUNTIME_PLUGIN_API_MAJOR}.{_RUNTIME_PLUGIN_API_MINOR}.{_RUNTIME_PLUGIN_API_PATCH}; "
+            "accepting with forward-compatibility risk.",
+            UserWarning,
+            stacklevel=3,
+        )
+        _GOVERNANCE_LOGGER.info(
+            "Accepted plugin with newer plugin_api_version minor/patch",
+            extra={
+                "plugin_name": plugin_name,
+                "runtime_plugin_api_version": (
+                    f"{_RUNTIME_PLUGIN_API_MAJOR}.{_RUNTIME_PLUGIN_API_MINOR}."
+                    f"{_RUNTIME_PLUGIN_API_PATCH}"
+                ),
+                "declared_plugin_api_version": raw,
+                "compatibility_policy": "major-hard/minor-soft",
+            },
         )
     return raw
 
@@ -154,7 +181,9 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
         meta["trusted"] = False
 
     # ADR-033: metadata compatibility defaults for legacy plugins.
-    meta["plugin_api_version"] = _parse_plugin_api_version(meta.get("plugin_api_version", "1.0"))
+    meta["plugin_api_version"] = _parse_plugin_api_version(
+        meta.get("plugin_api_version", "1.0"), plugin_name=meta.get("name")
+    )
     meta["data_modalities"] = _normalise_data_modalities(meta.get("data_modalities", ("tabular",)))
 
 

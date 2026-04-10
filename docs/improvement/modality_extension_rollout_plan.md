@@ -80,8 +80,8 @@ Motivation: reduce release risk and avoid architecture drift.
       2. Accept higher minor/patch versions with `UserWarning` + governance log entry so forward-compatibility risk is explicit.
    3. `data_modalities` must be a non-empty sequence of non-empty strings, normalized to lowercase.
    4. Enforce canonical core modalities with aliases and extension namespace:
-      1. Canonical: `tabular`, `image`, `audio`, `text`, `timeseries`, `multimodal`.
-      2. Aliases: `vision -> image`, `time_series -> timeseries`, `multi-modal -> multimodal`.
+      1. Canonical: `tabular`, `image`, `audio`, `text`, `multimodal`.
+      2. Aliases: `vision -> image`, `multi-modal -> multimodal`.
       3. Allow custom modalities only through `x-<vendor>-<name>` namespace.
 3. Keep all existing required keys and trust/checksum behavior unchanged.
 
