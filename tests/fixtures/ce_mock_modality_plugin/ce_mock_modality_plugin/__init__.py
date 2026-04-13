@@ -19,7 +19,15 @@ class MinimalModalityPlugin:
     }
 
     def supports(self, model):
+        """Return whether the plugin can handle the provided model."""
         return True
 
     def explain(self, model, x, **kw):
+        """Return an explanation payload for ``x``.
+
+        Notes
+        -----
+        This fixture intentionally raises because packaging smoke tests only
+        validate discovery/metadata contracts, not explanation execution.
+        """
         raise NotImplementedError
