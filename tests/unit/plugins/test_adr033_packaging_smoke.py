@@ -305,9 +305,12 @@ def test_should_not_use_nonstandard_entrypoint_loader_fallbacks():
         def load(self):
             raise RuntimeError("boom")
 
-        # Legacy weak-fallback shape that discovery must ignore.
+        # Legacy weak-fallback shapes that discovery must ignore.
         def loader(self):  # pragma: no cover - behavior asserted via registration outcome
             raise AssertionError("loader() should never be called")
+
+        def _loader(self):  # pragma: no cover - behavior asserted via registration outcome
+            raise AssertionError("_loader() should never be called")
 
     class EntryPoints:
         def select(self, *, group: str):

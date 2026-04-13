@@ -49,7 +49,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import yaml
-except Exception:  # pragma: no cover - optional in minimal environments
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - optional in minimal environments
     yaml = None
 
 

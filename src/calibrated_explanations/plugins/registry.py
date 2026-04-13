@@ -1810,6 +1810,13 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 UserWarning,
                 stacklevel=2,
             )
+            _LOGGER.info(
+                "Skipping entry-point plugin %r (provider=%r): load failed with %s: %s",
+                identifier,
+                getattr(entry_point, "dist", None),
+                type(exc).__name__,
+                exc,
+            )
             continue
         raw_meta = getattr(plugin, "plugin_meta", None)
         if raw_meta is None:
@@ -1830,6 +1837,10 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                 "('tabular',). Explicit declaration will be required in v0.12.0/v1.0.0-rc.",
                 DeprecationWarning,
                 stacklevel=2,
+            )
+            _LOGGER.info(
+                "Entry-point plugin %r missing 'data_modalities'; defaulting to ('tabular',).",
+                identifier,
             )
             _WARNED_MISSING_MODALITIES_ENTRYPOINTS.add(identifier)
 
