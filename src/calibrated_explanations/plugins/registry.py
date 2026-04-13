@@ -51,6 +51,7 @@ _ENTRYPOINT_GROUP = "calibrated_explanations.plugins"
 _ENV_TRUST_CACHE: set[str] | None = None
 _PYPROJECT_TRUST_CACHE: set[str] | None = None
 _WARNED_UNTRUSTED: set[str] = set()
+_WARNED_MISSING_MODALITIES_ENTRYPOINTS: set[str] = set()
 _LAST_DISCOVERY_REPORT: "PluginDiscoveryReport | None" = None
 
 _LOGGER = logging.getLogger("calibrated_explanations.governance.registry")
@@ -1804,30 +1805,19 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         except (
             Exception
         ) as exc:  # ADR002_ALLOW: keep discovery resilient to plugin failures.  # pragma: no cover
-            # Attempt best-effort alternative loaders that some test harnesses
-            # or legacy entrypoint shims may provide (e.g. attributes named
-            # '_loader' or 'loader'). If those exist and are callable, use
-            # them before giving up.
-            alt_loader = getattr(entry_point, "_loader", None) or getattr(
-                entry_point, "loader", None
+            warnings.warn(
+                f"Failed to load plugin entry point {identifier!r}: {exc}",
+                UserWarning,
+                stacklevel=2,
             )
-            if callable(alt_loader):
-                try:
-                    plugin = alt_loader()
-                except Exception as exc_alt:  # adr002_allow  # pragma: no cover - best-effort
-                    warnings.warn(
-                        f"Failed to load plugin entry point {identifier!r}: {exc_alt}",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    continue
-            else:
-                warnings.warn(
-                    f"Failed to load plugin entry point {identifier!r}: {exc}",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                continue
+            _LOGGER.info(
+                "Skipping entry-point plugin %r (provider=%r): load failed with %s: %s",
+                identifier,
+                getattr(entry_point, "dist", None),
+                type(exc).__name__,
+                exc,
+            )
+            continue
         raw_meta = getattr(plugin, "plugin_meta", None)
         if raw_meta is None:
             warnings.warn(
@@ -1837,13 +1827,22 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             )
             continue
 
-        if isinstance(raw_meta, Mapping) and "data_modalities" not in raw_meta:
+        if (
+            isinstance(raw_meta, Mapping)
+            and "data_modalities" not in raw_meta
+            and identifier not in _WARNED_MISSING_MODALITIES_ENTRYPOINTS
+        ):
             warnings.warn(
                 f"Plugin '{identifier}' does not declare 'data_modalities'; defaulting to "
                 "('tabular',). Explicit declaration will be required in v0.12.0/v1.0.0-rc.",
                 DeprecationWarning,
                 stacklevel=2,
             )
+            _LOGGER.info(
+                "Entry-point plugin %r missing 'data_modalities'; defaulting to ('tabular',).",
+                identifier,
+            )
+            _WARNED_MISSING_MODALITIES_ENTRYPOINTS.add(identifier)
 
         meta: Dict[str, Any] = dict(raw_meta)
         try:

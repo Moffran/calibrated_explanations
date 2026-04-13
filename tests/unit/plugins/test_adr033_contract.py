@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import importlib
 import sys
+import warnings
 from types import SimpleNamespace
 from typing import Any, Mapping
 from unittest.mock import patch
@@ -23,6 +24,7 @@ from calibrated_explanations.plugins.registry import (
 )
 from calibrated_explanations.utils.exceptions import MissingExtensionError, ValidationError
 from tests.support.registry_helpers import clear_explanation_plugins, clear_legacy_registry
+from tests.support.registry_helpers import clear_trust_warnings
 
 
 class DummyExplanationPlugin:
@@ -73,10 +75,12 @@ class AllowAllPolicy:
 def reset_registry_and_policy():
     clear_explanation_plugins()
     clear_legacy_registry()
+    clear_trust_warnings()
     set_trust_policy(DefaultPluginTrustPolicy())
     yield
     clear_explanation_plugins()
     clear_legacy_registry()
+    clear_trust_warnings()
     set_trust_policy(DefaultPluginTrustPolicy())
 
 
@@ -308,6 +312,63 @@ def test_deprecation_warning_on_plugin_without_modality(monkeypatch):
         match=r"tests\.modality:EntryPointPlugin.*does not declare 'data_modalities'",
     ):
         load_entrypoint_plugins(include_untrusted=True)
+
+
+def test_deprecation_warning_on_plugin_without_modality_emitted_once_per_identifier(monkeypatch):
+    class EntryPointPlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "name": "tests.modality.entrypoint.once",
+            "version": "0.1",
+            "provider": "tests",
+            "capabilities": ("explain",),
+            "modes": ("factual",),
+            "tasks": ("classification",),
+            "dependencies": (),
+            "trusted": False,
+        }
+
+        def supports(self, model: Any) -> bool:
+            return True
+
+        def supports_mode(self, mode: str, *, task: str) -> bool:
+            return mode == "factual" and task == "classification"
+
+        def initialize(self, context: Any) -> None:
+            return None
+
+        def explain_batch(self, x: Any, request: Any) -> Any:
+            raise NotImplementedError
+
+    class EntryPoint:
+        name = "tests.modality.entrypoint.once"
+        module = "tests.modality"
+        attr = "EntryPointPlugin"
+
+        def load(self):
+            return EntryPointPlugin()
+
+    class EntryPoints:
+        def select(self, *, group):
+            return [EntryPoint()] if group == "calibrated_explanations.plugins" else []
+
+    monkeypatch.setattr(
+        "calibrated_explanations.plugins.registry.importlib_metadata.entry_points",
+        lambda: EntryPoints(),
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
+        load_entrypoint_plugins(include_untrusted=True)
+        load_entrypoint_plugins(include_untrusted=True)
+
+    deprecation_messages = [
+        warning
+        for warning in caught
+        if issubclass(warning.category, DeprecationWarning)
+        and "does not declare 'data_modalities'" in str(warning.message)
+    ]
+    assert len(deprecation_messages) == 1
 
 
 def test_find_explanation_plugin_for_accepts_alias():

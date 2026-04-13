@@ -49,9 +49,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import yaml
-except Exception as exc:  # pragma: no cover - dev dependency expected
-    print("PyYAML is required (package name: pyyaml). Please install it.")
-    raise
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - optional in minimal environments
+    yaml = None
 
 
 def find_workflow_files(path: str = ".github/workflows") -> List[str]:
@@ -64,6 +63,8 @@ def find_workflow_files(path: str = ".github/workflows") -> List[str]:
 
 
 def load_workflow(path: str) -> Dict[str, Any]:
+    if yaml is None:
+        raise RuntimeError("PyYAML is required (package name: pyyaml). Please install it.")
     with open(path, "r", encoding="utf-8") as fh:
         return yaml.safe_load(fh)
 
@@ -386,7 +387,7 @@ def run_script_block(
                 pass
 
 
-def _summary_cwd(cwd: Optional[str]) -> str:
+def summary_cwd(cwd: Optional[str]) -> str:
     """Return a report-safe working-directory summary."""
     candidate = Path(cwd or ".")
     try:
@@ -566,7 +567,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         summary_path = os.path.join(reports_dir, "ci_local_summary.json")
         summary = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "cwd": _summary_cwd(args.cwd),
+            "cwd": summary_cwd(args.cwd),
             "shell": args.shell,
             "workflows": list(collected.keys()),
             "total_steps": total,

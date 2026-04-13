@@ -65,6 +65,17 @@ Boundary policy: keep checklist structure stable within a milestone; adjust gate
 - **ADR-026 immutable context + telemetry assertions covered**
   - [ ] Passed
 
+## v0.11.1 ADR-033 Closure (Tasks 11–13)
+
+- **Task 11 contract hardening (`--modality`, shims, warning semantics)**
+  - [x] Targeted ADR-033 contract tests pass
+  - [x] `make local-checks-pr` completed successfully in current integrated state
+- **Task 12 documentation follow-through**
+  - [ ] Sphinx hard-fail docs build (`python -m sphinx docs docs/_build/html -W --keep-going -q`) verified in release environment
+- **Task 13 packaging smoke realism**
+  - [x] Packaging smoke tests use entry-point discovery path with real `EntryPoint` loading semantics
+  - [x] ADR-033 packaging smoke test suite passes end-to-end
+
 ## Formatting & Standards (run `pre-commit run --all-files`)
 
 - **Linting**

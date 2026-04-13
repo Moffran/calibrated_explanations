@@ -12,6 +12,12 @@
 - ADR-033: Added top-level modality shim modules `calibrated_explanations.vision` and `calibrated_explanations.audio`, delegating to `ce_vision`/`ce_audio` when installed and raising `MissingExtensionError` with install guidance otherwise.
 - ADR-033: Added `--modality` filtering support to `ce plugins list`, including modality alias normalization (`image` -> `vision`).
 - ADR-033: Added practitioner modality plugin guide and contributor modality/packaging contract documentation.
+- ADR-033: Hardened packaging smoke coverage to use real `importlib.metadata.EntryPoint` objects with module import resolution, including alias normalization and plugin API compatibility assertions.
+
+#### Changed
+
+- ADR-033: Tightened entry-point discovery to fail closed on `EntryPoint.load()` errors (removed weak alternative loader fallback paths) so metadata contract enforcement cannot be bypassed by non-standard loader attributes.
+- ADR-033: Missing-`data_modalities` deprecation warnings are now deterministic (emitted once per entry-point plugin identifier per process) to reduce warning noise while keeping migration pressure visible.
 
 #### Deprecated
 
