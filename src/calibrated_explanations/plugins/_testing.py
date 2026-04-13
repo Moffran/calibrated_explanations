@@ -30,6 +30,7 @@ def set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None
 def clear_trust_warnings() -> None:
     """Reset the set of untrusted plugin warnings emitted during discovery."""
     registry._WARNED_UNTRUSTED.clear()
+    registry._WARNED_MISSING_MODALITIES_ENTRYPOINTS.clear()
 
 
 def normalise_trust(meta: Mapping[str, Any]) -> bool:

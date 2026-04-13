@@ -87,7 +87,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
     root = Path(request.config.rootpath)
     out = root / ".pytest_matplotlib_debug.json"
 
-    def _sanitize_path(value: object) -> object:
+    def sanitize_path(value: object) -> object:
         if not isinstance(value, str) or not value:
             return value
         try:
@@ -97,7 +97,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
                 return "<redacted-local-path>"
             return value
 
-    def _sanitize_repr(value: object) -> object:
+    def sanitize_repr(value: object) -> object:
         if not isinstance(value, str):
             return value
         return re.sub(
@@ -114,8 +114,8 @@ def debug_matplotlib_session_state(request: FixtureRequest):
             mod = sys.modules.get(m)
             try:
                 modules[m] = {
-                    "repr": _sanitize_repr(repr(mod)),
-                    "file": _sanitize_path(getattr(mod, "__file__", None)),
+                    "repr": sanitize_repr(repr(mod)),
+                    "file": sanitize_path(getattr(mod, "__file__", None)),
                     "has_artist": hasattr(mod, "artist"),
                     "has_figure": hasattr(mod, "figure"),
                     "spec": getattr(mod, "__spec__", None).name
@@ -128,7 +128,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
         data = {
             "timestamp": datetime.utcnow().isoformat(),
             "matplotlib_findable": found,
-            "sys_path": [_sanitize_path(entry) for entry in sys.path],
+            "sys_path": [sanitize_path(entry) for entry in sys.path],
             "matplotlib_modules": modules,
         }
         out.write_text(json.dumps(data, indent=2), encoding="utf8")
@@ -266,8 +266,8 @@ def pytest_sessionstart(session):
                         entry = {
                             "timestamp": datetime.utcnow().isoformat(),
                             "import_name": name,
-                            "module_repr": _sanitize_repr(repr(mod)),
-                            "module_file": _sanitize_path(getattr(mod, "__file__", None)),
+                            "module_repr": sanitize_repr(repr(mod)),
+                            "module_file": sanitize_path(getattr(mod, "__file__", None)),
                             "sys_modules_keys": [
                                 k for k in sys.modules if k.startswith("matplotlib")
                             ],

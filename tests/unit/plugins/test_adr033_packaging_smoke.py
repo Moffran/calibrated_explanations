@@ -1,9 +1,11 @@
 """ADR-033 packaging smoke tests: entry-point discovery, modality contract, plugin_api_version."""
 from __future__ import annotations
 
+import importlib.metadata as importlib_metadata
 import sys
+import types
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -11,8 +13,6 @@ import pytest
 _FIXTURE_ROOT = Path(__file__).parents[2] / "fixtures" / "ce_mock_modality_plugin"
 if str(_FIXTURE_ROOT) not in sys.path:
     sys.path.insert(0, str(_FIXTURE_ROOT))
-
-from ce_mock_modality_plugin import MinimalModalityPlugin  # noqa: E402
 
 from calibrated_explanations.plugins.registry import (  # noqa: E402
     DefaultPluginTrustPolicy,
@@ -24,6 +24,7 @@ from calibrated_explanations.plugins.registry import (  # noqa: E402
 from tests.support.registry_helpers import (  # noqa: E402
     clear_explanation_plugins,
     clear_legacy_registry,
+    clear_trust_warnings,
 )
 
 
@@ -32,21 +33,19 @@ from tests.support.registry_helpers import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 
-def _make_ep(name: str, plugin_class: type) -> MagicMock:
-    """Return a minimal entrypoint mock that mimics importlib.metadata.EntryPoint."""
-    ep = MagicMock()
-    ep.name = name
-    ep.group = "calibrated_explanations.plugins"
-    ep.attr = None  # ensures identifier = entry_point.name
-    ep.dist = None
-    ep.load.return_value = plugin_class
-    return ep
+def make_ep(name: str, module_name: str, class_name: str) -> importlib_metadata.EntryPoint:
+    """Return a real EntryPoint object to keep smoke tests close to packaging reality."""
+    return importlib_metadata.EntryPoint(
+        name=name,
+        value=f"{module_name}:{class_name}",
+        group="calibrated_explanations.plugins",
+    )
 
 
-class _MockEntryPoints:
+class MockEntryPoints:
     """Minimal stand-in for importlib.metadata.EntryPoints."""
 
-    def __init__(self, eps: list) -> None:
+    def __init__(self, eps: list[importlib_metadata.EntryPoint]) -> None:
         self.eps = eps
 
     def select(self, *, group: str) -> list:
@@ -60,12 +59,20 @@ class _MockEntryPoints:
 
 @pytest.fixture(autouse=True)
 def reset_registry_and_policy():
+    transient_modules = [name for name in sys.modules if name.startswith("tests_mock_")]
+    for name in transient_modules:
+        sys.modules.pop(name, None)
     clear_explanation_plugins()
     clear_legacy_registry()
+    clear_trust_warnings()
     set_trust_policy(DefaultPluginTrustPolicy())
     yield
+    transient_modules = [name for name in sys.modules if name.startswith("tests_mock_")]
+    for name in transient_modules:
+        sys.modules.pop(name, None)
     clear_explanation_plugins()
     clear_legacy_registry()
+    clear_trust_warnings()
     set_trust_policy(DefaultPluginTrustPolicy())
 
 
@@ -77,8 +84,8 @@ def reset_registry_and_policy():
 def test_should_register_valid_plugin_when_entry_point_is_discovered():
     """Entry-point discovery registers a MinimalModalityPlugin in the explanation catalog."""
     # Arrange
-    ep = _make_ep("tests.mock.modality", MinimalModalityPlugin)
-    mock_eps = _MockEntryPoints([ep])
+    ep = make_ep("tests.mock.modality", "ce_mock_modality_plugin", "MinimalModalityPlugin")
+    mock_eps = MockEntryPoints([ep])
 
     # Act
     with patch(
@@ -88,19 +95,20 @@ def test_should_register_valid_plugin_when_entry_point_is_discovered():
         load_entrypoint_plugins(include_untrusted=True)
 
     # Assert
-    descriptor = find_explanation_descriptor("tests.mock.modality")
+    identifier = "ce_mock_modality_plugin:MinimalModalityPlugin"
+    descriptor = find_explanation_descriptor(identifier)
     assert descriptor is not None
     report = get_last_discovery_report()
     assert report is not None
     accepted_ids = {record.identifier for record in report.accepted}
-    assert "tests.mock.modality" in accepted_ids
+    assert identifier in accepted_ids
 
 
 def test_should_preserve_data_modalities_when_entry_point_is_discovered():
     """Entry-point discovery preserves the declared data_modalities in the descriptor."""
     # Arrange
-    ep = _make_ep("tests.mock.modality", MinimalModalityPlugin)
-    mock_eps = _MockEntryPoints([ep])
+    ep = make_ep("tests.mock.modality", "ce_mock_modality_plugin", "MinimalModalityPlugin")
+    mock_eps = MockEntryPoints([ep])
 
     # Act
     with patch(
@@ -110,7 +118,7 @@ def test_should_preserve_data_modalities_when_entry_point_is_discovered():
         load_entrypoint_plugins(include_untrusted=True)
 
     # Assert
-    descriptor = find_explanation_descriptor("tests.mock.modality")
+    descriptor = find_explanation_descriptor("ce_mock_modality_plugin:MinimalModalityPlugin")
     assert descriptor is not None
     assert descriptor.metadata["data_modalities"] == ("vision",)
 
@@ -139,9 +147,11 @@ def test_should_normalise_modality_alias_when_plugin_declares_image():
         def explain(self, model, x, **kw):
             raise NotImplementedError
 
-    # Arrange
-    ep = _make_ep("tests.mock.modality.alias", AliasPlugin)
-    mock_eps = _MockEntryPoints([ep])
+    module = types.ModuleType("tests_mock_alias_plugin")
+    module.AliasPlugin = AliasPlugin
+    sys.modules[module.__name__] = module
+    ep = make_ep("tests.mock.modality.alias", module.__name__, "AliasPlugin")
+    mock_eps = MockEntryPoints([ep])
 
     # Act
     with patch(
@@ -151,7 +161,7 @@ def test_should_normalise_modality_alias_when_plugin_declares_image():
         load_entrypoint_plugins(include_untrusted=True)
 
     # Assert
-    descriptor = find_explanation_descriptor("tests.mock.modality.alias")
+    descriptor = find_explanation_descriptor(f"{module.__name__}:AliasPlugin")
     assert descriptor is not None
     assert descriptor.metadata["data_modalities"] == ("vision",)
 
@@ -180,9 +190,11 @@ def test_should_reject_plugin_when_plugin_api_version_major_mismatches():
         def explain(self, model, x, **kw):
             raise NotImplementedError
 
-    # Arrange
-    ep = _make_ep("tests.mock.modality.bad", BadVersionPlugin)
-    mock_eps = _MockEntryPoints([ep])
+    module = types.ModuleType("tests_mock_bad_version_plugin")
+    module.BadVersionPlugin = BadVersionPlugin
+    sys.modules[module.__name__] = module
+    ep = make_ep("tests.mock.modality.bad", module.__name__, "BadVersionPlugin")
+    mock_eps = MockEntryPoints([ep])
 
     # Act & Assert
     with pytest.warns(UserWarning, match="plugin_api_version.*major is incompatible"):
@@ -192,7 +204,7 @@ def test_should_reject_plugin_when_plugin_api_version_major_mismatches():
         ):
             load_entrypoint_plugins(include_untrusted=True)
 
-    assert find_explanation_descriptor("tests.mock.modality.bad") is None
+    assert find_explanation_descriptor(f"{module.__name__}:BadVersionPlugin") is None
 
 
 def test_should_default_plugin_api_version_to_1_0_when_key_is_absent():
@@ -218,9 +230,11 @@ def test_should_default_plugin_api_version_to_1_0_when_key_is_absent():
         def explain(self, model, x, **kw):
             raise NotImplementedError
 
-    # Arrange
-    ep = _make_ep("tests.mock.modality.default_api", NoApiVersionPlugin)
-    mock_eps = _MockEntryPoints([ep])
+    module = types.ModuleType("tests_mock_default_api_plugin")
+    module.NoApiVersionPlugin = NoApiVersionPlugin
+    sys.modules[module.__name__] = module
+    ep = make_ep("tests.mock.modality.default_api", module.__name__, "NoApiVersionPlugin")
+    mock_eps = MockEntryPoints([ep])
 
     # Act
     with patch(
@@ -230,7 +244,7 @@ def test_should_default_plugin_api_version_to_1_0_when_key_is_absent():
         load_entrypoint_plugins(include_untrusted=True)
 
     # Assert
-    descriptor = find_explanation_descriptor("tests.mock.modality.default_api")
+    descriptor = find_explanation_descriptor(f"{module.__name__}:NoApiVersionPlugin")
     assert descriptor is not None
     assert descriptor.metadata["plugin_api_version"] == "1.0"
 
@@ -259,9 +273,11 @@ def test_should_warn_and_accept_plugin_when_plugin_api_minor_is_newer():
         def explain(self, model, x, **kw):
             raise NotImplementedError
 
-    # Arrange
-    ep = _make_ep("tests.mock.modality.minor", MinorVersionPlugin)
-    mock_eps = _MockEntryPoints([ep])
+    module = types.ModuleType("tests_mock_minor_version_plugin")
+    module.MinorVersionPlugin = MinorVersionPlugin
+    sys.modules[module.__name__] = module
+    ep = make_ep("tests.mock.modality.minor", module.__name__, "MinorVersionPlugin")
+    mock_eps = MockEntryPoints([ep])
 
     # Act
     with pytest.warns(UserWarning, match="forward-compatibility risk"):
@@ -272,6 +288,36 @@ def test_should_warn_and_accept_plugin_when_plugin_api_minor_is_newer():
             load_entrypoint_plugins(include_untrusted=True)
 
     # Assert
-    descriptor = find_explanation_descriptor("tests.mock.modality.minor")
+    descriptor = find_explanation_descriptor(f"{module.__name__}:MinorVersionPlugin")
     assert descriptor is not None
     assert descriptor.metadata["plugin_api_version"] == "1.1"
+
+
+def test_should_not_use_nonstandard_entrypoint_loader_fallbacks():
+    """Discovery should fail closed when EntryPoint.load fails (no weak fallback paths)."""
+
+    class FakeEntryPoint:
+        name = "tests.mock.modality.fallback"
+        module = "tests.mock.modality"
+        attr = "FallbackPlugin"
+        dist = None
+
+        def load(self):
+            raise RuntimeError("boom")
+
+        # Legacy weak-fallback shape that discovery must ignore.
+        def loader(self):  # pragma: no cover - behavior asserted via registration outcome
+            raise AssertionError("loader() should never be called")
+
+    class EntryPoints:
+        def select(self, *, group: str):
+            return [FakeEntryPoint()] if group == "calibrated_explanations.plugins" else []
+
+    with pytest.warns(UserWarning, match="Failed to load plugin entry point"):
+        with patch(
+            "calibrated_explanations.plugins.registry.importlib_metadata.entry_points",
+            return_value=EntryPoints(),
+        ):
+            load_entrypoint_plugins(include_untrusted=True)
+
+    assert find_explanation_descriptor("tests.mock.modality:FallbackPlugin") is None
