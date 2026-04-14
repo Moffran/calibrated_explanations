@@ -5,7 +5,7 @@ This guide documents the deprecations introduced as part of the ADR-011 policy w
 ## Goals
 - Centralise deprecation emission and behaviour via `deprecate()` so messages are consistent and can be toggled to raise in CI (`CE_DEPRECATIONS`).
 - Provide clear migration examples for common deprecated symbols and aliases.
-- Inform maintainers about the two-minor-release deprecation window and CI checks.
+- Inform maintainers about the default two-minor-release deprecation window, plus the binding pre-v1.0 finalization exception that requires full closure by v0.11.3.
 
 ## Where the helper lives
 
@@ -101,9 +101,12 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 ## Migration timeline and policy
 
 - Deprecation messages are emitted once-per-session by default and can be elevated to errors by setting `CE_DEPRECATIONS=error` in CI.
-- The project follows a two-minor-release deprecation window: a message introduced in `vX.Y.Z` will remain for at least `vX.(Y+2).0` before removal unless explicitly called out in an ADR.
+- Default policy: a deprecation introduced in `vX.Y.Z` remains for at least two minor releases before removal.
+- Finalization override: for the v1.0.0 cleanup window, all active deprecations must be removed by v0.11.3. No deprecation remains active in v1.0.0.
 
 ## Status table
+
+**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** by the end of v0.11.3.
 
 ### Active deprecations
 
@@ -111,36 +114,36 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 
 | Deprecated symbol | Replacement | Deprecated since | Removal ETA | Notes |
 |---|---|---:|---:|---|
-| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v1.0.0 | ADR-001 Stage 1a. Shims in `core/calibration/__init__.py` and submodule files (`interval_learner`, `interval_regressor`, `state`, `summaries`, `venn_abers`). |
-| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v1.0.0 | Shim in `perf/cache.py`. |
-| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v1.0.0 | Shim in `perf/parallel.py`. |
-| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v1.0.0 | Lazy `__getattr__` shim in `core/calibration_helpers.py`. |
-| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v1.0.0 | Aliases in `explanations/reject.py` (`_missing_`) and `core/reject/policy.py` (`__getattr__`). |
-| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v1.0.0 | Same files. |
-| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v1.0.0 | Same files. |
-| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v1.0.0 | `plugins/registry.py` validates and warns on old mode aliases. |
-| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v1.0.0 | Same. |
-| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v1.0.0 | Same. |
-| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v1.0.0 | `parallel/parallel.py` silently upgrades the value and warns. |
-| `CalibratedExplainer.initialize_reject_learner(...)` | `explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.13.0/v1.0.0 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
-| `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.13.0/v1.0.0 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
-| `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.13.0/v1.0.0 | Wrapper parity deprecation aligned with explainer-level deprecation. |
-| `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.13.0/v1.0.0 | Wrapper parity deprecation aligned with explainer-level deprecation. |
-| `CalibratedExplainer.build_plot_style_chain(...)` | `explainer.plugin_manager.build_plot_chain(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.instantiate_plugin(...)` | `explainer.plugin_manager.explanation_orchestrator.instantiate_plugin(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.invoke_explanation_plugin(...)` | `explainer.explanation_orchestrator.invoke(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.ensure_interval_runtime_state(...)` | `explainer.prediction_orchestrator.ensure_interval_runtime_state(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.gather_interval_hints(...)` | `explainer.prediction_orchestrator.gather_interval_hints(...)` | v0.11.1 | v0.13.0/v1.0.0 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.interval_plugin_hints` | `explainer.plugin_manager.interval_plugin_hints` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_plugin_fallbacks` | `explainer.plugin_manager.interval_plugin_fallbacks` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.explanation_plugin_overrides` | `explainer.plugin_manager.explanation_plugin_overrides` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_plugin_override` | `explainer.plugin_manager.interval_plugin_override` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.fast_interval_plugin_override` | `explainer.plugin_manager.fast_interval_plugin_override` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.plot_style_override` | `explainer.plugin_manager.plot_style_override` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_preferred_identifier` | `explainer.plugin_manager.interval_preferred_identifier` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.13.0/v1.0.0 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v0.11.3 | ADR-001 Stage 1a. Shims in `core/calibration/__init__.py` and submodule files (`interval_learner`, `interval_regressor`, `state`, `summaries`, `venn_abers`). |
+| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v0.11.3 | Shim in `perf/cache.py`. |
+| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v0.11.3 | Shim in `perf/parallel.py`. |
+| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v0.11.3 | Lazy `__getattr__` shim in `core/calibration_helpers.py`. |
+| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v0.11.3 | Aliases in `explanations/reject.py` (`_missing_`) and `core/reject/policy.py` (`__getattr__`). |
+| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v0.11.3 | Same files. |
+| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v0.11.3 | Same files. |
+| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v0.11.3 | `plugins/registry.py` validates and warns on old mode aliases. |
+| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v0.11.3 | Same. |
+| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v0.11.3 | Same. |
+| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v0.11.3 | `parallel/parallel.py` silently upgrades the value and warns. |
+| `CalibratedExplainer.initialize_reject_learner(...)` | `explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
+| `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
+| `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Wrapper parity deprecation aligned with explainer-level deprecation. |
+| `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Wrapper parity deprecation aligned with explainer-level deprecation. |
+| `CalibratedExplainer.build_plot_style_chain(...)` | `explainer.plugin_manager.build_plot_chain(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.instantiate_plugin(...)` | `explainer.plugin_manager.explanation_orchestrator.instantiate_plugin(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.invoke_explanation_plugin(...)` | `explainer.explanation_orchestrator.invoke(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.ensure_interval_runtime_state(...)` | `explainer.prediction_orchestrator.ensure_interval_runtime_state(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.gather_interval_hints(...)` | `explainer.prediction_orchestrator.gather_interval_hints(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.interval_plugin_hints` | `explainer.plugin_manager.interval_plugin_hints` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_fallbacks` | `explainer.plugin_manager.interval_plugin_fallbacks` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.explanation_plugin_overrides` | `explainer.plugin_manager.explanation_plugin_overrides` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_override` | `explainer.plugin_manager.interval_plugin_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.fast_interval_plugin_override` | `explainer.plugin_manager.fast_interval_plugin_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.plot_style_override` | `explainer.plugin_manager.plot_style_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_preferred_identifier` | `explainer.plugin_manager.interval_preferred_identifier` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 
 ### Removed deprecations (history)
 
@@ -207,6 +210,7 @@ A warning is issued when `condition_source` is not provided, guiding users to th
 
 - When introducing a deprecation, use `deprecate(message, key="unique:key", stacklevel=3)` and prefer a stable `key` value.
 - Add a line to this document and update the release plan (`docs/improvement/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
+- In the v0.11.x finalization window, each new/remaining deprecation entry must include explicit removal ownership in v0.11.2 or v0.11.3.
 - Add a unit test in `tests/unit/` validating the desired behaviour of `deprecate()` if you change its semantics.
 
 ## Troubleshooting
