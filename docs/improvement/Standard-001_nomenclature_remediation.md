@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2026-04-14):** Last edited 2026-04-14 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
 # Standard-001 Nomenclature Remediation
 
@@ -14,6 +14,37 @@ This consolidated plan combines the nomenclature review and standardization road
 - **Kitchen-sink helper modules.** Broad utility modules like `utils/helper.py` accumulate unrelated responsibilities (filesystem, type checks, numerical transforms), mixing snake_case verbs with legacy names like `safe_isinstance` and `immutable_array`. Without a convention for grouping or prefixing, it becomes difficult to predict where a helper lives or how it should be named.【F:src/calibrated_explanations/utils/helper.py†L1-L160】
 
 Collectively these issues indicate that nomenclature drift is systemic rather than localized, warranting a focused remediation plan.
+
+## v0.11.1 Task 8 closure evidence (2026-04-14)
+
+Task 8 closure is now split into two explicit outcomes:
+
+1. **Blocking regression enforcement is complete in v0.11.1.**
+   - `scripts/quality/check_std001_nomenclature.py` is wired into both `make local-checks-pr`
+     and PR CI lint to block new non-legacy dunder regressions.
+   - `reports/nomenclature_violation_inventory.json` is the machine-generated closure inventory.
+2. **Bounded compatibility/transitional bridges remain intentionally tracked to v0.11.3.**
+   - Retained bridges are explicitly allowlisted and recorded in the detector report.
+   - Retained shim surfaces are machine-checked for **thin delegator shape** (no extra runtime logic).
+   - Their bounded removal horizon is `v0.11.3`, consistent with ADR-020 compatibility posture.
+
+### Explicit shim decisions (Task 8 requirement)
+
+| Surface | Decision in v0.11.1 | Evidence |
+| --- | --- | --- |
+| `plotting.py` | Retained as transitional bridge; no new non-allowlisted dunder/shim regressions may be introduced. | `check_std001_nomenclature.py` allowlist + inventory report |
+| `serialization.py` | `validate_payload` retained as thin compatibility wrapper around `schema.validate_payload`. | `check_std001_nomenclature.py` shim-surface record + `tests/unit/test_std001_task8_closure.py` |
+| `viz/builders.py` | `legacy_get_fill_color` retained as a named compatibility alias to `_legacy_get_fill_color`. | `check_std001_nomenclature.py` shim-surface record + `tests/unit/test_std001_task8_closure.py` |
+
+### Targeted regression evidence added for Task 8
+
+- Checker behavior: `tests/scripts/test_check_std001_nomenclature.py` covers allowlist and disallowed
+  regressions, including mangled private-symbol detection and shim-surface recording.
+- Utility/shim parity and bridge behavior:
+  - `tests/unit/test_std001_task8_closure.py::test_should_keep_utility_import_bridge_parity_for_safe_mean`
+  - `tests/unit/test_std001_task8_closure.py::test_should_delegate_serialization_validate_payload_to_schema_validator`
+  - `tests/unit/test_std001_task8_closure.py::test_should_keep_builders_legacy_color_alias_parity`
+  - `tests/unit/test_std001_task8_closure.py::test_should_keep_calibration_state_dict_row_bridge_working`
 
 ## Phase plan
 

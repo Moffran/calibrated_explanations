@@ -39,7 +39,7 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-034 | Proposed→Accepted path | Promote after v0.11.2 Phase B verification |
 | ADR-036 | Accepted | v0.11.2 readiness-gate/default-promotion decision |
 | ADR-037 | Accepted | v0.11.2 default-path and kind-extension follow-up |
-| STD-001 | Partially complete | Final shim removal in v0.11.3 |
+| STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
 | STD-002 | Partially complete | WrapCalibratedExplainer numpydoc closure in v0.11.3 |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
@@ -308,12 +308,11 @@ _Last gap analysis: 2026-03-03_
 
 ### Standard-001 - Nomenclature Standardization
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-04-14_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Double-underscore fields still mutated outside legacy | 5 | 4 | 20 | Remove direct `__` mutations from core helpers. |
-| 2 | Naming guardrails lack automated enforcement | 4 | 4 | 16 | Enable Ruff/pre-commit enforcement for naming rules. |
+| 1 | Remaining compatibility/transitional bridges are still present | 2 | 2 | 4 | Task 8 closed non-legacy regression risk via `check_std001_nomenclature.py` + inventory report; explicit shim decisions and targeted bridge/parity tests are documented in `Standard-001_nomenclature_remediation.md`; approved bridges remain tracked with v0.11.3 removal horizon. |
 
 ### Standard-002 - Documentation Standardisation
 

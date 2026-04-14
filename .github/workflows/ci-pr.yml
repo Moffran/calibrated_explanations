@@ -53,6 +53,12 @@ jobs:
           python scripts/quality/check_logging_domains.py \
             --root src/calibrated_explanations \
             --report reports/quality/logging_domain_report.json
+      - name: STD-001 nomenclature enforcement
+        run: |
+          python scripts/quality/check_std001_nomenclature.py \
+            --root src/calibrated_explanations \
+            --report reports/nomenclature_violation_inventory.json \
+            --check
       - name: Generated report local-path guard
         run: |
           python scripts/quality/check_no_local_paths_in_reports.py \
@@ -66,6 +72,7 @@ jobs:
           path: |
             docstring_coverage.txt
             reports/quality/logging_domain_report.json
+            reports/nomenclature_violation_inventory.json
             reports/quality/no_local_paths_report.json
 
   mypy:

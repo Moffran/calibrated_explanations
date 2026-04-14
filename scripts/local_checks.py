@@ -203,6 +203,17 @@ def main() -> int:
             ),
         ),
         Step(
+            "STD-001 nomenclature enforcement",
+            _python_cmd(
+                "scripts/quality/check_std001_nomenclature.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/nomenclature_violation_inventory.json",
+                "--check",
+            ),
+        ),
+        Step(
             "Agent instruction consistency",
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
@@ -510,6 +521,17 @@ def main() -> int:
                 "src/calibrated_explanations",
                 "--report",
                 "reports/quality/logging_domain_report.json",
+            ),
+        ),
+        Step(
+            "STD-001 nomenclature enforcement (main)",
+            _python_cmd(
+                "scripts/quality/check_std001_nomenclature.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/nomenclature_violation_inventory.json",
+                "--check",
             ),
         ),
         Step(
