@@ -108,6 +108,11 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 
 **Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** by the end of v0.11.3.
 
+### Task 21 inventory (v0.11.1): core-surface LIME/SHAP deprecations
+
+The v0.11.1 API-bloat removal program inventories ten LIME/SHAP core-surface entry points.
+All ten now emit `deprecate()` warnings and are assigned to explicit pre-v1.0 removal milestones.
+
 ### Active deprecations
 
 Symbols listed here still emit warnings. Stop using them — they will be removed on the date shown.
@@ -144,6 +149,16 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 | `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 | `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.preload_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; plugin-only preload path replaces core helper preload. |
+| `CalibratedExplainer.preload_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; plugin-only preload path replaces core helper preload. |
+| `CalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; runtime explanation path becomes plugin-only. |
+| `CalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; runtime explanation path becomes plugin-only. |
+| `CalibratedExplainer.is_lime_enabled(...)` | `calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()` | v0.11.1 | v0.11.2 | Task-21 inventory item; helper-enabled flag no longer lives on core explainer surface. |
+| `CalibratedExplainer.is_shap_enabled(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; helper-enabled flag no longer lives on core explainer surface. |
+| `WrapCalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; wrapper forwarding hook removed with core entry-point removal. |
+| `WrapCalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; wrapper forwarding hook removed with core entry-point removal. |
+| `CalibratedExplanations.as_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
+| `CalibratedExplanations.as_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
 
 ### Removed deprecations (history)
 

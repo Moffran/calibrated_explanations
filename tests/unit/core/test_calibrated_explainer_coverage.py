@@ -4,6 +4,7 @@ import numpy as np
 import warnings
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.exceptions import ValidationError, DataShapeError
+from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 @pytest.fixture
@@ -74,12 +75,20 @@ def test_preloads(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     with patch.object(explainer, "lime_helper") as mock_lime:
-        explainer.preload_lime(x_cal)
-        mock_lime.preload.assert_called_once_with(x_cal=x_cal)
+        with warns_or_raises(match="preload_lime is deprecated"):
+            explainer.preload_lime(x_cal)
+        if deprecations_error_enabled():
+            mock_lime.preload.assert_not_called()
+        else:
+            mock_lime.preload.assert_called_once_with(x_cal=x_cal)
 
     with patch.object(explainer, "shap_helper") as mock_shap:
-        explainer.preload_shap(num_test=10)
-        mock_shap.preload.assert_called_once_with(num_test=10)
+        with warns_or_raises(match="preload_shap is deprecated"):
+            explainer.preload_shap(num_test=10)
+        if deprecations_error_enabled():
+            mock_shap.preload.assert_not_called()
+        else:
+            mock_shap.preload.assert_called_once_with(num_test=10)
     # Minimal assertion to satisfy test-quality checks
     assert True
 
@@ -336,23 +345,37 @@ def test_additional_coverage(monkeypatch: pytest.MonkeyPatch, mock_learner, mock
     import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 
     with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
-        explainer.explain_lime(x_cal)
-        mock_lime.assert_called()
+        with warns_or_raises(match="explain_lime is deprecated"):
+            explainer.explain_lime(x_cal)
+        if deprecations_error_enabled():
+            mock_lime.assert_not_called()
+        else:
+            mock_lime.assert_called()
 
     # explain_shap
     import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
 
     with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
-        explainer.explain_shap(x_cal)
-        mock_shap.assert_called()
+        with warns_or_raises(match="explain_shap is deprecated"):
+            explainer.explain_shap(x_cal)
+        if deprecations_error_enabled():
+            mock_shap.assert_not_called()
+        else:
+            mock_shap.assert_called()
 
     # is_lime_enabled / is_shap_enabled
-    explainer.is_lime_enabled(True)
-    explainer.is_lime_enabled(False)
-    explainer.is_lime_enabled()
-    explainer.is_shap_enabled(True)
-    explainer.is_shap_enabled(False)
-    explainer.is_shap_enabled()
+    with warns_or_raises(match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled(True)
+    with warns_or_raises(match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled(False)
+    with warns_or_raises(match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled()
+    with warns_or_raises(match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled(True)
+    with warns_or_raises(match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled(False)
+    with warns_or_raises(match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled()
 
     # is_multiclass
     explainer.num_classes = 3
