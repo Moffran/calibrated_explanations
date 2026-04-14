@@ -44,6 +44,7 @@ A milestone cannot close while any of the following remains open:
 - Failing CI gates.
 - Stale or broken docs/examples.
 - Unresolved ADR or standards contradictions.
+- Any active deprecation scheduled to survive into v1.0.0.
 - Open high-severity runtime bug.
 - Incomplete milestone scope.
 
@@ -102,7 +103,7 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 
 **ADR-010 - Optional Dependency Split:** Partially complete; v0.11.0 target is to add automated core-only vs extras parity checks.
 
-**ADR-011 - Deprecation and Migration Policy:** Partially complete; v0.11.0 target is deprecation warning coverage for active compatibility shims. Legacy registry-list deprecation path remains v0.11.1.
+**ADR-011 - Deprecation and Migration Policy:** Accepted with a binding v1.0 finalization exception. The two-minor default remains normal policy, but all active deprecations must be removed or closed in v0.11.x so v1.0.0 ships with zero surviving deprecations.
 
 **ADR-012 - Documentation & Gallery Build Policy:** Accepted; notebook execution/runtime ceilings and gallery-tooling decision documentation remain v0.11.1 hardening work.
 
@@ -400,13 +401,13 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   2. Eliminate dual trust state: unify descriptor `trusted` flag and `_TRUSTED_*` identifier sets so all trust mutations are atomic; eliminate divergence risk between `find_*_trusted()` and `list_*_descriptors(trusted_only=True)`.
   3. Complete ADR-028 governance audit coverage: add structured audit log events for every accepted plugin registration (currently only deny/skip paths emit governance logs).
   4. Relocate test helper implementations from `registry.py` to `tests/support/registry_helpers.py` or a dedicated `plugins/_testing.py` internal; eliminate the anti-pattern of exposing test scaffolding through the production module.
-  5. Introduce `deprecate()` calls with a v0.13.0/v1.0.0 sunset date for the legacy `_REGISTRY`/`_TRUSTED` list-based path per ADR-011's two-minor-release requirement; document the migration path to the identifier-keyed descriptor dicts.
+  5. Close the legacy `_REGISTRY`/`_TRUSTED` list-based path in the v0.11.x line: keep warnings in v0.11.1, complete migration by v0.11.2, and remove residual list-path compatibility code in v0.11.3. No list-path deprecations may survive into v1.0.0.
   6. Reinforce ADR-012 notebook/gallery execution by documenting the tooling choice and enforcing execution/time ceilings in docs CI.
   7. Close ADR-027/ADR-028 observability enforcement by adding logging standards examples and lint/tests.
   8. Finish Standard-001 nomenclature clean-up by eliminating double-underscore mutations, splitting utilities, and confining transitional shims to legacy/.
   9. Extend governance dashboards to surface lint status alongside preprocessing/domain-model telemetry. → relocated to v0.11.2.
   10. Decommission workflows: `test.yml` (compat wrapper), `coverage.yml`, `examples.yml`, and any legacy wrappers that duplicate new reusables. See `docs/improvement/CI-upgrade.md` for the full migration and removal plan. → completed in v0.11.1.
-  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and version-pinned shim timeline (`v0.11.1` warn, `v1.0.0-rc` remove).
+  11. Ship ADR-033 additive UX/migration gates: CLI `--modality`, `vision`/`audio` shims that raise `MissingExtensionError` (`CE base + ImportError`), and a hard closure timeline executed in v0.11.x (`v0.11.1` warning, `v0.11.2` enforcement-ready validation, `v0.11.3` removal of warning fallback paths).
   12. Publish ADR-033 follow-through docs: contributor plugin contract updates, practitioner usage notes, and migration guidance for modality plugins.
   13. Add one ADR-033 packaging smoke test validating extension install + entry-point discovery/import behavior.
   14. Update the Reject Framework within Calibrated Explanations to include other forms of rejection beyond just binary conformal-based rejectors, such as uncertainty-based rejectors that leverage the uncertainty estimates from calibrated explanations to make informed decisions about when to abstain from making a prediction. Document the new rejector types and provide examples of how to implement and use them effectively in practice.
@@ -420,10 +421,10 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
    19. Add Standard-005 to ADR/Standards roadmap summary table in `RELEASE_PLAN_v1.md` and confirm v0.11.1 enforcement gate.
       - 2026-03-03 – Standard-005 row added to roadmap summary and Standards appendix; observability gaps assigned to v0.11.1 Task 7.
   20. Add a separate `governance_config_event_schema_v1.json` for `calibrated_explanations.governance.config` lifecycle events (`config.resolve`, `config.export`, `config.validation_failure`) — do NOT modify `governance_event_schema_v1.json` (its `event_name: const` and `decision: enum` are plugin-specific); wire emission into `ConfigManager` at snapshot lifecycle boundaries only; add structured log-capture tests and a CI schema gate against the new config-event schema.
-  21. API-bloat removal program for v1.0.0 (ADR-011 + ADR-037 + ADR-020): keep LIME/SHAP as plugin-only surfaces by removing `explain_lime`/`explain_shap` and related wrapper/export hooks from core imports/public API, move adapters to plugin modules with lazy imports, and split heavy dependencies into optional extras. Execute under the deprecation protocol: add explicit deprecation warnings + migration docs in v0.11.1, enforce warning coverage and `CE_DEPRECATIONS=error` on deprecated-core paths, then remove the deprecated core entry points before cutting v1.0.0.
+  21. API-bloat removal program (ADR-011 + ADR-037 + ADR-020) — mandatory v0.11.x closure: in v0.11.1, inventory and deprecate every core LIME/SHAP entry point with migration mapping and CI warning coverage; in v0.11.2, remove core exports/wrapper hooks and move runtime usage to plugin-only adapters; in v0.11.3, delete residual compatibility stubs and finalize docs/tests so v1.0.0 carries zero LIME/SHAP deprecations.
   22. PlotSpec hardening + ADR revisioning (ADR-036/ADR-037): harden PlotSpec as a canonical semantic IR by enforcing dataclass-only canonical in-memory representation, strengthening validator boundaries, unifying builder outputs to canonical PlotSpec, splitting rendering/normalization/export/test instrumentation responsibilities, and isolating compatibility handling to explicit serializer/translator boundaries. In the same task, publish and adopt ADR-036 + ADR-037 as the authoritative source of truth and supersede ADR-007/ADR-014/ADR-016 as historical records. Keep legacy plotting as the default public `.plot()` path in v0.11.1 and keep runtime plot-kind extension out of scope for this release.
 
-   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations (including `governance.config` events from ConfigManager); test-helper bodies no longer live in the production module; legacy list deprecation warnings are active and CI enforces `CE_DEPRECATIONS=error` for tests that exercise the legacy path; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green; ADR-020 and ADR-028 promoted to Accepted; `ConfigManager` is the authoritative configuration entry point with precedence and migration tests green; core package import/public API no longer hard-depends on LIME/SHAP adapters (plugin-only); PlotSpec canonical-contract hardening is implemented with boundary-only compatibility translation; ADR-036/ADR-037 are authoritative and ADR-007/014/016 are superseded; legacy plotting remains default in v0.11.1; and runtime plot-kind extension remains disabled.
+   Release gate: `PluginManager` owns all plugin resolution; trust state is atomic across descriptor and set; governance audit events cover both accepted and rejected registrations (including `governance.config` events from ConfigManager); test-helper bodies no longer live in the production module; list-path and core LIME/SHAP deprecation inventories are complete with explicit v0.11.2/v0.11.3 removal ownership; CI enforces `CE_DEPRECATIONS=error` for all deprecated paths still active in v0.11.1; ADR-012/027/028/001/033 additive rollout gates (CI/docs/shims/packaging smoke test) are green; ADR-020 and ADR-028 promoted to Accepted; `ConfigManager` is the authoritative configuration entry point with precedence and migration tests green; core package import/public API no longer hard-depends on LIME/SHAP adapters (plugin-only) after v0.11.2; PlotSpec canonical-contract hardening is implemented with boundary-only compatibility translation; ADR-036/ADR-037 are authoritative and ADR-007/014/016 are superseded; legacy plotting remains default in v0.11.1; runtime plot-kind extension remains disabled; and no v0.11.1 deprecation task is allowed to defer closure beyond v0.11.3.
 
 ### v0.11.2 (config hardening and ADR governance sweep)
 
@@ -444,7 +445,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   5. Deep memory audit and retention hardening.
   6. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 removals are executed for core LIME/SHAP exports and list-path compatibility code; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
@@ -463,7 +464,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      measurements with README guidance and a sample run (gate: sample run documented
      and reproducible).
 
-  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; `make local-checks-pr` passes.
+  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
 
 ### v1.0.0-rc (release candidate readiness)
 
@@ -497,7 +498,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
    settings, CLI usage, caching controls, and plugin integration testing
    expectations.
 
-Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy compatibility confirmed; caching/parallel staging validation signed off; Standard-002 ≥90% verified; versioned docs preview and doc-quality dashboards live; upgrade checklist ready for pilot customers.
+Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy compatibility confirmed; caching/parallel staging validation signed off; Standard-002 ≥90% verified; versioned docs preview and doc-quality dashboards live; upgrade checklist ready for pilot customers; deprecation ledger is empty (zero active deprecations).
 
 ### v1.0.0 (stability declaration)
 
@@ -509,7 +510,7 @@ Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy
    repositories, and circulate the upgrade checklist to partners with caching
    and parallelisation guidance.
 3. Validate telemetry, plugin registries, cache behaviour, and worker scaling in
-   production-like staging, signing off with no pending high-priority bugs.
+   production-like staging, signing off with no pending high-priority bugs and zero active deprecations.
 4. Confirm Standard-001/Standard-002 guardrails remain enforced post-tag, monitor the
    caching/parallel telemetry dashboards, and schedule maintenance cadences
    (coverage/docstring audits, performance regression sweeps) for the first
