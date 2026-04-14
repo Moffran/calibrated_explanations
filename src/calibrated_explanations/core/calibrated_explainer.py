@@ -430,14 +430,20 @@ class CalibratedExplainer:
             stacklevel=3,
         )
 
-    def _deprecate_lime_shap_surface(self, symbol: str, replacement: str) -> None:
+    def _deprecate_lime_shap_surface(
+        self,
+        symbol: str,
+        replacement: str,
+        *,
+        removal_version: str,
+    ) -> None:
         """Emit Task-21 deprecation warning for core LIME/SHAP entry points."""
         deprecate(
             f"CalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
-            f"{replacement} instead. This API is scheduled for removal by v0.11.3 "
+            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
             "under the pre-v1.0 zero-deprecation closure policy.",
             key=f"CalibratedExplainer.{symbol}_lime_shap_deprecation",
-            stacklevel=3,
+            stacklevel=4,
         )
 
     def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
@@ -1773,6 +1779,7 @@ class CalibratedExplainer:
         self._deprecate_lime_shap_surface(
             "preload_lime",
             "external_plugins.integrations.lime_pipeline.LimePipeline(self).preload(...)",
+            removal_version="v0.11.2",
         )
         return self._lime_helper.preload(x_cal=x_cal)
 
@@ -1792,6 +1799,7 @@ class CalibratedExplainer:
         self._deprecate_lime_shap_surface(
             "preload_shap",
             "external_plugins.integrations.shap_pipeline.ShapPipeline(self).preload(...)",
+            removal_version="v0.11.2",
         )
         return self._shap_helper.preload(num_test=num_test)
 
@@ -2315,6 +2323,7 @@ class CalibratedExplainer:
         self._deprecate_lime_shap_surface(
             "explain_lime",
             "external_plugins.integrations.lime_pipeline.LimePipeline(self).explain(...)",
+            removal_version="v0.11.2",
         )
         if bins is None and self.is_mondrian():
             bins = self.bins
@@ -2357,6 +2366,7 @@ class CalibratedExplainer:
         self._deprecate_lime_shap_surface(
             "explain_shap",
             "external_plugins.integrations.shap_pipeline.ShapPipeline(self).explain(...)",
+            removal_version="v0.11.2",
         )
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
@@ -2376,7 +2386,8 @@ class CalibratedExplainer:
         """Return or set the LIME helper enabled state."""
         self._deprecate_lime_shap_surface(
             "is_lime_enabled",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(...).is_enabled(...)",
+            "calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()",
+            removal_version="v0.11.2",
         )
         if is_enabled is None:
             return self._lime_helper.is_enabled()
@@ -2387,7 +2398,8 @@ class CalibratedExplainer:
         """Return or set the SHAP helper enabled state."""
         self._deprecate_lime_shap_surface(
             "is_shap_enabled",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).is_enabled(...)",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)",
+            removal_version="v0.11.2",
         )
         if is_enabled is None:
             return self._shap_helper.is_enabled()

@@ -16,6 +16,7 @@ from calibrated_explanations.utils.exceptions import (
     ValidationError,
 )
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class PredictOnlyLearner:
@@ -270,17 +271,17 @@ def test_explain_lime_invokes_underlying_explainer(
     monkeypatch.setattr(wrap_module, "validate_param_combination", lambda *_, **__: None)
     wrapper.explainer = RecordingExplainer()
 
-    with pytest.warns(
-        DeprecationWarning,
-        match="WrapCalibratedExplainer.explain_lime is deprecated",
-    ):
+    with warns_or_raises(match="WrapCalibratedExplainer.explain_lime is deprecated"):
         result = wrapper.explain_lime(np.array([[1, 2]]), custom_flag=True)
 
-    assert result == "lime"
-    assert wrapper.explainer.calls  # type: ignore[union-attr]
-    _, payload = wrapper.explainer.calls[-1]  # type: ignore[union-attr]
-    assert payload["custom_flag"] is True
-    assert "bins" in payload
+    if deprecations_error_enabled():
+        assert wrapper.explainer.calls == []  # type: ignore[union-attr]
+    else:
+        assert result == "lime"
+        assert wrapper.explainer.calls  # type: ignore[union-attr]
+        _, payload = wrapper.explainer.calls[-1]  # type: ignore[union-attr]
+        assert payload["custom_flag"] is True
+        assert "bins" in payload
 
 
 def test_predict_proba_threshold_requires_calibration_when_available() -> None:
