@@ -74,11 +74,13 @@ def test_preloads(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     with patch.object(explainer, "lime_helper") as mock_lime:
-        explainer.preload_lime(x_cal)
+        with pytest.warns(DeprecationWarning, match="preload_lime is deprecated"):
+            explainer.preload_lime(x_cal)
         mock_lime.preload.assert_called_once_with(x_cal=x_cal)
 
     with patch.object(explainer, "shap_helper") as mock_shap:
-        explainer.preload_shap(num_test=10)
+        with pytest.warns(DeprecationWarning, match="preload_shap is deprecated"):
+            explainer.preload_shap(num_test=10)
         mock_shap.preload.assert_called_once_with(num_test=10)
     # Minimal assertion to satisfy test-quality checks
     assert True
@@ -336,23 +338,31 @@ def test_additional_coverage(monkeypatch: pytest.MonkeyPatch, mock_learner, mock
     import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 
     with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
-        explainer.explain_lime(x_cal)
+        with pytest.warns(DeprecationWarning, match="explain_lime is deprecated"):
+            explainer.explain_lime(x_cal)
         mock_lime.assert_called()
 
     # explain_shap
     import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
 
     with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
-        explainer.explain_shap(x_cal)
+        with pytest.warns(DeprecationWarning, match="explain_shap is deprecated"):
+            explainer.explain_shap(x_cal)
         mock_shap.assert_called()
 
     # is_lime_enabled / is_shap_enabled
-    explainer.is_lime_enabled(True)
-    explainer.is_lime_enabled(False)
-    explainer.is_lime_enabled()
-    explainer.is_shap_enabled(True)
-    explainer.is_shap_enabled(False)
-    explainer.is_shap_enabled()
+    with pytest.warns(DeprecationWarning, match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled(True)
+    with pytest.warns(DeprecationWarning, match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled(False)
+    with pytest.warns(DeprecationWarning, match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled()
+    with pytest.warns(DeprecationWarning, match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled(True)
+    with pytest.warns(DeprecationWarning, match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled(False)
+    with pytest.warns(DeprecationWarning, match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled()
 
     # is_multiclass
     explainer.num_classes = 3

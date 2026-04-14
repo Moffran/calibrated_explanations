@@ -933,13 +933,15 @@ def test_collection_to_narrative_and_plot_style_narrative(monkeypatch, calibrate
 
 
 def test_as_lime_and_shap_transformations(calibrated_collection):
-    lime_explanations = calibrated_collection.as_lime(num_features_to_show=2)
+    with pytest.warns(DeprecationWarning, match="CalibratedExplanations.as_lime is deprecated"):
+        lime_explanations = calibrated_collection.as_lime(num_features_to_show=2)
     assert len(lime_explanations) == len(calibrated_collection)
     for lime in lime_explanations:
         assert lime.local_pred is not None
         assert len(lime.local_exp[1]) == 2
 
-    shap_exp = calibrated_collection.as_shap()
+    with pytest.warns(DeprecationWarning, match="CalibratedExplanations.as_shap is deprecated"):
+        shap_exp = calibrated_collection.as_shap()
     assert shap_exp.values.shape[0] == len(calibrated_collection)
     assert shap_exp.data is calibrated_collection.x_test
 
@@ -953,7 +955,8 @@ def test_as_lime_regression_branch():
             0, x[0], predict=0.42, interval=(0.0, 1.0), feature_weights=[1.0, 2.0, 3.0]
         )
     ]
-    lime = collection.as_lime()
+    with pytest.warns(DeprecationWarning, match="CalibratedExplanations.as_lime is deprecated"):
+        lime = collection.as_lime()
     assert lime[0].predicted_value == collection.explanations[0].prediction["predict"]
     assert lime[0].min_value == np.min(dummy_explainer.y_cal)
     assert lime[0].max_value == np.max(dummy_explainer.y_cal)

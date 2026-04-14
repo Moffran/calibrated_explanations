@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 import numpy as np
 
 from ..core.prediction_helpers import validate_and_prepare_input
-from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
+from ..utils import EntropyDiscretizer, RegressorDiscretizer, deprecate, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from ..utils.helper import calculate_metrics
 from .adapters import legacy_to_domain
@@ -1524,6 +1524,17 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault("output_format", "dataframe")
         return self.to_narrative(*args, **kwargs)
 
+    @staticmethod
+    def _deprecate_lime_shap_surface(symbol: str, replacement: str) -> None:
+        """Emit Task-21 deprecation warning for collection LIME/SHAP export helpers."""
+        deprecate(
+            f"CalibratedExplanations.{symbol} is deprecated since v0.11.1; use "
+            f"{replacement} instead. This API is scheduled for removal by v0.11.3 "
+            "under the pre-v1.0 zero-deprecation closure policy.",
+            key=f"CalibratedExplanations.{symbol}_lime_shap_deprecation",
+            stacklevel=3,
+        )
+
     # pylint: disable=protected-access
     def as_lime(self, num_features_to_show=None):
         """Transform the explanations into LIME explanation objects.
@@ -1533,6 +1544,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         list of lime.Explanation
             List of LIME explanation objects with the same values as the `CalibratedExplanations`.
         """
+        self._deprecate_lime_shap_surface(
+            "as_lime",
+            "external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)",
+        )
         _, lime_exp = self.calibrated_explainer.preload_lime()
         exp = []
         for explanation in self.explanations:  # range(len(self.x[:,0])):
@@ -1576,6 +1591,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         shap.Explanation
             SHAP explanation object with the same values as the explanation.
         """
+        self._deprecate_lime_shap_surface(
+            "as_shap",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)",
+        )
         _, shap_exp = self.calibrated_explainer.preload_shap()
         shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
         shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
@@ -2439,6 +2458,10 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
     # Safe adapters / explicit not-implemented for adapters that assume flat lists
     def as_lime(self):
         """Raise for multiclass collections where a flat LIME export is undefined."""
+        self._deprecate_lime_shap_surface(
+            "as_lime",
+            "external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)",
+        )
         raise NotImplementedError(
             "as_lime() is not supported for multi-label collections. "
             "Call get_explanation(i, cls).as_lime() for a specific class, or iterate over the collection "
@@ -2448,6 +2471,10 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
     def as_shap(self):
         """Raise for multiclass collections where a flat SHAP export is undefined."""
+        self._deprecate_lime_shap_surface(
+            "as_shap",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)",
+        )
         raise NotImplementedError(
             "as_shap() is not supported for multi-label collections. "
             "Call get_explanation(i, cls).as_shap() for a specific class, or iterate and aggregate per-class SHAP outputs. "

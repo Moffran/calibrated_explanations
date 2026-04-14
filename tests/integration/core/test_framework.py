@@ -62,7 +62,8 @@ def test_explanation_functions_classification(binary_dataset):
     except ImportError:  # pragma: no cover - executed only when lime missing
         pytest.skip("Skipping LIME export test because 'lime' is not installed")
     else:
-        factual_explanations.as_lime()
+        with pytest.warns(DeprecationWarning):
+            factual_explanations.as_lime()
     # factual_explanations.as_shap() # generates an insane number of warnings
 
     try:
@@ -83,7 +84,8 @@ def test_explanation_functions_classification(binary_dataset):
     alternative_explanations.is_one_sided
     alternative_explanations.is_probabilistic_regression
 
-    ce.preload_lime()
+    with pytest.warns(DeprecationWarning, match="preload_lime is deprecated"):
+        ce.preload_lime()
     # ce.preload_shap() # generates an insane number of warnings
 
     print(ce)

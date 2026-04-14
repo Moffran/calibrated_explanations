@@ -70,6 +70,17 @@ class WrapCalibratedExplainer:
     _logger: _logging.Logger
     _STATE_SCHEMA_VERSION: int = 1
 
+    @staticmethod
+    def _deprecate_lime_shap_surface(symbol: str, replacement: str) -> None:
+        """Emit Task-21 deprecation warning for wrapper LIME/SHAP entry points."""
+        deprecate(
+            f"WrapCalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
+            f"{replacement} instead. This API is scheduled for removal by v0.11.3 "
+            "under the pre-v1.0 zero-deprecation closure policy.",
+            key=f"WrapCalibratedExplainer.{symbol}_lime_shap_deprecation",
+            stacklevel=3,
+        )
+
     def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
 
@@ -549,6 +560,10 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
+        self._deprecate_lime_shap_surface(
+            "explain_lime",
+            "external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)",
+        )
         assert (
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
@@ -566,6 +581,10 @@ class WrapCalibratedExplainer:
 
     def explain_shap(self, x: Any, **kwargs: Any) -> Any:
         """Generate SHAP explanations for the test data."""
+        self._deprecate_lime_shap_surface(
+            "explain_shap",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)",
+        )
         assert (
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."

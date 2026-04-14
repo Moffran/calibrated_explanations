@@ -1,3 +1,5 @@
+import pytest
+
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 
 
@@ -32,7 +34,11 @@ def make_wrapper_with_dummy(dummy=None):
 
 def test_explain_shap_delegates_to_explainer():
     w, dummy = make_wrapper_with_dummy()
-    result = w.explain_shap([[1, 2, 3]], foo="bar")
+    with pytest.warns(
+        DeprecationWarning,
+        match="WrapCalibratedExplainer.explain_shap is deprecated",
+    ):
+        result = w.explain_shap([[1, 2, 3]], foo="bar")
     assert isinstance(result, dict)
     assert result["called"] is True
     assert result["x"] == [[1, 2, 3]]

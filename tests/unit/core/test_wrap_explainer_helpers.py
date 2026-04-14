@@ -270,7 +270,11 @@ def test_explain_lime_invokes_underlying_explainer(
     monkeypatch.setattr(wrap_module, "validate_param_combination", lambda *_, **__: None)
     wrapper.explainer = RecordingExplainer()
 
-    result = wrapper.explain_lime(np.array([[1, 2]]), custom_flag=True)
+    with pytest.warns(
+        DeprecationWarning,
+        match="WrapCalibratedExplainer.explain_lime is deprecated",
+    ):
+        result = wrapper.explain_lime(np.array([[1, 2]]), custom_flag=True)
 
     assert result == "lime"
     assert wrapper.explainer.calls  # type: ignore[union-attr]
