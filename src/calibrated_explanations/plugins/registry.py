@@ -31,7 +31,7 @@ from .. import __version__ as package_version
 from ..core.config_manager import ConfigManager
 from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
-from ..utils import deprecate
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import ConfigurationError, ValidationError
 from ._trust import (
     clear_trusted_identifiers,
@@ -2355,7 +2355,8 @@ def register(
         "plugins.registry.register() is deprecated and will be removed in v0.11.3; "
         "use register_explanation_plugin(identifier, plugin, metadata) instead.",
         key="legacy.plugin:register",
-        stacklevel=2,
+        stacklevel=3,
+        raise_on_error=False,
     )
     _register_legacy_plugin(plugin, source=source, identifier=identifier)
 
@@ -2460,7 +2461,8 @@ def trust_plugin(plugin: ExplainerPlugin | str) -> None:
         "set metadata={'trusted': True} when calling "
         "register_explanation_plugin(identifier, plugin, metadata) instead.",
         key="legacy.plugin:trust_plugin",
-        stacklevel=2,
+        stacklevel=3,
+        raise_on_error=False,
     )
     _trust_legacy_plugin(plugin)
 
@@ -2509,7 +2511,8 @@ def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
         "plugins.registry.find_for() is deprecated and will be removed in v0.11.3; "
         "use find_explanation_plugin_for(..., trusted_only=False) instead.",
         key="legacy.plugin:find_for",
-        stacklevel=2,
+        stacklevel=3,
+        raise_on_error=False,
     )
     return tuple(p for p in _REGISTRY if _safe_supports(p, model))
 
@@ -2520,7 +2523,8 @@ def find_for_trusted(model: Any) -> Tuple[ExplainerPlugin, ...]:
         "plugins.registry.find_for_trusted() is deprecated and will be removed in v0.11.3; "
         "use find_explanation_plugin_for(..., trusted_only=True) instead.",
         key="legacy.plugin:find_for_trusted",
-        stacklevel=2,
+        stacklevel=3,
+        raise_on_error=False,
     )
     return tuple(p for p in _TRUSTED if _safe_supports(p, model))
 

@@ -44,25 +44,31 @@ def test_register_and_find_example_plugin(tmp_path, monkeypatch):
     registry.clear()
 
     # Register and find
-    registry.register(plugin)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
     all_plugins = registry.list_plugins()
     assert plugin in all_plugins
 
     # find_for should return plugin for supported models
-    found = registry.find_for("supported-model")
+    with pytest.warns(DeprecationWarning, match="find_for\\(\\) is deprecated"):
+        found = registry.find_for("supported-model")
     assert plugin in found
 
     # Not supported model should return empty
-    assert registry.find_for("unsupported") == ()
+    with pytest.warns(DeprecationWarning, match="find_for\\(\\) is deprecated"):
+        assert registry.find_for("unsupported") == ()
 
     # Mark as trusted and ensure trusted discovery returns it
-    registry.trust_plugin(plugin)
-    trusted = registry.find_for_trusted("supported-model")
+    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+        registry.trust_plugin(plugin)
+    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
+        trusted = registry.find_for_trusted("supported-model")
     assert plugin in trusted
 
     # Untrust and ensure it's not returned by trusted finder
     registry.untrust_plugin(plugin)
-    assert plugin not in registry.find_for_trusted("supported-model")
+    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
+        assert plugin not in registry.find_for_trusted("supported-model")
 
     # Unregister removes the plugin
     registry.unregister(plugin)
@@ -91,23 +97,28 @@ def test_register_and_trust_flow(tmp_path):
     p = DummyPlugin()
     # ensure clean start
     registry.clear()
-    registry.register(p)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(p)
     assert p in registry.list_plugins()
     assert p not in registry.list_plugins(include_untrusted=False)
 
     # trusting unregistered plugin raises
     with pytest.raises(ValidationError):
-        registry.trust_plugin(object())
+        with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+            registry.trust_plugin(object())
 
     # trust and find
-    registry.trust_plugin(p)
+    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+        registry.trust_plugin(p)
     assert p in registry.list_plugins(include_untrusted=False)
-    trusted = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
+    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
+        trusted = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
     assert p in trusted
 
     # untrust works
     registry.untrust_plugin("dummy")
-    trusted2 = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
+    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
+        trusted2 = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
     assert p not in trusted2
     assert p not in registry.list_plugins(include_untrusted=False)
 

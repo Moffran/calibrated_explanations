@@ -749,13 +749,16 @@ class MutablePlugin:
 
 def test_register_existing_plugin_updates_trust_list():
     plugin = MutablePlugin(trusted=False)
-    registry.register(plugin)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
     assert plugin not in registry.list_plugins(include_untrusted=False)
 
     plugin.plugin_meta["trust"] = True
     plugin.plugin_meta["trusted"] = True
-    registry.register(plugin)
-    registry.trust_plugin(plugin)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
+    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+        registry.trust_plugin(plugin)
     assert plugin in registry.list_plugins(include_untrusted=False)
 
 
@@ -777,7 +780,8 @@ def test_resolve_plugin_from_name_and_safe_supports():
     remove_from_registry(raising_plugin)
 
     plugin = SimpleExplanationPlugin()
-    registry.register(plugin)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
     assert resolve_plugin_from_name("simple.explanation") is plugin
 
     class BrokenPlugin(SimpleExplanationPlugin):
@@ -785,7 +789,8 @@ def test_resolve_plugin_from_name_and_safe_supports():
             raise RuntimeError("boom")
 
     broken = BrokenPlugin()
-    registry.register(broken)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(broken)
     assert safe_supports(broken, object()) is False
 
 
@@ -807,7 +812,8 @@ def test_refresh_descriptor_and_register_errors():
         plugin_meta = None
 
     with pytest.raises(ValidationError):
-        registry.register(NoMeta())
+        with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+            registry.register(NoMeta())
 
     class FailingMeta(MutableMapping):
         def __init__(self):
@@ -845,10 +851,13 @@ def test_refresh_descriptor_and_register_errors():
         def explain(self, model, x, **kwargs):  # pragma: no cover - unused
             return {}
 
-    registry.register(FailingPlugin())
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(FailingPlugin())
 
     registry.clear()
     plugin2 = SimpleExplanationPlugin()
-    registry.register(plugin2)
-    registry.trust_plugin("simple.explanation")
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin2)
+    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+        registry.trust_plugin("simple.explanation")
     registry.untrust_plugin("simple.explanation")
