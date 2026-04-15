@@ -63,6 +63,7 @@ def test_register_emits_schema_valid_accepted_registration_event(caplog):
     with (
         logging_context(request_id="req-accepted", tenant_id="tenant-a"),
         caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
+        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
     ):
         registry.register(Plugin(), source="manual")
 
@@ -220,6 +221,7 @@ def test_register_emits_schema_valid_denied_registration_event(
 
     with (
         caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
+        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
         pytest.raises(ValidationError),
     ):
         registry.register(Plugin(), source="register_call")
@@ -238,7 +240,8 @@ def test_governance_events_are_side_effect_only_and_payload_safe(
         plugin_meta = base_meta(name="tests.side_effect.safe")
 
     # Baseline behavior without active caplog capture.
-    registry.register(Plugin(), source="manual")
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(Plugin(), source="manual")
     baseline_plugins = registry.list_plugins(include_untrusted=True)
     baseline_plugin_names = tuple(
         getattr(plugin, "plugin_meta", {}).get("name") for plugin in baseline_plugins
@@ -255,7 +258,8 @@ def test_governance_events_are_side_effect_only_and_payload_safe(
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None, raising=False)
 
     with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
-        registry.register(Plugin(), source="manual")
+        with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+            registry.register(Plugin(), source="manual")
 
     captured_plugins = registry.list_plugins(include_untrusted=True)
     captured_plugin_names = tuple(

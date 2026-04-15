@@ -199,7 +199,8 @@ def test_should_sync_descriptor_trust_state_when_using_legacy_trust_api(caplog) 
     assert descriptor.trusted is False
 
     with caplog.at_level("INFO", logger="calibrated_explanations.governance.registry"):
-        registry.trust_plugin(plugin)
+        with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+            registry.trust_plugin(plugin)
         registry.untrust_plugin(plugin)
 
     descriptor_after = registry.find_explanation_descriptor("tests.trust.atomic.explanation")

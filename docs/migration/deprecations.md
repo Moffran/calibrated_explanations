@@ -33,6 +33,79 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
   - `ce config show`
   - `ce config export`
 
+### Plugin registration list-path API (closed by v0.11.3)
+
+The legacy list-path plugin APIs are deprecated in `v0.11.1` and will be
+removed in `v0.11.3`.
+
+| Legacy API | Replacement |
+|---|---|
+| `register(plugin)` | `register_explanation_plugin(identifier, plugin, metadata)` |
+| `trust_plugin(plugin)` | Register with `metadata={"trusted": True, ...}` via `register_explanation_plugin(...)` |
+| `find_for(model)` | `find_explanation_plugin_for(..., model=model, trusted_only=False)` |
+| `find_for_trusted(model)` | `find_explanation_plugin_for(..., model=model, trusted_only=True)` |
+
+```py
+# register(plugin)
+# before
+registry.register(plugin)
+
+# after
+registry.register_explanation_plugin(
+    identifier=plugin.plugin_meta["name"],
+    plugin=plugin,
+    metadata=plugin.plugin_meta,
+)
+```
+
+```py
+# trust_plugin(plugin)
+# before
+registry.register(plugin)
+registry.trust_plugin(plugin)
+
+# after
+meta = dict(plugin.plugin_meta)
+meta["trusted"] = True
+registry.register_explanation_plugin(
+    identifier=meta["name"],
+    plugin=plugin,
+    metadata=meta,
+)
+```
+
+```py
+# find_for(model)
+# before
+plugins = registry.find_for(model)
+
+# after
+identifier, plugin = registry.find_explanation_plugin_for(
+    "tabular",
+    mode="factual",
+    task="classification",
+    model=model,
+    trusted_only=False,
+)
+plugins = (plugin,)
+```
+
+```py
+# find_for_trusted(model)
+# before
+trusted_plugins = registry.find_for_trusted(model)
+
+# after
+identifier, trusted_plugin = registry.find_explanation_plugin_for(
+    "tabular",
+    mode="factual",
+    task="classification",
+    model=model,
+    trusted_only=True,
+)
+trusted_plugins = (trusted_plugin,)
+```
+
 ## Common deprecated items and migration examples
 
 - `CalibratedExplanations.get_explanation(index)` was removed → Use indexing: `explanations[index]`.

@@ -31,6 +31,7 @@ from .. import __version__ as package_version
 from ..core.config_manager import ConfigManager
 from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import ConfigurationError, ValidationError
 from ._trust import (
     clear_trusted_identifiers,
@@ -222,7 +223,8 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
         warnings.warn(
             "Skipping untrusted plugin '%s' from %s discovered via %s. "
             "Set CE_TRUST_PLUGIN, add it to [tool.calibrated_explanations.plugins].trusted, "
-            "or call trust_plugin('%s') to load it." % (name, provider, source, name),
+            "or register the plugin with metadata={'trusted': True} to load it."
+            % (name, provider, source),
             UserWarning,
             stacklevel=3,
         )
@@ -1147,10 +1149,11 @@ def register_explanation_plugin(
             verify=_verify_trust_invariants_if_enabled,
         )
 
-        # Maintain backwards compatibility with the legacy list registry.
-        register(plugin, source=source, identifier=identifier)
+        # Maintain backwards compatibility with the legacy list registry
+        # without routing through deprecated public list-path APIs.
+        _register_legacy_plugin(plugin, source=source, identifier=identifier)
         if trusted:
-            trust_plugin(plugin)
+            _trust_legacy_plugin(plugin)
 
         return descriptor
 
@@ -1946,11 +1949,11 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                     source="entrypoint",
                 )
             except (ValueError, ValidationError) as _exc:  # ADR002_ALLOW: fall back to legacy catalog
-                register(plugin, source="entrypoint", identifier=identifier)
+                _register_legacy_plugin(plugin, source="entrypoint", identifier=identifier)
         else:
-            register(plugin, source="entrypoint", identifier=identifier)
+            _register_legacy_plugin(plugin, source="entrypoint", identifier=identifier)
         if trusted:
-            trust_plugin(plugin)
+            _trust_legacy_plugin(plugin)
         loaded.append(plugin)
         report.accepted.append(
             PluginDiscoveryRecord(
@@ -2033,14 +2036,14 @@ def _refresh_descriptor_trust(identifier: str, *, trusted: bool) -> ExplanationP
 def mark_explanation_trusted(identifier: str) -> ExplanationPluginDescriptor:
     """Mark the explanation plugin *identifier* as trusted."""
     descriptor = _refresh_descriptor_trust(identifier, trusted=True)
-    trust_plugin(descriptor.plugin)
+    _trust_legacy_plugin(descriptor.plugin)
     return descriptor
 
 
 def mark_explanation_untrusted(identifier: str) -> ExplanationPluginDescriptor:
     """Remove the explanation plugin *identifier* from the trusted set."""
     descriptor = _refresh_descriptor_trust(identifier, trusted=False)
-    untrust_plugin(descriptor.plugin)
+    _untrust_legacy_plugin(descriptor.plugin)
     return descriptor
 
 
@@ -2240,17 +2243,13 @@ def _sync_descriptor_trust_for_plugin(plugin: ExplainerPlugin, *, trusted: bool)
         _propagate_trust_metadata(descriptor.renderer, updated_meta)
 
 
-def register(
+def _register_legacy_plugin(
     plugin: ExplainerPlugin,
     *,
     source: str = "manual",
     identifier: str | None = None,
 ) -> None:
-    """Register a plugin after minimal metadata validation.
-
-    Notes: Registering a plugin executes third-party code at import-time.
-    Only register trusted plugins.
-    """
+    """Register a plugin in the legacy list-path registry."""
     raw_meta = getattr(plugin, "plugin_meta", None)
     if raw_meta is None:
         raise ValidationError(
@@ -2341,6 +2340,27 @@ def register(
     )
 
 
+def register(
+    plugin: ExplainerPlugin,
+    *,
+    source: str = "manual",
+    identifier: str | None = None,
+) -> None:
+    """Register a plugin after minimal metadata validation.
+
+    Notes: Registering a plugin executes third-party code at import-time.
+    Only register trusted plugins.
+    """
+    deprecate(
+        "plugins.registry.register() is deprecated and will be removed in v0.11.3; "
+        "use register_explanation_plugin(identifier, plugin, metadata) instead.",
+        key="legacy.plugin:register",
+        stacklevel=3,
+        raise_on_error=False,
+    )
+    _register_legacy_plugin(plugin, source=source, identifier=identifier)
+
+
 def unregister(plugin: ExplainerPlugin) -> None:
     """Remove a plugin if present."""
     with contextlib.suppress(ValueError):
@@ -2390,13 +2410,8 @@ def _resolve_plugin_from_name(name: str) -> ExplainerPlugin:
     raise KeyError(f"Plugin '{name}' is not registered")
 
 
-def trust_plugin(plugin: ExplainerPlugin | str) -> None:
-    """Mark an already-registered plugin as trusted.
-
-    Trust is an explicit, opt-in operation. The function validates metadata
-    before adding to the trusted list. Only trusted plugins will be returned
-    by :func:`find_for` when `trusted_only=True` is passed.
-    """
+def _trust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
+    """Mark an already-registered legacy list-path plugin as trusted."""
     if isinstance(plugin, str):
         plugin = _resolve_plugin_from_name(plugin)
     if plugin not in _REGISTRY:
@@ -2434,7 +2449,25 @@ def trust_plugin(plugin: ExplainerPlugin | str) -> None:
     )
 
 
-def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
+def trust_plugin(plugin: ExplainerPlugin | str) -> None:
+    """Mark an already-registered plugin as trusted.
+
+    Trust is an explicit, opt-in operation. The function validates metadata
+    before adding to the trusted list. Only trusted plugins will be returned
+    by :func:`find_for` when `trusted_only=True` is passed.
+    """
+    deprecate(
+        "plugins.registry.trust_plugin() is deprecated and will be removed in v0.11.3; "
+        "set metadata={'trusted': True} when calling "
+        "register_explanation_plugin(identifier, plugin, metadata) instead.",
+        key="legacy.plugin:trust_plugin",
+        stacklevel=3,
+        raise_on_error=False,
+    )
+    _trust_legacy_plugin(plugin)
+
+
+def _untrust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
     """Remove a plugin from the trusted set if present."""
     if isinstance(plugin, str):
         plugin = _resolve_plugin_from_name(plugin)
@@ -2467,13 +2500,32 @@ def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
     )
 
 
+def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
+    """Remove a plugin from the trusted set if present."""
+    _untrust_legacy_plugin(plugin)
+
+
 def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
     """Find plugins that declare support for the given model."""
+    deprecate(
+        "plugins.registry.find_for() is deprecated and will be removed in v0.11.3; "
+        "use find_explanation_plugin_for(..., trusted_only=False) instead.",
+        key="legacy.plugin:find_for",
+        stacklevel=3,
+        raise_on_error=False,
+    )
     return tuple(p for p in _REGISTRY if _safe_supports(p, model))
 
 
 def find_for_trusted(model: Any) -> Tuple[ExplainerPlugin, ...]:
     """Find trusted plugins that declare support for the given model."""
+    deprecate(
+        "plugins.registry.find_for_trusted() is deprecated and will be removed in v0.11.3; "
+        "use find_explanation_plugin_for(..., trusted_only=True) instead.",
+        key="legacy.plugin:find_for_trusted",
+        stacklevel=3,
+        raise_on_error=False,
+    )
     return tuple(p for p in _TRUSTED if _safe_supports(p, model))
 
 
