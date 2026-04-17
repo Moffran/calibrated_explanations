@@ -205,10 +205,13 @@ class VennAbers:
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
             interval_summary (IntervalSummary or str, optional): Strategy for selecting the
                 point estimate from the interval bounds. Defaults to regularized mean.
-            normalize (bool, optional): If True (default), apply row-sum normalization to the
-                multiclass OvR probability matrix so that rows sum to 1. Set to False to obtain
-                raw pre-normalization outputs for diagnostic purposes. Only affects the multiclass
-                branch; ignored for binary classification. See issue #123.
+            normalize (bool, optional): If True (default), apply two-step normalization to
+                multiclass OvR outputs. Step 1 (coherence): adjusts each upper bound to
+                enforce h_c + sum_{k!=c} l_k = 1 for all c, derived from the IS-c scenario
+                probability axiom; lower bounds are preserved. Step 2 (simplex): normalizes
+                point estimates to sum to 1. Set to False to obtain raw pre-normalization
+                outputs for diagnostic purposes. Only affects the multiclass branch; ignored
+                for binary classification.
 
         Returns
         -------
@@ -244,13 +247,23 @@ class VennAbers:
                     low[:, c], high[:, c], interval_summary
                 )
             if normalize:
-                # FIXME: Probability normalization is unexpectedly required here; see issue #123 for investigation.
-                row_sums = va_proba.sum(axis=1, keepdims=True)
-                # Guard against divide-by-zero for degenerate rows.
-                safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
-                va_proba = va_proba / safe_row_sums
-                low = low / safe_row_sums
-                high = high / safe_row_sums
+                # Step 1: Coherence normalization — enforce h_c + sum_{k!=c} l_k = 1 for all c.
+                # Derived from the IS-c scenario probability axiom: l_c (NOT-c scenario) is
+                # preserved; h_c is set to 1 - S_l + l_c where S_l = sum of all lower bounds.
+                s_low = low.sum(axis=1, keepdims=True)
+                high = np.clip(1.0 - s_low + low, low, 1.0)
+                # Step 2: Recompute point estimates from coherence-normalized bounds.
+                for c in range(tprobs.shape[1]):
+                    va_proba[:, c] = self._select_interval_summary(
+                        low[:, c], high[:, c], interval_summary
+                    )
+                # Step 3: Simplex normalization only for IS options where Σ p_c = 1 is expected.
+                # LOWER and UPPER are not expected to sum to 1 (they represent conservative /
+                # optimistic bounds, not a probability distribution).
+                if interval_summary in (IntervalSummary.MEAN, IntervalSummary.REGULARIZED_MEAN):
+                    row_sums = va_proba.sum(axis=1, keepdims=True)
+                    safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
+                    va_proba = va_proba / safe_row_sums
             if classes is not None:
                 if type(classes) not in (list, np.ndarray):
                     classes = [classes]
