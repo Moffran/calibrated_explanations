@@ -29,6 +29,17 @@ def test_should_not_import_venn_abers_in_ce_first_experiment():
     assert "VennAbers" not in source
 
 
+def test_should_not_import_matplotlib_at_module_import_time():
+    """The experiment module should avoid hard matplotlib imports at import time."""
+    tree = ast.parse(MODULE_PATH.read_text(encoding="utf-8"))
+    top_level_matplotlib_imports = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom) and node.module == "matplotlib"
+    ]
+    assert not top_level_matplotlib_imports
+
+
 def test_should_not_call_predict_proba_on_learner_or_model_symbols():
     """The experiment should predict only through wrapper public APIs."""
     tree = ast.parse(MODULE_PATH.read_text(encoding="utf-8"))
