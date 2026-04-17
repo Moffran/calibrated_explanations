@@ -36,7 +36,6 @@ import numpy as np
 import pandas as pd
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper
-from matplotlib import pyplot as plt
 from scipy.stats import wilcoxon
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, brier_score_loss
@@ -96,6 +95,18 @@ LOWER_IS_BETTER = {
     "top1_brier": True,
     "accuracy": False,
 }
+
+
+def _get_pyplot():
+    """Lazily import matplotlib pyplot for plotting-only code paths."""
+    try:
+        from matplotlib import pyplot as plt
+    except ModuleNotFoundError as error:
+        raise ModuleNotFoundError(
+            "matplotlib is required for plotting outputs in experiment_real_multiclass.py. "
+            "Install visualization extras to enable plot generation."
+        ) from error
+    return plt
 
 
 def compute_bin_stats(y_true_binary, y_prob, n_bins=N_BINS):
@@ -548,6 +559,7 @@ def run_dataset_experiment(dataset_name):
             }
         )
 
+    plt = _get_pyplot()
     figure, (axis_left, axis_right) = plt.subplots(1, 2, figsize=(14, 6))
     axis_left.plot([0, 1], [0, 1], "k:", label="Perfect")
     for method_name, method_plot_data in plot_data.items():
@@ -662,6 +674,7 @@ def main():
         sep=";",
     )
 
+    plt = _get_pyplot()
     pivot = results_df.pivot(index="dataset", columns="method", values="row_sum_mean")
     figure, axis = plt.subplots(figsize=(14, 5))
     x_positions = np.arange(len(pivot))
