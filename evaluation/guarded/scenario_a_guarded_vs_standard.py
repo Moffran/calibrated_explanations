@@ -11,7 +11,10 @@ explanations are compared on the same fitted models and test instances.
 Primary paper-facing metric:
   violation_rate
     Fraction of emitted factual rules whose one-feature perturbation violates
-    the known domain constraint.
+        the known domain constraint. For guarded interval-style emitted rules,
+        plausibility is evaluated at the constraint-facing boundary implied by the
+        rule condition, and may be stress-tested over interior values via boundary
+        probes.
 
 Secondary paper-facing metric:
   rule_count
@@ -20,6 +23,14 @@ Secondary paper-facing metric:
 
 Additional CSV-only diagnostics:
   runtime_ms, stability_jaccard, prediction_abs_diff, interval-overlap checks.
+
+Paper-focused execution:
+    --paper-focused
+        Restricts to factual mode and paper-facing metrics, skipping bootstrap
+        stability and auxiliary diagnostics to avoid metric bloat.
+    --large
+        Enables paper-focused mode and scales synthetic train/cal/test sizes,
+        sampled instances, and seeds for in-large evidence runs.
 
 Parameter guidance:
   --num-seeds
@@ -120,6 +131,31 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--n-cal", type=int, default=1000)
     parser.add_argument("--n-test", type=int, default=500)
     parser.add_argument("--top-k-alternatives", type=int, default=8)
+    parser.add_argument(
+        "--boundary-probes",
+        type=int,
+        default=11,
+        help=(
+            "Number of within-rule values to probe for guarded interval plausibility "
+            "checks (including boundaries)."
+        ),
+    )
+    parser.add_argument(
+        "--paper-focused",
+        action="store_true",
+        help=(
+            "Restrict outputs to paper-facing metrics (violation_rate and rule_count), "
+            "skip stability and auxiliary diagnostics."
+        ),
+    )
+    parser.add_argument(
+        "--large",
+        action="store_true",
+        help=(
+            "Enable a large synthetic run profile and paper-focused mode for stronger "
+            "evidence in synthetic-data settings."
+        ),
+    )
     parser.add_argument("--quick", action="store_true", help="Quick smoke mode.")
     return parser.parse_args()
 
@@ -137,7 +173,9 @@ def generate_scenario_a(n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
         mask = scenario_a_constraint(candidate)
         if np.any(mask):
             accepted.append(candidate[mask])
-    x = np.vstack(accepted)[:n]
+    x_info = np.vstack(accepted)[:n]
+    x_noise = rng.standard_normal((n, 2))
+    x = np.hstack([x_info, x_noise])
     logits = 0.9 * x[:, 0] + 0.7 * x[:, 1] + rng.normal(0.0, 0.75, size=n)
     y = (logits > np.median(logits)).astype(int)
     return x, y
@@ -185,6 +223,8 @@ def _scenario_a_guarded_rule_plausibility(
     lower: Any,
     upper: Any,
     representative: Any,
+    support_bounds: Dict[int, Tuple[float, float]],
+    boundary_probes: int,
 ) -> bool:
     """Return whether the guarded rule format stays inside Scenario A.
 
@@ -192,26 +232,35 @@ def _scenario_a_guarded_rule_plausibility(
     coordinates fixed. For guarded rows we score the interval
     condition itself rather than only the median representative.
     """
-    candidate = np.array(x_instance, copy=True)
     representative_f = _to_float(representative)
-    if representative_f is None:
+    if representative_f is None or feature not in support_bounds:
         return True
 
     lo = _to_float(lower)
     hi = _to_float(upper)
-    if feature == 0:
-        if lo is None or not np.isfinite(lo):
-            return False
-        candidate[feature] = lo
-        return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
-    if feature == 1:
-        if hi is None or not np.isfinite(hi):
-            return False
-        candidate[feature] = hi
-        return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
+    support_lo, support_hi = support_bounds[feature]
 
-    candidate[feature] = representative_f
-    return bool(scenario_a_constraint(candidate.reshape(1, -1))[0])
+    lo_eval = lo if lo is not None and np.isfinite(lo) else support_lo
+    hi_eval = hi if hi is not None and np.isfinite(hi) else support_hi
+    if lo_eval > hi_eval:
+        lo_eval, hi_eval = hi_eval, lo_eval
+
+    candidate_values = [representative_f, lo_eval, hi_eval]
+    probes = max(2, int(boundary_probes))
+    if np.isfinite(lo_eval) and np.isfinite(hi_eval) and hi_eval > lo_eval and probes > 2:
+        candidate_values.extend(np.linspace(lo_eval, hi_eval, probes).tolist())
+
+    # De-duplicate while keeping deterministic ordering for repeatable outputs.
+    dedup_values = list(dict.fromkeys(float(v) for v in candidate_values if np.isfinite(v)))
+    if not dedup_values:
+        return True
+
+    candidate = np.array(x_instance, copy=True)
+    for test_value in dedup_values:
+        candidate[feature] = test_value
+        if not bool(scenario_a_constraint(candidate.reshape(1, -1))[0]):
+            return False
+    return True
 
 
 def _assert_interval_invariant(low: Any, point: Any, high: Any, *, where: str) -> None:
@@ -305,6 +354,8 @@ def _rule_rows_from_guarded_audit(
     method: str,
     cfg: ExplainConfig,
     x_instance: np.ndarray,
+    support_bounds: Dict[int, Tuple[float, float]],
+    boundary_probes: int,
     runtime_ms: float,
 ) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
@@ -318,6 +369,8 @@ def _rule_rows_from_guarded_audit(
             rec.get("lower"),
             rec.get("upper"),
             representative,
+            support_bounds,
+            boundary_probes,
         )
         _assert_interval_invariant(
             rec["low"],
@@ -568,6 +621,15 @@ def _write_report(summary_df: pd.DataFrame, run_config: Dict[str, Any], out_path
 
 def main() -> None:
     args = parse_args()
+    if args.large:
+        args.paper_focused = True
+        args.num_seeds = max(args.num_seeds, 40)
+        args.sample_test = max(args.sample_test, 600)
+        args.n_train = max(args.n_train, 12000)
+        args.n_cal = max(args.n_cal, 5000)
+        args.n_test = max(args.n_test, 4000)
+        args.bootstrap_draws = min(args.bootstrap_draws, 10)
+
     if args.quick:
         args.num_seeds = min(args.num_seeds, 2)
         args.bootstrap_draws = min(args.bootstrap_draws, 4)
@@ -584,6 +646,9 @@ def main() -> None:
         "n_cal": args.n_cal,
         "n_test": args.n_test,
         "top_k_alternatives": args.top_k_alternatives,
+        "boundary_probes": args.boundary_probes,
+        "paper_focused": bool(args.paper_focused),
+        "large_profile": bool(args.large),
         "significance": list(DEFAULT_SIGNIFICANCE),
         "n_neighbors": list(DEFAULT_NEIGHBORS),
         "merge_adjacent": list(DEFAULT_MERGE),
@@ -594,15 +659,24 @@ def main() -> None:
 
     all_rows: List[Dict[str, Any]] = []
     metric_rows: List[Dict[str, Any]] = []
+    n_neighbors_grid = (5,) if args.paper_focused else DEFAULT_NEIGHBORS
+    merge_grid = (False,) if args.paper_focused else DEFAULT_MERGE
+    modes = ("factual",) if args.paper_focused else MODES
+
     configs = [
         ExplainConfig(significance=s, n_neighbors=nn, merge_adjacent=merge)
         for s in DEFAULT_SIGNIFICANCE
-        for nn in DEFAULT_NEIGHBORS
-        for merge in DEFAULT_MERGE
+        for nn in n_neighbors_grid
+        for merge in merge_grid
     ]
 
     for seed in range(args.num_seeds):
         x_train, y_train, x_cal, y_cal, x_test, _ = build_splits(seed, args.n_train, args.n_cal, args.n_test)
+        x_support = np.vstack([x_train, x_cal, x_test])
+        support_bounds = {
+            feature_idx: (float(np.min(x_support[:, feature_idx])), float(np.max(x_support[:, feature_idx])))
+            for feature_idx in range(x_support.shape[1])
+        }
         local_rng = np.random.default_rng(seed + 771)
         sampled_ids = local_rng.choice(np.arange(args.n_test), size=min(args.sample_test, args.n_test), replace=False)
         sampled_ids = np.sort(sampled_ids)
@@ -615,7 +689,7 @@ def main() -> None:
                 "Guard and predictor must share x_cal"
             )
 
-            for mode in MODES:
+            for mode in modes:
                 for instance_id in sampled_ids:
                     x_instance = x_test[instance_id : instance_id + 1]
                     std_start = time.perf_counter()
@@ -667,6 +741,8 @@ def main() -> None:
                             method="guarded",
                             cfg=cfg,
                             x_instance=x_instance[0],
+                            support_bounds=support_bounds,
+                            boundary_probes=args.boundary_probes,
                             runtime_ms=guard_runtime_ms,
                         )
                         std_rows = [
@@ -686,53 +762,55 @@ def main() -> None:
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "violation_rate", "value": violation_rate})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "runtime_ms", "value": float(rt)})
 
-                        abs_diff, u_in_g, g_in_u = _prepare_intersection_metrics(guarded_rows, std_rows)
-                        for value in abs_diff:
-                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "guarded", "mode": mode, "significance": cfg.significance, "metric": "prediction_abs_diff", "value": float(value)})
-                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "standard", "mode": mode, "significance": cfg.significance, "metric": "prediction_abs_diff", "value": float(value)})
-                        for value in u_in_g:
-                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "guarded", "mode": mode, "significance": cfg.significance, "metric": "unguarded_point_in_guarded_interval", "value": float(value)})
-                        for value in g_in_u:
-                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "standard", "mode": mode, "significance": cfg.significance, "metric": "guarded_point_in_unguarded_interval", "value": float(value)})
+                        if not args.paper_focused:
+                            abs_diff, u_in_g, g_in_u = _prepare_intersection_metrics(guarded_rows, std_rows)
+                            for value in abs_diff:
+                                metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "guarded", "mode": mode, "significance": cfg.significance, "metric": "prediction_abs_diff", "value": float(value)})
+                                metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "standard", "mode": mode, "significance": cfg.significance, "metric": "prediction_abs_diff", "value": float(value)})
+                            for value in u_in_g:
+                                metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "guarded", "mode": mode, "significance": cfg.significance, "metric": "unguarded_point_in_guarded_interval", "value": float(value)})
+                            for value in g_in_u:
+                                metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "standard", "mode": mode, "significance": cfg.significance, "metric": "guarded_point_in_unguarded_interval", "value": float(value)})
 
-            boot_cfg = ExplainConfig(significance=0.1, n_neighbors=5, merge_adjacent=False)
-            reference_indices = sampled_ids
-            ref_guard_rules: Dict[str, List[List[str]]] = {}
-            ref_std_rules: Dict[str, List[List[str]]] = {}
-            for mode in MODES:
-                x_ref = x_test[reference_indices]
-                if mode == "factual":
-                    std_ref = _run_standard_factual_multibin(wrapper, x_ref)
-                    guard_ref = wrapper.explain_guarded_factual(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
-                else:
-                    std_ref = wrapper.explore_alternatives(x_ref)
-                    guard_ref = wrapper.explore_guarded_alternatives(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
-                ref_std_rules[mode] = _extract_rule_conditions(std_ref, mode, args.top_k_alternatives)
-                ref_guard_rules[mode] = _extract_rule_conditions(guard_ref, mode, args.top_k_alternatives)
-
-            for draw in range(args.bootstrap_draws):
-                boot_seed = seed * 5000 + draw + 901
-                boot_rng = np.random.default_rng(boot_seed)
-                boot_idx = boot_rng.choice(np.arange(args.n_cal), size=args.n_cal, replace=True)
-                boot_x_cal = x_cal[boot_idx]
-                boot_y_cal = y_cal[boot_idx]
-                boot_wrapper = ensure_ce_first_wrapper(get_models(seed)[model_name])
-                fit_and_calibrate(boot_wrapper, x_train, y_train, boot_x_cal, boot_y_cal)
-                assert boot_wrapper.explainer is not None
-                assert np.array_equal(np.asarray(boot_wrapper.explainer.x_cal), np.asarray(boot_x_cal))
+            if not args.paper_focused:
+                boot_cfg = ExplainConfig(significance=0.1, n_neighbors=5, merge_adjacent=False)
+                reference_indices = sampled_ids
+                ref_guard_rules: Dict[str, List[List[str]]] = {}
+                ref_std_rules: Dict[str, List[List[str]]] = {}
                 for mode in MODES:
                     x_ref = x_test[reference_indices]
                     if mode == "factual":
-                        std_boot = _run_standard_factual_multibin(boot_wrapper, x_ref)
-                        guard_boot = boot_wrapper.explain_guarded_factual(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
+                        std_ref = _run_standard_factual_multibin(wrapper, x_ref)
+                        guard_ref = wrapper.explain_guarded_factual(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
                     else:
-                        std_boot = boot_wrapper.explore_alternatives(x_ref)
-                        guard_boot = boot_wrapper.explore_guarded_alternatives(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
-                    std_rules_boot = _extract_rule_conditions(std_boot, mode, args.top_k_alternatives)
-                    guard_rules_boot = _extract_rule_conditions(guard_boot, mode, args.top_k_alternatives)
-                    for local_idx, inst_id in enumerate(reference_indices):
-                        metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(inst_id), "method": "standard", "mode": mode, "significance": boot_cfg.significance, "metric": "stability_jaccard", "value": _jaccard(ref_std_rules[mode][local_idx], std_rules_boot[local_idx])})
-                        metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(inst_id), "method": "guarded", "mode": mode, "significance": boot_cfg.significance, "metric": "stability_jaccard", "value": _jaccard(ref_guard_rules[mode][local_idx], guard_rules_boot[local_idx])})
+                        std_ref = wrapper.explore_alternatives(x_ref)
+                        guard_ref = wrapper.explore_guarded_alternatives(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
+                    ref_std_rules[mode] = _extract_rule_conditions(std_ref, mode, args.top_k_alternatives)
+                    ref_guard_rules[mode] = _extract_rule_conditions(guard_ref, mode, args.top_k_alternatives)
+
+                for draw in range(args.bootstrap_draws):
+                    boot_seed = seed * 5000 + draw + 901
+                    boot_rng = np.random.default_rng(boot_seed)
+                    boot_idx = boot_rng.choice(np.arange(args.n_cal), size=args.n_cal, replace=True)
+                    boot_x_cal = x_cal[boot_idx]
+                    boot_y_cal = y_cal[boot_idx]
+                    boot_wrapper = ensure_ce_first_wrapper(get_models(seed)[model_name])
+                    fit_and_calibrate(boot_wrapper, x_train, y_train, boot_x_cal, boot_y_cal)
+                    assert boot_wrapper.explainer is not None
+                    assert np.array_equal(np.asarray(boot_wrapper.explainer.x_cal), np.asarray(boot_x_cal))
+                    for mode in MODES:
+                        x_ref = x_test[reference_indices]
+                        if mode == "factual":
+                            std_boot = _run_standard_factual_multibin(boot_wrapper, x_ref)
+                            guard_boot = boot_wrapper.explain_guarded_factual(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
+                        else:
+                            std_boot = boot_wrapper.explore_alternatives(x_ref)
+                            guard_boot = boot_wrapper.explore_guarded_alternatives(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
+                        std_rules_boot = _extract_rule_conditions(std_boot, mode, args.top_k_alternatives)
+                        guard_rules_boot = _extract_rule_conditions(guard_boot, mode, args.top_k_alternatives)
+                        for local_idx, inst_id in enumerate(reference_indices):
+                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(inst_id), "method": "standard", "mode": mode, "significance": boot_cfg.significance, "metric": "stability_jaccard", "value": _jaccard(ref_std_rules[mode][local_idx], std_rules_boot[local_idx])})
+                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(inst_id), "method": "guarded", "mode": mode, "significance": boot_cfg.significance, "metric": "stability_jaccard", "value": _jaccard(ref_guard_rules[mode][local_idx], guard_rules_boot[local_idx])})
 
     per_instance_df = pd.DataFrame(all_rows)
     metrics_df = pd.DataFrame(metric_rows)

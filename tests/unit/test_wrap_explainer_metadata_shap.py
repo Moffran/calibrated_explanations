@@ -1,5 +1,3 @@
-import pytest
-
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 

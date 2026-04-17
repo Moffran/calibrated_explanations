@@ -120,9 +120,11 @@ def test_validate_plugin_meta_warns_on_newer_minor_patch_api_version(caplog):
         "plugin_api_version": "1.1",
     }
 
-    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
-        with pytest.warns(UserWarning, match="forward-compatibility risk"):
-            validate_plugin_meta(meta)
+    with (
+        caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
+        pytest.warns(UserWarning, match="forward-compatibility risk"),
+    ):
+        validate_plugin_meta(meta)
 
     assert meta["plugin_api_version"] == "1.1"
     matching = [
@@ -131,9 +133,9 @@ def test_validate_plugin_meta_warns_on_newer_minor_patch_api_version(caplog):
         if "Accepted plugin with newer plugin_api_version minor/patch" in record.message
     ]
     assert matching, "governance log record not emitted"
-    assert matching[0].__dict__.get("plugin_name") == "tests.forward.compat", (
-        "governance log must include plugin_name for attributability"
-    )
+    assert (
+        matching[0].__dict__.get("plugin_name") == "tests.forward.compat"
+    ), "governance log must include plugin_name for attributability"
 
 
 def test_validate_plugin_meta_normalizes_modality_aliases():

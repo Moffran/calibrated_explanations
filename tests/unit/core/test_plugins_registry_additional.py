@@ -811,9 +811,11 @@ def test_refresh_descriptor_and_register_errors():
     class NoMeta:
         plugin_meta = None
 
-    with pytest.raises(ValidationError):
-        with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
-            registry.register(NoMeta())
+    with (
+        pytest.raises(ValidationError),
+        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
+    ):
+        registry.register(NoMeta())
 
     class FailingMeta(MutableMapping):
         def __init__(self):

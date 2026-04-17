@@ -23,6 +23,14 @@ Two metrics are reported:
     the empirical interval-level behaviour is more aggressive than intended.
 
 Run with --quick for a fast smoke-test (2 seeds, reduced grid).
+
+Paper-focused execution:
+    --paper-focused
+        Restricts to paper-facing defaults (normalize_guard=True, n_neighbors=5),
+        with the AUROC and interval-level FPR diagnostics used in the manuscript.
+    --large
+        Enables paper-focused mode and scales synthetic train/cal/test sizes and
+        seeds for in-large evidence runs.
 """
 from __future__ import annotations
 
@@ -166,7 +174,7 @@ def _plot_auroc_by_dim_and_shift(df: pd.DataFrame, out_dir: Path) -> None:
     plt.close(fig)
 
 
-def _plot_fpr_vs_significance(df: pd.DataFrame, out_dir: Path) -> None:
+def _plot_fpr_vs_significance(df: pd.DataFrame, out_dir: Path, significance: float) -> None:
     """Plot interval-level rejection rate at the configured significance."""
     # Compute FPR at a range of significance levels post-hoc from stored p-values
     # We use the fixed significance column available in the stored metrics
@@ -178,7 +186,7 @@ def _plot_fpr_vs_significance(df: pd.DataFrame, out_dir: Path) -> None:
     for sig in sigs:
         ax.axhline(sig, linestyle="--", linewidth=0.8, color="gray")
     ax.set_xlabel("n_dim")
-    ax.set_ylabel(f"FPR @ significance={DEFAULT_SIGNIFICANCE}")
+    ax.set_ylabel(f"FPR @ significance={significance}")
     ax.set_title("FPR on ID Intervals (should be ≤ significance)")
     ax.legend(fontsize=6, ncol=2)
     fig.tight_layout()
@@ -228,23 +236,68 @@ def parse_args() -> argparse.Namespace:
         default=Path(__file__).parent / "artifacts" / "guarded" / "scenario_b",
     )
     parser.add_argument("--num-seeds", type=int, default=5)
+    parser.add_argument("--n-train", type=int, default=N_TRAIN)
+    parser.add_argument("--n-cal", type=int, default=N_CAL)
+    parser.add_argument("--n-id-test", type=int, default=N_ID_TEST)
+    parser.add_argument("--n-ood-test", type=int, default=N_OOD_TEST)
+    parser.add_argument(
+        "--paper-focused",
+        action="store_true",
+        help=(
+            "Restrict grids and outputs to paper-facing defaults "
+            "(normalize_guard=True, n_neighbors=5)."
+        ),
+    )
+    parser.add_argument(
+        "--large",
+        action="store_true",
+        help=(
+            "Enable a large synthetic run profile and paper-focused mode for "
+            "stronger in-large evidence."
+        ),
+    )
     parser.add_argument("--quick", action="store_true", help="Fast smoke-test mode.")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.large:
+        args.paper_focused = True
+        args.num_seeds = max(args.num_seeds, 10)
+        args.n_train = max(args.n_train, 5000)
+        args.n_cal = max(args.n_cal, 3000)
+        args.n_id_test = max(args.n_id_test, 1000)
+        args.n_ood_test = max(args.n_ood_test, 1000)
+
     if args.quick:
         args.num_seeds = 2
         n_neighbors_grid = (5,)
         n_dim_grid = (2, 10)
         shift_levels = {"moderate": 2.0, "extreme": 5.0}
         normalize_grid = (True,)
+        n_train = min(args.n_train, 500)
+        n_cal = min(args.n_cal, 300)
+        n_id_test = min(args.n_id_test, 100)
+        n_ood_test = min(args.n_ood_test, 100)
+    elif args.paper_focused:
+        n_neighbors_grid = (5,)
+        n_dim_grid = DEFAULT_N_DIM
+        shift_levels = DEFAULT_SHIFT_LEVELS
+        normalize_grid = (True,)
+        n_train = args.n_train
+        n_cal = args.n_cal
+        n_id_test = args.n_id_test
+        n_ood_test = args.n_ood_test
     else:
         n_neighbors_grid = DEFAULT_N_NEIGHBORS
         n_dim_grid = DEFAULT_N_DIM
         shift_levels = DEFAULT_SHIFT_LEVELS
         normalize_grid = DEFAULT_NORMALIZE
+        n_train = args.n_train
+        n_cal = args.n_cal
+        n_id_test = args.n_id_test
+        n_ood_test = args.n_ood_test
 
     out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -255,13 +308,13 @@ def main() -> None:
         for n_dim in n_dim_grid:
             # Build calibration and training data from the base Gaussian distribution
             x_all, y_all = make_gaussian_classification(
-                n=N_TRAIN + N_CAL + N_ID_TEST, n_dim=n_dim, seed=seed * 100 + n_dim
+                n=n_train + n_cal + n_id_test, n_dim=n_dim, seed=seed * 100 + n_dim
             )
-            x_train = x_all[:N_TRAIN]
-            y_train = y_all[:N_TRAIN]
-            x_cal = x_all[N_TRAIN:N_TRAIN + N_CAL]
-            y_cal = y_all[N_TRAIN:N_TRAIN + N_CAL]
-            x_id_test = x_all[N_TRAIN + N_CAL:]
+            x_train = x_all[:n_train]
+            y_train = y_all[:n_train]
+            x_cal = x_all[n_train:n_train + n_cal]
+            y_cal = y_all[n_train:n_train + n_cal]
+            x_id_test = x_all[n_train + n_cal:]
 
             model = RandomForestClassifier(
                 n_estimators=100, max_depth=6, random_state=seed, n_jobs=1
@@ -272,12 +325,14 @@ def main() -> None:
             for shift_name, shift_magnitude in shift_levels.items():
                 shift_vec = _build_shift_vector(shift_magnitude, n_dim)
                 x_ood_test = make_ood_shift(x_id_test, shift_vec, seed=seed * 777 + n_dim)
+                if len(x_ood_test) > n_ood_test:
+                    x_ood_test = x_ood_test[:n_ood_test]
 
                 for nn in n_neighbors_grid:
                     for normalize in normalize_grid:
                         cfg = GuardConfig(
                             significance=DEFAULT_SIGNIFICANCE,
-                            n_neighbors=min(nn, N_CAL - 1),
+                            n_neighbors=min(nn, n_cal - 1),
                             normalize_guard=normalize,
                         )
                         try:
@@ -315,8 +370,9 @@ def main() -> None:
 
     # Plots
     _plot_auroc_by_dim_and_shift(df, out_dir)
-    _plot_normalize_comparison(df, out_dir)
-    _plot_fpr_vs_significance(df, out_dir)
+    if not args.paper_focused:
+        _plot_normalize_comparison(df, out_dir)
+    _plot_fpr_vs_significance(df, out_dir, DEFAULT_SIGNIFICANCE)
     print(f"Wrote plots to: {out_dir}")
 
     paper_df = df[(df["normalize_guard"] == True) & (df["n_neighbors"] == 5)].copy()  # noqa: E712
@@ -343,10 +399,10 @@ def main() -> None:
             "Setup",
             (
                 f"- Seeds: {args.num_seeds}\n"
-                f"- Calibration size: {N_CAL}\n"
-                f"- Train size: {N_TRAIN}\n"
-                f"- ID test size: {N_ID_TEST}\n"
-                f"- OOD test size per shift level: {N_OOD_TEST}\n"
+                f"- Calibration size: {n_cal}\n"
+                f"- Train size: {n_train}\n"
+                f"- ID test size: {n_id_test}\n"
+                f"- OOD test size per shift level: {n_ood_test}\n"
                 f"- Paper-facing slice: normalize_guard=True, n_neighbors={paper_n_neighbors}, significance={DEFAULT_SIGNIFICANCE}"
             ),
         ),

@@ -30,6 +30,31 @@ if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
+def sanitize_path(value: object, *, root: Path | None = None) -> object:
+    """Redact absolute local paths while keeping relative paths stable for logs."""
+    if not isinstance(value, str) or not value:
+        return value
+    if root is not None:
+        try:
+            return Path(value).resolve().relative_to(root.resolve()).as_posix()
+        except Exception:
+            pass
+    if ":\\" in value or ":/" in value or value.startswith("/") or value.startswith("\\\\"):
+        return "<redacted-local-path>"
+    return value
+
+
+def sanitize_repr(value: object) -> object:
+    """Redact absolute local paths in repr strings captured for diagnostics."""
+    if not isinstance(value, str):
+        return value
+    return re.sub(
+        r"([A-Za-z]:[\\/][^']+|\\\\[^\\/\s]+[\\/][^']+|/(?:Users|home|tmp|var|etc|opt|srv|mnt|private|root|proc|run|Volumes|Library|Applications|System|usr|bin|sbin|dev|github|workspace)[^']*)",
+        "<redacted-local-path>",
+        value,
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def configure_matplotlib_backend():
     """Ensure matplotlib uses a non-interactive backend for all tests.
@@ -87,25 +112,6 @@ def debug_matplotlib_session_state(request: FixtureRequest):
     root = Path(request.config.rootpath)
     out = root / ".pytest_matplotlib_debug.json"
 
-    def sanitize_path(value: object) -> object:
-        if not isinstance(value, str) or not value:
-            return value
-        try:
-            return Path(value).resolve().relative_to(root.resolve()).as_posix()
-        except Exception:
-            if ":\\" in value or ":/" in value or value.startswith("/") or value.startswith("\\\\"):
-                return "<redacted-local-path>"
-            return value
-
-    def sanitize_repr(value: object) -> object:
-        if not isinstance(value, str):
-            return value
-        return re.sub(
-            r"([A-Za-z]:[\\/][^']+|\\\\[^\\/\s]+[\\/][^']+|/(?:Users|home|tmp|var|etc|opt|srv|mnt|private|root|proc|run|Volumes|Library|Applications|System|usr|bin|sbin|dev|github|workspace)[^']*)",
-            "<redacted-local-path>",
-            value,
-        )
-
     try:
         found = find_spec("matplotlib") is not None
         mods = [k for k in sys.modules if k.startswith("matplotlib")]
@@ -115,7 +121,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
             try:
                 modules[m] = {
                     "repr": sanitize_repr(repr(mod)),
-                    "file": sanitize_path(getattr(mod, "__file__", None)),
+                    "file": sanitize_path(getattr(mod, "__file__", None), root=root),
                     "has_artist": hasattr(mod, "artist"),
                     "has_figure": hasattr(mod, "figure"),
                     "spec": getattr(mod, "__spec__", None).name
@@ -128,7 +134,7 @@ def debug_matplotlib_session_state(request: FixtureRequest):
         data = {
             "timestamp": datetime.utcnow().isoformat(),
             "matplotlib_findable": found,
-            "sys_path": [sanitize_path(entry) for entry in sys.path],
+            "sys_path": [sanitize_path(entry, root=root) for entry in sys.path],
             "matplotlib_modules": modules,
         }
         out.write_text(json.dumps(data, indent=2), encoding="utf8")
@@ -267,7 +273,7 @@ def pytest_sessionstart(session):
                             "timestamp": datetime.utcnow().isoformat(),
                             "import_name": name,
                             "module_repr": sanitize_repr(repr(mod)),
-                            "module_file": sanitize_path(getattr(mod, "__file__", None)),
+                            "module_file": sanitize_path(getattr(mod, "__file__", None), root=root),
                             "sys_modules_keys": [
                                 k for k in sys.modules if k.startswith("matplotlib")
                             ],

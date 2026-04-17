@@ -187,7 +187,13 @@ class VennAbers:
 
     # pylint: disable=too-many-locals, too-many-branches
     def predict_proba(
-        self, x, output_interval=False, classes=None, bins=None, interval_summary=None
+        self,
+        x,
+        output_interval=False,
+        classes=None,
+        bins=None,
+        interval_summary=None,
+        normalize=True,
     ):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
@@ -199,6 +205,10 @@ class VennAbers:
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
             interval_summary (IntervalSummary or str, optional): Strategy for selecting the
                 point estimate from the interval bounds. Defaults to regularized mean.
+            normalize (bool, optional): If True (default), apply row-sum normalization to the
+                multiclass OvR probability matrix so that rows sum to 1. Set to False to obtain
+                raw pre-normalization outputs for diagnostic purposes. Only affects the multiclass
+                branch; ignored for binary classification. See issue #123.
 
         Returns
         -------
@@ -233,13 +243,14 @@ class VennAbers:
                 va_proba[:, c] = self._select_interval_summary(
                     low[:, c], high[:, c], interval_summary
                 )
-            # FIXME: Probability normalization is unexpectedly required here; see issue #123 for investigation.
-            row_sums = va_proba.sum(axis=1, keepdims=True)
-            # Guard against divide-by-zero for degenerate rows.
-            safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
-            va_proba = va_proba / safe_row_sums
-            low = low / safe_row_sums
-            high = high / safe_row_sums
+            if normalize:
+                # FIXME: Probability normalization is unexpectedly required here; see issue #123 for investigation.
+                row_sums = va_proba.sum(axis=1, keepdims=True)
+                # Guard against divide-by-zero for degenerate rows.
+                safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
+                va_proba = va_proba / safe_row_sums
+                low = low / safe_row_sums
+                high = high / safe_row_sums
             if classes is not None:
                 if type(classes) not in (list, np.ndarray):
                     classes = [classes]

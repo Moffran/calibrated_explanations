@@ -1,4 +1,5 @@
 """ADR-033 packaging smoke tests: entry-point discovery, modality contract, plugin_api_version."""
+
 from __future__ import annotations
 
 import importlib.metadata as importlib_metadata
@@ -197,12 +198,14 @@ def test_should_reject_plugin_when_plugin_api_version_major_mismatches():
     mock_eps = MockEntryPoints([ep])
 
     # Act & Assert
-    with pytest.warns(UserWarning, match="plugin_api_version.*major is incompatible"):
-        with patch(
+    with (
+        pytest.warns(UserWarning, match="plugin_api_version.*major is incompatible"),
+        patch(
             "calibrated_explanations.plugins.registry.importlib_metadata.entry_points",
             return_value=mock_eps,
-        ):
-            load_entrypoint_plugins(include_untrusted=True)
+        ),
+    ):
+        load_entrypoint_plugins(include_untrusted=True)
 
     assert find_explanation_descriptor(f"{module.__name__}:BadVersionPlugin") is None
 
@@ -280,12 +283,14 @@ def test_should_warn_and_accept_plugin_when_plugin_api_minor_is_newer():
     mock_eps = MockEntryPoints([ep])
 
     # Act
-    with pytest.warns(UserWarning, match="forward-compatibility risk"):
-        with patch(
+    with (
+        pytest.warns(UserWarning, match="forward-compatibility risk"),
+        patch(
             "calibrated_explanations.plugins.registry.importlib_metadata.entry_points",
             return_value=mock_eps,
-        ):
-            load_entrypoint_plugins(include_untrusted=True)
+        ),
+    ):
+        load_entrypoint_plugins(include_untrusted=True)
 
     # Assert
     descriptor = find_explanation_descriptor(f"{module.__name__}:MinorVersionPlugin")
@@ -316,11 +321,13 @@ def test_should_not_use_nonstandard_entrypoint_loader_fallbacks():
         def select(self, *, group: str):
             return [FakeEntryPoint()] if group == "calibrated_explanations.plugins" else []
 
-    with pytest.warns(UserWarning, match="Failed to load plugin entry point"):
-        with patch(
+    with (
+        pytest.warns(UserWarning, match="Failed to load plugin entry point"),
+        patch(
             "calibrated_explanations.plugins.registry.importlib_metadata.entry_points",
             return_value=EntryPoints(),
-        ):
-            load_entrypoint_plugins(include_untrusted=True)
+        ),
+    ):
+        load_entrypoint_plugins(include_untrusted=True)
 
     assert find_explanation_descriptor("tests.mock.modality:FallbackPlugin") is None

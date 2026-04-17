@@ -257,9 +257,11 @@ def test_governance_events_are_side_effect_only_and_payload_safe(
     clear_trust_warnings()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None, raising=False)
 
-    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
-        with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
-            registry.register(Plugin(), source="manual")
+    with (
+        caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
+        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
+    ):
+        registry.register(Plugin(), source="manual")
 
     captured_plugins = registry.list_plugins(include_untrusted=True)
     captured_plugin_names = tuple(

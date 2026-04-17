@@ -27,6 +27,15 @@ Use in the paper:
 - Primary metric: `violation_rate`
 - Optional tradeoff metric: factual-mode `rule_count`
 
+Scenario A metric contract:
+- `violation_rate` is computed on emitted rules under the emitted rule format.
+- For guarded interval-style rules, plausibility is checked at the
+  constraint-facing boundary implied by the rule condition in this synthetic
+  setup, and can be stress-tested over interior values via boundary probes,
+  not only at the median representative point.
+- For standard rows and non-boundary cases, plausibility uses the
+  representative perturbation value.
+
 Do not use in the paper:
 - `stability_jaccard`
 - prediction-agreement metrics
@@ -37,6 +46,11 @@ Paper interpretation:
 - Lower guarded `violation_rate` is the main result.
 - Factual `rule_count` can be used once as a cost and coverage tradeoff.
 - This scenario validates the emitted guarded rule format, not whole-interval safety and not a pure representative-only semantics claim.
+
+Recommended paper run profile:
+- `python scenario_a_guarded_vs_standard.py --paper-focused --large`
+- This profile keeps only paper-facing metrics and scales synthetic data,
+  seeds, and sampled instances for in-large evidence.
 
 ### Scenario B: direct guard detection quality
 
@@ -66,6 +80,11 @@ Paper interpretation:
 - AUROC is the main detection result.
 - The interval-level rejection rate is a threshold diagnostic, not the main result.
 - The scenario matters because it tests whether the guard is selective for a reason, rather than merely removing intervals.
+
+Recommended paper run profile:
+- `python scenario_b_ood_detection_quality.py --paper-focused --large`
+- This profile keeps paper-facing defaults (`normalize_guard=True`,
+  `n_neighbors=5`) while increasing synthetic train/cal/test sizes.
 
 ## Engineering validation only
 
@@ -155,6 +174,14 @@ cd evaluation/guarded
 python run_all_guarded.py --quick
 python run_all_guarded.py --scenarios a,b --quick
 python run_all_guarded.py --scenarios all
+```
+
+Paper-focused large runs:
+
+```bash
+cd evaluation/guarded
+python scenario_a_guarded_vs_standard.py --paper-focused --large
+python scenario_b_ood_detection_quality.py --paper-focused --large
 ```
 
 Artifacts are written to `evaluation/guarded/artifacts/`.

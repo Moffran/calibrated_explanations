@@ -48,7 +48,9 @@ def test_should_warn_when_register_list_path_is_used():
 
 def test_should_warn_when_trust_plugin_list_path_is_used():
     plugin = LegacyPlugin()
-    registry.register_explanation_plugin(plugin.plugin_meta["name"], plugin, metadata=plugin.plugin_meta)
+    registry.register_explanation_plugin(
+        plugin.plugin_meta["name"], plugin, metadata=plugin.plugin_meta
+    )
 
     with pytest.warns(DeprecationWarning, match=r"metadata=\{'trusted': True\}"):
         registry.trust_plugin(plugin)
@@ -56,7 +58,9 @@ def test_should_warn_when_trust_plugin_list_path_is_used():
 
 def test_should_warn_when_find_for_list_path_is_used():
     plugin = LegacyPlugin()
-    registry.register_explanation_plugin(plugin.plugin_meta["name"], plugin, metadata=plugin.plugin_meta)
+    registry.register_explanation_plugin(
+        plugin.plugin_meta["name"], plugin, metadata=plugin.plugin_meta
+    )
 
     with pytest.warns(DeprecationWarning, match="trusted_only=False"):
         found = registry.find_for("supported")
@@ -66,7 +70,9 @@ def test_should_warn_when_find_for_list_path_is_used():
 
 def test_should_warn_when_find_for_trusted_list_path_is_used():
     plugin = LegacyPlugin()
-    registry.register_explanation_plugin(plugin.plugin_meta["name"], plugin, metadata=plugin.plugin_meta)
+    registry.register_explanation_plugin(
+        plugin.plugin_meta["name"], plugin, metadata=plugin.plugin_meta
+    )
     with pytest.warns(DeprecationWarning, match=r"metadata=\{'trusted': True\}"):
         registry.trust_plugin(plugin)
 

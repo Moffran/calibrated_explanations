@@ -1008,6 +1008,9 @@ def guarded_explain(
     )
     container.low_high_percentiles = low_high_percentiles
 
+    # Track instances where all candidates were removed (emit summary warning later)
+    _all_removed_instances: list[int] = []
+
     # Minimal binned payload for CE helper compatibility shims.
     # For example, add_new_rule_condition expects binned['rule_values'][feature][0][0].
     binned_predict: dict[str, list[Any]] = {"rule_values": []}
@@ -1128,12 +1131,7 @@ def guarded_explain(
                 f_weights["high"][f] = float(base_predict[inst_idx] - avg_l)
 
         if guarded_bins and not any(b.conforming for bins in guarded_bins.values() for b in bins):
-            warnings.warn(
-                f"All interval candidates for guarded instance {inst_idx} were removed "
-                "by the guard. No rules will be emitted for this instance.",
-                UserWarning,
-                stacklevel=2,
-            )
+            _all_removed_instances.append(inst_idx)
 
         for key in ["predict", "low", "high"]:
             feature_predict[key].append(f_predict[key])
@@ -1168,6 +1166,21 @@ def guarded_explain(
 
     container.feature_weights = feature_weights
     container.feature_predict = feature_predict
+
+    if _all_removed_instances:
+        n_removed = len(_all_removed_instances)
+        if n_removed <= 5:
+            idx_desc = ", ".join(str(i) for i in _all_removed_instances)
+        else:
+            first_three = ", ".join(str(i) for i in _all_removed_instances[:3])
+            idx_desc = f"{first_three}, ... ({n_removed} total)"
+        warnings.warn(
+            f"All interval candidates were removed by the guard for {n_removed} "
+            f"of {n_instances} instances (indices: {idx_desc}). "
+            "No rules will be emitted for these instances.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     _LOGGER.info(
         "guarded_explain completed",

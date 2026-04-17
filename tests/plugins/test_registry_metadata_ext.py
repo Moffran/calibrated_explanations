@@ -165,9 +165,11 @@ def test_register_emits_governance_event_for_accepted_registration(caplog):
     class Plugin:
         plugin_meta = base_meta()
 
-    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
-        with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
-            registry.register(Plugin(), source="manual")
+    with (
+        caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
+        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
+    ):
+        registry.register(Plugin(), source="manual")
 
     matches = [
         record

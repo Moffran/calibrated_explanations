@@ -103,9 +103,11 @@ def test_register_and_trust_flow(tmp_path):
     assert p not in registry.list_plugins(include_untrusted=False)
 
     # trusting unregistered plugin raises
-    with pytest.raises(ValidationError):
-        with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
-            registry.trust_plugin(object())
+    with (
+        pytest.raises(ValidationError),
+        pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"),
+    ):
+        registry.trust_plugin(object())
 
     # trust and find
     with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):

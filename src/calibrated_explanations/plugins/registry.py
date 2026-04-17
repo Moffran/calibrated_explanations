@@ -1948,7 +1948,10 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
                     metadata=dict(meta),
                     source="entrypoint",
                 )
-            except (ValueError, ValidationError) as _exc:  # ADR002_ALLOW: fall back to legacy catalog
+            except (
+                ValueError,
+                ValidationError,
+            ) as _exc:  # ADR002_ALLOW: fall back to legacy catalog
                 _register_legacy_plugin(plugin, source="entrypoint", identifier=identifier)
         else:
             _register_legacy_plugin(plugin, source="entrypoint", identifier=identifier)
