@@ -109,6 +109,7 @@ All four modes use the same API — the wrapper infers classification vs regress
 | Calibrated probabilities and predictions | No | No | **Yes** |
 | Uncertainty intervals per explanation | No | No | **Yes** |
 | Built-in counterfactual / alternative rules | No | No | **Yes** |
+| Feature interaction through conjunctions | No | No | **Yes** |
 | Deterministic (stable) output | No | High (TreeExplainer) | **Yes** |
 | Uncertainty-qualified counterfactuals (Ensured framework) | No | No | **Yes** |
 | Conditional calibration by group | No | No | **Yes** |
