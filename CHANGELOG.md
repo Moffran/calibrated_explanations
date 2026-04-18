@@ -3,7 +3,11 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.1...main)
+
+## [v0.11.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.1) - 2026-04-18
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.0...v0.11.1)
 
 ### ADR-033 Additive UX/Migration Gates
 
