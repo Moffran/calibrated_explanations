@@ -1,3 +1,9 @@
+import os
+
+os.environ.setdefault("MPLBACKEND", "Agg")
+import matplotlib
+matplotlib.use("Agg", force=True)
+
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
 from calibrated_explanations.viz import (
     REGRESSION_BAR_COLOR,

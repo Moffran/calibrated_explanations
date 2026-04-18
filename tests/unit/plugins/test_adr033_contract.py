@@ -206,6 +206,24 @@ def test_missing_extension_error_audio():
     assert isinstance(exc_info.value, ImportError)
 
 
+def test_audio_shim_imports_extension_symbols_when_dependency_present(monkeypatch):
+    fake_audio = SimpleNamespace(__all__=["sentinel"], sentinel="audio-ok")
+    monkeypatch.setitem(sys.modules, "ce_audio", fake_audio)
+    sys.modules.pop("calibrated_explanations.audio", None)
+
+    module = importlib.import_module("calibrated_explanations.audio")
+    assert module.sentinel == "audio-ok"
+
+
+def test_vision_shim_imports_extension_symbols_when_dependency_present(monkeypatch):
+    fake_vision = SimpleNamespace(__all__=["sentinel"], sentinel="vision-ok")
+    monkeypatch.setitem(sys.modules, "ce_vision", fake_vision)
+    sys.modules.pop("calibrated_explanations.vision", None)
+
+    module = importlib.import_module("calibrated_explanations.vision")
+    assert module.sentinel == "vision-ok"
+
+
 def test_cli_list_modality_filter(capsys):
     vision_plugin = DummyExplanationPlugin("tests.modality.vision", modalities=("vision",))
     tabular_plugin = DummyExplanationPlugin("tests.modality.tabular", modalities=("tabular",))

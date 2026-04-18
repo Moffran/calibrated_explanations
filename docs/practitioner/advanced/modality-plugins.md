@@ -89,7 +89,7 @@ Install companion packages when needed:
 | --- | --- |
 | `v0.11.0` | `data_modalities` defaults to `("tabular",)` with no warning |
 | `v0.11.1` | Missing `data_modalities` in entry-point metadata emits `DeprecationWarning` |
-| `v0.12.0/v1.0.0-rc` | Explicit `data_modalities` is required; default fallback removed |
+| `v0.11.3` | Explicit `data_modalities` is required; default fallback removed |
 
 ## Related references
 

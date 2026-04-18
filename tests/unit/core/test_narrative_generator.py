@@ -4,7 +4,9 @@ from calibrated_explanations.core.narrative_generator import (
     to_py,
     clean_condition,
     crosses_zero,
+    has_wide_prediction_interval,
     NarrativeGenerator,
+    load_template_file,
 )
 from calibrated_explanations.utils.exceptions import ValidationError
 from unittest.mock import MagicMock
@@ -13,6 +15,7 @@ from unittest.mock import MagicMock
 def test_to_py_variants():
     assert to_py(np.bool_(True)) is True
     assert to_py("string") == "string"
+    assert to_py(np.array([1, 2])).__class__ is list
 
 
 def test_clean_condition_variants():
@@ -35,6 +38,17 @@ def test_clean_condition_variants():
         re.sub = original_sub
 
 
+def test_clean_condition_should_reraise_non_exception_baseexception(monkeypatch):
+    import re
+
+    def raise_keyboard_interrupt(*_args, **_kwargs):
+        raise KeyboardInterrupt("stop")
+
+    monkeypatch.setattr(re, "sub", raise_keyboard_interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        clean_condition("feature > 1", "feature")
+
+
 def test_crosses_zero_fallback():
     assert crosses_zero({"weight_low": "abc", "weight_high": 1}) is False
 
@@ -42,6 +56,117 @@ def test_crosses_zero_fallback():
 def test_crosses_zero_should_handle_array_like_intervals():
     assert crosses_zero({"weight_low": [-0.1, 0.2], "weight_high": [0.1, 0.3]}) is True
     assert crosses_zero({"weight_low": [0.1, 0.2], "weight_high": [0.3, 0.4]}) is False
+
+
+def test_crosses_zero_should_handle_mismatched_interval_lengths():
+    assert crosses_zero({"weight_low": [-0.2, 0.3], "weight_high": [0.1]}) is True
+
+
+def test_has_wide_prediction_interval_handles_invalid_values() -> None:
+    assert has_wide_prediction_interval({"predict_low": "bad", "predict_high": 1.0}) is False
+
+
+def test_load_template_file_error_paths(tmp_path, monkeypatch):
+    from calibrated_explanations.core import narrative_generator as ng_mod
+    from calibrated_explanations.utils.exceptions import SerializationError
+
+    with pytest.raises(SerializationError, match="Template file not found"):
+        load_template_file(str(tmp_path / "missing.json"))
+
+    unsupported = tmp_path / "template.txt"
+    unsupported.write_text("x", encoding="utf-8")
+    with pytest.raises(SerializationError, match="Unsupported template file format"):
+        load_template_file(str(unsupported))
+
+    yaml_path = tmp_path / "template.yaml"
+    yaml_path.write_text("a: [unterminated", encoding="utf-8")
+    if getattr(ng_mod, "yaml", None) is not None:
+        with pytest.raises(SerializationError, match="Failed to parse YAML template"):
+            load_template_file(str(yaml_path))
+    else:
+        with pytest.raises(SerializationError, match="YAML support requires pyyaml"):
+            load_template_file(str(yaml_path))
+
+
+def test_generate_narrative_should_format_interval_threshold_context() -> None:
+    gen = NarrativeGenerator()
+    gen.templates = {
+        "narrative_templates": {
+            "probabilistic_regression": {
+                "factual": {
+                    "beginner": "Prediction: {calibrated_pred}; Condition: {threshold_condition}",
+                }
+            }
+        }
+    }
+    exp = MagicMock()
+    exp.get_rules.return_value = {
+        "base_predict": [0.42],
+        "base_predict_low": [0.21],
+        "base_predict_high": [0.63],
+        "rule": [],
+    }
+    out = gen.generate_narrative(
+        exp,
+        "probabilistic_regression",
+        explanation_type="factual",
+        expertise_level="beginner",
+        threshold=(0.1, 0.9),
+    )
+    assert "0.100 < target <= 0.900" in out
+
+
+def test_serialize_rules_should_extract_feature_name_fallbacks() -> None:
+    gen = NarrativeGenerator()
+    rules = {
+        "rule": ["", "city in inland", "income <= 2.0"],
+        "feature": [None, "not-an-int", 99],
+        "predict": [0.1, 0.2, 0.3],
+    }
+    serialized = gen.serialize_rules(rules, feature_names=["f0"])
+    assert serialized[0]["feature_name"] == ""
+    assert serialized[1]["feature_name"] == "city"
+    assert serialized[2]["feature_name"] == "income"
+
+
+def test_expand_template_should_cover_conjunctive_raw_and_fallback_paths() -> None:
+    gen = NarrativeGenerator()
+    template = "Rule: {feature_name} {condition} then {predict} [{predict_low}, {predict_high}]"
+    pos_features = [
+        {
+            "feature_name": "x",
+            "rule": "rawsegment",
+            "value": None,
+            "weight": 0.3,
+            "predict": 0.6,
+            "predict_low": None,
+            "predict_high": 0.9,
+            "is_conjunctive": True,
+        },
+        {
+            "feature_name": None,
+            "rule": "",
+            "value": None,
+            "weight": 0.2,
+            "predict": 0.55,
+            "predict_low": 0.40,
+            "predict_high": 0.70,
+            "is_conjunctive": True,
+        },
+    ]
+    out = gen.expand_template(
+        template,
+        pos_features,
+        neg_features=[],
+        uncertain_features=[],
+        context={"pred_interval_lower": "N/A", "pred_interval_upper": "N/A"},
+        level="advanced",
+        problem_type="probabilistic_regression",
+        explanation_type="alternative",
+        conjunction_separator=" AND ",
+        align_weights=False,
+    )
+    assert "rawsegment" in out
 
 
 def test_narrative_generator_validation():

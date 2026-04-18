@@ -45,3 +45,25 @@ def test_should_delegate_plugins_command_when_running_ce_plugins_subcommand() ->
 
     assert exit_code == 0
     mock_plugins.assert_called_once_with(["list", "--kind", "all"])
+
+
+def test_should_print_help_and_return_when_no_command_given(capsys) -> None:
+    exit_code = main([])
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert captured.out  # help text was printed
+
+
+def test_should_print_config_help_and_return_when_config_given_without_subcommand(capsys) -> None:
+    exit_code = main(["config"])
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert captured.out  # config help text was printed
+
+
+def test_should_handle_parse_error_and_return_nonzero_exit_code(capsys) -> None:
+    exit_code = main(["--this-flag-does-not-exist"])
+
+    assert exit_code != 0

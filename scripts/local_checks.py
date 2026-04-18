@@ -118,7 +118,7 @@ def _is_network_fetch_failure(stderr: str) -> bool:
 
 def _pytest_supports_no_cov() -> bool:
     """Return True if pytest supports the --no-cov option."""
-    result = subprocess.run(["pytest", "--help"], check=False, capture_output=True, text=True)
+    result = subprocess.run([sys.executable, "-m", "pytest", "--help"], check=False, capture_output=True, text=True)
     return "--no-cov" in (result.stdout or "")
 
 
@@ -156,7 +156,12 @@ def main() -> int:
         rc = subprocess.call([sys.executable, "scripts/run_ci_locally.py", "--shell", shell_arg])
         return rc
 
-    if shutil.which("mypy") is None:
+    mypy_available = shutil.which("mypy") is not None or subprocess.call(
+        [sys.executable, "-m", "mypy", "--version"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ) == 0
+    if not mypy_available:
         print("ERROR: mypy not found in current environment.")
         return 2
     pre_commit_available = shutil.which("pre-commit") is not None
@@ -174,14 +179,14 @@ def main() -> int:
     if not pydocstyle_available:
         print("WARNING: pydocstyle not found in current environment; skipping pydocstyle step.")
 
-    core_test_command = ["pytest", "-q", "-m", "not viz", "-o", "addopts="]
+    core_test_command = [sys.executable, "-m", "pytest", "-q", "-m", "not viz", "-o", "addopts="]
     if _pytest_supports_no_cov():
         core_test_command.append("--no-cov")
     else:
         print("WARNING: pytest-cov/--no-cov unavailable; running core tests without --no-cov.")
 
     pr_steps: list[Step] = [
-        Step("Ruff naming", ["ruff", "check", "--select", "N"]),
+        Step("Ruff naming", _python_cmd("-m", "ruff", "check", "--select", "N")),
         Step(
             "Docstring coverage",
             _python_cmd("scripts/quality/check_docstring_coverage.py", "--fail-under", "94.0"),
@@ -315,12 +320,12 @@ def main() -> int:
             6,
             Step(
                 "Mypy (Phase 1B scope)",
-                ["mypy", *mypy_targets, "--config-file", "pyproject.toml"],
+                _python_cmd("-m", "mypy", *mypy_targets, "--config-file", "pyproject.toml"),
             ),
         )
 
     # Additional PR-scoped CI checks mirrored from workflows
-    deprecation_test_args = ["pytest", "tests/unit", "-m", "not viz", "-q", "--maxfail=1"]
+    deprecation_test_args = [sys.executable, "-m", "pytest", "tests/unit", "-m", "not viz", "-q", "--maxfail=1"]
     if _pytest_supports_no_cov():
         deprecation_test_args.append("--no-cov")
 
@@ -374,13 +379,13 @@ def main() -> int:
             # Docs build (advisory locally)
             Step(
                 "Docs build (HTML)",
-                ["sphinx-build", "-b", "html", "docs", "docs/_build/html"],
+                [sys.executable, "-m", "sphinx", "-b", "html", "docs", "docs/_build/html"],
                 optional=not args.ci_parity,
             ),
             Step(
                 "Docs linkcheck",
                 [
-                    "sphinx-build",
+                    sys.executable, "-m", "sphinx",
                     "-b",
                     "linkcheck",
                     "-D",
@@ -395,7 +400,7 @@ def main() -> int:
         optional_pr_steps.append(
             Step(
                 "Examples smoke",
-                ["pytest", "-q", "tests/examples"],
+                [sys.executable, "-m", "pytest", "-q", "tests/examples"],
                 optional=True,
             )
         )
@@ -423,13 +428,13 @@ def main() -> int:
         ),
         Step(
             "Docs build (main)",
-            ["sphinx-build", "-b", "html", "docs", "docs/_build/html"],
+            [sys.executable, "-m", "sphinx", "-b", "html", "docs", "docs/_build/html"],
             optional=True,
         ),
         Step(
             "Core tests with coverage",
             [
-                "pytest",
+                sys.executable, "-m", "pytest",
                 "-q",
                 "-o",
                 "addopts=",
@@ -537,7 +542,7 @@ def main() -> int:
         Step(
             "Over-testing coverage contexts",
             [
-                "pytest",
+                sys.executable, "-m", "pytest",
                 "-q",
                 "-o",
                 "addopts=",

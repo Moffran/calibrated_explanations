@@ -59,7 +59,7 @@ Compatibility policy is major-hard/minor-soft:
 - `v0.11.0`: missing `data_modalities` defaults to `("tabular",)` silently
 - `v0.11.1`: missing `data_modalities` on entry-point metadata emits
     `DeprecationWarning`
-- `v0.12.0/v1.0.0-rc`: explicit `data_modalities` is required; fallback default
+- `v0.11.3`: explicit `data_modalities` is required; fallback default
     is removed
 
 See {doc}`../practitioner/advanced/modality-plugins` for user-facing selection

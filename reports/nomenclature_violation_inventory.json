@@ -59,7 +59,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/calibration/venn_abers.py",
       "is_allowed": true,
-      "line": 211,
+      "line": 224,
       "symbol": "__predict_proba_with_difficulty",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -68,7 +68,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/calibration/venn_abers.py",
       "is_allowed": true,
-      "line": 297,
+      "line": 321,
       "symbol": "__is_multiclass",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"

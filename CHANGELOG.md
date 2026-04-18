@@ -21,7 +21,19 @@
 
 #### Deprecated
 
-- ADR-033: Deprecated entry-point plugins that omit explicit `data_modalities` metadata. Discovery now emits `DeprecationWarning`; explicit declaration becomes required in `v0.12.0/v1.0.0-rc`.
+- ADR-033: Deprecated entry-point plugins that omit explicit `data_modalities` metadata. Discovery now emits `DeprecationWarning`; explicit declaration becomes required in `v0.11.3`.
+
+### v0.11.1 Closure Sync (Docs + Follow-up Fixes)
+
+#### Added
+
+- **v0.11.1 docs closure evidence:** Synced migration/release docs to reflect active deprecation ownership (v0.11.2/v0.11.3), modality migration timeline, reject strategy expansion status, ConfigManager precedence/snapshot guidance, and PlotSpec ADR supersession routing (ADR-036/ADR-037 authoritative).
+- **Multiclass CE-first experiment coverage:** Added CE-first multiclass experiment implementation and associated tests to harden multiclass explanation workflows.
+
+#### Fixed
+
+- **VennAbers multiclass normalization:** Corrected normalization behavior for multiclass outputs to keep calibrated probabilities stable and contract-compliant.
+- **Experiment import hardening:** Removed hard matplotlib import in multiclass experiment module to preserve optional dependency behavior in headless/core-first environments.
 
 ### ADR-012 Notebook Execution Driver (v0.11.1 Task 6)
 

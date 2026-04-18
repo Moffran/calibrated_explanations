@@ -26,3 +26,16 @@ def test_mappingproxy_reducer_registration_failure_is_non_fatal(monkeypatch) -> 
     monkeypatch.setattr(copyreg, "pickle", fail_registration)
     reloaded = importlib.reload(calibrated_explanations)
     assert reloaded is not None
+
+
+def test_unknown_package_attribute_raises_attribute_error() -> None:
+    import calibrated_explanations
+
+    with pytest.raises(AttributeError):
+        _ = calibrated_explanations.this_symbol_does_not_exist
+
+
+def test_lazy_package_reject_policy_spec_symbol_is_available() -> None:
+    import calibrated_explanations
+
+    assert calibrated_explanations.RejectPolicySpec is not None
