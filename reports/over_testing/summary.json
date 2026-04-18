@@ -530,7 +530,7 @@
   {
     "file": "src\\calibrated_explanations\\explanations\\explanation.py",
     "lines_covered": 2196,
-    "mean_count": 1.117,
+    "mean_count": 1.119,
     "median_count": 1.0,
     "max_count": 4,
     "over_threshold": 0
@@ -626,7 +626,7 @@
   {
     "file": "src\\calibrated_explanations\\legacy\\plotting.py",
     "lines_covered": 541,
-    "mean_count": 2.076,
+    "mean_count": 2.079,
     "median_count": 2.0,
     "max_count": 8,
     "over_threshold": 0
@@ -682,7 +682,7 @@
   {
     "file": "src\\calibrated_explanations\\plotting.py",
     "lines_covered": 1191,
-    "mean_count": 1.367,
+    "mean_count": 1.368,
     "median_count": 1.0,
     "max_count": 4,
     "over_threshold": 0

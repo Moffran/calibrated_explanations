@@ -215,3 +215,4 @@ evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/metrics_records.csv
 evaluation/guarded/main.tex
 evaluation/guarded/pmlr-sample.bib
 evaluation/multiclass/real-multiclass/*tex
+release.md
