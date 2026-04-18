@@ -62,6 +62,7 @@ def make_dummy_explain_self():
     obj.reject_orchestrator = DummyRejectOrch()
     obj.plugin_manager = SimpleNamespace(initialize_orchestrators=lambda: None)
     obj.default_reject_policy = None
+    setattr(obj, "_deprecate_nonessential_surface", lambda *args, **kwargs: None)
     return obj
 
 
@@ -71,6 +72,7 @@ def make_dummy_predict_self():
     obj.reject_orchestrator = DummyRejectOrch()
     obj.plugin_manager = SimpleNamespace(initialize_orchestrators=lambda: None)
     obj.default_reject_policy = None
+    setattr(obj, "_deprecate_nonessential_surface", lambda *args, **kwargs: None)
     return obj
 
 

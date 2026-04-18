@@ -7,6 +7,12 @@ import pytest
 from calibrated_explanations.plugins import registry, builtins
 from calibrated_explanations.explanations import legacy_conjunctions
 from calibrated_explanations.explanations import explanation as expl_mod
+from tests.support.registry_helpers import (
+    clear_trust_warnings,
+    registry_snapshot,
+    remove_from_registry,
+    warn_untrusted_plugin,
+)
 
 
 def make_ep(name, load=None, dist=None):
@@ -51,11 +57,11 @@ def test_warn_untrusted_plugin_emits_once(monkeypatch):
         "version": "0.0",
         "capabilities": ["explain"],
     }
-    registry.clear_trust_warnings()
+    clear_trust_warnings()
     with warnings.catch_warnings(record=True) as rec:
         warnings.simplefilter("always")
-        registry.warn_untrusted_plugin(meta, source="entry point")
-        registry.warn_untrusted_plugin(meta, source="entry point")
+        warn_untrusted_plugin(meta, source="entry point")
+        warn_untrusted_plugin(meta, source="entry point")
     assert any("Skipping untrusted plugin" in str(r.message) for r in rec)
 
 
@@ -69,6 +75,7 @@ def test_load_entrypoint_plugins_skips_when_meta_name_denied(monkeypatch):
             "version": "0.0",
             "provider": "x",
             "capabilities": ["explain"],
+            "data_modalities": ("tabular",),
         }
         return p
 
@@ -93,10 +100,10 @@ def test_register_and_use_builtin_fast_plugin(monkeypatch, tmp_path):
     desc = registry.find_explanation_descriptor("core.explanation.fast")
     if desc is not None:
         # descriptor may be stored in internal registry objects; attempt removal by scanning snapshot
-        for p in registry.registry_snapshot():
+        for p in registry_snapshot():
             pm = getattr(p, "plugin_meta", {})
             if isinstance(pm, dict) and pm.get("name") == "core.explanation.fast":
-                registry.remove_from_registry(p)
+                remove_from_registry(p)
     # Now call the public registration helper which should register the builtin fast plugin
     register_fast_explanation_plugin()
     desc2 = registry.find_explanation_descriptor("core.explanation.fast")

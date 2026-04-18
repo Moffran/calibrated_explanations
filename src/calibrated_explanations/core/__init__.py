@@ -69,6 +69,7 @@ def __getattr__(name: str) -> Any:
         "difficulty_estimator_helpers",
         "calibration_metrics",
         "config_helpers",
+        "config_manager",
         "discretizer_config",
         "exceptions",
         "narrative_generator",

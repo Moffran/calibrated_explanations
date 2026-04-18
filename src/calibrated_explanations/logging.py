@@ -9,10 +9,9 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import logging
-import os
 from typing import Any, Dict, Iterator
 
-from .core.config_helpers import read_pyproject_section
+from .core.config_manager import ConfigManager
 
 # Context keys expected by ADR-028 / Standard-005
 _CONTEXT_KEYS = (
@@ -25,6 +24,21 @@ _CONTEXT_KEYS = (
 )
 
 _context_vars = {key: contextvars.ContextVar(key, default=None) for key in _CONTEXT_KEYS}
+_module_config_manager: ConfigManager | None = None
+
+
+def _get_module_config_manager() -> ConfigManager:
+    """Return module-level ConfigManager singleton."""
+    global _module_config_manager
+    if _module_config_manager is None:
+        _module_config_manager = ConfigManager.from_sources()
+    return _module_config_manager
+
+
+def reset_module_config_manager() -> None:
+    """Reset module-level ConfigManager singleton (tests only)."""
+    global _module_config_manager
+    _module_config_manager = None
 
 
 def _coerce_bool(value: str | bool | None) -> bool:
@@ -46,12 +60,7 @@ def telemetry_diagnostic_mode() -> bool:
     Reads ``CE_TELEMETRY_DIAGNOSTIC_MODE`` or ``[tool.calibrated_explanations.telemetry]``
     ``diagnostic_mode`` from pyproject.toml. Env var takes precedence.
     """
-    env_value = os.environ.get("CE_TELEMETRY_DIAGNOSTIC_MODE")
-    if env_value is not None:
-        return coerce_bool(env_value)
-
-    config = read_pyproject_section(("tool", "calibrated_explanations", "telemetry"))
-    return coerce_bool(config.get("diagnostic_mode")) if config else False
+    return _get_module_config_manager().telemetry_diagnostic_mode()
 
 
 def get_logging_context() -> Dict[str, Any]:
@@ -110,4 +119,5 @@ __all__ = [
     "ensure_logging_context_filter",
     "LoggingContextFilter",
     "coerce_bool",
+    "reset_module_config_manager",
 ]

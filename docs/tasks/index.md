@@ -1,16 +1,14 @@
-# Tasks & capabilities
+# Tasks and capabilities
 
-Calibrated Explanations supports three primary task types, each with canonical API signatures and calibration mechanisms.
+Choose the task type first. Each task page gives API examples.
 
-| Task | Core Class | Capability |
-| :--- | :--- | :--- |
-| **{doc}`Classification <classification>`** | `VennAbers` | Calibrated probabilities + uncertainty intervals |
-| **{doc}`Conformal Regression <regression>`** | `ConformalPredictiveSystem` | Point estimates + CPS-conformal intervals |
-| **{doc}`Probabilistic Regression <probabilistic_regression>`** | `ConformalPredictiveSystem` + `VennAbers` | Thresholded probability queries on numeric targets |
+- {doc}`classification`
+- {doc}`regression`
+- {doc}`probabilistic_regression`
 
-All tasks support the core explanation methods:
-- `explain_factual(x)`
-- `explore_alternatives(x)`
+For a compact capability map, use {doc}`capabilities`.
+For guarantees, assumptions, and non-guarantees, use
+{doc}`../foundations/concepts/calibrated_interval_semantics`.
 
 ```{toctree}
 :maxdepth: 1
@@ -20,3 +18,5 @@ classification
 regression
 probabilistic_regression
 ```
+
+Entry-point tier: Tier 1.

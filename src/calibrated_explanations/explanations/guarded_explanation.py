@@ -1,19 +1,24 @@
 # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
-"""Guarded explanation classes for in-distribution calibrated explanations.
+"""Guarded explanation classes for CE-compatible guarded explanations.
 
 These classes represent explanations produced by
 :meth:`~calibrated_explanations.CalibratedExplainer.explain_guarded_factual` and
 :meth:`~calibrated_explanations.CalibratedExplainer.explore_guarded_alternatives`.
 
-Unlike standard explanations, guarded explanations:
+Guarded explanations are a CE-compatible extension rather than a claim of
+semantic identity with standard CE internals. They keep standard collection and
+helper surfaces working while changing the rule-generation regime.
+
+Guarded explanations:
 
 * Use multi-bin (``max_depth=3``) discretisers for *both* factual and
   alternative modes, yielding **interval rule conditions** such as
   ``"0.50 < age <= 1.50"`` rather than simple threshold splits.
-* Prune leaves whose representative perturbations are classified as
-  out-of-distribution by the in-distribution guard.
+* Prune leaves whose shipped guard-rule decision marks them as
+  out-of-distribution.
 * Optionally merge adjacent conforming leaves into wider intervals
-  (``merge_adjacent=True``).
+  (``merge_adjacent=True``), which can yield rules that standard factual CE
+  would not emit.
 
 The main entry-points are :class:`GuardedFactualExplanation` (subclass of
 :class:`~.explanation.FactualExplanation`) and
@@ -57,10 +62,13 @@ class GuardedBin:
     high : float
         Upper bound of the calibrated prediction interval.
     conforming : bool
-        ``True`` when the conformal p-value for the representative value
-        exceeds the configured significance threshold.
+        ``True`` when the shipped guard rule accepts this interval candidate.
+        This does not certify that every point in the interval would also pass
+        the guard.
     p_value : float
-        Conformal p-value for the representative value.
+        Decision p-value used by the shipped guard rule. For dense numerical
+        candidates this may come from the conservative `q10` / `q90` probe
+        rule rather than from the median representative alone.
     is_factual : bool
         ``True`` when the original instance's feature value falls in this bin.
     is_merged : bool
@@ -96,13 +104,15 @@ def _guarded_condition_str(
     """
     if is_categorical:
         return f"{feature_name} = {gbin.representative}"
-    if gbin.lower == -np.inf and gbin.upper == np.inf:
+    lo = gbin.lower
+    hi = gbin.upper
+    if lo == -np.inf and hi == np.inf:
         return f"{feature_name} (any value)"
-    if gbin.lower == -np.inf:
-        return f"{feature_name} <= {gbin.upper:.4g}"
-    if gbin.upper == np.inf:
-        return f"{feature_name} > {gbin.lower:.4g}"
-    return f"{gbin.lower:.4g} < {feature_name} <= {gbin.upper:.4g}"
+    if lo == -np.inf:
+        return f"{feature_name} <= {hi:.4g}"
+    if hi == np.inf:
+        return f"{feature_name} > {lo:.4g}"
+    return f"{lo:.4g} < {feature_name} <= {hi:.4g}"
 
 
 def _to_python(value: Any) -> Any:
@@ -252,12 +262,19 @@ class GuardedFactualExplanation(FactualExplanation):
                     else str(f)
                 )
                 if self._guarded_verbose:
-                    warnings.warn(
-                        f"Dropping non-conforming factual bin for feature '{name}' "
-                        f"(p_value={factual_bin.p_value:.4f}).",
-                        UserWarning,
-                        stacklevel=2,
-                    )
+                    if factual_bin is None:
+                        warnings.warn(
+                            f"No factual bin found for feature '{name}'; skipping.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        warnings.warn(
+                            f"Dropping non-conforming factual bin for feature '{name}' "
+                            f"(p_value={factual_bin.p_value:.4f}).",
+                            UserWarning,
+                            stacklevel=2,
+                        )
                 continue
 
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
@@ -310,7 +327,7 @@ class GuardedFactualExplanation(FactualExplanation):
         return self.rules
 
     def get_guarded_audit(self) -> Dict[str, Any]:
-        """Return interval-level guarded audit data for this factual explanation."""
+        """Return guarded audit data for this factual explanation."""
         ignored = self.ignored_features_for_instance()
         feature_names = list(self._guarded_feature_names or [])
         intervals: list[dict[str, Any]] = []
@@ -528,7 +545,7 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
         return self.rules
 
     def get_guarded_audit(self) -> Dict[str, Any]:
-        """Return interval-level guarded audit data for this alternative explanation."""
+        """Return guarded audit data for this alternative explanation."""
         ignored = self.ignored_features_for_instance()
         feature_names = list(self._guarded_feature_names or [])
         base_predict = self.prediction["predict"]

@@ -1,7 +1,7 @@
 ---
 name: ce-modality-extension
 description: >
-  Extend CE to non-tabular data modalities (vision, audio, timeseries, text) via
+  Extend CE to non-tabular data modalities (vision, audio, text) via
   ADR-033 plugin contracts, modality naming rules, and extension safety guardrails.
 ---
 
@@ -30,7 +30,6 @@ if the extension package is absent.
 | `"image"` | `"vision"` |
 | `"audio"` | — |
 | `"text"` | — |
-| `"timeseries"` | `"time_series"` |
 | `"multimodal"` | `"multi-modal"` |
 | `"x-<vendor>-<name>"` | Custom extension namespace |
 

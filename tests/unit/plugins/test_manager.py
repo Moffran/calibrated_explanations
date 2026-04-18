@@ -118,6 +118,55 @@ class TestExplanationPluginIdentifierManagement:
 class TestIntervalPluginState:
     """Tests for interval plugin state management."""
 
+    def test_resolve_interval_plugin_returns_object_override(self):
+        """should_return_non_string_override_directly_for_interval_resolution."""
+        mock_explainer = Mock()
+        manager = PluginManager(mock_explainer)
+        override = Mock()
+        override.plugin_meta = {"name": "custom.interval"}
+        manager.interval_plugin_override = override
+
+        plugin, identifier = manager.resolve_interval_plugin(fast=False)
+
+        assert plugin is override
+        assert identifier == "custom.interval"
+
+
+class TestPlotResolution:
+    """Tests for plot style and plugin resolution."""
+
+    def test_resolve_plot_style_chain_includes_explicit_and_mode_fallbacks(self):
+        """should_merge_explicit_style_manager_chain_and_mode_hints."""
+        mock_explainer = Mock()
+        mock_explainer.last_explanation_mode = "factual"
+        manager = PluginManager(mock_explainer)
+        manager.plot_plugin_fallbacks = {"factual": ("mode.one",)}
+        manager.build_plot_chain = Mock(return_value=("env.style", "legacy"))
+
+        chain = manager.resolve_plot_style_chain(explicit_style="explicit.style")
+
+        assert chain[0] == "explicit.style"
+        assert "env.style" in chain
+        assert "mode.one" in chain
+        assert "plot_spec.default" in chain
+        assert "legacy" in chain
+        assert chain.index("legacy") < chain.index("plot_spec.default")
+
+    def test_resolve_plot_plugin_raises_when_no_candidates(self, monkeypatch):
+        """should_raise_configuration_error_when_plot_plugins_missing."""
+        import calibrated_explanations.plugins.manager as manager_module
+
+        mock_explainer = Mock()
+        manager = PluginManager(mock_explainer)
+        manager.build_plot_chain = Mock(return_value=("missing.style", "legacy"))
+
+        monkeypatch.setattr(manager_module, "ensure_builtin_plugins", lambda: None)
+        monkeypatch.setattr(manager_module, "find_plot_plugin_trusted", lambda _ident: None)
+        monkeypatch.setattr(manager_module, "find_plot_plugin", lambda _ident: None)
+
+        with pytest.raises(ConfigurationError, match="Unable to resolve plot plugin"):
+            manager.resolve_plot_plugin(explicit_style="missing.style")
+
 
 class TestPluginManagerDeepCopy:
     """Tests for PluginManager deepcopy behavior."""

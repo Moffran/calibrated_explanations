@@ -245,6 +245,24 @@ class TestExplanationUnit:
         assert len(expl.rules["rule"]) == 1
         assert expl.rules["rule"][0] == "f0 > 8.00"
 
+    def test_get_rules_after_add_new_rule_condition_retains_added_rule(self):
+        """get_rules() must not discard rules added by add_new_rule_condition (regression)."""
+        expl = self.create_expl()
+
+        def predict_diff_effect(x, **kwargs):
+            n = len(x)
+            return (np.zeros(n) + 0.5, np.zeros(n) + 0.3, np.zeros(n) + 0.7, None)
+
+        self.explainer.prediction_orchestrator.predict_internal = Mock(
+            side_effect=predict_diff_effect
+        )
+
+        expl.add_new_rule_condition(0, 8.0)
+        rules_after_add = expl.get_rules()  # must NOT rebuild from scratch
+
+        assert len(rules_after_add["rule"]) == 1
+        assert rules_after_add["rule"][0] == "f0 > 8.00"
+
     def test_add_new_rule_condition_identical_prediction(self):
         expl = self.create_expl()
 
@@ -352,8 +370,8 @@ class TestRuleWithImpact:
             base_predict=0.8,
             predict=2.0,
             value="> 0.5",
-            uncertainty_low=1.0,
-            uncertainty_high=1.4,
+            weight_envelope_low=1.0,
+            weight_envelope_high=1.4,
             predict_low=1.8,
             predict_high=2.2,
         )
@@ -366,8 +384,8 @@ class TestRuleWithImpact:
         assert rule.base_predict == 0.8
         assert rule.predict == 2.0
         assert rule.value == "> 0.5"
-        assert rule.uncertainty_low == 1.0
-        assert rule.uncertainty_high == 1.4
+        assert rule.weight_envelope_low == 1.0
+        assert rule.weight_envelope_high == 1.4
         assert rule.predict_low == 1.8
         assert rule.predict_high == 2.2
 
@@ -386,8 +404,8 @@ class TestRuleWithImpact:
             value="<= 0.3",
         )
 
-        assert rule.uncertainty_low is None
-        assert rule.uncertainty_high is None
+        assert rule.weight_envelope_low is None
+        assert rule.weight_envelope_high is None
         assert rule.predict_low is None
         assert rule.predict_high is None
 
@@ -405,8 +423,8 @@ def test_rule_with_impact_dataclass():
         base_predict=1.0,
         predict=2.0,
         value="> 0.5",
-        uncertainty_low=1.0,
-        uncertainty_high=1.4,
+        weight_envelope_low=1.0,
+        weight_envelope_high=1.4,
         predict_low=1.8,
         predict_high=2.2,
     )
@@ -419,7 +437,7 @@ def test_rule_with_impact_dataclass():
     assert rule.base_predict == 1.0
     assert rule.predict == 2.0
     assert rule.value == "> 0.5"
-    assert rule.uncertainty_low == 1.0
-    assert rule.uncertainty_high == 1.4
+    assert rule.weight_envelope_low == 1.0
+    assert rule.weight_envelope_high == 1.4
     assert rule.predict_low == 1.8
     assert rule.predict_high == 2.2

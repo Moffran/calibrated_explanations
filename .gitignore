@@ -172,6 +172,7 @@ notebooks/additional_notebooks/catboost_info/learn/events.out.tfevents
 *catboost_info/*
 docs/improvement/ignore/*
 reports/ci_local_summary.json
+reports/docs/
 perf_diff.txt
 micro_current.json
 tests/benchmarks/micro_.json
@@ -206,3 +207,11 @@ reports/archived/
 evaluation/ensure/paper.tex
 evaluation/ensure/*tables/*
 .precommit-cache/
+evaluation/reject/paper/
+docs/contracts/*
+scripts/contracts/*
+evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/per_instance_records.csv
+evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/metrics_records.csv
+evaluation/guarded/main.tex
+evaluation/guarded/pmlr-sample.bib
+evaluation/multiclass/real-multiclass/*tex

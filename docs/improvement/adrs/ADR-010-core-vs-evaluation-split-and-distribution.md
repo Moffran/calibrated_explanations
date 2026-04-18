@@ -107,4 +107,4 @@ The ADR specified that core-only installs should not require matplotlib at impor
 
 ## Decision Notes
 
-This ADR complements ADR-001 (boundaries) and ADR-007 (visualization abstraction). The optional extras approach prepares for ADR-007 by making visualization an explicit, optional capability without blocking core usage.
+This ADR complements ADR-001 (boundaries), ADR-036 (PlotSpec canonical contract), and ADR-037 (visualization extension governance). The optional extras approach prepares for ADR-036/ADR-037 by making visualization an explicit, optional capability without blocking core usage.

@@ -43,6 +43,50 @@ class PredictBridge(Protocol):
         task:
             Calibrated task identifier (``"classification"`` or
             ``"regression"``).
+        bins : optional
+            Mondrian bins for conditional calibration, forwarded verbatim to
+            the underlying calibrator.
+
+        Returns
+        -------
+        Mapping[str, Any]
+            A payload containing at minimum ``predict``, ``mode``, and
+            ``task`` keys.  When the underlying calibrator produces uncertainty
+            bounds the payload also contains ``low`` and ``high`` arrays.
+            For classification tasks a ``classes`` key with calibrated class
+            labels is included.
+
+        Notes
+        -----
+        **The bridge is a lifecycle-check shim, not the interval-shaping path.**
+
+        The bridge protocol accepts only ``mode``, ``task``, and ``bins``.
+        It always uses the explainer's default percentiles (5, 95) to produce
+        ``low`` / ``high``; it has no parameter for customising them.
+
+        Plugin implementers who need to honour a non-default
+        ``low_high_percentiles`` value from an ``ExplanationRequest`` must
+        call the explainer handle directly — **not** forward the kwarg here:
+
+        .. code-block:: python
+
+            # CORRECT — custom percentiles go to the explainer handle
+            explainer = context.helper_handles["explainer"]
+            preds, (low, high) = explainer.predict(
+                x,
+                uq_interval=True,
+                low_high_percentiles=request.low_high_percentiles,
+                bins=request.bins,
+            )
+
+            # WRONG — bridge.predict() does not accept low_high_percentiles;
+            #         passing it raises TypeError, which propagates as ENGINE_FAILURE
+            bridge.predict(x, mode=mode, task=task, low_high_percentiles=...)  # noqa
+
+        In CE's own ``explain_batch`` implementations, the bridge call is
+        made solely to honour the lifecycle contract; its return value is either
+        used as-is (for default-percentile payloads) or discarded, and interval
+        shaping is performed separately through the explanation callable.
         """
 
     def predict_interval(

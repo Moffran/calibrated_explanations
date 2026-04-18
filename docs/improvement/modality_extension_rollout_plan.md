@@ -18,7 +18,7 @@ Motivation: avoid dependency bloat and preserve import/runtime characteristics.
 ADRs: `ADR-001`, `ADR-010`, `ADR-020`.
 2. Reuse the existing trust-governed plugin model.
 Motivation: do not fork a second extension mechanism.
-ADRs: `ADR-006`, `ADR-013`, `ADR-014`, `ADR-015`, `ADR-026`.
+ADRs: `ADR-006`, `ADR-013`, `ADR-037`, `ADR-015`, `ADR-026`.
 3. Use additive, backward-compatible contract evolution first.
 Motivation: preserve existing plugin ecosystem and user APIs.
 ADRs: `ADR-011`, `ADR-020`.
@@ -80,8 +80,8 @@ Motivation: reduce release risk and avoid architecture drift.
       2. Accept higher minor/patch versions with `UserWarning` + governance log entry so forward-compatibility risk is explicit.
    3. `data_modalities` must be a non-empty sequence of non-empty strings, normalized to lowercase.
    4. Enforce canonical core modalities with aliases and extension namespace:
-      1. Canonical: `tabular`, `image`, `audio`, `text`, `timeseries`, `multimodal`.
-      2. Aliases: `vision -> image`, `time_series -> timeseries`, `multi-modal -> multimodal`.
+      1. Canonical: `tabular`, `image`, `audio`, `text`, `multimodal`.
+      2. Aliases: `vision -> image`, `multi-modal -> multimodal`.
       3. Allow custom modalities only through `x-<vendor>-<name>` namespace.
 3. Keep all existing required keys and trust/checksum behavior unchanged.
 
@@ -142,7 +142,7 @@ Motivation: reduce release risk and avoid architecture drift.
 
 ### ADR references
 
-`ADR-006`, `ADR-013`, `ADR-014`, `ADR-015`, `ADR-026`.
+`ADR-006`, `ADR-013`, `ADR-037`, `ADR-015`, `ADR-026`.
 
 ---
 
@@ -303,7 +303,7 @@ Integration models:
 3. `docs/improvement/adrs/ADR-010-core-vs-evaluation-split-and-distribution.md`
 4. `docs/improvement/adrs/ADR-011-deprecation-and-migration-policy.md`
 5. `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md`
-6. `docs/improvement/adrs/ADR-014-plot-plugin-strategy.md`
+6. `docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md`
 7. `docs/improvement/adrs/ADR-015-explanation-plugin.md`
 8. `docs/improvement/adrs/ADR-020-legacy-user-api-stability.md`
 9. `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md`

@@ -239,6 +239,30 @@ def test_require_matplotlib_reports_original_error(monkeypatch):
     importlib.reload(plotting)
 
 
+def test_require_matplotlib_retries_after_stale_cached_import_error(monkeypatch):
+    """Legacy plotting must recover when a stale cached import error is no longer valid."""
+    pytest.importorskip("matplotlib")
+    require_name = "__" + "require_matplotlib"
+    error_name = "_" + "MATPLOTLIB_IMPORT_ERROR"
+
+    original_plt = plotting.plt
+    original_mcolors = plotting.mcolors
+    original_error = getattr(plotting, error_name)
+    monkeypatch.setattr(plotting, "plt", None)
+    monkeypatch.setattr(plotting, "mcolors", None)
+    monkeypatch.setattr(plotting, error_name, ImportError("stale failure"))
+
+    getattr(plotting, require_name)()
+
+    assert plotting.plt is not None
+    assert plotting.mcolors is not None
+    assert getattr(plotting, error_name) is None
+
+    monkeypatch.setattr(plotting, "plt", original_plt)
+    monkeypatch.setattr(plotting, "mcolors", original_mcolors)
+    monkeypatch.setattr(plotting, error_name, original_error)
+
+
 def testplot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
     explanation = DummyClassificationExplanation()
     predict = {"predict": 0.6, "low": 0.4, "high": 0.8}

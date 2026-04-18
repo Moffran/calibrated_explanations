@@ -1,109 +1,26 @@
 # Calibrated Explanations documentation
 
-Welcome! Start here to run a calibrated explanation across classification and
-regression, then follow the audience-specific hubs to go deeper.
+Use this site by audience and by task.
 
-## Run your first calibrated explanations
+Repository authority:
+- `kristinebergs/calibrated_explanations` is an active development mirror.
+- `Moffran/calibrated_explanations` is authoritative for versions, tags, GitHub releases, PyPI publication, changelog, security advisories, and published documentation.
 
-```bash
-python -m pip install calibrated-explanations scikit-learn
-```
+- New users start in {doc}`get-started/index`.
+- Practitioners use {doc}`practitioner/index`.
+- Researchers use {doc}`researcher/index`.
+- Contributors use {doc}`contributor/index`.
 
-```python
-from sklearn.datasets import load_breast_cancer, load_diabetes
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from calibrated_explanations import WrapCalibratedExplainer
-
-# Binary classification parity
-breast_cancer = load_breast_cancer()
-x_train, x_test, y_train, y_test = train_test_split(
-    breast_cancer.data,
-    breast_cancer.target,
-    test_size=0.2,
-    stratify=breast_cancer.target,
-    random_state=0,
-)
-x_proper, x_cal, y_proper, y_cal = train_test_split(
-  x_train,
-  y_train,
-  test_size=0.25,
-  stratify=y_train,
-  random_state=0,
-)
-explainer_cls = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-explainer_cls.fit(x_proper, y_proper)
-explainer_cls.calibrate(x_cal, y_cal, feature_names=breast_cancer.feature_names)
-factual_cls = explainer_cls.explain_factual(x_test[:1])
-probabilities_cls, probability_interval_cls = explainer_cls.predict_proba(
-    x_test[:1], uq_interval=True
-)
-low_cls, high_cls = probability_interval_cls
-
-# Regression parity
-boston = load_diabetes()
-x_train_reg, x_test_reg, y_train_reg, y_test_reg = train_test_split(
-    boston.data,
-    boston.target,
-    test_size=0.2,
-    random_state=0,
-)
-x_proper_reg, x_cal_reg, y_proper_reg, y_cal_reg = train_test_split(
-  x_train_reg,
-  y_train_reg,
-  test_size=0.25,
-  random_state=0,
-)
-explainer_reg = WrapCalibratedExplainer(RandomForestRegressor(random_state=0))
-explainer_reg.fit(x_proper_reg, y_proper_reg)
-explainer_reg.calibrate(x_cal_reg, y_cal_reg, feature_names=boston.feature_names)
-factual_reg = explainer_reg.explain_factual(x_test_reg[:1])
-prob_reg, (low_reg, high_reg) = explainer_reg.predict(x_test_reg[:1], uq_interval=True)
-
-print(
-    f"Classification probability: {probabilities_cls[0, 1]:.3f} "
-    f"[{low_cls[0]:.3f}, {high_cls[0]:.3f}]"
-)
-print(factual_cls[0])
-print(f"Regression prediction: {prob_reg[0]:.3f} [{low_reg[0]:.3f}, {high_reg[0]:.3f}]")
-print(factual_reg[0])
-```
-
-Next, interpret the outputs with the
-{doc}`foundations/how-to/interpret_explanations` guide and keep the
-{doc}`citing` page handy when publishing results.
-
-## Audience paths
-
-- {doc}`get-started/index` – Quickstarts, installation, and troubleshooting.
-- {doc}`get-started/quick_api` – Minimal working examples and core method cheat sheet.
-- {doc}`practitioner/index` – Core practitioner journey plus advanced telemetry
-  and performance references.
-- {doc}`researcher/index` – Replication workflow and literature map.
-- {doc}`contributor/index` – Plugin contract and contributor tooling.
-- {doc}`foundations/index` – Shared concepts, how-to guides, references, and
-  governance.
-- {doc}`appendices/external_plugins` – Community plugin listings and governance
-  notes.
+Semantics are mode-specific. Classification, interval regression, and
+probabilistic regression do not share one guarantee statement. For semantics,
+assumptions, and non-guarantees, use
+{doc}`foundations/concepts/calibrated_interval_semantics`.
 
 ```{toctree}
 :maxdepth: 1
-:caption: Comparisons
-
-compare
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Get started
+:caption: Start here
 
 get-started/index
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Audience hubs
-
 practitioner/index
 researcher/index
 contributor/index
@@ -111,53 +28,29 @@ contributor/index
 
 ```{toctree}
 :maxdepth: 1
-:caption: Shared foundations
+:caption: Core references
 
 foundations/index
-plugins
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Tasks
-
 tasks/index
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Engineering standards
-
-standards/index
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Reference
-
 api/index
 ```
 
 ```{toctree}
 :maxdepth: 1
-:caption: Upgrade guides
+:caption: Extensions and project docs
 
+plugins
 migration/index
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Appendices
-
 appendices/external_plugins
 appendices/changelog_links
+appendices/rtd_tier_map
+standards/index
+get-started/ce_first_agent_guide
+get-started/copilot-setup
 maintenance/legacy-plotting-reference
+compare
+ROADMAP
 citing
 ```
 
-```{toctree}
-:maxdepth: 1
-:caption: Project Management
-
-ROADMAP
-```
+Entry-point tier: Tier 1.

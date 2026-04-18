@@ -92,8 +92,17 @@ class InDistributionGuard:
 
         x = self._preprocess(self.x_cal)
         n_cal = x.shape[0]
-        # k+1 so the point itself (distance 0) can be excluded from the k-th neighbour
+        # k+1 so the point itself (distance 0) can be excluded from the k-th neighbour.
+        # When n_neighbors >= n_cal the guard is saturated: every calibration point is a
+        # neighbour of every other, so all p-values equal 1.0 (fail open).  Skipping sklearn
+        # fitting avoids a platform-specific crash (e.g. Windows WinError -1066598273) when
+        # NearestNeighbors is asked for n_neighbors == n_samples.
         k_actual = min(self.n_neighbors + 1, n_cal)
+        if k_actual >= n_cal:
+            self._knn = None
+            self._cal_scores = np.ones(n_cal)
+            return
+
         self._knn = NearestNeighbors(
             n_neighbors=k_actual, metric=self.metric, algorithm="auto"
         ).fit(x)
@@ -180,8 +189,12 @@ class InDistributionGuard:
         -------
         scores : np.ndarray of shape (n_samples,)
             Distance to the k-th nearest calibration neighbour.
+            Returns zeros when the guard is saturated (n_neighbors >= n_cal).
         """
         x = self._preprocess(x_test)
+        if self._knn is None:
+            # Saturated guard: all instances are treated as conforming (distance 0)
+            return np.zeros(x.shape[0])
         k_actual = self._knn.n_neighbors
         # For test instances, we do NOT skip the zeroth column (no self-neighbour)
         score_col = min(self.n_neighbors - 1, k_actual - 1)

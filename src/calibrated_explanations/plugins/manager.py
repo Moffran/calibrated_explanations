@@ -17,19 +17,27 @@ Responsibilities:
 
 from __future__ import annotations
 
+import contextlib
 import logging
-import os
 import sys
 import warnings
 from types import MappingProxyType
-from typing import Any, Dict, List, Mapping, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
+from ..core.config_manager import ConfigManager
 from .predict_monitor import PredictBridgeMonitor
 from .registry import (
+    ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
     find_explanation_plugin_trusted,
     find_interval_descriptor,
+    find_interval_plugin,
+    find_interval_plugin_trusted,
+    find_plot_plugin,
+    find_plot_plugin_trusted,
+    find_plot_renderer,
+    is_identifier_denied,
     set_trust_policy,
 )
 from .trust_policy import PluginTrustPolicy
@@ -53,6 +61,22 @@ EXTERNAL_INTERVAL_FAST_IDENTIFIER: str = "external.interval.fast"
 
 # Default plot style fallback chain
 DEFAULT_PLOT_STYLE: str = "legacy"
+
+
+def _split_csv(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return ()
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
+def _coerce_string_tuple(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return (value,) if value else ()
+    if isinstance(value, Sequence):
+        return tuple(str(item).strip() for item in value if str(item).strip())
+    return ()
 
 
 class PluginManager:
@@ -82,7 +106,13 @@ class PluginManager:
       - Provide plugin override coercion for callable overrides
     """
 
-    def __init__(self, explainer: Any, *, policy: PluginTrustPolicy | None = None) -> None:
+    def __init__(
+        self,
+        explainer: Any,
+        *,
+        policy: PluginTrustPolicy | None = None,
+        config_manager: ConfigManager | None = None,
+    ) -> None:
         """Initialize plugin manager with back-reference to explainer.
 
         Parameters
@@ -92,6 +122,7 @@ class PluginManager:
         """
         self.explainer = explainer
         self._logger = logging.getLogger(__name__)
+        self._config_manager = config_manager or ConfigManager.from_sources()
         if policy is not None:
             set_trust_policy(policy)
 
@@ -509,10 +540,6 @@ class PluginManager:
             - plot_style for plot style override
         """
         # Lazy import to avoid circular dependency
-        from ..core.config_helpers import (
-            read_pyproject_section,  # pylint: disable=import-outside-toplevel
-        )
-
         explanation_modes = ("factual", "alternative", "fast")
 
         self._explanation_plugin_overrides = {
@@ -523,13 +550,9 @@ class PluginManager:
         self.plot_style_override = kwargs.get("plot_style")
 
         # Cache pyproject.toml plugin configurations
-        self._pyproject_explanations = read_pyproject_section(
-            ("tool", "calibrated_explanations", "explanations")
-        )
-        self._pyproject_intervals = read_pyproject_section(
-            ("tool", "calibrated_explanations", "intervals")
-        )
-        self._pyproject_plots = read_pyproject_section(("tool", "calibrated_explanations", "plots"))
+        self._pyproject_explanations = self._config_manager.pyproject_section("explanations")
+        self._pyproject_intervals = self._config_manager.pyproject_section("intervals")
+        self._pyproject_plots = self._config_manager.pyproject_section("plots")
 
     def initialize_chains(self) -> None:
         """Build and cache all plugin fallback chains.
@@ -575,12 +598,6 @@ class PluginManager:
         tuple of str
             Ordered list of plugin identifiers to try for this mode.
         """
-        # Lazy import to avoid circular dependency
-        from ..core.config_helpers import (  # pylint: disable=import-outside-toplevel
-            coerce_string_tuple,
-            split_csv,
-        )
-
         entries: List[str] = []
         preferred_identifier: str | None = None
 
@@ -593,18 +610,18 @@ class PluginManager:
         default_env_key = (
             "CE_EXPLANATION_PLUGIN_FAST" if mode == "fast" else "CE_EXPLANATION_PLUGIN"
         )
-        default_env_value = os.environ.get(default_env_key)
+        default_env_value = self._config_manager.env(default_env_key)
         if default_env_value:
             entries.append(default_env_value.strip())
             preferred_identifier = preferred_identifier or default_env_value.strip()
 
         env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
         if env_key != default_env_key:
-            env_value = os.environ.get(env_key)
+            env_value = self._config_manager.env(env_key)
             if env_value:
                 entries.append(env_value.strip())
                 preferred_identifier = preferred_identifier or env_value.strip()
-        entries.extend(split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
+        entries.extend(_split_csv(self._config_manager.env(f"{env_key}_FALLBACKS")))
 
         # 3. pyproject.toml settings
         py_settings = self._pyproject_explanations or {}
@@ -612,7 +629,7 @@ class PluginManager:
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
             preferred_identifier = preferred_identifier or py_value
-        entries.extend(coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
+        entries.extend(_coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
 
         # 4. Expand with descriptor fallbacks and deduplicate
         seen: set[str] = set()
@@ -624,7 +641,7 @@ class PluginManager:
             seen.add(identifier)
             descriptor = find_explanation_descriptor(identifier)
             if descriptor:
-                for fallback in coerce_string_tuple(descriptor.metadata.get("fallbacks")):
+                for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
                     if fallback and fallback not in seen:
                         expanded.append(fallback)
                         seen.add(fallback)
@@ -676,12 +693,6 @@ class PluginManager:
         tuple of str
             Ordered list of interval plugin identifiers to try.
         """
-        # Lazy import to avoid circular dependency
-        from ..core.config_helpers import (  # pylint: disable=import-outside-toplevel
-            coerce_string_tuple,
-            split_csv,
-        )
-
         entries: List[str] = []
         override = self._fast_interval_plugin_override if fast else self._interval_plugin_override
         preferred_identifier: str | None = None
@@ -691,19 +702,19 @@ class PluginManager:
             preferred_identifier = override
 
         env_key = "CE_INTERVAL_PLUGIN_FAST" if fast else "CE_INTERVAL_PLUGIN"
-        env_value = os.environ.get(env_key)
+        env_value = self._config_manager.env(env_key)
         if env_value:
             entries.append(env_value.strip())
             if preferred_identifier is None:
                 preferred_identifier = env_value.strip()
-        entries.extend(split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
+        entries.extend(_split_csv(self._config_manager.env(f"{env_key}_FALLBACKS")))
 
         py_settings = self._pyproject_intervals or {}
         py_key = "fast" if fast else "default"
         py_value = py_settings.get(py_key)
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
-        entries.extend(coerce_string_tuple(py_settings.get(f"{py_key}_fallbacks")))
+        entries.extend(_coerce_string_tuple(py_settings.get(f"{py_key}_fallbacks")))
 
         default_identifier = (
             self._default_interval_identifiers.get("fast")
@@ -719,7 +730,7 @@ class PluginManager:
                 seen.add(identifier)
                 descriptor = find_interval_descriptor(identifier)
                 if descriptor:
-                    for fallback in coerce_string_tuple(descriptor.metadata.get("fallbacks")):
+                    for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
                         if fallback and fallback not in seen:
                             ordered.append(fallback)
                             seen.add(fallback)
@@ -749,12 +760,6 @@ class PluginManager:
         tuple of str
             Ordered list of plot style identifiers to try.
         """
-        # Lazy import to avoid circular dependency
-        from ..core.config_helpers import (  # pylint: disable=import-outside-toplevel
-            coerce_string_tuple,
-            split_csv,
-        )
-
         entries: List[str] = []
 
         # 1. User override
@@ -763,17 +768,17 @@ class PluginManager:
             entries.append(override)
 
         # 2. Environment variables
-        env_value = os.environ.get("CE_PLOT_STYLE")
+        env_value = self._config_manager.env("CE_PLOT_STYLE")
         if env_value:
             entries.append(env_value.strip())
-        entries.extend(split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+        entries.extend(_split_csv(self._config_manager.env("CE_PLOT_STYLE_FALLBACKS")))
 
         # 3. pyproject.toml settings
         py_settings = self._pyproject_plots or {}
         py_value = py_settings.get("style")
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
-        entries.extend(coerce_string_tuple(py_settings.get("style_fallbacks")))
+        entries.extend(_coerce_string_tuple(py_settings.get("style_fallbacks")))
 
         # 4. Default plot style
         entries.append(DEFAULT_PLOT_STYLE)
@@ -961,6 +966,334 @@ class PluginManager:
             return None, metadata, "not registered"
 
         return plugin, metadata, None
+
+    def resolve_explanation_plugin_for_mode(
+        self,
+        mode: str,
+        *,
+        task: str,
+        metadata_validator: Callable[..., str | None] | None = None,
+        instantiate_plugin: Callable[[Any], Any] | None = None,
+    ) -> tuple[Any, str | None]:
+        """Resolve the explanation plugin for a mode using manager authority."""
+        from ..utils.exceptions import (
+            ConfigurationError,  # pylint: disable=import-outside-toplevel
+        )
+
+        ensure_builtin_plugins()
+        chain = self._explanation_plugin_fallbacks.get(mode, ())
+
+        raw_override = self._explanation_plugin_overrides.get(mode)
+        override = self.coerce_plugin_override(raw_override)
+        if override is not None and not isinstance(override, str):
+            identifier = getattr(override, "plugin_meta", {}).get("name")
+            metadata = getattr(override, "plugin_meta", None)
+            if isinstance(metadata, Mapping):
+                trusted = metadata.get("trusted", metadata.get("trust", True))
+                if not bool(trusted):
+                    warnings.warn(
+                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                        "Ensure you trust the source of this plugin.",
+                        UserWarning,
+                        stacklevel=3,
+                    )
+            plugin = instantiate_plugin(override) if instantiate_plugin else override
+            if metadata_validator is not None:
+                error = metadata_validator(metadata, identifier=identifier, mode=mode)
+                if error:
+                    raise ConfigurationError(error) from None
+            supports = getattr(plugin, "supports_mode", None)
+            if not callable(supports):
+                raise ConfigurationError(
+                    f"{identifier or '<anonymous>'}: missing supports_mode"
+                ) from None
+            if not supports(mode, task=task):
+                raise ConfigurationError(
+                    f"{identifier or '<anonymous>'}: mode '{mode}' unsupported for task {task}"
+                ) from None
+            return plugin, identifier
+
+        explicit_override_identifier = raw_override if isinstance(raw_override, str) else None
+        preferred_identifier = (
+            explicit_override_identifier or self._explanation_preferred_identifier.get(mode)
+        )
+        allow_untrusted = explicit_override_identifier is not None
+
+        if not chain and mode == "fast":
+            msg = (
+                "Fast explanation plugin 'core.explanation.fast' is not registered. "
+                "Install the external plugins extra with "
+                '``pip install "calibrated-explanations[external-plugins]"`` '
+                "and call ``external_plugins.fast_explanations.register()`` or rerun "
+                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
+            )
+            raise ConfigurationError(msg)
+
+        errors: List[str] = []
+        for identifier in chain:
+            is_preferred = preferred_identifier is not None and identifier == preferred_identifier
+            is_explicit_override = (
+                explicit_override_identifier is not None
+                and identifier == explicit_override_identifier
+            )
+            if is_identifier_denied(identifier):
+                message = f"{identifier}: denied via CE_DENY_PLUGIN"
+                if is_preferred:
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + message) from None
+                errors.append(message)
+                continue
+
+            plugin, metadata, reason = self.resolve_explanation_plugin(
+                identifier,
+                allow_untrusted=allow_untrusted,
+                is_preferred=is_preferred,
+                is_explicit_override=is_explicit_override,
+            )
+            if reason == "untrusted":
+                raise ConfigurationError(
+                    "Explanation plugin configuration failed: "
+                    + identifier
+                    + " is untrusted; explicitly trust the plugin or pass an explicit override"
+                ) from None
+            if plugin is None:
+                message = f"{identifier}: not registered"
+                if is_preferred:
+                    prefix = (
+                        "Explanation plugin override failed: "
+                        if is_explicit_override
+                        else "Explanation plugin configuration failed: "
+                    )
+                    raise ConfigurationError(prefix + message) from None
+                errors.append(message)
+                continue
+
+            if metadata_validator is not None:
+                meta_source = metadata or getattr(plugin, "plugin_meta", None)
+                error = metadata_validator(meta_source, identifier=identifier, mode=mode)
+                if error:
+                    if is_preferred:
+                        prefix = (
+                            "Explanation plugin override failed: "
+                            if is_explicit_override
+                            else "Explanation plugin configuration failed: "
+                        )
+                        raise ConfigurationError(prefix + error) from None
+                    errors.append(error)
+                    continue
+
+            resolved_plugin = instantiate_plugin(plugin) if instantiate_plugin else plugin
+            supports = getattr(resolved_plugin, "supports_mode", None)
+            if not callable(supports):
+                errors.append(f"{identifier}: missing supports_mode")
+                continue
+            try:
+                if not supports(mode, task=task):
+                    errors.append(f"{identifier}: mode '{mode}' unsupported for task {task}")
+                    continue
+            except Exception as exc:  # adr002_allow
+                errors.append(f"{identifier}: error during supports_mode ({exc})")
+                continue
+            return resolved_plugin, identifier
+
+        if mode == "fast" and "core.explanation.fast" in chain:
+            msg = (
+                "Fast explanation plugin 'core.explanation.fast' is not registered. "
+                "Install the external plugins extra with "
+                '``pip install "calibrated-explanations[external-plugins]"`` '
+                "and call ``external_plugins.fast_explanations.register()`` or rerun "
+                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
+            )
+            raise ConfigurationError(msg)
+
+        raise ConfigurationError(
+            "Unable to resolve explanation plugin for mode '"
+            + mode
+            + "'. Tried: "
+            + ", ".join(chain or ("<none>",))
+            + ("; errors: " + "; ".join(errors) if errors else "")
+        )
+
+    def resolve_interval_plugin(
+        self,
+        *,
+        fast: bool,
+        hints: Sequence[str] = (),
+        runtime_validator: Callable[..., str | None] | None = None,
+    ) -> tuple[Any, str | None]:
+        """Resolve the interval plugin candidate for the requested mode."""
+        from ..utils.exceptions import (
+            ConfigurationError,  # pylint: disable=import-outside-toplevel
+        )
+
+        ensure_builtin_plugins()
+
+        raw_override = (
+            self._fast_interval_plugin_override if fast else self._interval_plugin_override
+        )
+        override = self.coerce_plugin_override(raw_override)
+        if override is not None and not isinstance(override, str):
+            identifier = getattr(override, "plugin_meta", {}).get("name")
+            return override, identifier
+
+        key = "fast" if fast else "default"
+        if isinstance(raw_override, str):
+            preferred_identifier = raw_override
+        else:
+            preferred_identifier = self._interval_preferred_identifier.get(key)
+
+        chain = list(self._interval_plugin_fallbacks.get(key, ()))
+        if hints:
+            ordered: List[str] = []
+            seen: set[str] = set()
+            for identifier in tuple(hints) + tuple(chain):
+                if identifier and identifier not in seen:
+                    ordered.append(identifier)
+                    seen.add(identifier)
+            chain = ordered
+
+        errors: List[str] = []
+        for identifier in chain:
+            if is_identifier_denied(identifier):
+                message = f"{identifier}: denied via CE_DENY_PLUGIN"
+                if preferred_identifier == identifier:
+                    raise ConfigurationError("Interval plugin override failed: " + message)
+                errors.append(message)
+                continue
+
+            descriptor = find_interval_descriptor(identifier)
+            plugin = None
+            metadata: Mapping[str, Any] | None = None
+            is_preferred = preferred_identifier == identifier
+            if descriptor is not None:
+                metadata = descriptor.metadata
+                if descriptor.trusted or is_preferred:
+                    plugin = descriptor.plugin
+
+            if plugin is None:
+                if is_preferred:
+                    plugin = find_interval_plugin(identifier)
+                else:
+                    plugin = find_interval_plugin_trusted(identifier)
+
+            if plugin is None:
+                message = f"{identifier}: not registered"
+                if preferred_identifier == identifier:
+                    raise ConfigurationError("Interval plugin override failed: " + message)
+                errors.append(message)
+                continue
+
+            if runtime_validator is not None:
+                meta_source = metadata or getattr(plugin, "plugin_meta", None)
+                error = runtime_validator(meta_source, identifier=identifier, fast=fast)
+                if error:
+                    if preferred_identifier == identifier:
+                        raise ConfigurationError(error)
+                    errors.append(error)
+                    continue
+
+            return plugin, identifier
+
+        raise ConfigurationError(
+            "Unable to resolve interval plugin for "
+            + ("fast" if fast else "default")
+            + " mode. Tried: "
+            + ", ".join(chain or ("<none>",))
+            + ("; errors: " + "; ".join(errors) if errors else "")
+        )
+
+    def resolve_plot_style_chain(self, explicit_style: str | None = None) -> Tuple[str, ...]:
+        """Resolve the ordered plot style chain for plotting runtimes."""
+        chain: List[str] = []
+        if isinstance(explicit_style, str) and explicit_style:
+            chain.append(explicit_style)
+
+        chain.extend(self.build_plot_chain())
+
+        mode = getattr(self.explainer, "last_explanation_mode", None)
+        if mode and isinstance(self._plot_plugin_fallbacks, dict):
+            chain.extend(self._plot_plugin_fallbacks.get(mode, ()))
+
+        ordered: List[str] = []
+        seen: set[str] = set()
+        for identifier in chain:
+            if identifier and identifier not in seen:
+                ordered.append(identifier)
+                seen.add(identifier)
+
+        if "plot_spec.default" not in seen:
+            ordered.append("plot_spec.default")
+        if "legacy" not in seen:
+            ordered.append("legacy")
+        return tuple(ordered)
+
+    def resolve_plot_plugin(
+        self,
+        *,
+        explicit_style: str | None = None,
+        renderer_override: str | None = None,
+    ) -> tuple[Any, str, Tuple[str, ...]]:
+        """Resolve the active plot plugin from the ordered style chain."""
+        from ..utils.exceptions import (
+            ConfigurationError,  # pylint: disable=import-outside-toplevel
+        )
+
+        ensure_builtin_plugins()
+        chain = self.resolve_plot_style_chain(explicit_style=explicit_style)
+        if not renderer_override:
+            renderer_override = self._config_manager.env("CE_PLOT_RENDERER")
+        if not renderer_override:
+            py_settings = self._pyproject_plots or {}
+            renderer_override = py_settings.get("renderer")
+
+        errors: List[str] = []
+        for identifier in chain:
+            plugin = find_plot_plugin_trusted(identifier)
+            if plugin is None:
+                plugin = find_plot_plugin(identifier)
+            if plugin is None:
+                errors.append(f"{identifier}: not registered")
+                continue
+
+            effective_renderer_override = renderer_override
+            if not effective_renderer_override:
+                builder_meta = getattr(plugin.builder, "plugin_meta", {})
+                effective_renderer_override = builder_meta.get("default_renderer")
+
+            if effective_renderer_override:
+                try:
+                    override_renderer = find_plot_renderer(effective_renderer_override)
+                except Exception:  # adr002_allow
+                    self._logger.info(
+                        "Failed to find plot renderer '%s'; falling back to default",
+                        effective_renderer_override,
+                    )
+                    warnings.warn(
+                        f"Failed to find plot renderer '{effective_renderer_override}'; falling back to default",
+                        UserWarning,
+                        stacklevel=3,
+                    )
+                    override_renderer = None
+                if override_renderer is not None:
+                    with contextlib.suppress(Exception):
+                        plugin.renderer = override_renderer
+
+            if not hasattr(plugin, "build") or not hasattr(plugin, "render"):
+                errors.append(f"{identifier}: missing build/render implementation")
+                continue
+
+            return plugin, identifier, chain
+
+        raise ConfigurationError(
+            "Unable to resolve plot plugin for global explanations; "
+            + "tried: "
+            + ", ".join(chain)
+            + ("; errors: " + "; ".join(errors) if errors else "")
+        )
 
     # =========================================================================
     # Orchestrator initialization (moved from CalibratedExplainer)

@@ -7,11 +7,23 @@ import pytest
 
 from calibrated_explanations.legacy import plotting
 
+pytestmark = pytest.mark.viz
+
 matplotlib = pytest.importorskip(
     "matplotlib", reason="matplotlib is required for legacy plotting tests"
 )
 
 matplotlib.use("Agg", force=True)
+
+
+@pytest.fixture(autouse=True)
+def force_legacy_plotting_agg_backend(monkeypatch):
+    import matplotlib.colors as mcolors
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+    monkeypatch.setattr(plotting, "mcolors", mcolors, raising=False)
+    monkeypatch.setattr(plotting, "plt", plt, raising=False)
 
 
 class CalibratedStub:

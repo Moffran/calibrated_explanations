@@ -8,7 +8,6 @@ callers pass in the relevant explanation containers and configuration.
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass
 from typing import Any, List
 
@@ -16,10 +15,27 @@ import numpy as np
 
 from ...explanations.explanations import CalibratedExplanations
 from ...logging import ensure_logging_context_filter
+from ..config_manager import ConfigManager
 
 _GOVERNANCE_LOGGER_NAME = "calibrated_explanations.governance.feature_filter"
 _governance_logger = logging.getLogger(_GOVERNANCE_LOGGER_NAME)
 ensure_logging_context_filter(_GOVERNANCE_LOGGER_NAME)
+
+_feature_filter_config_manager: ConfigManager | None = None
+
+
+def _get_feature_filter_config_manager() -> ConfigManager:
+    """Return the process-level ConfigManager singleton for feature-filter config reads."""
+    global _feature_filter_config_manager
+    if _feature_filter_config_manager is None:
+        _feature_filter_config_manager = ConfigManager.from_sources()
+    return _feature_filter_config_manager
+
+
+def _reset_feature_filter_config_manager_for_testing() -> None:
+    """Reset cached config manager singleton (tests only)."""
+    global _feature_filter_config_manager
+    _feature_filter_config_manager = None
 
 
 @dataclass
@@ -31,18 +47,24 @@ class FeatureFilterConfig:
     strict_observability: bool = False
 
     @classmethod
-    def from_base_and_env(cls, base: "FeatureFilterConfig | None" = None) -> "FeatureFilterConfig":
+    def from_base_and_env(
+        cls,
+        base: "FeatureFilterConfig | None" = None,
+        *,
+        config_manager: ConfigManager | None = None,
+    ) -> "FeatureFilterConfig":
         """Merge CE_FEATURE_FILTER overrides with an optional base configuration."""
+        mgr = config_manager if config_manager is not None else _get_feature_filter_config_manager()
         cfg = FeatureFilterConfig(
             **(base.__dict__ if base is not None else {})
         )  # shallow copy to avoid mutating base
 
         # Strict observability mode (debug-by-default policy)
-        strict_raw = os.getenv("CE_STRICT_OBSERVABILITY", "").lower()
+        strict_raw = (mgr.env("CE_STRICT_OBSERVABILITY") or "").lower()
         if strict_raw in {"1", "true", "on", "enable"}:
             cfg.strict_observability = True
 
-        raw = os.getenv("CE_FEATURE_FILTER")
+        raw = mgr.env("CE_FEATURE_FILTER")
         if not raw:
             return cfg
 

@@ -5,7 +5,7 @@ This guide documents the deprecations introduced as part of the ADR-011 policy w
 ## Goals
 - Centralise deprecation emission and behaviour via `deprecate()` so messages are consistent and can be toggled to raise in CI (`CE_DEPRECATIONS`).
 - Provide clear migration examples for common deprecated symbols and aliases.
-- Inform maintainers about the two-minor-release deprecation window and CI checks.
+- Inform maintainers about the default two-minor-release deprecation window, plus the binding pre-v1.0 finalization exception that requires full closure by v0.11.3.
 
 ## Where the helper lives
 
@@ -22,6 +22,89 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 1. Replace use of deprecated APIs as documented below. Where you control the calling code, update to the canonical API.
 2. If you rely on third-party libraries that emit deprecation warnings, pin those libraries or file an issue requesting they adopt the central helper.
 3. For CI enforcement, set `CE_DEPRECATIONS=error` temporarily to catch any remaining deprecation uses during migration.
+
+### ADR-034 centralized configuration migration (v0.11.1)
+
+- Runtime modules now resolve environment and `pyproject.toml` config through
+  `ConfigManager` snapshots, not live ad-hoc reads.
+- Snapshot behavior is intentional: changes to process env vars after manager
+  construction are only visible after reconstructing the owning runtime object.
+- CLI configuration diagnostics are available via:
+  - `ce config show`
+  - `ce config export`
+
+### Plugin registration list-path API (closed by v0.11.3)
+
+The legacy list-path plugin APIs are deprecated in `v0.11.1` and will be
+removed in `v0.11.3`.
+
+| Legacy API | Replacement |
+|---|---|
+| `register(plugin)` | `register_explanation_plugin(identifier, plugin, metadata)` |
+| `trust_plugin(plugin)` | Register with `metadata={"trusted": True, ...}` via `register_explanation_plugin(...)` |
+| `find_for(model)` | `find_explanation_plugin_for(..., model=model, trusted_only=False)` |
+| `find_for_trusted(model)` | `find_explanation_plugin_for(..., model=model, trusted_only=True)` |
+
+```py
+# register(plugin)
+# before
+registry.register(plugin)
+
+# after
+registry.register_explanation_plugin(
+    identifier=plugin.plugin_meta["name"],
+    plugin=plugin,
+    metadata=plugin.plugin_meta,
+)
+```
+
+```py
+# trust_plugin(plugin)
+# before
+registry.register(plugin)
+registry.trust_plugin(plugin)
+
+# after
+meta = dict(plugin.plugin_meta)
+meta["trusted"] = True
+registry.register_explanation_plugin(
+    identifier=meta["name"],
+    plugin=plugin,
+    metadata=meta,
+)
+```
+
+```py
+# find_for(model)
+# before
+plugins = registry.find_for(model)
+
+# after
+identifier, plugin = registry.find_explanation_plugin_for(
+    "tabular",
+    mode="factual",
+    task="classification",
+    model=model,
+    trusted_only=False,
+)
+plugins = (plugin,)
+```
+
+```py
+# find_for_trusted(model)
+# before
+trusted_plugins = registry.find_for_trusted(model)
+
+# after
+identifier, trusted_plugin = registry.find_explanation_plugin_for(
+    "tabular",
+    mode="factual",
+    task="classification",
+    model=model,
+    trusted_only=True,
+)
+trusted_plugins = (trusted_plugin,)
+```
 
 ## Common deprecated items and migration examples
 
@@ -91,9 +174,17 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 ## Migration timeline and policy
 
 - Deprecation messages are emitted once-per-session by default and can be elevated to errors by setting `CE_DEPRECATIONS=error` in CI.
-- The project follows a two-minor-release deprecation window: a message introduced in `vX.Y.Z` will remain for at least `vX.(Y+2).0` before removal unless explicitly called out in an ADR.
+- Default policy: a deprecation introduced in `vX.Y.Z` remains for at least two minor releases before removal.
+- Finalization override: for the v1.0.0 cleanup window, all active deprecations must be removed by v0.11.3. No deprecation remains active in v1.0.0.
 
 ## Status table
+
+**Binding rule for this table:** every row in **Active deprecations** must move to **Removed deprecations (history)** by the end of v0.11.3.
+
+### Task 21 inventory (v0.11.1): core-surface LIME/SHAP deprecations
+
+The v0.11.1 API-bloat removal program inventories ten LIME/SHAP core-surface entry points.
+All ten now emit `deprecate()` warnings and are assigned to explicit pre-v1.0 removal milestones.
 
 ### Active deprecations
 
@@ -101,17 +192,46 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 
 | Deprecated symbol | Replacement | Deprecated since | Removal ETA | Notes |
 |---|---|---:|---:|---|
-| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v1.0.0 | ADR-001 Stage 1a. Shims in `core/calibration/__init__.py` and submodule files (`interval_learner`, `interval_regressor`, `state`, `summaries`, `venn_abers`). |
-| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v1.0.0 | Shim in `perf/cache.py`. |
-| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v1.0.0 | Shim in `perf/parallel.py`. |
-| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v1.0.0 | Lazy `__getattr__` shim in `core/calibration_helpers.py`. |
-| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v1.0.0 | Aliases in `explanations/reject.py` (`_missing_`) and `core/reject/policy.py` (`__getattr__`). |
-| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v1.0.0 | Same files. |
-| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v1.0.0 | Same files. |
-| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v1.0.0 | `plugins/registry.py` validates and warns on old mode aliases. |
-| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v1.0.0 | Same. |
-| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v1.0.0 | Same. |
-| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v1.0.0 | `parallel/parallel.py` silently upgrades the value and warns. |
+| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v0.11.3 | ADR-001 Stage 1a. Shims in `core/calibration/__init__.py` and submodule files (`interval_learner`, `interval_regressor`, `state`, `summaries`, `venn_abers`). |
+| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v0.11.3 | Shim in `perf/cache.py`. |
+| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v0.11.3 | Shim in `perf/parallel.py`. |
+| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v0.11.3 | Lazy `__getattr__` shim in `core/calibration_helpers.py`. |
+| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v0.11.3 | Aliases in `explanations/reject.py` (`_missing_`) and `core/reject/policy.py` (`__getattr__`). |
+| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v0.11.3 | Same files. |
+| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v0.11.3 | Same files. |
+| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v0.11.3 | `plugins/registry.py` validates and warns on old mode aliases. |
+| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v0.11.3 | Same. |
+| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v0.11.3 | Same. |
+| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v0.11.3 | `parallel/parallel.py` silently upgrades the value and warns. |
+| `CalibratedExplainer.initialize_reject_learner(...)` | `explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
+| `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
+| `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Wrapper parity deprecation aligned with explainer-level deprecation. |
+| `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Wrapper parity deprecation aligned with explainer-level deprecation. |
+| `CalibratedExplainer.build_plot_style_chain(...)` | `explainer.plugin_manager.build_plot_chain(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.instantiate_plugin(...)` | `explainer.plugin_manager.explanation_orchestrator.instantiate_plugin(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.invoke_explanation_plugin(...)` | `explainer.explanation_orchestrator.invoke(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.ensure_interval_runtime_state(...)` | `explainer.prediction_orchestrator.ensure_interval_runtime_state(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.gather_interval_hints(...)` | `explainer.prediction_orchestrator.gather_interval_hints(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
+| `CalibratedExplainer.interval_plugin_hints` | `explainer.plugin_manager.interval_plugin_hints` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_fallbacks` | `explainer.plugin_manager.interval_plugin_fallbacks` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.explanation_plugin_overrides` | `explainer.plugin_manager.explanation_plugin_overrides` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_override` | `explainer.plugin_manager.interval_plugin_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.fast_interval_plugin_override` | `explainer.plugin_manager.fast_interval_plugin_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.plot_style_override` | `explainer.plugin_manager.plot_style_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_preferred_identifier` | `explainer.plugin_manager.interval_preferred_identifier` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
+| `CalibratedExplainer.preload_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; plugin-only preload path replaces core helper preload. |
+| `CalibratedExplainer.preload_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; plugin-only preload path replaces core helper preload. |
+| `CalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; runtime explanation path becomes plugin-only. |
+| `CalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; runtime explanation path becomes plugin-only. |
+| `CalibratedExplainer.is_lime_enabled(...)` | `calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()` | v0.11.1 | v0.11.2 | Task-21 inventory item; helper-enabled flag no longer lives on core explainer surface. |
+| `CalibratedExplainer.is_shap_enabled(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; helper-enabled flag no longer lives on core explainer surface. |
+| `WrapCalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; wrapper forwarding hook removed with core entry-point removal. |
+| `WrapCalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; wrapper forwarding hook removed with core entry-point removal. |
+| `CalibratedExplanations.as_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
+| `CalibratedExplanations.as_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
 
 ### Removed deprecations (history)
 
@@ -129,6 +249,29 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `calibrated_explanations.perf` root facade | `calibrated_explanations.cache` + `calibrated_explanations.parallel` | v0.10.x | v0.11.0 | `perf/__init__.py` is now empty. |
 
 ## Breaking changes
+
+### Guarded entrypoints now fail on calibration-feature divergence (v0.11.1+)
+
+`explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` now raise
+`ValidationError` when the active prediction backend is not using the same
+calibration feature matrix as `explainer.x_cal`.
+
+**Why:** Guarded filtering and interval predictions must share the same
+calibration-feature values to preserve the guarded exchangeability assumption.
+
+**Migration:**
+
+- Recalibrate the explainer before calling guarded entrypoints if you have rebuilt or swapped interval learners.
+- Do not mutate or replace the backend calibration features independently of `explainer.x_cal`.
+
+### Reject NCF public contract simplified (v0.11.1+)
+
+Reject NCF user-facing inputs are now limited to `default` and `ensured`.
+
+- `ncf="default"`: task-dependent internal score (`hinge` for binary + thresholded regression, `margin` for multiclass).
+- `ncf="ensured"`: `score = (1 - w) * interval_width + w * default_score`.
+- Legacy `ncf="entropy"` remains accepted and is silently normalized to `ncf="default"`.
+- Explicit `ncf="hinge"` and `ncf="margin"` are no longer accepted and now raise `ValidationError`.
 
 ### Default `condition_source` changed to `"prediction"` (v0.11.0)
 
@@ -155,6 +298,7 @@ A warning is issued when `condition_source` is not provided, guiding users to th
 
 - When introducing a deprecation, use `deprecate(message, key="unique:key", stacklevel=3)` and prefer a stable `key` value.
 - Add a line to this document and update the release plan (`docs/improvement/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
+- In the v0.11.x finalization window, each new/remaining deprecation entry must include explicit removal ownership in v0.11.2 or v0.11.3.
 - Add a unit test in `tests/unit/` validating the desired behaviour of `deprecate()` if you change its semantics.
 
 ## Troubleshooting

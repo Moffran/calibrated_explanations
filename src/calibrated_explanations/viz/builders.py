@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import math
 import sys
-from dataclasses import asdict, is_dataclass
 from typing import Any, Sequence
 
 import numpy as np
@@ -32,56 +31,7 @@ from .serializers import (
     validate_plotspec,
 )
 
-
-class _PlotSpecDictWrapper(dict):
-    """A dict-like wrapper that also exposes underlying dataclass attributes.
-
-    This lets builders return a JSON-serializable envelope (dict) while
-    preserving attribute access used by tests that treat the return value as
-    a dataclass (`spec.save_behavior = ...`).
-    """
-
-    def __init__(self, payload: dict, spec_obj: object):
-        super().__init__(payload)
-        object.__setattr__(self, "_spec_obj", spec_obj)
-        object.__setattr__(self, "_payload", payload)
-
-    def __getattr__(self, name: str):
-        spec = object.__getattribute__(self, "_spec_obj")
-        if hasattr(spec, name):
-            return getattr(spec, name)
-        raise AttributeError(name)
-
-    def __setattr__(self, name: str, value):
-        # write through to underlying dataclass when possible
-        spec = object.__getattribute__(self, "_spec_obj")
-        if hasattr(spec, name):
-            try:
-                setattr(spec, name, value)
-            except Exception:  # adr002_allow
-                serialized = _serialize_plot_attr(value)
-            else:
-                serialized = _serialize_plot_attr(value)
-            payload = object.__getattribute__(self, "_payload")
-            inner = payload.setdefault("plot_spec", {})
-            inner[name] = serialized
-            super().__setitem__(name, serialized)
-        else:
-            super().__setitem__(name, value)
-
-
 _PROBABILITY_TOL = 1e-9
-
-
-def _serialize_plot_attr(value: Any) -> Any:
-    """Serialize dataclass-like attributes for the wrapper dict."""
-    if value is None:
-        return None
-    if is_dataclass(value):
-        return asdict(value)
-    if isinstance(value, (list, tuple, dict)):
-        return value
-    return value
 
 
 def is_valid_probability_values(*values: float) -> bool:
@@ -1084,9 +1034,7 @@ def build_triangular_plotspec(
     )
     payload = triangular_plotspec_to_dict(spec)
     validate_plotspec(payload)
-    # Return a wrapper that is dict-like for parity tests but preserves
-    # attribute access to the underlying dataclass for roundtrip tests.
-    return _PlotSpecDictWrapper(payload, spec)
+    return spec
 
 
 def build_global_plotspec(
@@ -1117,7 +1065,7 @@ def build_global_plotspec(
     )
     payload = global_plotspec_to_dict(spec)
     validate_plotspec(payload)
-    return _PlotSpecDictWrapper(payload, spec)
+    return spec
 
 
 def build_factual_probabilistic_plotspec_dict(**kwargs) -> dict:

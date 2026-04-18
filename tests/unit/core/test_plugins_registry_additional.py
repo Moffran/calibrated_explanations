@@ -6,9 +6,29 @@ import pytest
 
 from calibrated_explanations.plugins import registry
 from tests.support.registry_helpers import (
+    append_to_registry,
     clear_explanation_plugins,
+    clear_env_trust_cache,
     clear_interval_plugins,
     clear_plot_plugins,
+    clear_trust_warnings,
+    coerce_string_collection,
+    ensure_bool,
+    ensure_sequence,
+    ensure_string,
+    env_trusted_names,
+    get_entrypoint_group,
+    normalise_dependency_field,
+    normalise_tasks,
+    normalise_trust,
+    propagate_trust_metadata,
+    remove_from_registry,
+    resolve_plugin_from_name,
+    resolve_plugin_module_file,
+    safe_supports,
+    set_plot_style,
+    should_trust,
+    verify_plugin_checksum,
 )
 
 
@@ -18,43 +38,43 @@ def reset_registry():
     clear_explanation_plugins()
     clear_interval_plugins()
     clear_plot_plugins()
-    registry.clear_env_trust_cache()
-    registry.clear_trust_warnings()
+    clear_env_trust_cache()
+    clear_trust_warnings()
     yield
     registry.clear()
     clear_explanation_plugins()
     clear_interval_plugins()
     clear_plot_plugins()
-    registry.clear_env_trust_cache()
-    registry.clear_trust_warnings()
+    clear_env_trust_cache()
+    clear_trust_warnings()
 
 
 def test_normalise_trust_and_env_cache(monkeypatch):
-    assert registry.normalise_trust({"trust": {"trusted": "yes"}})
-    assert registry.normalise_trust({"trust": {"default": "1"}})
+    assert normalise_trust({"trust": {"trusted": "yes"}})
+    assert normalise_trust({"trust": {"default": "1"}})
 
     monkeypatch.setenv("CE_TRUST_PLUGIN", "alpha;beta")
-    registry.clear_env_trust_cache()
-    first = registry.env_trusted_names()
+    clear_env_trust_cache()
+    first = env_trusted_names()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "")
-    second = registry.env_trusted_names()
+    second = env_trusted_names()
     assert first == {"alpha", "beta"}
     assert second == first
 
     meta = {"trust": False, "name": "alpha"}
-    assert registry.should_trust(meta, identifier="alpha", source="manual")
+    assert should_trust(meta, identifier="alpha", source="manual")
 
 
 def test_propagate_trust_metadata_variants():
-    registry.propagate_trust_metadata(object(), {"trusted": True, "trust": True})
+    propagate_trust_metadata(object(), {"trusted": True, "trust": True})
 
     plugin_dict = SimpleNamespace(plugin_meta={})
-    registry.propagate_trust_metadata(plugin_dict, {"trusted": True, "trust": True})
+    propagate_trust_metadata(plugin_dict, {"trusted": True, "trust": True})
     assert plugin_dict.plugin_meta["trusted"] is True
     assert plugin_dict.plugin_meta["trust"] is True
 
     plugin_no_setter = SimpleNamespace(plugin_meta=SimpleNamespace())
-    registry.propagate_trust_metadata(plugin_no_setter, {"trusted": False, "trust": False})
+    propagate_trust_metadata(plugin_no_setter, {"trusted": False, "trust": False})
 
     class CustomMeta(MutableMapping):
         def __init__(self):
@@ -77,7 +97,7 @@ def test_propagate_trust_metadata_variants():
 
     custom_meta = CustomMeta()
     plugin_custom = SimpleNamespace(plugin_meta=custom_meta)
-    registry.propagate_trust_metadata(plugin_custom, {"trusted": False, "trust": False})
+    propagate_trust_metadata(plugin_custom, {"trusted": False, "trust": False})
     assert custom_meta["trusted"] is False
     assert custom_meta["trust"] is False
 
@@ -102,15 +122,15 @@ def test_propagate_trust_metadata_variants():
 
     exploding_meta = ExplodingMeta()
     plugin_exploding = SimpleNamespace(plugin_meta=exploding_meta)
-    registry.propagate_trust_metadata(plugin_exploding, {"trusted": True, "trust": True})
+    propagate_trust_metadata(plugin_exploding, {"trusted": True, "trust": True})
 
 
 def test_resolve_plugin_module_file_branches(tmp_path):
     plugin_no_module = SimpleNamespace(__module__=None)
-    assert registry.resolve_plugin_module_file(plugin_no_module) is None
+    assert resolve_plugin_module_file(plugin_no_module) is None
 
     plugin_missing_module = SimpleNamespace(__module__="tests.missing.module")
-    assert registry.resolve_plugin_module_file(plugin_missing_module) is None
+    assert resolve_plugin_module_file(plugin_missing_module) is None
 
     module = ModuleType("tests.fake_no_file")
     module.__file__ = None
@@ -118,7 +138,7 @@ def test_resolve_plugin_module_file_branches(tmp_path):
     sys_modules[module.__name__] = module
     try:
         plugin_no_file = SimpleNamespace(__module__=module.__name__)
-        assert registry.resolve_plugin_module_file(plugin_no_file) is None
+        assert resolve_plugin_module_file(plugin_no_file) is None
     finally:
         sys_modules.pop(module.__name__, None)
 
@@ -128,7 +148,7 @@ def test_resolve_plugin_module_file_branches(tmp_path):
     real_module.__file__ = str(module_path)
     sys_modules[real_module.__name__] = real_module
     try:
-        resolved = registry.resolve_plugin_module_file(real_module)
+        resolved = resolve_plugin_module_file(real_module)
         assert resolved == module_path
     finally:
         sys_modules.pop(real_module.__name__, None)
@@ -140,12 +160,12 @@ def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
     plugin = SimpleNamespace()
 
     with pytest.raises(ValidationError):
-        registry.verify_plugin_checksum(plugin, {"checksum": {"sha256": 123}})
+        verify_plugin_checksum(plugin, {"checksum": {"sha256": 123}})
 
     missing_path = tmp_path / "missing.py"
-    monkeypatch.setattr(registry, "resolve_plugin_module_file", lambda p: missing_path)
+    monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: missing_path)
     with pytest.warns(UserWarning):
-        registry.verify_plugin_checksum(plugin, {"checksum": "deadbeef"})
+        verify_plugin_checksum(plugin, {"checksum": "deadbeef"})
 
     class FailingPath:
         def exists(self):
@@ -154,19 +174,19 @@ def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
         def read_bytes(self):
             raise OSError("boom")
 
-    monkeypatch.setattr(registry, "resolve_plugin_module_file", lambda p: FailingPath())
+    monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: FailingPath())
     with pytest.warns(UserWarning):
-        registry.verify_plugin_checksum(plugin, {"checksum": "deadbeef"})
+        verify_plugin_checksum(plugin, {"checksum": "deadbeef"})
 
     module_file = tmp_path / "module.py"
     module_file.write_text("payload")
     digest = hashlib.sha256(module_file.read_bytes()).hexdigest()
-    monkeypatch.setattr(registry, "resolve_plugin_module_file", lambda p: module_file)
-    registry.verify_plugin_checksum(plugin, {"checksum": {"sha256": digest}})
+    monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: module_file)
+    verify_plugin_checksum(plugin, {"checksum": {"sha256": digest}})
 
-    monkeypatch.setattr(registry, "resolve_plugin_module_file", lambda p: module_file)
+    monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: module_file)
     with pytest.raises(ValidationError):
-        registry.verify_plugin_checksum(plugin, {"checksum": "not-the-digest"})
+        verify_plugin_checksum(plugin, {"checksum": "not-the-digest"})
 
 
 def test_validate_explanation_metadata_from_mapping():
@@ -206,31 +226,31 @@ def test_sequence_and_collection_validation_errors():
     from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError):
-        registry.ensure_sequence({"values": "single"}, "values")
+        ensure_sequence({"values": "single"}, "values")
 
     with pytest.raises(ValidationError):
-        registry.ensure_sequence({"values": [1]}, "values")
+        ensure_sequence({"values": [1]}, "values")
 
     with pytest.raises(ValidationError):
-        registry.ensure_sequence({"values": []}, "values")
+        ensure_sequence({"values": []}, "values")
 
     with pytest.raises(ValidationError):
-        registry.ensure_sequence({"values": ["foo"]}, "values", allowed={"bar"})
+        ensure_sequence({"values": ["foo"]}, "values", allowed={"bar"})
 
     with pytest.raises(ValidationError):
-        registry.coerce_string_collection([1], key="items")
+        coerce_string_collection([1], key="items")
 
     with pytest.raises(ValidationError):
-        registry.coerce_string_collection(42, key="items")
+        coerce_string_collection(42, key="items")
 
     with pytest.raises(ValidationError):
-        registry.coerce_string_collection((), key="items")
+        coerce_string_collection((), key="items")
 
     with pytest.raises(ValidationError):
-        registry.normalise_dependency_field({}, "missing")
+        normalise_dependency_field({}, "missing")
 
     with pytest.raises(ValidationError):
-        registry.normalise_tasks({"tasks": ["invalid"]})
+        normalise_tasks({"tasks": ["invalid"]})
 
     bad_meta = {
         "schema_version": 1,
@@ -259,16 +279,16 @@ def test_sequence_and_collection_validation_errors():
         registry.validate_explanation_metadata(missing_trust)
 
     with pytest.raises(ValidationError):
-        registry.ensure_bool({}, "flag")
+        ensure_bool({}, "flag")
 
     with pytest.raises(ValidationError):
-        registry.ensure_bool({"flag": "yes"}, "flag")
+        ensure_bool({"flag": "yes"}, "flag")
 
     with pytest.raises(ValidationError):
-        registry.ensure_string({}, "name")
+        ensure_string({}, "name")
 
     with pytest.raises(ValidationError):
-        registry.ensure_string({"name": ""}, "name")
+        ensure_string({"name": ""}, "name")
 
     interval_meta = {
         "modes": [],
@@ -498,11 +518,11 @@ def test_find_plot_plugin_variants():
     assert registry.find_plot_plugin("missing") is None
 
     empty_descriptor = registry.PlotStyleDescriptor("nosteps", {"style": "nosteps"})
-    registry.set_plot_style("nosteps", empty_descriptor)
+    set_plot_style("nosteps", empty_descriptor)
     assert registry.find_plot_plugin("nosteps") is None
 
     clear_plot_plugins()
-    registry.set_plot_style(
+    set_plot_style(
         "broken",
         registry.PlotStyleDescriptor(
             "broken", {"style": "broken", "builder_id": "", "renderer_id": ""}
@@ -602,7 +622,7 @@ class EntryPoint:
         self.name = plugin.plugin_meta["name"]
         self.module = "tests.entry"
         self.attr = None
-        self.group = registry.get_entrypoint_group()
+        self.group = get_entrypoint_group()
         self.plugin_instance = plugin
 
     def load(self):
@@ -627,7 +647,7 @@ def test_load_entrypoint_plugins_errors(monkeypatch):
             self.name = "legacy"
             self.module = "legacy"
             self.attr = None
-            self.group = registry.get_entrypoint_group()
+            self.group = get_entrypoint_group()
 
         def load(self):
             class Bad:
@@ -729,44 +749,49 @@ class MutablePlugin:
 
 def test_register_existing_plugin_updates_trust_list():
     plugin = MutablePlugin(trusted=False)
-    registry.register(plugin)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
     assert plugin not in registry.list_plugins(include_untrusted=False)
 
     plugin.plugin_meta["trust"] = True
     plugin.plugin_meta["trusted"] = True
-    registry.register(plugin)
-    registry.trust_plugin(plugin)
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
+    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+        registry.trust_plugin(plugin)
     assert plugin in registry.list_plugins(include_untrusted=False)
 
 
 def test_resolve_plugin_from_name_and_safe_supports():
     bad_plugin = SimpleNamespace(plugin_meta=object())
-    registry.append_to_registry(bad_plugin)
+    append_to_registry(bad_plugin)
     with pytest.raises(KeyError):
-        registry.resolve_plugin_from_name("missing")
-    registry.remove_from_registry(bad_plugin)
+        resolve_plugin_from_name("missing")
+    remove_from_registry(bad_plugin)
 
     class RaisingMeta:
         def get(self, key, default=None):
             raise RuntimeError("boom")
 
     raising_plugin = SimpleNamespace(plugin_meta=RaisingMeta())
-    registry.append_to_registry(raising_plugin)
+    append_to_registry(raising_plugin)
     with pytest.raises(KeyError):
-        registry.resolve_plugin_from_name("missing")
-    registry.remove_from_registry(raising_plugin)
+        resolve_plugin_from_name("missing")
+    remove_from_registry(raising_plugin)
 
     plugin = SimpleExplanationPlugin()
-    registry.register(plugin)
-    assert registry.resolve_plugin_from_name("simple.explanation") is plugin
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin)
+    assert resolve_plugin_from_name("simple.explanation") is plugin
 
     class BrokenPlugin(SimpleExplanationPlugin):
         def supports(self, model):
             raise RuntimeError("boom")
 
     broken = BrokenPlugin()
-    registry.register(broken)
-    assert registry.safe_supports(broken, object()) is False
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(broken)
+    assert safe_supports(broken, object()) is False
 
 
 def test_refresh_descriptor_and_register_errors():
@@ -776,7 +801,7 @@ def test_refresh_descriptor_and_register_errors():
     plugin = SimpleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("simple.extra", plugin)
     registry.unregister(plugin)
-    assert registry.resolve_plugin_from_name("simple.explanation") is descriptor.plugin
+    assert resolve_plugin_from_name("simple.explanation") is descriptor.plugin
 
     with pytest.raises(KeyError):
         registry.mark_explanation_trusted("missing")
@@ -786,7 +811,10 @@ def test_refresh_descriptor_and_register_errors():
     class NoMeta:
         plugin_meta = None
 
-    with pytest.raises(ValidationError):
+    with (
+        pytest.raises(ValidationError),
+        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
+    ):
         registry.register(NoMeta())
 
     class FailingMeta(MutableMapping):
@@ -825,10 +853,13 @@ def test_refresh_descriptor_and_register_errors():
         def explain(self, model, x, **kwargs):  # pragma: no cover - unused
             return {}
 
-    registry.register(FailingPlugin())
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(FailingPlugin())
 
     registry.clear()
     plugin2 = SimpleExplanationPlugin()
-    registry.register(plugin2)
-    registry.trust_plugin("simple.explanation")
+    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
+        registry.register(plugin2)
+    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
+        registry.trust_plugin("simple.explanation")
     registry.untrust_plugin("simple.explanation")

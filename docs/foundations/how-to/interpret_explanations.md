@@ -118,7 +118,7 @@ for extra in alternative_metadata:
 - `core["feature_rules"]` lists the recommended feature adjustments alongside the calibrated prediction estimate and uncertainty interval for each alternative scenario.
 - `metadata["feature_rules"]` retains the richer calibration context: the difference from the factual baseline (`weight_value`), the detailed uncertainty metadata, and the alternative value used to create the scenario.
 
-Use these payloads to answer “which change makes the most difference?”—the best candidate is the scenario with the highest calibrated probability swing and acceptable feature adjustments. If uncertainty bounds remain wide, treat the recommendation with caution and look for additional calibration data.
+Use these payloads to answer “which change makes the most difference?”—the best candidate is the scenario with the highest calibrated probability swing and acceptable feature adjustments. If explanation envelopes remain wide, treat the recommendation with caution and look for additional calibration data.
 ## 3. Connect explanations to plots
 
 PlotSpec plots visualise the same rule rankings and uncertainty intervals:

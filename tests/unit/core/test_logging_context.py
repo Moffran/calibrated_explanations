@@ -3,6 +3,7 @@ import pytest
 from calibrated_explanations.logging import (
     get_logging_context,
     logging_context,
+    reset_module_config_manager,
     update_logging_context,
 )
 
@@ -10,7 +11,9 @@ from calibrated_explanations.logging import (
 @pytest.fixture(autouse=True)
 def clear_env(monkeypatch):
     monkeypatch.delenv("CE_TELEMETRY_DIAGNOSTIC_MODE", raising=False)
+    reset_module_config_manager()
     yield
+    reset_module_config_manager()
 
 
 def test_should_coerce_bool_with_various_inputs(monkeypatch):

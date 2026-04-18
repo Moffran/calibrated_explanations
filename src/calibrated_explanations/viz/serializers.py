@@ -119,6 +119,27 @@ class PlotKindRegistry:
         return cls._SUPPORTED_KINDS[kind].copy()
 
 
+def canonical_plotspec_to_dict(
+    spec: PlotSpec | TriangularPlotSpec | GlobalPlotSpec,
+) -> Dict[str, Any]:
+    """Serialize a canonical PlotSpec dataclass to a boundary dict envelope."""
+    if isinstance(spec, PlotSpec):
+        return plotspec_to_dict(spec)
+    if isinstance(spec, TriangularPlotSpec):
+        return triangular_plotspec_to_dict(spec)
+    if isinstance(spec, GlobalPlotSpec):
+        return global_plotspec_to_dict(spec)
+    raise ValidationError(
+        "Canonical PlotSpec must be a PlotSpec/TriangularPlotSpec/GlobalPlotSpec dataclass",
+        details={"actual_type": type(spec).__name__},
+    )
+
+
+def validate_canonical_plotspec(spec: PlotSpec | TriangularPlotSpec | GlobalPlotSpec) -> None:
+    """Validate canonical PlotSpec dataclass content at the renderer boundary."""
+    validate_plotspec(canonical_plotspec_to_dict(spec))
+
+
 def plotspec_to_dict(spec: PlotSpec) -> Dict[str, Any]:
     """Serialize a PlotSpec dataclass to a JSON-serializable envelope.
 
@@ -769,9 +790,11 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
 
 __all__ = [
     "plotspec_to_dict",
+    "canonical_plotspec_to_dict",
     "plotspec_from_dict",
     "triangular_plotspec_from_dict",
     "global_plotspec_from_dict",
+    "validate_canonical_plotspec",
     "validate_plotspec",
     "PLOTSPEC_VERSION",
     "PlotKindRegistry",

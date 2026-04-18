@@ -38,7 +38,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 
 # Core imports (no cross-sibling dependencies)
 from ..calibration.interval_wrappers import is_fast_interval_collection
-from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
+from ..utils import check_is_fitted, convert_targets_to_numeric, deprecate, safe_isinstance
 
 from ..utils.exceptions import (
     DataShapeError,
@@ -419,6 +419,33 @@ class CalibratedExplainer:
         self._enforce_feature_filter_plugin_preferences(manager)
         return manager
 
+    def _deprecate_nonessential_surface(self, symbol: str, replacement: str) -> None:
+        """Emit ADR-011 deprecation for compatibility delegators on explainer."""
+        deprecate(
+            f"CalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
+            f"{replacement} instead. This compatibility delegator will be removed "
+            "no earlier than v0.13.0 and only as a major-release change in v1.0.0+ "
+            "per ADR-020.",
+            key=f"CalibratedExplainer.{symbol}_delegator_deprecation",
+            stacklevel=3,
+        )
+
+    def _deprecate_lime_shap_surface(
+        self,
+        symbol: str,
+        replacement: str,
+        *,
+        removal_version: str,
+    ) -> None:
+        """Emit Task-21 deprecation warning for core LIME/SHAP entry points."""
+        deprecate(
+            f"CalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
+            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
+            "under the pre-v1.0 zero-deprecation closure policy.",
+            key=f"CalibratedExplainer.{symbol}_lime_shap_deprecation",
+            stacklevel=4,
+        )
+
     def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
         cfg = getattr(self, "_feature_filter_config", None)
         enabled = getattr(cfg, "enabled", False)
@@ -674,6 +701,9 @@ class CalibratedExplainer:
         to :class:`PluginManager` to construct the chain when available and
         otherwise returns an empty tuple for minimal explainer stubs used in tests.
         """
+        self._deprecate_nonessential_surface(
+            "build_plot_style_chain", "plugin_manager.build_plot_chain"
+        )
         return self.plugin_manager.build_plot_chain()
 
     @property
@@ -686,6 +716,9 @@ class CalibratedExplainer:
 
     def instantiate_plugin(self, prototype: Any) -> Any:
         """Delegate to ExplanationOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "instantiate_plugin", "plugin_manager.explanation_orchestrator.instantiate_plugin"
+        )
         return self.plugin_manager.explanation_orchestrator.instantiate_plugin(prototype)
 
     def build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
@@ -709,20 +742,26 @@ class CalibratedExplainer:
         reject_policy: Any | None = None,
     ) -> Any:
         """Delegate to ExplanationOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "invoke_explanation_plugin", "explanation_orchestrator.invoke"
+        )
         # Reject integration (ADR-029):
         # - default remains RejectPolicy.NONE (no reject)
         # - per-call reject_policy overrides the explainer-level default_reject_policy
         # Backward compatibility:
         # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
 
-        candidate_policy = reject_policy
-        if candidate_policy is None:
-            candidate_policy = getattr(self, "default_reject_policy", RejectPolicy.NONE)
+        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+            resolve_effective_reject_policy,
+        )
 
-        try:
-            effective_policy = RejectPolicy(candidate_policy)
-        except Exception:  # adr002_allow
-            effective_policy = RejectPolicy.NONE
+        resolution = resolve_effective_reject_policy(
+            reject_policy,
+            self,
+            default_policy=getattr(self, "default_reject_policy", RejectPolicy.NONE),
+            logger=logging.getLogger(__name__),
+        )
+        effective_policy = resolution.policy
 
         if effective_policy is RejectPolicy.NONE:
             return self.explanation_orchestrator.invoke(
@@ -736,6 +775,8 @@ class CalibratedExplainer:
             )
 
         # Policy enabled: ensure reject orchestration and delegate via RejectOrchestrator
+        confidence = extras.get("confidence", 0.95) if isinstance(extras, Mapping) else 0.95
+
         def _explain_fn(x_subset, **kw):
             return self.explanation_orchestrator.invoke(
                 mode,
@@ -757,16 +798,43 @@ class CalibratedExplainer:
             with contextlib.suppress(Exception):
                 self.plugin_manager.initialize_orchestrators()
 
-        return self.reject_orchestrator.apply_policy(
-            effective_policy, x, explain_fn=_explain_fn, bins=bins
+        result = self.reject_orchestrator.apply_policy(
+            effective_policy,
+            x,
+            explain_fn=_explain_fn,
+            bins=bins,
+            confidence=confidence,
+            threshold=threshold,
+            result_schema="v2",
         )
+        try:
+            from ..explanations.reject import (
+                RejectResultV2,  # pylint: disable=import-outside-toplevel
+                reject_result_v2_to_legacy,
+            )
+
+            if isinstance(result, RejectResultV2):
+                return reject_result_v2_to_legacy(result, emit_deprecation_warning=False)
+        except Exception as exc:  # adr002_allow
+            logging.getLogger(__name__).debug(
+                "RejectResultV2 compatibility conversion failed in invoke_explanation_plugin: %s",
+                exc,
+                exc_info=True,
+            )
+        return result
 
     def ensure_interval_runtime_state(self) -> None:
         """Delegate to PredictionOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "ensure_interval_runtime_state", "prediction_orchestrator.ensure_interval_runtime_state"
+        )
         return self.prediction_orchestrator.ensure_interval_runtime_state()
 
     def gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
         """Delegate to PredictionOrchestrator."""
+        self._deprecate_nonessential_surface(
+            "gather_interval_hints", "prediction_orchestrator.gather_interval_hints"
+        )
         return self.prediction_orchestrator.gather_interval_hints(fast=fast)
 
     # ===================================================================
@@ -954,6 +1022,9 @@ class CalibratedExplainer:
 
         Tests should use this instead of accessing the private attribute.
         """
+        self._deprecate_nonessential_surface(
+            "interval_plugin_hints", "plugin_manager.interval_plugin_hints"
+        )
         return self._interval_plugin_hints
 
     @interval_plugin_hints.setter
@@ -968,6 +1039,9 @@ class CalibratedExplainer:
     @property
     def interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
         """Public alias for `_interval_plugin_fallbacks`."""
+        self._deprecate_nonessential_surface(
+            "interval_plugin_fallbacks", "plugin_manager.interval_plugin_fallbacks"
+        )
         return self._interval_plugin_fallbacks
 
     @interval_plugin_fallbacks.setter
@@ -982,6 +1056,9 @@ class CalibratedExplainer:
     @property
     def explanation_plugin_overrides(self) -> Dict[str, Any]:
         """Public alias for `_explanation_plugin_overrides`."""
+        self._deprecate_nonessential_surface(
+            "explanation_plugin_overrides", "plugin_manager.explanation_plugin_overrides"
+        )
         if hasattr(self, "plugin_manager"):
             return self._explanation_plugin_overrides
         return {}
@@ -993,6 +1070,9 @@ class CalibratedExplainer:
     @property
     def interval_plugin_override(self) -> Any:
         """Public alias for `_interval_plugin_override`."""
+        self._deprecate_nonessential_surface(
+            "interval_plugin_override", "plugin_manager.interval_plugin_override"
+        )
         if hasattr(self, "plugin_manager"):
             return self._interval_plugin_override
         return None
@@ -1006,6 +1086,9 @@ class CalibratedExplainer:
     @property
     def fast_interval_plugin_override(self) -> Any:
         """Public alias for `_fast_interval_plugin_override`."""
+        self._deprecate_nonessential_surface(
+            "fast_interval_plugin_override", "plugin_manager.fast_interval_plugin_override"
+        )
         return self._fast_interval_plugin_override
 
     @fast_interval_plugin_override.setter
@@ -1015,6 +1098,9 @@ class CalibratedExplainer:
     @property
     def plot_style_override(self) -> Any:
         """Public alias for `_plot_style_override`."""
+        self._deprecate_nonessential_surface(
+            "plot_style_override", "plugin_manager.plot_style_override"
+        )
         return self._plot_style_override
 
     @plot_style_override.setter
@@ -1024,6 +1110,9 @@ class CalibratedExplainer:
     @property
     def interval_preferred_identifier(self) -> Dict[str, str | None]:
         """Public alias for `_interval_preferred_identifier`."""
+        self._deprecate_nonessential_surface(
+            "interval_preferred_identifier", "plugin_manager.interval_preferred_identifier"
+        )
         return self._interval_preferred_identifier
 
     @interval_preferred_identifier.setter
@@ -1038,6 +1127,9 @@ class CalibratedExplainer:
     @property
     def telemetry_interval_sources(self) -> Dict[str, str | None]:
         """Public alias for `_telemetry_interval_sources`."""
+        self._deprecate_nonessential_surface(
+            "telemetry_interval_sources", "plugin_manager.telemetry_interval_sources"
+        )
         return self._telemetry_interval_sources
 
     @telemetry_interval_sources.setter
@@ -1052,6 +1144,9 @@ class CalibratedExplainer:
     @property
     def interval_plugin_identifiers(self) -> Dict[str, str | None]:
         """Public alias for `_interval_plugin_identifiers`."""
+        self._deprecate_nonessential_surface(
+            "interval_plugin_identifiers", "plugin_manager.interval_plugin_identifiers"
+        )
         return self._interval_plugin_identifiers
 
     @interval_plugin_identifiers.setter
@@ -1108,6 +1203,9 @@ class CalibratedExplainer:
     @property
     def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
         """Public alias for `_interval_context_metadata`."""
+        self._deprecate_nonessential_surface(
+            "interval_context_metadata", "plugin_manager.interval_context_metadata"
+        )
         return self._interval_context_metadata
 
     @interval_context_metadata.setter
@@ -1678,6 +1776,11 @@ class CalibratedExplainer:
         LimePipeline
             The LIME pipeline instance.
         """
+        self._deprecate_lime_shap_surface(
+            "preload_lime",
+            "external_plugins.integrations.lime_pipeline.LimePipeline(self).preload(...)",
+            removal_version="v0.11.2",
+        )
         return self._lime_helper.preload(x_cal=x_cal)
 
     def preload_shap(self, num_test: int | None = None):
@@ -1693,6 +1796,11 @@ class CalibratedExplainer:
         tuple
             The SHAP explainer and reference explanation.
         """
+        self._deprecate_lime_shap_surface(
+            "preload_shap",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(self).preload(...)",
+            removal_version="v0.11.2",
+        )
         return self._shap_helper.preload(num_test=num_test)
 
     def explain_factual(
@@ -1815,7 +1923,6 @@ class CalibratedExplainer:
         *,
         _use_plugin: bool = True,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1852,9 +1959,6 @@ class CalibratedExplainer:
             Acceptable false-OOD rate. Bins are considered conforming when
             ``p_value >= significance``; bins below that threshold are
             treated as out-of-distribution and not included.
-        use_bonferroni : bool, default=False
-            When ``True``, apply per-feature Bonferroni correction and test
-            each bin of feature ``f`` at ``significance / n_bins(f)``.
         merge_adjacent : bool, default=False
             When ``True``, merge adjacent conforming bins into a single wider
             interval condition.
@@ -1896,11 +2000,11 @@ class CalibratedExplainer:
                 features_to_ignore=features_to_ignore,
                 reject_policy=reject_policy,
                 significance=significance,
-                use_bonferroni=use_bonferroni,
                 merge_adjacent=merge_adjacent,
                 n_neighbors=n_neighbors,
                 normalize_guard=normalize_guard,
                 verbose=verbose,
+                **kwargs,
             )
 
     def explore_guarded_alternatives(
@@ -1913,7 +2017,6 @@ class CalibratedExplainer:
         *,
         _use_plugin: bool = True,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1950,9 +2053,6 @@ class CalibratedExplainer:
             Acceptable false-OOD rate. Bins are considered conforming when
             ``p_value >= significance``; bins below that threshold are
             treated as out-of-distribution and not included as alternatives.
-        use_bonferroni : bool, default=False
-            When ``True``, apply per-feature Bonferroni correction and test
-            each bin of feature ``f`` at ``significance / n_bins(f)``.
         merge_adjacent : bool, default=False
             When ``True``, merge adjacent conforming bins into a single wider
             interval condition.
@@ -1994,11 +2094,11 @@ class CalibratedExplainer:
                 features_to_ignore=features_to_ignore,
                 reject_policy=reject_policy,
                 significance=significance,
-                use_bonferroni=use_bonferroni,
                 merge_adjacent=merge_adjacent,
                 n_neighbors=n_neighbors,
                 normalize_guard=normalize_guard,
                 verbose=verbose,
+                **kwargs,
             )
 
     def __call__(
@@ -2159,7 +2259,7 @@ class CalibratedExplainer:
         if bins is None and self.is_mondrian():
             bins = self.bins
         if _use_plugin:
-            return self._invoke_explanation_plugin(
+            return self.explanation_orchestrator.invoke(
                 "fast",
                 x,
                 threshold,
@@ -2220,6 +2320,11 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.
         """
+        self._deprecate_lime_shap_surface(
+            "explain_lime",
+            "external_plugins.integrations.lime_pipeline.LimePipeline(self).explain(...)",
+            removal_version="v0.11.2",
+        )
         if bins is None and self.is_mondrian():
             bins = self.bins
         # Delegate to external plugin pipeline
@@ -2258,6 +2363,11 @@ class CalibratedExplainer:
         ConfigurationError
             If SHAP is not properly installed or configured.
         """
+        self._deprecate_lime_shap_surface(
+            "explain_shap",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(self).explain(...)",
+            removal_version="v0.11.2",
+        )
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
         from pathlib import Path
@@ -2274,6 +2384,11 @@ class CalibratedExplainer:
 
     def is_lime_enabled(self, is_enabled: bool | None = None) -> bool:
         """Return or set the LIME helper enabled state."""
+        self._deprecate_lime_shap_surface(
+            "is_lime_enabled",
+            "calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()",
+            removal_version="v0.11.2",
+        )
         if is_enabled is None:
             return self._lime_helper.is_enabled()
         self._lime_helper.set_enabled(bool(is_enabled))
@@ -2281,6 +2396,11 @@ class CalibratedExplainer:
 
     def is_shap_enabled(self, is_enabled: bool | None = None) -> bool:
         """Return or set the SHAP helper enabled state."""
+        self._deprecate_lime_shap_surface(
+            "is_shap_enabled",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)",
+            removal_version="v0.11.2",
+        )
         if is_enabled is None:
             return self._shap_helper.is_enabled()
         self._shap_helper.set_enabled(bool(is_enabled))
@@ -2425,44 +2545,79 @@ class CalibratedExplainer:
         if initialize:
             self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
 
-    def initialize_reject_learner(self, calibration_set=None, threshold=None):
+    def initialize_reject_learner(  # pylint: disable=invalid-name
+        self, calibration_set=None, threshold=None, ncf=None, w=0.5
+    ):
         """Initialize the reject learner with a threshold value.
 
-        The reject learner is a :class:`crepes.base.ConformalClassifier`
-        that is trained on the calibration data. The reject learner is used to determine whether a test
-        instance is within the calibration data distribution. The reject learner is only available for
-        classification, unless a threshold is assigned.
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.initialize_reject_learner`` instead.
+            This wrapper will be removed no earlier than v0.13.0.
 
         Parameters
         ----------
         calibration_set : array-like, optional
-            The calibration set to use. Defaults to None.
+            Optional calibration set override.
         threshold : float, optional
-            The threshold value. Defaults to None.
+            Decision threshold (required for regression reject calibration).
+        ncf : str or None, default None
+            Non-conformity function type.
+        w : float, default 0.5
+            Blending weight used only when ``ncf='ensured'``.
+            Ignored for ``ncf='default'``.
+
+        Returns
+        -------
+        Any
+            The initialized reject learner.
         """
+        deprecate(
+            "CalibratedExplainer.initialize_reject_learner is deprecated since v0.11.1; "
+            "use reject_orchestrator.initialize_reject_learner instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.calibrated_explainer."
+                "CalibratedExplainer.initialize_reject_learner_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.plugin_manager.initialize_orchestrators()
         return self.reject_orchestrator.initialize_reject_learner(
-            calibration_set=calibration_set, threshold=threshold
+            calibration_set=calibration_set, threshold=threshold, ncf=ncf, w=w
         )
 
     def predict_reject(self, x, bins=None, confidence=0.95):
         """Predict whether to reject the explanations for the test data.
 
-        Use conformal classifier to identify test instances that may be too different from calibration data.
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.predict_reject`` instead.
+            This wrapper will be removed no earlier than v0.13.0.
 
         Parameters
         ----------
         x : array-like
             The test data.
         bins : array-like, optional
-            Mondrian categories. Defaults to None.
+            Mondrian categories for conditional calibration.
         confidence : float, default=0.95
-            The confidence level.
+            Confidence level used by the reject predictor.
 
         Returns
         -------
-        array-like
-            Returns rejection decisions and error/rejection rates.
+        tuple
+            Rejection decisions and summary rates.
         """
+        deprecate(
+            "CalibratedExplainer.predict_reject is deprecated since v0.11.1; "
+            "use reject_orchestrator.predict_reject instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.calibrated_explainer."
+                "CalibratedExplainer.predict_reject_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.plugin_manager.initialize_orchestrators()
         return self.reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=too-many-branches
@@ -2587,26 +2742,30 @@ class CalibratedExplainer:
 
         # Resolve reject policy (per-call overrides explainer default)
         from .reject.policy import RejectPolicy as _RejectPolicy
+        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+            resolve_effective_reject_policy,
+        )
 
         # Internal callers may skip reject orchestration by setting this flag
         if kwargs.pop("_ce_skip_reject", False):
-            reject_policy_kw = None
             skip_reject_for_internal = True
+            resolution = None
         else:
-            reject_policy_kw = kwargs.pop("reject_policy", None)
             skip_reject_for_internal = False
-        try:
-            policy = (
-                _RejectPolicy(reject_policy_kw)
-                if reject_policy_kw is not None
-                else self.default_reject_policy
+            resolution = resolve_effective_reject_policy(
+                kwargs.pop("reject_policy", None),
+                self,
+                default_policy=getattr(self, "default_reject_policy", _RejectPolicy.NONE),
+                logger=logging.getLogger(__name__),
             )
-        except Exception:  # adr002_allow - graceful fallback for invalid reject policy
-            policy = _RejectPolicy.NONE
+        policy = _RejectPolicy.NONE if skip_reject_for_internal else resolution.policy
 
         implicit_default_used = (
-            reject_policy_kw is None and policy is not _RejectPolicy.NONE
-        ) and not skip_reject_for_internal
+            (not skip_reject_for_internal)
+            and resolution is not None
+            and resolution.used_default
+            and policy is not _RejectPolicy.NONE
+        )
 
         # If no reject orchestration requested, proceed with legacy behavior
         if policy is _RejectPolicy.NONE or skip_reject_for_internal:
@@ -2634,8 +2793,28 @@ class CalibratedExplainer:
         bins_arg = kwargs.pop("bins", None)
         confidence_arg = kwargs.pop("confidence", 0.95)
         rr = self.reject_orchestrator.apply_policy(
-            policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
+            policy,
+            x,
+            explain_fn=None,
+            bins=bins_arg,
+            confidence=confidence_arg,
+            result_schema="v2",
+            **kwargs,
         )
+        try:
+            from ..explanations.reject import (
+                RejectResultV2,  # pylint: disable=import-outside-toplevel
+                reject_result_v2_to_legacy,
+            )
+
+            if isinstance(rr, RejectResultV2):
+                rr = reject_result_v2_to_legacy(rr, emit_deprecation_warning=False)
+        except Exception as exc:  # adr002_allow
+            logging.getLogger(__name__).debug(
+                "RejectResultV2 compatibility conversion failed in predict: %s",
+                exc,
+                exc_info=True,
+            )
 
         # Format the legacy payload into rr.prediction for consumer ergonomics
         try:
@@ -2752,30 +2931,42 @@ class CalibratedExplainer:
 
         # Inject default interval_summary if not provided
         kwargs.setdefault("interval_summary", self.interval_summary)
+        confidence_arg = kwargs.pop("confidence", 0.95)
 
         # Resolve reject policy (per-call override else explainer default)
         from .reject.policy import RejectPolicy as _RejectPolicy
+        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+            resolve_effective_reject_policy,
+        )
 
         # Internal callers may skip reject orchestration by setting this flag
         if kwargs.pop("_ce_skip_reject", False):
-            reject_policy_kw = None
             skip_reject_for_internal = True
+            resolution = None
         else:
-            reject_policy_kw = kwargs.pop("reject_policy", None)
             skip_reject_for_internal = False
-
-        try:
-            policy = (
-                _RejectPolicy(reject_policy_kw)
-                if reject_policy_kw is not None
-                else self.default_reject_policy
+            resolution = resolve_effective_reject_policy(
+                kwargs.pop("reject_policy", None),
+                self,
+                default_policy=getattr(self, "default_reject_policy", _RejectPolicy.NONE),
+                logger=logging.getLogger(__name__),
             )
-        except Exception:  # adr002_allow - graceful fallback for invalid reject policy
-            policy = _RejectPolicy.NONE
+
+        policy = _RejectPolicy.NONE if skip_reject_for_internal else resolution.policy
 
         implicit_default_used = (
-            reject_policy_kw is None and policy is not _RejectPolicy.NONE
-        ) and not skip_reject_for_internal
+            (not skip_reject_for_internal)
+            and resolution is not None
+            and resolution.used_default
+            and policy is not _RejectPolicy.NONE
+        )
+        if (
+            not skip_reject_for_internal
+            and policy is not _RejectPolicy.NONE
+            and self.mode == "regression"
+            and threshold is None
+        ):
+            raise ValidationError("reject learner unavailable for regression without threshold")
 
         # Helper: compute legacy proba payload for this call
         proba_payload = None
@@ -2837,10 +3028,30 @@ class CalibratedExplainer:
 
         # Reject policy active: compute envelope via orchestrator and attach legacy payload
         bins_arg = kwargs.pop("bins", None)
-        confidence_arg = kwargs.pop("confidence", 0.95)
         rr = self.reject_orchestrator.apply_policy(
-            policy, x, explain_fn=None, bins=bins_arg, confidence=confidence_arg, **kwargs
+            policy,
+            x,
+            explain_fn=None,
+            bins=bins_arg,
+            confidence=confidence_arg,
+            threshold=threshold,
+            result_schema="v2",
+            **kwargs,
         )
+        try:
+            from ..explanations.reject import (
+                RejectResultV2,  # pylint: disable=import-outside-toplevel
+                reject_result_v2_to_legacy,
+            )
+
+            if isinstance(rr, RejectResultV2):
+                rr = reject_result_v2_to_legacy(rr, emit_deprecation_warning=False)
+        except Exception as exc:  # adr002_allow
+            logging.getLogger(__name__).debug(
+                "RejectResultV2 compatibility conversion failed in predict_proba: %s",
+                exc,
+                exc_info=True,
+            )
         rr.prediction = proba_payload
 
         # Log once-per-call when an implicit default caused an envelope return

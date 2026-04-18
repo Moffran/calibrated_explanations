@@ -1,0 +1,18 @@
+{
+  "scenario": "scenario_2_multiclass_correctness",
+  "display_name": "Scenario 2 \u2014 Multiclass correctness classifier",
+  "paper_contribution": "C2",
+  "paper_rq": "RQ2",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "highlights": [
+    "Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.",
+    "This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method."
+  ],
+  "outcome": {
+    "datasets": 20,
+    "mean_accepted_top1_accuracy": NaN,
+    "mean_reject_rate": 1.0,
+    "hinge_collapse_events": 0
+  }
+}

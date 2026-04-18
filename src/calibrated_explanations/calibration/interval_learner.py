@@ -89,6 +89,12 @@ def update_interval_learner(  # pylint: disable=invalid-name
             raise ConfigurationError("Fast explanations are not supported in this update path.")
         # update the IntervalRegressor
         explainer.interval_learner.insert_calibration(xs, ys, bins=bins)
+        # Refresh the calibration-feature snapshot so guarded entrypoints see
+        # the updated x_cal rather than the stale pre-insert snapshot that was
+        # recorded when the learner was originally built via obtain_interval_calibrator.
+        _orch = getattr(explainer, "prediction_orchestrator", None)
+        if _orch is not None and hasattr(_orch, "refresh_interval_calibration_snapshot"):
+            _orch.refresh_interval_calibration_snapshot()
 
     explainer.initialized = True
 

@@ -1,175 +1,24 @@
 # Plugins
 
-Calibrated Explanations supports an optional, extensible plugin system. By default,
-you don’t need plugins to run calibrated factual and alternative explanations.
-When you want speed-ups (e.g., FAST) or custom visualizations, install a curated
-external bundle and wire it in. For built-in Matplotlib-based plotting, install
-the `viz` extra: `pip install "calibrated-explanations[viz]"`. If you’re extending
-the framework, follow the plugin contract to preserve calibration semantics.
+Plugins are optional extensions. Core calibrated explanations work without them.
 
-Choose your path:
+## Choose a path
 
-- For practitioners: Use external plugins to enable optional speed-ups and plots → {doc}`practitioner/advanced/use_plugins`
-- For contributors: Develop plugins that honor the CE contract → {doc}`contributor/plugin-contract`
+- Practitioners: {doc}`practitioner/advanced/use_plugins`
+- Contributors: {doc}`contributor/plugin-contract`
+- External plugin listing: {doc}`appendices/external_plugins`
 
-Community listings and the curated install extra live here: {doc}`appendices/external_plugins`.
+## Operational rules
 
-Notes
+- Plugins run in process with full application permissions.
+- Trust and deny controls are required for production use.
+- Governance details live in contributor docs, not in user quickstarts.
 
-- Plugins are optional and externally distributed. Core workflows work without them (Standard-004).
-- Wiring methods (priority order):
-  1) Explainer parameters; 2) Environment variables; 3) pyproject.toml; 4) Plugin-declared dependencies.
-- ⚠️ **Security warning:** Plugins execute in-process without sandboxing or isolation.
-  This is non-sandboxed execution with full application permissions, so only install and trust
-  plugins from sources you control or have reviewed.
-- Trust/deny controls and discovery are available via the registry and CLI; see contributor docs for details.
-- For detailed wiring (env vars, pyproject, dependency seeding), see {doc}`contributor/extending/plugin-advanced-contract`.
-- ADR references (GitHub):
-  [ADR-006 plugin registry trust model](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md),
-  [ADR-013 interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md),
-  [ADR-014 plot plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-014-plot-plugin-strategy.md),
-  [ADR-015 explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md),
-  [ADR-026 explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md).
+Contributor-facing ADR links:
+- `docs/improvement/adrs/ADR-006-plugin-registry-trust-model.md` (maintainer-only docs set)
+- `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` (maintainer-only docs set)
+- `docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md` (maintainer-only docs set)
+- `docs/improvement/adrs/ADR-015-explanation-plugin.md` (maintainer-only docs set)
+- `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
-Trust model (who, why, when)
-----------------------------
-
-**Why it exists:** Plugins run in-process with the same permissions as your application.
-That means third-party code can access data, file systems, and network resources without
-any sandbox boundary.
-The trust model forces explicit operator approval to reduce supply-chain risk and
-avoid accidental execution of unreviewed code.
-
-**How it works (summary):**
-
-- **Built-ins are trusted by default.** Only in-tree plugins ship as auto-trusted.
-- **Third-party plugins require explicit trust.** Set `CE_TRUST_PLUGIN` or add an
-  allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]`.
-- **Denied identifiers are blocked.** `CE_DENY_PLUGIN` skips loading and registration
-  even if a plugin is otherwise discoverable.
-- **Diagnostics are available.** Use the CLI to see trusted vs. untrusted plugins,
-  and include skipped entry points when needed.
-
-**Who should care:**
-
-- **Operators / platform teams:** Govern what plugin code is allowed in production.
-- **Security reviewers:** Audit trust/deny lists and verify plugin provenance.
-- **Plugin authors:** Understand that `trusted` metadata is informational only until
-  an operator explicitly trusts the identifier.
-
-**When to use it:**
-
-- **Development:** Use `CE_TRUST_PLUGIN` for quick, local opt-in.
-- **CI/CD or production:** Prefer the `pyproject.toml` allowlist for auditable,
-  versioned trust decisions.
-- **Incident response or testing:** Use `CE_DENY_PLUGIN` to block a plugin without
-  changing code.
-
-CLI examples:
-
-```bash
-python -m calibrated_explanations.plugins.cli list all --trusted-only
-python -m calibrated_explanations.plugins.cli list all --include-skipped
-python -m calibrated_explanations.plugins.cli report
-python -m calibrated_explanations.plugins.cli validate-interval external.interval.fast
-```
-
-**Env-var and explicit-trust workflow**
-
-- **Wiring precedence (highest → lowest):**
-  1. Explainer parameters / explicit overrides (constructor kwargs or `PluginManager` overrides).
-  2. Environment variables: `CE_EXPLANATION_PLUGIN` (global) then the ADR-015 mode keys
-     (`CE_EXPLANATION_PLUGIN_FACTUAL`, `CE_EXPLANATION_PLUGIN_ALTERNATIVE`,
-     `CE_EXPLANATION_PLUGIN_FAST`); fallbacks may be specified via `<ENV>_FALLBACKS`.
-  3. `pyproject.toml` under `[tool.calibrated_explanations.explanations]`.
-  4. Plugin-declared fallbacks and built-in defaults.
-
-- **Trust semantics (summary):**
-  - Only explicit overrides provided directly to the explainer (step 1) are treated as "explicit" for the trust model. An explicit string override will allow an untrusted plugin to be used but will emit a `UserWarning` prompting you to confirm the plugin source.
-  - Environment variables and `pyproject.toml` entries are *not* considered explicit overrides for bypassing trust; they participate in normal resolution and will not bypass trust checks.
-  - If a *preferred* identifier (selected by env/pyproject/chain logic) is untrusted, resolution fails with a `ConfigurationError` unless the operator explicitly trusts the identifier (see below).
-
-- **Operator controls:**
-  - Use `CE_TRUST_PLUGIN` (comma-separated identifiers) to mark identifiers trusted at runtime.
-  - Add an allowlist to `pyproject.toml` under `[tool.calibrated_explanations.plugins] trusted = ["id"]` for auditable, versioned trust decisions.
-  - Use `CE_DENY_PLUGIN` to block identifiers immediately (useful for incident response or temporary mitigation).
-
-- **Common env keys:** `CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_FACTUAL`,
-  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`,
-  `CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`.
-
-**pyproject trust allowlist example**
-
-```toml
-[tool.calibrated_explanations.plugins]
-trusted = ["external.explanations.fast", "external.interval.fast"]
-```
-
-The allowlist is evaluated for ADR-006 trust decisions across explanation and
-interval plugin registries, so keep identifiers aligned with the plugin
-metadata you install.
-
-**Discovery diagnostics**
-
-Use the discovery report to see which plugins were accepted or skipped (denied,
-untrusted, checksum failures), along with the resolver context that triggered
-the scan:
-
-```bash
-python -m calibrated_explanations.plugins.cli report
-```
-
-The report is particularly helpful when validating ADR-015 explanation plugin
-resolution and ADR-013 interval plugin discovery before enabling plugins in
-production.
-
-**Interval validation**
-
-Validate interval plugins against ADR-013 requirements without running
-explanations:
-
-```bash
-python -m calibrated_explanations.plugins.cli validate-interval external.interval.fast
-```
-
-Writing plugins
-----------------
-
-This section provides brief guidance for implementing plugins of each type. For detailed examples, contracts, and override patterns, see {doc}`contributor/plugin-contract`.
-
-### Writing explanation plugins
-
-Explanation plugins generate factual, alternative, or fast explanations from calibrated models, following ADR-015 and ADR-026.
-
-- **Base protocol**: Implement `ExplanationPlugin` from `src/calibrated_explanations/plugins/explanations.py`.
-- **Key methods**: `supports(model)`, `initialize(context)`, `explain_batch(x, request)`.
-- **Metadata**: Include `plugin_meta` with capabilities, modes, tasks, and dependencies.
-- **Registration**: Use `register_explanation_plugin(<id>, plugin)`.
-- **Override precedence**: Explainer parameters > environment variables (`CE_EXPLANATION_PLUGIN_*`) > pyproject.toml > plugin dependencies.
-
-See {doc}`contributor/plugin-contract` for a "Hello" example and wiring details.
-
-### Writing interval calibrator plugins
-
-Interval calibrator plugins produce prediction intervals for uncertainty quantification, per ADR-013.
-
-- **Base protocol**: Implement `IntervalCalibratorPlugin` from `src/calibrated_explanations/plugins/intervals.py`.
-- **Key method**: `create(context, **kwargs)` returning calibrator instances.
-- **Metadata**: Include `plugin_meta` with capabilities, modes, and fast compatibility.
-- **Registration**: Use `register_interval_plugin(<id>, plugin)`.
-- **Override precedence**: Explainer parameters > environment variables (`CE_INTERVAL_PLUGIN_*`) > pyproject.toml > plugin dependencies.
-
-See {doc}`contributor/plugin-contract` for a "Hello" example and context details.
-
-### Writing plot plugins
-
-Plot plugins render explanation visualizations in different styles and formats, following ADR-014.
-
-- **Base classes**: Subclass `BasePlotBuilder` and `BasePlotRenderer` from `src/calibrated_explanations/viz/plugins.py`. Use `initialize()` to capture a `PlotRenderContext` and implement `build()` / `render()`.
-- **Validation**: If your builder emits a PlotSpec-shaped mapping, call `validate_plotspec()` (available from `src/calibrated_explanations/viz/serializers.py`) to surface schema problems early. The base renderer will also attempt best-effort validation for PlotSpec payloads.
-- **Metadata**: Provide `plugin_meta` on both builder and renderer. Builders may include an optional `default_renderer` key recommending a renderer id.
-- **Registration**: Register your builder/renderer via the registry helpers: `register_plot_builder(<id>, builder)` and `register_plot_renderer(<id>, renderer)`; then map a style with `register_plot_style(<style_id>, metadata={...})`.
-- **Override precedence**: Explainer parameters > environment variables (`CE_PLOT_STYLE_*`) > pyproject.toml > plugin dependencies.
-- **CLI helpers**: Use `ce.plugins list --plots` to inspect style mappings, `ce.plugins validate-plot --builder <id>` to run a dry build, and `ce.plugins set-default --plot-style <id>` to set the default style.
-
-See `src/calibrated_explanations/viz/plugins.py` for the minimal base classes and `src/calibrated_explanations/plugins/cli.py` for the CLI tooling examples.
+Entry-point tier: Tier 1.

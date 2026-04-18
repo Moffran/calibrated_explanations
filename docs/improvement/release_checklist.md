@@ -3,6 +3,26 @@
 This checklist tracks compliance with release gates defined in `docs/improvement/RELEASE_PLAN_v1.md`.
 It must be reviewed and completed for every pull request that touches the user-facing API or documentation.
 
+Boundary policy: keep checklist structure stable within a milestone; adjust gates and wording at milestone boundaries to reduce process overhead.
+
+## CI role and local reproduction
+
+- **Mirror CI scope confirmed?**
+  - [ ] Yes — validation + artifact build verification only
+  - [ ] Yes — authoritative release/publication remains `Moffran/calibrated_explanations`
+- **Local checks run with correct tier?**
+  - [ ] `make local-checks-pr` (routine PR validation)
+  - [ ] `make local-checks` (milestone closure or branch-gate changes)
+
+## Packaging verification (validation only)
+
+- **Build artifacts produced?**
+  - [ ] Yes (wheel + sdist)
+- **Install from built artifacts in clean environment?**
+  - [ ] Yes
+- **Artifact contents inspected?**
+  - [ ] Yes
+
 ## Legacy Stability (ADR-020)
 
 - **Legacy contract touched?**
@@ -21,6 +41,9 @@ It must be reviewed and completed for every pull request that touches the user-f
   - [ ] Yes - without warnings
 - **Gallery examples execute? (within time ceilings)**
   - [ ] Yes
+- **Notebook execution policy applied correctly?**
+  - [ ] Yes — release branches blocking
+  - [ ] Yes — non-release contexts advisory/non-blocking unless explicitly promoted
 
 ## Test Quality (ADR-030) (run `python scripts/anti-pattern-analysis/detect_test_anti_patterns.py --check --baseline .github/test-quality-baseline.json`)
 
@@ -41,6 +64,17 @@ It must be reviewed and completed for every pull request that touches the user-f
   - [ ] Passed
 - **ADR-026 immutable context + telemetry assertions covered**
   - [ ] Passed
+
+## v0.11.1 ADR-033 Closure (Tasks 11–13)
+
+- **Task 11 contract hardening (`--modality`, shims, warning semantics)**
+  - [x] Targeted ADR-033 contract tests pass
+  - [x] `make local-checks-pr` completed successfully in current integrated state
+- **Task 12 documentation follow-through**
+  - [ ] Sphinx hard-fail docs build (`python -m sphinx docs docs/_build/html -W --keep-going -q`) verified in release environment
+- **Task 13 packaging smoke realism**
+  - [x] Packaging smoke tests use entry-point discovery path with real `EntryPoint` loading semantics
+  - [x] ADR-033 packaging smoke test suite passes end-to-end
 
 ## Formatting & Standards (run `pre-commit run --all-files`)
 

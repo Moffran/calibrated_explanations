@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -39,6 +40,8 @@ def test_check_logging_domains_passes_for_dunder_name_and_project_literal(tmp_pa
     )
     assert result.returncode == 0
     assert "Logger domain check passed" in result.stdout
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["package_root"] == "src/calibrated_explanations"
 
 
 def test_check_logging_domains_fails_for_non_project_literal(tmp_path: Path) -> None:

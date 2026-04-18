@@ -4,7 +4,7 @@ All code examples in this repo use `WrapCalibratedExplainer`.
 
 ## vs SHAP
 
-- ✅ Uncertainty bounds on feature importance (aleatoric + epistemic)
+- ✅ Endpoint envelopes describing how features shift predictive boundaries
 - ✅ Calibrated predictions included
 - ⚠️ Requires held-out calibration set for guarantees (SHAP does not)
 

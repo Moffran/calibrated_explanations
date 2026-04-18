@@ -26,7 +26,7 @@ Define top-level internal packages (initial):
   while keeping low-level executors isolated from sibling imports.
 - `calibrated_explanations.schema`: JSON schema definitions & validation helpers (see ADR-005).
 - `calibrated_explanations.plugins`: Registry & loading (to be defined in ADR-006).
-- `calibrated_explanations.viz`: Visualization abstractions (future ADR-007).
+- `calibrated_explanations.viz`: Visualization abstractions (see ADR-036 and ADR-037).
 - `calibrated_explanations.utils`: Non-domain helpers (logging, hashing, config parsing) — keep lean.
 
 Public API consolidation via `calibrated_explanations.__init__` re-exporting stable entry points only (`CalibratedExplainer`, `WrapCalibratedExplainer`, factories, dataclasses, high-level run functions). Everything else treated as private (leading underscore or omitted from `__all__`).

@@ -38,43 +38,20 @@ def orchestrator(mock_explainer):
         return PredictionOrchestrator(mock_explainer)
 
 
-@patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
-@patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
-def test_resolve_interval_plugin_denied(mock_is_denied, mock_find_desc, mock_ensure, orchestrator):
-    mock_is_denied.return_value = True
-
+def test_resolve_interval_plugin_denied(orchestrator):
+    orchestrator.explainer.plugin_manager.resolve_interval_plugin.side_effect = ConfigurationError(
+        "Unable to resolve interval plugin"
+    )
     with pytest.raises(ConfigurationError, match="Unable to resolve interval plugin"):
         orchestrator.resolve_interval_plugin(fast=False)
 
 
-@patch("calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin")
-@patch("calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted")
-@patch("calibrated_explanations.core.prediction.orchestrator.is_identifier_denied")
 def test_resolve_interval_plugin_metadata_error(
-    mock_is_denied,
-    mock_find_trusted,
-    mock_find,
-    mock_find_desc,
-    mock_ensure,
     orchestrator,
-    mock_explainer,
 ):
-    mock_is_denied.return_value = False
-
-    # Setup descriptor with incompatible metadata
-    mock_desc = MagicMock()
-    mock_desc.metadata = {
-        "name": "default_plugin",
-        "modes": ("regression",),
-        "capabilities": ("interval:regression",),
-    }  # Wrong mode
-    mock_desc.trusted = True
-    mock_desc.plugin = MagicMock()
-    mock_find_desc.return_value = mock_desc
-
+    orchestrator.explainer.plugin_manager.resolve_interval_plugin.side_effect = ConfigurationError(
+        "Unable to resolve interval plugin"
+    )
     with pytest.raises(ConfigurationError, match="Unable to resolve interval plugin"):
         orchestrator.resolve_interval_plugin(fast=False)
 

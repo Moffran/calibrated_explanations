@@ -8,6 +8,7 @@ from calibrated_explanations.cache.cache import (
     LRUCache,
     default_size_estimator,
 )
+from calibrated_explanations.core.config_manager import ConfigManager
 
 
 def test_pickle_and_restore_cache_config_and_metrics():
@@ -76,11 +77,11 @@ def test_wrap_none_and_evict_least_recently_used():
 
 def test_parse_cache_config_from_env(monkeypatch):
     monkeypatch.delenv("CE_CACHE", raising=False)
-    cfg = CacheConfig.from_env(None)
+    cfg = CacheConfig.from_env(None, config_manager=ConfigManager.from_sources())
     assert isinstance(cfg, CacheConfig)
 
     monkeypatch.setenv("CE_CACHE", "namespace=foo,version=v9,max_items=3,max_bytes=1024,ttl=5")
-    cfg2 = CacheConfig.from_env(None)
+    cfg2 = CacheConfig.from_env(None, config_manager=ConfigManager.from_sources())
     assert cfg2.namespace == "foo"
     assert cfg2.version == "v9"
     assert cfg2.max_items == 3

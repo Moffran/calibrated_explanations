@@ -1,4 +1,5 @@
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class DummyExplainer:
@@ -32,11 +33,15 @@ def make_wrapper_with_dummy(dummy=None):
 
 def test_explain_shap_delegates_to_explainer():
     w, dummy = make_wrapper_with_dummy()
-    result = w.explain_shap([[1, 2, 3]], foo="bar")
-    assert isinstance(result, dict)
-    assert result["called"] is True
-    assert result["x"] == [[1, 2, 3]]
-    assert result["kwargs"]["foo"] == "bar"
+    with warns_or_raises(match="WrapCalibratedExplainer.explain_shap is deprecated"):
+        result = w.explain_shap([[1, 2, 3]], foo="bar")
+    if deprecations_error_enabled():
+        assert dummy.preprocessor_metadata is None
+    else:
+        assert isinstance(result, dict)
+        assert result["called"] is True
+        assert result["x"] == [[1, 2, 3]]
+        assert result["kwargs"]["foo"] == "bar"
 
 
 def test_preprocessor_metadata_property_and_setter():

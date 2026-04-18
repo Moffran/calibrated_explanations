@@ -183,7 +183,7 @@ The validator must check:
   failures.【F:src/calibrated_explanations/plugins/builtins.py†L353-L442】
 * Additional metadata fields (such as `dependencies` or `trusted`) are primarily
   advisory. The runtime currently inspects `interval_dependency`,
-  `plot_dependency`, and trust settings to enforce ADR-006/ADR-013/ADR-014, so
+  `plot_dependency`, and trust settings to enforce ADR-006/ADR-013/ADR-037, so
   authors should keep those aligned with the calibrators and plotters they
   expect to use.
 
@@ -199,6 +199,17 @@ The validator must check:
   plotting, and JSON export. Plugins that produce alternative containers must
   populate equivalent attributes so downstream utilities continue to operate
   without change.【F:src/calibrated_explanations/explanations/explanations.py†L24-L249】
+
+### 6a. Scoped exception for guarded entrypoints (v0.11.x)
+
+* `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` are
+  sanctioned core-side guarded execution paths in v0.11.x.
+* They reuse CE containers, explanation subclasses, and helper surfaces, but
+  they are **not** explanation-plugin modes and are not required to execute
+  through `_invoke_explanation_plugin`.
+* Their semantics are governed by ADR-032, which contracts schema compatibility
+  and representative-point guarded interval candidates rather than plugin-path
+  identity with standard CE.
 
 ## Consequences
 

@@ -1,0 +1,17 @@
+{
+  "num_seeds": 30,
+  "sample_test": 200,
+  "n_train": 3000,
+  "n_cal": 1000,
+  "n_test": 500,
+  "significance": [
+    0.01,
+    0.05,
+    0.1,
+    0.2
+  ],
+  "models": [
+    "logreg",
+    "rf"
+  ]
+}

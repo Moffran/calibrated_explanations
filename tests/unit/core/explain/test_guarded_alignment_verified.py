@@ -1,4 +1,4 @@
-"""Unit tests verifying strict alignment of guarded explanations with standard CE conventions."""
+"""Internal consistency tests for guarded CE-compatible compatibility shims."""
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -6,8 +6,8 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
-def test_should_align_factual_weight_with_ce_impact_semantics():
-    """Guarded factual should use the same CE factual weight definition as standard factual."""
+def test_should_keep_factual_weights_internally_consistent_with_feature_backgrounds():
+    """Guarded factual weights should stay consistent with guarded background caches."""
     # Arrange
     x_train = np.array([[0, 0], [1, 1], [0, 1], [1, 0]])
     y_train = np.array([0, 2, 1, 1])
@@ -31,13 +31,13 @@ def test_should_align_factual_weight_with_ce_impact_semantics():
         p = rules["predict"][i]
         feature_background = expl.feature_predict["predict"][f]
 
-        # Standard factual CE invariant:
-        # weight = prediction - per-feature background prediction.
+        # Guarded internal consistency invariant:
+        # weight = emitted rule prediction - guarded background prediction.
         assert np.isclose(w, p - feature_background, atol=1e-5)
 
 
-def test_should_match_standard_factual_baseline_payload_shape():
-    """Guarded factual baseline payload should match standard factual schema."""
+def test_should_preserve_ce_compatible_baseline_payload_shape():
+    """Guarded factual baseline payload should preserve CE-compatible schema shape."""
     x_train = np.array([[0, 0], [1, 1], [0, 1], [1, 0]])
     y_train = np.array([0, 1, 1, 0])
 
@@ -60,8 +60,8 @@ def test_should_match_standard_factual_baseline_payload_shape():
     assert len(guarded["base_predict_high"]) == 1
 
 
-def test_should_format_categorical_conditions_with_single_equals():
-    """Categorical rules should use 'Feature = Value' not 'Feature == Value'."""
+def test_should_format_categorical_conditions_with_single_equals_for_helper_compatibility():
+    """Categorical rules should keep CE-compatible condition formatting."""
     # Arrange
     x_train = np.array([[0, 0], [1, 1]])
     y_train = np.array([0, 1])
@@ -90,8 +90,8 @@ def test_should_format_categorical_conditions_with_single_equals():
         assert " = " in rule_str, f"Missing single equals in rule string: {rule_str}"
 
 
-def test_should_populate_internal_feature_weights_for_conjunction_compatibility():
-    """Guarded explanations should populate internal caches used by plugins like conjunctions."""
+def test_should_populate_internal_feature_caches_for_conjunction_compatibility():
+    """Guarded explanations should populate the caches used by conjunction helpers."""
     # Arrange
     x_train = np.array([[0, 0], [1, 1], [0, 1], [1, 0]])
     y_train = np.array([0, 1, 1, 0])
@@ -115,14 +115,14 @@ def test_should_populate_internal_feature_weights_for_conjunction_compatibility(
     assert len(expl.feature_weights["predict"]) == x_train.shape[1]
     assert len(expl.feature_predict["predict"]) == x_train.shape[1]
 
-    # Standard CE convention: plural container should also have them
+    # CE-compatible containers should also expose the same helper caches.
     assert hasattr(result, "feature_weights")
     assert len(result.feature_weights["predict"]) == 1  # 1 instance
     assert len(result.feature_weights["predict"][0]) == x_train.shape[1]
 
 
-def test_should_include_prob_in_prediction_data_for_classification():
-    """Classification predictions should include 'prob' key in prediction data."""
+def test_should_include_prob_key_in_classification_prediction_metadata():
+    """Classification predictions should retain the `prob` key expected by CE helpers."""
     # Arrange
     x_train = np.array([[0, 0], [1, 1], [0, 1], [1, 0]])
     y_train = np.array([0, 1, 1, 0])
@@ -137,6 +137,6 @@ def test_should_include_prob_in_prediction_data_for_classification():
     result = explainer.explain_guarded_factual(x_test, significance=1.0)
     expl = result.explanations[0]
 
-    # Standard CE convention: Prediction metadata for classification MUST have 'prob'
+    # CE-compatible helper surfaces expect a `prob` key for classification.
     assert "prob" in expl.prediction
     assert 0 <= expl.prediction["prob"] <= 1

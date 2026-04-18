@@ -115,6 +115,13 @@ Every fallback must be visible to users. No silent fallbacks.
 | `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
 | `Makefile` | Entry points: `make test`, `make ci-local` |
 
+### Root-directory policy
+
+**No new root-level directories may be created** without explicit maintainer approval.
+Artifact and report outputs must be placed under an existing top-level directory:
+`reports/`, `artifacts/`, `docs/`, `scripts/`, or `tests/`.
+Proposing a new root directory requires a PR rationale and an update to this file.
+
 ---
 
 ## 6A. Shared Skill Registry (Cross-Agent)
@@ -217,6 +224,43 @@ Before any implementation work:
 1. Read `docs/improvement/RELEASE_PLAN_v1.md` to identify the active milestone.
 2. Check `docs/improvement/adrs/` for ADRs governing the area being changed.
 
+### 7A. Engineering planning hierarchy authority (mandatory)
+
+The repository planning/control hierarchy is authoritative and must be preserved:
+
+1. `docs/improvement/RELEASE_PLAN_v1.md` (release-level plan and control gates)
+2. Concrete implementation plans in `vX.Y.Z_plan.md`
+3. Governance via ADRs (`docs/improvement/adrs/`) and Standards (`docs/standards/`)
+
+Conflict rule: ADRs and Standards govern design, behavior, architecture, and
+engineering standards. If any plan text conflicts with an ADR/Standard, the
+ADR/Standard is authoritative and must win.
+
+Do not redesign, replace, or create a parallel planning hierarchy unless one of these
+is true:
+
+- The current documents directly contradict each other.
+- A required engineering rule is missing and safe execution is impossible without it.
+- The current structure causes a concrete execution failure (not a stylistic concern).
+- A repository-wide instruction for all agents and human contributors has no suitable
+  existing home elsewhere.
+
+When a shared instruction must be added or updated, `CONTRIBUTOR_INSTRUCTIONS.md`
+is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
+repository-wide engineering rules.
+
+Default execution posture for plan/instruction edits:
+
+- If no concrete contradiction, missing required rule, or execution blocker
+  exists, make no structural documentation changes.
+- Apply minimum-diff edits only; preserve existing headings, numbering,
+  milestone-plan structure, and future-milestone detail unless a concrete
+  conflict requires local clarification.
+- Do not create new plan/policy/checklist files by default; prefer resolving
+  shared guidance in this file with short cross-references from plans only when
+  necessary.
+
 ---
 
 ## 8. Design Patterns & TDD
@@ -252,16 +296,13 @@ decisions. The ADR takes precedence over any plan document.
 | ADR-004 | Parallel Backend Abstraction | Changes to parallel execution strategy |
 | ADR-005 | Explanation JSON Schema Versioning | Explanation payload structure changes |
 | ADR-006 | Plugin Registry Trust Model | Adding or modifying a plugin registration |
-| ADR-007 | Visualization Abstraction Layer | PlotSpec IR or headless export changes |
 | ADR-008 | Explanation Domain Model | Explanation domain object changes |
 | ADR-009 | Input Preprocessing and Mapping | Input encoding, unseen-category policy |
 | ADR-010 | Core vs Evaluation Split | Import-time dependencies or extras flags |
 | ADR-011 | Deprecation and Migration Policy | Deprecating or removing any API |
 | ADR-012 | Documentation & Gallery Build | Docs/notebook build policy |
 | ADR-013 | Interval Calibrator Plugin Strategy | Calibrator plugin changes |
-| ADR-014 | Plot Plugin Strategy | Plot plugin changes |
 | ADR-015 | Explanation Plugin Integration | Explanation plugin changes |
-| ADR-016 | PlotSpec Separation and Schema | PlotSpec schema/validation changes |
 | ADR-020 | Legacy User API Stability | Any public API change or removal |
 | ADR-021 | Calibrated Interval Semantics | Interval/probability semantics |
 | ADR-023 | Matplotlib Coverage Exemption | Coverage targets for viz modules |
@@ -272,6 +313,11 @@ decisions. The ADR takes precedence over any plan document.
 | ADR-030 | Test Quality Priorities and Enforcement | Any new or modified test |
 | ADR-031 | Calibrator Serialization | Calibrator save/load contracts |
 | ADR-032 | Guarded Explanation Semantics | In-distribution / guarded mode |
+| ADR-033 | Modality Extension Plugin Contract and Packaging Strategy | Modality metadata, plugin API compatibility, resolver modality selection, or extension packaging/shim policy |
+| ADR-034 | Centralized Configuration Management | Runtime config reads, env/`pyproject.toml` precedence, strict config validation, or config export/governance events |
+| ADR-035 | CI Workflow Governance | Changes to `.github/workflows/**`, `.github/actions/ci-policy/**`, CI merge gates, or `scripts/local_checks.py` parity rules |
+| ADR-036 | PlotSpec Canonical Contract and Validation Boundary | PlotSpec canonical model, serialization boundaries, and validation contract changes |
+| ADR-037 | Visualization Extension and Rendering Governance | Plot builder/renderer governance and visualization extension changes |
 
 > **Note:** ADR-017, ADR-018, and ADR-019 were reclassified as engineering standards
 > (STD-001, STD-002, STD-003 respectively); the original ADR files were removed and

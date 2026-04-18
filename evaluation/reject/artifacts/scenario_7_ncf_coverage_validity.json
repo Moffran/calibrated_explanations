@@ -1,0 +1,28 @@
+{
+  "scenario": "scenario_7_ncf_coverage_validity",
+  "display_name": "Scenario 7 \u2014 NCF coverage validity sweep (supplementary)",
+  "paper_contribution": "C1",
+  "guarantee_status": "empirical_companion_to_proposition_1",
+  "supplementary": true,
+  "quick": false,
+  "highlights": [
+    "SUPPLEMENTARY \u2014 may yield misleading results before the RT-2 fix.",
+    "Empirical companion to Proposition 1: coverage >= 1-epsilon across (NCF, w, epsilon) grid.",
+    "structural_violation: CI upper bound < 1-epsilon; cannot be attributed to finite-sample noise."
+  ],
+  "outcome": {
+    "datasets": 26,
+    "total_violations": 0,
+    "structural_violations": 0,
+    "violations_by_ncf_w": {
+      "('default', 0.3)": 0,
+      "('default', 0.5)": 0,
+      "('default', 0.7)": 0,
+      "('default', 1.0)": 0,
+      "('ensured', 0.3)": 0,
+      "('ensured', 0.5)": 0,
+      "('ensured', 0.7)": 0,
+      "('ensured', 1.0)": 0
+    }
+  }
+}

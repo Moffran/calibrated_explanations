@@ -1,8 +1,10 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
+import warnings
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.exceptions import ValidationError, DataShapeError
+from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 @pytest.fixture
@@ -73,61 +75,80 @@ def test_preloads(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     with patch.object(explainer, "lime_helper") as mock_lime:
-        explainer.preload_lime(x_cal)
-        mock_lime.preload.assert_called_once_with(x_cal=x_cal)
+        with warns_or_raises(match="preload_lime is deprecated"):
+            explainer.preload_lime(x_cal)
+        if deprecations_error_enabled():
+            mock_lime.preload.assert_not_called()
+        else:
+            mock_lime.preload.assert_called_once_with(x_cal=x_cal)
 
     with patch.object(explainer, "shap_helper") as mock_shap:
-        explainer.preload_shap(num_test=10)
-        mock_shap.preload.assert_called_once_with(num_test=10)
+        with warns_or_raises(match="preload_shap is deprecated"):
+            explainer.preload_shap(num_test=10)
+        if deprecations_error_enabled():
+            mock_shap.preload.assert_not_called()
+        else:
+            mock_shap.preload.assert_called_once_with(num_test=10)
     # Minimal assertion to satisfy test-quality checks
     assert True
 
 
-def test_plugin_delegations_and_aliases(mock_learner, mock_plugin_manager):
+def test_plugin_delegations_and_aliases(
+    monkeypatch: pytest.MonkeyPatch, mock_learner, mock_plugin_manager
+):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
     plugin_manager = explainer.plugin_manager
 
     plugin_manager.build_plot_chain.return_value = ("default",)
-    assert explainer.build_plot_style_chain() == ("default",)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.build_plot_style_chain() == ("default",)
 
     explainer.prediction_orchestrator.ensure_interval_runtime_state.return_value = "ok"
-    assert explainer.ensure_interval_runtime_state() == "ok"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.ensure_interval_runtime_state() == "ok"
     explainer.prediction_orchestrator.gather_interval_hints.return_value = ("hint",)
-    assert explainer.gather_interval_hints(fast=True) == ("hint",)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.gather_interval_hints(fast=True) == ("hint",)
 
-    plugin_manager.interval_plugin_hints = {"a": ("b",)}
-    assert explainer.interval_plugin_hints == {"a": ("b",)}
-    explainer.interval_plugin_hints = {"c": ("d",)}
-    assert plugin_manager.interval_plugin_hints == {"c": ("d",)}
-    assert explainer.interval_plugin_hints == {"c": ("d",)}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        plugin_manager.interval_plugin_hints = {"a": ("b",)}
+        assert explainer.interval_plugin_hints == {"a": ("b",)}
+        explainer.interval_plugin_hints = {"c": ("d",)}
+        assert plugin_manager.interval_plugin_hints == {"c": ("d",)}
+        assert explainer.interval_plugin_hints == {"c": ("d",)}
 
-    plugin_manager.interval_plugin_fallbacks = {"a": ("b",)}
-    assert explainer.interval_plugin_fallbacks == {"a": ("b",)}
-    explainer.interval_plugin_fallbacks = {"c": ("d",)}
-    assert plugin_manager.interval_plugin_fallbacks == {"c": ("d",)}
-    assert explainer.interval_plugin_fallbacks == {"c": ("d",)}
+        plugin_manager.interval_plugin_fallbacks = {"a": ("b",)}
+        assert explainer.interval_plugin_fallbacks == {"a": ("b",)}
+        explainer.interval_plugin_fallbacks = {"c": ("d",)}
+        assert plugin_manager.interval_plugin_fallbacks == {"c": ("d",)}
+        assert explainer.interval_plugin_fallbacks == {"c": ("d",)}
 
-    plugin_manager.interval_preferred_identifier = {"x": "y"}
-    assert explainer.interval_preferred_identifier == {"x": "y"}
-    explainer.interval_preferred_identifier = {"z": None}
-    assert plugin_manager.interval_preferred_identifier == {"z": None}
+        plugin_manager.interval_preferred_identifier = {"x": "y"}
+        assert explainer.interval_preferred_identifier == {"x": "y"}
+        explainer.interval_preferred_identifier = {"z": None}
+        assert plugin_manager.interval_preferred_identifier == {"z": None}
 
-    plugin_manager.telemetry_interval_sources = {"x": "y"}
-    assert explainer.telemetry_interval_sources == {"x": "y"}
-    explainer.telemetry_interval_sources = {"z": "w"}
-    assert plugin_manager.telemetry_interval_sources == {"z": "w"}
+        plugin_manager.telemetry_interval_sources = {"x": "y"}
+        assert explainer.telemetry_interval_sources == {"x": "y"}
+        explainer.telemetry_interval_sources = {"z": "w"}
+        assert plugin_manager.telemetry_interval_sources == {"z": "w"}
 
-    plugin_manager.interval_plugin_identifiers = {"x": "y"}
-    assert explainer.interval_plugin_identifiers == {"x": "y"}
-    explainer.interval_plugin_identifiers = {"z": "w"}
-    assert plugin_manager.interval_plugin_identifiers == {"z": "w"}
+        plugin_manager.interval_plugin_identifiers = {"x": "y"}
+        assert explainer.interval_plugin_identifiers == {"x": "y"}
+        explainer.interval_plugin_identifiers = {"z": "w"}
+        assert plugin_manager.interval_plugin_identifiers == {"z": "w"}
 
-    plugin_manager.interval_context_metadata = {"x": {"y": 1}}
-    assert explainer.interval_context_metadata == {"x": {"y": 1}}
-    explainer.interval_context_metadata = {"z": {"w": 2}}
-    assert plugin_manager.interval_context_metadata == {"z": {"w": 2}}
+        plugin_manager.interval_context_metadata = {"x": {"y": 1}}
+        assert explainer.interval_context_metadata == {"x": {"y": 1}}
+        explainer.interval_context_metadata = {"z": {"w": 2}}
+        assert plugin_manager.interval_context_metadata == {"z": {"w": 2}}
 
     explainer.plot_plugin_fallbacks = {"plot": ("fallback",)}
     assert plugin_manager.plot_plugin_fallbacks == {"plot": ("fallback",)}
@@ -136,10 +157,14 @@ def test_plugin_delegations_and_aliases(mock_learner, mock_plugin_manager):
     assert plugin_manager.explanation_plugin_instances == explainer.explanation_plugin_instances
 
     explainer.interval_plugin_override = "override"
-    assert explainer.interval_plugin_override == "override"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.interval_plugin_override == "override"
 
     explainer.fast_interval_plugin_override = "fast"
-    assert explainer.fast_interval_plugin_override == "fast"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert explainer.fast_interval_plugin_override == "fast"
 
     explainer.initialized = True
     assert explainer.is_initialized is True
@@ -190,7 +215,8 @@ def test_explain_mondrian_bins_and_legacy_path(mock_learner, mock_plugin_manager
         assert mock_legacy.call_args.kwargs["bins"] is explainer.bins
 
 
-def test_additional_coverage(mock_learner, mock_plugin_manager):
+def test_additional_coverage(monkeypatch: pytest.MonkeyPatch, mock_learner, mock_plugin_manager):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
 
@@ -216,11 +242,15 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     # properties
     explainer.plugin_manager = mock_plugin_manager
     _ = explainer.plot_plugin_fallbacks
-    _ = explainer.plot_style_override
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        _ = explainer.plot_style_override
     _ = explainer.explanation_plugin_instances
-    _ = explainer.explanation_plugin_overrides
-    _ = explainer.interval_plugin_override
-    _ = explainer.plot_style_override
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        _ = explainer.explanation_plugin_overrides
+        _ = explainer.interval_plugin_override
+        _ = explainer.plot_style_override
     _ = explainer.shap_helper
     _ = explainer.feature_filter_per_instance_ignore
     _ = explainer.runtime_telemetry
@@ -315,23 +345,37 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
     import external_plugins.integrations.lime_pipeline as lime_pipeline_mod
 
     with patch.object(lime_pipeline_mod, "LimePipeline") as mock_lime:
-        explainer.explain_lime(x_cal)
-        mock_lime.assert_called()
+        with warns_or_raises(match="explain_lime is deprecated"):
+            explainer.explain_lime(x_cal)
+        if deprecations_error_enabled():
+            mock_lime.assert_not_called()
+        else:
+            mock_lime.assert_called()
 
     # explain_shap
     import external_plugins.integrations.shap_pipeline as shap_pipeline_mod
 
     with patch.object(shap_pipeline_mod, "ShapPipeline") as mock_shap:
-        explainer.explain_shap(x_cal)
-        mock_shap.assert_called()
+        with warns_or_raises(match="explain_shap is deprecated"):
+            explainer.explain_shap(x_cal)
+        if deprecations_error_enabled():
+            mock_shap.assert_not_called()
+        else:
+            mock_shap.assert_called()
 
     # is_lime_enabled / is_shap_enabled
-    explainer.is_lime_enabled(True)
-    explainer.is_lime_enabled(False)
-    explainer.is_lime_enabled()
-    explainer.is_shap_enabled(True)
-    explainer.is_shap_enabled(False)
-    explainer.is_shap_enabled()
+    with warns_or_raises(match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled(True)
+    with warns_or_raises(match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled(False)
+    with warns_or_raises(match="is_lime_enabled is deprecated"):
+        explainer.is_lime_enabled()
+    with warns_or_raises(match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled(True)
+    with warns_or_raises(match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled(False)
+    with warns_or_raises(match="is_shap_enabled is deprecated"):
+        explainer.is_shap_enabled()
 
     # is_multiclass
     explainer.num_classes = 3
@@ -367,8 +411,8 @@ def test_additional_coverage(mock_learner, mock_plugin_manager):
         explainer.set_mode("invalid")
 
     # initialize_reject_learner / predict_reject
-    explainer.initialize_reject_learner()
-    explainer.predict_reject(x_cal)
+    explainer.reject_orchestrator.initialize_reject_learner()
+    explainer.reject_orchestrator.predict_reject(x_cal)
 
     # set_discretizer
     explainer.set_discretizer("entropy")

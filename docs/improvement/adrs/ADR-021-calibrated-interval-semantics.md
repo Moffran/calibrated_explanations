@@ -1,9 +1,9 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-03-16):** Last edited 2026-03-16 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-021: Calibrated Interval Semantics
 
-Status: Draft
-Date: 2025-10-07
+Status: Accepted (with documented un-contracted constraints)
+Date: 2026-03-16
 Deciders: Core maintainers
 Reviewers: TBD
 Supersedes: None
@@ -48,9 +48,9 @@ between the three paths.
 * During explanation generation the first pass through
   `prediction_helpers.explain_predict_step` stores the calibrated probability
   vector under `prediction["__full_probabilities__"]` alongside the class-level
-  interval for each queried instance. Subsequent perturbations—emitted by the
-  FAST explanation path, which layers a dedicated plugin on top of the legacy
-  interval calibrator—reuse the same Venn-Abers calibrator, ensuring
+  interval for each queried instance. Subsequent perturbations, emitted by the
+  FAST explanation path (which layers a dedicated plugin on top of the legacy
+  interval calibrator), reuse the same Venn-Abers calibrator, ensuring
   CE-formatted outputs contain both per-feature impacts and the original
   probability interval metadata.【F:src/calibrated_explanations/core/prediction_helpers.py†L158-L218】
 * `CalibratedExplanations` caches the per-instance predictions, intervals, and
@@ -233,9 +233,18 @@ Negative / Risks:
 * No runtime code was altered, so existing misconceptions in older materials
   remain until linked or revised.
 
+## Explicit Non-Guarantees
+
+While CE manages the structural formatting above, CE expressly **does not contractually guarantee** the physical statistical constraints of its underlying third-party dependencies (`crepes`, `venn-abers`):
+
+1. **Exchangeability & Theoretical Coverage**: CE assumes the calibration data inputted via the wrapper is statistically exchangeable with production inferences. CE does not scan for drift, nor guarantees continuous perfect 90% confidence intervals if out-of-distribution (OOD) data is supplied.
+2. **Absolute Parity/Monotonicity Checking**: CE trusts `venn-abers` vector generation and `crepes` conformal arrays. CE does not constantly test whether normalization or monotonicity math formulas successfully hold within third-party code.
+3. **Epsilon Soft Coercion**: Small floating-point differences (e.g. drift < `1e-8`) outside the `low <= predict <= high` interval are coercively bounded to preserve system structural validity rather than fatally failing the pipeline. Hard validation (`ValidationError`) only occurs on stark logical breaches.
+4. **Feature-Level Interval Propagation limits**: The rule weights and alternative scenario explanations inherit boundary formats, but the theoretical mathematical coverage bounds of those *derived* properties are not formally and empirically tested.
+
 ## Status & Follow-up
 
-* Adopt this ADR as the canonical explanation of calibrated interval semantics.
+* Adopted as the canonical explanation of calibrated interval architectural mapping semantics, heavily caveated by the explicit non-guarantees section above.
 * Link developer documentation and release planning templates to this ADR when
   referencing interval behaviour or requesting changes that depend on it.
 * Future enhancements (e.g., alternative probabilistic calibrators) must state

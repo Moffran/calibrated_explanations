@@ -36,11 +36,10 @@ from ...plugins import (
     ExplanationRequest,
     ensure_builtin_plugins,
     find_explanation_descriptor,
-    is_identifier_denied,
     validate_explanation_batch,
 )
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
-from ...utils.exceptions import CalibratedError, ConfigurationError
+from ...utils.exceptions import CalibratedError, ConfigurationError, DataShapeError
 from ...utils.int_utils import as_int_array, coerce_to_int
 
 if TYPE_CHECKING:
@@ -49,6 +48,197 @@ if TYPE_CHECKING:
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
 _TELEMETRY_LOGGER = logging.getLogger("calibrated_explanations.telemetry.explanation")
 ensure_logging_context_filter()
+
+
+def _resolve_reject_policy_spec(candidate_policy: Any, explainer: Any) -> Any:
+    """Resolve reject policy via lazy import and ensure orchestrators are initialized."""
+    from ...core.reject.orchestrator import (
+        resolve_policy_spec,  # pylint: disable=import-outside-toplevel
+    )
+
+    if getattr(explainer, "reject_orchestrator", None) is None:
+        plugin_manager = getattr(explainer, "plugin_manager", None)
+        if plugin_manager is not None:
+            plugin_manager.initialize_orchestrators()
+    return resolve_policy_spec(candidate_policy, explainer)
+
+
+def resolve_reject_policy_spec(candidate_policy: Any, explainer: Any) -> Any:
+    """Public wrapper for reject policy specification resolution."""
+    return _resolve_reject_policy_spec(candidate_policy, explainer)
+
+
+def _resolve_effective_reject_policy(
+    candidate_policy: Any,
+    explainer: Any,
+    *,
+    default_policy: Any,
+) -> Any:
+    """Resolve effective reject policy with shared fail-fast/fallback semantics."""
+    from ...core.reject.orchestrator import (  # pylint: disable=import-outside-toplevel
+        resolve_effective_reject_policy,
+    )
+
+    if getattr(explainer, "reject_orchestrator", None) is None:
+        plugin_manager = getattr(explainer, "plugin_manager", None)
+        if plugin_manager is not None:
+            plugin_manager.initialize_orchestrators()
+    return resolve_effective_reject_policy(
+        candidate_policy,
+        explainer,
+        default_policy=default_policy,
+        logger=logging.getLogger(__name__),
+    )
+
+
+def resolve_effective_reject_policy(
+    candidate_policy: Any,
+    explainer: Any,
+    *,
+    default_policy: Any,
+) -> Any:
+    """Public wrapper for reject policy resolution with defaults."""
+    return _resolve_effective_reject_policy(
+        candidate_policy,
+        explainer,
+        default_policy=default_policy,
+    )
+
+
+def _warn_source_index_issue(message: str) -> None:
+    """Emit visible warning and diagnostic log for source-index resolution issues."""
+    logger = logging.getLogger(__name__)
+    from ...explanations.reject import (
+        RejectContractWarning,  # pylint: disable=import-outside-toplevel
+    )
+
+    logger.info(message)
+    warnings.warn(message, RejectContractWarning, stacklevel=3)
+
+
+def _coerce_legacy_reject_result(result: Any) -> Any:
+    """Convert strict v2 reject envelopes to legacy format for compatibility."""
+    try:
+        from ...explanations.reject import (
+            RejectResultV2,  # pylint: disable=import-outside-toplevel
+            reject_result_v2_to_legacy,
+        )
+
+        if isinstance(result, RejectResultV2):
+            return reject_result_v2_to_legacy(result, emit_deprecation_warning=False)
+    except Exception:  # adr002_allow
+        return result
+    return result
+
+
+def coerce_legacy_reject_result(result: Any) -> Any:
+    """Public wrapper for coercing reject envelopes to legacy format."""
+    return _coerce_legacy_reject_result(result)
+
+
+def _resolve_source_indices_for_payload(
+    *,
+    policy: Any,
+    metadata: Any,
+    rejected_mask: Any,
+    payload_count: int,
+) -> list[int] | None:
+    """Resolve source indices for reject-filtered payloads.
+
+    Returns ``None`` when a safe mapping cannot be established.
+    """
+    source_indices_raw = None
+    if isinstance(metadata, Mapping):
+        source_indices_raw = metadata.get("source_indices")
+
+    if source_indices_raw is not None:
+        try:
+            idx_arr = np.asarray(source_indices_raw)
+            if idx_arr.ndim != 1 or not np.issubdtype(idx_arr.dtype, np.integer):
+                raise DataShapeError("source_indices must be a 1D integer sequence")
+            idxs = [int(v) for v in idx_arr.tolist()]
+            if len(idxs) != payload_count:
+                raise DataShapeError(
+                    f"source_indices length {len(idxs)} does not match payload length {payload_count}"
+                )
+            if any(i < 0 for i in idxs):
+                raise DataShapeError("source_indices must be non-negative")
+            if len(set(idxs)) != len(idxs):
+                raise DataShapeError("source_indices must be unique")
+            if any(curr >= nxt for curr, nxt in zip(idxs, idxs[1:], strict=False)):
+                raise DataShapeError("source_indices must preserve source order")
+            if isinstance(metadata, Mapping) and metadata.get("original_count") is not None:
+                original_count = int(metadata["original_count"])
+                if any(i >= original_count for i in idxs):
+                    raise DataShapeError(
+                        f"source_indices must be < original_count={original_count}; got {idxs!r}"
+                    )
+            return idxs
+        except (TypeError, DataShapeError) as exc:
+            _warn_source_index_issue(
+                f"Reject source_indices metadata is invalid ({exc!s}); attempting deterministic fallback."
+            )
+
+    if rejected_mask is None:
+        return list(range(payload_count)) if payload_count == 0 else None
+
+    try:
+        rejected = np.asarray(rejected_mask, dtype=bool).flatten()
+        policy_enum = policy
+        from ...core.reject.policy import RejectPolicy  # pylint: disable=import-outside-toplevel
+
+        if not isinstance(policy_enum, RejectPolicy):
+            policy_enum = RejectPolicy(policy_enum)
+        if policy_enum is RejectPolicy.ONLY_REJECTED:
+            idxs = [i for i, v in enumerate(rejected) if v]
+        elif policy_enum is RejectPolicy.ONLY_ACCEPTED:
+            idxs = [i for i, v in enumerate(rejected) if not v]
+        else:
+            idxs = list(range(len(rejected)))
+        if len(idxs) != payload_count:
+            rejected_idxs = [i for i, v in enumerate(rejected) if v]
+            accepted_idxs = [i for i, v in enumerate(rejected) if not v]
+            if len(rejected_idxs) == payload_count and len(accepted_idxs) != payload_count:
+                _warn_source_index_issue(
+                    "Reject source mapping inferred from rejected subset cardinality."
+                )
+                return rejected_idxs
+            if len(accepted_idxs) == payload_count and len(rejected_idxs) != payload_count:
+                _warn_source_index_issue(
+                    "Reject source mapping inferred from accepted subset cardinality."
+                )
+                return accepted_idxs
+            _warn_source_index_issue(
+                "Unable to map reject payload to source rows: derived fallback indices length "
+                f"{len(idxs)} differs from payload length {payload_count}."
+            )
+            return None
+        _warn_source_index_issue(
+            "Reject result is missing source_indices metadata; using deterministic fallback mapping."
+        )
+        return idxs
+    except (TypeError, DataShapeError) as exc:
+        _warn_source_index_issue(
+            f"Unable to derive reject source indices from policy/mask ({exc!s}); "
+            "reject context attachment skipped."
+        )
+        return None
+
+
+def resolve_source_indices_for_payload(
+    *,
+    policy: Any,
+    metadata: Any,
+    rejected_mask: Any,
+    payload_count: int,
+) -> list[int] | None:
+    """Public wrapper for reject payload/source index mapping."""
+    return _resolve_source_indices_for_payload(
+        policy=policy,
+        metadata=metadata,
+        rejected_mask=rejected_mask,
+        payload_count=payload_count,
+    )
 
 
 class ExplanationOrchestrator:
@@ -323,16 +513,13 @@ class ExplanationOrchestrator:
         from ...core.reject.policy import RejectPolicy
 
         if not _ce_skip_reject:
-            candidate_policy = reject_policy
-            if candidate_policy is None:
-                candidate_policy = getattr(
-                    self.explainer, "default_reject_policy", RejectPolicy.NONE
-                )
-
-            try:
-                effective_policy = RejectPolicy(candidate_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
+            confidence = extras.get("confidence", 0.95) if isinstance(extras, Mapping) else 0.95
+            resolution = _resolve_effective_reject_policy(
+                reject_policy,
+                self.explainer,
+                default_policy=getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE),
+            )
+            effective_policy = resolution.policy
 
             if effective_policy is not RejectPolicy.NONE:
                 # Ensure reject orchestrator is available (implicit enable)
@@ -359,13 +546,22 @@ class ExplanationOrchestrator:
                 # per-explanation `RejectContext` so downstream narrative/plot
                 # code can render expertise-aware messages and badges.
                 from ...explanations.reject import (
+                    RejectAlternativeExplanations,
                     RejectCalibratedExplanations,
                     RejectContext,
                     RejectResult,
                 )
 
-                res = self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy, x, explain_fn=_explain_fn, bins=bins
+                res = _coerce_legacy_reject_result(
+                    self.explainer.reject_orchestrator.apply_policy(
+                        effective_policy,
+                        x,
+                        explain_fn=_explain_fn,
+                        bins=bins,
+                        confidence=confidence,
+                        threshold=threshold,
+                        result_schema="v2",
+                    )
                 )
 
                 # Attach RejectContext instances when possible. Be defensive
@@ -393,14 +589,21 @@ class ExplanationOrchestrator:
                         else:
                             targets = []
 
-                        # Determine mapping from returned explanations to original indices
-                        if rejected_mask is not None and len(targets) != len(rejected_mask):
-                            # ONLY_REJECTED path: map targets to indices where rejected is True
-                            map_indices = [i for i, r in enumerate(rejected_mask) if r]
-                        else:
-                            map_indices = list(range(len(targets)))
+                        map_indices = _resolve_source_indices_for_payload(
+                            policy=res.policy,
+                            metadata=metadata,
+                            rejected_mask=rejected_mask,
+                            payload_count=len(targets),
+                        )
+                        if map_indices is None:
+                            logging.getLogger(__name__).info(
+                                "Skipping reject_context attachment due to unresolved source mapping."
+                            )
+                            map_indices = []
 
                         for local_idx, global_idx in enumerate(map_indices):
+                            if local_idx >= len(targets):
+                                continue
                             try:
                                 is_rej = (
                                     bool(rejected_mask[global_idx])
@@ -422,35 +625,32 @@ class ExplanationOrchestrator:
                             except (IndexError, TypeError, ValueError):
                                 psize = 1
                             try:
-                                confidence = None if epsilon is None else (1.0 - float(epsilon))
+                                context_confidence = (
+                                    None if epsilon is None else (1.0 - float(epsilon))
+                                )
                             except (TypeError, ValueError):
-                                confidence = None
+                                context_confidence = None
 
-                            pset = None
+                            prediction_set_ref = None
                             try:
                                 if pred_set_mask is not None:
-                                    # Get row mask for this instance
                                     row_mask = pred_set_mask[global_idx]
                                     if hasattr(row_mask, "flatten"):
                                         row_mask = row_mask.flatten()
-                                    # Get indices where mask is True
                                     indices = np.flatnonzero(row_mask)
-                                    # Map to labels
-                                    labels = getattr(self.explainer, "class_labels", None)
-                                    if labels:
-                                        # labels is typically dict[int, str]
-                                        pset = {labels[i] for i in indices}
-                                    else:
-                                        pset = set(indices.tolist())
+                                    prediction_set_ref = {
+                                        "type": "indices",
+                                        "indices": indices.tolist(),
+                                    }
                             except (AttributeError, IndexError, TypeError, ValueError):
-                                pset = None
+                                prediction_set_ref = None
 
                             rc = RejectContext(
                                 rejected=is_rej,
                                 reject_type=rtype,
                                 prediction_set_size=psize,
-                                confidence=confidence,
-                                prediction_set=pset,
+                                confidence=context_confidence,
+                                prediction_set_ref=prediction_set_ref,
                             )
                             # attach to the materialised explanation object when possible
                             try:
@@ -474,13 +674,52 @@ class ExplanationOrchestrator:
                     and hasattr(res.explanation, "explanations")
                 ):
                     try:
+                        try:
+                            from ...explanations import (  # pylint: disable=import-outside-toplevel
+                                AlternativeExplanations,
+                            )
+
+                            alt_cls = AlternativeExplanations
+                        except Exception:  # adr002_allow - import environment variation
+                            alt_cls = None
+                            logging.getLogger(__name__).debug(
+                                "AlternativeExplanations import failed during reject upgrade; falling back to attribute heuristic.",
+                                exc_info=True,
+                            )
+
+                        if alt_cls is not None:
+                            is_alternative = isinstance(res.explanation, alt_cls)
+                        else:
+                            # Deterministic fallback: when alternative class import
+                            # is unavailable we avoid brittle duck-typing and keep
+                            # generic reject wrapping.
+                            is_alternative = False
+
+                        if is_alternative:
+                            return RejectAlternativeExplanations.from_collection(
+                                res.explanation,
+                                res.metadata or {},
+                                res.policy,
+                                rejected=res.rejected,
+                            )
                         return RejectCalibratedExplanations.from_collection(
                             res.explanation,
                             res.metadata or {},
                             res.policy,
                             rejected=res.rejected,
                         )
-                    except (AttributeError, CalibratedError, TypeError, ValueError) as exc:
+                    except (
+                        AttributeError,
+                        CalibratedError,
+                        DataShapeError,
+                        TypeError,
+                        ValueError,
+                    ) as exc:
+                        warnings.warn(
+                            "Reject wrapper upgrade skipped due to reject metadata/payload misalignment.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
                         logging.getLogger(__name__).debug(
                             "failed to upgrade to RejectCalibratedExplanations: %s",
                             exc,
@@ -808,10 +1047,13 @@ class ExplanationOrchestrator:
             else:
                 from ...core.reject.policy import RejectPolicy
 
-                try:
-                    effective_policy = RejectPolicy(reject_policy)
-                except (TypeError, ValueError):
-                    effective_policy = RejectPolicy.NONE
+                resolution = _resolve_effective_reject_policy(
+                    reject_policy,
+                    self.explainer,
+                    default_policy=RejectPolicy.NONE,
+                )
+                effective_policy = resolution.policy
+                confidence = kwargs.get("confidence", 0.95)
 
                 # Prepare a per-class explain_fn closure that legacy_explain can call
                 def make_explain_fn_for_class(cls_val):
@@ -837,8 +1079,16 @@ class ExplanationOrchestrator:
                 for cls in classes:
                     explain_fn = make_explain_fn_for_class(int(cls))
                     try:
-                        res = self.explainer.reject_orchestrator.apply_policy(
-                            effective_policy, x, explain_fn=explain_fn, bins=bins
+                        res = _coerce_legacy_reject_result(
+                            self.explainer.reject_orchestrator.apply_policy(
+                                effective_policy,
+                                x,
+                                explain_fn=explain_fn,
+                                bins=bins,
+                                confidence=confidence,
+                                threshold=threshold,
+                                result_schema="v2",
+                            )
                         )
                     except Exception:  # adr002_allow
                         # Fallback to legacy explain if reject orchestration fails
@@ -865,20 +1115,16 @@ class ExplanationOrchestrator:
                     if explanation_payload is None:
                         continue
 
-                    # explanation_payload corresponds to either full-length
-                    # explanations (FLAG) or a subset aligned with the rejected/accepted mask.
-                    if rejected_mask is None or len(explanation_payload) == len(x):
-                        # Full-length: assign one-to-one
-                        for i, explanation in enumerate(explanation_payload):
-                            multi_label_explanations[i][int(cls)] = explanation
-                    else:
-                        # Subset mapping: find indices matching the mask
-                        idxs = [i for i, v in enumerate(rejected_mask) if v]
-                        if len(idxs) != len(explanation_payload):
-                            # If policy was ONLY_ACCEPTED, invert mapping
-                            idxs = [i for i, v in enumerate(rejected_mask) if not v]
-                        for j, inst_idx in enumerate(idxs):
-                            multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
+                    idxs = _resolve_source_indices_for_payload(
+                        policy=getattr(res, "policy", effective_policy),
+                        metadata=getattr(res, "metadata", {}),
+                        rejected_mask=rejected_mask,
+                        payload_count=len(explanation_payload),
+                    )
+                    if idxs is None:
+                        continue
+                    for j, inst_idx in enumerate(idxs):
+                        multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
             return MultiClassCalibratedExplanations(
                 self.explainer, x, bins, len(classes), multi_label_explanations
             )
@@ -1000,10 +1246,13 @@ class ExplanationOrchestrator:
             else:
                 from ...core.reject.policy import RejectPolicy
 
-                try:
-                    effective_policy = RejectPolicy(reject_policy)
-                except (TypeError, ValueError):
-                    effective_policy = RejectPolicy.NONE
+                resolution = _resolve_effective_reject_policy(
+                    reject_policy,
+                    self.explainer,
+                    default_policy=RejectPolicy.NONE,
+                )
+                effective_policy = resolution.policy
+                confidence = kwargs.get("confidence", 0.95)
 
                 def make_explain_fn_for_class(cls_val):
                     def _explain_fn(x_subset, **inner_kw):
@@ -1027,8 +1276,16 @@ class ExplanationOrchestrator:
                 for cls in classes:
                     explain_fn = make_explain_fn_for_class(int(cls))
                     try:
-                        res = self.explainer.reject_orchestrator.apply_policy(
-                            effective_policy, x, explain_fn=explain_fn, bins=bins
+                        res = _coerce_legacy_reject_result(
+                            self.explainer.reject_orchestrator.apply_policy(
+                                effective_policy,
+                                x,
+                                explain_fn=explain_fn,
+                                bins=bins,
+                                confidence=confidence,
+                                threshold=threshold,
+                                result_schema="v2",
+                            )
                         )
                     except Exception:  # adr002_allow
                         labels = [cls for _ in range(len(x))]
@@ -1054,15 +1311,16 @@ class ExplanationOrchestrator:
                     if explanation_payload is None:
                         continue
 
-                    if rejected_mask is None or len(explanation_payload) == len(x):
-                        for i, explanation in enumerate(explanation_payload):
-                            multi_label_explanations[i][int(cls)] = explanation
-                    else:
-                        idxs = [i for i, v in enumerate(rejected_mask) if v]
-                        if len(idxs) != len(explanation_payload):
-                            idxs = [i for i, v in enumerate(rejected_mask) if not v]
-                        for j, inst_idx in enumerate(idxs):
-                            multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
+                    idxs = _resolve_source_indices_for_payload(
+                        policy=getattr(res, "policy", effective_policy),
+                        metadata=getattr(res, "metadata", {}),
+                        rejected_mask=rejected_mask,
+                        payload_count=len(explanation_payload),
+                    )
+                    if idxs is None:
+                        continue
+                    for j, inst_idx in enumerate(idxs):
+                        multi_label_explanations[inst_idx][int(cls)] = explanation_payload[j]
             return MultiClassCalibratedExplanations(
                 self.explainer, x, bins, len(classes), multi_label_explanations
             )
@@ -1104,7 +1362,6 @@ class ExplanationOrchestrator:
         per_instance_features_to_ignore: Any = None,
         reject_policy: Any | None = None,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1133,8 +1390,6 @@ class ExplanationOrchestrator:
             Feature indices to exclude.
         significance : float, default=0.1
             Conformity significance level.
-        use_bonferroni : bool, default=False
-            Whether to apply per-feature Bonferroni correction.
         merge_adjacent : bool, default=False
             Merge adjacent conforming bins into wider intervals.
         n_neighbors : int, default=5
@@ -1157,38 +1412,40 @@ class ExplanationOrchestrator:
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
-            candidate_policy = reject_policy
-            if candidate_policy is None:
-                candidate_policy = getattr(
-                    self.explainer, "default_reject_policy", RejectPolicy.NONE
-                )
-            try:
-                effective_policy = RejectPolicy(candidate_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
+            confidence = kwargs.get("confidence", 0.95)
+            resolution = _resolve_effective_reject_policy(
+                reject_policy,
+                self.explainer,
+                default_policy=getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE),
+            )
+            effective_policy = resolution.policy
             if effective_policy is not RejectPolicy.NONE:
                 with contextlib.suppress(Exception):
                     _ = self.explainer.reject_orchestrator
-                return self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy,
-                    x,
-                    explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_factual(
-                        x_subset,
+                return _coerce_legacy_reject_result(
+                    self.explainer.reject_orchestrator.apply_policy(
+                        effective_policy,
+                        x,
+                        explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_factual(
+                            x_subset,
+                            threshold=threshold,
+                            low_high_percentiles=low_high_percentiles,
+                            bins=inner_kw.get("bins", bins),
+                            features_to_ignore=features_to_ignore,
+                            per_instance_features_to_ignore=per_instance_features_to_ignore,
+                            reject_policy=RejectPolicy.NONE,
+                            significance=significance,
+                            merge_adjacent=merge_adjacent,
+                            n_neighbors=n_neighbors,
+                            normalize_guard=normalize_guard,
+                            verbose=verbose,
+                            _ce_skip_reject=True,
+                        ),
+                        bins=bins,
+                        confidence=confidence,
                         threshold=threshold,
-                        low_high_percentiles=low_high_percentiles,
-                        bins=inner_kw.get("bins", bins),
-                        features_to_ignore=features_to_ignore,
-                        per_instance_features_to_ignore=per_instance_features_to_ignore,
-                        reject_policy=RejectPolicy.NONE,
-                        significance=significance,
-                        use_bonferroni=use_bonferroni,
-                        merge_adjacent=merge_adjacent,
-                        n_neighbors=n_neighbors,
-                        normalize_guard=normalize_guard,
-                        verbose=verbose,
-                        _ce_skip_reject=True,
-                    ),
-                    bins=bins,
+                        result_schema="v2",
+                    )
                 )
 
         per_instance_ignore = per_instance_features_to_ignore
@@ -1255,7 +1512,6 @@ class ExplanationOrchestrator:
             features_to_ignore=features_to_ignore_flat,
             per_instance_features_to_ignore=per_instance_ignore,
             significance=significance,
-            use_bonferroni=use_bonferroni,
             merge_adjacent=merge_adjacent,
             n_neighbors=n_neighbors,
             normalize_guard=normalize_guard,
@@ -1272,7 +1528,6 @@ class ExplanationOrchestrator:
         per_instance_features_to_ignore: Any = None,
         reject_policy: Any | None = None,
         significance: float = 0.1,
-        use_bonferroni: bool = False,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
@@ -1302,8 +1557,6 @@ class ExplanationOrchestrator:
             Feature indices to exclude.
         significance : float, default=0.1
             Conformity significance level.
-        use_bonferroni : bool, default=False
-            Whether to apply per-feature Bonferroni correction.
         merge_adjacent : bool, default=False
             Merge adjacent conforming bins into wider intervals.
         n_neighbors : int, default=5
@@ -1326,38 +1579,40 @@ class ExplanationOrchestrator:
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
         if not kwargs.pop("_ce_skip_reject", False):
-            candidate_policy = reject_policy
-            if candidate_policy is None:
-                candidate_policy = getattr(
-                    self.explainer, "default_reject_policy", RejectPolicy.NONE
-                )
-            try:
-                effective_policy = RejectPolicy(candidate_policy)
-            except Exception:  # adr002_allow
-                effective_policy = RejectPolicy.NONE
+            confidence = kwargs.get("confidence", 0.95)
+            resolution = _resolve_effective_reject_policy(
+                reject_policy,
+                self.explainer,
+                default_policy=getattr(self.explainer, "default_reject_policy", RejectPolicy.NONE),
+            )
+            effective_policy = resolution.policy
             if effective_policy is not RejectPolicy.NONE:
                 with contextlib.suppress(Exception):
                     _ = self.explainer.reject_orchestrator
-                return self.explainer.reject_orchestrator.apply_policy(
-                    effective_policy,
-                    x,
-                    explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_alternative(
-                        x_subset,
+                return _coerce_legacy_reject_result(
+                    self.explainer.reject_orchestrator.apply_policy(
+                        effective_policy,
+                        x,
+                        explain_fn=lambda x_subset, **inner_kw: self.invoke_guarded_alternative(
+                            x_subset,
+                            threshold=threshold,
+                            low_high_percentiles=low_high_percentiles,
+                            bins=inner_kw.get("bins", bins),
+                            features_to_ignore=features_to_ignore,
+                            per_instance_features_to_ignore=per_instance_features_to_ignore,
+                            reject_policy=RejectPolicy.NONE,
+                            significance=significance,
+                            merge_adjacent=merge_adjacent,
+                            n_neighbors=n_neighbors,
+                            normalize_guard=normalize_guard,
+                            verbose=verbose,
+                            _ce_skip_reject=True,
+                        ),
+                        bins=bins,
+                        confidence=confidence,
                         threshold=threshold,
-                        low_high_percentiles=low_high_percentiles,
-                        bins=inner_kw.get("bins", bins),
-                        features_to_ignore=features_to_ignore,
-                        per_instance_features_to_ignore=per_instance_features_to_ignore,
-                        reject_policy=RejectPolicy.NONE,
-                        significance=significance,
-                        use_bonferroni=use_bonferroni,
-                        merge_adjacent=merge_adjacent,
-                        n_neighbors=n_neighbors,
-                        normalize_guard=normalize_guard,
-                        verbose=verbose,
-                        _ce_skip_reject=True,
-                    ),
-                    bins=bins,
+                        result_schema="v2",
+                    )
                 )
 
         per_instance_ignore = per_instance_features_to_ignore
@@ -1424,7 +1679,6 @@ class ExplanationOrchestrator:
             features_to_ignore=features_to_ignore_flat,
             per_instance_features_to_ignore=per_instance_ignore,
             significance=significance,
-            use_bonferroni=use_bonferroni,
             merge_adjacent=merge_adjacent,
             n_neighbors=n_neighbors,
             normalize_guard=normalize_guard,
@@ -1533,138 +1787,13 @@ class ExplanationOrchestrator:
                 with contextlib.suppress(CalibratedError):
                     pm.initialize_chains()
 
-        raw_override = self.explainer.plugin_manager.explanation_plugin_overrides.get(mode)
-        override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
-        if override is not None and not isinstance(override, str):
-            plugin = override
-            identifier = getattr(plugin, "plugin_meta", {}).get("name")
-            meta = getattr(plugin, "plugin_meta", {})
-            if isinstance(meta, Mapping):
-                trusted = meta.get("trusted", meta.get("trust", True))
-                if not bool(trusted):
-                    warnings.warn(
-                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
-                        "Ensure you trust the source of this plugin.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-            return plugin, identifier
-
-        explicit_override_identifier = raw_override if isinstance(raw_override, str) else None
-        preferred_identifier = (
-            explicit_override_identifier
-            or self.explainer.plugin_manager.explanation_preferred_identifier.get(mode)
+        plugin, identifier = self.explainer.plugin_manager.resolve_explanation_plugin_for_mode(
+            mode,
+            task=self.explainer.mode,
+            metadata_validator=self.check_metadata,
+            instantiate_plugin=self.instantiate_plugin,
         )
-        allow_untrusted = explicit_override_identifier is not None
-        chain = self.explainer.plugin_manager.explanation_plugin_fallbacks.get(mode, ())
-        if not chain and mode == "fast":
-            msg = (
-                "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                "Install the external plugins extra with "
-                '``pip install "calibrated-explanations[external-plugins]"`` '
-                "and call ``external_plugins.fast_explanations.register()`` or rerun "
-                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
-            )
-            raise ConfigurationError(msg)
-
-        errors: List[str] = []
-        for identifier in chain:
-            is_preferred = preferred_identifier is not None and identifier == preferred_identifier
-            is_explicit_override = (
-                explicit_override_identifier is not None
-                and identifier == explicit_override_identifier
-            )
-            if is_identifier_denied(identifier):
-                message = f"{identifier}: denied via CE_DENY_PLUGIN"
-                if is_preferred:
-                    prefix = (
-                        "Explanation plugin override failed: "
-                        if is_explicit_override
-                        else "Explanation plugin configuration failed: "
-                    )
-                    raise ConfigurationError(prefix + message) from None
-                errors.append(message)
-                continue
-
-            plugin, metadata, reason = self.explainer.plugin_manager.resolve_explanation_plugin(
-                identifier,
-                allow_untrusted=allow_untrusted,
-                is_preferred=is_preferred,
-                is_explicit_override=is_explicit_override,
-            )
-            if reason == "untrusted":
-                raise ConfigurationError(
-                    "Explanation plugin configuration failed: "
-                    + identifier
-                    + " is untrusted; explicitly trust the plugin or pass an explicit override"
-                ) from None
-            if plugin is None:
-                message = f"{identifier}: not registered"
-                if is_preferred:
-                    prefix = (
-                        "Explanation plugin override failed: "
-                        if is_explicit_override
-                        else "Explanation plugin configuration failed: "
-                    )
-                    raise ConfigurationError(prefix + message) from None
-                errors.append(message)
-                continue
-
-            meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self.check_metadata(
-                meta_source,
-                identifier=identifier,
-                mode=mode,
-            )
-            if error:
-                if is_preferred:
-                    prefix = (
-                        "Explanation plugin override failed: "
-                        if is_explicit_override
-                        else "Explanation plugin configuration failed: "
-                    )
-                    raise ConfigurationError(prefix + error) from None
-                errors.append(error)
-                continue
-
-            plugin = self.instantiate_plugin(plugin)
-            try:
-                supports = plugin.supports_mode
-            except AttributeError as exc:
-                errors.append(f"{identifier}: missing supports_mode ({exc})")
-                continue
-            try:
-                if not supports(mode, task=self.explainer.mode):
-                    errors.append(
-                        f"{identifier}: mode '{mode}' "
-                        f"unsupported for task {self.explainer.mode}"
-                    )
-                    continue
-            except (
-                Exception
-            ) as exc:  # ADR002_ALLOW: defensive catch for third-party plugins.  # pragma: no cover
-                # pragma: no cover - defensive
-                errors.append(f"{identifier}: error during supports_mode ({exc})")
-                continue
-            return plugin, identifier
-
-        if mode == "fast" and "core.explanation.fast" in chain:
-            msg = (
-                "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                "Install the external plugins extra with "
-                '``pip install "calibrated-explanations[external-plugins]"`` '
-                "and call ``external_plugins.fast_explanations.register()`` or rerun "
-                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
-            )
-            raise ConfigurationError(msg)
-
-        raise ConfigurationError(
-            "Unable to resolve explanation plugin for mode '"
-            + mode
-            + "'. Tried: "
-            + ", ".join(chain or ("<none>",))
-            + ("; errors: " + "; ".join(errors) if errors else "")
-        )
+        return plugin, identifier
 
     def check_metadata(
         self,

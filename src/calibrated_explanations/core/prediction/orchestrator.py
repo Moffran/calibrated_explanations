@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import os
 import sys
 import warnings
 from collections.abc import Mapping, MutableMapping, Sequence
@@ -32,11 +31,6 @@ from ...plugins import (
     ClassificationIntervalCalibrator,
     IntervalCalibratorContext,
     RegressionIntervalCalibrator,
-    ensure_builtin_plugins,
-    find_interval_descriptor,
-    find_interval_plugin,
-    find_interval_plugin_trusted,
-    is_identifier_denied,
 )
 from ...utils import assert_threshold
 from ...utils.exceptions import (
@@ -46,6 +40,7 @@ from ...utils.exceptions import (
     NotFittedError,
     ValidationError,
 )
+from ..config_manager import ConfigManager
 from .interval_summary import coerce_interval_summary
 from .validation import check_interval_runtime_metadata
 
@@ -111,6 +106,12 @@ class PredictionOrchestrator:
 
         self.interval_registry = IntervalRegistry(explainer)
         self._logger = logging.getLogger(__name__)
+        self._interval_calibration_features: dict[str, np.ndarray] = {}
+        self._config_manager = ConfigManager.from_sources()
+
+    def _config_env(self, key: str) -> str | None:
+        """Resolve runtime config for fallback-sensitive behavior checks."""
+        return self._config_manager.env(key)
 
     def initialize_chains(self) -> None:
         """Delegate to PluginManager for chain initialization.
@@ -220,9 +221,25 @@ class PredictionOrchestrator:
                     **kw,
                 )
 
-            return self.explainer.reject_orchestrator.apply_policy(
-                effective_policy, x, explain_fn=_predict_fn, bins=bins
+            result = self.explainer.reject_orchestrator.apply_policy(
+                effective_policy,
+                x,
+                explain_fn=_predict_fn,
+                bins=bins,
+                threshold=threshold,
+                result_schema="v2",
             )
+            try:
+                from ...explanations.reject import (
+                    RejectResultV2,
+                    reject_result_v2_to_legacy,
+                )
+
+                if isinstance(result, RejectResultV2):
+                    return reject_result_v2_to_legacy(result, emit_deprecation_warning=False)
+            except Exception:  # adr002_allow
+                return result
+            return result
         key_parts = None
         if cache_enabled:
             x_arr = np.asarray(x)
@@ -490,7 +507,7 @@ class PredictionOrchestrator:
                         # deletes the env var set by the disable fixture). When
                         # fallbacks remain disabled we log info instead to avoid
                         # triggering the runtime fallback enforcement.
-                        if os.getenv("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
+                        if self._config_env("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
                             warnings.warn(
                                 "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded fallback.",
                                 UserWarning,
@@ -525,7 +542,7 @@ class PredictionOrchestrator:
                     raise
 
                 if self.explainer.suppress_crepes_errors:
-                    if os.getenv("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
+                    if self._config_env("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
                         warnings.warn(
                             "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded fallback.",
                             UserWarning,
@@ -602,6 +619,97 @@ class PredictionOrchestrator:
             bins=self.explainer.bins,
         )
 
+    def _record_interval_calibration_features(
+        self,
+        *,
+        context: IntervalCalibratorContext,
+        fast: bool,
+    ) -> None:
+        """Capture the calibration feature matrix used to build the active interval learner."""
+        calibration_splits = getattr(context, "calibration_splits", ())
+        if not calibration_splits:
+            return
+        try:
+            features = calibration_splits[0][0]
+        except (IndexError, TypeError):  # pragma: no cover - defensive
+            return
+        if features is None:
+            return
+        key = "fast" if fast else "default"
+        self._interval_calibration_features[key] = np.asarray(features).copy()
+
+    def set_interval_calibration_snapshot(
+        self, features: np.ndarray, *, fast: bool = False
+    ) -> None:
+        """Directly set the calibration-feature snapshot for a given mode.
+
+        Intended for testing and controlled recalibration scenarios.  For normal
+        calibration workflows use ``refresh_interval_calibration_snapshot`` or
+        ``obtain_interval_calibrator`` instead.
+        """
+        key = "fast" if fast else "default"
+        self._interval_calibration_features[key] = np.asarray(features).copy()
+
+    def record_interval_calibration_features(
+        self,
+        *,
+        context: "IntervalCalibratorContext",
+        fast: bool,
+    ) -> None:
+        """Public entry-point for capturing the calibration feature snapshot.
+
+        Delegates to the internal implementation.  Exposed so tests can call
+        this without private-member access.
+        """
+        self._record_interval_calibration_features(context=context, fast=fast)
+
+    def get_interval_calibration_features(self, *, fast: bool | None = None) -> np.ndarray | None:
+        """Return the feature matrix used to initialize the active interval learner.
+
+        Parameters
+        ----------
+        fast : bool or None, optional
+            When ``None`` (default) the current ``explainer.is_fast()`` state is
+            used to determine the key.  Pass ``True`` or ``False`` to query a
+            specific mode explicitly.
+
+        Returns
+        -------
+        np.ndarray or None
+            The calibration feature matrix snapshot recorded when the active
+            interval learner was last built, or ``None`` if no snapshot exists
+            yet for the requested mode.  No cross-key fallback is applied: if
+            the requested mode key is absent the method returns ``None``.
+        """
+        if fast is None:
+            is_fast = getattr(self.explainer, "is_fast", None)
+            if callable(is_fast):
+                with contextlib.suppress(TypeError):
+                    fast = bool(is_fast())
+            if fast is None:
+                fast = bool(is_fast) if is_fast is not None else False
+
+        key = "fast" if fast else "default"
+        return self._interval_calibration_features.get(key)
+
+    def refresh_interval_calibration_snapshot(self) -> None:
+        """Refresh the calibration-feature snapshot from the current ``explainer.x_cal``.
+
+        Call this after in-place interval learner updates (e.g. regression
+        ``insert_calibration``) so that guarded entrypoints see the up-to-date
+        calibration data rather than the stale pre-update snapshot recorded at
+        the time the learner was last built via ``obtain_interval_calibrator``.
+
+        Notes
+        -----
+        Only the ``"default"`` (non-fast) key is refreshed.  Fast mode does not
+        go through this update path and is not supported by guarded entrypoints.
+        """
+        x_cal = getattr(self.explainer, "x_cal", None)
+        if x_cal is None:
+            return
+        self._interval_calibration_features["default"] = np.asarray(x_cal).copy()
+
     def resolve_interval_plugin(
         self,
         *,
@@ -609,89 +717,24 @@ class PredictionOrchestrator:
         hints: Sequence[str] = (),
     ) -> Tuple[Any, str | None]:
         """Resolve the interval plugin for the requested execution path."""
-        ensure_builtin_plugins()
-
         raw_override = (
             self.explainer.plugin_manager.fast_interval_plugin_override
             if fast
             else self.explainer.plugin_manager.interval_plugin_override
         )
-        override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
-        if override is not None and not isinstance(override, str):
-            identifier = getattr(override, "plugin_meta", {}).get("name")
-            return override, identifier
+        coerced_override = self.explainer.plugin_manager.coerce_plugin_override(raw_override)
+        if coerced_override is not None and not isinstance(coerced_override, str):
+            identifier = getattr(coerced_override, "plugin_meta", {}).get("name")
+            return coerced_override, identifier
 
-        if isinstance(raw_override, str):
-            preferred_identifier = raw_override
-        else:
-            key = "fast" if fast else "default"
-            preferred_identifier = self.explainer.plugin_manager.interval_preferred_identifier.get(
-                key
-            )
-        chain = list(
-            self.explainer.plugin_manager.interval_plugin_fallbacks.get(
-                "fast" if fast else "default", ()
-            )
+        plugin, identifier = self.explainer.plugin_manager.resolve_interval_plugin(
+            fast=fast,
+            hints=hints,
+            runtime_validator=self.check_interval_runtime_metadata,
         )
-        if hints:
-            ordered = []
-            seen: set[str] = set()
-            for identifier in tuple(hints) + tuple(chain):
-                if identifier and identifier not in seen:
-                    ordered.append(identifier)
-                    seen.add(identifier)
-            chain = ordered
 
-        errors: List[str] = []
-        for identifier in chain:
-            if is_identifier_denied(identifier):
-                message = f"{identifier}: denied via CE_DENY_PLUGIN"
-                if preferred_identifier == identifier:
-                    raise ConfigurationError("Interval plugin override failed: " + message)
-                errors.append(message)
-                continue
-            descriptor = find_interval_descriptor(identifier)
-            plugin = None
-            metadata: Mapping[str, Any] | None = None
-            preferred = preferred_identifier == identifier
-            if descriptor is not None:
-                metadata = descriptor.metadata
-                if descriptor.trusted or preferred:
-                    plugin = descriptor.plugin
-            if plugin is None:
-                if preferred:
-                    plugin = find_interval_plugin(identifier)
-                else:
-                    plugin = find_interval_plugin_trusted(identifier)
-            if plugin is None:
-                message = f"{identifier}: not registered"
-                if preferred_identifier == identifier:
-                    raise ConfigurationError("Interval plugin override failed: " + message)
-                errors.append(message)
-                continue
-
-            meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self.check_interval_runtime_metadata(
-                meta_source,
-                identifier=identifier,
-                fast=fast,
-            )
-            if error:
-                if preferred_identifier == identifier:
-                    raise ConfigurationError(error)
-                errors.append(error)
-                continue
-
-            plugin = self.explainer.instantiate_plugin(plugin)
-            return plugin, identifier
-
-        raise ConfigurationError(
-            "Unable to resolve interval plugin for "
-            + ("fast" if fast else "default")
-            + " mode. Tried: "
-            + ", ".join(chain or ("<none>",))
-            + ("; errors: " + "; ".join(errors) if errors else "")
-        )
+        plugin = self.explainer.explanation_orchestrator.instantiate_plugin(plugin)
+        return plugin, identifier
 
     def build_interval_context(
         self,
@@ -796,6 +839,7 @@ class PredictionOrchestrator:
             calibrator=calibrator,
             fast=fast,
         )
+        self._record_interval_calibration_features(context=context, fast=fast)
         key = "fast" if fast else "default"
         self.explainer.plugin_manager.interval_plugin_identifiers[key] = identifier
         self.explainer.plugin_manager.telemetry_interval_sources[key] = identifier

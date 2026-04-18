@@ -191,7 +191,7 @@ ADR approving the regression.
 |---|---|---|
 | `WrapCalibratedExplainer.explain_counterfactual` | `explore_alternatives(...)` | Removed; use the alternatives API |
 | `CalibratedExplanations.get_explanation(i)` | `collection[i]` | Standard indexing is the supported path |
-| `plugins.registry.register_plot_plugin` | `PluginManager` / registry APIs | Removed from public `__all__` per ADR-014 |
+| `plugins.registry.register_plot_plugin` | `PluginManager` / registry APIs | Removed from public `__all__` per ADR-014 (superseded by ADR-037) |
 | `calibrated_explanations.perf` | `calibrated_explanations.utils` / direct imports | Root perf facade removed |
 | Parameter alias `alpha` / `alphas` | `low_high_percentiles` | ADR-011 removal; two-minor window satisfied |
 | Parameter alias `n_jobs` | `parallel_workers` | ADR-011 removal; two-minor window satisfied |

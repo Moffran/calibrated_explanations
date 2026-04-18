@@ -25,6 +25,46 @@ All plugin types follow a consistent override hierarchy for selection and config
 
 For detailed wiring examples, see {doc}`./extending/plugin-advanced-contract`.
 
+## Modality contract
+
+ADR-033 defines the modality metadata required for entry-point plugins and the
+resolver behavior used by modality-aware selection helpers.
+
+### Canonical modalities and aliases
+
+`data_modalities` values are normalised to canonical names:
+
+- `tabular`
+- `vision` (aliases: `image`, `images`, `img`)
+- `audio`
+- `text`
+- `multimodal` (aliases: `multi-modal`, `multi_modal`)
+
+Custom extension names must use an `x-<vendor>-<name>` namespace.
+
+### Metadata requirements
+
+Entry-point explanation plugins should publish these metadata fields:
+
+- `data_modalities`: tuple of canonical modality names
+- `plugin_api_version`: `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`
+
+Compatibility policy is major-hard/minor-soft:
+
+- major mismatch is rejected at discovery time
+- higher minor/patch can load with `UserWarning` plus governance logging
+
+### v0.11.1 deprecation timeline
+
+- `v0.11.0`: missing `data_modalities` defaults to `("tabular",)` silently
+- `v0.11.1`: missing `data_modalities` on entry-point metadata emits
+    `DeprecationWarning`
+- `v0.11.3`: explicit `data_modalities` is required; fallback default
+    is removed
+
+See {doc}`../practitioner/advanced/modality-plugins` for user-facing selection
+examples and migration guidance.
+
 ## Hello, calibrated plugin (minimal explanation plugin)
 
 Use this minimal example when you want to wrap a model that already exposes
@@ -216,6 +256,42 @@ validate_plugin_meta(dict(plugin.plugin_meta))
 register_explanation_plugin("external.hello.explanation", plugin)
 ```
 
+### Pitfall: two prediction paths — do not mix them
+
+Inside `explain_batch` there are **two separate prediction paths** with different
+responsibilities. Confusing them produces a `TypeError` that surfaces as an opaque
+`ENGINE_FAILURE` to the caller.
+
+| Path | How to call | What it does |
+|---|---|---|
+| `bridge.predict(x, mode=..., task=..., bins=...)` | Via `context.predict_bridge` | Lifecycle contract check; uses **default percentiles (5, 95)** internally; return value is often discarded |
+| `explainer.predict(x, uq_interval=True, low_high_percentiles=..., bins=...)` | Via `context.helper_handles["explainer"]` | Full inference; honours any custom `low_high_percentiles` from the `ExplanationRequest` |
+
+**The `PredictBridge` protocol does not accept `low_high_percentiles`.** If a
+caller forwards `request.low_high_percentiles` into `bridge.predict()` it gets a
+`TypeError` on every call where that field is non-`None`. The fix is to send
+interval-shaping parameters to the explainer handle instead:
+
+```python
+def explain_batch(self, x, request):
+    # Step 1 — honour the bridge lifecycle contract (protocol-defined params only)
+    self._bridge.predict(x, mode=self._mode, task=self.context.task, bins=request.bins)
+
+    # Step 2 — full inference with custom percentiles goes to the explainer handle
+    explainer = self.context.helper_handles["explainer"]
+    prediction, (low, high) = explainer.predict(
+        x,
+        uq_interval=True,
+        low_high_percentiles=request.low_high_percentiles,  # safe here
+        bins=request.bins,
+    )
+    ...
+```
+
+This distinction is not obvious because the bridge's `predict()` return value
+contains `low` and `high` arrays, which makes it look like the interval-shaping
+surface. It is not — it is a narrowly-scoped lifecycle shim.
+
 ### Override precedence for explanation plugins
 
 Explanation plugins support mode-specific selection:
@@ -230,7 +306,7 @@ Explanation plugins support mode-specific selection:
 ## Hello, plot plugin
 
 Follow these steps to build a plot plugin (builder and renderer pair) that respects the
-contract defined by ADR-014 and ADR-016.
+contract defined by ADR-037 and ADR-036.
 
 ### 1. Scaffold the plot builder and renderer
 
@@ -537,12 +613,12 @@ Use these decision records when designing new plugins:
   defines explicit trust controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and governance expectations for third-party plugins.
 - [ADR-013 - interval calibrator plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   defines the architecture for interval calibrator plugins and their integration with core calibrators.
-- [ADR-014 - plot plugin strategy](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-014-plot-plugin-strategy.md)
-  defines optional/explicit plot plugin extension boundaries and default behavior.
+- [ADR-037 - visualization extension and rendering governance](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-037-visualization-extension-and-rendering-governance.md)
+  defines builder/renderer governance, deterministic metadata requirements, and default behavior.
 - [ADR-015 - explanation plugin architecture](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-015-explanation-plugin.md)
   specifies the plugin orchestration, resolution, and mode-aware selection for explanation plugins.
-- [ADR-016 - PlotSpec separation](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-016-plot-spec-separation.md)
-  documents PlotSpec semantics and validation responsibilities for builders/renderers.
+- [ADR-036 - PlotSpec canonical contract and validation boundary](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-036-plot-spec-canonical-contract-and-validation-boundary.md)
+  documents canonical PlotSpec semantics, validation boundaries, and compatibility rules.
 - [ADR-026 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md)
   captures the calibrated explanation contract for explanation and interval
   plugins.

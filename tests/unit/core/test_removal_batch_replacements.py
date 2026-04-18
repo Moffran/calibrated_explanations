@@ -161,33 +161,15 @@ def test_prediction_orchestrator_predict_impl_requires_initialized() -> None:
         orch.predict_impl(np.asarray([[0.0]]))
 
 
-def test_prediction_orchestrator_resolve_interval_plugin_override_failure(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_prediction_orchestrator_resolve_interval_plugin_override_failure() -> None:
     orch = build_orchestrator_with_stub_explainer()
     orch.explainer.plugin_manager.interval_plugin_override = "missing.plugin"
     orch.explainer.plugin_manager.interval_plugin_fallbacks["default"] = ("missing.plugin",)
 
-    monkeypatch.setattr(
-        "calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins",
-        lambda: None,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-        lambda _identifier: None,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin",
-        lambda _identifier: None,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
-        lambda _identifier: None,
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
-        lambda _identifier: False,
-    )
+    def _raise_override_failure(**_kwargs):
+        raise ConfigurationError("Interval plugin override failed: missing.plugin: not registered")
+
+    orch.explainer.plugin_manager.resolve_interval_plugin = _raise_override_failure  # type: ignore[attr-defined]
 
     with pytest.raises(ConfigurationError, match="override failed"):
         orch.resolve_interval_plugin(fast=False)

@@ -19,6 +19,23 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
+from .core.config_manager import ConfigManager
+
+_plotting_config_manager: ConfigManager | None = None
+
+
+def _get_plotting_config_manager() -> ConfigManager:
+    global _plotting_config_manager
+    if _plotting_config_manager is None:
+        _plotting_config_manager = ConfigManager.from_sources()
+    return _plotting_config_manager
+
+
+def reset_plotting_config_manager() -> None:
+    """Reset plotting module config singleton (tests only)."""
+    global _plotting_config_manager
+    _plotting_config_manager = None
+
 
 def __getattr__(name: str) -> Any:
     """Lazily load legacy plotting module."""
@@ -65,20 +82,20 @@ def __require_matplotlib() -> None:
     from .utils.exceptions import ConfigurationError
 
     if plt is None or mcolors is None:
-        if _MATPLOTLIB_IMPORT_ERROR is None:
-            try:
-                import matplotlib.artist  # noqa: F401
-                import matplotlib.axes  # noqa: F401
-                import matplotlib.colors as mcolors_local
+        try:
+            import matplotlib.artist  # noqa: F401
+            import matplotlib.axes  # noqa: F401
+            import matplotlib.colors as mcolors_local
 
-                # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
-                import matplotlib.image  # noqa: F401
-                import matplotlib.pyplot as plt_local
+            # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
+            import matplotlib.image  # noqa: F401
+            import matplotlib.pyplot as plt_local
 
-                mcolors = mcolors_local
-                plt = plt_local
-            except Exception:  # adr002_allow
-                _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
+            mcolors = mcolors_local
+            plt = plt_local
+            _MATPLOTLIB_IMPORT_ERROR = None
+        except Exception:  # adr002_allow
+            _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
 
         if plt is None or mcolors is None:
             msg = (
@@ -100,36 +117,7 @@ def __require_matplotlib() -> None:
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
-    # Import tomllib/tomli lazily to avoid a top-level hard dependency
-    try:
-        import tomllib as _plot_tomllib
-    except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
-        try:  # pragma: no cover - optional dependency path
-            import tomli as _plot_tomllib  # type: ignore[assignment]
-        except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
-            _plot_tomllib = None  # type: ignore[assignment]
-
-    if _plot_tomllib is None:
-        return {}
-
-    candidate = Path.cwd() / "pyproject.toml"
-    if not candidate.exists():
-        return {}
-    try:
-        with candidate.open("rb") as fh:  # type: ignore[arg-type]
-            data = _plot_tomllib.load(fh)
-    except Exception:  # adr002_allow
-        return {}
-
-    cursor: Any = data
-    for key in ("tool", "calibrated_explanations", "plots"):
-        if isinstance(cursor, dict) and key in cursor:
-            cursor = cursor[key]
-        else:
-            return {}
-    if isinstance(cursor, dict):
-        return dict(cursor)
-    return {}
+    return _get_plotting_config_manager().pyproject_section("plots")
 
 
 def read_plot_pyproject() -> Dict[str, Any]:
@@ -170,34 +158,53 @@ def format_save_path(base_path: Any, filename: str) -> str:
 
 def _resolve_explainer_from_explanation(explanation: Any) -> Any:
     """Best-effort resolver for explanation -> explainer references."""
+    resolved = None
     getter = getattr(explanation, "get_explainer", None)
     if callable(getter):
-        return getter()
-    getter = getattr(explanation, "_get_explainer", None)
-    if callable(getter):
-        return getter()
-    container = getattr(explanation, "calibrated_explanations", None)
-    if container is not None:
-        getter = getattr(container, "get_explainer", None)
+        resolved = getter()
+    else:
+        getter = getattr(explanation, "_get_explainer", None)
         if callable(getter):
-            return getter()
-        getter = getattr(container, "_get_explainer", None)
-        if callable(getter):
-            return getter()
-        return getattr(container, "calibrated_explainer", None)
-    return None
+            resolved = getter()
+        else:
+            container = getattr(explanation, "calibrated_explanations", None)
+            if container is not None:
+                getter = getattr(container, "get_explainer", None)
+                if callable(getter):
+                    resolved = getter()
+                else:
+                    getter = getattr(container, "_get_explainer", None)
+                    if callable(getter):
+                        resolved = getter()
+                    else:
+                        resolved = getattr(container, "calibrated_explainer", None)
+
+    while resolved is not None and not hasattr(resolved, "plugin_manager"):
+        nested_explainer = getattr(resolved, "_explainer", None)
+        if nested_explainer is None:
+            nested_explainer = getattr(resolved, "explainer", None)
+        if nested_explainer is None or nested_explainer is resolved:
+            break
+        resolved = nested_explainer
+    return resolved
 
 
 def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
     """Determine the ordered style fallback chain for plot builders/renderers."""
+    manager = getattr(explainer, "plugin_manager", None)
+    resolver = getattr(manager, "resolve_plot_style_chain", None)
+    if callable(resolver):
+        return resolver(explicit_style=explicit_style)
+
     chain: List[str] = []
     if isinstance(explicit_style, str) and explicit_style:
         chain.append(explicit_style)
 
-    env_style = os.environ.get("CE_PLOT_STYLE")
+    config_manager = _get_plotting_config_manager()
+    env_style = config_manager.env("CE_PLOT_STYLE")
     if env_style:
         chain.append(env_style.strip())
-    chain.extend(split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+    chain.extend(split_csv(config_manager.env("CE_PLOT_STYLE_FALLBACKS")))
 
     py_settings = _read_plot_pyproject()
     py_style = py_settings.get("style")
@@ -228,14 +235,141 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
             ordered.append(identifier)
             seen.add(identifier)
     if "plot_spec.default" not in seen:
-        if "legacy" in ordered:
-            legacy_index = ordered.index("legacy")
-            ordered.insert(legacy_index, "plot_spec.default")
-        else:
-            ordered.append("plot_spec.default")
+        ordered.append("plot_spec.default")
     if "legacy" not in ordered:
         ordered.append("legacy")
     return tuple(ordered)
+
+
+_BUILTIN_INSTANCE_PLOT_STYLES = {"regular", "triangular", "ensured", "narrative"}
+
+
+def _resolve_named_plot_style(
+    *,
+    style_override: Any,
+    style: Any,
+) -> str | None:
+    """Return an explicit plugin style identifier for instance plots when present."""
+    if isinstance(style_override, str) and style_override:
+        return style_override
+    if isinstance(style, str) and style and style not in _BUILTIN_INSTANCE_PLOT_STYLES:
+        return style
+    return None
+
+
+def _render_instance_plot_plugin(
+    explanation: Any,
+    *,
+    explicit_style: str | None,
+    show: bool,
+    path: str | None,
+    save_ext: Sequence[str] | None,
+    renderer_override: str | None,
+    intent_type: str,
+    options: Mapping[str, Any],
+) -> Any | None:
+    """Render a registered custom plot plugin for a single explanation instance."""
+    if not explicit_style or explicit_style in {"legacy", "plot_spec.default"}:
+        return None
+
+    explainer = _resolve_explainer_from_explanation(explanation)
+    manager = getattr(explainer, "plugin_manager", None)
+    resolve_plot_plugin = getattr(manager, "resolve_plot_plugin", None)
+    if not callable(resolve_plot_plugin):
+        return None
+
+    from .plugins import PlotRenderContext, ensure_builtin_plugins
+
+    ensure_builtin_plugins()
+    plugin, identifier, _ = resolve_plot_plugin(
+        explicit_style=explicit_style,
+        renderer_override=renderer_override,
+    )
+    if identifier in {"legacy", "plot_spec.default"}:
+        return None
+
+    context = PlotRenderContext(
+        explanation=explanation,
+        instance_metadata=MappingProxyType(
+            {
+                "type": "instance",
+                "index": getattr(explanation, "index", None),
+            }
+        ),
+        style=identifier,
+        intent=MappingProxyType(
+            {
+                "type": intent_type,
+                "explainer_mode": getattr(explainer, "_last_explanation_mode", None),
+            }
+        ),
+        show=show,
+        path=path,
+        save_ext=tuple(save_ext) if save_ext else None,
+        options=MappingProxyType(dict(options)),
+    )
+    artifact = plugin.build(context)
+    return plugin.render(artifact, context=context)
+
+
+def _render_collection_plot_plugin(
+    collection: Any,
+    *,
+    explicit_style: str | None,
+    show: bool,
+    path: str | None,
+    save_ext: Sequence[str] | None,
+    renderer_override: str | None,
+    intent_type: str,
+    options: Mapping[str, Any],
+) -> Any | None:
+    """Render a registered custom plot plugin for a full explanation collection."""
+    if not explicit_style or explicit_style in {"legacy", "plot_spec.default"}:
+        return None
+
+    explainer = _resolve_explainer_from_explanation(collection)
+    manager = getattr(explainer, "plugin_manager", None)
+    resolve_plot_plugin = getattr(manager, "resolve_plot_plugin", None)
+    if not callable(resolve_plot_plugin):
+        return None
+
+    from .plugins import PlotRenderContext, ensure_builtin_plugins
+
+    ensure_builtin_plugins()
+    plugin, identifier, _ = resolve_plot_plugin(
+        explicit_style=explicit_style,
+        renderer_override=renderer_override,
+    )
+    if identifier in {"legacy", "plot_spec.default"}:
+        return None
+
+    context = PlotRenderContext(
+        explanation=collection,
+        instance_metadata=MappingProxyType({"type": "collection"}),
+        style=identifier,
+        intent=MappingProxyType(
+            {
+                "type": intent_type,
+                "explainer_mode": getattr(explainer, "_last_explanation_mode", None),
+            }
+        ),
+        show=show,
+        path=path,
+        save_ext=tuple(save_ext) if save_ext else None,
+        options=MappingProxyType(dict(options)),
+    )
+    artifact = plugin.build(context)
+    return plugin.render(artifact, context=context)
+
+
+def _plugin_instance_index(explanation: Any, options: Mapping[str, Any]) -> Any:
+    """Resolve the instance index passed to custom plot plugins."""
+    if "instance_index" in options:
+        return options["instance_index"]
+    kind = options.get("shap_kind")
+    if kind in {"waterfall", "force"}:
+        return getattr(explanation, "index", None)
+    return None
 
 
 def resolve_plot_style_chain(explainer, explicit_style: str | None = None) -> Sequence[str]:
@@ -433,16 +567,20 @@ def plot_probabilistic(
     if return_plot_spec:
         use_legacy = False
 
+    explicit_style = _resolve_named_plot_style(
+        style_override=style_override,
+        style=kwargs.get("style"),
+    )
     explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
         if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, style_override)
+            chain = _resolve_plot_style_chain(explainer, explicit_style)
         else:
             chain = ("plot_spec.default", "legacy")
         selected_style = chain[0] if chain else "legacy"
         use_legacy = selected_style == "legacy"
     else:
-        selected_style = None
+        selected_style = explicit_style
 
     predict_payload = dict(predict or {})
 
@@ -465,6 +603,22 @@ def plot_probabilistic(
             save_ext,
         )
         return
+
+    plugin_result = _render_instance_plot_plugin(
+        explanation,
+        explicit_style=selected_style,
+        show=show,
+        path=path or None,
+        save_ext=save_ext,
+        renderer_override=kwargs.get("renderer"),
+        intent_type="factual",
+        options={
+            **kwargs,
+            "instance_index": _plugin_instance_index(explanation, kwargs),
+        },
+    )
+    if plugin_result is not None:
+        return plugin_result
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
     __require_matplotlib()
@@ -738,16 +892,20 @@ def plot_regression(
             # If the guard fails unexpectedly, defer to legacy parity by proceeding.
             logging.getLogger(__name__).debug("Guard check failed: %s", sys.exc_info()[1])
 
+    explicit_style = _resolve_named_plot_style(
+        style_override=style_override,
+        style=kwargs.get("style"),
+    )
     explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
         if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, style_override)
+            chain = _resolve_plot_style_chain(explainer, explicit_style)
         else:
             chain = ("plot_spec.default", "legacy")
         selected_style = chain[0] if chain else "legacy"
         use_legacy = selected_style == "legacy"
     else:
-        selected_style = None
+        selected_style = explicit_style
 
     if use_legacy:
         from .legacy import plotting as legacy
@@ -768,6 +926,22 @@ def plot_regression(
             save_ext,
         )
         return
+
+    plugin_result = _render_instance_plot_plugin(
+        explanation,
+        explicit_style=selected_style,
+        show=show,
+        path=path or None,
+        save_ext=save_ext,
+        renderer_override=kwargs.get("renderer"),
+        intent_type="factual",
+        options={
+            **kwargs,
+            "instance_index": _plugin_instance_index(explanation, kwargs),
+        },
+    )
+    if plugin_result is not None:
+        return plugin_result
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
     if (
@@ -929,16 +1103,15 @@ def plot_triangular(
     if not show and (save_ext is None or len(save_ext) == 0):
         return
 
-    # Build triangular PlotSpec dict via the builder and delegate rendering to the adapter.
-    # This ensures the adapter emits canonical primitives (triangle_background,
-    # quiver/scatter, save_fig) matching ADR-016 and keeps a single rendering path.
-    from .viz.builders import build_triangular_plotspec_dict
+    # Build canonical triangular PlotSpec via the builder and delegate rendering
+    # to the adapter.
+    from .viz.builders import build_triangular_plotspec
     from .viz.matplotlib_adapter import render as render_plotspec
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
 
-    spec = build_triangular_plotspec_dict(
+    spec = build_triangular_plotspec(
         title=title,
         proba=proba,
         uncertainty=uncertainty,
@@ -955,17 +1128,7 @@ def plot_triangular(
     # if matplotlib is available).
     if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
         for ext in save_ext:
-            render_plotspec(
-                {
-                    **spec,
-                    "plot_spec": {
-                        **spec.get("plot_spec", {}),
-                        "save_behavior": {"default_exts": [ext]},
-                    },
-                },
-                show=False,
-                save_path=_format_save_path(path, title + ext),
-            )
+            render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
     return
 
 
@@ -1030,19 +1193,23 @@ def plot_alternative(
     if return_plot_spec:
         use_legacy = False
 
+    explicit_style = _resolve_named_plot_style(
+        style_override=style_override,
+        style=kwargs.get("style"),
+    )
     explainer = _resolve_explainer_from_explanation(explanation)
     return_plot_spec = kwargs.get("return_plot_spec", False)
     if return_plot_spec:
         use_legacy = False
     if use_legacy is None:
         if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, style_override)
+            chain = _resolve_plot_style_chain(explainer, explicit_style)
         else:
             chain = ("plot_spec.default", "legacy")
         selected_style = chain[0] if chain else "legacy"
         use_legacy = selected_style == "legacy"
     else:
-        selected_style = None
+        selected_style = explicit_style
 
     if use_legacy:
         from .legacy import plotting as legacy
@@ -1062,12 +1229,24 @@ def plot_alternative(
         )
         return
 
-    # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if (
-        not return_plot_spec and not show and plt is None
-    ):  # lightweight path for tests/CI without viz extra
-        return
-    # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
+    plugin_result = _render_instance_plot_plugin(
+        explanation,
+        explicit_style=selected_style,
+        show=show,
+        path=path or None,
+        save_ext=save_ext,
+        renderer_override=kwargs.get("renderer"),
+        intent_type="alternative",
+        options={
+            **kwargs,
+            "instance_index": _plugin_instance_index(explanation, kwargs),
+        },
+    )
+    if plugin_result is not None:
+        return plugin_result
+
+    # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib.
+    # Saving still requires the renderer/backend to be available.
     if not return_plot_spec and not show and (save_ext is None or len(save_ext) == 0):
         return
 
@@ -1557,67 +1736,29 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     from .plugins import (
         PlotRenderContext,
         ensure_builtin_plugins,
-        find_plot_plugin,
     )
-    from .plugins.registry import find_plot_plugin_trusted, find_plot_renderer
+    from .utils.exceptions import ConfigurationError as _PlotConfigurationError
 
     ensure_builtin_plugins()
 
-    chain = _resolve_plot_style_chain(explainer, style)
-    # Resolve renderer override from kwargs/env/pyproject
-    renderer_override = kwargs.get("renderer")
-    if not renderer_override:
-        renderer_override = os.environ.get("CE_PLOT_RENDERER")
-    if not renderer_override:
-        py_settings = _read_plot_pyproject()
-        renderer_override = py_settings.get("renderer")
+    manager = getattr(explainer, "plugin_manager", None)
+    resolve_plot_plugin = getattr(manager, "resolve_plot_plugin", None)
+    if not callable(resolve_plot_plugin):
+        raise _PlotConfigurationError(
+            "PluginManager.resolve_plot_plugin is unavailable; cannot resolve plot plugin."
+        )
+
+    plugin, identifier, chain = resolve_plot_plugin(
+        explicit_style=style,
+        renderer_override=kwargs.get("renderer"),
+    )
+
     errors: List[str] = []
-
-    for identifier in chain:
-        plugin = find_plot_plugin_trusted(identifier)
-        if plugin is None:
-            plugin = find_plot_plugin(identifier)
-        if plugin is None:
-            errors.append(f"{identifier}: not registered")
-            continue
-        # If no renderer override, use default_renderer from builder metadata
-        effective_renderer_override = renderer_override
-        if not effective_renderer_override:
-            builder_meta = getattr(plugin.builder, "plugin_meta", {})
-            effective_renderer_override = builder_meta.get("default_renderer")
-        # If a renderer override is specified, try to substitute the renderer
-        if effective_renderer_override:
-            try:
-                override_renderer = find_plot_renderer(effective_renderer_override)
-            except Exception:  # adr002_allow
-                import logging
-                import warnings
-
-                logging.getLogger(__name__).info(
-                    "Failed to find plot renderer '%s'; falling back to default",
-                    effective_renderer_override,
-                )
-                warnings.warn(
-                    f"Failed to find plot renderer '{effective_renderer_override}'; falling back to default",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                override_renderer = None
-            if override_renderer is not None:
-                # Combined plugin returned by registry exposes .builder and .renderer
-                # best-effort: ignore substitution failures
-                with contextlib.suppress(Exception):
-                    plugin.renderer = override_renderer
-        if not hasattr(plugin, "build") or not hasattr(plugin, "render"):
-            errors.append(f"{identifier}: missing build/render implementation")
-            continue
-
-        if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
-            __require_matplotlib()
-        elif show and plt is None:  # pragma: no cover - optional dep path
-            errors.append(f"{identifier}: matplotlib backend unavailable")
-            continue
-
+    if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
+        __require_matplotlib()
+    elif show and plt is None:  # pragma: no cover - optional dep path
+        errors.append(f"{identifier}: matplotlib backend unavailable")
+    else:
         context = PlotRenderContext(
             explanation=getattr(explainer, "latest_explanation", None),
             instance_metadata=MappingProxyType({"type": "global"}),
@@ -1640,10 +1781,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             errors.append(f"{identifier}: {sys.exc_info()[1]}")
-            continue
-        return result
-
-    from .utils.exceptions import ConfigurationError as _PlotConfigurationError
+        else:
+            return result
 
     raise _PlotConfigurationError(
         "Unable to resolve plot plugin for global explanations; "

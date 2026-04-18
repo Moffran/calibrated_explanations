@@ -137,18 +137,8 @@ class TestTrustEnforcement:
 
             orchestrator = ExplanationOrchestrator(mock_explainer)
             mock_explainer.mode = "classification"
-            mock_explainer.plugin_manager.explanation_plugin_overrides = {"factual": None}
-            mock_explainer.plugin_manager.coerce_plugin_override.side_effect = lambda x: x
-            mock_explainer.plugin_manager.explanation_plugin_fallbacks = {
-                "factual": ("test.untrusted",)
-            }
-            mock_explainer.plugin_manager.explanation_preferred_identifier = {
-                "factual": "test.untrusted"
-            }
-            mock_explainer.plugin_manager.resolve_explanation_plugin.return_value = (
-                None,
-                None,
-                "untrusted",
+            mock_explainer.plugin_manager.resolve_explanation_plugin_for_mode.side_effect = (
+                ConfigurationError("untrusted")
             )
 
             with pytest.raises(ConfigurationError, match="untrusted"):
@@ -170,8 +160,19 @@ class TestTrustEnforcement:
 
         orchestrator = ExplanationOrchestrator(mock_explainer)
         mock_explainer.mode = "classification"
-        mock_explainer.plugin_manager.explanation_plugin_overrides = {"factual": mock_plugin}
-        mock_explainer.plugin_manager.coerce_plugin_override.side_effect = lambda x: x
+
+        def _resolve(*_args, **_kwargs):
+            import warnings
+
+            warnings.warn(
+                "Using untrusted explanation plugin 'test.untrusted.instance' via explicit override. "
+                "Ensure you trust the source of this plugin.",
+                UserWarning,
+                stacklevel=2,
+            )
+            return mock_plugin, "test.untrusted.instance"
+
+        mock_explainer.plugin_manager.resolve_explanation_plugin_for_mode.side_effect = _resolve
 
         with pytest.warns(UserWarning, match="Using untrusted explanation plugin"):
             plugin, identifier = orchestrator.resolve_plugin("factual")

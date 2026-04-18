@@ -1,4 +1,4 @@
-"""Unit tests for guarded interval audit payloads."""
+"""Contract tests for guarded audit payloads."""
 
 import json
 
@@ -117,6 +117,7 @@ def test_guarded_alternative_audit_returns_full_interval_table():
 
 
 def test_guarded_audit_removed_count_equals_nonconforming_count():
+    """Removed-guard counts should track candidates rejected by the shipped guard rule."""
     explainer, x_cal = make_classification_explainer(seed=33)
     res = explainer.explain_guarded_factual(x_cal[:1], significance=0.2)
     audit = res.explanations[0].get_guarded_audit()
@@ -267,8 +268,70 @@ def test_guarded_audit_merge_adjacent_marks_is_merged_and_retains_p_values():
     assert rec["p_value"] == pytest.approx(0.42)
 
 
+def test_guarded_audit_uses_emitted_bounds_in_condition_strings():
+    payload = minimal_payload()
+    expl = GuardedAlternativeExplanation(
+        DummyCollection(),
+        0,
+        np.array([0.1, 0.2]),
+        guarded_bins={
+            0: [
+                GuardedBin(
+                    lower=0.0,
+                    upper=1.0,
+                    representative=0.5,
+                    predict=0.3,
+                    low=0.2,
+                    high=0.4,
+                    conforming=True,
+                    p_value=0.42,
+                    is_factual=False,
+                )
+            ]
+        },
+        feature_names=["f0", "f1"],
+        **payload,
+    )
+    rec = expl.get_guarded_audit()["intervals"][0]
+    assert rec["lower"] == pytest.approx(0.0)
+    assert rec["upper"] == pytest.approx(1.0)
+    assert rec["condition"] == "0 < f0 <= 1"
+
+
 def test_guarded_audit_serialization_smoke():
     explainer, x_cal = make_classification_explainer(seed=40)
     res = explainer.explain_guarded_factual(x_cal[:1], significance=0.1)
     audit = res.get_guarded_audit()
     assert isinstance(json.dumps(audit), str)
+
+
+def test_guarded_audit__merge_fails_rerenders_original_bins():
+    """Strict significance triggers merge re-check failures; rollback produces valid records.
+
+    With significance=0.95 on Iris calibration data, merged interval representatives
+    covering wide ranges rarely satisfy the guard.  The rollback path must return the
+    original unmerged GuardedBin records without raising and without corrupting p_value
+    or is_merged fields.
+    """
+    explainer, x_cal = make_classification_explainer(seed=0)
+    # significance=0.95 is strict enough that merged representatives over wider intervals
+    # will typically fail; individual bins at their own representative may still pass.
+    result = explainer.explain_guarded_factual(
+        x_cal[:2],
+        significance=0.95,
+        merge_adjacent=True,
+        n_neighbors=3,
+    )
+    audit = result.get_guarded_audit()
+    all_records = [r for inst in audit["instances"] for r in inst["intervals"]]
+    assert all_records, "At least some interval records must be present"
+    for rec in all_records:
+        assert isinstance(
+            rec["is_merged"], bool
+        ), f"is_merged must be bool, got {rec['is_merged']!r}"
+        assert isinstance(rec["p_value"], float), f"p_value must be float, got {rec['p_value']!r}"
+        assert 0.0 <= rec["p_value"] <= 1.0, f"p_value out of [0, 1]: {rec['p_value']}"
+    # At this strict significance level no merged bins should survive the re-check.
+    assert not any(
+        r["is_merged"] for r in all_records
+    ), "No merged records expected at significance=0.95; merge rollback should have fired"

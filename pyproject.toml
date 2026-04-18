@@ -96,6 +96,7 @@ external-plugins = [
 ]
 
 [project.scripts]
+ce = "calibrated_explanations.cli:main"
 "ce.plugins" = "calibrated_explanations.plugins.cli:main"
 
 [tool.pytest.ini_options]

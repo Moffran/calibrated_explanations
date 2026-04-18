@@ -53,6 +53,17 @@ jobs:
           python scripts/quality/check_logging_domains.py \
             --root src/calibrated_explanations \
             --report reports/quality/logging_domain_report.json
+      - name: STD-001 nomenclature enforcement
+        run: |
+          python scripts/quality/check_std001_nomenclature.py \
+            --root src/calibrated_explanations \
+            --report reports/nomenclature_violation_inventory.json \
+            --check
+      - name: Generated report local-path guard
+        run: |
+          python scripts/quality/check_no_local_paths_in_reports.py \
+            --check \
+            --report reports/quality/no_local_paths_report.json
       - name: Upload lint artifacts
         if: always()
         uses: actions/upload-artifact@v7
@@ -61,6 +72,8 @@ jobs:
           path: |
             docstring_coverage.txt
             reports/quality/logging_domain_report.json
+            reports/nomenclature_violation_inventory.json
+            reports/quality/no_local_paths_report.json
 
   mypy:
     runs-on: ubuntu-latest
@@ -134,7 +147,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt -c constraints.txt; fi
       - name: Run private-member scan
         run: |
-          python scripts/anti-pattern-analysis/scan_private_usage.py --check
+          python scripts/anti-pattern-analysis/scan_private_usage.py tests --check
 
   anti-pattern-audit:
     name: Anti-pattern Audit (ADR-030)
@@ -171,6 +184,11 @@ jobs:
             --check \
             --report reports/marker-hygiene/marker_hygiene_report.json \
             --baseline .github/marker-hygiene-baseline.json
+      - name: Run generated report local-path guard
+        run: |
+          python scripts/quality/check_no_local_paths_in_reports.py \
+            --check \
+            --report reports/quality/no_local_paths_report.json
       - name: Upload quality reports
         if: always()
         uses: actions/upload-artifact@v7
@@ -181,3 +199,55 @@ jobs:
             reports/anti-pattern-analysis/test_quality_report.json
             reports/anti-pattern-analysis/test_helper_wrapper_report.json
             reports/marker-hygiene/marker_hygiene_report.json
+            reports/quality/no_local_paths_report.json
+
+  governance-event-schema-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should_run: ${{ steps.filter.outputs.governance }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Detect governance-event relevant changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            governance:
+              - 'src/calibrated_explanations/plugins/registry.py'
+              - 'src/calibrated_explanations/governance/**'
+              - 'src/calibrated_explanations/schemas/governance_event_schema_v1.json'
+              - 'scripts/quality/check_governance_event_schema.py'
+              - 'tests/observability/test_governance_events.py'
+              - 'tests/scripts/test_check_governance_event_schema.py'
+              - 'docs/foundations/governance/governance_events.md'
+              - '.github/workflows/ci-pr.yml'
+
+  governance-event-schema:
+    name: Governance Event Schema (ADR-028)
+    needs: [lint, governance-event-schema-changes]
+    if: needs.governance-event-schema-changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints.txt
+            pyproject.toml
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev] -c constraints.txt
+      - name: Run governance-event schema checker
+        run: python scripts/quality/check_governance_event_schema.py
+      - name: Run governance-event tests
+        run: pytest -q --no-cov tests/observability/test_governance_events.py tests/scripts/test_check_governance_event_schema.py

@@ -1,0 +1,109 @@
+# RTD tier map
+
+This page maps the public RTD pages to STD-004 tiers.
+
+- Tier assignment policy follows `docs/standards/STD-004-documentation-audience-standard.md`.
+- Entry-point pages also include bottom-of-page `Entry-point tier: Tier X.` labels.
+
+| Page | Tier |
+| --- | --- |
+| `api/calibrated_explainer.md` | Tier 3 |
+| `api/cli.md` | Tier 3 |
+| `api/index.md` | Tier 3 |
+| `api/plugins.md` | Tier 3 |
+| `api/serialization.md` | Tier 3 |
+| `api/visualization.md` | Tier 3 |
+| `appendices/changelog_links.md` | Tier 3 |
+| `appendices/external_plugins.md` | Tier 3 |
+| `citing.md` | Tier 3 |
+| `compare.md` | Tier 3 |
+| `contributor/agent_skills.md` | Tier 3 |
+| `contributor/extending/advanced.md` | Tier 3 |
+| `contributor/extending/guides/index.md` | Tier 3 |
+| `contributor/extending/plugin-advanced-contract.md` | Tier 3 |
+| `contributor/index.md` | Tier 1 |
+| `contributor/plugin-contract.md` | Tier 3 |
+| `foundations/concepts/alternatives.md` | Tier 3 |
+| `foundations/concepts/architecture.md` | Tier 3 |
+| `foundations/concepts/calibrated_interval_semantics.md` | Tier 3 |
+| `foundations/concepts/error_handling.md` | Tier 3 |
+| `foundations/concepts/explanation_structures.md` | Tier 3 |
+| `foundations/concepts/guarded_explanations.md` | Tier 3 |
+| `foundations/concepts/index.md` | Tier 3 |
+| `foundations/concepts/probabilistic_regression.md` | Tier 3 |
+| `foundations/concepts/telemetry.md` | Tier 3 |
+| `foundations/concepts/terminology_thresholded_vs_probabilistic_regression.md` | Tier 3 |
+| `foundations/concepts/terminology.md` | Tier 3 |
+| `foundations/governance/index.md` | Tier 3 |
+| `foundations/governance/nav_crosswalk.md` | Tier 3 |
+| `foundations/governance/optional_telemetry.md` | Tier 3 |
+| `foundations/governance/pr_guide.md` | Tier 3 |
+| `foundations/governance/release_checklist.md` | Tier 3 |
+| `foundations/governance/release_notes.md` | Tier 3 |
+| `foundations/governance/section_owners.md` | Tier 3 |
+| `foundations/governance/test_policy.md` | Tier 3 |
+| `foundations/governance/waivers_inventory.md` | Tier 3 |
+| `foundations/how-to/configure_telemetry.md` | Tier 3 |
+| `foundations/how-to/export_explanations.md` | Tier 3 |
+| `foundations/how-to/index.md` | Tier 3 |
+| `foundations/how-to/integrate_with_pipelines.md` | Tier 3 |
+| `foundations/how-to/interpret_explanations.md` | Tier 3 |
+| `foundations/how-to/plot_with_plotspec.md` | Tier 3 |
+| `foundations/how-to/to_narrative.md` | Tier 3 |
+| `foundations/how-to/tune_runtime_performance.md` | Tier 3 |
+| `foundations/index.md` | Tier 3 |
+| `foundations/reference/api.md` | Tier 3 |
+| `foundations/reference/index.md` | Tier 3 |
+| `get-started/ce_first_agent_guide.md` | Tier 3 |
+| `get-started/copilot-setup.md` | Tier 3 |
+| `get-started/index.md` | Tier 1 |
+| `get-started/installation.md` | Tier 3 |
+| `get-started/quick_api.md` | Tier 2 |
+| `get-started/quickstart_classification.md` | Tier 2 |
+| `get-started/quickstart_guarded.md` | Tier 2 |
+| `get-started/quickstart_regression.md` | Tier 2 |
+| `get-started/troubleshooting.md` | Tier 3 |
+| `getting_started_60s.md` | Tier 1 |
+| `index.md` | Tier 1 |
+| `maintenance/legacy-plotting-reference.md` | Tier 3 |
+| `migration/adr033_v0_11_0.md` | Tier 3 |
+| `migration/deprecations.md` | Tier 3 |
+| `migration/index.md` | Tier 3 |
+| `multiclass_all_classes_gap_analysis.md` | Tier 3 |
+| `plugins.md` | Tier 1 |
+| `practitioner/advanced/explanation_retrieval.md` | Tier 3 |
+| `practitioner/advanced/index.md` | Tier 3 |
+| `practitioner/advanced/normalization-guide.md` | Tier 3 |
+| `practitioner/advanced/parallel_execution_playbook.md` | Tier 3 |
+| `practitioner/advanced/reject-policy.md` | Tier 3 |
+| `practitioner/advanced/use_plugins.md` | Tier 3 |
+| `practitioner/index.md` | Tier 1 |
+| `practitioner/narrative_templates.md` | Tier 3 |
+| `practitioner/performance-tuning.md` | Tier 3 |
+| `practitioner/playbooks/decision-policies.md` | Tier 2 |
+| `practitioner/playbooks/ensured-explanations.md` | Tier 2 |
+| `practitioner/playbooks/eu-ai-act-compliance.md` | Tier 2 |
+| `practitioner/playbooks/eu-data-liability-compliance.md` | Tier 2 |
+| `practitioner/playbooks/index.md` | Tier 2 |
+| `practitioner/playbooks/mondrian-calibration.md` | Tier 2 |
+| `practitioner/task_api_comparison.md` | Tier 3 |
+| `researcher/advanced/index.md` | Tier 3 |
+| `researcher/advanced/theory_and_literature.md` | Tier 3 |
+| `researcher/future_work.md` | Tier 3 |
+| `researcher/index.md` | Tier 1 |
+| `researcher/replication/index.md` | Tier 3 |
+| `ROADMAP.md` | Tier 3 |
+| `schema_v1.md` | Tier 3 |
+| `standards/index.md` | Tier 3 |
+| `standards/STD-001-nomenclature-standardization.md` | Tier 3 |
+| `standards/STD-002-code-documentation-standard.md` | Tier 3 |
+| `standards/STD-003-test-coverage-standard.md` | Tier 3 |
+| `standards/STD-004-documentation-audience-standard.md` | Tier 3 |
+| `standards/STD-005-logging-and-observability-standard.md` | Tier 3 |
+| `tasks/capabilities.md` | Tier 2 |
+| `tasks/classification.md` | Tier 2 |
+| `tasks/index.md` | Tier 1 |
+| `tasks/probabilistic_regression.md` | Tier 2 |
+| `tasks/regression.md` | Tier 2 |
+
+Entry-point tier: Tier 3.

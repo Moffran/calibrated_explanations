@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "level": "info",
+      "message": "Governance event schema validation passed."
+    },
+    {
+      "level": "info",
+      "message": "Config governance event schema validation passed."
+    },
+    {
+      "level": "info",
+      "message": "Governance event fixture validation passed."
+    }
+  ],
+  "generated_at": "2026-04-18T05:28:41+00:00",
+  "ok": true,
+  "version": 1
+}

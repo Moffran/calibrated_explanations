@@ -338,11 +338,11 @@ def test_regression_predict_reject_requires_threshold(regression_dataset):
         model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
     )
 
-    cal_exp.initialize_reject_learner(threshold=0.5)
+    cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
     cal_exp.reject_threshold = None
 
     with pytest.raises(ValidationError):
-        cal_exp.predict_reject(x_test)
+        cal_exp.reject_orchestrator.predict_reject(x_test)
 
 
 def test_regression_reject_learner_custom_calibration(regression_dataset):
@@ -366,12 +366,16 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
 
     # Use a list to exercise the fallback calibration_set path inside initialize_reject_learner
     calibration_subset = [x_cal[:25], y_cal[:25]]
-    learner = cal_exp.initialize_reject_learner(calibration_set=calibration_subset, threshold=0.6)
+    learner = cal_exp.reject_orchestrator.initialize_reject_learner(
+        calibration_set=calibration_subset, threshold=0.6
+    )
 
     assert learner is cal_exp.reject_learner
     assert cal_exp.reject_threshold == 0.6
 
-    rejected, error_rate, reject_rate = cal_exp.predict_reject(x_test, confidence=0.9)
+    rejected, error_rate, reject_rate = cal_exp.reject_orchestrator.predict_reject(
+        x_test, confidence=0.9, threshold=0.6
+    )
 
     assert rejected.shape == (len(x_test),)
     assert not np.isnan(error_rate)
@@ -405,8 +409,8 @@ def test_probabilistic_regression_ce(regression_dataset):
         model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
     )
 
-    cal_exp.initialize_reject_learner(threshold=0.5)
-    cal_exp.predict_reject(x_test)
+    cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
+    cal_exp.reject_orchestrator.predict_reject(x_test, threshold=0.5)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test)
     factual_explanation.add_conjunctions()
@@ -612,8 +616,8 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
         bins=x_cal[:, 0],
     )
 
-    cal_exp.initialize_reject_learner(threshold=0.5)
-    cal_exp.predict_reject(x_test, bins=x_test[:, 0])
+    cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
+    cal_exp.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0], threshold=0.5)
 
     factual_explanation = cal_exp.explain_factual(x_test, y_test, bins=x_test[:, 0])
     factual_explanation.add_conjunctions()

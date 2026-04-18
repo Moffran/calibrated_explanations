@@ -1,0 +1,9 @@
+[project]
+name = "ce-mock-modality-plugin"
+version = "0.1.0"
+
+# Documents the entry-point group name expected by calibrated_explanations.
+# This file is NOT installed at test time; it serves as the reference spec
+# for what the monkeypatched entry point simulates.
+[project.entry-points."calibrated_explanations.plugins"]
+"tests.mock.modality" = "ce_mock_modality_plugin:MinimalModalityPlugin"

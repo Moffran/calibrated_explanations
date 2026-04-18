@@ -32,7 +32,7 @@ from ..api.params import (
     reject_removed_aliases,
     validate_param_combination,
 )
-from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
+from ..utils import check_is_fitted, deprecate, safe_isinstance  # noqa: F401
 from ..utils.exceptions import (
     DataShapeError,
     IncompatibleStateError,
@@ -69,6 +69,22 @@ class WrapCalibratedExplainer:
     mc: Callable[[Any], Any] | MondrianCategorizer | None
     _logger: _logging.Logger
     _STATE_SCHEMA_VERSION: int = 1
+
+    @staticmethod
+    def _deprecate_lime_shap_surface(
+        symbol: str,
+        replacement: str,
+        *,
+        removal_version: str,
+    ) -> None:
+        """Emit Task-21 deprecation warning for wrapper LIME/SHAP entry points."""
+        deprecate(
+            f"WrapCalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
+            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
+            "under the pre-v1.0 zero-deprecation closure policy.",
+            key=f"WrapCalibratedExplainer.{symbol}_lime_shap_deprecation",
+            stacklevel=4,
+        )
 
     def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
@@ -479,14 +495,9 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explain_guarded_factual` : Refer to the docstring for full parameter documentation.
         """
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-            )
-            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-            .explainer
-            is not None
-        )
+        self._assert_fitted(
+            "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+        )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
@@ -505,14 +516,9 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explore_guarded_alternatives` : Refer to the docstring for full parameter documentation.
         """
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-            )
-            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-            .explainer
-            is not None
-        )
+        self._assert_fitted(
+            "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+        )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
@@ -559,6 +565,11 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
+        self._deprecate_lime_shap_surface(
+            "explain_lime",
+            "external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)",
+            removal_version="v0.11.2",
+        )
         assert (
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
@@ -572,10 +583,17 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explain_lime(x_local, **kwargs)
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("ignore", DeprecationWarning)
+            return self.explainer.explain_lime(x_local, **kwargs)
 
     def explain_shap(self, x: Any, **kwargs: Any) -> Any:
         """Generate SHAP explanations for the test data."""
+        self._deprecate_lime_shap_surface(
+            "explain_shap",
+            "external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)",
+            removal_version="v0.11.2",
+        )
         assert (
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
@@ -589,7 +607,9 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explain_shap(x_local, **kwargs)
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("ignore", DeprecationWarning)
+            return self.explainer.explain_shap(x_local, **kwargs)
 
     # pylint: disable=too-many-return-statements
     def predict(
@@ -741,8 +761,28 @@ class WrapCalibratedExplainer:
         )
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
-    def initialize_reject_learner(self, threshold: float | None = None) -> Any:
+    def initialize_reject_learner(  # pylint: disable=invalid-name
+        self, threshold: float | None = None, ncf=None, w: float = 0.5
+    ) -> Any:
         """Initialize the reject learner with a threshold value.
+
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.initialize_reject_learner`` on the
+            calibrated explainer instead. This wrapper will be removed no
+            earlier than v0.13.0.
+
+        Parameters
+        ----------
+        threshold : float or None
+            Decision threshold (regression only). Defaults to None.
+        ncf : str or None, default None
+            Non-conformity function type: ``'default'`` or ``'ensured'``.
+            The internal default score is task-dependent (margin for
+            multiclass, hinge for binary/regression). Legacy ``'entropy'``
+            is accepted and mapped to ``'default'``.
+        w : float, default 0.5
+            Blending weight in [0, 1] used only when ``ncf='ensured'``.
+            Ignored for ``ncf='default'``.
 
         See Also
         --------
@@ -758,10 +798,28 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        return self.explainer.initialize_reject_learner(threshold=threshold)
+        deprecate(
+            "WrapCalibratedExplainer.initialize_reject_learner is deprecated since v0.11.1; "
+            "use explainer.reject_orchestrator.initialize_reject_learner instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.wrap_explainer."
+                "WrapCalibratedExplainer.initialize_reject_learner_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.explainer.plugin_manager.initialize_orchestrators()
+        return self.explainer.reject_orchestrator.initialize_reject_learner(
+            threshold=threshold, ncf=ncf, w=w
+        )
 
     def predict_reject(self, x: Any, bins: Any = None, confidence: float = 0.95) -> Any:
         """Predict whether to reject the explanations for the test data.
+
+        .. deprecated:: 0.11.1
+            Use ``reject_orchestrator.predict_reject`` on the calibrated
+            explainer instead. This wrapper will be removed no earlier than
+            v0.13.0.
 
         See Also
         --------
@@ -778,7 +836,20 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
+        deprecate(
+            "WrapCalibratedExplainer.predict_reject is deprecated since v0.11.1; "
+            "use explainer.reject_orchestrator.predict_reject instead. "
+            "This wrapper will be removed no earlier than v0.13.0.",
+            key=(
+                "calibrated_explanations.core.wrap_explainer."
+                "WrapCalibratedExplainer.predict_reject_deprecation"
+            ),
+            stacklevel=2,
+        )
+        self.explainer.plugin_manager.initialize_orchestrators()
+        return self.explainer.reject_orchestrator.predict_reject(
+            x, bins=bins, confidence=confidence
+        )
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> Any:

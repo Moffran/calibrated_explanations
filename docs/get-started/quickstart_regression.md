@@ -1,8 +1,6 @@
 # Regression quickstart
 
-Calibrate regression models with probabilistic thresholds and interval guidance
-without enabling optional tooling. This quickstart mirrors the README flow and
-feeds the practitioner notebooks.
+Run interval regression and probabilistic regression from one calibrated explainer.
 
 ## Prerequisites
 
@@ -10,22 +8,23 @@ feeds the practitioner notebooks.
 pip install calibrated-explanations scikit-learn
 ```
 
-```{admonition} Tested environments
-:class: tip
+## Interval regression semantics note
 
-Continuous integration runs this guide through
-``pytest tests/docs/test_quickstarts.py::test_regression_quickstart`` on Linux
-with CPython 3.8–3.11.
-```
+- **Calibration prerequisites**: fit on `x_proper, y_proper` and calibrate on held-out `x_cal, y_cal`.
+- **Mode-specific guarantees**: percentile intervals use CPS for requested percentile bounds.
+- **Assumptions**: calibration and deployment data are exchangeable or distribution-matched.
+- **Explicit non-guarantees**: no guarantee under drift or fixed interval width across subpopulations.
+- **Explanation-envelope limits**: feature-level intervals summarize model behavior under perturbation.
+- **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics`.
 
-```{admonition} Guarantees & Assumptions
-:class: important
+## Probabilistic or thresholded regression semantics note
 
-* Conformal intervals require a calibration set for CPS fitting (the `x_cal`, `y_cal` split below)
-* Probabilistic regression uses CPS + Venn-Abers for calibrated threshold probabilities
-* Interval width reflects the requested `low_high_percentiles` (default: 5th–95th for 90% coverage)
-* See [ADR-021 formal semantics (GitHub)](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
-```
+- **Calibration prerequisites**: fit on `x_proper, y_proper` and calibrate on held-out `x_cal, y_cal`.
+- **Mode-specific guarantees**: threshold queries use CPS with Venn-Abers for calibrated event probabilities.
+- **Assumptions**: calibration and deployment data are exchangeable or distribution-matched.
+- **Explicit non-guarantees**: no guarantee under drift, and no causal guarantee from threshold probabilities.
+- **Explanation-envelope limits**: feature-level intervals summarize model behavior under perturbation.
+- **Formal semantics**: {doc}`../foundations/concepts/calibrated_interval_semantics`.
 
 ## 1. Prepare the dataset
 
@@ -53,48 +52,27 @@ from calibrated_explanations import WrapCalibratedExplainer
 
 explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=0))
 explainer.fit(x_proper, y_proper)
-explainer.calibrate(
-    x_cal,
-    y_cal,
-    feature_names=dataset.feature_names,
-)
+explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 ```
 
-## 3. Retrieve calibrated intervals and probabilities
+## 3. Interval and threshold predictions
 
 ```python
-factual = explainer.explain_factual(x_test[:3])
-
+pred, (low, high) = explainer.predict(x_test[:3], uq_interval=True)
 probabilities, probability_interval = explainer.predict_proba(
     x_test[:1], threshold=150, uq_interval=True
 )
 ```
 
-> 🎯 **Interval regression insight:** The prediction interval remains the
-> decision boundary for interval regression scenarios; probabilistic thresholds
-> complement rather than replace it.
-
-## 4. Explore calibrated alternatives
+## 4. Explore alternatives
 
 ```python
-alternatives = explainer.explore_alternatives(
-    x_test[:2], threshold=150
-)
+alternatives = explainer.explore_alternatives(x_test[:2], threshold=150)
 ```
 
-See the [Alternatives concept guide](../foundations/concepts/alternatives.md) for visual and
-interpretation walkthroughs.
+Next steps:
+- {doc}`../foundations/concepts/probabilistic_regression`
+- {doc}`../foundations/how-to/interpret_explanations`
+- {doc}`../citing`
 
-> 📘 **Deep dive:** The {doc}`../foundations/concepts/probabilistic_regression` guide explains
-> how calibrated probabilities and intervals stay aligned across regression
-> tasks.
-
-> 📝 **Citing calibrated explanations:** When publishing regression or
-> probabilistic threshold results, use {doc}`../citing` to pick the appropriate
-> references.
-
-> 🔬 **Research hub:** Cross-check {doc}`../researcher/index` for detailed
-> replication notes on the Machine Learning (2025) regression study and the Fast
-> Calibrated Explanations (2024) performance paper catalogued in
-> {doc}`../researcher/advanced/theory_and_literature`—both reinforce the interval and
-> probabilistic workflows demonstrated here.
+Entry-point tier: Tier 2.

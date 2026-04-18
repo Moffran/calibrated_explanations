@@ -35,6 +35,7 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
 
 
 def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     explainer = stub_explainer(explainer_factory)
 
     class CallableWithMeta:
@@ -44,14 +45,18 @@ def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory
             raise AssertionError("should not be invoked")
 
     callable_with_meta = CallableWithMeta()
-    assert explainer.instantiate_plugin(callable_with_meta) is callable_with_meta
+    import pytest
+
+    with pytest.warns(DeprecationWarning):
+        assert explainer.instantiate_plugin(callable_with_meta) is callable_with_meta
 
     class SimplePlugin:
         def __init__(self) -> None:
             self.token = object()
 
     prototype = SimplePlugin()
-    clone = explainer.instantiate_plugin(prototype)
+    with pytest.warns(DeprecationWarning):
+        clone = explainer.instantiate_plugin(prototype)
     assert isinstance(clone, SimplePlugin)
     assert clone is not prototype
 
@@ -65,14 +70,16 @@ def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory
     from calibrated_explanations.core.explain import orchestrator as explain_orch
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", lambda value: sentinel)
-    assert explainer.instantiate_plugin(broken) is sentinel
+    with pytest.warns(DeprecationWarning):
+        assert explainer.instantiate_plugin(broken) is sentinel
 
     # Test fallback when deepcopy itself fails
     def raising_deepcopy(value):
         raise RuntimeError("fail")
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", raising_deepcopy)
-    assert explainer.instantiate_plugin(broken) is broken
+    with pytest.warns(DeprecationWarning):
+        assert explainer.instantiate_plugin(broken) is broken
 
 
 class RaisingInterval:

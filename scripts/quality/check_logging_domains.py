@@ -51,6 +51,12 @@ def _relative(path: Path, package_root: Path) -> str:
     return str(path.resolve().relative_to(package_root.parent.resolve())).replace("\\", "/")
 
 
+def _report_package_root(package_root: Path) -> str:
+    """Return a repo-relative package root for report payloads."""
+    base = package_root.parent.parent if package_root.parent.name == "src" else package_root.parent
+    return str(package_root.resolve().relative_to(base.resolve())).replace("\\", "/")
+
+
 def _is_logging_getlogger(node: ast.Call) -> bool:
     func = node.func
     if not isinstance(func, ast.Attribute) or func.attr != "getLogger":
@@ -103,7 +109,7 @@ def write_report(report_path: Path, package_root: Path, violations: list[Violati
     payload = {
         "version": 1,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "package_root": str(package_root).replace("\\", "/"),
+        "package_root": _report_package_root(package_root),
         "total_violations": len(violations),
         "violations": [v.to_record() for v in violations],
     }

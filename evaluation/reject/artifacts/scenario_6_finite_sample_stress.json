@@ -1,0 +1,20 @@
+{
+  "scenario": "scenario_6_finite_sample_stress",
+  "display_name": "Scenario 6 \u2014 Finite-sample stress tests",
+  "paper_rq": "RQ6",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "highlights": [
+    "Stress tests focus on finite-sample behavior and extreme confidence settings.",
+    "The suite reports coverage violations empirically rather than claiming new guarantees.",
+    "violation is computed from actual coverage, not hard-coded.",
+    "extreme_confidence probe uses the same violation logic as small_calibration."
+  ],
+  "outcome": {
+    "rows": 51,
+    "violations": 28,
+    "max_reject_rate": 1.0,
+    "small_cal_violations": 27,
+    "extreme_conf_violations": 1
+  }
+}

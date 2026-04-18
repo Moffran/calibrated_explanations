@@ -1,32 +1,25 @@
 # Researcher hub
 
-Connect calibrated explanations back to the published literature, benchmark
-artefacts, and replication workflows. This hub centralises the guidance that
-used to be spread across ``research/`` and ``researcher/`` so you can navigate
-from replication to advanced telemetry experiments without duplicate content.
+Use this hub for replication and method-focused analysis.
 
-## Start with replication
+## Core path
 
-Follow the {doc}`replication/index` workflow to align your environment,
-datasets, and evaluation scripts with the published studies across
-classification and regression. The steps mirror the evaluation extras and data
-manifests shipped in the repository.
+1. Follow {doc}`replication/index`.
+2. Use {doc}`../foundations/concepts/calibrated_interval_semantics` for formal
+   semantics and non-guarantees.
+3. Use {doc}`advanced/theory_and_literature` for papers and benchmark context.
 
-## Explore advanced threads
+## Open questions
 
-When curating new benchmarks or extending telemetry experiments, jump to the
-{doc}`advanced/index` lane. It houses the literature roundup and placeholders
-for future research artefacts, all linked back to the same shared foundations as
-the practitioner and contributor hubs.
-
-Consult the {doc}`future_work` ledger to explore open research questions and
-potential enhancements to the calibrated explanations framework.
+Track unresolved questions in {doc}`future_work`.
 
 ```{toctree}
 :maxdepth: 1
 :hidden:
 
-future_work
 replication/index
 advanced/index
+future_work
 ```
+
+Entry-point tier: Tier 1.

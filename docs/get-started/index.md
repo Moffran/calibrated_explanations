@@ -1,46 +1,17 @@
 # Get started
 
-Follow these curated paths to run calibrated explanations without any optional
-telemetry or plugin prerequisites. Each quickstart mirrors the README flow and
-links directly to the companion notebook.
+Pick one quickstart and run it end to end.
 
-| Binary & multiclass classification | Probabilistic regression | Guarded (in-distribution) |
-| --- | --- | --- |
-| [Classification quickstart](quickstart_classification.md)<br>[Demo notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_binary_classification.ipynb) | [Regression quickstart](quickstart_regression.md)<br>[Probabilistic regression notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/core_demos/demo_probabilistic_regression.ipynb) | [Guarded quickstart](quickstart_guarded.md)<br>In-distribution filtering for trustworthy rules |
+- {doc}`quickstart_classification`
+- {doc}`quickstart_regression`
+- {doc}`quickstart_guarded`
 
-> 📈 **Interval regression signpost:** The regression quickstart highlights how
-> calibrated interval outputs complement probabilistic thresholds, with links to
-> the interval regression walkthrough for deeper coverage.
+For fast routing, use {doc}`../getting_started_60s`.
+For method signatures, use {doc}`quick_api`.
+For interpretation, use {doc}`../foundations/how-to/interpret_explanations`.
 
-Regression in Calibrated Explanations is **conformal interval regression** implemented via
-**Conformal Predictive Systems (CPS)**. Use `low_high_percentiles=(a, b)` to choose the CPS
-percentiles for the returned interval; use `threshold=...` to switch to probabilistic (thresholded)
-regression. See {doc}`../tasks/regression` and {doc}`../tasks/probabilistic_regression`.
-
-After you finish a quickstart, read the
-{doc}`../foundations/how-to/interpret_explanations` guide to interpret factual,
-alternative, probabilistic, and interval outputs, and visit the
-{doc}`../foundations/concepts/alternatives` explainer for the full alternatives
-walkthrough.
-
-Need CE-first guidance for agents and humans? See the
-{doc}`ce_first_agent_guide` for a runnable, OSS-only workflow.
-Want to set up an AI agent (GitHub Copilot, Codex, Claude Code, Gemini) for CE development? See the
-{doc}`copilot-setup` guide for environment setup, instruction files, prompt workflows, and the feedback loop.
-Need a faster start? Use the {doc}`../getting_started_60s` decision tree.
-Need a method cheat-sheet? Start with the {doc}`quick_api` page.
-For quick programmatic access to explanation rules see
-{doc}`../practitioner/advanced/explanation_retrieval` (retrieval helpers and examples).
-
-## Interpretation & research links
-
-- {doc}`../foundations/how-to/interpret_explanations` – Deep dive on factual,
-  alternative, and interval outputs mirrored in the notebooks.
-- {doc}`../foundations/concepts/probabilistic_regression` – Concept guide explaining how
-  probabilistic thresholds pair with interval regression.
-- {doc}`../citing` – Cite the binary, multiclass, probabilistic, and interval
-  regression research when you publish results.
-- {doc}`../researcher/index` – Research hub with proofs, benchmarks, and funding context underpinning the quickstarts.
+Semantics are mode-specific. Start with
+{doc}`../foundations/concepts/calibrated_interval_semantics`.
 
 ```{toctree}
 :maxdepth: 1
@@ -51,8 +22,7 @@ quickstart_classification
 quickstart_regression
 quickstart_guarded
 ../getting_started_60s
-ce_first_agent_guide
-copilot-setup
 troubleshooting
-../practitioner/advanced/explanation_retrieval
 ```
+
+Entry-point tier: Tier 1.

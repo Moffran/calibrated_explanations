@@ -440,8 +440,8 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     repr(cal_exp)
 
     cal_exp.calibrated_confusion_matrix()
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(x_test)
+    cal_exp.explainer.reject_orchestrator.initialize_reject_learner()
+    cal_exp.explainer.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0])
 
     y_test_hat1 = cal_exp.predict(x_test)
     y_test_hat2, (low, high) = cal_exp.predict(x_test, True)
@@ -455,7 +455,15 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     for i, y_hat in enumerate(y_test_hat2):
         for j, y_hat_j in enumerate(y_hat):
             assert y_test_hat1[i][j] == y_hat_j
-            assert low[i][j] <= y_hat_j <= high[i][j]
+        # Coherence property: h_c + sum_{k!=c} l_k = 1 for each class c.
+        s_low_i = low[i].sum()
+        for j in range(len(y_hat)):
+            coherence = high[i][j] + s_low_i - low[i][j]
+            assert abs(coherence - 1.0) < 0.01, (
+                f"VA coherence violated at row {i} class {j}: "
+                f"high={high[i][j]:.4f}, sum_low={s_low_i:.4f}, low_j={low[i][j]:.4f}, "
+                f"coherence={coherence:.4f}"
+            )
 
     generic_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test)
 

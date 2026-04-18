@@ -34,8 +34,26 @@ except BaseException:  # pragma: no cover - joblib remains optional
     _joblib_delayed = None  # type: ignore[assignment]
 
 from ..cache import CalibratorCache, TelemetryCallback
+from ..core.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
+
+_parallel_config_manager: ConfigManager | None = None
+
+
+def _get_parallel_config_manager() -> ConfigManager:
+    """Return the process-level ConfigManager singleton for parallel config reads."""
+    global _parallel_config_manager
+    if _parallel_config_manager is None:
+        _parallel_config_manager = ConfigManager.from_sources()
+    return _parallel_config_manager
+
+
+def _reset_parallel_config_manager_for_testing() -> None:
+    """Reset cached config manager singleton (tests only)."""
+    global _parallel_config_manager
+    _parallel_config_manager = None
+
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -88,10 +106,16 @@ class ParallelConfig:
     worker_init_args: Optional[Tuple] = None
 
     @classmethod
-    def from_env(cls, base: "ParallelConfig | None" = None) -> "ParallelConfig":
+    def from_env(
+        cls,
+        base: "ParallelConfig | None" = None,
+        *,
+        config_manager: ConfigManager | None = None,
+    ) -> "ParallelConfig":
         """Merge ``CE_PARALLEL`` overrides with an optional ``base`` configuration."""
+        mgr = config_manager if config_manager is not None else _get_parallel_config_manager()
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
-        raw = os.getenv("CE_PARALLEL")
+        raw = mgr.env("CE_PARALLEL")
         if not raw:
             return cfg
         tokens = [segment.strip() for segment in raw.split(",") if segment.strip()]
@@ -159,6 +183,7 @@ class ParallelExecutor:
         config: ParallelConfig,
         *,
         cache: CalibratorCache[Any] | None = None,
+        config_manager: ConfigManager | None = None,
     ) -> None:
         """Store configuration and telemetry state for later map calls."""
         self.config = config
@@ -168,6 +193,9 @@ class ParallelExecutor:
         self.active_strategy_name: str | None = None
         self._warned_min_batch: bool = False
         self._warned_tiny_workload: bool = False
+        self._config_manager = (
+            config_manager if config_manager is not None else ConfigManager.from_sources()
+        )
 
     def __getstate__(self) -> dict[str, Any]:
         """Return state for pickling, excluding the pool."""
@@ -390,7 +418,7 @@ class ParallelExecutor:
                 # via the testing fixture (the autouse disable sets
                 # `CE_PARALLEL_MIN_BATCH_SIZE` to a large value; enabling
                 # fallbacks removes that env var). Otherwise log info.
-                if os.getenv("CE_PARALLEL_MIN_BATCH_SIZE") is None:
+                if self._config_manager.env("CE_PARALLEL_MIN_BATCH_SIZE") is None:
                     warnings.warn(
                         f"Parallel execution failed ({exc!r}); falling back to sequential execution.",
                         UserWarning,
@@ -512,13 +540,11 @@ class ParallelExecutor:
         """Expose the cgroup quota helper as part of the public API."""
         return ParallelExecutor._get_cgroup_cpu_quota()
 
-    @staticmethod
-    def _is_ci_environment() -> bool:
+    def _is_ci_environment(self) -> bool:
         """Detect if running in a CI environment."""
-        return (
-            os.getenv("CI", "").lower() == "true"
-            or os.getenv("GITHUB_ACTIONS", "").lower() == "true"
-        )
+        return (self._config_manager.env("CI") or "").lower() == "true" or (
+            self._config_manager.env("GITHUB_ACTIONS") or ""
+        ).lower() == "true"
 
     def _auto_strategy(self, *, work_items: int | None = None) -> str:
         """Backwards-compatible alias for auto_strategy."""
@@ -696,7 +722,7 @@ class ParallelExecutor:
             # Emit a UserWarning only when parallel fallbacks are enabled by
             # the test fixture; otherwise log info to avoid triggering the
             # fallback enforcement that converts such warnings to test failures.
-            if os.getenv("CE_PARALLEL_MIN_BATCH_SIZE") is None:
+            if self._config_manager.env("CE_PARALLEL_MIN_BATCH_SIZE") is None:
                 warnings.warn(
                     "Joblib is not available; falling back to thread-based parallel execution.",
                     UserWarning,

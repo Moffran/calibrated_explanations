@@ -23,6 +23,7 @@ perturb_dataset(x_cal, y_cal, categorical_features=None, noise_type='uniform', s
 
 # Import Libraries
 # import configparser
+import os
 from typing import Optional
 
 import numpy as np
@@ -39,6 +40,21 @@ import numpy as np
 # HIGH = config.getfloat('perturbation_variables', 'HIGH')
 # STEP = config.getfloat('perturbation_variables', 'STEP')
 # Now Let's write functions to provide perturbations to each column specific to each data type
+
+_perturbation_config_manager: object | None = None
+
+
+def _get_perturbation_config_manager():
+    """Return a process-level ConfigManager for perturbation config reads."""
+    from ..core.config_manager import ConfigManager
+
+    global _perturbation_config_manager
+    # Tests mutate env repeatedly; keep test behavior deterministic per invocation.
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return ConfigManager.from_sources()
+    if _perturbation_config_manager is None:
+        _perturbation_config_manager = ConfigManager.from_sources()
+    return _perturbation_config_manager
 
 
 # BASIC PERTURBATIONS FOR THE VERSION I: Provides Gaussian Noise by protecting
@@ -72,12 +88,14 @@ def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random
         # As a deterministic fallback for tiny arrays or degenerate RNG states,
         # force a minimal change by swapping two positions when possible.
         import logging as _logging
-        import os as _os
 
         # Emit a UserWarning only when fallback chains are enabled (tests opt-in
         # via the `enable_fallbacks` fixture which removes the disabling env
         # vars). Otherwise log info to avoid triggering test-suite enforcement.
-        if _os.getenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS") is None:
+        if (
+            _get_perturbation_config_manager().env("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS")
+            is None
+        ):
             import warnings as _warnings
 
             _warnings.warn(

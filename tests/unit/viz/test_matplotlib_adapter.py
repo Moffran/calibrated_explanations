@@ -1,16 +1,20 @@
 import sys
 import types
 
-import numpy as np
 import pytest
 
 from calibrated_explanations.viz import matplotlib_adapter as ma
 from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
+    GlobalPlotSpec,
+    GlobalSpec,
     IntervalHeaderSpec,
     PlotSpec,
+    TriangularPlotSpec,
+    TriangularSpec,
 )
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 CREATED_FIGURES = []
@@ -230,53 +234,51 @@ def test_auto_height_falls_back_when_label_conversion_fails():
     assert fig.figsize[1] >= 3.0
 
 
-def test_render_normalizes_dict_payloads():
-    tri = {
-        "plot_spec": {
-            "kind": "triangular",
-            "triangular": {"angles": np.array([0.0, 0.5, 1.0])},
-        }
-    }
+def test_render_normalizes_non_panel_plotspecs():
+    tri = TriangularPlotSpec(
+        kind="triangular",
+        mode="classification",
+        triangular=TriangularSpec(
+            proba=[0.4, 0.6],
+            uncertainty=[0.1, 0.2],
+            rule_proba=[0.5],
+            rule_uncertainty=[0.1],
+        ),
+    )
     tri_result = ma.render(tri, export_drawn_primitives=True)
     assert tri_result["triangle_background"]["type"] == "triangle_background"
     assert any(p["type"] == "quiver" for p in tri_result["primitives"])
 
-    global_payload = {
-        "plot_spec": {
-            "kind": "global_scatter",
-            "global_entries": {
-                "proba": [[0.1, 0.9], [0.25, 0.75]],
-                "uncertainty": [[0.05, 0.15], [0.02, 0.12]],
-            },
-            "save_behavior": {"default_exts": ["png", "pdf"]},
-        }
-    }
-    glob_result = ma.render(global_payload, export_drawn_primitives=True)
+    global_spec = GlobalPlotSpec(
+        kind="global_probabilistic",
+        mode="classification",
+        global_entries=GlobalSpec(
+            proba=[[0.1, 0.9], [0.25, 0.75]],
+            uncertainty=[[0.05, 0.15], [0.02, 0.12]],
+        ),
+    )
+    glob_result = ma.render(global_spec, export_drawn_primitives=True)
     scatter_ids = [p["id"] for p in glob_result["primitives"] if p["type"] == "scatter"]
     assert scatter_ids == ["global.scatter.0", "global.scatter.1"]
-    save_ids = [p["id"] for p in glob_result["primitives"] if p["type"] == "save_fig"]
-    assert save_ids == ["save.png", "save.pdf"]
 
     # Scalar probabilities hit the non-multiclass branch and still emit scatter primitives
-    scalar_payload = {
-        "plot_spec": {
-            "kind": "global_scatter",
-            "global_entries": {"proba": [0.2, 0.8], "uncertainty": [0.1, 0.05]},
-        }
-    }
-    scalar_result = ma.render(scalar_payload, export_drawn_primitives=True)
+    scalar_spec = GlobalPlotSpec(
+        kind="global_probabilistic",
+        mode="classification",
+        global_entries=GlobalSpec(proba=[0.2, 0.8], uncertainty=[0.1, 0.05]),
+    )
+    scalar_result = ma.render(scalar_spec, export_drawn_primitives=True)
     assert [p["coords"]["x"] for p in scalar_result["primitives"] if p["type"] == "scatter"] == [
         0.2,
         0.8,
     ]
 
     # Trigger the defensive fallback path when casting to float fails
-    bad_global = {
-        "plot_spec": {
-            "kind": "global_scatter",
-            "global_entries": {"proba": ["bad"], "uncertainty": ["bad"]},
-        }
-    }
+    bad_global = GlobalPlotSpec(
+        kind="global_probabilistic",
+        mode="classification",
+        global_entries=GlobalSpec(proba=["bad"], uncertainty=["bad"]),
+    )
     bad_result = ma.render(bad_global, export_drawn_primitives=True)
     assert any(p["id"] == "global.scatter.summary" for p in bad_result["primitives"])
 
@@ -623,9 +625,13 @@ def test_render_handles_non_dataclass_spec_payload():
     body = BarHPanelSpec(bars=[BarItem(label="ns", value=0.1)])
     spec = NamespaceSpec(title="ns", header=header, body=body, figure_size=(4, 3))
 
-    result = ma.render(spec, export_drawn_primitives=True)
+    with pytest.raises(ValidationError):
+        ma.render(spec, export_drawn_primitives=True)
 
-    assert isinstance(result["plot_spec"], dict)
+
+def test_render_rejects_raw_dict_payload():
+    with pytest.raises(ValidationError):
+        ma.render({"plot_spec": {"kind": "triangular"}}, export_drawn_primitives=True)
 
 
 def test_render_closes_when_only_show_requested():

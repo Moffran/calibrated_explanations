@@ -22,6 +22,7 @@ __all__ = [
     "SerializationError",
     "IncompatibleStateError",
     "PlotPluginError",
+    "MissingExtensionError",
     "explain_exception",
 ]
 
@@ -108,3 +109,7 @@ def explain_exception(e: Exception) -> str:
 
 class PlotPluginError(CalibratedError):
     """Raised when a plot plugin encounters an unrecoverable error or is misconfigured."""
+
+
+class MissingExtensionError(CalibratedError, ImportError):
+    """Raised when an optional modality extension package is not installed (ADR-033)."""

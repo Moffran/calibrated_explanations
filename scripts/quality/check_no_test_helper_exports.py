@@ -99,6 +99,12 @@ def _relative_path(path: Path, package_root: Path) -> str:
     return str(path.resolve().relative_to(package_root.parent.resolve())).replace("\\", "/")
 
 
+def _report_package_root(package_root: Path) -> str:
+    """Return a repo-relative package root for report payloads."""
+    base = package_root.parent.parent if package_root.parent.name == "src" else package_root.parent
+    return str(package_root.resolve().relative_to(base.resolve())).replace("\\", "/")
+
+
 def _extract_exports(tree: ast.Module) -> dict[str, int]:
     """Extract static ``__all__`` string entries from a module AST."""
     exports: dict[str, int] = {}
@@ -177,6 +183,135 @@ def _should_ignore_module(module: str) -> bool:
     return any(module.startswith(prefix) for prefix in IGNORED_MODULE_PREFIXES)
 
 
+def _find_dynamic_test_imports(
+    tree: ast.Module,
+    module: str,
+    report_file: str,
+    seen: set[tuple[str, str, str]],
+) -> list[Violation]:
+    """Return violations for importlib.import_module('tests....') calls in src/."""
+    violations: list[Violation] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        is_import_module = (
+            (isinstance(func, ast.Attribute) and func.attr == "import_module")
+            or (isinstance(func, ast.Name) and func.id == "import_module")
+        )
+        if not is_import_module or not node.args:
+            continue
+        first_arg = node.args[0]
+        if not (isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str)):
+            continue
+        target = first_arg.value
+        if target.startswith("tests.") or target.startswith("tests/"):
+            reason = "dynamic-import targeting tests namespace"
+            key = (module, target, reason)
+            if key not in seen:
+                seen.add(key)
+                violations.append(
+                    Violation(
+                        module=module,
+                        file=report_file,
+                        symbol=target,
+                        line=node.lineno,
+                        reason=reason,
+                    )
+                )
+    return violations
+
+
+def _find_banned_import_reexports(
+    tree: ast.Module,
+    module: str,
+    report_file: str,
+    banned_exports: set[str],
+    seen: set[tuple[str, str, str]],
+) -> list[Violation]:
+    """Return violations for import-level re-exports of banned symbols."""
+    violations: list[Violation] = []
+    for node in tree.body:
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        for alias in node.names:
+            imported_name = alias.name
+            if imported_name not in banned_exports:
+                continue
+            reason = "import-level banned symbol re-export"
+            key = (module, imported_name, reason)
+            if key not in seen:
+                seen.add(key)
+                violations.append(
+                    Violation(
+                        module=module,
+                        file=report_file,
+                        symbol=imported_name,
+                        line=node.lineno,
+                        reason=reason,
+                    )
+                )
+    return violations
+
+
+def _symbol_reasons(
+    symbol: str,
+    export_line: int,
+    banned_exports: set[str],
+    public_defs: dict[str, ast.AST],
+) -> list[tuple[str, int]]:
+    """Collect violation reasons for a single exported symbol."""
+    reasons: list[tuple[str, int]] = []
+    if symbol in banned_exports:
+        reasons.append(("explicitly banned export for this module", export_line))
+    if _looks_like_test_helper_name(symbol):
+        reasons.append(("symbol name indicates test-only helper intent", export_line))
+    node = public_defs.get(symbol)
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        docstring = ast.get_docstring(node) or ""
+        if _contains_test_helper_phrase(docstring) and _contains_helper_intent(docstring):
+            reasons.append(("docstring labels symbol as testing helper", node.lineno))
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and _is_private_delegate(node)
+            and _contains_test_helper_phrase(docstring)
+        ):
+            label = "thin public wrapper around private helper for tests"
+            reasons.append((label, node.lineno))
+    return reasons
+
+
+def _find_banned_exported_symbols(
+    tree: ast.Module,
+    module: str,
+    report_file: str,
+    banned_exports: set[str],
+    seen: set[tuple[str, str, str]],
+) -> list[Violation]:
+    """Return violations for exported symbols that look like test helpers."""
+    exports = _extract_exports(tree)
+    if not exports:
+        return []
+    public_defs = _collect_public_defs(tree)
+    violations: list[Violation] = []
+    for symbol, export_line in exports.items():
+        reasons = _symbol_reasons(symbol, export_line, banned_exports, public_defs)
+        for reason, reason_line in reasons:
+            key = (module, symbol, reason)
+            if key not in seen:
+                seen.add(key)
+                violations.append(
+                    Violation(
+                        module=module,
+                        file=report_file,
+                        symbol=symbol,
+                        line=reason_line,
+                        reason=reason,
+                    )
+                )
+    return violations
+
+
 def scan_package(package_root: Path) -> list[Violation]:
     """Scan package modules for banned test-helper exports."""
     violations: list[Violation] = []
@@ -191,69 +326,17 @@ def scan_package(package_root: Path) -> list[Violation]:
         except SyntaxError as exc:
             raise RuntimeError(f"Unable to parse {path}: {exc}") from exc
 
-        exports = _extract_exports(tree)
-        public_defs = _collect_public_defs(tree)
         banned_exports = BANNED_EXPORTS_BY_MODULE.get(module, set())
         report_file = _relative_path(path, package_root)
 
-        # Block import-level leakage of banned symbols from entrypoint modules.
+        violations.extend(_find_dynamic_test_imports(tree, module, report_file, seen))
         if banned_exports:
-            for node in tree.body:
-                if not isinstance(node, ast.ImportFrom):
-                    continue
-                for alias in node.names:
-                    imported_name = alias.name
-                    if imported_name in banned_exports:
-                        key = (module, imported_name, "import-level banned symbol re-export")
-                        if key in seen:
-                            continue
-                        seen.add(key)
-                        violations.append(
-                            Violation(
-                                module=module,
-                                file=report_file,
-                                symbol=imported_name,
-                                line=node.lineno,
-                                reason="import-level banned symbol re-export",
-                            )
-                        )
-
-        if not exports:
-            continue
-
-        for symbol, export_line in exports.items():
-            reasons: list[tuple[str, int]] = []
-            if symbol in banned_exports:
-                reasons.append(("explicitly banned export for this module", export_line))
-            if _looks_like_test_helper_name(symbol):
-                reasons.append(("symbol name indicates test-only helper intent", export_line))
-
-            node = public_defs.get(symbol)
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                docstring = ast.get_docstring(node) or ""
-                if _contains_test_helper_phrase(docstring) and _contains_helper_intent(docstring):
-                    reasons.append(("docstring labels symbol as testing helper", node.lineno))
-                if (
-                    isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-                    and _is_private_delegate(node)
-                    and _contains_test_helper_phrase(docstring)
-                ):
-                    reasons.append(("thin public wrapper around private helper for tests", node.lineno))
-
-            for reason, reason_line in reasons:
-                key = (module, symbol, reason)
-                if key in seen:
-                    continue
-                seen.add(key)
-                violations.append(
-                    Violation(
-                        module=module,
-                        file=report_file,
-                        symbol=symbol,
-                        line=reason_line,
-                        reason=reason,
-                    )
-                )
+            violations.extend(
+                _find_banned_import_reexports(tree, module, report_file, banned_exports, seen)
+            )
+        violations.extend(
+            _find_banned_exported_symbols(tree, module, report_file, banned_exports, seen)
+        )
 
     return sorted(
         violations,
@@ -266,7 +349,7 @@ def write_report(report_path: Path, package_root: Path, violations: list[Violati
     payload = {
         "version": 1,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "package_root": str(package_root).replace("\\", "/"),
+        "package_root": _report_package_root(package_root),
         "total_violations": len(violations),
         "violations": [violation.to_record() for violation in violations],
     }

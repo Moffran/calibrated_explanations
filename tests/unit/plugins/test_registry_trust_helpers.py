@@ -1,4 +1,4 @@
-from calibrated_explanations.plugins import registry as reg
+from tests.support import registry_helpers as reg
 
 
 def test_normalise_trust_various_forms():
