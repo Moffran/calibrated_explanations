@@ -84,7 +84,7 @@ def test_load_template_file_error_paths(tmp_path, monkeypatch):
         with pytest.raises(SerializationError, match="Failed to parse YAML template"):
             load_template_file(str(yaml_path))
     else:
-        with pytest.raises(SerializationError, match="YAML support requires pyyaml"):
+        with pytest.raises(SerializationError, match="PyYAML not installed"):
             load_template_file(str(yaml_path))
 
 
