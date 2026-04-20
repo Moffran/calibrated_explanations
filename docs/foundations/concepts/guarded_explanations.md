@@ -5,7 +5,7 @@ guard rule for interval candidates.
 
 Semantics and non-guarantees are defined in
 {doc}`calibrated_interval_semantics` and
-{doc}`../../improvement/adrs/ADR-032-guarded-explanation-semantics`.
+[ADR-032 guarded-explanation semantics](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-032-guarded-explanation-semantics.md).
 
 ## What guarded mode changes
 

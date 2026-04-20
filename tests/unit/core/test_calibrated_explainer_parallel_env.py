@@ -42,3 +42,32 @@ class TestCalibratedExplainerParallelEnv:
             assert explainer.parallel_executor is not None
             assert explainer.parallel_executor.config.enabled is True
             assert explainer.parallel_executor.config.strategy == "threads"
+
+    def test_should_isolate_ce_parallel_from_env_changes_after_snapshot(
+        self, simple_learner_and_data
+    ):
+        """CE_PARALLEL must be read from ConfigManager snapshot; post-construction env changes must not affect it."""
+        from calibrated_explanations.parallel.parallel import ParallelConfig
+
+        _EMPTY_PYPROJECT = {
+            "plugins": {},
+            "explanations": {},
+            "intervals": {},
+            "plots": {},
+            "telemetry": {},
+        }
+        # Build a ConfigManager snapshot with CE_PARALLEL enabled.
+        mgr = ConfigManager(
+            env_snapshot={"CE_PARALLEL": "on"},
+            pyproject_snapshot=_EMPTY_PYPROJECT,
+        )
+        cfg = ParallelConfig.from_env(config_manager=mgr)
+        assert cfg.enabled is True, "CE_PARALLEL=on must enable parallel execution"
+
+        # A second manager with no CE_PARALLEL returns disabled (default).
+        mgr_off = ConfigManager(
+            env_snapshot={},
+            pyproject_snapshot=_EMPTY_PYPROJECT,
+        )
+        cfg_off = ParallelConfig.from_env(config_manager=mgr_off)
+        assert cfg_off.enabled is False, "Absent CE_PARALLEL must default to disabled"
