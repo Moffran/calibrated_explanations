@@ -7,6 +7,8 @@
 
 ### Documentation / Governance
 
+- **Governance status artifact (v0.11.2 Task 4):** Added `scripts/quality/build_governance_status_artifact.py` — a CI-derived artifact producer that aggregates four quality report `ok` fields into a single `reports/governance/governance_status.json` payload. Added `docs/improvement/schemas/governance_status_schema_v1.json` (ADR-028 aligned, `additionalProperties: false`). Wired into `local_checks.py` (PR and main steps). Added 15-test suite `tests/scripts/test_build_governance_status_artifact.py`. CI wiring guide documented in `docs/improvement/governance_status_artifact.md`.
+
 - **ADR-034 post-acceptance conformance closure (v0.11.2 Task 2):** Synchronized ADR-034, `RELEASE_PLAN_v1.md`, and `RELEASE_PLAN_status_appendix.md` to accepted-state wording, added ADR-034 implementation summary for v0.11.1-v0.11.2, removed stale "Proposed→Accepted path" status text, and preserved only deferred v1.0 open items (redaction + export schema versioning).
 
 ## [v0.11.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.1) - 2026-04-18

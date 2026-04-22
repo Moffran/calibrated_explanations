@@ -198,6 +198,15 @@ def main() -> int:
             _python_cmd("scripts/quality/check_governance_event_schema.py"),
         ),
         Step(
+            "Governance status artifact (aggregation)",
+            _python_cmd(
+                "scripts/quality/build_governance_status_artifact.py",
+                "--output",
+                "reports/governance/governance_status.json",
+                "--validate",
+            ),
+        ),
+        Step(
             "STD-005 logger domain enforcement",
             _python_cmd(
                 "scripts/quality/check_logging_domains.py",
@@ -517,6 +526,15 @@ def main() -> int:
         Step(
             "ADR-028 governance event schema check (main)",
             _python_cmd("scripts/quality/check_governance_event_schema.py"),
+        ),
+        Step(
+            "Governance status artifact (aggregation, main)",
+            _python_cmd(
+                "scripts/quality/build_governance_status_artifact.py",
+                "--output",
+                "reports/governance/governance_status.json",
+                "--validate",
+            ),
         ),
         Step(
             "STD-005 logger domain enforcement (main)",

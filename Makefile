@@ -61,6 +61,10 @@ check-report-paths:
 check-ci-policy:
 	python scripts/quality/validate_ci_policy.py --base-sha HEAD~1 --head-sha HEAD --advisory
 
+.PHONY: governance-status
+governance-status:
+	python scripts/quality/build_governance_status_artifact.py --output reports/governance/governance_status.json --validate
+
 # Run stacked CI-equivalent checks in the current Python environment,
 # including `pre-commit run --all-files` (no install/bootstrap steps).
 .PHONY: local-checks local-checks-pr

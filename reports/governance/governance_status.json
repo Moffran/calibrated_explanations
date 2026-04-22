@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-04-22T11:56:47+00:00",
+  "lint": {
+    "local_checks_pr": "unavailable",
+    "mypy": "unavailable",
+    "ruff": "unavailable"
+  },
+  "run": {
+    "commit": null,
+    "run_id": null,
+    "workflow": null
+  },
+  "schema_checks": {
+    "config_manager_usage": "passed",
+    "governance_event_schema": "passed",
+    "logging_domains": "passed",
+    "no_local_paths": "passed"
+  },
+  "schema_version": "1.0"
+}
