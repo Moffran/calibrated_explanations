@@ -172,11 +172,11 @@ Use ADR-011 deprecation process for any public API changes during implementation
 
 ## Open Items
 
-1. **Sensitive-value redaction (v1.0):** Governance logs and exports should not leak
+1. **Sensitive-value redaction (v1.0.0-rc):** Governance logs and exports should not leak
    secret-like values. A hybrid redaction policy (pattern-based deny + safe-key allowlist)
    is the intended approach; both the allowlist contents and the implementation are
-   deferred to v1.0.
+   deferred to v1.0.0-rc.
 
-2. **Export payload schema contract (v1.0):** The `export_effective()` payload structure
+2. **Export payload schema contract (v1.0.0-rc):** The `export_effective()` payload structure
    is not yet versioned for consumers. A stable schema contract with version-gating is
    needed before the export surface can be relied on by external tooling.

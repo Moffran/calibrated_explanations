@@ -217,3 +217,31 @@ def test_record_interval_calibration_features_should_copy_context_features(
     np.testing.assert_array_equal(
         orchestrator.get_interval_calibration_features(fast=True), np.array([[7.0, 8.0]])
     )
+
+
+def test_should_freeze_mondrian_bins_at_request_construction_when_caller_mutates():
+    """ADR-026 gap 3: ExplanationRequest.bins must be frozen so caller mutation does not propagate.
+
+    Verifies that converting a mutable list/array to tuple at ExplanationRequest construction
+    means subsequent caller-side mutation cannot alter the stored bins.
+    """
+    from calibrated_explanations.plugins.explanations import ExplanationRequest
+
+    original_bins = [1, 2, 3]
+    request = ExplanationRequest(
+        threshold=None,
+        low_high_percentiles=None,
+        bins=original_bins,
+        features_to_ignore=[],
+    )
+
+    captured_bins = request.bins
+
+    # Mutate the caller-side list after construction
+    original_bins.append(999)
+
+    # The request's bins must not contain the mutation
+    assert 999 not in captured_bins
+    # And bins must be a tuple (immutable), not the original mutable list
+    assert isinstance(captured_bins, tuple)
+    assert captured_bins == (1, 2, 3)
