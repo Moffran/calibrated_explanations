@@ -21,7 +21,7 @@
       "message": "jsonschema package not installed; skipping fixture validation for config governance event fixture (validation_failure)."
     }
   ],
-  "generated_at": "2026-04-22T14:54:47+00:00",
+  "generated_at": "2026-04-22T16:11:57+00:00",
   "ok": true,
   "version": 1
 }

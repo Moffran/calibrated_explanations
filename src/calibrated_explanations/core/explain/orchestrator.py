@@ -1703,9 +1703,16 @@ class ExplanationOrchestrator:
             explainer_id=getattr(self.explainer, "id", None),
             mode=mode,
         ):
-            if mode in self.explainer.plugin_manager.explanation_plugin_instances:
+            plugin_cache = self.explainer.plugin_manager.explanation_plugin_instances
+            if mode in plugin_cache:
+                get_cached = getattr(
+                    self.explainer.plugin_manager,
+                    "get_explanation_plugin_instance",
+                    None,
+                )
+                cached_plugin = get_cached(mode) if callable(get_cached) else plugin_cache[mode]
                 return (
-                    self.explainer.plugin_manager.explanation_plugin_instances[mode],
+                    cached_plugin,
                     self.explainer.plugin_manager.explanation_plugin_identifiers.get(mode),
                 )
 
@@ -1749,7 +1756,7 @@ class ExplanationOrchestrator:
                         f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
                     ) from exc
 
-        self.explainer.plugin_manager.explanation_plugin_instances[mode] = plugin
+        self.explainer.plugin_manager.set_explanation_plugin_instance(mode, plugin)
         if identifier:
             self.explainer.plugin_manager.explanation_plugin_identifiers[mode] = identifier
         self.explainer.plugin_manager.explanation_contexts[mode] = context

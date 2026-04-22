@@ -131,7 +131,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1178,
+      "line": 1202,
       "symbol": "__initialize_interval_learner_for_fast_explainer",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -140,7 +140,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1291,
+      "line": 1315,
       "symbol": "__initialized",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -149,7 +149,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1395,
+      "line": 1419,
       "symbol": "__fast",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -158,7 +158,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1404,
+      "line": 1428,
       "symbol": "__initialize_interval_learner_for_fast_explainer",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -167,7 +167,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1406,
+      "line": 1430,
       "symbol": "__fast",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -176,7 +176,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1665,
+      "line": 1689,
       "symbol": "__initialize_interval_learner_for_fast_explainer",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -185,7 +185,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1697,
+      "line": 1721,
       "symbol": "__initialized",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -194,7 +194,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 1718,
+      "line": 1742,
       "symbol": "__initialized",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -203,7 +203,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2252,
+      "line": 2276,
       "symbol": "__fast",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -212,7 +212,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2317,
+      "line": 2341,
       "symbol": "__initialized",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -221,7 +221,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2360,
+      "line": 2384,
       "symbol": "__initialized",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -230,7 +230,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2949,
+      "line": 2973,
       "symbol": "__fast",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -239,7 +239,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2953,
+      "line": 2977,
       "symbol": "__fast",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -248,7 +248,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2972,
+      "line": 2996,
       "symbol": "__noise_type",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -257,7 +257,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2976,
+      "line": 3000,
       "symbol": "__noise_type",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -266,7 +266,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2995,
+      "line": 3019,
       "symbol": "__scale_factor",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -275,7 +275,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 2999,
+      "line": 3023,
       "symbol": "__scale_factor",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -284,7 +284,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 3018,
+      "line": 3042,
       "symbol": "__severity",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -293,7 +293,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/core/calibrated_explainer.py",
       "is_allowed": true,
-      "line": 3022,
+      "line": 3046,
       "symbol": "__severity",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"

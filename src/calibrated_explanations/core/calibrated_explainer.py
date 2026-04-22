@@ -594,7 +594,8 @@ class CalibratedExplainer:
             self._perf_parallel.__enter__()
 
     def close(self) -> None:
-        """Shutdown any provisioned parallel pool and release resources."""
+        """Reset runtime state, then shutdown any provisioned parallel pool."""
+        self.reset()
         perf = getattr(self, "_perf_parallel", None)
         if perf is None:
             return
@@ -602,6 +603,29 @@ class CalibratedExplainer:
             perf.__exit__(None, None, None)
         finally:
             self._perf_parallel = None
+
+    def reset(self) -> None:
+        """Clear transient runtime state retained between explanation calls."""
+        self.latest_explanation = None
+
+        for helper_name in ("_lime_helper", "_shap_helper"):
+            helper = getattr(self, helper_name, None)
+            if helper is not None and hasattr(helper, "reset"):
+                helper.reset()
+
+        plugin_manager = getattr(self, "_plugin_manager", None)
+        if plugin_manager is None:
+            return
+
+        with contextlib.suppress(Exception):
+            plugin_manager.clear_explanation_plugin_instances()
+        with contextlib.suppress(Exception):
+            plugin_manager.clear_explanation_plugin_identifiers()
+        with contextlib.suppress(Exception):
+            plugin_manager.clear_bridge_monitors()
+        contexts = getattr(plugin_manager, "explanation_contexts", None)
+        if isinstance(contexts, dict):
+            contexts.clear()
 
     def __enter__(self) -> "CalibratedExplainer":
         """Context manager entry; create and enter a worker pool."""

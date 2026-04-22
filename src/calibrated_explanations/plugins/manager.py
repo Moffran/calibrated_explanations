@@ -21,6 +21,7 @@ import contextlib
 import logging
 import sys
 import warnings
+from collections import OrderedDict
 from types import MappingProxyType
 from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
@@ -138,7 +139,8 @@ class PluginManager:
 
         # Plugin instance caching
         self._bridge_monitors: Dict[str, PredictBridgeMonitor] = {}
-        self._explanation_plugin_instances: Dict[str, Any] = {}
+        self._max_explanation_plugin_instances: int = 16
+        self._explanation_plugin_instances: OrderedDict[str, Any] = OrderedDict()
         self._explanation_plugin_identifiers: Dict[str, str] = {}
 
         # Fallback chains for plugin resolution (populated by initialize_chains)
@@ -343,7 +345,8 @@ class PluginManager:
     @explanation_plugin_instances.setter
     def explanation_plugin_instances(self, value: Dict[str, Any]) -> None:
         """Update the cached explanation plugin instances."""
-        self._explanation_plugin_instances = value
+        self._explanation_plugin_instances = OrderedDict(value)
+        self._trim_explanation_plugin_instances()
 
     @property
     def explanation_plugin_identifiers(self) -> Dict[str, str]:
@@ -872,7 +875,16 @@ class PluginManager:
         Any | None
             Cached plugin instance, or None if not cached.
         """
-        return self._explanation_plugin_instances.get(identifier)
+        instance = self._explanation_plugin_instances.get(identifier)
+        if instance is not None:
+            self._explanation_plugin_instances.move_to_end(identifier)
+        return instance
+
+    def _trim_explanation_plugin_instances(self) -> None:
+        """Enforce bounded explanation plugin cache with LRU eviction."""
+        max_entries = max(1, int(getattr(self, "_max_explanation_plugin_instances", 16)))
+        while len(self._explanation_plugin_instances) > max_entries:
+            self._explanation_plugin_instances.popitem(last=False)
 
     def set_explanation_plugin_instance(self, identifier: str, instance: Any) -> None:
         """Cache explanation plugin instance.
@@ -884,7 +896,10 @@ class PluginManager:
         instance : Any
             Plugin instance to cache.
         """
+        if identifier in self._explanation_plugin_instances:
+            self._explanation_plugin_instances.pop(identifier)
         self._explanation_plugin_instances[identifier] = instance
+        self._trim_explanation_plugin_instances()
 
     def clear_explanation_plugin_instances(self) -> None:
         """Clear all cached explanation plugin instances."""

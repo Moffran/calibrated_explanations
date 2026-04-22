@@ -224,6 +224,10 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 | `CalibratedExplanations.as_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
 | `CalibratedExplanations.as_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
+| `plugins.registry.register(plugin)` | `register_explanation_plugin(identifier, plugin, metadata)` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
+| `plugins.registry.trust_plugin(plugin)` | `register_explanation_plugin(..., metadata={"trusted": True, ...})` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
+| `plugins.registry.find_for(model)` | `find_explanation_plugin_for(..., trusted_only=False)` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
+| `plugins.registry.find_for_trusted(model)` | `find_explanation_plugin_for(..., trusted_only=True)` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
 
 ### Removed deprecations (history)
 

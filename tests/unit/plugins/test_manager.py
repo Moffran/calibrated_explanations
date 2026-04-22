@@ -88,6 +88,33 @@ class TestExplanationPluginInstanceManagement:
         manager.clear_explanation_plugin_instances()
         assert len(manager.explanation_plugin_instances) == 0
 
+    def test_should_evict_oldest_plugin_instance_when_cache_exceeds_capacity(self):
+        """should_evict_lru_plugin_instance_when_cache_size_exceeds_limit."""
+        mock_explainer = Mock()
+        manager = PluginManager(mock_explainer)
+
+        for index in range(17):
+            manager.set_explanation_plugin_instance(f"id-{index}", Mock())
+
+        assert len(manager.explanation_plugin_instances) == 16
+        assert "id-0" not in manager.explanation_plugin_instances
+        assert "id-16" in manager.explanation_plugin_instances
+
+    def test_should_refresh_lru_order_when_instance_is_read(self):
+        """should_keep_recently_read_instance_when_cache_evicts."""
+        mock_explainer = Mock()
+        manager = PluginManager(mock_explainer)
+
+        for index in range(16):
+            manager.set_explanation_plugin_instance(f"id-{index}", Mock())
+
+        _ = manager.get_explanation_plugin_instance("id-0")
+        manager.set_explanation_plugin_instance("id-16", Mock())
+
+        assert "id-0" in manager.explanation_plugin_instances
+        assert "id-1" not in manager.explanation_plugin_instances
+        assert "id-16" in manager.explanation_plugin_instances
+
 
 class TestExplanationPluginIdentifierManagement:
     """Tests for explanation plugin identifier caching."""
