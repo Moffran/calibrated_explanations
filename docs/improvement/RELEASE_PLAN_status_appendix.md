@@ -36,7 +36,7 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-028 | Accepted with open enforcement hardening | v0.11.1 close-out |
 | ADR-030 | Accepted | Zero-tolerance ratification targeted v0.11.3 |
 | ADR-033 | Accepted | v0.11.1 additive rollout hardening |
-| ADR-034 | Proposed→Accepted path | Promote after v0.11.2 Phase B verification |
+| ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning |
 | ADR-036 | Accepted | v0.11.2 readiness-gate/default-promotion decision |
 | ADR-037 | Accepted | v0.11.2 default-path and kind-extension follow-up |
 | STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
@@ -293,16 +293,14 @@ _Last gap analysis: 2026-03-03_
 
 ### ADR-034 - Centralized Configuration Management
 
-_Last gap analysis: 2026-03-03_
+_Last gap analysis: 2026-04-20_
+
+Runtime conformance closure for v0.11.2 is complete: Phase A and Phase B migration outputs are synchronized in ADR/release-plan surfaces, checker enforcement is zero-violation, and governance lifecycle schema alignment is closed for v0.11.x scope.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Phase A remaining: allowlisted modules not fully migrated; status not yet Accepted | 4 | 3 | 12 | v0.11.1 Task 15; gate is CI allowlist reduced to zero or documented boundary. |
-| 2 | Phase B: `cache/cache.py`, `parallel/parallel.py`, `_feature_filter.py`, `orchestrator.py` use direct env/pyproject reads | 4 | 3 | 12 | v0.11.2 Task 1; done when all four removed from CI allowlist. |
-| 3 | `GovernanceEvent` schema not yet extended to `governance.config` lifecycle events | 3 | 2 | 6 | v0.11.1 Task 20; ADR-034 §4 + ADR-028 requirement. |
-| 4 | Phase C: remaining direct env/pyproject readers (allowlist not closed) | 2 | 2 | 4 | v0.11.3. |
-| 5 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Deferred to v1.0.0; interim: document that no redaction exists until post-GA. |
-| 6 | `export_effective()` payload schema not versioned for external consumers (Open Item 2) | 3 | 2 | 6 | v1.0.0-rc gate; must be versioned before external tooling can rely on export. |
+| 1 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Deferred to v1.0.0; interim posture remains documented as non-redacted. |
+| 2 | `export_effective()` payload schema not versioned for external consumers (Open Item 2) | 3 | 2 | 6 | v1.0.0-rc gate; must be versioned before external tooling can rely on export. |
 
 ## Standards status appendix (unified severity tables)
 

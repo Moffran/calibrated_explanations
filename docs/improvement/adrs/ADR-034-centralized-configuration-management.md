@@ -1,4 +1,4 @@
-> **Status note (2026-04-07):** Last edited 2026-04-07 to update status to Accepted.
+> **Status note (2026-04-20):** Last edited 2026-04-20 to record v0.11.2 runtime conformance closure evidence and implementation summary.
 > Archive after: Retain indefinitely as architectural record
 > Implementation window: v0.11.1–v1.0.0
 
@@ -158,6 +158,17 @@ configuration management. Delivery sequencing, milestone scope, migration owners
 and release gating are governed by the versioned release plans.
 
 Use ADR-011 deprecation process for any public API changes during implementation.
+
+### Implementation summary (v0.11.1-v0.11.2)
+
+- Phase A (v0.11.1): centralized authority and governance-schema closure landed for runtime ConfigManager adoption and `governance.config` lifecycle-event schema alignment.
+- Phase B (v0.11.2): completed migration of `cache/cache.py`, `parallel/parallel.py`, `core/explain/_feature_filter.py`, and `core/prediction/orchestrator.py` to ConfigManager-owned reads.
+- CI enforcement: `scripts/quality/check_config_manager_usage.py --scope targeted --report reports/config_manager_usage_report.json` reports zero violations as of 2026-04-20.
+- Remaining deferred items: sensitive-value redaction for governance logs/exports and export payload schema versioning (see Open Items).
+- Evidence commands:
+   - `python scripts/quality/check_config_manager_usage.py --scope targeted --report reports/config_manager_usage_report.json`
+   - `python -m pytest -q tests/scripts/test_check_config_manager_usage.py -o addopts= --no-cov`
+   - `make local-checks-pr`
 
 ## Open Items
 
