@@ -8,7 +8,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import calibrated_explanations.core.wrap_explainer as wrap_module
 from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     DataShapeError,
@@ -16,7 +15,6 @@ from calibrated_explanations.utils.exceptions import (
     ValidationError,
 )
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class PredictOnlyLearner:
@@ -253,35 +251,14 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
     assert getattr(wrapper, "cfg", None) is cfg
 
 
-def test_explain_lime_invokes_underlying_explainer(
-    wrapper: WrapCalibratedExplainer, monkeypatch: pytest.MonkeyPatch
+def test_should_raise_attribute_error_when_explain_lime_removed(
+    wrapper: WrapCalibratedExplainer,
 ) -> None:
     wrapper.fitted = True
     wrapper.calibrated = True
 
-    class RecordingExplainer:
-        def __init__(self) -> None:
-            self.calls: list[tuple[Any, dict[str, Any]]] = []
-
-        def explain_lime(self, x: Any, **kwargs: Any) -> str:
-            self.calls.append((x, dict(kwargs)))
-            return "lime"
-
-    monkeypatch.setattr(wrap_module, "validate_inputs_matrix", lambda *_, **__: None)
-    monkeypatch.setattr(wrap_module, "validate_param_combination", lambda *_, **__: None)
-    wrapper.explainer = RecordingExplainer()
-
-    with warns_or_raises(match="WrapCalibratedExplainer.explain_lime is deprecated"):
-        result = wrapper.explain_lime(np.array([[1, 2]]), custom_flag=True)
-
-    if deprecations_error_enabled():
-        assert wrapper.explainer.calls == []  # type: ignore[union-attr]
-    else:
-        assert result == "lime"
-        assert wrapper.explainer.calls  # type: ignore[union-attr]
-        _, payload = wrapper.explainer.calls[-1]  # type: ignore[union-attr]
-        assert payload["custom_flag"] is True
-        assert "bins" in payload
+    with pytest.raises(AttributeError, match="explain_lime"):
+        wrapper.explain_lime(np.array([[1, 2]]), custom_flag=True)
 
 
 def test_predict_proba_threshold_requires_calibration_when_available() -> None:

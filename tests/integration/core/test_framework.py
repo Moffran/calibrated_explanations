@@ -85,7 +85,7 @@ def test_explanation_functions_classification(binary_dataset):
     alternative_explanations.is_one_sided
     alternative_explanations.is_probabilistic_regression
 
-    with warns_or_raises(match="preload_lime is deprecated"):
+    with pytest.raises(AttributeError, match="preload_lime"):
         ce.preload_lime()
     # ce.preload_shap() # generates an insane number of warnings
 

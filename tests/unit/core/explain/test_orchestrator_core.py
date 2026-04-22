@@ -104,7 +104,7 @@ def test_check_metadata_detects_missing_and_schema_mismatch():
     assert "unsupported" in msg2 or "schema_version" in msg2
 
 
-def _make_invoke_explainer_stub():
+def make_invoke_explainer_stub():
     """Extended stub with attributes required for invoke telemetry tests.
 
     Uses a MagicMock for plugin_manager so that runtime attribute access (e.g.
@@ -128,7 +128,7 @@ def _make_invoke_explainer_stub():
 
 def test_should_include_interval_dependencies_in_batch_telemetry_when_plugin_provides_hints():
     """ADR-026 gap 2: batch-level last_telemetry must include interval_dependencies key."""
-    expl = _make_invoke_explainer_stub()
+    expl = make_invoke_explainer_stub()
     orch = ExplanationOrchestrator(expl)
 
     mock_plugin = MagicMock()

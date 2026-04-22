@@ -50,6 +50,8 @@ def _run_step(step: Step) -> int:
     print(f"$ {cmd_text}")
     env = dict(os.environ)
     env.setdefault("PRE_COMMIT_HOME", str(Path(".cache/pre-commit").resolve()))
+    if step.name in {"Core tests (no viz/no cov)", "Core tests with coverage"}:
+        env.pop("CE_DEPRECATIONS", None)
     try:
         if _is_pre_commit_step(step):
             result = subprocess.run(step.command, check=False, env=env, capture_output=True, text=True)

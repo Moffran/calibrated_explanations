@@ -12,7 +12,7 @@ To reduce coupling between tests and internal implementation details, several pr
   - Refactored `_is_mondrian` to public `is_mondrian` property.
   - Exposed public properties for orchestrators: `prediction_orchestrator`, `explanation_orchestrator`, `reject_orchestrator`.
   - Exposed execution state: `is_mondrian`, `is_multiclass`.
-  - Added public API surface for plugin consumption: `predict_calibrated`, `discretize`, `preload_lime`, `preload_shap`, and `runtime_telemetry`.
+  - Added public API surface for plugin consumption: `predict_calibrated`, `discretize`, `preload_lime`, `preload_shap`, and `runtime_telemetry`. (**v0.11.2 note:** `preload_lime` and `preload_shap` were subsequently removed in v0.11.2 Task 5A as part of the Task-21 LIME/SHAP removal program.)
   - Fixed `runtime_telemetry` to point to `self.plugin_manager.last_telemetry`.
   - Updated explain methods (`explain_factual`, `explore_alternatives`, `_explain`) to auto-set bins for Mondrian calibration when `bins` is None and `is_mondrian` is True.
 - **Explanation / CalibratedExplanation**:
@@ -59,7 +59,7 @@ Legacy and redundant code was removed to improve maintainability.
 
 - **Removed Deprecated Methods**:
   - `explain_counterfactual` (superseded by `explore_alternatives`).
-  - LIME and SHAP integration helpers: `is_lime_enabled`, `is_shap_enabled`, `_preload_lime`, `_preload_shap`, `preload_shap`.
+  - LIME and SHAP integration helpers: `is_lime_enabled`, `is_shap_enabled`, `_preload_lime`, `_preload_shap`, `preload_shap`. (**v0.11.2 note:** the public surface equivalents `is_lime_enabled`, `is_shap_enabled`, `preload_lime`, and `preload_shap` were deprecated in v0.11.1 and then physically removed in v0.11.2 Task 5A. They now raise `AttributeError` on access.)
 - **Removed Internal Helpers**:
   - `_build_explanation_chain`, `_build_interval_chain` (from `CalibratedExplainer`).
   - `_build_plot_chain` (from `ExplanationOrchestrator`).
@@ -72,7 +72,7 @@ Legacy and redundant code was removed to improve maintainability.
 
 - **Plugin Architecture Stabilization**:
   - Resolved 38 test failures following the migration to a plugin-based architecture.
-  - Standardized test stubs (`DummyExplainer`, `StubExplainer`, `FakeExplainer`, `DummyOriginalExplainer`) to include `PluginManager` and required methods (`infer_explanation_mode`, `predict_calibrated`, `discretize`, `preload_lime`, `preload_shap`).
+  - Standardized test stubs (`DummyExplainer`, `StubExplainer`, `FakeExplainer`, `DummyOriginalExplainer`) to include `PluginManager` and required methods (`infer_explanation_mode`, `predict_calibrated`, `discretize`, `preload_lime`, `preload_shap`). (**v0.11.2 note:** `preload_lime` and `preload_shap` were removed from the production API in v0.11.2 Task 5A; test stubs that previously included them were updated to assert `AttributeError` instead.)
   - Synchronized `PredictBridgeMonitor` lookup in `ExplanationOrchestrator` to use `identifier or mode`.
   - Fixed attribute access in `_ExecutionExplanationPluginBase` to use `self._explainer`.
   - Resolved recursion error in `test_calibration_helpers.py` by ensuring `CalibratedExplainer` initialization is properly mocked.

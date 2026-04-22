@@ -13,61 +13,76 @@ SCRIPT = Path("scripts/quality/build_governance_status_artifact.py")
 SCHEMA = Path("docs/improvement/schemas/governance_status_schema_v1.json")
 
 
+def write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
 # ---------------------------------------------------------------------------
-# _status_from_report
+# build_artifact status derivation
 # ---------------------------------------------------------------------------
 
 
-def test_should_build_valid_artifact_when_all_reports_present(tmp_path):
-    """_status_from_report returns 'passed' for a report with ok=True."""
-    from scripts.quality.build_governance_status_artifact import _status_from_report
+def test_should_build_valid_artifact_when_all_reports_present(tmp_path, monkeypatch):
+    """build_artifact maps report files to passed statuses when reports are healthy."""
+    from scripts.quality.build_governance_status_artifact import build_artifact
 
-    report = tmp_path / "governance_event_schema_report.json"
-    report.write_text(
-        json.dumps({"ok": True, "findings": [], "version": 1}),
-        encoding="utf-8",
+    monkeypatch.chdir(tmp_path)
+    write_json(
+        tmp_path / "reports/quality/governance_event_schema_report.json",
+        {"ok": True, "findings": [], "version": 1},
     )
-    assert _status_from_report(report) == "passed"
+    write_json(tmp_path / "reports/config_manager_usage_report.json", {"total_violations": 0})
+    write_json(tmp_path / "reports/quality/logging_domain_report.json", {"ok": True})
+    write_json(tmp_path / "reports/quality/no_local_paths_report.json", {"ok": True})
+
+    artifact = build_artifact()
+    assert artifact["schema_checks"]["governance_event_schema"] == "passed"
+    assert artifact["schema_checks"]["config_manager_usage"] == "passed"
+    assert artifact["schema_checks"]["logging_domains"] == "passed"
+    assert artifact["schema_checks"]["no_local_paths"] == "passed"
 
 
-def test_should_return_unavailable_when_report_missing(tmp_path):
-    """_status_from_report returns 'unavailable' when the report file does not exist."""
-    from scripts.quality.build_governance_status_artifact import _status_from_report
+def test_should_return_unavailable_when_report_missing(tmp_path, monkeypatch):
+    """build_artifact returns unavailable statuses when reports are missing."""
+    from scripts.quality.build_governance_status_artifact import build_artifact
 
-    assert _status_from_report(tmp_path / "nonexistent.json") == "unavailable"
-
-
-def test_should_return_failed_when_report_ok_false(tmp_path):
-    """_status_from_report returns 'failed' when ok is False."""
-    from scripts.quality.build_governance_status_artifact import _status_from_report
-
-    report = tmp_path / "bad_report.json"
-    report.write_text(json.dumps({"ok": False}), encoding="utf-8")
-    assert _status_from_report(report) == "failed"
+    monkeypatch.chdir(tmp_path)
+    artifact = build_artifact()
+    assert artifact["schema_checks"]["governance_event_schema"] == "unavailable"
+    assert artifact["schema_checks"]["config_manager_usage"] == "unavailable"
+    assert artifact["schema_checks"]["logging_domains"] == "unavailable"
+    assert artifact["schema_checks"]["no_local_paths"] == "unavailable"
 
 
-def test_should_return_passed_for_config_manager_zero_violations(tmp_path):
-    """_status_from_report maps total_violations==0 to 'passed' (config_manager format)."""
-    from scripts.quality.build_governance_status_artifact import _status_from_report
+def test_should_return_failed_when_report_ok_false(tmp_path, monkeypatch):
+    """build_artifact maps ok=False reports to failed status."""
+    from scripts.quality.build_governance_status_artifact import build_artifact
 
-    report = tmp_path / "config_manager_usage_report.json"
-    report.write_text(
-        json.dumps({"total_violations": 0, "version": 1}),
-        encoding="utf-8",
-    )
-    assert _status_from_report(report) == "passed"
+    monkeypatch.chdir(tmp_path)
+    write_json(tmp_path / "reports/quality/governance_event_schema_report.json", {"ok": False})
+    artifact = build_artifact()
+    assert artifact["schema_checks"]["governance_event_schema"] == "failed"
 
 
-def test_should_return_failed_for_config_manager_nonzero_violations(tmp_path):
-    """_status_from_report maps total_violations>0 to 'failed' (config_manager format)."""
-    from scripts.quality.build_governance_status_artifact import _status_from_report
+def test_should_return_passed_for_config_manager_zero_violations(tmp_path, monkeypatch):
+    """build_artifact maps config manager total_violations==0 to passed."""
+    from scripts.quality.build_governance_status_artifact import build_artifact
 
-    report = tmp_path / "config_manager_usage_report.json"
-    report.write_text(
-        json.dumps({"total_violations": 3, "version": 1}),
-        encoding="utf-8",
-    )
-    assert _status_from_report(report) == "failed"
+    monkeypatch.chdir(tmp_path)
+    write_json(tmp_path / "reports/config_manager_usage_report.json", {"total_violations": 0})
+    artifact = build_artifact()
+    assert artifact["schema_checks"]["config_manager_usage"] == "passed"
+
+
+def test_should_return_failed_for_config_manager_nonzero_violations(tmp_path, monkeypatch):
+    """build_artifact maps config manager total_violations>0 to failed."""
+    from scripts.quality.build_governance_status_artifact import build_artifact
+
+    monkeypatch.chdir(tmp_path)
+    write_json(tmp_path / "reports/config_manager_usage_report.json", {"total_violations": 3})
+    artifact = build_artifact()
+    assert artifact["schema_checks"]["config_manager_usage"] == "failed"
 
 
 # ---------------------------------------------------------------------------
@@ -117,36 +132,33 @@ def test_should_build_artifact_with_custom_lint_status():
 
 
 # ---------------------------------------------------------------------------
-# _validate_artifact
+# schema validation
 # ---------------------------------------------------------------------------
 
 
 def test_should_validate_artifact_against_schema():
     """Schema validation passes for a well-formed artifact produced by build_artifact."""
-    pytest.importorskip("jsonschema")
-    from scripts.quality.build_governance_status_artifact import (
-        _validate_artifact,
-        build_artifact,
-    )
+    jsonschema = pytest.importorskip("jsonschema")
+    from scripts.quality.build_governance_status_artifact import build_artifact
 
     artifact = build_artifact()
-    errors = _validate_artifact(artifact, SCHEMA)
-    hard_errors = [e for e in errors if "Schema validation failed" in e]
-    assert not hard_errors, hard_errors
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=artifact, schema=schema)
+    assert artifact["schema_version"] == schema["properties"]["schema_version"]["const"]
 
 
 def test_should_fail_closed_on_schema_violation():
-    """_validate_artifact reports hard errors when the payload violates the schema."""
-    pytest.importorskip("jsonschema")
-    from scripts.quality.build_governance_status_artifact import _validate_artifact
+    """JSON schema validation fails for malformed artifact payloads."""
+    jsonschema = pytest.importorskip("jsonschema")
 
     bad_artifact = {
         "schema_version": "9.9",
         "generated_at": "bad",
         "extra_field": True,
     }
-    errors = _validate_artifact(bad_artifact, SCHEMA)
-    assert any(errors), "Expected validation errors for a malformed artifact"
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    with pytest.raises(jsonschema.exceptions.ValidationError):
+        jsonschema.validate(instance=bad_artifact, schema=schema)
 
 
 # ---------------------------------------------------------------------------

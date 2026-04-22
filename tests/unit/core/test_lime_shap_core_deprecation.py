@@ -8,34 +8,35 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 
 
-def test_task21_lime_shap_entrypoints_raise_with_ce_deprecations_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("CE_DEPRECATIONS", "error")
-
+def test_should_raise_attribute_error_for_removed_task21_core_wrapper_entrypoints() -> None:
+    """Task 5A v0.11.2 removals must fail closed for core and wrapper LIME/SHAP hooks."""
     explainer = object.__new__(CalibratedExplainer)
     wrapper = object.__new__(WrapCalibratedExplainer)
-    collection = object.__new__(CalibratedExplanations)
 
-    checks = [
-        ("preload_lime is deprecated", lambda: explainer.preload_lime()),
-        ("preload_shap is deprecated", lambda: explainer.preload_shap()),
-        ("explain_lime is deprecated", lambda: explainer.explain_lime(np.array([[0.0, 1.0]]))),
-        ("explain_shap is deprecated", lambda: explainer.explain_shap(np.array([[0.0, 1.0]]))),
-        ("is_lime_enabled is deprecated", lambda: explainer.is_lime_enabled()),
-        ("is_shap_enabled is deprecated", lambda: explainer.is_shap_enabled()),
-        (
-            "WrapCalibratedExplainer.explain_lime is deprecated",
-            lambda: wrapper.explain_lime(np.array([[0.0, 1.0]])),
-        ),
-        (
-            "WrapCalibratedExplainer.explain_shap is deprecated",
-            lambda: wrapper.explain_shap(np.array([[0.0, 1.0]])),
-        ),
-        ("CalibratedExplanations.as_lime is deprecated", lambda: collection.as_lime()),
-        ("CalibratedExplanations.as_shap is deprecated", lambda: collection.as_shap()),
+    removed_calls = [
+        ("preload_lime", lambda: explainer.preload_lime()),
+        ("preload_shap", lambda: explainer.preload_shap()),
+        ("explain_lime", lambda: explainer.explain_lime(np.array([[0.0, 1.0]]))),
+        ("explain_shap", lambda: explainer.explain_shap(np.array([[0.0, 1.0]]))),
+        ("is_lime_enabled", lambda: explainer.is_lime_enabled()),
+        ("is_shap_enabled", lambda: explainer.is_shap_enabled()),
+        ("explain_lime", lambda: wrapper.explain_lime(np.array([[0.0, 1.0]]))),
+        ("explain_shap", lambda: wrapper.explain_shap(np.array([[0.0, 1.0]]))),
     ]
 
-    for match, callback in checks:
-        with pytest.raises(DeprecationWarning, match=match):
+    for symbol, callback in removed_calls:
+        with pytest.raises(AttributeError, match=symbol):
             callback()
+
+
+def test_should_keep_collection_as_lime_as_shap_deprecated_until_v0113(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Collection adapters remain deprecations in v0.11.2 and are removed in v0.11.3."""
+    monkeypatch.setenv("CE_DEPRECATIONS", "error")
+    collection = object.__new__(CalibratedExplanations)
+
+    with pytest.raises(DeprecationWarning, match="CalibratedExplanations.as_lime is deprecated"):
+        collection.as_lime()
+    with pytest.raises(DeprecationWarning, match="CalibratedExplanations.as_shap is deprecated"):
+        collection.as_shap()

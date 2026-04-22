@@ -222,14 +222,6 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 | `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
 | `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.preload_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; plugin-only preload path replaces core helper preload. |
-| `CalibratedExplainer.preload_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; plugin-only preload path replaces core helper preload. |
-| `CalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; runtime explanation path becomes plugin-only. |
-| `CalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; runtime explanation path becomes plugin-only. |
-| `CalibratedExplainer.is_lime_enabled(...)` | `calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()` | v0.11.1 | v0.11.2 | Task-21 inventory item; helper-enabled flag no longer lives on core explainer surface. |
-| `CalibratedExplainer.is_shap_enabled(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; helper-enabled flag no longer lives on core explainer surface. |
-| `WrapCalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; wrapper forwarding hook removed with core entry-point removal. |
-| `WrapCalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item; wrapper forwarding hook removed with core entry-point removal. |
 | `CalibratedExplanations.as_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
 | `CalibratedExplanations.as_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
 
@@ -247,6 +239,14 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | Parameter alias `n_jobs` | `parallel_workers` | v0.9.0 | v0.11.0 | Removed alias mapping/warning path; calls now fail fast with `ConfigurationError`. |
 | Top-level package exports (`AlternativeExplanation`, `FactualExplanation`, `FastExplanation`, `AlternativeExplanations`, `CalibratedExplanations`, `BinaryEntropyDiscretizer`, `BinaryRegressorDiscretizer`, `EntropyDiscretizer`, `RegressorDiscretizer`, `IntervalRegressor`, `VennAbers`) | Import from respective submodules | v0.9.0 | v0.11.0 | Verified by `tests/unit/test_package_init_deprecation.py`. |
 | `calibrated_explanations.perf` root facade | `calibrated_explanations.cache` + `calibrated_explanations.parallel` | v0.10.x | v0.11.0 | `perf/__init__.py` is now empty. |
+| `CalibratedExplainer.preload_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; core helper preload path deleted. |
+| `CalibratedExplainer.preload_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).preload(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; core helper preload path deleted. |
+| `CalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; runtime explanation path is plugin-only. |
+| `CalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; runtime explanation path is plugin-only. |
+| `CalibratedExplainer.is_lime_enabled(...)` | `calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; core helper toggle removed. |
+| `CalibratedExplainer.is_shap_enabled(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; core helper toggle removed. |
+| `WrapCalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; wrapper forwarding hook deleted. |
+| `WrapCalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; wrapper forwarding hook deleted. |
 
 ## Breaking changes
 
