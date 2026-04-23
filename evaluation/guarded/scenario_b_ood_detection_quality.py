@@ -52,7 +52,6 @@ from common_guarded import (
     extract_audit_rows,
     fisher_p_value_per_instance,
     make_gaussian_classification,
-    make_ood_shift,
     write_report,
 )
 
@@ -324,9 +323,11 @@ def main() -> None:
 
             for shift_name, shift_magnitude in shift_levels.items():
                 shift_vec = _build_shift_vector(shift_magnitude, n_dim)
-                x_ood_test = make_ood_shift(x_id_test, shift_vec, seed=seed * 777 + n_dim)
-                if len(x_ood_test) > n_ood_test:
-                    x_ood_test = x_ood_test[:n_ood_test]
+                # Sample OOD instances independently from a shifted Gaussian rather
+                # than shifting the ID test set, to avoid ID/OOD dependence that
+                # would inflate AUROC.
+                ood_rng = np.random.default_rng(seed * 777 + n_dim)
+                x_ood_test = ood_rng.standard_normal((n_ood_test, n_dim)) + shift_vec
 
                 for nn in n_neighbors_grid:
                     for normalize in normalize_grid:

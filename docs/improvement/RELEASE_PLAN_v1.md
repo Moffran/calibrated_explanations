@@ -145,9 +145,9 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 
 **ADR-034 - Centralized Configuration Management:** Accepted (2026-04-07); v0.11.2 runtime conformance closure is complete (Phase B migration + release-plan synchronization). Remaining ADR-034 work is limited to deferred v1.0 items: sensitive-value redaction and export payload schema versioning.
 
-**ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up: PlotSpec default-promotion readiness-gate definition and policy decision.
+**ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up is now recorded as a deferral: legacy remains default while Task 9 hardens PlotSpec visual semantics; default-promotion is re-evaluated in v0.11.3 Task 6.
 
-**ADR-037 - Visualization Extension and Rendering Governance:** Accepted (2026-03-20); builder/renderer contracts, deterministic extension metadata requirements, and default-path posture established. Legacy plotting remains default and PlotSpec opt-in in v0.11.1. Runtime plot-kind extension explicitly deferred. v0.11.2 follow-up: revisit default-path promotion and tighten readiness gate; runtime kind-extension policy decision.
+**ADR-037 - Visualization Extension and Rendering Governance:** Accepted (2026-03-20); builder/renderer contracts, deterministic extension metadata requirements, and default-path posture established. Legacy plotting remains default and PlotSpec opt-in in v0.11.1. Runtime plot-kind extension explicitly deferred. v0.11.2 follow-up is now recorded as a deferral: legacy remains default while Task 9 hardens PlotSpec visual semantics; default-promotion is re-evaluated in v0.11.3 Task 6.
 
 **Standard-001 - Nomenclature Standardization:** Partially complete; v0.11.0 delivered naming guardrail automation and private-member allowlist emptied. Double-underscore mutation cleanup targets v0.11.1; final transitional shim removal targets v0.11.3.
 

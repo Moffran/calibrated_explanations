@@ -81,11 +81,16 @@ Additional optional fields **MAY** be defined, but required semantics **MUST** r
 - Pixel parity with legacy plotting is **not** a PlotSpec semantic requirement.
 - Pixel parity obligations, where required, remain in legacy-renderer territory.
 
-### 10. Current default-path posture (v0.11.1)
+### 10. Current default-path posture (v0.11.1 -> v0.11.2)
 
 - Legacy plotting remains the default plotting path in v0.11.1.
 - PlotSpec path remains opt-in and non-default in v0.11.1.
 - This ADR does not define a hard default-promotion gate for v0.11.1.
+- **v0.11.2 decision update (2026-04-23):** the release-plan follow-up recorded
+  an explicit deferral decision. PlotSpec remains non-default in v0.11.2 even
+  though routing/parity gate evidence was collected, because current
+  PlotSpec-rendered visuals are not yet trusted to preserve legacy-equivalent
+  explanatory meaning for default user-facing use.
 
 ## Non-goals
 
@@ -110,7 +115,12 @@ Additional optional fields **MAY** be defined, but required semantics **MUST** r
 
 - ADR-007 and ADR-016 are superseded by this ADR and ADR-037.
 - In v0.11.1, legacy remains default and PlotSpec remains opt-in.
-- A v0.11.2 release-planning follow-up will revisit PlotSpec default-path promotion and define a stricter readiness gate at that time.
+- The v0.11.2 release-planning follow-up has now recorded a **deferral**:
+  legacy remains default in v0.11.2.
+- v0.11.2 Task 9 is the active PlotSpec semantic/visual mending task while the
+  PlotSpec path remains opt-in.
+- v0.11.3 Task 6 is the explicit re-evaluation/finalization point for any later
+  default-path promotion.
 
 ## Future considerations (narrow)
 

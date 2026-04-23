@@ -37,8 +37,8 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-030 | Accepted | Zero-tolerance ratification targeted v0.11.3 |
 | ADR-033 | Accepted | v0.11.1 additive rollout hardening |
 | ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning |
-| ADR-036 | Accepted | v0.11.2 readiness-gate/default-promotion decision |
-| ADR-037 | Accepted | v0.11.2 default-path and kind-extension follow-up |
+| ADR-036 | Accepted | v0.11.2 default-promotion decision recorded as deferral; zero open severity >= 9 conformance gaps confirmed; Task 9 mending and v0.11.3 Task 6 re-evaluation remain |
+| ADR-037 | Accepted | v0.11.2 default-path follow-up recorded as deferral; zero open severity >= 9 conformance gaps confirmed; Task 9 mending and v0.11.3 Task 6 re-evaluation remain |
 | STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
 | STD-002 | Partially complete | WrapCalibratedExplainer numpydoc closure in v0.11.3 |
 | STD-003 | Completed | Monitor for regressions |

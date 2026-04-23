@@ -278,17 +278,9 @@ def _assert_interval_invariant(low: Any, point: Any, high: Any, *, where: str) -
     )
 
 
-def _run_standard_factual_multibin(wrapper: Any, x: np.ndarray) -> Any:
-    assert wrapper.explainer is not None
-    return wrapper.explainer.explanation_orchestrator.invoke_factual(
-        x=x,
-        threshold=None,
-        low_high_percentiles=(5, 95),
-        bins=None,
-        features_to_ignore=None,
-        discretizer="entropy",
-        _use_plugin=True,
-    )
+def _run_standard_factual(wrapper: Any, x: np.ndarray) -> Any:
+    """Call the public explain_factual API (binary discretiser, max_depth=1)."""
+    return wrapper.explain_factual(x)
 
 
 def _rule_rows_from_standard(
@@ -555,6 +547,7 @@ def _build_summary_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
                     p_value, median_diff = _wilcoxon_from_group(
                         model_subset, "guarded", "standard"
                     )
+                    mb_slice = model_subset[model_subset["method"] == "multibin_noguard"]["value"]
                     rows.append(
                         {
                             "metric": metric,
@@ -567,6 +560,7 @@ def _build_summary_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
                             "standard_mean": model_subset[
                                 model_subset["method"] == "standard"
                             ]["value"].mean(),
+                            "multibin_noguard_mean": mb_slice.mean() if not mb_slice.empty else float("nan"),
                             "median_difference_guarded_minus_standard": median_diff,
                             "wilcoxon_p_value": p_value,
                         }
@@ -690,11 +684,21 @@ def main() -> None:
             )
 
             for mode in modes:
+                # Multibin no-guard ablation: significance=1e-6 is below the minimum
+                # non-zero conformal p-value (1/n_cal), so all non-empty bins pass.
+                # This isolates the discretisation change from the guard effect.
+                # significance=0.0 is rejected by the API (must be in (0, 1]).
+                MULTIBIN_NOGUARD_SIG = 1e-6
+                multibin_cfg = ExplainConfig(
+                    significance=MULTIBIN_NOGUARD_SIG, n_neighbors=DEFAULT_NEIGHBORS[0], merge_adjacent=False
+                )
                 for instance_id in sampled_ids:
                     x_instance = x_test[instance_id : instance_id + 1]
+
+                    # Standard binary baseline via public API.
                     std_start = time.perf_counter()
                     if mode == "factual":
-                        std_expl = _run_standard_factual_multibin(wrapper, x_instance)
+                        std_expl = _run_standard_factual(wrapper, x_instance)
                     else:
                         std_expl = wrapper.explore_alternatives(x_instance)
                     runtime_ms = (time.perf_counter() - std_start) * 1000.0
@@ -710,6 +714,37 @@ def main() -> None:
                         x_instance=x_instance[0],
                         runtime_ms=runtime_ms,
                     )
+
+                    # Multibin no-guard ablation run (factual mode only; alternative
+                    # mode already uses multibin in explore_alternatives).
+                    if mode == "factual":
+                        mb_start = time.perf_counter()
+                        mb_expl = wrapper.explain_guarded_factual(
+                            x_instance,
+                            significance=MULTIBIN_NOGUARD_SIG,
+                            n_neighbors=DEFAULT_NEIGHBORS[0],
+                            merge_adjacent=False,
+                            normalize_guard=True,
+                        )
+                        mb_runtime_ms = (time.perf_counter() - mb_start) * 1000.0
+                        mb_audit = mb_expl.get_guarded_audit()["instances"][0]
+                        multibin_rows_base = _rule_rows_from_guarded_audit(
+                            mb_audit,
+                            dataset="scenario_a",
+                            seed=seed,
+                            model_name=model_name,
+                            instance_id=int(instance_id),
+                            mode=mode,
+                            method="multibin_noguard",
+                            cfg=multibin_cfg,
+                            x_instance=x_instance[0],
+                            support_bounds=support_bounds,
+                            boundary_probes=args.boundary_probes,
+                            runtime_ms=mb_runtime_ms,
+                        )
+                    else:
+                        multibin_rows_base = []
+                        mb_runtime_ms = 0.0
 
                     for cfg in configs:
                         guard_start = time.perf_counter()
@@ -749,17 +784,29 @@ def main() -> None:
                             dict(row, significance=cfg.significance, n_neighbors=cfg.n_neighbors, merge_adjacent=cfg.merge_adjacent)
                             for row in std_rows_base
                         ]
+                        multibin_rows = [
+                            dict(row, significance=cfg.significance)
+                            for row in multibin_rows_base
+                        ]
                         if mode == "alternative" and args.top_k_alternatives > 0:
                             guarded_rows = guarded_rows[: args.top_k_alternatives]
                             std_rows = std_rows[: args.top_k_alternatives]
                         all_rows.extend(guarded_rows)
                         all_rows.extend(std_rows)
+                        if multibin_rows:
+                            all_rows.extend(multibin_rows)
 
-                        for method, rows_, rt in (("guarded", guarded_rows, guard_runtime_ms), ("standard", std_rows, runtime_ms)):
+                        for method, rows_, rt in (
+                            ("guarded", guarded_rows, guard_runtime_ms),
+                            ("standard", std_rows, runtime_ms),
+                            ("multibin_noguard", multibin_rows, mb_runtime_ms),
+                        ):
                             rule_count = len(rows_)
                             violation_rate = float(np.mean([not r["plausibility_flag"] for r in rows_])) if rows_ else 0.0
+                            fraction_nonempty = 1.0 if rule_count > 0 else 0.0
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "rule_count", "value": float(rule_count)})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "violation_rate", "value": violation_rate})
+                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "fraction_nonempty", "value": fraction_nonempty})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "runtime_ms", "value": float(rt)})
 
                         if not args.paper_focused:
@@ -780,7 +827,7 @@ def main() -> None:
                 for mode in MODES:
                     x_ref = x_test[reference_indices]
                     if mode == "factual":
-                        std_ref = _run_standard_factual_multibin(wrapper, x_ref)
+                        std_ref = _run_standard_factual(wrapper, x_ref)
                         guard_ref = wrapper.explain_guarded_factual(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
                     else:
                         std_ref = wrapper.explore_alternatives(x_ref)
@@ -801,7 +848,7 @@ def main() -> None:
                     for mode in MODES:
                         x_ref = x_test[reference_indices]
                         if mode == "factual":
-                            std_boot = _run_standard_factual_multibin(boot_wrapper, x_ref)
+                            std_boot = _run_standard_factual(boot_wrapper, x_ref)
                             guard_boot = boot_wrapper.explain_guarded_factual(x_ref, significance=boot_cfg.significance, n_neighbors=boot_cfg.n_neighbors, merge_adjacent=boot_cfg.merge_adjacent, normalize_guard=True)
                         else:
                             std_boot = boot_wrapper.explore_alternatives(x_ref)
