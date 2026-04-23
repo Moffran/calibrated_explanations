@@ -452,10 +452,10 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      instance cache (max 16 LRU entries); RSS stabilization gate (≤10% delta, ≤64 MB absolute
      growth over 200 iterations). Depends on task 5A (post-removal surface needed for
      accurate memory baseline).
-  7. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should
-     move from opt-in to default path; define and enforce a stricter readiness gate; update
-     PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the
-     explicit decision point governed by ADR-036 and ADR-037.
+  7. PlotSpec default-promotion follow-up (new in v0.11.2): record the binding v0.11.2
+     decision to keep legacy as the default path, document the exact per-function deferral
+     outcome for all in-scope plots, and carry the promotion question forward to v0.11.3.
+     This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
   8. ADR-035 conformance gap remediation (surfaced by Task 4 red-team):
      GAP 1 — insert §2 rollout status note resolving the advisory/blocking MUST contradiction;
      GAP 2 — add `scripts/local_checks.py` rule to `.github/CODEOWNERS`;
@@ -463,8 +463,12 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      pre-reusable workflows (`ci-main.yml`, `ci-nightly.yml`, `deprecation-check.yml`,
      `maintenance.yml`, `update_baseline.yml`), each with a dated `review-by: v0.11.3` rationale.
      Depends on task 4 (Task 4 revealed GAP 2 and its Makefile addition triggered GAP 4 analysis).
+  9. PlotSpec semantic/visual mending while non-default (new in v0.11.2): improve PlotSpec
+      rendered plots on explicit opt-in paths so they preserve the same explanatory meaning
+      as legacy plots without changing user default behavior. This task creates the evidence
+      base required for any later default-promotion decision.
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 v0.11.2 removal phase complete (eight core/wrapper LIME/SHAP symbols deleted, fail-closed tests green, deprecation ledger rows moved); deep memory retention bounded with RSS stabilization proof; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; ADR-035 GAPs 1/2/4 closed with tests; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 v0.11.2 removal phase complete (eight core/wrapper LIME/SHAP symbols deleted, fail-closed tests green, deprecation ledger rows moved); deep memory retention bounded with RSS stabilization proof; PlotSpec default-promotion follow-up completed with an explicit v0.11.2 deferral decision recorded; PlotSpec semantic/visual mending evidence exists for the opt-in path; ADR-035 GAPs 1/2/4 closed with tests; `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
@@ -482,8 +486,16 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      self-contained): provide a reusable harness for semi/fully-online latency
      measurements with README guidance and a sample run (gate: sample run documented
      and reproducible).
-
-  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
+  5. Task 21 final closure gate (LIME/SHAP deprecation ledger must be empty): delete
+     any residual v0.11.3-owned Task-21 compatibility adapters, move all remaining
+     Task-21 rows from Active to Removed history, and verify that zero active Task-21
+     deprecations survive into v1.0.0.
+  6. PlotSpec default-promotion re-evaluation after v0.11.2 mending: revisit the
+      default-path question only after reviewing the v0.11.2 deferral note and plot
+      mending evidence. Proposed candidate outcome: broad promotion (1C-family) if
+      semantic/visual parity evidence is sufficient; otherwise record another explicit
+      deferral rather than promoting by momentum.
+  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
 
 ### v1.0.0-rc (release candidate readiness)
 
