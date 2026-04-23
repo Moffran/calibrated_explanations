@@ -15,6 +15,19 @@ APPROVED_REUSABLES = (
     "./.github/workflows/reusable-run-make.yml",
     "./.github/workflows/reusable-build-docs.yml",
 )
+
+# ADR-035 GAP 4 (v0.11.2): Pre-reusable inline workflows allow-list
+# These workflows pre-date the reusable-first rule and run all jobs inline.
+# Future edits to these workflows must still update scripts/local_checks.py and Makefile
+# per ADR-035 section 3 local reproducibility parity.
+_REUSABLE_FIRST_ALLOWLIST = (
+    ".github/workflows/ci-main.yml",  # Pre-reusable inline workflow; review-by: v0.11.3
+    ".github/workflows/ci-nightly.yml",  # Heavy/scheduled workflow; review-by: v0.11.3
+    ".github/workflows/deprecation-check.yml",  # Single-purpose test workflow; review-by: v0.11.3
+    ".github/workflows/maintenance.yml",  # Maintenance workflow; review-by: v0.11.3
+    ".github/workflows/update_baseline.yml",  # Automated baseline updater; review-by: v0.11.3
+)
+
 HEAVY_KEYWORDS = ("parity", "perf", "notebook-audit", "docs")
 REQUIRED_CHECKLIST_ITEMS = (
     "I used one of the approved reusable workflows OR marked this workflow `experimental: true`",
@@ -67,6 +80,9 @@ def _check_reusables(file_path: Path, text: str, errors: list[str]) -> None:
     if file_path.name.startswith("reusable-") or file_path.name == "ci-policy.yml":
         return
     if _is_experimental(file_path, text):
+        return
+    # ADR-035 GAP 4: Skip reusable-first check for pre-reusable inline workflows on allow-list
+    if file_path.as_posix() in _REUSABLE_FIRST_ALLOWLIST:
         return
     if "jobs:" not in text:
         return

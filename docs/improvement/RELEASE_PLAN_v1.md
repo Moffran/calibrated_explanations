@@ -174,7 +174,7 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 | v0.10.3 | Domain model (ADR-008), Schema (ADR-005), Defaults, Plugin docs (Standard-004), Legacy stability (ADR-020). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure part 1: ADR-005/008/010/020 + Standard-004. |
 | v0.11.0 | Modality extension breaking contract/resolver changes (ADR-033); ADR-027 observability policy/examples updates and ADR-028 docs alignment to Standard-005. | Wrapper/public numpydoc closure target (Standard-002). | ADR-030 detector + CI enforcement and ADR-010 core-only vs extras parity checks. | Naming guardrail automation where feasible (Standard-001). | ADR gap-closure maximization milestone: close ADR-004/005/006(partial)/009/011/014/015/020/026/030/031/033; keep only architecture-heavy migrations deferred. |
 | v0.11.1 | Notebook execution + runtime ceilings (ADR-012); remaining ADR-027/028 enforcement hardening; ADR-033 additive modality rollout follow-through. | No major new code-doc initiative planned beyond maintenance. | No major new coverage initiative planned beyond maintenance. | Double-underscore mutation cleanup completion tasks (Standard-001). | Registry hardening deferred from v0.11.0: full PluginManager resolution migration, trust-state atomicity unification, governance audit completion, and legacy list deprecation. CI upgrade: decommission legacy workflows. |
-| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, deep memory audit (retention/leak fixes), and PlotSpec default-promotion follow-up decision (ADR-036/ADR-037). |
+| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, governance dashboard artifact, LIME/SHAP v0.11.2 removal phase (Task 21 execution), deep memory audit (retention/leak fixes), PlotSpec default-promotion follow-up decision (ADR-036/ADR-037), and ADR-035 conformance gap remediation. |
 | v0.11.3 | Minimal docs-build changes; Standard-002 numpydoc gap closure. | Close WrapCalibratedExplainer numpydoc blocks (Standard-002). | No new coverage work planned. | Final transitional shim removal (Standard-001). | RC readiness: Standard-001 shim closure, Standard-002 gap, ADR-030 zero-tolerance ratification, OSS perf harness (stretch). |
 | v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled. |
 
@@ -442,10 +442,29 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      dates older than 60 days, and close any quick-win gaps that require no feature
      work (e.g., remaining ADR-026 observability gaps).
   4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3, 7, and 20 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. This artifact is a derived CI/reporting surface and must not replace the runtime governance event contracts defined for plugin/config lifecycle events. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
-  5. Deep memory audit and retention hardening.
-  6. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
+  5A. LIME/SHAP v0.11.2 removal follow-through (execution of v0.11.1 Task 21 removal phase):
+      delete `CalibratedExplainer.{preload,explain,is_enabled}_lime/shap` and
+      `WrapCalibratedExplainer.explain_lime/shap`; move deprecation ledger rows from Active
+      to Removed history; verify plugin-only replacement paths remain functional.
+      Depends on task 3 completing (governance inventory must be current before ledger moves).
+  6. Deep memory audit and retention hardening: bounded `reset()`/`close()` lifecycle
+     semantics for `latest_explanation`, SHAP/LIME helper caches, and the plugin explanation
+     instance cache (max 16 LRU entries); RSS stabilization gate (≤10% delta, ≤64 MB absolute
+     growth over 200 iterations). Depends on task 5A (post-removal surface needed for
+     accurate memory baseline).
+  7. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should
+     move from opt-in to default path; define and enforce a stricter readiness gate; update
+     PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the
+     explicit decision point governed by ADR-036 and ADR-037.
+  8. ADR-035 conformance gap remediation (surfaced by Task 4 red-team):
+     GAP 1 — insert §2 rollout status note resolving the advisory/blocking MUST contradiction;
+     GAP 2 — add `scripts/local_checks.py` rule to `.github/CODEOWNERS`;
+     GAP 4 — add inline-workflow allow-list to `validate_ci_policy.py` covering the five
+     pre-reusable workflows (`ci-main.yml`, `ci-nightly.yml`, `deprecation-check.yml`,
+     `maintenance.yml`, `update_baseline.yml`), each with a dated `review-by: v0.11.3` rationale.
+     Depends on task 4 (Task 4 revealed GAP 2 and its Makefile addition triggered GAP 4 analysis).
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 removals are executed for core LIME/SHAP exports and list-path compatibility code; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 v0.11.2 removal phase complete (eight core/wrapper LIME/SHAP symbols deleted, fail-closed tests green, deprecation ledger rows moved); deep memory retention bounded with RSS stabilization proof; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; ADR-035 GAPs 1/2/4 closed with tests; `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
