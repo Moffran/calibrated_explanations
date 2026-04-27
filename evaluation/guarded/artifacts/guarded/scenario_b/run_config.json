@@ -1,0 +1,33 @@
+{
+  "num_seeds": 10,
+  "n_train": 5000,
+  "n_cal": 3000,
+  "n_id_test": 1000,
+  "n_ood_test": 1000,
+  "n_neighbors": [
+    5
+  ],
+  "n_dim": [
+    2,
+    5,
+    10,
+    20
+  ],
+  "shift_levels": {
+    "mild": 1.0,
+    "moderate": 2.0,
+    "extreme": 5.0
+  },
+  "normalize_guard": [
+    true
+  ],
+  "significance": 0.1,
+  "paper_focused": true,
+  "large_profile": true,
+  "scenario": "B",
+  "checkpoint_interval": 1,
+  "intermediate_outputs": {
+    "ood_metrics": "C:\\Users\\loftuw\\Documents\\Github\\calibrated_explanations\\evaluation\\guarded\\artifacts\\guarded\\scenario_b\\ood_metrics.partial.csv",
+    "progress": "C:\\Users\\loftuw\\Documents\\Github\\calibrated_explanations\\evaluation\\guarded\\artifacts\\guarded\\scenario_b\\progress.json"
+  }
+}

@@ -4,17 +4,19 @@ Question: do guarded explanations emit rules that violate a known domain
 constraint less often than standard CE, and what is the tradeoff in retained
 rules and runtime?
 
-This scenario builds a synthetic two-feature classification problem where valid
-points satisfy ``x[:, 1] <= 2 * x[:, 0] + 3``. Standard and guarded
+This scenario builds a synthetic classification problem where the first two
+features satisfy ``x[:, 1] <= 2 * x[:, 0] + 3``. The default 10-dimensional
+profile adds correlated support features, nonlinear support features,
+additional predictive features, and pure noise dimensions. Standard and guarded
 explanations are compared on the same fitted models and test instances.
 
 Primary paper-facing metric:
   violation_rate
-    Fraction of emitted factual rules whose one-feature perturbation violates
-        the known domain constraint. For guarded interval-style emitted rules,
-        plausibility is evaluated at the constraint-facing boundary implied by the
-        rule condition, and may be stress-tested over interior values via boundary
-        probes.
+    Fraction of emitted factual rules touching the constrained feature pair
+        whose one-feature perturbation violates the known domain constraint. For
+        guarded interval-style emitted rules, plausibility is evaluated at the
+        constraint-facing boundary implied by the rule condition, and may be
+        stress-tested over interior values via boundary probes.
 
 Secondary paper-facing metric:
   rule_count
@@ -65,6 +67,14 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from common_guarded import (
+    ProgressTracker,
+    append_intermediate_rows,
+    dataframe_to_markdown,
+    reset_intermediate_outputs,
+    write_intermediate_frame,
+    write_progress_snapshot,
+)
 from scipy.stats import wilcoxon
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -72,9 +82,43 @@ from sklearn.linear_model import LogisticRegression
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
 
 DEFAULT_SIGNIFICANCE = (0.01, 0.05, 0.1, 0.2)
-DEFAULT_NEIGHBORS = (3, 5, 10)
-DEFAULT_MERGE = (False, True)
+DEFAULT_NEIGHBORS = (5,)
+DEFAULT_MERGE = (False,)
 MODES = ("factual", "alternative")
+PER_INSTANCE_COLUMNS = (
+    "dataset",
+    "seed",
+    "model",
+    "instance_id",
+    "method",
+    "mode",
+    "significance",
+    "n_neighbors",
+    "merge_adjacent",
+    "rule_id",
+    "feature",
+    "condition",
+    "representative_value",
+    "lower",
+    "upper",
+    "p_value_guard",
+    "prediction_point",
+    "prediction_low",
+    "prediction_high",
+    "plausibility_flag",
+    "runtime_ms",
+)
+METRIC_COLUMNS = (
+    "dataset",
+    "model",
+    "seed",
+    "instance_id",
+    "method",
+    "mode",
+    "significance",
+    "metric",
+    "value",
+)
 
 
 @dataclass(frozen=True)
@@ -95,24 +139,28 @@ def parse_args() -> argparse.Namespace:
     --output-dir : pathlib.Path
         Destination for CSVs, figures, and the markdown report. Use a fresh
         directory when comparing multiple runs.
-    --num-seeds : int, default=30
+    --num-seeds : int, default=10
         Number of independently generated train/cal/test splits. Useful range:
         10-30 for paper tables, 2-4 for smoke runs.
-    --bootstrap-draws : int, default=30
+    --bootstrap-draws : int, default=10
         Number of bootstrap calibration resamples used for stability metrics.
         Useful range: 20-50 for full analysis, 2-5 for quick checks.
-    --sample-test : int, default=200
+    --sample-test : int, default=100
         Test instances sampled per seed and model. Useful range: 100-300 for
         stable means; lower values reduce runtime.
     --n-train : int, default=3000
         Synthetic training size. Useful range: 1000-5000; larger values reduce
         model variance more than guard variance.
-    --n-cal : int, default=1000
+    --n-cal : int, default=500
         Calibration size. Useful range: 500-3000. Very small values make guard
         p-values too coarse for reliable comparison.
     --n-test : int, default=500
         Size of the synthetic test pool before sampling. Keep above
         ``sample-test`` so per-seed sampling is not degenerate.
+    --n-dim : int, default=10
+        Total number of features. The first two features carry the known
+        Scenario A constraint; later features add correlated support,
+        nonlinear support, additional predictive signal, and noise dimensions.
     --top-k-alternatives : int, default=8
         Maximum alternative rules retained in alternative-mode summaries.
         Useful range: 5-10; larger values mostly add clutter.
@@ -124,12 +172,13 @@ def parse_args() -> argparse.Namespace:
         description="Scenario A guarded vs standard CE comparison (factual + alternatives)."
     )
     parser.add_argument("--output-dir", type=Path, default=Path(__file__).parent / "artifacts" / "guarded_vs_standard" / "scenario_a")
-    parser.add_argument("--num-seeds", type=int, default=30)
-    parser.add_argument("--bootstrap-draws", type=int, default=30)
-    parser.add_argument("--sample-test", type=int, default=200)
+    parser.add_argument("--num-seeds", type=int, default=10)
+    parser.add_argument("--bootstrap-draws", type=int, default=10)
+    parser.add_argument("--sample-test", type=int, default=100)
     parser.add_argument("--n-train", type=int, default=3000)
-    parser.add_argument("--n-cal", type=int, default=1000)
+    parser.add_argument("--n-cal", type=int, default=500)
     parser.add_argument("--n-test", type=int, default=500)
+    parser.add_argument("--n-dim", type=int, default=10)
     parser.add_argument("--top-k-alternatives", type=int, default=8)
     parser.add_argument(
         "--boundary-probes",
@@ -156,15 +205,27 @@ def parse_args() -> argparse.Namespace:
             "evidence in synthetic-data settings."
         ),
     )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=50,
+        help=(
+            "Write partial CSV/progress artifacts after this many completed "
+            "progress units. Set to 0 to write only at seed/model boundaries."
+        ),
+    )
     parser.add_argument("--quick", action="store_true", help="Quick smoke mode.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.n_dim < 2:
+        parser.error("--n-dim must be at least 2 because Scenario A constrains x0 and x1")
+    return args
 
 
 def scenario_a_constraint(x: np.ndarray) -> np.ndarray:
     return x[:, 1] <= (2.0 * x[:, 0] + 3.0)
 
 
-def generate_scenario_a(n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
+def generate_scenario_a(n: int, seed: int, n_dim: int = 10) -> Tuple[np.ndarray, np.ndarray]:
     rng = np.random.default_rng(seed)
     accepted: List[np.ndarray] = []
     cov = np.array([[1.0, 0.9], [0.9, 1.5]])
@@ -174,17 +235,41 @@ def generate_scenario_a(n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
         if np.any(mask):
             accepted.append(candidate[mask])
     x_info = np.vstack(accepted)[:n]
-    x_noise = rng.standard_normal((n, 2))
-    x = np.hstack([x_info, x_noise])
-    logits = 0.9 * x[:, 0] + 0.7 * x[:, 1] + rng.normal(0.0, 0.75, size=n)
+    extras: List[np.ndarray] = []
+    if n_dim >= 3:
+        extras.append(0.65 * x_info[:, 0] + 0.25 * x_info[:, 1] + rng.normal(0.0, 0.35, size=n))
+    if n_dim >= 4:
+        extras.append(-0.35 * x_info[:, 0] + 0.55 * x_info[:, 1] + rng.normal(0.0, 0.35, size=n))
+    if n_dim >= 5:
+        extras.append(np.sin(x_info[:, 0]) + rng.normal(0.0, 0.20, size=n))
+    if n_dim >= 6:
+        extras.append(rng.standard_normal(n))
+    while len(extras) < n_dim - 2:
+        extras.append(rng.standard_normal(n))
+    x_extra = np.column_stack(extras) if extras else np.empty((n, 0))
+    x = np.hstack([x_info, x_extra])
+    x2 = x[:, 2] if n_dim >= 3 else 0.0
+    x3 = x[:, 3] if n_dim >= 4 else 0.0
+    x4 = x[:, 4] if n_dim >= 5 else 0.0
+    x5 = x[:, 5] if n_dim >= 6 else 0.0
+    logits = (
+        0.75 * x[:, 0]
+        + 0.55 * x[:, 1]
+        + 0.35 * x2
+        - 0.30 * x3
+        + 0.55 * x4
+        + 0.45 * x5
+        + 0.25 * x[:, 0] * x5
+        + rng.normal(0.0, 0.75, size=n)
+    )
     y = (logits > np.median(logits)).astype(int)
     return x, y
 
 
-def build_splits(seed: int, n_train: int, n_cal: int, n_test: int) -> Tuple[np.ndarray, ...]:
-    x_train, y_train = generate_scenario_a(n_train, seed * 100 + 11)
-    x_cal, y_cal = generate_scenario_a(n_cal, seed * 100 + 17)
-    x_test, y_test = generate_scenario_a(n_test, seed * 100 + 23)
+def build_splits(seed: int, n_train: int, n_cal: int, n_test: int, n_dim: int) -> Tuple[np.ndarray, ...]:
+    x_train, y_train = generate_scenario_a(n_train, seed * 100 + 11, n_dim)
+    x_cal, y_cal = generate_scenario_a(n_cal, seed * 100 + 17, n_dim)
+    x_test, y_test = generate_scenario_a(n_test, seed * 100 + 23, n_dim)
     return x_train, y_train, x_cal, y_cal, x_test, y_test
 
 
@@ -592,18 +677,27 @@ def _write_report(summary_df: pd.DataFrame, run_config: Dict[str, Any], out_path
         f"- Seeds: {run_config['num_seeds']}",
         f"- Models: {', '.join(run_config['models'])}",
         f"- Test instances sampled per seed: {run_config['sample_test']}",
+        f"- Features: {run_config['n_dim']}",
         f"- Guard grid: significance={run_config['significance']}, n_neighbors={run_config['n_neighbors']}, merge_adjacent={run_config['merge_adjacent']}",
         "",
         "## Purpose",
         "This report keeps only the paper-facing metrics for Scenario A.",
-        "The main comparison is the factual-mode violation rate under the emitted guarded rule format and the known domain constraint.",
-        "A secondary tradeoff metric is the factual-mode rule count.",
+        "The main comparison is the factual-mode violation rate on emitted rules that touch the constrained feature pair.",
+        "The secondary tradeoff metric is the factual-mode rule count across all emitted rules.",
         "",
         "## Factual violation rate",
-        (vr_rows.to_markdown(index=False) if not vr_rows.empty else "No factual violation-rate rows found."),
+        (
+            dataframe_to_markdown(vr_rows, index=False)
+            if not vr_rows.empty
+            else "No factual violation-rate rows found."
+        ),
         "",
         "## Factual rule count",
-        (rule_rows.to_markdown(index=False) if not rule_rows.empty else "No factual rule-count rows found."),
+        (
+            dataframe_to_markdown(rule_rows, index=False)
+            if not rule_rows.empty
+            else "No factual rule-count rows found."
+        ),
         "",
         "## Notes",
         "The CSV outputs retain additional diagnostics for engineering use.",
@@ -617,11 +711,11 @@ def main() -> None:
     args = parse_args()
     if args.large:
         args.paper_focused = True
-        args.num_seeds = max(args.num_seeds, 40)
-        args.sample_test = max(args.sample_test, 600)
-        args.n_train = max(args.n_train, 12000)
-        args.n_cal = max(args.n_cal, 5000)
-        args.n_test = max(args.n_test, 4000)
+        args.num_seeds = max(args.num_seeds, 10)
+        args.sample_test = max(args.sample_test, 500)
+        args.n_train = max(args.n_train, 3000)
+        args.n_cal = max(args.n_cal, 2000)
+        args.n_test = max(args.n_test, 1000)
         args.bootstrap_draws = min(args.bootstrap_draws, 10)
 
     if args.quick:
@@ -631,6 +725,18 @@ def main() -> None:
 
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
+    partial_per_instance_path = output_dir / "per_instance_records.partial.csv"
+    partial_metrics_path = output_dir / "metrics_records.partial.csv"
+    partial_summary_path = output_dir / "summary_metrics.partial.csv"
+    progress_path = output_dir / "progress.json"
+    reset_intermediate_outputs(
+        [
+            partial_per_instance_path,
+            partial_metrics_path,
+            partial_summary_path,
+            progress_path,
+        ]
+    )
 
     run_cfg = {
         "num_seeds": args.num_seeds,
@@ -639,6 +745,7 @@ def main() -> None:
         "n_train": args.n_train,
         "n_cal": args.n_cal,
         "n_test": args.n_test,
+        "n_dim": args.n_dim,
         "top_k_alternatives": args.top_k_alternatives,
         "boundary_probes": args.boundary_probes,
         "paper_focused": bool(args.paper_focused),
@@ -648,6 +755,13 @@ def main() -> None:
         "merge_adjacent": list(DEFAULT_MERGE),
         "models": ["logreg", "rf"],
         "scenario": "A",
+        "checkpoint_interval": args.checkpoint_interval,
+        "intermediate_outputs": {
+            "per_instance_records": str(partial_per_instance_path),
+            "metrics_records": str(partial_metrics_path),
+            "summary_metrics": str(partial_summary_path),
+            "progress": str(progress_path),
+        },
     }
     (output_dir / "run_config.json").write_text(json.dumps(run_cfg, indent=2), encoding="utf-8")
 
@@ -663,9 +777,88 @@ def main() -> None:
         for nn in n_neighbors_grid
         for merge in merge_grid
     ]
+    sampled_count = min(args.sample_test, args.n_test)
+    model_count = len(run_cfg["models"])
+    main_units = args.num_seeds * model_count * len(modes) * sampled_count
+    bootstrap_units = (
+        0
+        if args.paper_focused
+        else args.num_seeds * model_count * args.bootstrap_draws * len(MODES)
+    )
+    total_units = main_units + bootstrap_units
+    tracker = ProgressTracker("Scenario A", total_units)
+    tracker.start(
+        (
+            f"seeds={args.num_seeds}, models={model_count}, modes={len(modes)}, "
+            f"instances_per_seed={sampled_count}, configs={len(configs)}, "
+            f"output_dir={output_dir}"
+        )
+    )
+    write_progress_snapshot(
+        progress_path,
+        tracker,
+        detail="started",
+        extra={"per_instance_rows": 0, "metric_rows": 0},
+    )
+
+    last_all_rows_checkpoint = 0
+    last_metric_rows_checkpoint = 0
+    last_progress_checkpoint = 0
+
+    def _flush_intermediate(
+        detail: str,
+        *,
+        include_summary: bool = False,
+        force: bool = False,
+    ) -> None:
+        nonlocal last_all_rows_checkpoint, last_metric_rows_checkpoint
+        nonlocal last_progress_checkpoint
+        if (
+            not force
+            and (
+                args.checkpoint_interval <= 0
+                or tracker.completed - last_progress_checkpoint < args.checkpoint_interval
+            )
+        ):
+            return
+        append_intermediate_rows(
+            all_rows[last_all_rows_checkpoint:],
+            partial_per_instance_path,
+            columns=PER_INSTANCE_COLUMNS,
+        )
+        append_intermediate_rows(
+            metric_rows[last_metric_rows_checkpoint:],
+            partial_metrics_path,
+            columns=METRIC_COLUMNS,
+        )
+        last_all_rows_checkpoint = len(all_rows)
+        last_metric_rows_checkpoint = len(metric_rows)
+        last_progress_checkpoint = tracker.completed
+        if include_summary and metric_rows:
+            summary_partial_df = _build_summary_table(pd.DataFrame(metric_rows))
+            write_intermediate_frame(summary_partial_df, partial_summary_path)
+        write_progress_snapshot(
+            progress_path,
+            tracker,
+            detail=detail,
+            extra={
+                "per_instance_rows": len(all_rows),
+                "metric_rows": len(metric_rows),
+                "partial_per_instance_records": str(partial_per_instance_path),
+                "partial_metrics_records": str(partial_metrics_path),
+                "partial_summary_metrics": str(partial_summary_path),
+            },
+        )
 
     for seed in range(args.num_seeds):
-        x_train, y_train, x_cal, y_cal, x_test, _ = build_splits(seed, args.n_train, args.n_cal, args.n_test)
+        tracker.note(f"seed {seed + 1}/{args.num_seeds}: building data splits")
+        x_train, y_train, x_cal, y_cal, x_test, _ = build_splits(
+            seed,
+            args.n_train,
+            args.n_cal,
+            args.n_test,
+            args.n_dim,
+        )
         x_support = np.vstack([x_train, x_cal, x_test])
         support_bounds = {
             feature_idx: (float(np.min(x_support[:, feature_idx])), float(np.max(x_support[:, feature_idx])))
@@ -674,25 +867,38 @@ def main() -> None:
         local_rng = np.random.default_rng(seed + 771)
         sampled_ids = local_rng.choice(np.arange(args.n_test), size=min(args.sample_test, args.n_test), replace=False)
         sampled_ids = np.sort(sampled_ids)
+        tracker.note(
+            f"seed {seed + 1}/{args.num_seeds}: sampled {len(sampled_ids)} test instances"
+        )
 
         for model_name, model in get_models(seed).items():
+            tracker.note(
+                f"seed {seed + 1}/{args.num_seeds}, model={model_name}: fit/calibrate starting"
+            )
             wrapper = ensure_ce_first_wrapper(model)
             fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
             assert wrapper.explainer is not None
             assert np.array_equal(np.asarray(wrapper.explainer.x_cal), np.asarray(x_cal)), (
                 "Guard and predictor must share x_cal"
             )
+            tracker.note(
+                f"seed {seed + 1}/{args.num_seeds}, model={model_name}: fit/calibrate complete"
+            )
 
             for mode in modes:
+                tracker.note(
+                    f"seed {seed + 1}/{args.num_seeds}, model={model_name}, mode={mode}: "
+                    f"evaluating {len(sampled_ids)} instances"
+                )
                 # Multibin no-guard ablation: significance=1e-6 is below the minimum
                 # non-zero conformal p-value (1/n_cal), so all non-empty bins pass.
                 # This isolates the discretisation change from the guard effect.
                 # significance=0.0 is rejected by the API (must be in (0, 1]).
-                MULTIBIN_NOGUARD_SIG = 1e-6
+                multibin_noguard_sig = 1e-6
                 multibin_cfg = ExplainConfig(
-                    significance=MULTIBIN_NOGUARD_SIG, n_neighbors=DEFAULT_NEIGHBORS[0], merge_adjacent=False
+                    significance=multibin_noguard_sig, n_neighbors=DEFAULT_NEIGHBORS[0], merge_adjacent=False
                 )
-                for instance_id in sampled_ids:
+                for local_instance_idx, instance_id in enumerate(sampled_ids, start=1):
                     x_instance = x_test[instance_id : instance_id + 1]
 
                     # Standard binary baseline via public API.
@@ -721,7 +927,7 @@ def main() -> None:
                         mb_start = time.perf_counter()
                         mb_expl = wrapper.explain_guarded_factual(
                             x_instance,
-                            significance=MULTIBIN_NOGUARD_SIG,
+                            significance=multibin_noguard_sig,
                             n_neighbors=DEFAULT_NEIGHBORS[0],
                             merge_adjacent=False,
                             normalize_guard=True,
@@ -802,10 +1008,18 @@ def main() -> None:
                             ("multibin_noguard", multibin_rows, mb_runtime_ms),
                         ):
                             rule_count = len(rows_)
-                            violation_rate = float(np.mean([not r["plausibility_flag"] for r in rows_])) if rows_ else 0.0
+                            constraint_rows = [
+                                r for r in rows_
+                                if int(r["feature"]) in (0, 1)
+                            ]
+                            violation_rate = (
+                                float(np.mean([not r["plausibility_flag"] for r in constraint_rows]))
+                                if constraint_rows else 0.0
+                            )
                             fraction_nonempty = 1.0 if rule_count > 0 else 0.0
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "rule_count", "value": float(rule_count)})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "violation_rate", "value": violation_rate})
+                            metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "constraint_rule_count", "value": float(len(constraint_rows))})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "fraction_nonempty", "value": fraction_nonempty})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": method, "mode": mode, "significance": cfg.significance, "metric": "runtime_ms", "value": float(rt)})
 
@@ -818,8 +1032,26 @@ def main() -> None:
                                 metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "guarded", "mode": mode, "significance": cfg.significance, "metric": "unguarded_point_in_guarded_interval", "value": float(value)})
                             for value in g_in_u:
                                 metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(instance_id), "method": "standard", "mode": mode, "significance": cfg.significance, "metric": "guarded_point_in_unguarded_interval", "value": float(value)})
+                    tracker.advance(
+                        (
+                            f"seed {seed + 1}/{args.num_seeds}, model={model_name}, "
+                            f"mode={mode}, instance={local_instance_idx}/{len(sampled_ids)}"
+                        )
+                    )
+                    _flush_intermediate(
+                        f"seed {seed + 1}, model={model_name}, mode={mode}",
+                    )
+                _flush_intermediate(
+                    f"seed {seed + 1}, model={model_name}, mode={mode} complete",
+                    include_summary=True,
+                    force=True,
+                )
 
             if not args.paper_focused:
+                tracker.note(
+                    f"seed {seed + 1}/{args.num_seeds}, model={model_name}: "
+                    f"bootstrap stability starting ({args.bootstrap_draws} draws)"
+                )
                 boot_cfg = ExplainConfig(significance=0.1, n_neighbors=5, merge_adjacent=False)
                 reference_indices = sampled_ids
                 ref_guard_rules: Dict[str, List[List[str]]] = {}
@@ -858,9 +1090,32 @@ def main() -> None:
                         for local_idx, inst_id in enumerate(reference_indices):
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(inst_id), "method": "standard", "mode": mode, "significance": boot_cfg.significance, "metric": "stability_jaccard", "value": _jaccard(ref_std_rules[mode][local_idx], std_rules_boot[local_idx])})
                             metric_rows.append({"dataset": "scenario_a", "model": model_name, "seed": seed, "instance_id": int(inst_id), "method": "guarded", "mode": mode, "significance": boot_cfg.significance, "metric": "stability_jaccard", "value": _jaccard(ref_guard_rules[mode][local_idx], guard_rules_boot[local_idx])})
+                        tracker.advance(
+                            (
+                                f"seed {seed + 1}/{args.num_seeds}, model={model_name}, "
+                                f"bootstrap={draw + 1}/{args.bootstrap_draws}, mode={mode}"
+                            )
+                        )
+                        _flush_intermediate(
+                            (
+                                f"seed {seed + 1}, model={model_name}, "
+                                f"bootstrap={draw + 1}, mode={mode}"
+                            )
+                        )
+                _flush_intermediate(
+                    f"seed {seed + 1}, model={model_name} bootstrap complete",
+                    include_summary=True,
+                    force=True,
+                )
+            _flush_intermediate(
+                f"seed {seed + 1}, model={model_name} complete",
+                include_summary=True,
+                force=True,
+            )
 
-    per_instance_df = pd.DataFrame(all_rows)
-    metrics_df = pd.DataFrame(metric_rows)
+    _flush_intermediate("final checkpoint before final artifacts", include_summary=True, force=True)
+    per_instance_df = pd.DataFrame(all_rows).reindex(columns=PER_INSTANCE_COLUMNS)
+    metrics_df = pd.DataFrame(metric_rows).reindex(columns=METRIC_COLUMNS)
     summary_df = _build_summary_table(metrics_df)
     per_instance_path = output_dir / "per_instance_records.csv"
     metrics_path = output_dir / "metrics_records.csv"
@@ -870,6 +1125,20 @@ def main() -> None:
     summary_df.to_csv(summary_path, index=False)
     _plot_outputs(metrics_df, output_dir)
     _write_report(summary_df, run_cfg, output_dir / "report.md")
+    tracker.finish(f"final artifacts written to {output_dir}")
+    write_progress_snapshot(
+        progress_path,
+        tracker,
+        detail="completed",
+        extra={
+            "per_instance_rows": len(all_rows),
+            "metric_rows": len(metric_rows),
+            "summary_rows": len(summary_df),
+            "final_per_instance_records": str(per_instance_path),
+            "final_metrics_records": str(metrics_path),
+            "final_summary_metrics": str(summary_path),
+        },
+    )
     print(f"Wrote: {per_instance_path}")
     print(f"Wrote: {metrics_path}")
     print(f"Wrote: {summary_path}")

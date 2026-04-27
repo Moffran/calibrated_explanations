@@ -4,14 +4,15 @@ All scenario scripts import from here to avoid boilerplate duplication.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
 
 # ---------------------------------------------------------------------------
 # Guard configuration
@@ -24,6 +25,156 @@ class GuardConfig:
     n_neighbors: int = 5
     merge_adjacent: bool = False
     normalize_guard: bool = True
+
+
+def format_duration(seconds: float | None) -> str:
+    """Format elapsed or remaining seconds for terminal progress messages."""
+    if seconds is None or not np.isfinite(seconds):
+        return "unknown"
+    total_seconds = max(0, int(round(seconds)))
+    hours, rem = divmod(total_seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours:d}h {minutes:02d}m {secs:02d}s"
+    if minutes:
+        return f"{minutes:d}m {secs:02d}s"
+    return f"{secs:d}s"
+
+
+@dataclass
+class ProgressTracker:
+    """Small terminal progress helper for long guarded evaluation scripts."""
+
+    label: str
+    total: int
+    min_interval_seconds: float = 10.0
+    completed: int = 0
+    started_at: float = field(default_factory=time.perf_counter)
+    _last_print_at: float = field(init=False, default=0.0)
+
+    def start(self, detail: str = "") -> None:
+        """Print the first progress line."""
+        self._emit("start", detail, force=True)
+
+    def note(self, detail: str) -> None:
+        """Print an unconditional status note without changing progress."""
+        self._emit("status", detail, force=True)
+
+    def advance(self, detail: str = "", step: int = 1, *, force: bool = False) -> None:
+        """Advance completed work and print when enough time has passed."""
+        self.completed = min(max(self.completed + step, 0), max(self.total, 0))
+        self._emit("progress", detail, force=force)
+
+    def finish(self, detail: str = "") -> None:
+        """Mark all work complete and print the final progress line."""
+        self.completed = max(self.completed, self.total)
+        self._emit("done", detail, force=True)
+
+    def snapshot(self, detail: str = "") -> dict[str, Any]:
+        """Return a JSON-serializable progress snapshot."""
+        elapsed = time.perf_counter() - self.started_at
+        percent = 100.0 if self.total <= 0 else 100.0 * self.completed / self.total
+        rate = self.completed / elapsed if elapsed > 0 and self.completed > 0 else 0.0
+        remaining = max(self.total - self.completed, 0)
+        eta_seconds = remaining / rate if rate > 0 else None
+        return {
+            "label": self.label,
+            "completed": int(self.completed),
+            "total": int(self.total),
+            "remaining": int(remaining),
+            "percent": round(percent, 2),
+            "elapsed_seconds": round(elapsed, 3),
+            "eta_seconds": round(eta_seconds, 3) if eta_seconds is not None else None,
+            "detail": detail,
+        }
+
+    def _emit(self, kind: str, detail: str, *, force: bool) -> None:
+        now = time.perf_counter()
+        should_print = (
+            force
+            or self.completed >= self.total
+            or now - self._last_print_at >= self.min_interval_seconds
+        )
+        if not should_print:
+            return
+        self._last_print_at = now
+        snapshot = self.snapshot(detail)
+        percent = snapshot["percent"]
+        elapsed = format_duration(float(snapshot["elapsed_seconds"]))
+        eta = format_duration(snapshot["eta_seconds"])
+        parts = [
+            f"[{self.label}] {kind}:",
+            f"{snapshot['completed']}/{snapshot['total']}",
+            f"({percent:.1f}%)",
+            f"elapsed={elapsed}",
+            f"eta={eta}",
+        ]
+        if detail:
+            parts.append(f"- {detail}")
+        print(" ".join(parts), flush=True)
+
+
+def reset_intermediate_outputs(paths: Sequence[Path]) -> None:
+    """Remove stale intermediate files for a new guarded evaluation run."""
+    for path in paths:
+        if path.exists():
+            path.unlink()
+
+
+def append_intermediate_rows(
+    rows: Sequence[Mapping[str, Any]],
+    path: Path,
+    *,
+    columns: Sequence[str] | None = None,
+) -> int:
+    """Append row dictionaries to a CSV file and return the number written."""
+    if not rows:
+        return 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame = pd.DataFrame(rows)
+    if columns is not None:
+        frame = frame.reindex(columns=list(columns))
+    write_header = not path.exists()
+    frame.to_csv(path, mode="a", header=write_header, index=False)
+    return len(frame)
+
+
+def write_intermediate_frame(frame: pd.DataFrame, path: Path) -> None:
+    """Write a complete intermediate frame atomically where possible."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    frame.to_csv(tmp_path, index=False)
+    tmp_path.replace(path)
+
+
+def write_progress_snapshot(
+    path: Path,
+    tracker: ProgressTracker,
+    *,
+    detail: str = "",
+    extra: Mapping[str, Any] | None = None,
+) -> None:
+    """Write a small JSON file describing current guarded evaluation progress."""
+    payload = tracker.snapshot(detail)
+    if extra:
+        payload.update(dict(extra))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    tmp_path.replace(path)
+
+
+def dataframe_to_markdown(obj: Any, **kwargs: Any) -> str:
+    """Render a pandas object as markdown, with a CSV fallback."""
+    try:
+        return obj.to_markdown(**kwargs)
+    except ImportError:
+        index = bool(kwargs.get("index", True))
+        if isinstance(obj, pd.Series):
+            csv_text = obj.to_frame(name=obj.name or "value").to_csv()
+        else:
+            csv_text = obj.to_csv(index=index)
+        return f"```csv\n{csv_text.strip()}\n```"
 
 
 # Minimum absolute difference in mean fraction_removed between OOD and ID instances
@@ -215,10 +366,11 @@ def compute_ood_detection_metrics(
     scores = np.concatenate([1.0 - arr_id, 1.0 - arr_ood])
     labels = np.concatenate([np.zeros(len(arr_id)), np.ones(len(arr_ood))])
 
-    if len(np.unique(labels)) < 2:
-        auroc = float("nan")
-    else:
-        auroc = float(roc_auc_score(labels, scores))
+    auroc = (
+        float("nan")
+        if len(np.unique(labels)) < 2
+        else float(roc_auc_score(labels, scores))
+    )
 
     return {
         "auroc": auroc,

@@ -35,25 +35,30 @@ Paper-focused execution:
 from __future__ import annotations
 
 import argparse
+import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-
-from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
-
 from common_guarded import (
     GuardConfig,
+    ProgressTracker,
+    append_intermediate_rows,
     compute_ood_detection_metrics,
+    dataframe_to_markdown,
     extract_audit_rows,
     fisher_p_value_per_instance,
     make_gaussian_classification,
+    reset_intermediate_outputs,
+    write_progress_snapshot,
     write_report,
 )
+from sklearn.ensemble import RandomForestClassifier
+
+from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -78,6 +83,24 @@ N_CAL = 300
 N_TRAIN = 500
 N_ID_TEST = 100   # in-distribution test instances
 N_OOD_TEST = 100  # OOD test instances per shift level
+OOD_METRIC_COLUMNS = (
+    "seed",
+    "n_dim",
+    "shift_level",
+    "shift_magnitude",
+    "n_neighbors",
+    "normalize_guard",
+    "significance",
+    "auroc",
+    "fpr_at_significance",
+    "n_id",
+    "n_ood",
+    "median_combined_p_id",
+    "median_combined_p_ood",
+    "n_id_intervals",
+    "runtime_ms_per_instance",
+    "error",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +122,6 @@ def _run_one_config(
     """Explain both ID and OOD sets with cfg; return detection metrics dict."""
     x_all = np.vstack([x_id, x_ood])
     n_id = len(x_id)
-    n_ood = len(x_ood)
 
     t0 = time.perf_counter()
     guarded_expl = wrapper.explain_guarded_factual(
@@ -155,7 +177,7 @@ def _plot_auroc_by_dim_and_shift(df: pd.DataFrame, out_dir: Path) -> None:
     fig, axes = plt.subplots(1, len(neighbors), figsize=(4 * len(neighbors), 4), sharey=True)
     if len(neighbors) == 1:
         axes = [axes]
-    for ax, nn in zip(axes, neighbors):
+    for ax, nn in zip(axes, neighbors, strict=True):
         sub = df[(df["n_neighbors"] == nn) & (df["normalize_guard"])]
         for sl in shift_levels:
             grp = sub[sub["shift_level"] == sl].groupby("n_dim")["auroc"].mean().reset_index()
@@ -255,6 +277,15 @@ def parse_args() -> argparse.Namespace:
             "stronger in-large evidence."
         ),
     )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=1,
+        help=(
+            "Write partial CSV/progress artifacts after this many completed "
+            "grid configurations. Set to 0 to write only at dimension boundaries."
+        ),
+    )
     parser.add_argument("--quick", action="store_true", help="Fast smoke-test mode.")
     return parser.parse_args()
 
@@ -300,11 +331,91 @@ def main() -> None:
 
     out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+    partial_csv_path = out_dir / "ood_metrics.partial.csv"
+    progress_path = out_dir / "progress.json"
+    reset_intermediate_outputs([partial_csv_path, progress_path])
+
+    run_cfg = {
+        "num_seeds": args.num_seeds,
+        "n_train": n_train,
+        "n_cal": n_cal,
+        "n_id_test": n_id_test,
+        "n_ood_test": n_ood_test,
+        "n_neighbors": list(n_neighbors_grid),
+        "n_dim": list(n_dim_grid),
+        "shift_levels": dict(shift_levels),
+        "normalize_guard": list(normalize_grid),
+        "significance": DEFAULT_SIGNIFICANCE,
+        "paper_focused": bool(args.paper_focused),
+        "large_profile": bool(args.large),
+        "scenario": "B",
+        "checkpoint_interval": args.checkpoint_interval,
+        "intermediate_outputs": {
+            "ood_metrics": str(partial_csv_path),
+            "progress": str(progress_path),
+        },
+    }
+    (out_dir / "run_config.json").write_text(json.dumps(run_cfg, indent=2), encoding="utf-8")
 
     rows: List[Dict] = []
+    total_configs = (
+        args.num_seeds
+        * len(n_dim_grid)
+        * len(shift_levels)
+        * len(n_neighbors_grid)
+        * len(normalize_grid)
+    )
+    tracker = ProgressTracker("Scenario B", total_configs)
+    tracker.start(
+        (
+            f"seeds={args.num_seeds}, dims={len(n_dim_grid)}, "
+            f"shifts={len(shift_levels)}, neighbors={len(n_neighbors_grid)}, "
+            f"normalize_options={len(normalize_grid)}, output_dir={out_dir}"
+        )
+    )
+    write_progress_snapshot(
+        progress_path,
+        tracker,
+        detail="started",
+        extra={"metric_rows": 0, "partial_ood_metrics": str(partial_csv_path)},
+    )
+
+    last_rows_checkpoint = 0
+    last_progress_checkpoint = 0
+
+    def _flush_intermediate(detail: str, *, force: bool = False) -> None:
+        nonlocal last_rows_checkpoint, last_progress_checkpoint
+        if (
+            not force
+            and (
+                args.checkpoint_interval <= 0
+                or tracker.completed - last_progress_checkpoint < args.checkpoint_interval
+            )
+        ):
+            return
+        append_intermediate_rows(
+            rows[last_rows_checkpoint:],
+            partial_csv_path,
+            columns=OOD_METRIC_COLUMNS,
+        )
+        last_rows_checkpoint = len(rows)
+        last_progress_checkpoint = tracker.completed
+        write_progress_snapshot(
+            progress_path,
+            tracker,
+            detail=detail,
+            extra={
+                "metric_rows": len(rows),
+                "partial_ood_metrics": str(partial_csv_path),
+            },
+        )
 
     for seed in range(args.num_seeds):
+        tracker.note(f"seed {seed + 1}/{args.num_seeds}: starting")
         for n_dim in n_dim_grid:
+            tracker.note(
+                f"seed {seed + 1}/{args.num_seeds}, n_dim={n_dim}: fit/calibrate starting"
+            )
             # Build calibration and training data from the base Gaussian distribution
             x_all, y_all = make_gaussian_classification(
                 n=n_train + n_cal + n_id_test, n_dim=n_dim, seed=seed * 100 + n_dim
@@ -320,6 +431,9 @@ def main() -> None:
             )
             wrapper = ensure_ce_first_wrapper(model)
             fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
+            tracker.note(
+                f"seed {seed + 1}/{args.num_seeds}, n_dim={n_dim}: fit/calibrate complete"
+            )
 
             for shift_name, shift_magnitude in shift_levels.items():
                 shift_vec = _build_shift_vector(shift_magnitude, n_dim)
@@ -352,8 +466,10 @@ def main() -> None:
                                 "runtime_ms_per_instance": float("nan"),
                                 "error": str(exc),
                             }
+                        else:
+                            metrics["error"] = ""
 
-                        rows.append({
+                        row = {
                             "seed": seed,
                             "n_dim": n_dim,
                             "shift_level": shift_name,
@@ -362,9 +478,30 @@ def main() -> None:
                             "normalize_guard": normalize,
                             "significance": DEFAULT_SIGNIFICANCE,
                             **metrics,
-                        })
+                        }
+                        rows.append(row)
+                        auroc = row.get("auroc")
+                        auroc_text = "nan" if pd.isna(auroc) else f"{float(auroc):.3f}"
+                        tracker.advance(
+                            (
+                                f"seed {seed + 1}/{args.num_seeds}, n_dim={n_dim}, "
+                                f"shift={shift_name}, n_neighbors={cfg.n_neighbors}, "
+                                f"normalize={normalize}, auroc={auroc_text}"
+                            )
+                        )
+                        _flush_intermediate(
+                            (
+                                f"seed {seed + 1}, n_dim={n_dim}, shift={shift_name}, "
+                                f"n_neighbors={cfg.n_neighbors}, normalize={normalize}"
+                            )
+                        )
+            _flush_intermediate(
+                f"seed {seed + 1}, n_dim={n_dim} complete",
+                force=True,
+            )
 
-    df = pd.DataFrame(rows)
+    _flush_intermediate("final checkpoint before final artifacts", force=True)
+    df = pd.DataFrame(rows).reindex(columns=OOD_METRIC_COLUMNS)
     csv_path = out_dir / "ood_metrics.csv"
     df.to_csv(csv_path, index=False)
     print(f"Wrote: {csv_path}")
@@ -441,7 +578,7 @@ def main() -> None:
         (
             "AUROC by shift level and dimensionality",
             f"Mean AUROC on the paper-facing slice:\n\n"
-            f"{by_shift.to_markdown()}\n\n"
+            f"{dataframe_to_markdown(by_shift)}\n\n"
             "AUROC above 0.80 for moderate or extreme shift indicates useful "
             "separation. AUROC near 0.50 indicates that the guard is close to "
             "random on this synthetic shift task.",
@@ -450,7 +587,7 @@ def main() -> None:
             "Interval-level rejection rate on in-distribution rows",
             f"Mean rejection rate at significance={DEFAULT_SIGNIFICANCE} on the "
             f"paper-facing slice:\n\n"
-            f"{fpr_by_dim.to_markdown()}\n\n"
+            f"{dataframe_to_markdown(fpr_by_dim)}\n\n"
             f"We flag configurations where the empirical interval-level rejection "
             f"rate exceeds {FPR_TOLERANCE_FACTOR:.1f} times the nominal threshold "
             f"({fpr_threshold:.3f}). "
@@ -482,6 +619,17 @@ def main() -> None:
         out_dir / "report.md",
         "Scenario B: OOD Detection Quality",
         report_sections,
+    )
+    tracker.finish(f"final artifacts written to {out_dir}")
+    write_progress_snapshot(
+        progress_path,
+        tracker,
+        detail="completed",
+        extra={
+            "metric_rows": len(rows),
+            "final_ood_metrics": str(csv_path),
+            "report": str(out_dir / "report.md"),
+        },
     )
     print(f"Wrote: {out_dir / 'report.md'}")
 

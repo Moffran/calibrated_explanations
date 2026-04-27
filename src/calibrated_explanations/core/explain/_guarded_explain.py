@@ -713,8 +713,11 @@ def guarded_explain(
     # ------------------------------------------------------------------ #
     # Accumulate all perturbed instances for a single batched prediction call.
     perturbed_rows: list[np.ndarray] = []  # each row is a 1D feature vector
-    # Metadata: (inst_idx, feat_idx, bin_idx, lo, hi, p_val, rep, adjusted_sig, is_factual)
-    pert_metadata: list[tuple] = []
+    # Metadata: [inst_idx, feat_idx, bin_idx, lo, hi, p_val, rep, adjusted_sig, is_factual]
+    # p_val is None for rows whose guard query is deferred to the batch below.
+    pert_metadata: list[list] = []
+    # Indices into perturbed_rows that need a guard query (non-empty bins + categoricals).
+    _guard_indices: list[int] = []
 
     # Cache per-feature bin lists (shared across instances for numerical features).
     feature_disc_bins: dict[int, list] = {}
@@ -727,6 +730,7 @@ def guarded_explain(
             else:
                 feature_disc_bins[f] = []
 
+    # Phase 1: collect all perturbed rows; defer guard queries to a single batch call.
     for inst_idx in range(n_instances):
         x_instance = x[inst_idx]
 
@@ -743,32 +747,12 @@ def guarded_explain(
                 for val in feature_values:
                     x_pert = x_instance.copy()
                     x_pert[f] = val
-                    # Guard p-value for this categorical value
-                    p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-                    conforming = p_val >= significance
                     is_factual = bool(val == x_instance[f])
-
-                    total_bins_tested += 1
-                    if conforming:
-                        total_bins_conforming += 1
-                    else:
-                        total_bins_nonconforming += 1
-                        if is_factual:
-                            total_factual_bins_nonconforming += 1
-
+                    _guard_indices.append(len(perturbed_rows))
                     perturbed_rows.append(x_pert)
                     pert_metadata.append(
-                        (
-                            inst_idx,
-                            f,
-                            "cat",
-                            -np.inf,
-                            np.inf,
-                            p_val,
-                            val,  # Removed float(val) cast to prevent string category crashes
-                            significance,
-                            is_factual,
-                        )
+                        # val cast kept absent to prevent string category crashes
+                        [inst_idx, f, "cat", -np.inf, np.inf, None, val, significance, is_factual]
                     )
             else:
                 disc_bins = feature_disc_bins.get(f, [])
@@ -789,7 +773,7 @@ def guarded_explain(
                         is_factual = (cur > lo) and (cur <= hi)
 
                     if feat_vals.size == 0:
-                        # Empty bin: reject unconditionally
+                        # Empty bin: reject unconditionally, no guard query needed
                         if verbose:
                             warnings.warn(
                                 f"Feature {f}, bin ({lo}, {hi}] has no calibration "
@@ -805,47 +789,46 @@ def guarded_explain(
                             representative = float(lo)
                         else:
                             representative = float((lo + hi) / 2)
-                        p_val = 0.0
                         x_pert = x_instance.copy()
                         x_pert[f] = representative
-
+                        perturbed_rows.append(x_pert)
+                        pert_metadata.append(
+                            [inst_idx, f, b_idx, lo, hi, 0.0, representative, significance, is_factual]
+                        )
                     else:
-                        # Non-empty bin: single median probe
+                        # Non-empty bin: queue for batch guard query
                         representative = float(np.median(feat_vals))
                         x_pert = x_instance.copy()
                         x_pert[f] = representative
-                        p_val = float(guard.p_values(x_pert.reshape(1, -1))[0])
-
-                    conforming = p_val >= significance
-
-                    total_bins_tested += 1
-                    if conforming:
-                        total_bins_conforming += 1
-                    else:
-                        total_bins_nonconforming += 1
-                        if is_factual:
-                            total_factual_bins_nonconforming += 1
-
-                    perturbed_rows.append(x_pert)
-                    pert_metadata.append(
-                        (
-                            inst_idx,
-                            f,
-                            b_idx,
-                            lo,
-                            hi,
-                            p_val,
-                            representative,
-                            significance,
-                            is_factual,
+                        _guard_indices.append(len(perturbed_rows))
+                        perturbed_rows.append(x_pert)
+                        pert_metadata.append(
+                            [inst_idx, f, b_idx, lo, hi, None, representative, significance, is_factual]
                         )
-                    )
+
+    # Batch guard queries: single KNN call for all non-empty bins and categoricals.
+    if _guard_indices:
+        _guard_batch = np.array([perturbed_rows[i] for i in _guard_indices])
+        _batch_p_vals = guard.p_values(_guard_batch)
+        for _k, _row_idx in enumerate(_guard_indices):
+            pert_metadata[_row_idx][5] = float(_batch_p_vals[_k])
+
+    # Tally conformity statistics from the completed batch.
+    for meta in pert_metadata:
+        _p, _sig, _is_f = meta[5], meta[7], meta[8]
+        total_bins_tested += 1
+        if _p >= _sig:
+            total_bins_conforming += 1
+        else:
+            total_bins_nonconforming += 1
+            if _is_f:
+                total_factual_bins_nonconforming += 1
 
     # ------------------------------------------------------------------ #
     # Phase 2: Batched calibrated predictions for all perturbed instances
     # ------------------------------------------------------------------ #
     if perturbed_rows:
-        x_perturbed = np.vstack([r.reshape(1, -1) for r in perturbed_rows])
+        x_perturbed = np.array(perturbed_rows)
 
         # Replicate per-instance thresholds if provided (probabilistic regression).
         # For scalar/tuple thresholds, pass through unchanged.
