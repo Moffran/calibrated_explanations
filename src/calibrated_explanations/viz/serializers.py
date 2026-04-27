@@ -23,6 +23,29 @@ from .plotspec import (
 PLOTSPEC_VERSION = "1.0.0"
 
 
+def _to_boundary_value(value: Any) -> Any:
+    """Return a JSON-friendly boundary value without changing canonical objects."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    item = getattr(value, "item", None)
+    if callable(item):
+        try:
+            return _to_boundary_value(item())
+        except Exception:  # adr002_allow
+            pass
+    tolist = getattr(value, "tolist", None)
+    if callable(tolist):
+        try:
+            return _to_boundary_value(tolist())
+        except Exception:  # adr002_allow
+            pass
+    if isinstance(value, dict):
+        return {str(k): _to_boundary_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_boundary_value(item) for item in value]
+    return value
+
+
 class PlotKindRegistry:
     """Registry of supported PlotSpec kinds and their validation requirements.
 
@@ -284,13 +307,15 @@ def triangular_plotspec_to_dict(spec: TriangularPlotSpec) -> Dict[str, Any]:
         "kind": spec.kind,
         "mode": spec.mode,
         "triangular": {
-            "proba": spec.triangular.proba if spec.triangular else None,
-            "uncertainty": spec.triangular.uncertainty if spec.triangular else None,
-            "rule_proba": list(spec.triangular.rule_proba)
-            if spec.triangular and spec.triangular.rule_proba
+            "proba": _to_boundary_value(spec.triangular.proba) if spec.triangular else None,
+            "uncertainty": _to_boundary_value(spec.triangular.uncertainty)
+            if spec.triangular
             else None,
-            "rule_uncertainty": list(spec.triangular.rule_uncertainty)
-            if spec.triangular and spec.triangular.rule_uncertainty
+            "rule_proba": _to_boundary_value(spec.triangular.rule_proba)
+            if spec.triangular and spec.triangular.rule_proba is not None
+            else None,
+            "rule_uncertainty": _to_boundary_value(spec.triangular.rule_uncertainty)
+            if spec.triangular and spec.triangular.rule_uncertainty is not None
             else None,
             "num_to_show": spec.triangular.num_to_show if spec.triangular else 50,
             "is_probabilistic": spec.triangular.is_probabilistic if spec.triangular else True,
@@ -324,24 +349,31 @@ def global_plotspec_to_dict(spec: GlobalPlotSpec) -> Dict[str, Any]:
         "kind": spec.kind,
         "mode": spec.mode,
         "global_entries": {
-            "proba": list(spec.global_entries.proba)
+            "proba": _to_boundary_value(spec.global_entries.proba)
             if spec.global_entries and spec.global_entries.proba is not None
             else None,
-            "predict": list(spec.global_entries.predict)
+            "predict": _to_boundary_value(spec.global_entries.predict)
             if spec.global_entries and spec.global_entries.predict is not None
             else None,
-            "low": list(spec.global_entries.low)
+            "low": _to_boundary_value(spec.global_entries.low)
             if spec.global_entries and spec.global_entries.low is not None
             else None,
-            "high": list(spec.global_entries.high)
+            "high": _to_boundary_value(spec.global_entries.high)
             if spec.global_entries and spec.global_entries.high is not None
             else None,
-            "uncertainty": list(spec.global_entries.uncertainty)
+            "uncertainty": _to_boundary_value(spec.global_entries.uncertainty)
             if spec.global_entries and spec.global_entries.uncertainty is not None
             else None,
-            "y_test": list(spec.global_entries.y_test)
+            "y_test": _to_boundary_value(spec.global_entries.y_test)
             if spec.global_entries and spec.global_entries.y_test is not None
             else None,
+            "threshold": _to_boundary_value(spec.global_entries.threshold)
+            if spec.global_entries
+            else None,
+            "class_labels": _to_boundary_value(spec.global_entries.class_labels)
+            if spec.global_entries
+            else None,
+            "is_regularized": spec.global_entries.is_regularized if spec.global_entries else None,
         }
         if spec.global_entries
         else None,
@@ -520,6 +552,9 @@ def global_plotspec_from_dict(obj: Dict[str, Any]) -> GlobalPlotSpec:
             if inner.get("uncertainty") is not None
             else None,
             "y_test": list(inner.get("y_test")) if inner.get("y_test") is not None else None,
+            "threshold": inner.get("threshold"),
+            "class_labels": inner.get("class_labels"),
+            "is_regularized": inner.get("is_regularized"),
         }
         from .plotspec import GlobalSpec
 
@@ -530,6 +565,9 @@ def global_plotspec_from_dict(obj: Dict[str, Any]) -> GlobalPlotSpec:
             high=ge["high"],
             uncertainty=ge["uncertainty"],
             y_test=ge["y_test"],
+            threshold=ge["threshold"],
+            class_labels=ge["class_labels"],
+            is_regularized=ge["is_regularized"],
         )
 
     sb = None

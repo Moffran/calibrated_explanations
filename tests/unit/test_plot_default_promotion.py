@@ -7,7 +7,7 @@ import pytest
 from calibrated_explanations import plotting
 
 
-def _explanation_without_explainer() -> SimpleNamespace:
+def explanation_without_explainer() -> SimpleNamespace:
     return SimpleNamespace(
         prediction={"classes": 0},
         y_minmax=(0.0, 1.0),
@@ -88,7 +88,7 @@ def test_should_keep_legacy_default_for_chain_based_plotters_when_chain_prefers_
     )
 
     plot_func = getattr(plotting, plot_func_name)
-    plot_func(_explanation_without_explainer(), use_legacy=None, **call_kwargs)
+    plot_func(explanation_without_explainer(), use_legacy=None, **call_kwargs)
 
     assert legacy_calls
 
@@ -125,7 +125,7 @@ def test_should_select_plotspec_for_chain_based_plotters_when_style_override_req
     else:
         common["feature_weights"] = {"predict": [0.5], "low": [0.4], "high": [0.6]}
 
-    plot_func(_explanation_without_explainer(), **common)
+    plot_func(explanation_without_explainer(), **common)
 
     assert captured_styles == ["plot_spec.default"]
 
@@ -165,7 +165,7 @@ def test_should_use_plotspec_first_when_no_explainer_is_available(
     else:
         common["feature_weights"] = {"predict": [0.5], "low": [0.4], "high": [0.6]}
 
-    plot_func(_explanation_without_explainer(), **common)
+    plot_func(explanation_without_explainer(), **common)
 
     assert captured_styles == ["plot_spec.default"]
     assert not legacy_calls

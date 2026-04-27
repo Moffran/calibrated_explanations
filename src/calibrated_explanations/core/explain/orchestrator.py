@@ -346,6 +346,7 @@ class ExplanationOrchestrator:
         import numpy as np
 
         from ...core.discretizer_config import (
+            discretizer_is_cached,
             instantiate_discretizer,
             setup_discretized_data,
             validate_discretizer_choice,
@@ -367,6 +368,26 @@ class ExplanationOrchestrator:
                     "allowed": ("observed", "prediction"),
                 },
             )
+
+        # Validate discretizer choice early so the cache check uses the canonical name.
+        discretizer = validate_discretizer_choice(discretizer, self.explainer.mode)
+
+        if features_to_ignore is None:
+            features_to_ignore = []
+
+        not_to_discretize = np.union1d(
+            np.union1d(self.explainer.categorical_features, self.explainer.features_to_ignore),
+            features_to_ignore,
+        )
+
+        # Early cache check: skip the expensive predict(x_cal) call when the
+        # discretizer type is already correct and discretized data is ready.
+        old_discretizer = self.explainer.discretizer
+        if discretizer_is_cached(discretizer, old_discretizer) and hasattr(
+            self.explainer, "discretized_X_cal"
+        ):
+            return
+
         condition_labels = None
         if selected_condition_source == "prediction":
             predictions = self.explainer.predict(
@@ -402,20 +423,6 @@ class ExplanationOrchestrator:
                 else:
                     x_cal = x_cal[mask]
                     condition_labels = condition_labels[mask]
-
-        # Validate and potentially default the discretizer choice
-        discretizer = validate_discretizer_choice(discretizer, self.explainer.mode)
-
-        if features_to_ignore is None:
-            features_to_ignore = []
-
-        not_to_discretize = np.union1d(
-            np.union1d(self.explainer.categorical_features, self.explainer.features_to_ignore),
-            features_to_ignore,
-        )
-
-        # Store old discretizer to check if we can cache
-        old_discretizer = self.explainer.discretizer
 
         # Instantiate the discretizer (may return cached instance if type matches)
         self.explainer.discretizer = instantiate_discretizer(

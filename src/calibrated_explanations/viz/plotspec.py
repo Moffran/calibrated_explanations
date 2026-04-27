@@ -144,6 +144,9 @@ class GlobalSpec:
     high: Sequence[float] | None = None
     uncertainty: Sequence[float] | None = None
     y_test: Sequence[Any] | None = None
+    threshold: Any | None = None
+    class_labels: Any | None = None
+    is_regularized: bool | None = None
 
 
 @dataclass

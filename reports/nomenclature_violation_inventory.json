@@ -869,7 +869,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1758,
+      "line": 1760,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -878,7 +878,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1797,
+      "line": 1799,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -887,7 +887,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1867,
+      "line": 1869,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -896,7 +896,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 2130,
+      "line": 2132,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"

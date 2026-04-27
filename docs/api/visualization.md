@@ -32,6 +32,19 @@ Task 9 in `docs/improvement/v0.11.2_plan.md` is the active semantic/visual
 mending task for the opt-in PlotSpec path. The default-promotion question is
 re-opened in v0.11.3 Task 6 only after that mending work is complete.
 
+## v0.11.2 Task 9 mending status
+
+The opt-in PlotSpec path now has semantic parity coverage for all six planned
+families: factual probabilistic, factual regression, alternative probabilistic,
+alternative regression, triangular, and global. Triangular and global PlotSpec
+dataclasses render through concrete matplotlib adapter branches rather than
+placeholder primitives. Global PlotSpec payloads preserve threshold and
+class-label semantics so thresholded and class-conditioned axis labels remain
+available to renderers.
+
+This does not change the default route. Human side-by-side review and sign-off
+remain required before any later default-promotion decision.
+
 ## Core modules
 
 - `src/calibrated_explanations/viz/plotspec.py` – PlotSpec dataclasses and

@@ -24,6 +24,14 @@ UNIX_ABS_RE = re.compile(
 DEFAULT_SCAN_ROOTS = ("reports",)
 DEFAULT_EXTRA_ARTIFACTS = (".pytest_matplotlib_debug.json",)
 
+BINARY_SKIP_SUFFIXES = frozenset({
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico",
+    ".svg", ".pdf", ".eps",
+    ".bin", ".pkl", ".pickle", ".npz", ".npy",
+    ".mp4", ".avi", ".mov",
+    ".zip", ".tar", ".gz", ".bz2",
+})
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -71,8 +79,11 @@ def _iter_default_targets(repo_root: Path) -> Iterable[Path]:
     for rel in DEFAULT_SCAN_ROOTS:
         root = repo_root / rel
         if root.is_dir():
-            yield from sorted(path for path in root.rglob("*") if path.is_file())
-        elif root.is_file():
+            yield from sorted(
+                path for path in root.rglob("*")
+                if path.is_file() and path.suffix.lower() not in BINARY_SKIP_SUFFIXES
+            )
+        elif root.is_file() and root.suffix.lower() not in BINARY_SKIP_SUFFIXES:
             yield root
 
     for rel in DEFAULT_EXTRA_ARTIFACTS:
@@ -90,8 +101,11 @@ def _resolve_targets(repo_root: Path, paths: list[str]) -> list[Path]:
     for raw in paths:
         candidate = (repo_root / raw).resolve()
         if candidate.is_dir():
-            resolved.extend(sorted(path for path in candidate.rglob("*") if path.is_file()))
-        elif candidate.is_file():
+            resolved.extend(sorted(
+                path for path in candidate.rglob("*")
+                if path.is_file() and path.suffix.lower() not in BINARY_SKIP_SUFFIXES
+            ))
+        elif candidate.is_file() and candidate.suffix.lower() not in BINARY_SKIP_SUFFIXES:
             resolved.append(candidate)
     return list(dict.fromkeys(resolved))
 
@@ -162,6 +176,8 @@ def _scan_json_value(
 
 def scan_path(path: Path, repo_root: Path) -> list[Violation]:
     """Scan a single artifact for local absolute paths."""
+    if path.suffix.lower() in BINARY_SKIP_SUFFIXES:
+        return []
     artifact = _normalize_rel(path, repo_root)
     text = path.read_text(encoding="utf-8", errors="replace")
     violations: list[Violation] = []
