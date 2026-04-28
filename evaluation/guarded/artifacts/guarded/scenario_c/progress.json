@@ -1,0 +1,10 @@
+{
+  "label": "scenario_c",
+  "completed": 49,
+  "total": 79,
+  "remaining": 30,
+  "percent": 62.03,
+  "elapsed_seconds": 698.581,
+  "eta_seconds": 427.703,
+  "detail": "regression/bank8fm"
+}

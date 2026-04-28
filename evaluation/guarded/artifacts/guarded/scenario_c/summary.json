@@ -1,0 +1,47 @@
+{
+  "scenario": "C",
+  "description": "Real-dataset guard retention benchmark",
+  "primary_significance": 0.1,
+  "n_datasets_total": 79,
+  "n_datasets_skipped": 30,
+  "n_datasets_errored": 1,
+  "config": {
+    "num_seeds": 3,
+    "calibration_sizes": [
+      100,
+      300,
+      500
+    ],
+    "significance_levels": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "n_neighbors": 5,
+    "normalize_guard": true,
+    "merge_adjacent": false
+  },
+  "task_summary": [
+    {
+      "task": "binary",
+      "mean_standard_rules_per_instance": 16.0,
+      "mean_guarded_rules_per_instance": 14.668444444444443,
+      "guard_retention_rate": 0.17755850468883855,
+      "fraction_instances_fully_filtered": 0.08733333333333335
+    },
+    {
+      "task": "multiclass",
+      "mean_standard_rules_per_instance": 16.0,
+      "mean_guarded_rules_per_instance": 12.985555555555555,
+      "guard_retention_rate": 0.1657073413916094,
+      "fraction_instances_fully_filtered": 0.06194444444444444
+    },
+    {
+      "task": "regression",
+      "mean_standard_rules_per_instance": 16.0,
+      "mean_guarded_rules_per_instance": 6.815659722222222,
+      "guard_retention_rate": 0.11825916557211284,
+      "fraction_instances_fully_filtered": 0.050972222222222224
+    }
+  ]
+}

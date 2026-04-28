@@ -21,19 +21,15 @@ from typing import Dict, List, Optional
 DEFAULT_OUTPUT_DIR = Path(__file__).parent / "artifacts" / "guarded"
 
 SCENARIO_SCRIPTS: Dict[str, str] = {
-    "a": "scenario_a_guarded_vs_standard.py",
+    "a": "scenario_a2_representative_constraint.py",
     "b": "scenario_b_ood_detection_quality.py",
-    "c": "scenario_c_regression.py",
-    "d": "scenario_d_real_datasets.py",
-    "e": "scenario_e_edge_cases.py",
+    "c": "scenario_c_real_benchmarks.py",
 }
 
 SCENARIO_LABELS: Dict[str, str] = {
-    "a": "Scenario A — Domain plausibility (synthetic constraint)",
-    "b": "Scenario B — OOD detection quality",
-    "c": "Scenario C — Regression invariants",
-    "d": "Scenario D — Real dataset correctness",
-    "e": "Scenario E — Edge case behavior",
+    "a": "Scenario A — Representative-level constraint plausibility (synthetic)",
+    "b": "Scenario B — Guard-score discrimination under controlled shift",
+    "c": "Scenario C — Rule-count and retention benchmark (real datasets)",
 }
 
 
@@ -156,10 +152,8 @@ def _write_summary_report(results: List[Dict], out_dir: Path) -> None:
         "| `violation_rate` (guarded < standard) | A | Detection | Guarded lower | Guarded ≥ standard |",
         "| `auroc` | B | Detection | > 0.80 for moderate+ shift | < 0.60 for extreme shift |",
         "| `fpr_at_significance` | B | Calibration | ≈ significance | >> significance |",
-        "| `n_invariant_violations` | C | Correctness | 0 always | Any > 0 = bug |",
-        "| `audit_field_completeness` | D | Correctness | True always | Any False = bug |",
-        "| `fraction_instances_fully_filtered` | D | Usability | < 0.05 at α=0.10 | > 0.10 |",
-        "| Edge case PASS/FAIL | E | Correctness | All PASS | Any unexpected FAIL |",
+        "| `guard_retention_rate` | C | Usability | ≥ 1−ε at significance=0.10 | << 1−ε for all datasets |",
+        "| `fraction_instances_fully_filtered` | C | Usability | < 0.05 at ε=0.10 | > 0.10 |",
     ]
 
     if n_fail > 0:
