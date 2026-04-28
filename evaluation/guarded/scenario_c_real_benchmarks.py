@@ -47,6 +47,7 @@ import argparse
 import json
 import sys
 import traceback
+import warnings
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -667,6 +668,18 @@ def parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    # Suppress the advisory "predict not in [low, high]" UserWarning that CE emits
+    # when a perturbed-feature representative sits fractionally outside its conformal
+    # interval.  This is expected for probabilistic-regression threshold modes (p25/
+    # p50/p75) and for OOD perturbations that the guard already filters — it carries
+    # no information beyond what the guard metrics themselves capture.
+    warnings.filterwarnings(
+        "ignore",
+        message="Prediction invariant violated",
+        category=UserWarning,
+        module=r"calibrated_explanations",
+    )
+
     args = parse_args()
 
     if args.quick:
