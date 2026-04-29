@@ -32,12 +32,15 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 
 from ._conjunctions import ConjunctionState
 from .explanation import AlternativeExplanation, FactualExplanation
+
+if TYPE_CHECKING:
+    from calibrated_explanations.utils.distribution_guard import InDistributionGuard
 
 
 @dataclass
@@ -184,12 +187,17 @@ class GuardedFactualExplanation(FactualExplanation):
         feature_names: Optional[List[str]] = None,
         categorical_features: Optional[set] = None,
         verbose: bool = False,
+        guard: Optional["InDistributionGuard"] = None,
+        significance: float = 0.1,
     ):
         # Store guarded data BEFORE super().__init__ which calls get_rules()
         self._guarded_bins = guarded_bins or {}
         self._guarded_feature_names = feature_names or []
         self._guarded_categorical = categorical_features or set()
         self._guarded_verbose = bool(verbose)
+        self._guard = guard
+        self._significance = significance
+        self._conjunction_audit: List[Dict[str, Any]] = []
         super().__init__(
             calibrated_explanations,
             index,
@@ -326,6 +334,64 @@ class GuardedFactualExplanation(FactualExplanation):
         self.has_rules = True
         return self.rules
 
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
+        """Build conjunctions then guard-filter each by its joint representative perturbation."""
+        super().add_conjunctions(n_top_features, max_rule_size, **kwargs)
+        if self._guard is not None and self.has_conjunctive_rules:
+            self._filter_conjunctions_by_guard()
+        return self
+
+    def _filter_conjunctions_by_guard(self) -> None:
+        """Remove conjunctions whose joint representative perturbation fails the KNN guard."""
+        state = self.conjunctive_rules
+        n_rules = len(state["rule"])
+        bad_indices: set = set()
+        audit_records: List[Dict[str, Any]] = []
+
+        for i in range(n_rules):
+            if not state["is_conjunctive"][i]:
+                continue
+            features = state["feature"][i]
+            if not isinstance(features, list):
+                features = [features]
+            sampled_vals = state["sampled_values"][i] or []
+
+            x_pert = self.x_test.copy()
+            representatives: List[float] = []
+            for j, feat_idx in enumerate(features):
+                if j < len(sampled_vals) and sampled_vals[j] is not None:
+                    vals = np.asarray(sampled_vals[j], dtype=float).ravel()
+                    vals = vals[np.isfinite(vals)]
+                    rep = float(np.median(vals)) if len(vals) > 0 else float(x_pert[feat_idx])
+                else:
+                    rep = float(x_pert[feat_idx])
+                x_pert[feat_idx] = rep
+                representatives.append(rep)
+
+            p_val = float(self._guard.p_values(x_pert.reshape(1, -1))[0])
+            conforming = p_val >= self._significance
+            if not conforming:
+                bad_indices.add(i)
+
+            audit_records.append({
+                "type": "conjunction",
+                "features": list(features),
+                "p_value": p_val,
+                "conforming": conforming,
+                "emitted": conforming,
+                "emission_reason": "emitted" if conforming else "removed_guard",
+            })
+
+        self._conjunction_audit = audit_records
+
+        if bad_indices:
+            for key in list(state.keys()):
+                val = state[key]
+                if isinstance(val, list) and len(val) == n_rules:
+                    state[key] = [v for idx, v in enumerate(val) if idx not in bad_indices]
+
+        self.has_conjunctive_rules = any(state.get("is_conjunctive", []))
+
     def get_guarded_audit(self) -> Dict[str, Any]:
         """Return guarded audit data for this factual explanation."""
         ignored = self.ignored_features_for_instance()
@@ -392,12 +458,22 @@ class GuardedFactualExplanation(FactualExplanation):
             ),
         }
 
-        return {
+        audit: Dict[str, Any] = {
             "mode": "factual",
             "instance_index": int(self.index),
             "summary": summary,
             "intervals": intervals,
         }
+        if self._conjunction_audit:
+            audit["conjunctions"] = self._conjunction_audit
+            audit["summary"]["conjunctions_tested"] = len(self._conjunction_audit)
+            audit["summary"]["conjunctions_guard_removed"] = sum(
+                1 for r in self._conjunction_audit if not r["conforming"]
+            )
+            audit["summary"]["conjunctions_emitted"] = sum(
+                1 for r in self._conjunction_audit if r["conforming"]
+            )
+        return audit
 
 
 class GuardedAlternativeExplanation(AlternativeExplanation):
@@ -438,12 +514,17 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
         feature_names: Optional[List[str]] = None,
         categorical_features: Optional[set] = None,
         verbose: bool = False,
+        guard: Optional["InDistributionGuard"] = None,
+        significance: float = 0.1,
     ):
         # Store guarded data BEFORE super().__init__ which calls get_rules()
         self._guarded_bins = guarded_bins or {}
         self._guarded_feature_names = feature_names or []
         self._guarded_categorical = categorical_features or set()
         self._guarded_verbose = bool(verbose)
+        self._guard = guard
+        self._significance = significance
+        self._conjunction_audit: List[Dict[str, Any]] = []
         super().__init__(
             calibrated_explanations,
             index,
@@ -544,6 +625,64 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
         self.has_rules = True
         return self.rules
 
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
+        """Build conjunctions then guard-filter each by its joint representative perturbation."""
+        super().add_conjunctions(n_top_features, max_rule_size, **kwargs)
+        if self._guard is not None and self.has_conjunctive_rules:
+            self._filter_conjunctions_by_guard()
+        return self
+
+    def _filter_conjunctions_by_guard(self) -> None:
+        """Remove conjunctions whose joint representative perturbation fails the KNN guard."""
+        state = self.conjunctive_rules
+        n_rules = len(state["rule"])
+        bad_indices: set = set()
+        audit_records: List[Dict[str, Any]] = []
+
+        for i in range(n_rules):
+            if not state["is_conjunctive"][i]:
+                continue
+            features = state["feature"][i]
+            if not isinstance(features, list):
+                features = [features]
+            sampled_vals = state["sampled_values"][i] or []
+
+            x_pert = self.x_test.copy()
+            representatives: List[float] = []
+            for j, feat_idx in enumerate(features):
+                if j < len(sampled_vals) and sampled_vals[j] is not None:
+                    vals = np.asarray(sampled_vals[j], dtype=float).ravel()
+                    vals = vals[np.isfinite(vals)]
+                    rep = float(np.median(vals)) if len(vals) > 0 else float(x_pert[feat_idx])
+                else:
+                    rep = float(x_pert[feat_idx])
+                x_pert[feat_idx] = rep
+                representatives.append(rep)
+
+            p_val = float(self._guard.p_values(x_pert.reshape(1, -1))[0])
+            conforming = p_val >= self._significance
+            if not conforming:
+                bad_indices.add(i)
+
+            audit_records.append({
+                "type": "conjunction",
+                "features": list(features),
+                "p_value": p_val,
+                "conforming": conforming,
+                "emitted": conforming,
+                "emission_reason": "emitted" if conforming else "removed_guard",
+            })
+
+        self._conjunction_audit = audit_records
+
+        if bad_indices:
+            for key in list(state.keys()):
+                val = state[key]
+                if isinstance(val, list) and len(val) == n_rules:
+                    state[key] = [v for idx, v in enumerate(val) if idx not in bad_indices]
+
+        self.has_conjunctive_rules = any(state.get("is_conjunctive", []))
+
     def get_guarded_audit(self) -> Dict[str, Any]:
         """Return guarded audit data for this alternative explanation."""
         ignored = self.ignored_features_for_instance()
@@ -610,9 +749,19 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
             ),
         }
 
-        return {
+        audit: Dict[str, Any] = {
             "mode": "alternative",
             "instance_index": int(self.index),
             "summary": summary,
             "intervals": intervals,
         }
+        if self._conjunction_audit:
+            audit["conjunctions"] = self._conjunction_audit
+            audit["summary"]["conjunctions_tested"] = len(self._conjunction_audit)
+            audit["summary"]["conjunctions_guard_removed"] = sum(
+                1 for r in self._conjunction_audit if not r["conforming"]
+            )
+            audit["summary"]["conjunctions_emitted"] = sum(
+                1 for r in self._conjunction_audit if r["conforming"]
+            )
+        return audit

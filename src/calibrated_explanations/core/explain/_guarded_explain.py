@@ -1144,6 +1144,8 @@ def guarded_explain(
             feature_names=feature_names,
             categorical_features=categorical_features,
             verbose=verbose,
+            guard=guard,
+            significance=significance,
         )
         container.explanations.append(expl)
 

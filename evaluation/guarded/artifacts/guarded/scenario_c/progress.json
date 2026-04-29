@@ -1,10 +1,10 @@
 {
   "label": "scenario_c",
-  "completed": 57,
+  "completed": 79,
   "total": 79,
-  "remaining": 22,
-  "percent": 72.15,
-  "elapsed_seconds": 6363.86,
-  "eta_seconds": 2456.227,
-  "detail": "regression/deltaE"
+  "remaining": 0,
+  "percent": 100.0,
+  "elapsed_seconds": 3011.921,
+  "eta_seconds": 0.0,
+  "detail": "regression/wizmir"
 }

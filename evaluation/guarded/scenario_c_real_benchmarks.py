@@ -10,11 +10,11 @@ enough to be practically useful across diverse real-world datasets?
 Primary metrics (representative-level, factual mode)
 ----------------------------------------------------
 - guard_retention_rate
-    intervals_emitted / intervals_tested.  The fraction of per-feature
-    candidate intervals whose representative perturbation passes the guard.
-    At significance=0.1 the guard should retain at least 90 % of in-distribution
-    candidates by construction; lower values indicate regions of sparse
-    calibration coverage or correlated features.
+    intervals_emitted / (intervals_emitted + guard_removed), computed over
+    factual bins only (design_excluded non-factual bins are excluded from both
+    numerator and denominator).  At significance=0.1 the guard should retain
+    at least 90 % of in-distribution candidates by construction; lower values
+    indicate regions of sparse calibration coverage or correlated features.
 
 - mean_guarded_rules_per_instance
     Mean intervals_emitted per test instance across the test set.  Directly
@@ -120,6 +120,7 @@ _RESULT_COLUMNS: Tuple[str, ...] = (
     "normalize_guard",
     "regression_mode",
     "threshold_value",
+    "explanation_type",
     "n_test_instances",
     "mean_standard_rules_per_instance",
     "mean_guarded_rules_per_instance",
@@ -170,15 +171,67 @@ def load_dataset_specs(quick: bool) -> List[Tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 def _count_standard_rules(explanations: Any) -> float:
-    """Return mean rule count per instance from a standard factual explanation batch."""
+    """Return mean rule count per instance from a factual or alternative explanation batch.
+
+    get_rules() returns the ConjunctionState payload dict (16 fixed schema keys).
+    len(dict) is always 16 — the actual per-instance rule list is rules["rule"].
+    """
     counts: List[int] = []
     for expl in explanations:
         try:
             rules = expl.get_rules()
-            counts.append(len(rules) if rules is not None else 0)
+            if rules is None:
+                counts.append(0)
+            elif isinstance(rules, dict):
+                counts.append(len(rules.get("rule", [])))
+            else:
+                counts.append(len(rules))
         except Exception:  # noqa: BLE001
             counts.append(0)
     return float(np.mean(counts)) if counts else float("nan")
+
+
+def _extract_guard_metrics(
+    instances: List[Dict[str, Any]],
+    n_test: int,
+    *,
+    explanation_type: str,
+) -> Tuple[float, float, float, int]:
+    """Compute guarded metrics from audit instance records.
+
+    For factual explanations the relevant bins are ``is_factual=True``; for
+    alternative explanations they are ``is_factual=False``.
+
+    Returns (mean_guarded_rules, guard_retention_rate,
+             fraction_fully_filtered, n_fully_filtered).
+    """
+    is_target = (explanation_type == "factual")  # True → factual bins; False → alt bins
+
+    total_emitted = 0
+    total_target_emitted = 0
+    total_target_guard_removed = 0
+    n_test_actual = len(instances) if instances else n_test
+    n_fully_filtered = 0
+
+    for inst in instances:
+        inst_emitted = inst["summary"].get("intervals_emitted", 0)
+        total_emitted += inst_emitted
+        if inst_emitted == 0:
+            n_fully_filtered += 1
+        for rec in inst.get("intervals", []):
+            if rec.get("is_factual", False) == is_target:
+                if rec.get("emitted", False):
+                    total_target_emitted += 1
+                elif rec.get("emission_reason") == "removed_guard":
+                    total_target_guard_removed += 1
+
+    mean_guarded_rules = total_emitted / max(1, n_test_actual)
+    factual_denom = total_target_emitted + total_target_guard_removed
+    guard_retention = (
+        total_target_emitted / factual_denom if factual_denom > 0 else float("nan")
+    )
+    fraction_filtered = n_fully_filtered / max(1, n_test_actual)
+    return mean_guarded_rules, guard_retention, fraction_filtered, n_fully_filtered
 
 
 def _evaluate_dataset(
@@ -297,7 +350,7 @@ def _evaluate_dataset(
                 ("p75", float(thresh_dict["p75"])),
             ]
         else:
-            regression_modes = [("N/A", None)]
+            regression_modes = [("cls", None)]
 
         for cal_size in effective_cal_sizes:
             x_cal, y_cal = subsample_calibration(
@@ -329,17 +382,25 @@ def _evaluate_dataset(
                 continue
 
             for reg_mode, threshold_val in regression_modes:
-                # Standard CE factual for this regression mode (threshold selects
-                # plain conformal vs. probabilistic regression).
+                # Standard CE rules: factual and alternative (shared model, same threshold).
                 try:
-                    std_explanations = wrapper.explain_factual(
+                    std_factual_expl = wrapper.explain_factual(
                         x_test, threshold=threshold_val
                     )
-                    mean_std_rules = _count_standard_rules(std_explanations)
+                    mean_std_factual = _count_standard_rules(std_factual_expl)
                 except Exception:  # noqa: BLE001
-                    mean_std_rules = float("nan")
+                    mean_std_factual = float("nan")
 
-                # Guarded CE — one run per (significance, n_neighbors) config
+                try:
+                    std_alt_expl = wrapper.explore_alternatives(
+                        x_test, threshold=threshold_val
+                    )
+                    mean_std_alt = _count_standard_rules(std_alt_expl)
+                except Exception:  # noqa: BLE001
+                    mean_std_alt = float("nan")
+
+                # Guarded CE — one run per (significance, n_neighbors) config,
+                # both factual and alternative.
                 for cfg in guard_configs:
                     safe_nn = min(cfg.n_neighbors, max(1, len(x_cal) - 1))
                     safe_cfg = GuardConfig(
@@ -348,8 +409,17 @@ def _evaluate_dataset(
                         merge_adjacent=cfg.merge_adjacent,
                         normalize_guard=cfg.normalize_guard,
                     )
+                    _shared = dict(
+                        task=task, dataset=name, n_features=n_features, n_classes=n_classes,
+                        n_cal=int(cal_size), seed=seed, significance=safe_cfg.significance,
+                        n_neighbors=safe_cfg.n_neighbors, normalize_guard=safe_cfg.normalize_guard,
+                        regression_mode=reg_mode, threshold_value=threshold_val,
+                        task_skipped=False, skip_reason=None, error=None,
+                    )
+
+                    # --- factual ---
                     try:
-                        guarded_expl = wrapper.explain_guarded_factual(
+                        guarded_factual = wrapper.explain_guarded_factual(
                             x_test,
                             threshold=threshold_val,
                             significance=safe_cfg.significance,
@@ -357,48 +427,20 @@ def _evaluate_dataset(
                             merge_adjacent=safe_cfg.merge_adjacent,
                             normalize_guard=safe_cfg.normalize_guard,
                         )
-                        audit = guarded_expl.get_guarded_audit()
-                        instances = audit.get("instances", [])
-                        total_tested = sum(
-                            inst["summary"].get("intervals_tested", 0) for inst in instances
+                        instances_f = guarded_factual.get_guarded_audit().get("instances", [])
+                        mg_f, gr_f, ff_f, nff_f = _extract_guard_metrics(
+                            instances_f, len(x_test), explanation_type="factual"
                         )
-                        total_emitted = sum(
-                            inst["summary"].get("intervals_emitted", 0) for inst in instances
-                        )
-                        n_test_actual = len(instances) if instances else len(x_test)
-                        n_fully_filtered = sum(
-                            1 for inst in instances
-                            if inst["summary"].get("intervals_emitted", 0) == 0
-                        )
-                        mean_guarded_rules = total_emitted / max(1, n_test_actual)
-                        guard_retention = (
-                            total_emitted / total_tested if total_tested > 0 else float("nan")
-                        )
-                        fraction_filtered = n_fully_filtered / max(1, n_test_actual)
-
                         rows.append({
-                            "task": task,
-                            "dataset": name,
-                            "n_features": n_features,
-                            "n_classes": n_classes,
-                            "n_cal": int(cal_size),
-                            "seed": seed,
-                            "significance": safe_cfg.significance,
-                            "n_neighbors": safe_cfg.n_neighbors,
-                            "normalize_guard": safe_cfg.normalize_guard,
-                            "regression_mode": reg_mode,
-                            "threshold_value": threshold_val,
-                            "n_test_instances": n_test_actual,
-                            "mean_standard_rules_per_instance": mean_std_rules,
-                            "mean_guarded_rules_per_instance": mean_guarded_rules,
-                            "guard_retention_rate": guard_retention,
-                            "fraction_instances_fully_filtered": fraction_filtered,
-                            "n_instances_fully_filtered": n_fully_filtered,
-                            "task_skipped": False,
-                            "skip_reason": None,
-                            "error": None,
+                            **_shared,
+                            "explanation_type": "factual",
+                            "n_test_instances": len(instances_f) if instances_f else len(x_test),
+                            "mean_standard_rules_per_instance": mean_std_factual,
+                            "mean_guarded_rules_per_instance": mg_f,
+                            "guard_retention_rate": gr_f,
+                            "fraction_instances_fully_filtered": ff_f,
+                            "n_instances_fully_filtered": nff_f,
                         })
-
                     except Exception:  # noqa: BLE001
                         rows.append(_error_row(
                             task, name, n_features, n_classes, cal_size, seed,
@@ -408,6 +450,43 @@ def _evaluate_dataset(
                             n_neighbors=cfg.n_neighbors,
                             regression_mode=reg_mode,
                             threshold_val=threshold_val,
+                            explanation_type="factual",
+                        ))
+
+                    # --- alternative ---
+                    try:
+                        guarded_alt = wrapper.explore_guarded_alternatives(
+                            x_test,
+                            threshold=threshold_val,
+                            significance=safe_cfg.significance,
+                            n_neighbors=safe_cfg.n_neighbors,
+                            merge_adjacent=safe_cfg.merge_adjacent,
+                            normalize_guard=safe_cfg.normalize_guard,
+                        )
+                        instances_a = guarded_alt.get_guarded_audit().get("instances", [])
+                        mg_a, gr_a, ff_a, nff_a = _extract_guard_metrics(
+                            instances_a, len(x_test), explanation_type="alternative"
+                        )
+                        rows.append({
+                            **_shared,
+                            "explanation_type": "alternative",
+                            "n_test_instances": len(instances_a) if instances_a else len(x_test),
+                            "mean_standard_rules_per_instance": mean_std_alt,
+                            "mean_guarded_rules_per_instance": mg_a,
+                            "guard_retention_rate": gr_a,
+                            "fraction_instances_fully_filtered": ff_a,
+                            "n_instances_fully_filtered": nff_a,
+                        })
+                    except Exception:  # noqa: BLE001
+                        rows.append(_error_row(
+                            task, name, n_features, n_classes, cal_size, seed,
+                            traceback.format_exc().splitlines()[-1],
+                            n_test=len(x_test),
+                            significance=cfg.significance,
+                            n_neighbors=cfg.n_neighbors,
+                            regression_mode=reg_mode,
+                            threshold_val=threshold_val,
+                            explanation_type="alternative",
                         ))
 
     return rows
@@ -425,7 +504,7 @@ def _skip_row(
         "task": task, "dataset": name, "n_features": n_features,
         "n_classes": n_classes, "n_cal": 0, "seed": seed,
         "significance": None, "n_neighbors": None, "normalize_guard": None,
-        "regression_mode": None, "threshold_value": None,
+        "regression_mode": None, "threshold_value": None, "explanation_type": None,
         "n_test_instances": 0,
         "mean_standard_rules_per_instance": float("nan"),
         "mean_guarded_rules_per_instance": float("nan"),
@@ -450,6 +529,7 @@ def _error_row(
     n_neighbors: Optional[int] = None,
     regression_mode: Optional[str] = None,
     threshold_val: Optional[float] = None,
+    explanation_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     return {
         "task": task, "dataset": name, "n_features": n_features,
@@ -457,6 +537,7 @@ def _error_row(
         "significance": significance, "n_neighbors": n_neighbors,
         "normalize_guard": DEFAULT_NORMALIZE_GUARD,
         "regression_mode": regression_mode, "threshold_value": threshold_val,
+        "explanation_type": explanation_type,
         "n_test_instances": n_test,
         "mean_standard_rules_per_instance": float("nan"),
         "mean_guarded_rules_per_instance": float("nan"),
@@ -475,19 +556,20 @@ def _aggregate_results(df: pd.DataFrame, significance: float) -> pd.DataFrame:
     """Return per-dataset aggregates at a fixed significance level.
 
     Averages over seeds and calibration sizes for non-skipped rows.
-    For regression datasets the result includes one row per regression_mode
-    (plain, p25, p50, p75); for classification tasks regression_mode is "N/A".
+    Each (task, dataset, regression_mode, explanation_type) combination
+    yields one row.
     """
     sub = df[
         (df["task_skipped"] == False)  # noqa: E712
         & (df["significance"] == significance)
         & df["error"].isna()
+        & df["explanation_type"].notna()
     ].copy()
     if sub.empty:
         return pd.DataFrame()
 
     agg = (
-        sub.groupby(["task", "dataset", "n_features", "regression_mode"])[
+        sub.groupby(["task", "dataset", "n_features", "regression_mode", "explanation_type"])[
             [
                 "mean_standard_rules_per_instance",
                 "mean_guarded_rules_per_instance",
@@ -498,16 +580,17 @@ def _aggregate_results(df: pd.DataFrame, significance: float) -> pd.DataFrame:
         .mean()
         .reset_index()
     )
-    agg = agg.sort_values(["task", "dataset", "regression_mode"])
+    agg = agg.sort_values(["task", "dataset", "regression_mode", "explanation_type"])
     return agg
 
 
 def _summary_by_task(agg: pd.DataFrame) -> pd.DataFrame:
-    """Collapse the per-dataset aggregate to a per-task / per-regression-mode summary."""
+    """Collapse the per-dataset aggregate to a per-task / per-regression-mode /
+    per-explanation-type summary."""
     if agg.empty:
         return pd.DataFrame()
     return (
-        agg.groupby(["task", "regression_mode"])[
+        agg.groupby(["task", "regression_mode", "explanation_type"])[
             [
                 "mean_standard_rules_per_instance",
                 "mean_guarded_rules_per_instance",
@@ -737,6 +820,16 @@ def main() -> None:
 
     df = pd.read_csv(intermediate_csv)
 
+    # Pandas treats "N/A" as NaN by default, so classification rows written with
+    # regression_mode="N/A" (legacy) or rows that stored None arrive as NaN here.
+    # Restore the sentinel for non-regression, non-skipped rows so groupby includes them.
+    cls_mask = (
+        df["task"].isin(["binary", "multiclass"])
+        & (df["task_skipped"] == False)  # noqa: E712
+        & df["regression_mode"].isna()
+    )
+    df.loc[cls_mask, "regression_mode"] = "cls"
+
     # Summary for the primary significance (0.10)
     primary_sig = 0.10
     agg = _aggregate_results(df, primary_sig)
@@ -760,16 +853,17 @@ def main() -> None:
             return f"{v:.3f}"
         return str(v)
 
-    # Task-level summary table (regression_mode separates plain from probabilistic)
+    # Task-level summary table
     if not task_summary.empty:
         task_lines = [
-            "| Task | Reg mode | Std rules | Guarded rules | Retention | Fully filtered |",
-            "|---|---|---|---|---|---|",
+            "| Task | Reg mode | Expl type | Std rules | Guarded rules | Retention | Fully filtered |",
+            "|---|---|---|---|---|---|---|",
         ]
         for _, row in task_summary.iterrows():
             task_lines.append(
                 f"| {row['task']} "
                 f"| {row.get('regression_mode', 'N/A')} "
+                f"| {row.get('explanation_type', '?')} "
                 f"| {_fmt(row['mean_standard_rules_per_instance'])} "
                 f"| {_fmt(row['mean_guarded_rules_per_instance'])} "
                 f"| {_fmt(row['guard_retention_rate'])} "
@@ -782,14 +876,15 @@ def main() -> None:
     # Per-dataset table
     if not agg.empty:
         ds_lines = [
-            "| Task | Dataset | Reg mode | d | Std rules | Guarded rules | Retention | Fully filtered |",
-            "|---|---|---|---|---|---|---|---|",
+            "| Task | Dataset | Reg mode | Expl type | d | Std rules | Guarded rules | Retention | Fully filtered |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
         for _, row in agg.iterrows():
             ds_lines.append(
                 f"| {row['task']} "
                 f"| {row['dataset']} "
                 f"| {row.get('regression_mode', 'N/A')} "
+                f"| {row.get('explanation_type', '?')} "
                 f"| {int(row['n_features']) if pd.notna(row['n_features']) else '?'} "
                 f"| {_fmt(row['mean_standard_rules_per_instance'])} "
                 f"| {_fmt(row['mean_guarded_rules_per_instance'])} "
@@ -820,9 +915,9 @@ def main() -> None:
         title="Scenario C — Real-Dataset Guard Retention Benchmark",
         sections=[
             ("Scientific Question", (
-                "How does conformal guard filtering affect the number of emitted factual rules "
-                "across the full dataset universe?  Are guard retention rates stable across "
-                "diverse real-world datasets at ε=0.10?\n\n"
+                "How does conformal guard filtering affect the number of emitted factual and "
+                "alternative rules across the full dataset universe?  Are guard retention rates "
+                "stable across diverse real-world datasets at ε=0.10?\n\n"
                 "**Coverage preservation is not a metric here**: it is structurally invariant "
                 "under guard filtering (§2.3 of the paper)."
             )),
@@ -832,9 +927,9 @@ def main() -> None:
             ("Metric definitions", (
                 "| Metric | Definition |\n"
                 "|---|---|\n"
-                "| `mean_standard_rules_per_instance` | Mean rule count from `explain_factual` (max_depth=1) |\n"
+                "| `mean_standard_rules_per_instance` | Mean rule count from `explain_factual` / `explore_alternatives` |\n"
                 "| `mean_guarded_rules_per_instance` | Mean `intervals_emitted` per test instance |\n"
-                "| `guard_retention_rate` | `intervals_emitted / intervals_tested` across all test instances |\n"
+                "| `guard_retention_rate` | `intervals_emitted / (intervals_emitted + guard_removed)` over factual bins only |\n"
                 "| `fraction_instances_fully_filtered` | Fraction of test instances with 0 guarded rules |\n"
             )),
         ],
