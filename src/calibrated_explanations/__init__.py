@@ -46,9 +46,10 @@ __version__ = "v0.11.2-dev"
 # works without triggering an eager import of `calibrated_explanations.core`.
 __all__ = [
     "CalibratedExplainer",
+    "NormalizationStrategy",
+    "RejectPolicySpec",
     "WrapCalibratedExplainer",
     "transform_to_numeric",
-    "RejectPolicySpec",
 ]
 
 
@@ -92,5 +93,11 @@ def __getattr__(name: str):
 
         globals()[name] = RejectPolicySpec
         return RejectPolicySpec
+
+    if name == "NormalizationStrategy":
+        from .calibration.normalization_strategy import NormalizationStrategy
+
+        globals()[name] = NormalizationStrategy
+        return NormalizationStrategy
 
     raise AttributeError(name)

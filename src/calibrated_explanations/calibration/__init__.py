@@ -19,6 +19,7 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         update_interval_learner,
     )
     from .interval_regressor import IntervalRegressor
+    from .normalization_strategy import NormalizationStrategy, coerce_normalization_strategy
     from .state import CalibrationState
     from .summaries import (
         get_calibration_summaries,
@@ -30,8 +31,10 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
 __all__ = (
     "CalibrationState",
     "IntervalRegressor",
+    "NormalizationStrategy",
     "VennAbers",
     "assign_threshold",
+    "coerce_normalization_strategy",
     "get_calibration_summaries",
     "initialize_interval_learner",
     "initialize_interval_learner_for_fast_explainer",
@@ -42,8 +45,10 @@ __all__ = (
 _NAME_TO_MODULE = {
     "CalibrationState": ("state", "CalibrationState"),
     "IntervalRegressor": ("interval_regressor", "IntervalRegressor"),
+    "NormalizationStrategy": ("normalization_strategy", "NormalizationStrategy"),
     "VennAbers": ("venn_abers", "VennAbers"),
     "assign_threshold": ("interval_learner", "assign_threshold"),
+    "coerce_normalization_strategy": ("normalization_strategy", "coerce_normalization_strategy"),
     "get_calibration_summaries": ("summaries", "get_calibration_summaries"),
     "initialize_interval_learner": (
         "interval_learner",
