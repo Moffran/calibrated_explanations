@@ -56,28 +56,10 @@ CE_FIRST_POLICY: Mapping[str, Any] = {
 }
 
 
-NARRATIVE_TEMPLATES: Mapping[str, str] = {
-    "short": (
-        "Prediction: {prediction}. Calibrated probability: {calibrated_probability}. "
-        "Uncertainty interval: {uncertainty}. Top features: {top_features}. "
-        "Suggested action: {action}."
-    ),
-    "long": (
-        "Calibrated Explanations (CE-First) summary:\n"
-        "- Prediction: {prediction}\n"
-        "- Calibrated probability: {calibrated_probability}\n"
-        "- Uncertainty interval: {uncertainty}\n"
-        "- Top contributing features: {top_features}\n"
-        "- Suggested action: {action}\n"
-        "Narrative detail: {explanation_narrative}"
-    ),
-    "bullet": (
-        "• Prediction: {prediction}\n"
-        "• Calibrated probability: {calibrated_probability}\n"
-        "• Uncertainty interval: {uncertainty}\n"
-        "• Top features: {top_features}\n"
-        "• Suggested action: {action}\n"
-    ),
+_NARRATIVE_FORMAT_TO_EXPERTISE: Mapping[str, str] = {
+    "short": "beginner",
+    "bullet": "intermediate",
+    "long": "advanced",
 }
 
 
@@ -288,59 +270,60 @@ def fit_and_calibrate(
     return wrapper
 
 
-def _safe_call_with_kwargs(callable_obj: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-    """Invoke a callable after dropping unsupported keyword arguments."""
-    filtered = _filter_kwargs(callable_obj, kwargs)
-    return callable_obj(*args, **filtered)
+def _ce_strict_call(callable_obj: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Invoke a CE API callable without silently dropping unsupported kwargs.
+
+    Unlike ``_safe_call_with_kwargs``, this function does **not** filter out
+    unknown keyword arguments. A ``TypeError`` caused by an unexpected kwarg is
+    converted to a ``ValidationError`` so callers learn the CE public API
+    instead of receiving a silent no-op.
+
+    Parameters
+    ----------
+    callable_obj : Callable
+        The CE public-API callable to invoke.
+    *args : Any
+        Positional arguments forwarded unchanged.
+    **kwargs : Any
+        Keyword arguments forwarded unchanged.
+
+    Returns
+    -------
+    Any
+        Return value from ``callable_obj``.
+
+    Raises
+    ------
+    ValidationError
+        When ``callable_obj`` raises ``TypeError`` due to an unsupported
+        keyword argument, surfacing the CE-first policy violation explicitly.
+    """
+    try:
+        return callable_obj(*args, **kwargs)
+    except TypeError as exc:
+        msg = str(exc)
+        if "unexpected keyword argument" in msg or "got an unexpected" in msg:
+            func_name = getattr(callable_obj, "__name__", repr(callable_obj))
+            raise ValidationError(
+                f"CE API call to {func_name!r} received an unsupported keyword argument. "
+                "Consult the CE public API for accepted kwargs.",
+                details={"cause": msg},
+            ) from exc
+        raise
 
 
 def _extract_top_features(explanation: Any, top_k: int = 3) -> List[str]:
-    """Extract top-ranked rule texts from an explanation payload."""
-    if explanation is None:
+    """Extract top-ranked rule texts via the CE public get_rules() API."""
+    if explanation is None or not hasattr(explanation, "get_rules"):
         return []
-    rules = None
-    if hasattr(explanation, "get_rules"):
-        try:
-            rules = explanation.get_rules()
-        except Exception:  # pragma: no cover - defensive  # adr002_allow
-            rules = None
-    if isinstance(rules, Mapping) and "rule" in rules and "weight" in rules:
-        rule_texts = rules.get("rule", [])
-        weights = rules.get("weight", [])
-        if rule_texts and weights:
-            ranked = sorted(
-                zip(rule_texts, weights, strict=False),
-                key=lambda item: abs(float(item[1])),
-                reverse=True,
-            )
-            return [text for text, _ in ranked[:top_k]]
-    if hasattr(explanation, "rules") and isinstance(explanation.rules, Mapping):
-        rule_texts = explanation.rules.get("rule", [])
-        if rule_texts:
-            return list(rule_texts)[:top_k]
+    try:
+        rules = explanation.get_rules()
+    except Exception:  # pragma: no cover - defensive  # adr002_allow
+        return []
+    if isinstance(rules, Mapping) and "rule" in rules:
+        return list(rules.get("rule", []))[:top_k]
     return []
 
-
-def _format_probability(proba: Any) -> str:
-    """Format probability-like values for narrative output."""
-    if proba is None:
-        return "n/a"
-    if isinstance(proba, (list, tuple, np.ndarray)):
-        try:
-            arr = np.asarray(proba)
-            if arr.ndim == 2:
-                return np.array2string(arr[0], precision=3)
-            return np.array2string(arr, precision=3)
-        except Exception:  # adr002_allow
-            return str(proba)
-    return str(proba)
-
-
-def _format_interval(interval: Any) -> str:
-    """Format interval-like values for narrative output."""
-    if interval is None:
-        return "n/a"
-    return str(interval)
 
 
 def _extract_prediction_triplet(prediction: Any) -> Optional[Tuple[Any, Any, Any]]:
@@ -378,21 +361,9 @@ def summarize_explanations(explanations: Any, *, top_k: int = 5) -> Mapping[str,
     prediction = getattr(first, "prediction", None)
     pred_triplet = _extract_prediction_triplet(prediction)
 
+    # get_rules() already returns conjunctive rules when present (CE-first)
     top_rules = _extract_top_features(first, top_k=top_k)
     has_conjunctions = bool(getattr(first, "has_conjunctive_rules", False))
-    conjunctive_rule_texts: List[str] = []
-    conjunctive_rules = getattr(first, "conjunctive_rules", None)
-    if isinstance(conjunctive_rules, Mapping) and "rule" in conjunctive_rules:
-        try:
-            conjunctive_rule_texts = list(conjunctive_rules.get("rule", []))[:top_k]
-        except Exception:  # pragma: no cover - defensive  # adr002_allow
-            conjunctive_rule_texts = []
-
-    # percentiles are not currently used in the summary; skip retrieval
-
-    y_threshold = getattr(explanations, "y_threshold", None)
-    if first is not None and getattr(first, "y_threshold", None) is not None:
-        y_threshold = getattr(first, "y_threshold", None)
 
     confidence = None
     if hasattr(explanations, "get_confidence"):
@@ -407,10 +378,10 @@ def summarize_explanations(explanations: Any, *, top_k: int = 5) -> Mapping[str,
         else prediction,
         "top_rules": top_rules,
         "has_conjunctions": has_conjunctions,
-        "top_conjunction_rules": conjunctive_rule_texts,
+        "top_conjunction_rules": top_rules if has_conjunctions else [],
         "low_high_percentiles": getattr(explanations, "low_high_percentiles", None),
         "confidence": confidence,
-        "y_threshold": y_threshold,
+        "y_threshold": getattr(explanations, "y_threshold", None),
     }
 
 
@@ -584,36 +555,43 @@ def print_guarded_audit_table(
     )
 
 
-def _action_suggestion(weights: List[float], rules: List[str]) -> str:
-    if not weights or not rules:
-        return "Review the most influential features for potential adjustments."
-    paired = sorted(
-        zip(weights, rules, strict=False), key=lambda item: abs(float(item[0])), reverse=True
-    )
-    weight, rule = paired[0]
-    direction = "increase" if weight < 0 else "decrease"
-    return f"Consider how to {direction} influence from: {rule}."
-
 
 def explain_and_narrate(
     wrapper: Any,
     x: Any,
     *,
     mode: str = "factual",
-    narrative_format: str = "short",
+    expertise_level: str = "beginner",
+    narrative_format: Optional[str] = None,
     **kwargs: Any,
 ) -> Tuple[Any, str]:
     """Generate explanations and a CE-first narrative summary.
 
     Returns the explanations collection and narrative text.
+
+    Parameters
+    ----------
+    expertise_level : str, default="beginner"
+        Narrative detail level: "beginner", "intermediate", or "advanced".
+    narrative_format : str, optional
+        Deprecated alias for ``expertise_level`` using legacy names
+        ("short" → "beginner", "bullet" → "intermediate", "long" → "advanced").
+        If provided, takes precedence over ``expertise_level`` with a warning.
     """
+    if narrative_format is not None:
+        warnings.warn(
+            "narrative_format is deprecated; use expertise_level='beginner'|'intermediate'|'advanced'.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        expertise_level = _NARRATIVE_FORMAT_TO_EXPERTISE.get(narrative_format, expertise_level)
     _emit("ce.explain.start", mode=mode)
     return enforce_ce_first_and_execute(
         _explain_and_narrate_impl,
         wrapper,
         x,
         mode=mode,
-        narrative_format=narrative_format,
+        expertise_level=expertise_level,
         **kwargs,
     )
 
@@ -623,7 +601,7 @@ def _explain_and_narrate_impl(
     x: Any,
     *,
     mode: str,
-    narrative_format: str,
+    expertise_level: str,
     **kwargs: Any,
 ) -> Tuple[Any, str]:
     explainer = wrapper
@@ -638,55 +616,16 @@ def _explain_and_narrate_impl(
         if mode_normalized == "factual"
         else explainer.explore_alternatives
     )
-    # NOTE: Explanation kwargs and prediction kwargs are intentionally separated.
-    # Agents may request alternative-only knobs (e.g. ensure_coverage) that should
-    # not be forwarded to predict/predict_proba.
-    explain_kwargs = dict(kwargs)
-    prediction_kwargs: Dict[str, Any] = {}
-    for key in ("threshold", "low_high_percentiles", "bins", "uq_interval"):
-        if key in explain_kwargs:
-            prediction_kwargs[key] = explain_kwargs[key]
-
-    explanations = _safe_call_with_kwargs(explain_func, x, **explain_kwargs)
-    explanation = explanations[0] if hasattr(explanations, "__getitem__") else None
-    pred = _safe_call_with_kwargs(explainer.predict, x, **prediction_kwargs)
-    proba = None
-    if hasattr(explainer, "predict_proba"):
-        # For regression, WrapCalibratedExplainer.predict_proba requires a
-        # threshold unless the underlying learner supports predict_proba.
-        threshold = prediction_kwargs.get("threshold")
-        learner_supports = bool(getattr(getattr(explainer, "learner", None), "predict_proba", None))
-        if learner_supports or threshold is not None:
-            proba = _safe_call_with_kwargs(
-                explainer.predict_proba,
-                x,
-                uq_interval=True,
-                **prediction_kwargs,
-            )
-    explanation_narrative = ""
-    if explanation is not None and hasattr(explanation, "to_narrative"):
+    explanations = _ce_strict_call(explain_func, x, **kwargs)
+    narrative = ""
+    if hasattr(explanations, "to_narrative"):
         try:
-            explanation_narrative = explanation.to_narrative(format="short")
+            narrative = explanations.to_narrative(
+                expertise_level=expertise_level,
+                output_format="text",
+            )
         except Exception:  # pragma: no cover - defensive  # adr002_allow
-            explanation_narrative = str(explanation)
-    top_features = _extract_top_features(explanation, top_k=3)
-    weights = []
-    if (
-        explanation is not None
-        and hasattr(explanation, "rules")
-        and isinstance(explanation.rules, Mapping)
-    ):
-        weights = [float(w) for w in explanation.rules.get("weight", []) if w is not None]
-    action = _action_suggestion(weights, top_features)
-    template = NARRATIVE_TEMPLATES.get(narrative_format, NARRATIVE_TEMPLATES["short"])
-    narrative = template.format(
-        prediction=pred,
-        calibrated_probability=_format_probability(proba),
-        uncertainty=_format_interval(getattr(explanation, "prediction", None)),
-        top_features=", ".join(top_features) if top_features else "n/a",
-        action=action,
-        explanation_narrative=explanation_narrative,
-    )
+            narrative = str(explanations)
     _emit("ce.explain.end", mode=mode)
     return explanations, narrative
 
@@ -696,24 +635,21 @@ def explain_and_summarize(
     x: Any,
     *,
     mode: str = "factual",
-    narrative_format: str = "short",
+    expertise_level: str = "beginner",
+    narrative_format: Optional[str] = None,
     add_conjunctions_params: Optional[Mapping[str, Any]] = None,
     uq_interval: bool = True,
     threshold: Optional[Any] = None,
     low_high_percentiles: Optional[Sequence[float]] = None,
     **kwargs: Any,
 ) -> Mapping[str, Any]:
-    """CE-first, USP-focused helper for agents.
+    """CE-first convenience helper for structured explanation output.
 
-    This helper is meant to be the "one-stop" call for capturing the
-    differentiators of Calibrated Explanations:
-
-    - Explanations: factual rules or alternative (counterfactual-style) rules
-    - Conjunctions: interaction-like rules via ``add_conjunctions``
-    - Uncertainty: calibrated probability intervals (classification) and
-      conformal prediction intervals (regression)
-    - Probabilistic regression: calibrated probability intervals driven by
-      ``threshold=...`` (a.k.a. "thresholded regression" in ADRs)
+    Generates explanations, narrative text, optional conjunctions, and
+    calibrated predictions in a single call. This is a post-processing utility
+    over the canonical CE-first lifecycle (fit → calibrate → explain); it is
+    **not** the primary CE API. Prefer calling ``WrapCalibratedExplainer``
+    methods directly when orchestrating CE-first workflows.
 
     The semantics of ``threshold`` vs ``low_high_percentiles`` follow ADR-021.
 
@@ -736,6 +672,7 @@ def explain_and_summarize(
         wrapper,
         x,
         mode=mode,
+        expertise_level=expertise_level,
         narrative_format=narrative_format,
         **explain_kwargs,
     )
@@ -801,17 +738,64 @@ def get_calibrated_predictions(
     # For regression, low/high percentiles control conformal prediction intervals.
     if "low_high_percentiles" in kwargs and kwargs.get("low_high_percentiles") is None:
         predict_kwargs.pop("low_high_percentiles", None)
-    prediction = _safe_call_with_kwargs(wrapper.predict, x, **predict_kwargs)
+    prediction = _ce_strict_call(wrapper.predict, x, **predict_kwargs)
     proba = None
     if hasattr(wrapper, "predict_proba"):
-        learner_supports = bool(getattr(getattr(wrapper, "learner", None), "predict_proba", None))
-        if learner_supports or threshold is not None:
-            proba = _safe_call_with_kwargs(wrapper.predict_proba, x, **predict_kwargs)
+        try:
+            proba = _ce_strict_call(wrapper.predict_proba, x, **predict_kwargs)
+        except (ModelNotSupportedError, ValidationError):
+            # predict_proba is not applicable (e.g. regression without a threshold)
+            proba = None
     return {"prediction": prediction, "probability": proba}
 
 
+def _safe_call_with_kwargs(callable_obj: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Invoke a callable after dropping unsupported keyword arguments.
+
+    Non-canonical compat helper — silently drops unsupported kwargs.
+    Only used by ``get_uncalibrated_predictions`` to forward kwargs to raw
+    learner methods that may not accept them. Canonical CE-first paths must
+    use ``_ce_strict_call`` instead.
+    """
+    filtered = _filter_kwargs(callable_obj, kwargs)
+    return callable_obj(*args, **filtered)
+
+
 def get_uncalibrated_predictions(wrapper: Any, x: Any, **kwargs: Any) -> Mapping[str, Any]:
-    """Return uncalibrated outputs directly from the learner."""
+    """Return uncalibrated outputs directly from the learner.
+
+    .. warning::
+        **Non-canonical escape hatch.** Raw learner outputs bypass CE
+        calibration and interval semantics. A ``UserWarning`` is always emitted
+        when this function is called. Prefer ``get_calibrated_predictions`` for
+        CE-first workflows.
+
+    Parameters
+    ----------
+    wrapper : Any
+        A fitted ``WrapCalibratedExplainer`` instance.
+    x : Any
+        Input features.
+    **kwargs : Any
+        Extra kwargs forwarded to the learner (compat path; silently filtered
+        if the learner does not accept them).
+
+    Returns
+    -------
+    Mapping[str, Any]
+        ``{"prediction": ..., "probability": ...}`` from the raw learner.
+    """
+    warnings.warn(
+        "get_uncalibrated_predictions returns raw learner outputs that bypass "
+        "CE calibration. This is a non-canonical escape hatch. Use "
+        "get_calibrated_predictions for CE-first workflows.",
+        UserWarning,
+        stacklevel=2,
+    )
+    LOGGER.info(
+        "ce_agent_utils: get_uncalibrated_predictions called; "
+        "non-canonical path bypassing CE calibration"
+    )
     wrapper = ensure_ce_first_wrapper(wrapper)
     learner = wrapper.learner
     prediction = None
@@ -834,7 +818,14 @@ def wrap_and_explain(
     mode: str = "factual",
     **kwargs: Any,
 ) -> Mapping[str, Any]:
-    """Full CE-first workflow: wrap, fit, calibrate, explain, narrate."""
+    """Convenience wrapper: wrap, fit, calibrate, explain, narrate.
+
+    This is a post-processing utility, not the canonical CE-first path. Prefer
+    calling ``WrapCalibratedExplainer`` methods directly for production
+    workflows. Note that ``**kwargs`` are forwarded to both
+    ``fit_and_calibrate`` and ``explain_and_narrate``; pass fit-specific and
+    explain-specific params via those functions directly if they differ.
+    """
     wrapper = ensure_ce_first_wrapper(model)
     wrapper = fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal, **kwargs)
     explanations, narrative = explain_and_narrate(wrapper, x_test, mode=mode, **kwargs)
@@ -904,7 +895,6 @@ def probe_optional_features(
 
 __all__ = [
     "CE_FIRST_POLICY",
-    "NARRATIVE_TEMPLATES",
     "TelemetryEvent",
     "set_telemetry_hook",
     "optional_cache",

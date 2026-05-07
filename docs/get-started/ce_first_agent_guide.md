@@ -124,24 +124,31 @@ explainer.plot(x_test[:50])
 
 ---
 
-## 4. Agent helper library (runnable code) — CE-First by design
+## 4. Agent policy utilities (supplementary) — not the canonical CE path
 
-> The canonical helper is provided in `calibrated_explanations/ce_agent_utils.py` and enforces CE-First at runtime. It **never** creates a custom wrapper class; it only uses `WrapCalibratedExplainer`.
+> **Important:** The helpers in `calibrated_explanations/ce_agent_utils.py` are
+> policy-enforcement utilities and post-processing aids. They enforce CE-first
+> invariants at runtime (wrapper identity, fit/calibrate state, calibrated-by-default)
+> but are **not** the primary CE API. Always learn and use
+> `WrapCalibratedExplainer` methods directly. Use helpers as guardrails alongside
+> the CE public API, not instead of it.
+>
+> Canonical CE-first paths use `_ce_strict_call` internally: unsupported keyword
+> arguments now raise `ValidationError` instead of being silently dropped.
 
-### Example usage
+### Guardrail helpers (strict CE-first enforcement)
 
 ```python
+from calibrated_explanations.ce_agent_utils import (
+    ensure_ce_first_wrapper,   # validates wrapper identity + required attrs/methods
+    fit_and_calibrate,         # fit + calibrate with state assertions
+    get_calibrated_predictions, # calibrated predict/predict_proba
+    enforce_ce_first_and_execute,  # gate: validate CE-first before any action
+)
+
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-
-from calibrated_explanations.ce_agent_utils import (
-    ensure_ce_first_wrapper,
-    fit_and_calibrate,
-    explain_and_narrate,
-    explain_and_summarize,
-    wrap_and_explain,
-)
 
 X, y = load_breast_cancer(return_X_y=True)
 x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
@@ -150,25 +157,42 @@ x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, ran
 model = RandomForestClassifier(random_state=0)
 wrapper = ensure_ce_first_wrapper(model)
 fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
-explanations, narrative = explain_and_narrate(wrapper, x_test[:1], mode="factual")
-print(narrative)
 
-# One-line CE-first flow
-payload = wrap_and_explain(model, x_train, y_train, x_cal, y_cal, x_test[:1])
-print(payload["narrative"])
-
-# USP-focused flow (conjunctions + UQ + probabilistic regression metadata)
-usp = explain_and_summarize(
-    wrapper,
-    x_test[:2],
-    add_conjunctions_params={"n_top_features": 3, "max_rule_size": 2},
-)
-print(usp["summary"])
+# After this point, use CE public API directly:
+explanations = wrapper.explain_factual(x_test[:1])
+print(explanations[0].to_narrative(format="short"))
 ```
 
-### Defensive behavior
+### Post-processing utilities (convenience, non-canonical)
 
-The helper probes for required methods and kwargs such as `threshold`, `uq_interval`, and `bins`. If the API differs, it either adapts or raises a clear error.
+The following helpers are convenience wrappers over the CE public API. They are
+clearly non-canonical — prefer the direct CE API above for production workflows.
+
+```python
+from calibrated_explanations.ce_agent_utils import (
+    explain_and_narrate,     # convenience: explain + narrative text
+    explain_and_summarize,   # convenience: explain + narrative + summary dict
+    wrap_and_explain,        # convenience: full wrap/fit/calibrate/explain in one call
+)
+
+explanations, narrative = explain_and_narrate(wrapper, x_test[:1], mode="factual")
+print(narrative)
+```
+
+### Non-canonical escape hatch (emits UserWarning)
+
+```python
+from calibrated_explanations.ce_agent_utils import get_uncalibrated_predictions
+
+# Always emits UserWarning — only use when explicitly required.
+raw = get_uncalibrated_predictions(wrapper, x_test[:1])
+```
+
+### Strict kwarg behavior
+
+Canonical CE-first paths raise `ValidationError` when unsupported keyword
+arguments are passed. This replaces the previous silent-drop behavior so agents
+learn the CE public API instead of receiving silent no-ops.
 
 ---
 
@@ -346,10 +370,10 @@ class MyPlotPlugin:
         return "<svg>..."  # or matplotlib output
 ```
 
-### Telemetry, caching, and parallelism
+### Telemetry and caching (optional post-processing utilities)
 
-- Use `set_telemetry_hook(...)` in `ce_agent_utils` to emit events on calibration/explanation.
-- Optional caching (via `optional_cache`) can reduce repeated calls in large-scale runs.
+- `set_telemetry_hook(...)` in `ce_agent_utils` emits events on calibration/explanation. This is opt-in and not part of the canonical CE-first path.
+- `optional_cache` is a convenience decorator for repeated helper calls. Not part of the guardrail layer.
 - Parallelism hooks exist on the wrapper (`wrapper.parallel_executor`) and should only be tuned for extreme workloads.
 
 ### Documentation (RTD)

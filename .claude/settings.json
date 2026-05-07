@@ -57,7 +57,7 @@
       "Bash(go fmt *)",
 
 
-      "Bash(make local-checks*)"
+      "Bash(make local-checks*)",
       "Bash(python scripts/*)"
     ],
     "deny": [

@@ -36,8 +36,10 @@ or explanation output.
    `low_high_percentiles=` for conformal.
 
 Helper utilities that enforce these invariants programmatically live in
-`src/calibrated_explanations/ce_agent_utils.py`. Use them instead of writing
-ad-hoc checks.
+`src/calibrated_explanations/ce_agent_utils.py`. Use them as supplementary
+policy validators alongside the CE public API, not as a substitute for it.
+Canonical CE-first paths in these helpers raise ``ValidationError`` on
+unsupported kwargs rather than silently dropping them.
 
 ---
 

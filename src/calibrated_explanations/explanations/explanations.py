@@ -1432,7 +1432,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def to_narrative(
         self,
-        template_path="exp.yaml",
+        template_path=None,
         expertise_level=("beginner", "advanced"),
         output_format="dataframe",
         conjunction_separator=" AND ",
@@ -1447,9 +1447,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        template_path : str, default="exp.yaml"
+        template_path : str or None, default=None
             Path to the narrative template file (YAML or JSON).
-            If the file doesn't exist, the default template will be used.
+            If None or the file doesn't exist, the built-in default template is used.
         expertise_level : str or tuple of str, default=("beginner", "advanced")
             The expertise level(s) for narrative generation. Can be a single
             level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
@@ -1488,7 +1488,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         >>> explainer = CalibratedExplainer(model, x_train, y_train)
         >>> explanations = explainer.explain_factual(x_test)
         >>> narratives = explanations.to_narrative(
-        ...     template_path="exp.yaml",
         ...     expertise_level=("beginner", "advanced"),
         ...     output_format="dataframe"
         ... )
