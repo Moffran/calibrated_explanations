@@ -13,13 +13,14 @@ At the start of every Gemini session, explicitly direct the agent to:
 1. Read `CONTRIBUTOR_INSTRUCTIONS.md` (canonical CE rules).
 2. Read `GEMINI.md` (this file).
 3. Follow the CE-first checklist from `docs/get-started/ce_first_agent_guide.md`.
-4. Use helpers from `src/calibrated_explanations/ce_agent_utils.py`.
+4. Use `WrapCalibratedExplainer` from the public CE API directly. Do not use
+   `ce_agent_utils` as an implementation shortcut.
 
 Reusable priming prompt:
 
 ```text
 You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
-and GEMINI.md first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
+and GEMINI.md first. Use WrapCalibratedExplainer and the public CE API directly.
 Fail fast if CE-first invariants are not satisfied.
 ```
 
@@ -66,7 +67,7 @@ reference stale API signatures.
 |---|---|
 | Wrong API usage | Update `CONTRIBUTOR_INSTRUCTIONS.md` §1 or §2 |
 | Platform-specific Gemini quirk | Add a bullet to this file |
-| Recurring test mistake | Add a test to `tests/unit/test_ce_agent_utils.py` |
+| Recurring test mistake | Add a test to the relevant unit test file under `tests/unit/` |
 
 All feedback entries must be recorded in `.github/copilot-feedback-log.md`
 with `Feedback`, `Root cause`, `Durable fix`, `Verification`, and `Status`.

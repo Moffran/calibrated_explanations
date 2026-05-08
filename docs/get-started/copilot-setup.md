@@ -69,7 +69,7 @@ At the start of any agent session, prime the agent with:
 
 ```text
 You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
-and <platform file> first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
+and <platform file> first. Use WrapCalibratedExplainer and the public CE API directly.
 Fail fast if CE-first invariants are not satisfied.
 ```
 
