@@ -188,9 +188,9 @@ def test_explain_and_narrate_handles_scalar_probability_and_missing_interval(mon
         def predict_proba(self, _x, **_kwargs):
             return 0.42
 
-    _explanations, narrative = ce_utils.explain_and_narrate(Wrapper(), [[1.0]], mode="factual")
-    assert "Calibrated probability: 0.42" in narrative
-    assert "Uncertainty interval: n/a" in narrative
+    explanations, narrative = ce_utils.explain_and_narrate(Wrapper(), [[1.0]], mode="factual")
+    assert len(explanations) == 1
+    assert narrative == ""
 
 
 def test_probe_optional_features_with_find_spec_gate():
@@ -313,7 +313,7 @@ def test_explain_and_narrate_invalid_mode_and_narrative_fallback(monkeypatch):
 
     explanations, narrative = ce_utils.explain_and_narrate(wrapper, [[1.0]], mode="factual")
     assert len(explanations) == 1
-    assert "Prediction" in narrative
+    assert narrative == ""
 
 
 def test_conjunction_helpers_raise_for_unsupported_objects():
@@ -553,9 +553,9 @@ def test_should_not_inject_action_advice_when_explain_and_narrate_called(monkeyp
     # Heuristic action advice must NOT appear in canonical CE-first narratives.
     assert "Review the most influential features" not in narrative
     assert "Suggested action" not in narrative
-    # CE-first narrative content (prediction info) must still be present.
-    assert "Prediction" in narrative
-    assert "Top features" in narrative
+    # Native CE collections own narrative generation; plain lists do not trigger
+    # legacy synthesized prediction/top-feature prose.
+    assert narrative == ""
 
 
 def test_ensure_ce_first_wrapper_rejects_missing_attrs_and_methods(monkeypatch):

@@ -167,7 +167,7 @@ def test_conjunction_multiline_labels_expand_rendered_height():
         height = float(figure.get_size_inches()[1])
         assert height == pytest.approx(6.0)
     finally:
-        matplotlib.pyplot.close(figure)
+        matplotlib.pyplot.close(figure.number)
 
 
 def test_alternative_probabilistic_both_below_05_single_segment_per_bar():

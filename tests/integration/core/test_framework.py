@@ -63,7 +63,7 @@ def test_explanation_functions_classification(binary_dataset):
     except ImportError:  # pragma: no cover - executed only when lime missing
         pytest.skip("Skipping LIME export test because 'lime' is not installed")
     else:
-        with warns_or_raises():
+        with pytest.raises(AttributeError, match="preload_lime"):
             factual_explanations.as_lime()
     # factual_explanations.as_shap() # generates an insane number of warnings
 
