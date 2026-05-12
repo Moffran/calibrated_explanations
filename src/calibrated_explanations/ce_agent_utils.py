@@ -818,7 +818,7 @@ def wrap_and_explain(
     mode: str = "factual",
     **kwargs: Any,
 ) -> Mapping[str, Any]:
-    """Convenience wrapper: wrap, fit, calibrate, explain, narrate.
+    """Wrap, fit, calibrate, explain, and narrate.
 
     This is a post-processing utility, not the canonical CE-first path. Prefer
     calling ``WrapCalibratedExplainer`` methods directly for production

@@ -57,7 +57,7 @@ _ALLOWED_CONTEXT_WORDS = {
 }
 
 
-def _line_is_in_allowed_context(line: str) -> bool:
+def line_is_in_allowed_context(line: str) -> bool:
     lower = line.lower()
     return any(word in lower for word in _ALLOWED_CONTEXT_WORDS)
 
@@ -70,7 +70,7 @@ def test_no_forbidden_recommendation_patterns_in_agent_docs() -> None:
         for lineno, line in enumerate(doc_path.read_text(encoding="utf-8").splitlines(), 1):
             for pattern in FORBIDDEN_RECOMMENDATION_PATTERNS:
                 if re.search(pattern, line, re.IGNORECASE):
-                    if not _line_is_in_allowed_context(line):
+                    if not line_is_in_allowed_context(line):
                         violations.append(
                             f"{doc_path.relative_to(ROOT)}:{lineno}: "
                             f"forbidden pattern «{pattern}» found in: {line.strip()}"

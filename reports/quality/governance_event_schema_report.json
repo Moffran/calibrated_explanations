@@ -1,27 +1,19 @@
 {
   "findings": [
     {
-      "level": "warning",
-      "message": "jsonschema package not installed; skipping JSON-Schema meta-validation."
+      "level": "info",
+      "message": "Governance event schema validation passed."
     },
     {
-      "level": "warning",
-      "message": "jsonschema package not installed; skipping fixture validation for plugin governance event fixture."
+      "level": "info",
+      "message": "Config governance event schema validation passed."
     },
     {
-      "level": "warning",
-      "message": "jsonschema package not installed; skipping fixture validation for config governance event fixture (resolve)."
-    },
-    {
-      "level": "warning",
-      "message": "jsonschema package not installed; skipping fixture validation for config governance event fixture (export)."
-    },
-    {
-      "level": "warning",
-      "message": "jsonschema package not installed; skipping fixture validation for config governance event fixture (validation_failure)."
+      "level": "info",
+      "message": "Governance event fixture validation passed."
     }
   ],
-  "generated_at": "2026-04-29T06:57:01+00:00",
+  "generated_at": "2026-05-11T20:31:05+00:00",
   "ok": true,
   "version": 1
 }
