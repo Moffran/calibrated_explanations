@@ -19,6 +19,10 @@ def commit_all(tmp_path: Path, message: str) -> str:
     return sha.stdout.strip()
 
 
+CHECKOUT_SHA = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+SETUP_PYTHON_SHA = "a309ff8b426b58ec0e2a45f0f869d46889d02405"
+
+
 def test_should_fail_when_pip_install_missing_constraints(tmp_path: Path) -> None:
     init_repo(tmp_path)
     (tmp_path / ".github/workflows").mkdir(parents=True)
@@ -71,6 +75,293 @@ jobs:
     result = validate_policy(base_sha=base_sha, head_sha=head_sha, repo_root=tmp_path)
 
     assert any("pip install must include -c constraints.txt" in error for error in result.errors)
+
+
+def test_should_fail_when_external_action_is_major_tag(tmp_path: Path) -> None:
+    init_repo(tmp_path)
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / "scripts").mkdir(parents=True)
+    (tmp_path / "scripts/local_checks.py").write_text("print('ok')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text("local-checks:\n\tpython scripts/local_checks.py\n", encoding="utf-8")
+    (tmp_path / ".github/workflows/ci-main.yml").write_text(
+        f"""
+name: CI Main
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@{CHECKOUT_SHA}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    base_sha = commit_all(tmp_path, "base")
+
+    (tmp_path / ".github/workflows/ci-main.yml").write_text(
+        f"""
+name: CI Main
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@{SETUP_PYTHON_SHA}
+        with:
+          python-version: '3.11'
+          cache: pip
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    head_sha = commit_all(tmp_path, "head")
+
+    result = validate_policy(base_sha=base_sha, head_sha=head_sha, repo_root=tmp_path)
+
+    assert any("must use a full 40-character commit SHA" in error for error in result.errors)
+
+
+def test_should_pass_when_external_actions_use_full_sha(tmp_path: Path) -> None:
+    init_repo(tmp_path)
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / "scripts").mkdir(parents=True)
+    (tmp_path / "scripts/local_checks.py").write_text("print('ok')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text("local-checks:\n\tpython scripts/local_checks.py\n", encoding="utf-8")
+    (tmp_path / ".github/workflows/ci-main.yml").write_text(
+        f"""
+name: CI Main
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@{CHECKOUT_SHA}
+      - uses: actions/setup-python@{SETUP_PYTHON_SHA}
+        with:
+          python-version: '3.11'
+          cache: pip
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    base_sha = commit_all(tmp_path, "base")
+
+    (tmp_path / ".github/workflows/ci-main.yml").write_text(
+        f"""
+name: CI Main Updated
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@{CHECKOUT_SHA}
+      - uses: actions/setup-python@{SETUP_PYTHON_SHA}
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: echo verify
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "scripts/local_checks.py").write_text("print('changed')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        "# includes full-SHA pin enforcement parity\nlocal-checks:\n\tpython scripts/local_checks.py\n",
+        encoding="utf-8",
+    )
+    head_sha = commit_all(tmp_path, "head")
+
+    result = validate_policy(base_sha=base_sha, head_sha=head_sha, repo_root=tmp_path)
+
+    assert result.errors == []
+
+
+def test_should_fail_when_external_action_missing_version(tmp_path: Path) -> None:
+    init_repo(tmp_path)
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / "scripts").mkdir(parents=True)
+    (tmp_path / "scripts/local_checks.py").write_text("print('ok')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text("local-checks:\n\tpython scripts/local_checks.py\n", encoding="utf-8")
+    (tmp_path / ".github/workflows/ci-main.yml").write_text(
+        f"""
+name: CI Main
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@{CHECKOUT_SHA}
+      - uses: actions/setup-python@{SETUP_PYTHON_SHA}
+        with:
+          python-version: '3.11'
+          cache: pip
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    base_sha = commit_all(tmp_path, "base")
+
+    (tmp_path / ".github/workflows/ci-main.yml").write_text(
+        """
+name: CI Main
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    head_sha = commit_all(tmp_path, "head")
+
+    result = validate_policy(base_sha=base_sha, head_sha=head_sha, repo_root=tmp_path)
+
+    assert any("must be pinned to a full commit SHA" in error for error in result.errors)
+
+
+def test_should_pass_when_local_action_is_unpinned(tmp_path: Path) -> None:
+    init_repo(tmp_path)
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / ".github/actions/ci-policy").mkdir(parents=True)
+    (tmp_path / "scripts").mkdir(parents=True)
+    (tmp_path / "scripts/local_checks.py").write_text("print('ok')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text("local-checks:\n\tpython scripts/local_checks.py\n", encoding="utf-8")
+    (tmp_path / ".github/actions/ci-policy/action.yml").write_text(
+        """
+name: ci-policy
+runs:
+  using: composite
+  steps:
+    - run: echo ok
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".github/workflows/ci-policy.yml").write_text(
+        f"""
+name: ci-policy/validate-workflows
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@{CHECKOUT_SHA}
+      - uses: actions/setup-python@{SETUP_PYTHON_SHA}
+        with:
+          python-version: '3.11'
+      - uses: ./.github/actions/ci-policy
+        with:
+          base-sha: abc123
+          head-sha: def456
+          advisory: 'true'
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    base_sha = commit_all(tmp_path, "base")
+
+    (tmp_path / ".github/workflows/ci-policy.yml").write_text(
+        f"""
+name: ci-policy/validate-workflows
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@{CHECKOUT_SHA}
+      - uses: actions/setup-python@{SETUP_PYTHON_SHA}
+        with:
+          python-version: '3.11'
+      - uses: ./.github/actions/ci-policy
+        with:
+          base-sha: abc123
+          head-sha: def456
+          advisory: 'false'
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "scripts/local_checks.py").write_text("print('changed')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text(
+        "# includes full-SHA pin enforcement parity\nlocal-checks:\n\tpython scripts/local_checks.py\n",
+        encoding="utf-8",
+    )
+    head_sha = commit_all(tmp_path, "head")
+
+    result = validate_policy(base_sha=base_sha, head_sha=head_sha, repo_root=tmp_path)
+
+    assert result.errors == []
 
 
 def test_should_pass_for_metadata_only_workflow_changes(tmp_path: Path) -> None:

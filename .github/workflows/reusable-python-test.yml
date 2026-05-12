@@ -18,6 +18,8 @@ on:
         type: string
         default: "pytest -q"
     # callers may set permissions on their side; this job only needs read
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -25,10 +27,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip

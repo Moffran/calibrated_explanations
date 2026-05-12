@@ -234,7 +234,7 @@ def main() -> int:
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
         Step(
-            "CI policy workflow validation (advisory)",
+            "CI policy workflow validation (advisory, includes full-SHA pinning)",
             _python_cmd(
                 "scripts/quality/validate_ci_policy.py",
                 "--base-sha",
