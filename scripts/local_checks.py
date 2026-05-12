@@ -134,27 +134,54 @@ def _run_uv_install_smoke() -> int:
     pip_venv = run_dir / "venv-pip"
     uv_venv = run_dir / "venv-uv"
     timing_report = Path("reports/ci/uv_install_timing.txt")
+    smoke_python = "3.11"
 
     print("\n[uv install smoke and timing]")
     print(f"Working directory: {run_dir}")
+    print(f"Provisioning smoke envs with Python {smoke_python} via uv")
     timing_report.parent.mkdir(parents=True, exist_ok=True)
 
     for venv_path in (pip_venv, uv_venv):
-        rc = subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=False).returncode
+        rc = subprocess.run(
+            ["uv", "venv", "--python", smoke_python, "--seed", str(venv_path)],
+            check=False,
+        ).returncode
         if rc != 0:
             return rc
 
     pip_python = _venv_python(pip_venv)
     uv_python = _venv_python(uv_venv)
+    binary_only = "--only-binary=numpy,scipy,scikit-learn"
 
     pip_rc, pip_seconds = _run_timed_command(
-        [str(pip_python), "-m", "pip", "install", "-e", ".[dev]", "-c", "constraints.txt"]
+        [
+            str(pip_python),
+            "-m",
+            "pip",
+            "install",
+            binary_only,
+            "-e",
+            ".[dev]",
+            "-c",
+            "constraints.txt",
+        ]
     )
     if pip_rc != 0:
         return pip_rc
 
     uv_rc, uv_seconds = _run_timed_command(
-        ["uv", "pip", "install", "--python", str(uv_python), "-e", ".[dev]", "-c", "constraints.txt"]
+        [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(uv_python),
+            binary_only,
+            "-e",
+            ".[dev]",
+            "-c",
+            "constraints.txt",
+        ]
     )
     if uv_rc != 0:
         return uv_rc

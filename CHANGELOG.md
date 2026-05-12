@@ -8,6 +8,7 @@
 ### Packaging / CI
 
 - **Optional uv contributor workflow (v0.11.3 Task 7):** Added an optional `uv pip install -e .[dev] -c constraints.txt` contributor fast path, introduced a pinned `uv-install-smoke` PR lane that compares pip and uv install timing without replacing existing pip-based CI, and removed stale `uv.lock` so no unvalidated lockfile appears authoritative.
+- **Windows install-smoke wheel hardening:** Updated `uv-install-smoke` to provision CI-aligned Python 3.11 virtualenvs via `uv venv` and require binary wheels for `numpy`, `scipy`, and `scikit-learn` so local host-Python drift (for example, 3.14) does not trigger compiler-dependent source builds. Relaxed the Python >=3.13 NumPy constraint to `numpy>=2.1.2` to avoid over-constraining newer interpreter resolution.
 
 ## [v0.11.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.2) - 2026-05-12
 
