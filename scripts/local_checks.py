@@ -11,6 +11,8 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -107,6 +109,83 @@ def _run_micro_benchmark() -> int:
     return 0
 
 
+def _venv_python(venv_path: Path) -> Path:
+    """Return the Python executable path for a virtual environment."""
+    if os.name == "nt":
+        return venv_path / "Scripts" / "python.exe"
+    return venv_path / "bin" / "python"
+
+
+def _run_timed_command(command: list[str]) -> tuple[int, int]:
+    """Run a command and return ``(returncode, elapsed_seconds)``."""
+    start = time.monotonic()
+    result = subprocess.run(command, check=False)
+    elapsed = int(round(time.monotonic() - start))
+    return result.returncode, elapsed
+
+
+def _run_uv_install_smoke() -> int:
+    """Reproduce the CI uv install smoke and timing lane locally."""
+    if shutil.which("uv") is None:
+        print("ERROR: uv not found. Install uv before running the optional uv install smoke.")
+        return 127
+
+    run_dir = Path(tempfile.mkdtemp(prefix="ce-uv-install-smoke-")).resolve()
+    pip_venv = run_dir / "venv-pip"
+    uv_venv = run_dir / "venv-uv"
+    timing_report = Path("reports/ci/uv_install_timing.txt")
+
+    print("\n[uv install smoke and timing]")
+    print(f"Working directory: {run_dir}")
+    timing_report.parent.mkdir(parents=True, exist_ok=True)
+
+    for venv_path in (pip_venv, uv_venv):
+        rc = subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=False).returncode
+        if rc != 0:
+            return rc
+
+    pip_python = _venv_python(pip_venv)
+    uv_python = _venv_python(uv_venv)
+
+    pip_rc, pip_seconds = _run_timed_command(
+        [str(pip_python), "-m", "pip", "install", "-e", ".[dev]", "-c", "constraints.txt"]
+    )
+    if pip_rc != 0:
+        return pip_rc
+
+    uv_rc, uv_seconds = _run_timed_command(
+        ["uv", "pip", "install", "--python", str(uv_python), "-e", ".[dev]", "-c", "constraints.txt"]
+    )
+    if uv_rc != 0:
+        return uv_rc
+
+    smoke = subprocess.run(
+        [
+            str(uv_python),
+            "-c",
+            (
+                "from importlib.metadata import version; "
+                "import calibrated_explanations; "
+                "from calibrated_explanations import WrapCalibratedExplainer; "
+                "print(calibrated_explanations.__name__); "
+                "print(WrapCalibratedExplainer.__name__); "
+                "print(version('calibrated-explanations'))"
+            ),
+        ],
+        check=False,
+    )
+    if smoke.returncode != 0:
+        return smoke.returncode
+
+    timing_report.write_text(
+        f"pip_install_seconds={pip_seconds}\nuv_install_seconds={uv_seconds}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(timing_report.read_text(encoding="utf-8"), end="")
+    return 0
+
+
 def _is_network_fetch_failure(stderr: str) -> bool:
     text = (stderr or "").lower()
     if "unable to access 'https://github.com" in text:
@@ -136,7 +215,15 @@ def main() -> int:
         action="store_true",
         help="Run docs/linkcheck in strict CI parity mode (make linkcheck fatal).",
     )
+    parser.add_argument(
+        "--uv-install-smoke",
+        action="store_true",
+        help="Run the optional uv install smoke and pip-vs-uv install timing lane.",
+    )
     args = parser.parse_args()
+
+    if args.uv_install_smoke:
+        return _run_uv_install_smoke()
 
     # CI-parity mode: dynamically read CI workflows and run them locally.
     if args.ci_parity:

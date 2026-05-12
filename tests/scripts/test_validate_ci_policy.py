@@ -77,6 +77,62 @@ jobs:
     assert any("pip install must include -c constraints.txt" in error for error in result.errors)
 
 
+def test_should_allow_pip_bootstrap_upgrade_without_constraints(tmp_path: Path) -> None:
+    init_repo(tmp_path)
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / "scripts").mkdir(parents=True)
+    (tmp_path / "scripts/local_checks.py").write_text("print('ok')\n", encoding="utf-8")
+    (tmp_path / "Makefile").write_text("local-checks:\n\tpython scripts/local_checks.py\n", encoding="utf-8")
+    (tmp_path / ".github/workflows/ci-pr.yml").write_text(
+        """
+name: CI
+on: [pull_request]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e .[dev] -c constraints.txt
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    base_sha = commit_all(tmp_path, "base")
+
+    (tmp_path / ".github/workflows/ci-pr.yml").write_text(
+        """
+name: CI
+on: [pull_request]
+jobs:
+  tests:
+    uses: ./.github/workflows/reusable-python-test.yml
+    permissions:
+      contents: read
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e .[dev] -c constraints.txt
+      - run: echo verify
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    head_sha = commit_all(tmp_path, "head")
+
+    result = validate_policy(base_sha=base_sha, head_sha=head_sha, repo_root=tmp_path)
+
+    assert not any("pip install must include -c constraints.txt" in error for error in result.errors)
+
+
 def test_should_fail_when_external_action_is_major_tag(tmp_path: Path) -> None:
     init_repo(tmp_path)
     (tmp_path / ".github/workflows").mkdir(parents=True)

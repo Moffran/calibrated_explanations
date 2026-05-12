@@ -19,7 +19,7 @@
 
 | Requirement | Notes |
 |---|---|
-| Python environment | Use one venv per CE branch; install editable: `pip install -e .[dev]` |
+| Python environment | Use one venv per CE branch; install editable: `pip install -e .[dev] -c constraints.txt` |
 | Agent platform | See platform-specific file for tool installation steps |
 | VS Code (Copilot only) | v1.90+ with Copilot and Copilot Chat extensions |
 
@@ -29,7 +29,13 @@ Quick dev environment setup (all platforms):
 python -m venv .venv
 source .venv/bin/activate       # or .venv\Scripts\activate on Windows
 pip install --upgrade pip
-pip install -e .[dev]
+pip install -e .[dev] -c constraints.txt
+```
+
+Optional fast path if `uv` is already installed:
+
+```bash
+uv pip install -e .[dev] -c constraints.txt
 ```
 
 ---
@@ -132,7 +138,7 @@ ADR status row in `CONTRIBUTOR_INSTRUCTIONS.md` §9.
 
 ```bash
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e .[dev] -c constraints.txt
 python -m pip check
 pytest -q
 ```

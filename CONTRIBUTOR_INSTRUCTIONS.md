@@ -206,7 +206,10 @@ every existing skill directory under `.claude/skills/`.
 
 ```bash
 # Install (editable, with dev extras)
-pip install -e .[dev]
+pip install -e .[dev] -c constraints.txt
+
+# Optional fast path if uv is already installed
+uv pip install -e .[dev] -c constraints.txt
 
 # Run tests
 make test

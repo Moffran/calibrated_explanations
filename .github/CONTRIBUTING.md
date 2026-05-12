@@ -75,7 +75,15 @@ python -m pip install -e .[dev] -c constraints.txt
 python -m pip install -r docs/requirements-doc.txt -c constraints.txt
 ```
 
+If you use `uv`, the supported optional fast path mirrors the same constraint
+policy:
 
+```bash
+uv pip install -e .[dev] -c constraints.txt
+```
+
+The `uv` path is for contributor setup and CI install timing only. It does not
+replace the canonical `pip` workflow, release builds, or `constraints.txt`.
 
 ## Testing and Code Coverage
 
