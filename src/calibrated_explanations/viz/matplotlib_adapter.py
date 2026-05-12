@@ -6,13 +6,13 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 
 from __future__ import annotations
 
-import contextlib
 import importlib
 import io
 import logging
 import math
 import sys
 import warnings
+from contextlib import suppress
 from typing import Any, Sequence
 
 import numpy as np
@@ -365,11 +365,14 @@ def _threshold_xlabel(threshold: Any) -> str:
     if threshold is None:
         return "Probability of Y = 1"
     try:
-        if isinstance(threshold, Sequence) and not isinstance(threshold, (str, bytes)):
-            if len(threshold) >= 2:
-                return f"Probability of {float(threshold[0])} <= Y < {float(threshold[1])}"
+        if (
+            isinstance(threshold, Sequence)
+            and not isinstance(threshold, (str, bytes))
+            and len(threshold) >= 2
+        ):
+            return f"Probability of {float(threshold[0])} <= Y < {float(threshold[1])}"
     except Exception:  # adr002_allow
-        pass
+        return f"Probability of Y < {threshold}"
     return f"Probability of Y < {threshold}"
 
 
@@ -526,6 +529,7 @@ def _render_global_spec(
     elif spec.kind == "global_regression":
         if y_test is not None:
             import matplotlib.colors as mcolors
+
             norm = mcolors.Normalize(vmin=float(np.min(y_test)), vmax=float(np.max(y_test)))
             colormap = plt.cm.viridis  # noqa: E501 - standard colormap reference
             pt_colors = colormap(norm(y_test))
@@ -803,10 +807,8 @@ def render(
             for _bar in spec.body.bars:
                 _lbl = getattr(_bar, "label", None)
                 if _lbl:
-                    try:
+                    with suppress(Exception):  # adr002_allow - bad label must not crash sizing
                         extra_lines += str(_lbl).count("\n")
-                    except Exception:  # adr002_allow - bad label must not crash sizing
-                        pass
         height = float((num_bars + extra_lines) * 0.5 + 2.0)
         if height <= 0:
             height = 2.0

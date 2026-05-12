@@ -793,7 +793,17 @@ def guarded_explain(
                         x_pert[f] = representative
                         perturbed_rows.append(x_pert)
                         pert_metadata.append(
-                            [inst_idx, f, b_idx, lo, hi, 0.0, representative, significance, is_factual]
+                            [
+                                inst_idx,
+                                f,
+                                b_idx,
+                                lo,
+                                hi,
+                                0.0,
+                                representative,
+                                significance,
+                                is_factual,
+                            ]
                         )
                     else:
                         # Non-empty bin: queue for batch guard query
@@ -803,7 +813,17 @@ def guarded_explain(
                         _guard_indices.append(len(perturbed_rows))
                         perturbed_rows.append(x_pert)
                         pert_metadata.append(
-                            [inst_idx, f, b_idx, lo, hi, None, representative, significance, is_factual]
+                            [
+                                inst_idx,
+                                f,
+                                b_idx,
+                                lo,
+                                hi,
+                                None,
+                                representative,
+                                significance,
+                                is_factual,
+                            ]
                         )
 
     # Batch guard queries: single KNN call for all non-empty bins and categoricals.

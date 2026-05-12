@@ -13,6 +13,7 @@ Allowed mentions are restricted to:
 Files checked here are exclusively agent-facing instructions and the CE-First
 guide that agents are directed to read.
 """
+
 from __future__ import annotations
 
 import re
@@ -69,15 +70,13 @@ def test_no_forbidden_recommendation_patterns_in_agent_docs() -> None:
             continue
         for lineno, line in enumerate(doc_path.read_text(encoding="utf-8").splitlines(), 1):
             for pattern in FORBIDDEN_RECOMMENDATION_PATTERNS:
-                if re.search(pattern, line, re.IGNORECASE):
-                    if not line_is_in_allowed_context(line):
-                        violations.append(
-                            f"{doc_path.relative_to(ROOT)}:{lineno}: "
-                            f"forbidden pattern «{pattern}» found in: {line.strip()}"
-                        )
+                if re.search(pattern, line, re.IGNORECASE) and not line_is_in_allowed_context(line):
+                    violations.append(
+                        f"{doc_path.relative_to(ROOT)}:{lineno}: "
+                        f"forbidden pattern «{pattern}» found in: {line.strip()}"
+                    )
     assert not violations, (
-        "Agent-facing docs must not recommend ce_agent_utils usage.\n"
-        + "\n".join(violations)
+        "Agent-facing docs must not recommend ce_agent_utils usage.\n" + "\n".join(violations)
     )
 
 

@@ -55,16 +55,12 @@ def test_explanation_functions_classification(binary_dataset):
     factual_explanations.is_alternative()
     factual_explanations.is_one_sided
     factual_explanations.is_probabilistic_regression
-    # LIME is an optional dependency; skip this portion if not installed
-    try:  # pragma: no cover - optional path
-        import importlib
-
-        importlib.import_module("lime.lime_tabular")
-    except ImportError:  # pragma: no cover - executed only when lime missing
-        pytest.skip("Skipping LIME export test because 'lime' is not installed")
-    else:
-        with pytest.raises(AttributeError, match="preload_lime"):
+    with warns_or_raises(match="CalibratedExplanations.as_lime is deprecated"):
+        try:
             factual_explanations.as_lime()
+        except AttributeError as exc:
+            # LIME preload support has been removed from core and may raise here.
+            assert "preload_lime" in str(exc)
     # factual_explanations.as_shap() # generates an insane number of warnings
 
     try:

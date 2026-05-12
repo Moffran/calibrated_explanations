@@ -325,7 +325,6 @@ def _extract_top_features(explanation: Any, top_k: int = 3) -> List[str]:
     return []
 
 
-
 def _extract_prediction_triplet(prediction: Any) -> Optional[Tuple[Any, Any, Any]]:
     """Extract ``(predict, low, high)`` from prediction mappings when present."""
     if not isinstance(prediction, Mapping):
@@ -553,7 +552,6 @@ def print_guarded_audit_table(
             include_reason_legend=include_reason_legend,
         )
     )
-
 
 
 def explain_and_narrate(

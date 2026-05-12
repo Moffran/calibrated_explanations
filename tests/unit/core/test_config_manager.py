@@ -199,6 +199,7 @@ def test_effective_export_uses_default_profile_when_no_env_or_pyproject() -> Non
 # Phase B: module-specific singleton ownership assertions (ADR-034 Task 1)
 # ---------------------------------------------------------------------------
 
+
 def test_should_instantiate_orchestrator_without_errors() -> None:
     """PredictionOrchestrator.__init__ must complete successfully (proves ConfigManager.from_sources() wiring is correct)."""
     from unittest.mock import MagicMock

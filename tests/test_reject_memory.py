@@ -19,6 +19,7 @@ from calibrated_explanations.explanations.reject import RejectCalibratedExplanat
 def current_rss_bytes() -> int:
     """Return resident memory for the current process in bytes."""
     if os.name == "nt":
+
         class ProcessMemoryCountersEx(ctypes.Structure):
             _fields_ = [
                 ("cb", ctypes.c_uint32),

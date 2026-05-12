@@ -27,7 +27,9 @@ def test_build_instance_telemetry_payload_includes_full_probs_when_diag_enabled(
     assert payload["interval_dependencies"] == ("interval_b",)
 
 
-def test_should_capture_ce_interval_plugin_fallbacks_in_config_manager_snapshot(monkeypatch) -> None:
+def test_should_capture_ce_interval_plugin_fallbacks_in_config_manager_snapshot(
+    monkeypatch,
+) -> None:
     """ConfigManager.from_sources() must capture CE_INTERVAL_PLUGIN_FALLBACKS at construction time.
 
     This verifies that PredictionOrchestrator's ConfigManager.from_sources() call in __init__

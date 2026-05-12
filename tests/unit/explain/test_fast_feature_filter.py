@@ -1,7 +1,7 @@
 """Tests for feature-filter ConfigManager config resolution (ADR-034 Task 1)."""
+
 from __future__ import annotations
 
-import pytest
 
 from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.core.explain._feature_filter import (
@@ -26,12 +26,16 @@ class TestFeatureFilterConfigResolution:
 
     def test_should_enable_feature_filter_when_ce_feature_filter_is_on(self) -> None:
         """CE_FEATURE_FILTER=on must set enabled=True."""
-        cfg = FeatureFilterConfig.from_base_and_env(config_manager=make_mgr({"CE_FEATURE_FILTER": "on"}))
+        cfg = FeatureFilterConfig.from_base_and_env(
+            config_manager=make_mgr({"CE_FEATURE_FILTER": "on"})
+        )
         assert cfg.enabled is True
 
     def test_should_disable_feature_filter_when_ce_feature_filter_is_off(self) -> None:
         """CE_FEATURE_FILTER=off must set enabled=False."""
-        cfg = FeatureFilterConfig.from_base_and_env(config_manager=make_mgr({"CE_FEATURE_FILTER": "off"}))
+        cfg = FeatureFilterConfig.from_base_and_env(
+            config_manager=make_mgr({"CE_FEATURE_FILTER": "off"})
+        )
         assert cfg.enabled is False
 
     def test_should_set_top_k_from_ce_feature_filter_token(self) -> None:
@@ -67,5 +71,6 @@ class TestFeatureFilterConfigResolution:
         monkeypatch.setenv("CE_FEATURE_FILTER", "off")
 
         cfg = FeatureFilterConfig.from_base_and_env(config_manager=mgr)
-        assert cfg.enabled is True, "Snapshot must reflect the state at ConfigManager construction time"
-
+        assert (
+            cfg.enabled is True
+        ), "Snapshot must reflect the state at ConfigManager construction time"

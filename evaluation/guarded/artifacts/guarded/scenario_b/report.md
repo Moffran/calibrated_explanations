@@ -30,18 +30,30 @@ The secondary diagnostic is the interval-level rejection rate on in-distribution
 Mean AUROC on the paper-facing slice:
 
 ```csv
-shift_level,n_dim,auroc
-extreme,2,0.9982201500000001
-extreme,5,0.9746341
-extreme,10,0.9408309499999999
-extreme,20,0.8996422000000001
-mild,2,0.6078785499999999
-mild,5,0.58510455
-mild,10,0.5526853
-mild,20,0.5403107
-moderate,2,0.8123440000000001
-moderate,5,0.7556834
-moderate,10,0.6937752500000001
+shift_level,n_dim,auroc
+
+extreme,2,0.9982201500000001
+
+extreme,5,0.9746341
+
+extreme,10,0.9408309499999999
+
+extreme,20,0.8996422000000001
+
+mild,2,0.6078785499999999
+
+mild,5,0.58510455
+
+mild,10,0.5526853
+
+mild,20,0.5403107
+
+moderate,2,0.8123440000000001
+
+moderate,5,0.7556834
+
+moderate,10,0.6937752500000001
+
 moderate,20,0.6478198
 ```
 
@@ -52,10 +64,14 @@ AUROC above 0.80 for moderate or extreme shift indicates useful separation. AURO
 Mean rejection rate at significance=0.1 on the paper-facing slice:
 
 ```csv
-n_dim,fpr_at_significance
-2,0.13191875
-5,0.13932147435897438
-10,0.13744285677929663
+n_dim,fpr_at_significance
+
+2,0.13191875
+
+5,0.13932147435897438
+
+10,0.13744285677929663
+
 20,0.12977743590385993
 ```
 

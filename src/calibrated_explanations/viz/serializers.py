@@ -7,6 +7,7 @@ lightweight validator for the MVP spec. The serialized envelope contains
 
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import asdict
 from typing import Any, Dict, List, Set
 
@@ -29,16 +30,12 @@ def _to_boundary_value(value: Any) -> Any:
         return value
     item = getattr(value, "item", None)
     if callable(item):
-        try:
+        with suppress(Exception):  # adr002_allow
             return _to_boundary_value(item())
-        except Exception:  # adr002_allow
-            pass
     tolist = getattr(value, "tolist", None)
     if callable(tolist):
-        try:
+        with suppress(Exception):  # adr002_allow
             return _to_boundary_value(tolist())
-        except Exception:  # adr002_allow
-            pass
     if isinstance(value, dict):
         return {str(k): _to_boundary_value(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):

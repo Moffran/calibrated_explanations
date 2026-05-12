@@ -457,7 +457,6 @@ def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz bu
     # Remember whether the caller provided `xticks`. If not provided we may
     # default them for plotting, but header-creation logic should only
     # consider explicitly-provided hints.
-    provided_xticks = xticks is not None
     if xticks is None and xlim == (0.0, 1.0):
         xticks = [float(x) for x in np.linspace(0.0, 1.0, 11)]
 

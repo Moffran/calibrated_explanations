@@ -2240,7 +2240,6 @@ class CalibratedExplainer:
 
         # Delegate to external plugin pipeline for non-plugin path
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path

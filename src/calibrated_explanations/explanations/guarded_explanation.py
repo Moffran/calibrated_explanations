@@ -373,14 +373,16 @@ class GuardedFactualExplanation(FactualExplanation):
             if not conforming:
                 bad_indices.add(i)
 
-            audit_records.append({
-                "type": "conjunction",
-                "features": list(features),
-                "p_value": p_val,
-                "conforming": conforming,
-                "emitted": conforming,
-                "emission_reason": "emitted" if conforming else "removed_guard",
-            })
+            audit_records.append(
+                {
+                    "type": "conjunction",
+                    "features": list(features),
+                    "p_value": p_val,
+                    "conforming": conforming,
+                    "emitted": conforming,
+                    "emission_reason": "emitted" if conforming else "removed_guard",
+                }
+            )
 
         self._conjunction_audit = audit_records
 
@@ -664,14 +666,16 @@ class GuardedAlternativeExplanation(AlternativeExplanation):
             if not conforming:
                 bad_indices.add(i)
 
-            audit_records.append({
-                "type": "conjunction",
-                "features": list(features),
-                "p_value": p_val,
-                "conforming": conforming,
-                "emitted": conforming,
-                "emission_reason": "emitted" if conforming else "removed_guard",
-            })
+            audit_records.append(
+                {
+                    "type": "conjunction",
+                    "features": list(features),
+                    "p_value": p_val,
+                    "conforming": conforming,
+                    "emitted": conforming,
+                    "emission_reason": "emitted" if conforming else "removed_guard",
+                }
+            )
 
         self._conjunction_audit = audit_records
 

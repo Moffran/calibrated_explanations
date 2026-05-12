@@ -20,9 +20,7 @@ def test_pyproject_development_status_classifier_matches_release_phase() -> None
 
     version = project.get("version", "")
     development_status_classifiers = [
-        classifier
-        for classifier in classifiers
-        if classifier.startswith("Development Status ::")
+        classifier for classifier in classifiers if classifier.startswith("Development Status ::")
     ]
 
     assert "Development Status :: 3 - Alpha" not in development_status_classifiers

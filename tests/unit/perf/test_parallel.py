@@ -1,7 +1,7 @@
 from __future__ import annotations
 from functools import partial
 
-from typing import Any
+from typing import Any, Mapping
 
 import pytest
 
