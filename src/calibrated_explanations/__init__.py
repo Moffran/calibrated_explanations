@@ -11,6 +11,7 @@ import copyreg
 import importlib
 import logging as _logging
 from types import MappingProxyType
+from typing import Any
 
 # Ensure MappingProxyType objects can be pickled project-wide by reducing them
 # to plain dicts. This avoids "cannot pickle 'mappingproxy' object" errors
@@ -53,7 +54,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Lazy import for sanctioned public symbols.
 
     This avoids importing `calibrated_explanations.core` at package import time
@@ -100,4 +101,4 @@ def __getattr__(name: str):
         globals()[name] = NormalizationStrategy
         return NormalizationStrategy
 
-    raise AttributeError(name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -659,6 +659,28 @@ def test_package_init_lazy_attributes_smoke() -> None:
             continue
 
 
+def test_should_raise_descriptive_attribute_error_when_accessing_unknown_package_attribute() -> None:
+    import importlib
+
+    pkg = importlib.import_module("calibrated_explanations")
+
+    with pytest.raises(
+        AttributeError,
+        match=r"module 'calibrated_explanations' has no attribute 'definitely_missing_attribute'",
+    ):
+        getattr(pkg, "definitely_missing_attribute")
+
+
+def test_should_annotate_package_getattr_return_type_as_any_when_introspected() -> None:
+    import importlib
+    from inspect import signature
+    from typing import Any as TypingAny
+
+    pkg = importlib.import_module("calibrated_explanations")
+
+    assert signature(pkg.__getattr__).return_annotation is TypingAny
+
+
 def test_compute_calibrated_confusion_matrix_requires_samples() -> None:
     x_cal = np.empty((0, 2))
     y_cal = np.array([])
