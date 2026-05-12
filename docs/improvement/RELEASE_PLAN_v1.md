@@ -519,8 +519,15 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
       mending evidence. Proposed candidate outcome: broad promotion (1C-family) if
       semantic/visual parity evidence is sufficient; otherwise record another explicit
       deferral rather than promoting by momentum.
+  7. Packaging workflow decision: decide whether to add explicit `uv` support for
+     contributor, notebook, and reproducible-development workflows. The decision must
+     classify `uv` as one of: optional supported workflow, deferred investigation, or
+     unsupported/stale artifact cleanup. If support is adopted, update docs, refresh
+     `uv.lock`, and add an appropriately scoped validation check; if not, remove or
+     document the stale lockfile state so users are not misled.
   Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
-
+  Packaging decision gate: the `uv` support decision is recorded with docs,
+  lockfile, and CI follow-up completed as applicable before v0.11.3 closes.
 
 ### v1.0.0-rc (release candidate readiness)
 
