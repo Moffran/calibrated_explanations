@@ -1,10 +1,21 @@
 {
   "summary": {
-    "total": 18,
-    "compliant": 18,
+    "total": 17,
+    "compliant": 17,
     "failed": 0
   },
   "notebooks": [
+    {
+      "path": "notebooks/quickstart_tiny.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "calibrate",
+        "explain_factual",
+        "fit",
+        "plot"
+      ]
+    },
     {
       "path": "notebooks/quickstart.ipynb",
       "compliant": true,
@@ -40,18 +51,7 @@
       ]
     },
     {
-      "path": "notebooks/quickstart_tiny.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "calibrate",
-        "explain_factual",
-        "fit",
-        "plot"
-      ]
-    },
-    {
-      "path": "notebooks/advanced/demo_conditional.ipynb",
+      "path": "notebooks/core_demos/demo_probabilistic_regression.ipynb",
       "compliant": true,
       "violations": [],
       "usage": [
@@ -62,86 +62,8 @@
         "fit",
         "plot",
         "predict",
-        "remove_conjunctions"
-      ]
-    },
-    {
-      "path": "notebooks/advanced/demo_narrative_explanations.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "add_conjunctions",
-        "calibrate",
-        "explain_factual",
-        "fit"
-      ]
-    },
-    {
-      "path": "notebooks/advanced/demo_plugin_wiring.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "calibrate",
-        "explain_factual",
-        "explainer",
-        "fit",
-        "plot"
-      ]
-    },
-    {
-      "path": "notebooks/advanced/demo_reject.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "calibrate",
-        "default_reject_policy",
-        "explain_factual",
-        "explainer",
-        "fit",
-        "initialize_reject_learner",
-        "predict",
-        "predict_proba"
-      ]
-    },
-    {
-      "path": "notebooks/advanced/demo_under_the_hood.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "add_conjunctions",
-        "calibrate",
-        "explain_factual",
-        "explore_alternatives",
-        "fit",
-        "plot",
-        "remove_conjunctions"
-      ]
-    },
-    {
-      "path": "notebooks/advanced/fast_feature_filtering_demo.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "calibrate",
-        "explain_factual",
-        "explainer",
-        "fit",
-        "num_features",
-        "perf_parallel",
-        "plot"
-      ]
-    },
-    {
-      "path": "notebooks/core_demos/demo_binary_classification.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "add_conjunctions",
-        "calibrate",
-        "explain_factual",
-        "explore_alternatives",
-        "fit",
-        "plot"
+        "remove_conjunctions",
+        "set_difficulty_estimator"
       ]
     },
     {
@@ -159,7 +81,7 @@
       ]
     },
     {
-      "path": "notebooks/core_demos/demo_probabilistic_regression.ipynb",
+      "path": "notebooks/core_demos/demo_binary_classification.ipynb",
       "compliant": true,
       "violations": [],
       "usage": [
@@ -168,10 +90,7 @@
         "explain_factual",
         "explore_alternatives",
         "fit",
-        "plot",
-        "predict",
-        "remove_conjunctions",
-        "set_difficulty_estimator"
+        "plot"
       ]
     },
     {
@@ -188,6 +107,35 @@
         "predict",
         "remove_conjunctions",
         "set_difficulty_estimator"
+      ]
+    },
+    {
+      "path": "notebooks/paper_based/ensured.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explore_alternatives",
+        "fit",
+        "learner",
+        "plot",
+        "set_difficulty_estimator"
+      ]
+    },
+    {
+      "path": "notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "predict",
+        "predict_proba"
       ]
     },
     {
@@ -220,46 +168,84 @@
       ]
     },
     {
-      "path": "notebooks/miscellaneous/LIME_comparison.ipynb",
+      "path": "notebooks/advanced/demo_reject.ipynb",
       "compliant": true,
       "violations": [],
       "usage": [
         "calibrate",
+        "default_reject_policy",
         "explain_factual",
+        "explainer",
         "fit",
-        "plot",
-        "predict",
-        "predict_proba",
-        "show_in_notebook"
-      ]
-    },
-    {
-      "path": "notebooks/miscellaneous/support_xgboost_lightgbm_catboost_issue_92.ipynb",
-      "compliant": true,
-      "violations": [],
-      "usage": [
-        "add_conjunctions",
-        "calibrate",
-        "explain_factual",
-        "explore_alternatives",
-        "fit",
-        "plot",
+        "initialize_reject_learner",
         "predict",
         "predict_proba"
       ]
     },
     {
-      "path": "notebooks/paper_based/ensured.ipynb",
+      "path": "notebooks/advanced/demo_conditional.ipynb",
       "compliant": true,
       "violations": [],
       "usage": [
         "add_conjunctions",
         "calibrate",
+        "explain_factual",
         "explore_alternatives",
         "fit",
-        "learner",
         "plot",
-        "set_difficulty_estimator"
+        "predict",
+        "remove_conjunctions"
+      ]
+    },
+    {
+      "path": "notebooks/advanced/demo_narrative_explanations.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "fit"
+      ]
+    },
+    {
+      "path": "notebooks/advanced/fast_feature_filtering_demo.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "calibrate",
+        "explain_factual",
+        "explainer",
+        "fit",
+        "num_features",
+        "perf_parallel",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/advanced/demo_plugin_wiring.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "calibrate",
+        "explain_factual",
+        "explainer",
+        "fit",
+        "plot"
+      ]
+    },
+    {
+      "path": "notebooks/advanced/demo_under_the_hood.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": [
+        "add_conjunctions",
+        "calibrate",
+        "explain_factual",
+        "explore_alternatives",
+        "fit",
+        "plot",
+        "remove_conjunctions"
       ]
     }
   ]

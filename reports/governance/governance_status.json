@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-12T08:38:33+00:00",
+  "generated_at": "2026-05-12T18:57:03+00:00",
   "lint": {
     "local_checks_pr": "unavailable",
     "mypy": "unavailable",
     "ruff": "unavailable"
   },
   "run": {
-    "commit": null,
-    "run_id": null,
-    "workflow": null
+    "commit": "ed895ec5711152b5a6222c80b6f24a7a646cc2a5",
+    "run_id": "25755545411",
+    "workflow": "dynamic/copilot-swe-agent/copilot"
   },
   "schema_checks": {
     "config_manager_usage": "passed",
