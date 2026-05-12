@@ -124,69 +124,63 @@ explainer.plot(x_test[:50])
 
 ---
 
-## 4. Agent helper library (runnable code) — CE-First by design
+## 4. CE-First lifecycle enforcement (direct public API)
 
-> The canonical helper is provided in `calibrated_explanations/ce_agent_utils.py` and enforces CE-First at runtime. It **never** creates a custom wrapper class; it only uses `WrapCalibratedExplainer`.
-
-### Example usage
+Agents must implement the CE-First lifecycle using the public CE API directly.
+Do **not** use `calibrated_explanations.ce_agent_utils` as an implementation
+shortcut.
 
 ```python
+from calibrated_explanations import WrapCalibratedExplainer
+
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
-from calibrated_explanations.ce_agent_utils import (
-    ensure_ce_first_wrapper,
-    fit_and_calibrate,
-    explain_and_narrate,
-    explain_and_summarize,
-    wrap_and_explain,
-)
-
 X, y = load_breast_cancer(return_X_y=True)
 x_train, X_tmp, y_train, y_tmp = train_test_split(X, y, test_size=0.4, random_state=0)
 x_cal, x_test, y_cal, y_test = train_test_split(X_tmp, y_tmp, test_size=0.5, random_state=0)
+feature_names = load_breast_cancer().feature_names.tolist()
 
 model = RandomForestClassifier(random_state=0)
-wrapper = ensure_ce_first_wrapper(model)
-fit_and_calibrate(wrapper, x_train, y_train, x_cal, y_cal)
-explanations, narrative = explain_and_narrate(wrapper, x_test[:1], mode="factual")
-print(narrative)
+explainer = WrapCalibratedExplainer(model)
+explainer.fit(x_train, y_train)
+explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
 
-# One-line CE-first flow
-payload = wrap_and_explain(model, x_train, y_train, x_cal, y_cal, x_test[:1])
-print(payload["narrative"])
+if not explainer.fitted or not explainer.calibrated:
+    raise RuntimeError("CE-first lifecycle violation: fit and calibrate before use.")
 
-# USP-focused flow (conjunctions + UQ + probabilistic regression metadata)
-usp = explain_and_summarize(
-    wrapper,
-    x_test[:2],
-    add_conjunctions_params={"n_top_features": 3, "max_rule_size": 2},
-)
-print(usp["summary"])
+# Factual explanations + narratives + plots
+explanations = explainer.explain_factual(x_test[:1])
+print(explanations[0].to_narrative(format="short"))
+explanations[0].plot()
+
+# Alternative / counterfactual explanations
+alternatives = explainer.explore_alternatives(x_test[:1])
+print(alternatives[0].to_narrative(format="short"))
+
+# Calibrated predictions with uncertainty intervals
+probabilities, interval = explainer.predict_proba(x_test[:1], uq_interval=True)
 ```
 
-### Defensive behavior
-
-The helper probes for required methods and kwargs such as `threshold`, `uq_interval`, and `bins`. If the API differs, it either adapts or raises a clear error.
+> **Legacy note:** Helper functions remain available in
+> `calibrated_explanations.ce_agent_utils` for older integrations and examples,
+> but new agent instructions must not use them. Use the public API shown above.
 
 ---
 
 ## 5. Narrative templates and code to generate narratives
 
-The helper includes short/long/bullet templates and exposes them via `NARRATIVE_TEMPLATES`. Example use:
+Use CE-native narrative methods directly on explanation objects:
 
 ```python
-from calibrated_explanations.ce_agent_utils import explain_and_narrate
-
-explanations, short_text = explain_and_narrate(wrapper, x_test[:1], narrative_format="short")
-explanations, long_text = explain_and_narrate(wrapper, x_test[:1], narrative_format="long")
-```
-
-You can also use CE-native narratives:
-
-```python
+# Short narrative
 print(explanations[0].to_narrative(format="short"))
+
+# Long narrative
+print(explanations[0].to_narrative(format="long"))
+
+# Markdown narrative
 print(explanations[0].to_narrative(format="markdown"))
 ```
 
@@ -213,53 +207,80 @@ alt = explainer.explore_alternatives(x_test[:3], ensure_coverage=True, ensure_or
 
 ---
 
-## 7. Agent policy and enforcement code (runnable)
+## 7. Agent policy enforcement (direct lifecycle checks)
 
-Use `enforce_ce_first_and_execute` to enforce CE-First before any action.
-
-```python
-from calibrated_explanations.ce_agent_utils import enforce_ce_first_and_execute
-
-# Example: enforce CE-first before explaining
-explanations, narrative = enforce_ce_first_and_execute(
-    lambda w, x: w.explain_factual(x),
-    wrapper,
-    x_test[:1],
-)
-```
-
-Policy snippet (Python dict, importable):
+Agents must verify the CE-First lifecycle explicitly before any prediction or
+explanation call. Do not delegate this check to `ce_agent_utils` helpers.
 
 ```python
-from calibrated_explanations.ce_agent_utils import CE_FIRST_POLICY
-print(CE_FIRST_POLICY)
+from calibrated_explanations import WrapCalibratedExplainer
+
+# 1. Library present — or fail fast
+try:
+    import calibrated_explanations  # noqa: F401
+except ImportError as exc:
+    raise RuntimeError(
+        "calibrated_explanations is required. Install with: "
+        "pip install calibrated-explanations"
+    ) from exc
+
+# 2. Construct wrapper using the public API
+explainer = WrapCalibratedExplainer(model)
+
+# 3. Fit
+explainer.fit(x_proper, y_proper)
+
+# 4. Calibrate on held-out calibration data
+explainer.calibrate(x_cal, y_cal)
+
+# 5. Verify state before use
+if not explainer.fitted or not explainer.calibrated:
+    raise RuntimeError(
+        "CE-first lifecycle violation: fit and calibrate before use."
+    )
+
+# 6. Call public prediction / explanation APIs
+explanations = explainer.explain_factual(X_query)
+alternatives = explainer.explore_alternatives(X_query)
+probabilities, interval = explainer.predict_proba(X_query, uq_interval=True)
 ```
 
 ---
 
 ## 8. Testing & QA checklist for agents
 
-Minimal pytest checks are provided in `tests/unit/test_ce_agent_utils.py`:
+Agents should verify the following CE-first behaviors with direct public API tests:
 
-- CE presence and `WrapCalibratedExplainer` importability.
-- `ensure_ce_first_wrapper` behavior for raw model and wrapper.
-- `fit_and_calibrate` setting `.fitted` and `.calibrated`.
-- `explain_and_narrate` failing before calibration and succeeding after.
+- CE package and `WrapCalibratedExplainer` are importable from the top-level package.
+- `explainer.fit(...)` sets `explainer.fitted = True`.
+- `explainer.calibrate(...)` sets `explainer.calibrated = True`.
+- Calling `explain_factual` or `predict_proba` before calibration raises an error.
+- `explain_factual` and `explore_alternatives` return correct explanation objects.
+- `to_narrative(format="short")` returns a non-empty string.
+- `predict_proba(X, uq_interval=True)` returns probabilities and an uncertainty interval.
 - Probabilistic regression `threshold` usage (scalar + interval).
 - Conjunctions on collections and single explanations.
-- Optional feature probes (difficulty estimator, Mondrian categorizer, reject policy, plugins) with warning fallback.
+
+> **Note:** Backward-compatibility tests for `ce_agent_utils` are in
+> `tests/unit/test_ce_agent_utils.py`. Those protect the legacy module's API
+> contract and must not be read as endorsing its use for new agent code.
 
 ---
 
 ## 9. Integration & exposure plan (practical)
 
-- Register `calibrated_explanations.ce_agent_utils` as a canonical helper module in your agent registry.
-- Canonical entrypoints to expose:
-  - `calibrated_explanations.ce_agent_utils.ensure_ce_first_wrapper`
-  - `calibrated_explanations.ce_agent_utils.fit_and_calibrate`
-  - `calibrated_explanations.ce_agent_utils.explain_and_narrate`
-  - `calibrated_explanations.ce_agent_utils.wrap_and_explain`
-- CI: add a test stage that executes CE-first tests from `tests/unit/test_ce_agent_utils.py` to ensure CE-first behavior never regresses.
+- Agents must use the public CE API directly — **do not** register
+  `calibrated_explanations.ce_agent_utils` as a canonical helper module or
+  expose its functions as canonical agent entrypoints.
+- Canonical entrypoints to expose in any agent registry:
+  - `calibrated_explanations.WrapCalibratedExplainer`
+  - `WrapCalibratedExplainer.fit`
+  - `WrapCalibratedExplainer.calibrate`
+  - `WrapCalibratedExplainer.explain_factual`
+  - `WrapCalibratedExplainer.explore_alternatives`
+  - `WrapCalibratedExplainer.predict` / `WrapCalibratedExplainer.predict_proba`
+- CI: add a test stage that validates the CE-first lifecycle (fit → calibrate →
+  explain) against the public API to ensure behavior never regresses.
 
 ---
 
@@ -346,18 +367,17 @@ class MyPlotPlugin:
         return "<svg>..."  # or matplotlib output
 ```
 
-### Telemetry, caching, and parallelism
+### Telemetry and caching (optional post-processing utilities)
 
-- Use `set_telemetry_hook(...)` in `ce_agent_utils` to emit events on calibration/explanation.
-- Optional caching (via `optional_cache`) can reduce repeated calls in large-scale runs.
 - Parallelism hooks exist on the wrapper (`wrapper.parallel_executor`) and should only be tuned for extreme workloads.
+- Telemetry and caching utilities exist in the legacy `ce_agent_utils` module but are not part of the canonical CE-first path and should not be used in new agent code.
 
 ### Documentation (RTD)
 
 The ReadTheDocs suite is comprehensive but may not yet be agent-optimized. Recommended additions:
 - A CE-first “agent” checklist page.
-- Agent-specific examples in quickstarts (e.g., `explain_and_narrate`).
-- A glossary of CE terms mapped to helper APIs.
+- Agent-specific examples in quickstarts using the direct public CE API.
+- A glossary of CE terms mapped to the public `WrapCalibratedExplainer` API.
 
 ---
 

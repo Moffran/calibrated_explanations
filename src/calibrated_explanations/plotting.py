@@ -1731,6 +1731,8 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         "y": (list(y) if y is not None else None),
         "is_regularized": is_regularized,
         "threshold": threshold,
+        "class_labels": getattr(explainer, "class_labels", None),
+        "x": x,
     }
 
     from .plugins import (

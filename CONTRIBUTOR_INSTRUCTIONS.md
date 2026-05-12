@@ -35,9 +35,9 @@ or explanation output.
 9. **Probabilistic regression** – `threshold=` for probabilistic intervals;
    `low_high_percentiles=` for conformal.
 
-Helper utilities that enforce these invariants programmatically live in
-`src/calibrated_explanations/ce_agent_utils.py`. Use them instead of writing
-ad-hoc checks.
+Agents must not use `calibrated_explanations.ce_agent_utils` as their
+implementation shortcut. Use the public API directly. `ce_agent_utils.py` is
+retained for backward compatibility and as a legacy example only.
 
 ---
 
@@ -105,7 +105,7 @@ Every fallback must be visible to users. No silent fallbacks.
 |---|---|
 | `src/calibrated_explanations/core/__init__.py` | Public API surface |
 | `src/calibrated_explanations/plugins/` | Plugin implementations |
-| `src/calibrated_explanations/ce_agent_utils.py` | CE-first runtime guardrails for agents |
+| `src/calibrated_explanations/ce_agent_utils.py` | Legacy compatibility module — backward-compat and example only, not the recommended agent interface |
 | `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
 | `docs/improvement/RELEASE_PLAN_v1.md` | Active release plan and milestone gates |
 | `docs/improvement/adrs/` | Architectural Decision Records |
@@ -378,7 +378,6 @@ AI agents have no cross-session memory. To make feedback durable:
 1. Convert the feedback into a concrete change in a versioned file:
    - A new bullet in this file or a platform-specific instruction file.
    - A test that reproduces the mistake.
-   - A helper update in `ce_agent_utils.py`.
 2. Commit the change in the same PR as the fix.
 3. Record a dated entry in `.github/copilot-feedback-log.md` using this schema:
    - `**Feedback:**` what the agent got wrong

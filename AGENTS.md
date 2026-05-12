@@ -13,14 +13,14 @@ At the start of every Codex session, explicitly direct the agent to:
 1. Read `CONTRIBUTOR_INSTRUCTIONS.md` (canonical CE rules).
 2. Read `AGENTS.md` (this file).
 3. Follow the CE-first checklist from `docs/get-started/ce_first_agent_guide.md`.
-4. Use helpers from `src/calibrated_explanations/ce_agent_utils.py` instead of
-   ad-hoc wrappers.
+4. Use `WrapCalibratedExplainer` from the public CE API directly. Do not use
+   `ce_agent_utils` as an implementation shortcut.
 
 Reusable priming prompt:
 
 ```text
 You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
-and AGENTS.md first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
+and AGENTS.md first. Use WrapCalibratedExplainer and the public CE API directly.
 Fail fast if CE-first invariants are not satisfied.
 ```
 
@@ -91,7 +91,7 @@ Codex has no persistent cross-session memory. Convert feedback into durable file
 |---|---|
 | Wrong API usage | Update `CONTRIBUTOR_INSTRUCTIONS.md` §1 or §2 |
 | Wrong coding style | Update `CONTRIBUTOR_INSTRUCTIONS.md` §3 |
-| Recurring test mistake | Add a test to `tests/unit/test_ce_agent_utils.py` |
+| Recurring test mistake | Add a test to the relevant unit test file under `tests/unit/` |
 | Platform-specific Codex quirk | Add a bullet to this file |
 | General improvement | Update `PROMPTS.md` |
 
@@ -106,14 +106,32 @@ Commit the changes in the same PR so the correction is permanent.
 
 ---
 
-## 7. CE-first utilities (Codex-specific)
+## 7. CE-first lifecycle (Codex-specific)
 
-Prefer these helpers over ad-hoc code:
+Agents must use the public CE API directly. Do **not** use
+`calibrated_explanations.ce_agent_utils` as an implementation shortcut.
 
-- `ensure_ce_first_wrapper(model)` — wraps and validates
-- `fit_and_calibrate(explainer, x_proper, y_proper, x_cal, y_cal)` — fit+calibrate
-- `explain_and_narrate(explainer, X, mode)` — explain + return narrative
-- `wrap_and_explain(model, x_proper, y_proper, x_cal, y_cal, X_query)` — full pipeline
-- `probe_optional_features(explainer)` — check which optional features are available
+```python
+from calibrated_explanations import WrapCalibratedExplainer
 
-All helpers are in `src/calibrated_explanations/ce_agent_utils.py`.
+explainer = WrapCalibratedExplainer(model)
+explainer.fit(x_proper, y_proper)
+explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
+
+if not explainer.fitted or not explainer.calibrated:
+    raise RuntimeError("CE-first lifecycle violation: fit and calibrate before use.")
+
+# Factual explanations
+explanations = explainer.explain_factual(X_query)
+print(explanations[0].to_narrative(format="short"))
+
+# Alternative / counterfactual explanations
+alternatives = explainer.explore_alternatives(X_query)
+
+# Calibrated predictions with uncertainty intervals
+probabilities, interval = explainer.predict_proba(X_query, uq_interval=True)
+```
+
+> **Note:** `ce_agent_utils.py` is retained for backward compatibility and as a
+> legacy example. It is not the recommended agent interface. New agent code must
+> not import from it.

@@ -569,7 +569,7 @@ class CalibratedExplanation(ABC):
 
     def to_narrative(
         self,
-        template_path="exp.yaml",
+        template_path=None,
         expertise_level=("beginner", "advanced"),
         output_format="dataframe",
         conjunction_separator=" AND ",
@@ -584,9 +584,9 @@ class CalibratedExplanation(ABC):
 
         Parameters
         ----------
-        template_path : str, default="exp.yaml"
+        template_path : str or None, default=None
             Path to the narrative template file (YAML or JSON).
-            If the file doesn't exist, the default template will be used.
+            If None or the file doesn't exist, the built-in default template is used.
         expertise_level : str or tuple of str, default=("beginner", "advanced")
             The expertise level(s) for narrative generation. Can be a single
             level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
@@ -628,7 +628,6 @@ class CalibratedExplanation(ABC):
         >>> explanations = explainer.explain_factual(x_test)
         >>> single_explanation = explanations[0]
         >>> narrative = single_explanation.to_narrative(
-        ...     template_path="exp.yaml",
         ...     expertise_level=("beginner", "advanced"),
         ...     output_format="dataframe"
         ... )

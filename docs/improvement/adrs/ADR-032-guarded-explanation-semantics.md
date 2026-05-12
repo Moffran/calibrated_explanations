@@ -66,7 +66,25 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
    - Guarded entrypoints must fail with `ValidationError` when backend calibration features are unavailable or differ from `explainer.x_cal`.
    - Equality is defined by array shape plus value equality, not Python object identity.
 
-7. **Guarded explanations are not supported for fast explainers.**
+7. **Conjunctions are guarded via a joint representative perturbation.**
+   - When `add_conjunctions()` is called on a guarded explanation, each generated conjunction
+     is tested by building a **joint perturbation**: all constituent features are simultaneously
+     set to the median of their respective bin's sampled values (the same median-probe rule as
+     single-feature bins).
+   - The joint point is evaluated by `InDistributionGuard.p_values()` at `significance`
+     (unadjusted — a conjunction is one holistic test, not a multi-bin Bonferroni candidate).
+   - Conjunctions whose joint perturbation fails (`p_value < significance`) are removed from
+     the rule set before `add_conjunctions` returns.
+   - Single-feature bins that already passed the original guard are not re-tested; only the
+     joint representative point is evaluated for the conjunction.
+   - Conjunction audit records are appended to `get_guarded_audit()["conjunctions"]` and include
+     `features`, `p_value`, `conforming`, and `emission_reason` (`"emitted"` or
+     `"removed_guard"`).
+   - Summary keys `conjunctions_tested`, `conjunctions_guard_removed`, and
+     `conjunctions_emitted` are added to `get_guarded_audit()["summary"]` when conjunctions
+     were tested.
+
+8. **Guarded explanations are not supported for fast explainers.**
    - Fast interval calibrators are trained on per-feature blends of `scaled_x_cal` / `fast_x_cal`, not on `explainer.x_cal` directly.
    - The `InDistributionGuard` always uses `explainer.x_cal` as its reference distribution.
    - These two distributions cannot be aligned, so the ADR-032 precondition (decision 6) cannot be reliably enforced for fast explainers.

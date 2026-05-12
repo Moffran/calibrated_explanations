@@ -168,3 +168,54 @@ def test_checker_targeted_scope_ignores_non_target_runtime_file(tmp_path: Path) 
     )
     result = run_checker(tmp_path, scope="targeted")
     assert result.returncode == 0
+
+
+def test_should_have_empty_lifecycle_allowlist() -> None:
+    """ADR-034 Phase B closure: runtime checker output must not mention any lifecycle allowlist entries."""
+    import subprocess
+
+    package_root = Path("src/calibrated_explanations")
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--root",
+            str(package_root),
+            "--report",
+            "reports/config_manager_usage_report.json",
+            "--scope",
+            "targeted",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert "Active lifecycle allowlist entries" not in result.stdout, (
+        f"ADR-034 Phase B allowlist must be empty; checker output:\n{result.stdout}"
+    )
+
+
+def test_should_report_zero_targeted_violations_against_real_package() -> None:
+    """Checker must pass with zero violations against the real package (Phase B gate)."""
+    import subprocess
+
+    package_root = Path("src/calibrated_explanations")
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--root",
+            str(package_root),
+            "--report",
+            "reports/config_manager_usage_report.json",
+            "--scope",
+            "targeted",
+            "--check",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"Expected zero targeted violations; checker output:\n{result.stdout}\n{result.stderr}"
+    )

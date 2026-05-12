@@ -32,10 +32,13 @@ A PR that modifies CI-governed files MUST NOT merge unless all are satisfied:
 2. CODEOWNERS approval for workflow/policy files is present,
 3. PR includes CI checklist and short rationale.
 
+> **Rollout status note (2026-04-22):** `ci-policy/validate-workflows` currently runs in advisory mode (Rollout step 1). The MUST criteria above become fully enforceable at Rollout step 3 when the check is flipped to required in branch protection. Until then, violations are reported but non-blocking.
+
 ### 3. CI policy rules
 
 - **Reusable workflow first:** New entrypoints must call approved reusables (`reusable-python-test.yml`, `reusable-run-make.yml`, `reusable-build-docs.yml`) unless classified as experimental.
 - **Least-privilege permissions:** default `contents: read`; write scopes only in approved maintenance workflows.
+- **External action pinning:** all external `uses:` references MUST be pinned to a full 40-character commit SHA. Local workflow references (for example `./.github/workflows/...`) and local composite actions under `.github/actions/` are exempt.
 - **Pip constraints enforcement:** `pip install` in CI MUST include `-c constraints.txt` or a documented approved equivalent.
 - **Heavy workload gating:** heavy jobs (`parity`, `perf`, `notebook-audit`, `docs`) MUST be path-gated and/or manual/scheduled (`workflow_dispatch` / `schedule`).
 - **Local reproducibility parity:** CI changes that affect contributor-runnable checks MUST update `scripts/local_checks.py` and `Makefile` targets.

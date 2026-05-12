@@ -430,22 +430,6 @@ class CalibratedExplainer:
             stacklevel=3,
         )
 
-    def _deprecate_lime_shap_surface(
-        self,
-        symbol: str,
-        replacement: str,
-        *,
-        removal_version: str,
-    ) -> None:
-        """Emit Task-21 deprecation warning for core LIME/SHAP entry points."""
-        deprecate(
-            f"CalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
-            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
-            "under the pre-v1.0 zero-deprecation closure policy.",
-            key=f"CalibratedExplainer.{symbol}_lime_shap_deprecation",
-            stacklevel=4,
-        )
-
     def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
         cfg = getattr(self, "_feature_filter_config", None)
         enabled = getattr(cfg, "enabled", False)
@@ -610,7 +594,8 @@ class CalibratedExplainer:
             self._perf_parallel.__enter__()
 
     def close(self) -> None:
-        """Shutdown any provisioned parallel pool and release resources."""
+        """Reset runtime state, then shutdown any provisioned parallel pool."""
+        self.reset()
         perf = getattr(self, "_perf_parallel", None)
         if perf is None:
             return
@@ -618,6 +603,29 @@ class CalibratedExplainer:
             perf.__exit__(None, None, None)
         finally:
             self._perf_parallel = None
+
+    def reset(self) -> None:
+        """Clear transient runtime state retained between explanation calls."""
+        self.latest_explanation = None
+
+        for helper_name in ("_lime_helper", "_shap_helper"):
+            helper = getattr(self, helper_name, None)
+            if helper is not None and hasattr(helper, "reset"):
+                helper.reset()
+
+        plugin_manager = getattr(self, "_plugin_manager", None)
+        if plugin_manager is None:
+            return
+
+        with contextlib.suppress(Exception):
+            plugin_manager.clear_explanation_plugin_instances()
+        with contextlib.suppress(Exception):
+            plugin_manager.clear_explanation_plugin_identifiers()
+        with contextlib.suppress(Exception):
+            plugin_manager.clear_bridge_monitors()
+        contexts = getattr(plugin_manager, "explanation_contexts", None)
+        if isinstance(contexts, dict):
+            contexts.clear()
 
     def __enter__(self) -> "CalibratedExplainer":
         """Context manager entry; create and enter a worker pool."""
@@ -1763,46 +1771,6 @@ class CalibratedExplainer:
         """Return the interval calibrator from the prediction orchestrator."""
         return self.prediction_orchestrator.obtain_interval_calibrator(fast=fast, metadata=metadata)
 
-    def preload_lime(self, x_cal=None):
-        """Materialize LIME explainer artifacts.
-
-        Parameters
-        ----------
-        x_cal : array-like, optional
-            Calibration data to use for preloading.
-
-        Returns
-        -------
-        LimePipeline
-            The LIME pipeline instance.
-        """
-        self._deprecate_lime_shap_surface(
-            "preload_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(self).preload(...)",
-            removal_version="v0.11.2",
-        )
-        return self._lime_helper.preload(x_cal=x_cal)
-
-    def preload_shap(self, num_test: int | None = None):
-        """Materialize SHAP explainer artifacts.
-
-        Parameters
-        ----------
-        num_test : int, optional
-            Number of test samples to use for preloading.
-
-        Returns
-        -------
-        tuple
-            The SHAP explainer and reference explanation.
-        """
-        self._deprecate_lime_shap_surface(
-            "preload_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(self).preload(...)",
-            removal_version="v0.11.2",
-        )
-        return self._shap_helper.preload(num_test=num_test)
-
     def explain_factual(
         self,
         x,
@@ -2272,7 +2240,6 @@ class CalibratedExplainer:
 
         # Delegate to external plugin pipeline for non-plugin path
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path
@@ -2286,125 +2253,6 @@ class CalibratedExplainer:
         return pipeline.explain(x, threshold, low_high_percentiles, bins)
 
     # feature-merge and feature-parallel logic moved to plugin helpers
-
-    def explain_lime(
-        self,
-        x,
-        threshold=None,
-        low_high_percentiles=(5, 95),
-        bins=None,
-    ) -> CalibratedExplanations:
-        """Create a :class:`.CalibratedExplanations` object for the test data.
-
-        Parameters
-        ----------
-        x : array-like
-            A set with n_samples of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression.
-        low_high_percentiles : a tuple of floats, default=(5, 95)
-            The low and high percentile used to calculate the interval. Applicable to regression.
-        bins : array-like of shape (n_samples,), default=None
-            Mondrian categories
-
-        Raises
-        ------
-        ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The threshold-parameter is only supported for mode='regression'.
-        ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in x.
-        RuntimeError: Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.
-
-        Returns
-        -------
-        CalibratedExplanations : :class:`.CalibratedExplanations`
-            A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.
-        """
-        self._deprecate_lime_shap_surface(
-            "explain_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(self).explain(...)",
-            removal_version="v0.11.2",
-        )
-        if bins is None and self.is_mondrian():
-            bins = self.bins
-        # Delegate to external plugin pipeline
-        # pylint: disable-next=import-outside-toplevel
-        from pathlib import Path
-
-        # Ensure the repository root is in the path
-        repo_root = Path(__file__).resolve().parents[3]
-        if str(repo_root) not in sys.path:
-            sys.path.insert(0, str(repo_root))
-
-        from external_plugins.integrations.lime_pipeline import LimePipeline
-
-        pipeline = LimePipeline(self)
-        return pipeline.explain(x, threshold, low_high_percentiles, bins)
-
-    def explain_shap(self, x, **kwargs):
-        """Create SHAP-based explanations for the test data.
-
-        Delegates to the external SHAP integration pipeline.
-
-        Parameters
-        ----------
-        x : array-like
-            A set with n_samples of test objects to explain.
-        **kwargs
-            Additional keyword arguments passed through to SHAP.
-
-        Returns
-        -------
-        Any
-            SHAP explanation object containing feature importance values.
-
-        Raises
-        ------
-        ConfigurationError
-            If SHAP is not properly installed or configured.
-        """
-        self._deprecate_lime_shap_surface(
-            "explain_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(self).explain(...)",
-            removal_version="v0.11.2",
-        )
-        # Delegate to external plugin pipeline
-        # pylint: disable-next=import-outside-toplevel
-        from pathlib import Path
-
-        # Ensure the repository root is in the path
-        repo_root = Path(__file__).resolve().parents[3]
-        if str(repo_root) not in sys.path:
-            sys.path.insert(0, str(repo_root))
-
-        from external_plugins.integrations.shap_pipeline import ShapPipeline
-
-        pipeline = ShapPipeline(self)
-        return pipeline.explain(x, **kwargs)
-
-    def is_lime_enabled(self, is_enabled: bool | None = None) -> bool:
-        """Return or set the LIME helper enabled state."""
-        self._deprecate_lime_shap_surface(
-            "is_lime_enabled",
-            "calibrated_explanations.integrations.lime.LimeHelper(explainer).is_enabled()",
-            removal_version="v0.11.2",
-        )
-        if is_enabled is None:
-            return self._lime_helper.is_enabled()
-        self._lime_helper.set_enabled(bool(is_enabled))
-        return self._lime_helper.is_enabled()
-
-    def is_shap_enabled(self, is_enabled: bool | None = None) -> bool:
-        """Return or set the SHAP helper enabled state."""
-        self._deprecate_lime_shap_surface(
-            "is_shap_enabled",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)",
-            removal_version="v0.11.2",
-        )
-        if is_enabled is None:
-            return self._shap_helper.is_enabled()
-        self._shap_helper.set_enabled(bool(is_enabled))
-        return self._shap_helper.is_enabled()
 
     def is_multiclass(self) -> bool:
         """Test if it is a multiclass problem.

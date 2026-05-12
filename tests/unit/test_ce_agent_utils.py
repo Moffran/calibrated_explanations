@@ -188,9 +188,9 @@ def test_explain_and_narrate_handles_scalar_probability_and_missing_interval(mon
         def predict_proba(self, _x, **_kwargs):
             return 0.42
 
-    _explanations, narrative = ce_utils.explain_and_narrate(Wrapper(), [[1.0]], mode="factual")
-    assert "Calibrated probability: 0.42" in narrative
-    assert "Uncertainty interval: n/a" in narrative
+    explanations, narrative = ce_utils.explain_and_narrate(Wrapper(), [[1.0]], mode="factual")
+    assert len(explanations) == 1
+    assert narrative == ""
 
 
 def test_probe_optional_features_with_find_spec_gate():
@@ -213,7 +213,8 @@ def test_get_uncalibrated_predictions_without_predict_proba():
         predict=lambda x: np.zeros(len(x)),
     )
 
-    payload = get_uncalibrated_predictions(wrapper, x_test[:2])
+    with pytest.warns(UserWarning, match="non-canonical escape hatch"):
+        payload = get_uncalibrated_predictions(wrapper, x_test[:2])
     assert payload["prediction"] is not None
     assert payload["probability"] is None
 
@@ -312,7 +313,7 @@ def test_explain_and_narrate_invalid_mode_and_narrative_fallback(monkeypatch):
 
     explanations, narrative = ce_utils.explain_and_narrate(wrapper, [[1.0]], mode="factual")
     assert len(explanations) == 1
-    assert "Prediction" in narrative
+    assert narrative == ""
 
 
 def test_conjunction_helpers_raise_for_unsupported_objects():
@@ -348,9 +349,10 @@ def test_get_calibrated_predictions_and_uncalibrated_paths(monkeypatch):
         def predict_proba(self, _x, **_kwargs):
             return [[0.5, 0.5]]
 
-    unc = ce_utils.get_uncalibrated_predictions(
-        types.SimpleNamespace(learner=LearnerNoPredict()), [[1]]
-    )
+    with pytest.warns(UserWarning, match="non-canonical escape hatch"):
+        unc = ce_utils.get_uncalibrated_predictions(
+            types.SimpleNamespace(learner=LearnerNoPredict()), [[1]]
+        )
     assert unc["prediction"] is None
     assert unc["probability"] == [[0.5, 0.5]]
 
@@ -464,29 +466,36 @@ def test_wrap_and_explain_plot_failure_is_tolerated(monkeypatch):
     assert out["plot"] is None
 
 
-def test_get_calibrated_predictions_tolerates_signature_probe_failures(monkeypatch):
+def test_should_raise_when_unsupported_kwargs_in_get_calibrated_predictions(monkeypatch):
+    """Canonical CE-first predict path must raise on unsupported kwargs, not silently drop."""
     ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
-
-    def _broken_signature(_callable):
-        raise ValueError("boom")
-
-    monkeypatch.setattr(ce_utils.inspect, "signature", _broken_signature)
     monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
 
-    class FakeWrapper:
+    class FixedArgsWrapper:
         fitted = True
         calibrated = True
         learner = types.SimpleNamespace()
 
-        def predict(self, _x, **_kwargs):
+        def predict(self, x):
             return [0.4]
 
-        def predict_proba(self, _x, **_kwargs):
-            return [[0.6, 0.4]]
+    with pytest.raises(ValidationError, match="unsupported keyword argument"):
+        ce_utils.get_calibrated_predictions(FixedArgsWrapper(), [[0.0]], calibrated=False, foo=99)
 
+
+def test_should_emit_userwarning_when_get_uncalibrated_predictions_called(monkeypatch):
+    """get_uncalibrated_predictions must always emit UserWarning (non-canonical escape hatch)."""
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
     monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
-    out = ce_utils.get_calibrated_predictions(FakeWrapper(), [[0.0]], threshold=0.25)
-    assert out["probability"] == [[0.6, 0.4]]
+
+    class FakeWrapper:
+        learner = types.SimpleNamespace(predict=lambda x: [0.0] * len(x))
+
+    with pytest.warns(UserWarning, match="non-canonical escape hatch"):
+        result = ce_utils.get_uncalibrated_predictions(FakeWrapper(), [[1.0]])
+
+    assert result["prediction"] is not None
+    assert result["probability"] is None
 
 
 def test_public_validation_and_summary_paths(monkeypatch):
@@ -510,7 +519,8 @@ def test_public_validation_and_summary_paths(monkeypatch):
     assert summary["prediction"] == [1, 2]
 
 
-def test_explain_and_narrate_covers_no_probability_and_fallback_action(monkeypatch):
+def test_should_not_inject_action_advice_when_explain_and_narrate_called(monkeypatch):
+    """Canonical CE-first narrative must not include heuristic action suggestions."""
     ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
     monkeypatch.setattr(
         ce_utils,
@@ -540,7 +550,12 @@ def test_explain_and_narrate_covers_no_probability_and_fallback_action(monkeypat
             return [[0.1, 0.9]]
 
     _explanations, narrative = ce_utils.explain_and_narrate(FakeWrapper(), [[1.0]], mode="factual")
-    assert "Review the most influential features" in narrative
+    # Heuristic action advice must NOT appear in canonical CE-first narratives.
+    assert "Review the most influential features" not in narrative
+    assert "Suggested action" not in narrative
+    # Native CE collections own narrative generation; plain lists do not trigger
+    # legacy synthesized prediction/top-feature prose.
+    assert narrative == ""
 
 
 def test_ensure_ce_first_wrapper_rejects_missing_attrs_and_methods(monkeypatch):
@@ -581,8 +596,9 @@ def test_get_calibrated_predictions_covers_kwarg_filter_variants(monkeypatch):
         def predict(self, x):
             return [len(x)]
 
-    out = ce_utils.get_calibrated_predictions(StrictWrapper(), [[0.0]], calibrated=False, foo=1)
-    assert out["prediction"] == [1]
+    # Strict CE-first path: unsupported kwargs must raise ValidationError, not be silently dropped.
+    with pytest.raises(ValidationError):
+        ce_utils.get_calibrated_predictions(StrictWrapper(), [[0.0]], calibrated=False, foo=1)
 
     class KwargNamedWrapper:
         fitted = True

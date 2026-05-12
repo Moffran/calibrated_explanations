@@ -449,8 +449,8 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     for i, y_hat in enumerate(y_test_hat2):
         assert y_test_hat1[i] == y_hat
 
-    y_test_hat1 = cal_exp.predict_proba(x_test)
-    y_test_hat2, (low, high) = cal_exp.predict_proba(x_test, True)
+    y_test_hat1 = cal_exp.predict_proba(x_test, normalization="coherence")
+    y_test_hat2, (low, high) = cal_exp.predict_proba(x_test, True, normalization="coherence")
 
     for i, y_hat in enumerate(y_test_hat2):
         for j, y_hat_j in enumerate(y_hat):

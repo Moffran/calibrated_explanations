@@ -50,6 +50,8 @@ def _run_step(step: Step) -> int:
     print(f"$ {cmd_text}")
     env = dict(os.environ)
     env.setdefault("PRE_COMMIT_HOME", str(Path(".cache/pre-commit").resolve()))
+    if step.name in {"Core tests (no viz/no cov)", "Core tests with coverage"}:
+        env.pop("CE_DEPRECATIONS", None)
     try:
         if _is_pre_commit_step(step):
             result = subprocess.run(step.command, check=False, env=env, capture_output=True, text=True)
@@ -198,6 +200,15 @@ def main() -> int:
             _python_cmd("scripts/quality/check_governance_event_schema.py"),
         ),
         Step(
+            "Governance status artifact (aggregation)",
+            _python_cmd(
+                "scripts/quality/build_governance_status_artifact.py",
+                "--output",
+                "reports/governance/governance_status.json",
+                "--validate",
+            ),
+        ),
+        Step(
             "STD-005 logger domain enforcement",
             _python_cmd(
                 "scripts/quality/check_logging_domains.py",
@@ -223,7 +234,7 @@ def main() -> int:
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
         Step(
-            "CI policy workflow validation (advisory)",
+            "CI policy workflow validation (advisory, includes full-SHA pinning)",
             _python_cmd(
                 "scripts/quality/validate_ci_policy.py",
                 "--base-sha",
@@ -517,6 +528,15 @@ def main() -> int:
         Step(
             "ADR-028 governance event schema check (main)",
             _python_cmd("scripts/quality/check_governance_event_schema.py"),
+        ),
+        Step(
+            "Governance status artifact (aggregation, main)",
+            _python_cmd(
+                "scripts/quality/build_governance_status_artifact.py",
+                "--output",
+                "reports/governance/governance_status.json",
+                "--validate",
+            ),
         ),
         Step(
             "STD-005 logger domain enforcement (main)",

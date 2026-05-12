@@ -197,7 +197,9 @@ def test_should_synchronise_all_descriptor_kinds_when_legacy_trust_changes():
         registry.trust_plugin(plugin)
     registry.untrust_plugin(plugin)
 
-    assert registry.find_interval_descriptor("tests.registry.runtime.shared.interval").trusted is False
+    assert (
+        registry.find_interval_descriptor("tests.registry.runtime.shared.interval").trusted is False
+    )
     assert (
         registry.find_plot_builder_descriptor("tests.registry.runtime.shared.builder").trusted
         is False

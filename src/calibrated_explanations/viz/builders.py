@@ -457,7 +457,6 @@ def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz bu
     # Remember whether the caller provided `xticks`. If not provided we may
     # default them for plotting, but header-creation logic should only
     # consider explicitly-provided hints.
-    provided_xticks = xticks is not None
     if xticks is None and xlim == (0.0, 1.0):
         xticks = [float(x) for x in np.linspace(0.0, 1.0, 11)]
 
@@ -597,7 +596,7 @@ def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz bu
     # `legacy_solid_behavior` is True and header-related hints are present.
     is_prob_scale = xlim == (0.0, 1.0)
     has_base_interval = bool(base_segments)
-    header_hints = explicit_header_labels or provided_xticks
+    header_hints = explicit_header_labels
     header_needed = is_prob_scale and header_hints
     if header_needed and legacy_solid_behavior:
         header = IntervalHeaderSpec(
@@ -1046,6 +1045,8 @@ def build_global_plotspec(
     high: list[float],
     uncertainty: list[float],
     y_test: list | None = None,
+    threshold: Any | None = None,
+    class_labels: Any | None = None,
     is_regularized: bool = True,
 ) -> GlobalPlotSpec:
     """Create a GlobalPlotSpec dataclass for global plots."""
@@ -1056,6 +1057,9 @@ def build_global_plotspec(
         high=high,
         uncertainty=uncertainty,
         y_test=y_test,
+        threshold=threshold,
+        class_labels=class_labels,
+        is_regularized=is_regularized,
     )
     spec = GlobalPlotSpec(
         title=title,

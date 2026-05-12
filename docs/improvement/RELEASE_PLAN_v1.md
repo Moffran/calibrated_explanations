@@ -48,6 +48,26 @@ A milestone cannot close while any of the following remains open:
 - Open high-severity runtime bug.
 - Incomplete milestone scope.
 
+### Packaging metadata maturity control
+
+- The `Development Status` classifier in `pyproject.toml` is release-governed metadata.
+- The historical Alpha classifier is stale metadata.
+- The classifier must be corrected to `Development Status :: 4 - Beta` no later than v0.11.2.
+- This correction does not declare v1.0 stability.
+- v1.0.0 release candidates must retain `Development Status :: 4 - Beta`.
+- RC release notes must state that the public API is frozen except for release-blocking defects.
+- v1.0.0 GA must update the classifier to `Development Status :: 5 - Production/Stable`.
+- GA promotion is blocked unless all v1.0.0 release gates are closed:
+  - public API contract frozen;
+  - CI gates green;
+  - docs/examples current and passing;
+  - zero active deprecations scheduled to survive into v1.0.0;
+  - no unresolved ADR or standards contradiction;
+  - no open high-severity runtime bug;
+  - release artifacts built and installation-smoke-tested.
+- `Development Status :: 6 - Mature` is explicitly out of scope for v1.0.0 and may only be considered after multiple stable post-v1 releases with demonstrated low API churn.
+
+
 ### Active control items
 
 - **Milestone execution control**
@@ -143,11 +163,11 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 
 **ADR-033 - Modality Extension Plugin Contract and Packaging Strategy:** Accepted; split across v0.11.0 (breaking metadata/resolver semantics) and v0.11.1 (CLI/shims/docs/packaging hardening).
 
-**ADR-034 - Centralized Configuration Management:** Accepted (2026-04-07); ADR-034 defines the centralized configuration architecture, snapshot semantics, ownership model, boundary rules, validation posture, and CLI/export contract. Delivery sequencing is governed by the versioned release plans: v0.11.1 Task 15 owns Phase A authority/migration closure, v0.11.1 Task 20 owns schema-backed `governance.config` lifecycle-event closure, and v0.11.2 closes remaining post-Phase-A migration and governance follow-through.
+**ADR-034 - Centralized Configuration Management:** Accepted (2026-04-07); v0.11.2 runtime conformance closure is complete (Phase B migration + release-plan synchronization). Remaining ADR-034 work is limited to deferred v1.0 items: sensitive-value redaction and export payload schema versioning.
 
-**ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up: PlotSpec default-promotion readiness-gate definition and policy decision.
+**ADR-036 - PlotSpec Canonical Contract and Validation Boundary:** Accepted (2026-03-20); canonical dataclass IR, builder output contract, validation boundary, and forbidden backend-leakage rules established. v0.11.1 delivers contract foundation. v0.11.2 follow-up is now recorded as a deferral: legacy remains default while Task 9 hardens PlotSpec visual semantics; default-promotion is re-evaluated in v0.11.3 Task 6.
 
-**ADR-037 - Visualization Extension and Rendering Governance:** Accepted (2026-03-20); builder/renderer contracts, deterministic extension metadata requirements, and default-path posture established. Legacy plotting remains default and PlotSpec opt-in in v0.11.1. Runtime plot-kind extension explicitly deferred. v0.11.2 follow-up: revisit default-path promotion and tighten readiness gate; runtime kind-extension policy decision.
+**ADR-037 - Visualization Extension and Rendering Governance:** Accepted (2026-03-20); builder/renderer contracts, deterministic extension metadata requirements, and default-path posture established. Legacy plotting remains default and PlotSpec opt-in in v0.11.1. Runtime plot-kind extension explicitly deferred. v0.11.2 follow-up is now recorded as a deferral: legacy remains default while Task 9 hardens PlotSpec visual semantics; default-promotion is re-evaluated in v0.11.3 Task 6.
 
 **Standard-001 - Nomenclature Standardization:** Partially complete; v0.11.0 delivered naming guardrail automation and private-member allowlist emptied. Double-underscore mutation cleanup targets v0.11.1; final transitional shim removal targets v0.11.3.
 
@@ -174,9 +194,9 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 | v0.10.3 | Domain model (ADR-008), Schema (ADR-005), Defaults, Plugin docs (Standard-004), Legacy stability (ADR-020). | No changes planned. | No changes planned. | No changes planned. | ADR gap closure part 1: ADR-005/008/010/020 + Standard-004. |
 | v0.11.0 | Modality extension breaking contract/resolver changes (ADR-033); ADR-027 observability policy/examples updates and ADR-028 docs alignment to Standard-005. | Wrapper/public numpydoc closure target (Standard-002). | ADR-030 detector + CI enforcement and ADR-010 core-only vs extras parity checks. | Naming guardrail automation where feasible (Standard-001). | ADR gap-closure maximization milestone: close ADR-004/005/006(partial)/009/011/014/015/020/026/030/031/033; keep only architecture-heavy migrations deferred. |
 | v0.11.1 | Notebook execution + runtime ceilings (ADR-012); remaining ADR-027/028 enforcement hardening; ADR-033 additive modality rollout follow-through. | No major new code-doc initiative planned beyond maintenance. | No major new coverage initiative planned beyond maintenance. | Double-underscore mutation cleanup completion tasks (Standard-001). | Registry hardening deferred from v0.11.0: full PluginManager resolution migration, trust-state atomicity unification, governance audit completion, and legacy list deprecation. CI upgrade: decommission legacy workflows. |
-| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, deep memory audit (retention/leak fixes), and PlotSpec default-promotion follow-up decision (ADR-036/ADR-037). |
+| v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, governance dashboard artifact, LIME/SHAP v0.11.2 removal phase (Task 21 execution), deep memory audit (retention/leak fixes), PlotSpec default-promotion follow-up decision (ADR-036/ADR-037), ADR-035 conformance gap remediation, and packaging metadata maturity correction. |
 | v0.11.3 | Minimal docs-build changes; Standard-002 numpydoc gap closure. | Close WrapCalibratedExplainer numpydoc blocks (Standard-002). | No new coverage work planned. | Final transitional shim removal (Standard-001). | RC readiness: Standard-001 shim closure, Standard-002 gap, ADR-030 zero-tolerance ratification, OSS perf harness (stretch). |
-| v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled. |
+| v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled, and packaging classifier promoted to `Development Status :: 5 - Production/Stable` at GA cutover. |
 
 ### v0.6.x (stabilisation patches)
 
@@ -271,7 +291,7 @@ achieved via ADR-023 exemption.
 10. **Sustain Standard-003 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, enable `--cov-fail-under=88` in CI, and execute the module-level remediation efforts for interval regressors, registry/CLI, plotting, and explanation caching per the dedicated gap plan.【F:docs/improvement/archived/coverage_uplift_plan.md†L34-L111】
 11. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】 See the ADR-004 phase table above for task breakdown and ownership.
 
-      - 2025-11-04 – Implemented opt-in calibrator cache with LRU eviction, multiprocessing toggle via ParallelExecutor facade, and vectorized perturbation handling. Added performance guidance for plugin authors in docs/contributor/plugin-contract.md. Cache and parallel primitives integrated into explain pipeline without altering calibration semantics.
+      - 2025-11-04 – Implemented opt-in calibrator cache with LRU eviction, multiprocessing toggle via `ParallelExecutor`, and vectorized perturbation handling. Added performance guidance for plugin authors in docs/contributor/plugin-contract.md. Cache and parallel primitives integrated into explain pipeline without altering calibration semantics.
 12. **Plugin CLI, discovery, and denylist parity (optional extras).** Extend trust toggles and entry-point discovery to interval/plot plugins, add the `CE_DENY_PLUGIN` registry control highlighted in the OSS scope review, and ship the whole surface as opt-in so calibrated explanations remain usable without telemetry/CLI adoption.
 13. **External plugin distribution path.** Document and test an aggregated installation extra (e.g., `pip install calibrated-explanations[external-plugins]`) that installs all supported external plugins, outline curation criteria, and add placeholders in docs and README for community plugin listings.
 
@@ -442,10 +462,37 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      dates older than 60 days, and close any quick-win gaps that require no feature
      work (e.g., remaining ADR-026 observability gaps).
   4. Governance dashboard extension (relocated from v0.11.1 Task 9; depends on v0.11.1 Tasks 3, 7, and 20 completing): surface lint status and preprocessing/domain telemetry in a machine-readable governance status artifact. This artifact is a derived CI/reporting surface and must not replace the runtime governance event contracts defined for plugin/config lifecycle events. Fits v0.11.2 governance sweep theme; ADR-028 CLEAR.
-  5. Deep memory audit and retention hardening.
-  6. PlotSpec default-promotion follow-up (new in v0.11.2): revisit whether PlotSpec should move from opt-in to default path; define and enforce a stricter readiness gate; update PlotSpec plots and flip defaults only if that gate is satisfied. This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
+  5A. LIME/SHAP v0.11.2 removal follow-through (execution of v0.11.1 Task 21 removal phase):
+      delete `CalibratedExplainer.{preload,explain,is_enabled}_lime/shap` and
+      `WrapCalibratedExplainer.explain_lime/shap`; move deprecation ledger rows from Active
+      to Removed history; verify plugin-only replacement paths remain functional.
+      Depends on task 3 completing (governance inventory must be current before ledger moves).
+  6. Deep memory audit and retention hardening: bounded `reset()`/`close()` lifecycle
+     semantics for `latest_explanation`, SHAP/LIME helper caches, and the plugin explanation
+     instance cache (max 16 LRU entries); RSS stabilization gate (≤10% delta, ≤64 MB absolute
+     growth over 200 iterations). Depends on task 5A (post-removal surface needed for
+     accurate memory baseline).
+  7. PlotSpec default-promotion follow-up (new in v0.11.2): record the binding v0.11.2
+     decision to keep legacy as the default path, document the exact per-function deferral
+     outcome for all in-scope plots, and carry the promotion question forward to v0.11.3.
+     This follow-up is the explicit decision point governed by ADR-036 and ADR-037.
+  8. ADR-035 conformance gap remediation (surfaced by Task 4 red-team):
+     GAP 1 — insert §2 rollout status note resolving the advisory/blocking MUST contradiction;
+     GAP 2 — add `scripts/local_checks.py` rule to `.github/CODEOWNERS`;
+     GAP 4 — add inline-workflow allow-list to `validate_ci_policy.py` covering the five
+     pre-reusable workflows (`ci-main.yml`, `ci-nightly.yml`, `deprecation-check.yml`,
+     `maintenance.yml`, `update_baseline.yml`), each with a dated `review-by: v0.11.3` rationale.
+     Depends on task 4 (Task 4 revealed GAP 2 and its Makefile addition triggered GAP 4 analysis).
+  9. PlotSpec semantic/visual mending while non-default (new in v0.11.2): improve PlotSpec
+      rendered plots on explicit opt-in paths so they preserve the same explanatory meaning
+      as legacy plots without changing user default behavior. This task creates the evidence
+      base required for any later default-promotion decision.
+ 10. Packaging metadata maturity correction: update `pyproject.toml` classifier from
+      `Development Status :: 3 - Alpha` to `Development Status :: 4 - Beta`, document
+      RC/GA policy controls, and verify package metadata generation reflects Beta
+      exactly once with Alpha absent.
 
-  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 removals are executed for core LIME/SHAP exports and list-path compatibility code; PlotSpec default-promotion follow-up completed with explicit readiness-gate decision recorded; `make local-checks-pr` passes.
+  Release gate: All four allowlisted modules migrated and removed from CI allowlist; ADR-034 implementation-status text synchronized with the accepted ADR; governance sweep complete with all appendix gaps assigned or superseded; governance status artifact schema documented and CI-generated as a derived reporting surface; Task 21 v0.11.2 removal phase complete (eight core/wrapper LIME/SHAP symbols deleted, fail-closed tests green, deprecation ledger rows moved); deep memory retention bounded with RSS stabilization proof; PlotSpec default-promotion follow-up completed with an explicit v0.11.2 deferral decision recorded; PlotSpec semantic/visual mending evidence exists for the opt-in path; ADR-035 GAPs 1/2/4 closed with tests; packaging metadata maturity correction completed (Beta in source and generated metadata, Alpha absent); `make local-checks-pr` passes.
 
 ### v0.11.3 (RC readiness: Standard closure, ADR-030 ratification, docs gap)
 
@@ -463,8 +510,17 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      self-contained): provide a reusable harness for semi/fully-online latency
      measurements with README guidance and a sample run (gate: sample run documented
      and reproducible).
+  5. Task 21 final closure gate (LIME/SHAP deprecation ledger must be empty): delete
+     any residual v0.11.3-owned Task-21 compatibility adapters, move all remaining
+     Task-21 rows from Active to Removed history, and verify that zero active Task-21
+     deprecations survive into v1.0.0.
+  6. PlotSpec default-promotion re-evaluation after v0.11.2 mending: revisit the
+      default-path question only after reviewing the v0.11.2 deferral note and plot
+      mending evidence. Proposed candidate outcome: broad promotion (1C-family) if
+      semantic/visual parity evidence is sufficient; otherwise record another explicit
+      deferral rather than promoting by momentum.
+  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
 
-  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
 
 ### v1.0.0-rc (release candidate readiness)
 
@@ -497,8 +553,9 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 6. Provide an RC upgrade checklist covering environment variables, pyproject
    settings, CLI usage, caching controls, and plugin integration testing
    expectations.
+7. Confirm release-candidate packaging metadata remains `Development Status :: 4 - Beta`, and ensure RC release notes state that the public API is frozen except for release-blocking defects.
 
-Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy compatibility confirmed; caching/parallel staging validation signed off; Standard-002 ≥90% verified; versioned docs preview and doc-quality dashboards live; upgrade checklist ready for pilot customers; deprecation ledger is empty (zero active deprecations).
+Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy compatibility confirmed; caching/parallel staging validation signed off; Standard-002 ≥90% verified; versioned docs preview and doc-quality dashboards live; upgrade checklist ready for pilot customers; deprecation ledger is empty (zero active deprecations), RC package metadata remains `Development Status :: 4 - Beta`, and RC notes state the public API freeze posture.
 
 ### v1.0.0 (stability declaration)
 
@@ -506,23 +563,23 @@ Release gate: Schema v1 freeze documented; wrap interface and exception taxonomy
 
 1. Announce the stable plugin/telemetry contracts and publish the final
    compatibility statement across README, CHANGELOG, and docs hub.
-2. Tag the v1.0.0 release, backport documentation to downstream extension
+2. Promote packaging metadata from `Development Status :: 4 - Beta` to `Development Status :: 5 - Production/Stable`, only after all v1.0.0 release gates are closed and release-blocking defects are zero.
+3. Tag the v1.0.0 release, backport documentation to downstream extension
    repositories, and circulate the upgrade checklist to partners with caching
    and parallelisation guidance.
-3. Validate telemetry, plugin registries, cache behaviour, and worker scaling in
+4. Validate telemetry, plugin registries, cache behaviour, and worker scaling in
    production-like staging, signing off with no pending high-priority bugs and zero active deprecations.
-4. Confirm Standard-001/Standard-002 guardrails remain enforced post-tag, monitor the
+5. Confirm Standard-001/Standard-002 guardrails remain enforced post-tag, monitor the
    caching/parallel telemetry dashboards, and schedule maintenance cadences
    (coverage/docstring audits, performance regression sweeps) for the first
    patch release.
-5. Finalise versioned documentation hosting and publish long-term dashboard
+6. Finalise versioned documentation hosting and publish long-term dashboard
    links (coverage, doc lint, notebooks) so the IA plan’s success metrics are met
    when GA lands.【F:docs/improvement/documentation_information_architecture.md†L108-L118】
-
 Release gate: Tagged release artifacts available, documentation hubs updated with
 versioned hosting and public dashboards, caching/parallel toggles operating
 within documented guardrails, staging validation signed off, and post-release
-maintenance cadences scheduled.
+maintenance cadences scheduled, and packaging classifier promoted to `Development Status :: 5 - Production/Stable` at GA cutover.
 
 ## Standard-003 integration analysis
 

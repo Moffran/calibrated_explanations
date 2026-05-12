@@ -49,11 +49,15 @@ Visualization extension descriptors/registrations **MUST** provide minimal but s
 
 Metadata **MUST NOT** be so thin that resolver outcomes depend on implicit defaults or non-auditable side effects.
 
-### 5. Default and legacy behavior (v0.11.1)
+### 5. Default and legacy behavior (v0.11.1 -> v0.11.2)
 
 - Legacy plotting remains the default path in v0.11.1.
 - PlotSpec-driven rendering remains opt-in/non-default in v0.11.1.
 - This ADR does not define a v0.11.1 hard gate for default promotion.
+- **v0.11.2 decision update (2026-04-23):** legacy remains the default path in
+  v0.11.2 as well. The release-plan follow-up recorded an explicit deferral
+  because current PlotSpec-rendered visuals are not yet trusted to preserve the
+  same user-facing explanatory meaning as the legacy path.
 
 ### 6. Plot kind extension policy (current state)
 
@@ -90,7 +94,12 @@ Metadata **MUST NOT** be so thin that resolver outcomes depend on implicit defau
 - ADR-007, ADR-014, and ADR-016 are superseded by ADR-036 and ADR-037.
 - ADR-023 remains separate and unchanged.
 - In v0.11.1, legacy plotting remains default; PlotSpec remains opt-in.
-- A v0.11.2 release-planning follow-up will revisit default-path promotion, tighten the readiness gate, and update PlotSpec defaults only when that gate is defined and met.
+- The v0.11.2 release-planning follow-up has now recorded a **deferral**:
+  legacy remains default in v0.11.2.
+- v0.11.2 Task 9 is the active PlotSpec semantic/visual mending task on opt-in
+  paths.
+- v0.11.3 Task 6 is the explicit re-evaluation/finalization point for any later
+  default-path promotion.
 
 ## Future considerations (narrow)
 

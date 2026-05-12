@@ -1261,7 +1261,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     details={"intent_type": "global", "requirement": "payload must be a mapping"},
                 )
             payload_dict = dict(payload)
-            payload_dict.pop("threshold", None)  # legacy-only field
+            payload_dict.pop("x", None)  # model input is consumed before the PlotSpec boundary.
             if "y" in payload_dict and "y_test" not in payload_dict:
                 payload_dict["y_test"] = payload_dict.pop("y")
             # Keep builder resilient for sparse payloads in tests and plugin probes.

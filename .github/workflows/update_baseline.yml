@@ -21,15 +21,17 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 jobs:
   collect:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: '3.11'
           cache: pip
@@ -69,7 +71,7 @@ jobs:
           echo "Threshold regeneration not automated; adjust manually if needed." >> tests/benchmarks/perf_diff.txt
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: new-micro-baseline-${{ steps.gen.outputs.date_tag }}
           path: |
@@ -77,7 +79,7 @@ jobs:
             tests/benchmarks/perf_diff.txt
 
       - name: Create Pull Request with new baseline
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           commit-message: "chore: update micro performance baseline ${{ steps.gen.outputs.date_tag }}"
           title: "Update micro performance baseline ${{ steps.gen.outputs.date_tag }}"

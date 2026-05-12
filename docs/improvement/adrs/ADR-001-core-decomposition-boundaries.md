@@ -21,7 +21,7 @@ Define top-level internal packages (initial):
 - `calibrated_explanations.calibration`: Calibration algorithms & conformal predictors.
 - `calibrated_explanations.explanations`: Explanation strategies (attribution, intervals, diagnostics).
 - `calibrated_explanations.cache`: Cache layer (see ADR-003) internal initially.
-- `calibrated_explanations.parallel`: Parallel facade (see ADR-004) internal initially; treated as a
+- `calibrated_explanations.parallel`: Parallel execution layer (`ParallelExecutor`; see ADR-004) internal initially; treated as a
   shared service that domain packages may wrap locally (e.g., explain-specific runtime wrappers)
   while keeping low-level executors isolated from sibling imports.
 - `calibrated_explanations.schema`: JSON schema definitions & validation helpers (see ADR-005).

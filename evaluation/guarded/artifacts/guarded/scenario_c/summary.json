@@ -1,0 +1,134 @@
+{
+  "scenario": "C",
+  "description": "Real-dataset guard retention benchmark",
+  "primary_significance": 0.1,
+  "n_datasets_total": 79,
+  "n_datasets_skipped": 30,
+  "n_datasets_errored": 1,
+  "config": {
+    "num_seeds": 3,
+    "calibration_sizes": [
+      100,
+      300,
+      500
+    ],
+    "significance_levels": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "n_neighbors": 5,
+    "normalize_guard": true,
+    "merge_adjacent": false
+  },
+  "task_summary": [
+    {
+      "task": "binary",
+      "regression_mode": "cls",
+      "explanation_type": "alternative",
+      "mean_standard_rules_per_instance": 17.031333333333333,
+      "mean_guarded_rules_per_instance": 34.27666666666667,
+      "guard_retention_rate": 0.706090722113952,
+      "fraction_instances_fully_filtered": 0.07022222222222223
+    },
+    {
+      "task": "binary",
+      "regression_mode": "cls",
+      "explanation_type": "factual",
+      "mean_standard_rules_per_instance": 17.124888888888886,
+      "mean_guarded_rules_per_instance": 14.668444444444443,
+      "guard_retention_rate": 0.8885283288673087,
+      "fraction_instances_fully_filtered": 0.08733333333333335
+    },
+    {
+      "task": "multiclass",
+      "regression_mode": "cls",
+      "explanation_type": "alternative",
+      "mean_standard_rules_per_instance": 20.024907407407408,
+      "mean_guarded_rules_per_instance": 62.79962962962963,
+      "guard_retention_rate": 0.7697780149073487,
+      "fraction_instances_fully_filtered": 0.017685185185185186
+    },
+    {
+      "task": "multiclass",
+      "regression_mode": "cls",
+      "explanation_type": "factual",
+      "mean_standard_rules_per_instance": 11.828703703703704,
+      "mean_guarded_rules_per_instance": 12.985833333333334,
+      "guard_retention_rate": 0.9043265983280641,
+      "fraction_instances_fully_filtered": 0.06194444444444444
+    },
+    {
+      "task": "regression",
+      "regression_mode": "p25",
+      "explanation_type": "alternative",
+      "mean_standard_rules_per_instance": 12.081875,
+      "mean_guarded_rules_per_instance": 24.286597222222223,
+      "guard_retention_rate": 0.6496078982019774,
+      "fraction_instances_fully_filtered": 0.019375
+    },
+    {
+      "task": "regression",
+      "regression_mode": "p25",
+      "explanation_type": "factual",
+      "mean_standard_rules_per_instance": 6.673819444444444,
+      "mean_guarded_rules_per_instance": 6.235,
+      "guard_retention_rate": 0.8916999622922386,
+      "fraction_instances_fully_filtered": 0.05572916666666667
+    },
+    {
+      "task": "regression",
+      "regression_mode": "p50",
+      "explanation_type": "alternative",
+      "mean_standard_rules_per_instance": 12.062673611111112,
+      "mean_guarded_rules_per_instance": 23.61857638888889,
+      "guard_retention_rate": 0.6469506825760066,
+      "fraction_instances_fully_filtered": 0.017951388888888888
+    },
+    {
+      "task": "regression",
+      "regression_mode": "p50",
+      "explanation_type": "factual",
+      "mean_standard_rules_per_instance": 6.724930555555556,
+      "mean_guarded_rules_per_instance": 6.324618055555556,
+      "guard_retention_rate": 0.8930081625242265,
+      "fraction_instances_fully_filtered": 0.05572916666666667
+    },
+    {
+      "task": "regression",
+      "regression_mode": "p75",
+      "explanation_type": "alternative",
+      "mean_standard_rules_per_instance": 12.245694444444444,
+      "mean_guarded_rules_per_instance": 24.60559027777778,
+      "guard_retention_rate": 0.652514239971192,
+      "fraction_instances_fully_filtered": 0.01875
+    },
+    {
+      "task": "regression",
+      "regression_mode": "p75",
+      "explanation_type": "factual",
+      "mean_standard_rules_per_instance": 6.829513888888889,
+      "mean_guarded_rules_per_instance": 6.396597222222223,
+      "guard_retention_rate": 0.8940618895817185,
+      "fraction_instances_fully_filtered": 0.05555555555555556
+    },
+    {
+      "task": "regression",
+      "regression_mode": "plain",
+      "explanation_type": "alternative",
+      "mean_standard_rules_per_instance": 13.526458333333334,
+      "mean_guarded_rules_per_instance": 31.958506944444444,
+      "guard_retention_rate": 0.6976246218218268,
+      "fraction_instances_fully_filtered": 0.01423611111111111
+    },
+    {
+      "task": "regression",
+      "regression_mode": "plain",
+      "explanation_type": "factual",
+      "mean_standard_rules_per_instance": 7.546111111111111,
+      "mean_guarded_rules_per_instance": 6.813541666666667,
+      "guard_retention_rate": 0.8992210881879972,
+      "fraction_instances_fully_filtered": 0.050902777777777776
+    }
+  ]
+}

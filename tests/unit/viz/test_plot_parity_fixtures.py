@@ -28,11 +28,11 @@ def factual_probabilistic_no_uncertainty():
 
 def factual_probabilistic_zero_crossing():
     predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
-    # one feature crosses the previous probability pivot; pivot behavior removed
+    # contribution-space values: interval crosses zero directly (no probability shift applied)
     feature_weights = {
-        "predict": [0.6],
-        "low": [0.45],
-        "high": [0.55],
+        "predict": [0.05],
+        "low": [-0.05],
+        "high": [0.12],
     }
     spec = build_probabilistic_bars_spec(
         title="factual_cross",
@@ -157,6 +157,99 @@ def triangular_probabilistic():
         rule_proba=rule_proba,
         rule_uncertainty=rule_uncertainty,
         num_to_show=1,
+    )
+    return spec
+
+
+def factual_probabilistic_multiclass():
+    """Factual probabilistic with explicit multiclass captions (neg uses '!=' notation)."""
+    predict = {"predict": 0.75, "low": 0.70, "high": 0.80}
+    feature_weights = {"predict": [0.4, -0.15], "low": [0.35, -0.20], "high": [0.45, -0.10]}
+    spec = build_probabilistic_bars_spec(
+        title="factual_multiclass",
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0, 1],
+        column_names=["feat_a", "feat_b"],
+        instance=[3.0, 1.0],
+        y_minmax=[0.0, 1.0],
+        interval=True,
+        neg_caption="P(y!=class2)",
+        pos_caption="P(y=class2)",
+    )
+    return spec
+
+
+def factual_probabilistic_conjunction_multiline():
+    """Factual probabilistic fixture with multiline conjunction labels."""
+    predict = {"predict": 0.68, "low": 0.58, "high": 0.78}
+    feature_weights = {
+        "predict": [0.31, -0.22, 0.14, -0.09],
+        "low": [0.24, -0.28, 0.08, -0.15],
+        "high": [0.38, -0.16, 0.20, -0.03],
+    }
+    spec = build_probabilistic_bars_spec(
+        title="conjunction_multiline",
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0, 1, 2, 3],
+        column_names=[
+            "age > 45\nAND income < 30k",
+            "education = high\nAND credit_score > 700",
+            "loan_term <= 24m\nAND employment = full-time\nAND region = urban",
+            "dependents = 0",
+        ],
+        instance=[52.0, 28500.0, "high", 0],
+        y_minmax=[0.0, 1.0],
+        interval=True,
+        neg_caption="P(y=0)",
+        pos_caption="P(y=1)",
+    )
+    return spec
+
+
+def alternative_probabilistic_both_below_05():
+    """Alternative probabilistic where base and all feature intervals stay below 0.5."""
+    predict = {"predict": 0.25, "low": 0.15, "high": 0.35}
+    feature_predict = {
+        "predict": [0.1, 0.3],
+        "low": [0.05, 0.20],
+        "high": [0.15, 0.40],
+    }
+    spec = build_alternative_probabilistic_spec(
+        title="alt_below_05",
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=["b0", "b1"],
+        instance=[0.1, 0.2],
+        y_minmax=[0.0, 1.0],
+        interval=True,
+        xlim=(0.0, 1.0),
+        xticks=[float(x) for x in range(11)],
+    )
+    return spec
+
+
+def alternative_probabilistic_feature_cross_05():
+    """Alternative probabilistic where a feature bar interval crosses 0.5 (two-color split)."""
+    predict = {"predict": 0.5, "low": 0.45, "high": 0.55}
+    feature_predict = {
+        "predict": [0.5, 0.8],
+        "low": [0.3, 0.75],
+        "high": [0.7, 0.85],
+    }
+    spec = build_alternative_probabilistic_spec(
+        title="alt_feature_cross",
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=["cross_feat", "high_feat"],
+        instance=[0.5, 0.8],
+        y_minmax=[0.0, 1.0],
+        interval=True,
+        xlim=(0.0, 1.0),
+        xticks=[float(x) for x in range(11)],
     )
     return spec
 

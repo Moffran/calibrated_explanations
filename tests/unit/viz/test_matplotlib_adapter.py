@@ -45,6 +45,12 @@ class FakeAxes:
     def plot(self, *args, **kwargs):
         self.calls.append(("plot", args, kwargs))
 
+    def quiver(self, *args, **kwargs):
+        self.calls.append(("quiver", args, kwargs))
+
+    def scatter(self, *args, **kwargs):
+        self.calls.append(("scatter", args, kwargs))
+
     def set_xlim(self, *args, **kwargs):
         self.calls.append(("set_xlim", args, kwargs))
 
@@ -62,6 +68,12 @@ class FakeAxes:
 
     def set_ylabel(self, *args, **kwargs):
         self.calls.append(("set_ylabel", args, kwargs))
+
+    def set_title(self, *args, **kwargs):
+        self.calls.append(("set_title", args, kwargs))
+
+    def legend(self, *args, **kwargs):
+        self.calls.append(("legend", args, kwargs))
 
     def set_ylim(self, *args, **kwargs):
         if args:

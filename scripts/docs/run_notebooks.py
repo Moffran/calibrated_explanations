@@ -31,6 +31,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
+import os
 import sys
 import threading
 import time
@@ -42,6 +44,7 @@ from typing import Any
 VALID_STATUSES: frozenset[str] = frozenset(
     {"passed", "failed", "timed_out", "skipped_noexec", "skipped_slow"}
 )
+logger = logging.getLogger(__name__)
 KNOWN_SKIP_TAGS: frozenset[str] = frozenset({"noexec", "slow"})
 REQUIRED_RECORD_FIELDS: tuple[str, ...] = (
     "notebook",
@@ -52,6 +55,51 @@ REQUIRED_RECORD_FIELDS: tuple[str, ...] = (
     "skip_reason",
     "mode",
 )
+
+NOTEBOOK_RUNTIME_ENV_DEFAULTS: dict[str, str] = {
+    "CE_PARALLEL": "off",
+    "LOKY_MAX_CPU_COUNT": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "MPLBACKEND": "Agg",
+}
+
+
+def configure_notebook_runtime() -> dict[str, str]:
+    """Apply deterministic defaults inherited by notebook kernels.
+
+    The driver runs documentation notebooks as validation artifacts, not as
+    performance demonstrations.  Keeping execution serial by default avoids
+    noisy Windows ``joblib``/``loky`` resource-tracker shutdown tracebacks and
+    makes advisory reports easier to read while preserving explicit user
+    overrides already present in the environment.
+
+    Returns
+    -------
+    dict[str, str]
+        Environment defaults that were newly applied.
+    """
+    applied: dict[str, str] = {}
+    for key, value in NOTEBOOK_RUNTIME_ENV_DEFAULTS.items():
+        if key not in os.environ:
+            os.environ[key] = value
+            applied[key] = value
+
+    if sys.platform.startswith("win"):
+        try:
+            import asyncio
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                policy = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
+                if policy is not None:
+                    asyncio.set_event_loop_policy(policy())
+        except Exception as exc:  # pragma: no cover - best-effort Windows runtime hygiene
+            logger.debug("Windows notebook runtime policy setup skipped: %s", exc)
+
+    return applied
 
 
 def discover_notebooks(root: Path) -> list[Path]:
@@ -170,8 +218,8 @@ def _execute_with_notebook_timeout(
             km = getattr(preprocessor, "km", None)
             if km is not None:
                 km.shutdown_kernel(now=True)
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Kernel shutdown after notebook timeout failed: %s", exc)
         raise TimeoutError(
             f"Notebook exceeded {notebook_timeout}s wall-clock timeout"
         )
@@ -236,19 +284,21 @@ def run_notebooks(
         ``0`` if all notebooks passed or were skipped; ``1`` if any failed
         and *mode* is ``"blocking"``.
     """
+    configure_notebook_runtime()
+
     try:
         import nbformat  # noqa: PLC0415
         from nbconvert.preprocessors import (  # noqa: PLC0415
-            CellExecutionError,
             ExecutePreprocessor,
         )
 
         try:
-            from nbconvert.preprocessors.execute import (  # noqa: PLC0415
-                CellTimeoutError as _CellTimeoutError,
-            )
+            import importlib
+
+            execute_module = importlib.import_module("nbconvert.preprocessors.execute")
+            cell_timeout_error_type = getattr(execute_module, "CellTimeoutError", None)
         except ImportError:
-            _CellTimeoutError = None
+            cell_timeout_error_type = None
     except ImportError as exc:
         print(
             f"ERROR: nbconvert is not installed. "
@@ -404,8 +454,8 @@ def run_notebooks(
         except Exception as exc:  # noqa: BLE001
             elapsed = time.monotonic() - start
             is_cell_timeout = (
-                _CellTimeoutError is not None
-                and isinstance(exc, _CellTimeoutError)
+                cell_timeout_error_type is not None
+                and isinstance(exc, cell_timeout_error_type)
             )
             if is_cell_timeout:
                 status = "timed_out"

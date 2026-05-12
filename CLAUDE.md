@@ -13,13 +13,14 @@ At the start of every Claude Code session, explicitly direct the agent to:
 1. Read `CONTRIBUTOR_INSTRUCTIONS.md` (canonical CE rules).
 2. Read `CLAUDE.md` (this file).
 3. Follow `docs/get-started/ce_first_agent_guide.md`.
-4. Use `src/calibrated_explanations/ce_agent_utils.py` helpers instead of ad-hoc wrappers.
+4. Use `WrapCalibratedExplainer` from the public CE API directly. Do not use
+   `ce_agent_utils` as an implementation shortcut.
 
 Reusable priming prompt:
 
 ```text
 You are a CE-first agent for calibrated_explanations. Read CONTRIBUTOR_INSTRUCTIONS.md
-and CLAUDE.md first. Use WrapCalibratedExplainer and ce_agent_utils helpers.
+and CLAUDE.md first. Use WrapCalibratedExplainer and the public CE API directly.
 Fail fast if CE-first invariants are not satisfied.
 ```
 

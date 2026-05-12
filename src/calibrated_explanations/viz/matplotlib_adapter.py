@@ -6,13 +6,14 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 
 from __future__ import annotations
 
-import contextlib
 import importlib
 import io
 import logging
 import math
 import sys
 import warnings
+from contextlib import suppress
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -104,6 +105,512 @@ def _import_pyplot_with_retries() -> object:
             raise
 
 
+def _first_float(value: Any, *, default: float = 0.0) -> float:
+    """Return the first finite float from a scalar or sequence."""
+    try:
+        arr = np.asarray(value, dtype=float)
+        if arr.size == 0:
+            return default
+        candidate = float(arr.reshape(-1)[0])
+    except Exception:  # adr002_allow
+        return default
+    return candidate if math.isfinite(candidate) else default
+
+
+def _float_vector(value: Any, *, name: str) -> np.ndarray:
+    """Coerce a scalar/sequence to a one-dimensional float array."""
+    if value is None:
+        raise ValidationError(f"{name} is required for PlotSpec rendering", details={"param": name})
+    try:
+        arr = np.asarray(value, dtype=float)
+    except Exception as exc:  # adr002_allow
+        raise ValidationError(
+            f"{name} must be numeric for PlotSpec rendering",
+            details={"param": name, "actual_type": type(value).__name__},
+        ) from exc
+    if arr.ndim == 0:
+        arr = arr.reshape(1)
+    return arr.reshape(-1)
+
+
+def _finite_bounds(values: Sequence[float], *, default: tuple[float, float]) -> tuple[float, float]:
+    """Return finite min/max bounds with light padding for degenerate spans."""
+    finite = [float(v) for v in values if math.isfinite(float(v))]
+    if not finite:
+        return default
+    lo = min(finite)
+    hi = max(finite)
+    if math.isclose(lo, hi, rel_tol=1e-9, abs_tol=1e-12):
+        pad = abs(lo) * 0.1 if lo else 0.1
+        return lo - pad, hi + pad
+    pad = 0.1 * (hi - lo)
+    return lo - pad, hi + pad
+
+
+def _plot_probability_triangle(ax: Any, *, primitives: list[dict[str, Any]] | None = None) -> None:
+    """Draw the legacy probability-triangle reference lines."""
+    segments = []
+    x = np.arange(0, 1, 0.01)
+    segments.append((x / (1 + x), x))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        segments.append((x, (1 - x) / x))
+    x = np.arange(0.5, 1, 0.005)
+    segments.append(((0.5 + x - 0.5) / (1 + x - 0.5), x - 0.5))
+    x = np.arange(0, 0.5, 0.005)
+    segments.append(((x + 0.5 - x) / (1 + x), x))
+    for idx, (xs, ys) in enumerate(segments):
+        ax.plot(xs, ys, color="black")
+        if primitives is not None:
+            finite = np.isfinite(xs) & np.isfinite(ys)
+            finite_xs = xs[finite]
+            finite_ys = ys[finite]
+            x0 = float(finite_xs[0]) if finite_xs.size else 0.0
+            y0 = float(finite_ys[0]) if finite_ys.size else 0.0
+            x1 = float(finite_xs[-1]) if finite_xs.size else 0.0
+            y1 = float(finite_ys[-1]) if finite_ys.size else 0.0
+            primitives.append(
+                {
+                    "id": f"triangle.background.{idx}",
+                    "type": "line",
+                    "coords": {
+                        "x0": x0,
+                        "y0": y0,
+                        "x1": x1,
+                        "y1": y1,
+                    },
+                    "semantic": "triangle_reference",
+                }
+            )
+
+
+def _finish_non_panel_figure(
+    fig: Any,
+    plt: Any,
+    *,
+    show: bool,
+    save_path: str | None,
+    return_fig: bool,
+    export_drawn_primitives: bool,
+    wrapper: dict[str, Any],
+) -> Any:
+    """Apply common save/show/close behavior for non-panel PlotSpec plots."""
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight")
+    if show:
+        plt.show()
+    if return_fig:
+        return fig
+    try:
+        fig.tight_layout()
+    except Exception:  # adr002_allow
+        logging.getLogger(__name__).debug("Non-panel tight_layout skipped", exc_info=True)
+    plt.close(fig)
+    return wrapper if export_drawn_primitives else None
+
+
+def _render_triangular_spec(
+    spec: TriangularPlotSpec,
+    *,
+    show: bool,
+    save_path: str | None,
+    return_fig: bool,
+    export_drawn_primitives: bool,
+) -> Any:
+    """Render a triangular PlotSpec with legacy-equivalent quiver/scatter semantics."""
+    tri = spec.triangular
+    if tri is None:
+        raise ValidationError(
+            "Triangular PlotSpec requires triangular data",
+            details={"required": ["triangular"]},
+        )
+
+    _require_mpl()
+    plt = _import_pyplot_with_retries()
+    _setup_style(None)
+    fig = plt.figure(figsize=spec.figure_size)
+    ax = fig.add_subplot(111)
+    primitives: list[dict[str, Any]] = []
+
+    proba = _first_float(tri.proba)
+    uncertainty = _first_float(tri.uncertainty)
+    rule_proba = _float_vector(tri.rule_proba, name="rule_proba")
+    rule_uncertainty = _float_vector(tri.rule_uncertainty, name="rule_uncertainty")
+    count = max(0, min(int(tri.num_to_show), len(rule_proba), len(rule_uncertainty)))
+    shown_rule_proba = rule_proba[:count]
+    shown_rule_uncertainty = rule_uncertainty[:count]
+
+    if tri.is_probabilistic:
+        _plot_probability_triangle(ax, primitives=primitives if export_drawn_primitives else None)
+        xlim = (0.0, 1.0)
+        ylim = (0.0, 1.0)
+        xlabel = "Probability"
+    else:
+        xlim = _finite_bounds([*shown_rule_proba, proba], default=(0.0, 1.0))
+        ylim = _finite_bounds([*shown_rule_uncertainty, uncertainty], default=(0.0, 1.0))
+        xlabel = "Prediction"
+
+    if count:
+        dx = shown_rule_proba - proba
+        dy = shown_rule_uncertainty - uncertainty
+        ax.quiver(
+            [proba] * count,
+            [uncertainty] * count,
+            dx,
+            dy,
+            angles="xy",
+            scale_units="xy",
+            scale=1,
+            color="lightgrey",
+            width=0.005,
+            headwidth=3,
+            headlength=3,
+        )
+        if export_drawn_primitives:
+            for idx, (rp, ru, dpx, duy) in enumerate(
+                zip(shown_rule_proba, shown_rule_uncertainty, dx, dy, strict=False)
+            ):
+                primitives.append(
+                    {
+                        "id": f"triangle.quiver.{idx}",
+                        "type": "quiver",
+                        "coords": {
+                            "x": proba,
+                            "y": uncertainty,
+                            "dx": float(dpx),
+                            "dy": float(duy),
+                            "x1": float(rp),
+                            "y1": float(ru),
+                        },
+                        "semantic": "alternative_direction",
+                    }
+                )
+
+    ax.scatter(
+        rule_proba,
+        rule_uncertainty,
+        label="Alternative Explanations",
+        marker=".",
+        s=50,
+    )
+    ax.scatter(
+        proba,
+        uncertainty,
+        color="red",
+        label="Original Prediction",
+        marker=".",
+        s=50,
+    )
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Uncertainty")
+    set_title = getattr(ax, "set_title", None)
+    if callable(set_title):
+        set_title(spec.title or "Alternative Explanations")
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    legend = getattr(ax, "legend", None)
+    if callable(legend):
+        legend()
+
+    if export_drawn_primitives:
+        primitives.append(
+            {
+                "id": "triangle.scatter.alternatives",
+                "type": "scatter",
+                "coords": {
+                    "x": [float(v) for v in rule_proba],
+                    "y": [float(v) for v in rule_uncertainty],
+                },
+                "style": {"label": "Alternative Explanations", "marker": "."},
+                "semantic": "alternative_points",
+            }
+        )
+        primitives.append(
+            {
+                "id": "triangle.scatter.original",
+                "type": "scatter",
+                "coords": {"x": proba, "y": uncertainty},
+                "style": {"label": "Original Prediction", "marker": ".", "color": "red"},
+                "semantic": "original_prediction",
+            }
+        )
+        primitives.append(
+            {
+                "id": "triangle.axes",
+                "type": "axes",
+                "coords": {"xlim": xlim, "ylim": ylim},
+                "style": {"xlabel": xlabel, "ylabel": "Uncertainty"},
+                "semantic": "axis_meaning",
+            }
+        )
+
+    payload = triangular_plotspec_to_dict(spec)["plot_spec"]
+    wrapper = {
+        "plot_spec": payload,
+        "triangle_background": {"type": "triangle_background"},
+        "primitives": primitives,
+    }
+    return _finish_non_panel_figure(
+        fig,
+        plt,
+        show=show,
+        save_path=save_path,
+        return_fig=return_fig,
+        export_drawn_primitives=export_drawn_primitives,
+        wrapper=wrapper,
+    )
+
+
+def _threshold_xlabel(threshold: Any) -> str:
+    """Return the legacy global-plot x-axis label for thresholded regression."""
+    if threshold is None:
+        return "Probability of Y = 1"
+    try:
+        if (
+            isinstance(threshold, Sequence)
+            and not isinstance(threshold, (str, bytes))
+            and len(threshold) >= 2
+        ):
+            return f"Probability of {float(threshold[0])} <= Y < {float(threshold[1])}"
+    except Exception:  # adr002_allow
+        return f"Probability of Y < {threshold}"
+    return f"Probability of Y < {threshold}"
+
+
+def _class_labels(class_labels: Any, unique_y: Sequence[Any]) -> list[str]:
+    """Return display labels for class-conditioned global scatter groups."""
+    if class_labels is None:
+        return [f"Y = {item}" for item in unique_y]
+    if isinstance(class_labels, dict):
+        return [f"Y = {class_labels.get(item, item)}" for item in unique_y]
+    try:
+        labels = list(class_labels)
+    except TypeError:
+        return [f"Y = {item}" for item in unique_y]
+    resolved = []
+    for item in unique_y:
+        try:
+            resolved.append(f"Y = {labels[int(item)]}")
+        except Exception:  # adr002_allow
+            resolved.append(f"Y = {item}")
+    return resolved
+
+
+def _global_xy(
+    proba: Any,
+    predict: Any,
+    uncertainty: Any,
+    y_test: Any,
+    *,
+    kind: str | None,
+    threshold: Any,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, str]:
+    """Resolve global plot x/y arrays and x-axis label from PlotSpec semantics."""
+    y_arr = None if y_test is None else np.asarray(y_test)
+    unc_arr = np.asarray(uncertainty, dtype=float)
+    if unc_arr.ndim == 0:
+        unc_arr = unc_arr.reshape(1)
+
+    if kind == "global_regression":
+        x_arr = np.asarray(predict if predict is not None else proba, dtype=float)
+        if x_arr.ndim == 0:
+            x_arr = x_arr.reshape(1)
+        return x_arr.reshape(-1), unc_arr.reshape(-1), y_arr, "Predictions"
+
+    proba_arr = np.asarray(proba if proba is not None else predict, dtype=float)
+    if proba_arr.ndim == 0:
+        proba_arr = proba_arr.reshape(1)
+
+    if threshold is not None:
+        if proba_arr.ndim > 1:
+            x_arr = proba_arr[:, 1] if proba_arr.shape[1] > 1 else proba_arr[:, 0]
+        else:
+            x_arr = proba_arr.reshape(-1)
+        if unc_arr.ndim > 1:
+            y_values = unc_arr[:, 1] if unc_arr.shape[1] > 1 else unc_arr[:, 0]
+        else:
+            y_values = unc_arr.reshape(-1)
+        return x_arr.reshape(-1), y_values.reshape(-1), y_arr, _threshold_xlabel(threshold)
+
+    if proba_arr.ndim > 1:
+        if y_arr is None:
+            predicted = np.argmax(proba_arr, axis=1)
+            row_idx = np.arange(len(predicted))
+            x_arr = proba_arr[row_idx, predicted]
+            y_values = unc_arr[row_idx, predicted] if unc_arr.ndim > 1 else unc_arr.reshape(-1)
+            return (
+                x_arr.reshape(-1),
+                y_values.reshape(-1),
+                None,
+                "Probability of Y = predicted class",
+            )
+
+        unique_y = np.unique(y_arr)
+        if proba_arr.shape[1] == 2 or len(unique_y) == 2:
+            x_arr = proba_arr[:, 1]
+            y_values = unc_arr[:, 1] if unc_arr.ndim > 1 else unc_arr.reshape(-1)
+            return x_arr.reshape(-1), y_values.reshape(-1), y_arr, "Probability of Y = 1"
+
+        class_idx = y_arr.astype(int)
+        row_idx = np.arange(len(class_idx))
+        x_arr = proba_arr[row_idx, class_idx]
+        y_values = unc_arr[row_idx, class_idx] if unc_arr.ndim > 1 else unc_arr.reshape(-1)
+        return x_arr.reshape(-1), y_values.reshape(-1), y_arr, "Probability of Y = actual class"
+
+    return proba_arr.reshape(-1), unc_arr.reshape(-1), y_arr, "Probability of Y = 1"
+
+
+def _render_global_spec(
+    spec: GlobalPlotSpec,
+    *,
+    show: bool,
+    save_path: str | None,
+    return_fig: bool,
+    export_drawn_primitives: bool,
+) -> Any:
+    """Render a global PlotSpec with legacy-equivalent scatter semantics."""
+    entries = spec.global_entries
+    if entries is None:
+        raise ValidationError(
+            "Global PlotSpec requires global_entries",
+            details={"required": ["global_entries"]},
+        )
+
+    try:
+        x_values, y_values, y_test, xlabel = _global_xy(
+            entries.proba,
+            entries.predict,
+            entries.uncertainty,
+            entries.y_test,
+            kind=spec.kind,
+            threshold=entries.threshold,
+        )
+    except Exception as exc:  # adr002_allow
+        if export_drawn_primitives:
+            payload = global_plotspec_to_dict(spec)["plot_spec"]
+            return {
+                "plot_spec": payload,
+                "primitives": [
+                    {
+                        "id": "global.scatter.summary",
+                        "type": "scatter",
+                        "coords": {},
+                        "semantic": "global_prediction_summary",
+                    }
+                ],
+            }
+        raise ValidationError(
+            "Global PlotSpec contains non-numeric scatter values",
+            details={"kind": spec.kind},
+        ) from exc
+
+    _require_mpl()
+    plt = _import_pyplot_with_retries()
+    _setup_style(None)
+    fig = plt.figure(figsize=spec.figure_size)
+    ax = fig.add_subplot(111)
+    primitives: list[dict[str, Any]] = []
+
+    if spec.kind == "global_probabilistic":
+        _x = np.arange(0, 1, 0.01)
+        ax.plot(_x / (1 + _x), _x, color="black")
+        ax.plot(_x, (1 - _x) / _x, color="black")
+        _x2 = np.arange(0.5, 1, 0.005)
+        ax.plot((0.5 + _x2 - 0.5) / (1 + _x2 - 0.5), _x2 - 0.5, color="black")
+        _x3 = np.arange(0, 0.5, 0.005)
+        ax.plot((0.5) / (1 + _x3), _x3, color="black")
+
+    colors = ["blue", "red", "tab:green", "tab:orange", "tab:purple", "tab:brown"]
+    markers = ["o", "x", "s", "^", "v", "D", "P", "*", "h", "H"]
+    marker_size = 25 if y_test is not None else 50
+
+    if y_test is None:
+        ax.scatter(x_values, y_values, label="Predictions", marker=".", s=marker_size)
+        groups = [("Predictions", np.ones_like(x_values, dtype=bool), ".", None)]
+    elif spec.kind == "global_regression":
+        if y_test is not None:
+            import matplotlib.colors as mcolors
+
+            norm = mcolors.Normalize(vmin=float(np.min(y_test)), vmax=float(np.max(y_test)))
+            colormap = plt.cm.viridis  # noqa: E501 - standard colormap reference
+            pt_colors = colormap(norm(y_test))
+            ax.scatter(x_values, y_values, color=pt_colors, marker=".", s=50)
+        else:
+            ax.scatter(x_values, y_values, label="Predictions", marker=".", s=50)
+        groups = [("Predictions", np.ones_like(x_values, dtype=bool), ".", None)]
+    else:
+        unique_y = list(np.unique(y_test))
+        labels = _class_labels(entries.class_labels, unique_y)
+        groups = []
+        for idx, cls in enumerate(unique_y):
+            mask = y_test == cls
+            color = colors[idx % len(colors)]
+            marker = markers[idx % len(markers)]
+            label = labels[idx] if idx < len(labels) else f"Y = {cls}"
+            ax.scatter(
+                x_values[mask],
+                y_values[mask],
+                color=color,
+                label=label,
+                marker=marker,
+                s=marker_size,
+            )
+            groups.append((label, mask, marker, color))
+        legend = getattr(ax, "legend", None)
+        if callable(legend):
+            legend()
+
+    if spec.kind == "global_probabilistic":
+        xlim = (0.0, 1.0)
+        ylim = (0.0, 1.0)
+    else:
+        xlim = _finite_bounds(x_values, default=(0.0, 1.0))
+        ylim = _finite_bounds(y_values, default=(0.0, 1.0))
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Uncertainty")
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+
+    if export_drawn_primitives:
+        scatter_index = 0
+        for label, mask, marker, color in groups:
+            group_indices = np.where(mask)[0]
+            for item_idx in group_indices:
+                primitives.append(
+                    {
+                        "id": f"global.scatter.{scatter_index}",
+                        "type": "scatter",
+                        "coords": {
+                            "x": float(x_values[item_idx]),
+                            "y": float(y_values[item_idx]),
+                        },
+                        "style": {"label": label, "marker": marker, "color": color},
+                        "semantic": "global_prediction",
+                    }
+                )
+                scatter_index += 1
+        primitives.append(
+            {
+                "id": "global.axes",
+                "type": "axes",
+                "coords": {"xlim": xlim, "ylim": ylim},
+                "style": {"xlabel": xlabel, "ylabel": "Uncertainty"},
+                "semantic": "axis_meaning",
+            }
+        )
+
+    payload = global_plotspec_to_dict(spec)["plot_spec"]
+    wrapper = {"plot_spec": payload, "primitives": primitives}
+    return _finish_non_panel_figure(
+        fig,
+        plt,
+        show=show,
+        save_path=save_path,
+        return_fig=return_fig,
+        export_drawn_primitives=export_drawn_primitives,
+        wrapper=wrapper,
+    )
+
+
 def render(
     spec: PlotSpec | TriangularPlotSpec | GlobalPlotSpec | dict,
     *,
@@ -121,35 +628,13 @@ def render(
     # allow tests to request the created figure or primitives even when not showing/saving
     # However, allow headless export if SaveBehavior requests in-memory default_exts
 
-    # Normalize non-panel canonical PlotSpec variants through boundary serializers so
-    # the adapter keeps one rendering/primitive shim path for triangular/global payloads.
-    if isinstance(spec, TriangularPlotSpec):
-        return render(
-            triangular_plotspec_to_dict(spec),
-            show=show,
-            save_path=save_path,
-            return_fig=return_fig,
-            draw_intervals=draw_intervals,
-            export_drawn_primitives=export_drawn_primitives,
-            _allow_serialized_envelope=True,
-        )
-    if isinstance(spec, GlobalPlotSpec):
-        return render(
-            global_plotspec_to_dict(spec),
-            show=show,
-            save_path=save_path,
-            return_fig=return_fig,
-            draw_intervals=draw_intervals,
-            export_drawn_primitives=export_drawn_primitives,
-            _allow_serialized_envelope=True,
-        )
     if isinstance(spec, dict) and not _allow_serialized_envelope:
         raise ValidationError(
             "Renderer requires canonical PlotSpec dataclass input. "
             "Convert boundary dict payloads via serializers first.",
             details={"actual_type": "dict", "expected_type": "canonical_plotspec_dataclass"},
         )
-    if not isinstance(spec, (PlotSpec, dict)):
+    if not isinstance(spec, (PlotSpec, TriangularPlotSpec, GlobalPlotSpec, dict)):
         raise ValidationError(
             "Renderer requires PlotSpec/TriangularPlotSpec/GlobalPlotSpec dataclass input",
             details={"actual_type": type(spec).__name__},
@@ -204,6 +689,23 @@ def render(
             if bytes_map:
                 wrapper["bytes"] = bytes_map
             return wrapper
+
+    if isinstance(spec, TriangularPlotSpec):
+        return _render_triangular_spec(
+            spec,
+            show=show,
+            save_path=save_path,
+            return_fig=return_fig,
+            export_drawn_primitives=export_drawn_primitives,
+        )
+    if isinstance(spec, GlobalPlotSpec):
+        return _render_global_spec(
+            spec,
+            show=show,
+            save_path=save_path,
+            return_fig=return_fig,
+            export_drawn_primitives=export_drawn_primitives,
+        )
 
     # Shim: accept dict-style PlotSpec payloads returned by builders for
     # non-panel plots (triangular/global) so tests can exercise those
@@ -299,9 +801,15 @@ def render(
         height = float(spec.figure_size[1])
     else:
         num_bars = 0
+        extra_lines = 0
         if spec.body is not None and getattr(spec.body, "bars", None) is not None:
             num_bars = len(spec.body.bars)
-        height = float(num_bars * 0.5 + 2.0)
+            for _bar in spec.body.bars:
+                _lbl = getattr(_bar, "label", None)
+                if _lbl:
+                    with suppress(Exception):  # adr002_allow - bad label must not crash sizing
+                        extra_lines += str(_lbl).count("\n")
+        height = float((num_bars + extra_lines) * 0.5 + 2.0)
         if height <= 0:
             height = 2.0
     fig = plt.figure(figsize=(width, height))
@@ -313,8 +821,8 @@ def render(
     body_spec = spec.body
     if header is not None:
         if getattr(header, "dual", False):
-            panels.append(("header_negative", header))
             panels.append(("header_positive", header))
+            panels.append(("header_negative", header))
         else:
             panels.append(("header", header))
     if body_spec is not None:
@@ -322,7 +830,7 @@ def render(
 
     # Create axes using a GridSpec so the figure title can reserve space via tight_layout.
     axes = []
-    if len(panels) == 3 and panels[0][0] == "header_negative" and panels[1][0] == "header_positive":
+    if len(panels) == 3 and panels[0][0] == "header_positive" and panels[1][0] == "header_negative":
         num_bars = (
             len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
         )
@@ -478,6 +986,8 @@ def render(
                 [comp_pred, comp_pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2
             )
             ax.set_xticks(np.linspace(x0f, x1f, 6))
+            if header.xlabel:
+                ax.set_xlabel(header.xlabel)
             solid_range = (0.0, comp_low)
             overlay_range = (comp_high, comp_low)
         else:
@@ -487,8 +997,6 @@ def render(
                 ax.fill_betweenx(y_coords, low, high, color=overlay_color, alpha=alpha_val)
             ax.plot([pred, pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2)
             ax.set_xticks([])
-            if header.xlabel:
-                ax.set_xlabel(header.xlabel)
             solid_range = (0.0, low)
             overlay_range = (low, high)
 
@@ -826,7 +1334,11 @@ def render(
         xs = np.linspace(0, n - 1, n)
         alpha_val = float(config["colors"]["alpha"])
         is_dual_header = bool(spec.header is not None and getattr(spec.header, "dual", False))
-        pos_contrib_color, neg_contrib_color = _regression_sign_colors(config["colors"])
+        if is_dual_header:
+            pos_contrib_color = config["colors"].get("positive", "r")
+            neg_contrib_color = config["colors"].get("negative", "b")
+        else:
+            pos_contrib_color, neg_contrib_color = _regression_sign_colors(config["colors"])
 
         # If header is dual/probabilistic, we still render the body in the
         # contribution coordinate system (centered at zero). Legacy v0.5.1
@@ -906,19 +1418,6 @@ def render(
                 except:  # noqa: E722
                     raw_val = float(item.value)
                 width = raw_val
-                try:
-                    is_dual = bool(spec.header.dual) if spec.header is not None else False
-                except Exception:  # adr002_allow
-                    is_dual = False
-                # Heuristic: treat values in [0,1] as probabilities and shift
-                # them into contribution-space when header.dual is set.
-                if is_dual:
-                    try:
-                        if -1e-9 <= raw_val <= 1.0 + 1e-9:
-                            width = raw_val - float(spec.header.pred)
-                    except Exception:  # adr002_allow
-                        # Fall back to raw value on any conversion issue
-                        width = raw_val
                 color = pos_color if width > 0 else neg_color
 
                 has_interval = (
@@ -933,21 +1432,12 @@ def render(
                     suppress_solid_on_cross = True
 
                 if has_interval:
-                    # Interval endpoints may be probability-space; convert
-                    # to contribution-space when header.dual is present.
                     try:
                         wl = float(item.interval_low)
                         wh = float(item.interval_high)
                     except Exception:  # adr002_allow
                         wl = float(item.interval_low)
                         wh = float(item.interval_high)
-                    if is_dual:
-                        with contextlib.suppress(Exception):  # adr002_allow
-                            # shift if endpoints look like probability values
-                            if -1e-9 <= wl <= 1.0 + 1e-9 and -1e-9 <= wh <= 1.0 + 1e-9:
-                                shift = float(spec.header.pred)
-                                wl = wl - shift
-                                wh = wh - shift
                     if wh < wl:
                         wl, wh = wh, wl
                     crosses_zero = wl < 0.0 < wh

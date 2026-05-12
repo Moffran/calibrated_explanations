@@ -69,6 +69,16 @@ Branch protection should require:
 
 Do **not** require nearly every non-nightly job. Keep required checks practical and stable.
 
+## Action pinning policy
+
+For supply-chain hardening, external GitHub Actions should be pinned to full commit SHAs rather than major tags.
+
+- Pin external `owner/repo` actions to `@<40-char-sha>`.
+- Keep local reusable workflows (`./.github/workflows/...`) and local composite actions (`./.github/actions/...`) unpinned because they are repository-relative.
+- Record the source tag or release date in the PR description or changelog when rotating a SHA.
+- Prefer automated refresh PRs for routine SHA updates so the maintenance cost stays bounded.
+- Use the CI policy validator and local checks to catch noncompliant action references before merge.
+
 ## Workflow/check-name freeze policy during migration
 
 - Workflow names and required check names are frozen during migration.

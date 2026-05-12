@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,7 @@ import pytest
 import scripts.docs.run_notebooks as driver
 from scripts.docs.run_notebooks import (
     VALID_STATUSES,
+    configure_notebook_runtime,
     discover_notebooks,
     extract_errors,
     read_skip_tag,
@@ -647,6 +649,35 @@ class TestDiscoverNotebooksCheckpoints:
         names = [p.name for p in result]
         assert names == ["real.ipynb"]
         assert not any(".ipynb_checkpoints" in str(p) for p in result)
+
+
+class TestNotebookRuntimeConfiguration:
+    """Notebook execution should inherit deterministic runtime defaults."""
+
+    def test_should_apply_serial_headless_runtime_defaults(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            applied = configure_notebook_runtime()
+
+            assert applied["CE_PARALLEL"] == "off"
+            assert applied["LOKY_MAX_CPU_COUNT"] == "1"
+            assert applied["MPLBACKEND"] == "Agg"
+            assert os.environ["OMP_NUM_THREADS"] == "1"
+
+    def test_should_preserve_existing_runtime_overrides(self) -> None:
+        existing = {
+            "CE_PARALLEL": "enable,threads,workers=2",
+            "LOKY_MAX_CPU_COUNT": "2",
+            "MPLBACKEND": "module://custom_backend",
+        }
+        with patch.dict(os.environ, existing, clear=True):
+            applied = configure_notebook_runtime()
+
+            assert "CE_PARALLEL" not in applied
+            assert "LOKY_MAX_CPU_COUNT" not in applied
+            assert "MPLBACKEND" not in applied
+            assert os.environ["CE_PARALLEL"] == "enable,threads,workers=2"
+            assert os.environ["LOKY_MAX_CPU_COUNT"] == "2"
+            assert os.environ["MPLBACKEND"] == "module://custom_backend"
 
 
 class TestRunNotebooksExtractErrors:

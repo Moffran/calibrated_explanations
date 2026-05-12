@@ -21,6 +21,7 @@ import venn_abers as va
 from ..core.prediction.interval_summary import IntervalSummary, coerce_interval_summary
 from ..utils import convert_targets_to_numeric
 from ..utils.exceptions import ConfigurationError
+from .normalization_strategy import NormalizationStrategy, coerce_normalization_strategy
 
 
 class VennAbers:
@@ -193,7 +194,8 @@ class VennAbers:
         classes=None,
         bins=None,
         interval_summary=None,
-        normalize=True,
+        normalization=NormalizationStrategy.SCALE,
+        normalize=None,
     ):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
@@ -205,13 +207,31 @@ class VennAbers:
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
             interval_summary (IntervalSummary or str, optional): Strategy for selecting the
                 point estimate from the interval bounds. Defaults to regularized mean.
-            normalize (bool, optional): If True (default), apply two-step normalization to
-                multiclass OvR outputs. Step 1 (coherence): adjusts each upper bound to
-                enforce h_c + sum_{k!=c} l_k = 1 for all c, derived from the IS-c scenario
-                probability axiom; lower bounds are preserved. Step 2 (simplex): normalizes
-                point estimates to sum to 1. Set to False to obtain raw pre-normalization
-                outputs for diagnostic purposes. Only affects the multiclass branch; ignored
-                for binary classification.
+            normalization (NormalizationStrategy or str, optional): Strategy for normalizing
+                multiclass OvR outputs. Only affects the multiclass branch; ignored for binary
+                classification. One of:
+
+                - ``NormalizationStrategy.SCALE`` (default, ``"scale"``): scale both bounds
+                  and point estimates uniformly by ``1/S`` (``S = Σ_c p_c``), so that point
+                  estimates sum to 1, relative width ordering across classes is preserved, and
+                  bounds remain consistent with point estimates.
+
+                - ``NormalizationStrategy.SIMPLEX`` (``"simplex"``): preserve raw VA bounds;
+                  normalize only the point estimates to sum to 1.  Interval widths reflect
+                  per-class calibrator uncertainty and differ across classes.
+
+                - ``NormalizationStrategy.COHERENCE`` (``"coherence"``): enforce the additive
+                  coherence constraint ``h_c + Σ_{k≠c} l_k = 1`` for every class c by
+                  adjusting upper bounds while preserving lower bounds.  As a mathematical
+                  consequence all interval widths become equal (``D = 1 − Σ_k l_k``).
+                  Point estimates are then simplex-normalized.
+
+                - ``NormalizationStrategy.NONE`` (``"none"``): return raw, un-normalized VA
+                  outputs.  Useful for diagnostics.
+
+            normalize (bool, optional): Deprecated. Use ``normalization`` instead.
+                ``True`` maps to ``NormalizationStrategy.COHERENCE``; ``False`` maps to
+                ``NormalizationStrategy.NONE``.
 
         Returns
         -------
@@ -221,6 +241,11 @@ class VennAbers:
                 high (n_test_samples,): Upper bounds of the VennAbers interval for each test sample.
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
+        # Resolve normalization strategy: legacy bool `normalize` takes precedence when set.
+        if normalize is not None:
+            normalization = coerce_normalization_strategy(normalize)
+        else:
+            normalization = coerce_normalization_strategy(normalization)
         tprobs = self.__predict_proba_with_difficulty(x, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
@@ -246,24 +271,42 @@ class VennAbers:
                 va_proba[:, c] = self._select_interval_summary(
                     low[:, c], high[:, c], interval_summary
                 )
-            if normalize:
-                # Step 1: Coherence normalization — enforce h_c + sum_{k!=c} l_k = 1 for all c.
-                # Derived from the IS-c scenario probability axiom: l_c (NOT-c scenario) is
-                # preserved; h_c is set to 1 - S_l + l_c where S_l = sum of all lower bounds.
+
+            _simplex_summaries = (IntervalSummary.MEAN, IntervalSummary.REGULARIZED_MEAN)
+
+            if normalization is NormalizationStrategy.COHERENCE:
+                # Enforce h_c + sum_{k≠c} l_k = 1 for all c by preserving lower bounds and
+                # setting h_c := 1 - S_low + l_c.  Mathematical side-effect: all interval
+                # widths become equal (D = 1 - S_low), erasing the per-class difficulty signal.
                 s_low = low.sum(axis=1, keepdims=True)
                 high = np.clip(1.0 - s_low + low, low, 1.0)
-                # Step 2: Recompute point estimates from coherence-normalized bounds.
                 for c in range(tprobs.shape[1]):
                     va_proba[:, c] = self._select_interval_summary(
                         low[:, c], high[:, c], interval_summary
                     )
-                # Step 3: Simplex normalization only for IS options where Σ p_c = 1 is expected.
-                # LOWER and UPPER are not expected to sum to 1 (they represent conservative /
-                # optimistic bounds, not a probability distribution).
-                if interval_summary in (IntervalSummary.MEAN, IntervalSummary.REGULARIZED_MEAN):
+                if interval_summary in _simplex_summaries:
                     row_sums = va_proba.sum(axis=1, keepdims=True)
                     safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
                     va_proba = va_proba / safe_row_sums
+
+            elif normalization is NormalizationStrategy.SIMPLEX:
+                # Preserve raw VA bounds; normalize only point estimates to sum to 1.
+                # Interval widths retain the per-class calibrator uncertainty signal.
+                if interval_summary in _simplex_summaries:
+                    row_sums = va_proba.sum(axis=1, keepdims=True)
+                    safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
+                    va_proba = va_proba / safe_row_sums
+
+            elif normalization is NormalizationStrategy.SCALE:
+                # Scale both bounds and point estimates uniformly by 1/S (S = Σ_c p_c).
+                # Point estimates sum to 1; relative width ordering across classes is preserved.
+                row_sums = va_proba.sum(axis=1, keepdims=True)
+                safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
+                low = low / safe_row_sums
+                high = high / safe_row_sums
+                va_proba = va_proba / safe_row_sums
+
+            # NormalizationStrategy.NONE: return raw outputs unchanged.
             if classes is not None:
                 if type(classes) not in (list, np.ndarray):
                     classes = [classes]

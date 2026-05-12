@@ -1,4 +1,6 @@
 # CI governance ownership
-/.github/workflows/ @org/ci-team @org/core-maintainers
-/.github/actions/ci-policy/ @org/ci-team @org/core-maintainers
-/.github/CODEOWNERS @org/core-maintainers
+/.github/workflows/ @loftuw
+/.github/actions/ci-policy/ @loftuw
+/.github/CODEOWNERS @loftuw
+# ADR-035 §1 governance: scripts/local_checks.py is an ADR-035-governed file
+/scripts/local_checks.py @loftuw

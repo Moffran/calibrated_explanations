@@ -216,3 +216,7 @@ evaluation/guarded/main.tex
 evaluation/guarded/pmlr-sample.bib
 evaluation/multiclass/real-multiclass/*tex
 release.md
+evaluation/guarded/artifacts/archive/*
+.tmp*
+evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/per_instance_record*
+evaluation/guarded/archive/*

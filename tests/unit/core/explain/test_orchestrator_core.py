@@ -1,5 +1,6 @@
 import numpy as np
 from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
@@ -101,3 +102,58 @@ def test_check_metadata_detects_missing_and_schema_mismatch():
     }
     msg2 = orch.check_metadata(bad_meta, identifier="y", mode="factual")
     assert "unsupported" in msg2 or "schema_version" in msg2
+
+
+def make_invoke_explainer_stub():
+    """Extended stub with attributes required for invoke telemetry tests.
+
+    Uses a MagicMock for plugin_manager so that runtime attribute access (e.g.
+    `initialize_orchestrators()`) succeeds without an explicit SimpleNamespace entry.
+    """
+    ns = make_explainer_stub()
+    pm = MagicMock()
+    pm.get_bridge_monitor = MagicMock(return_value=None)
+    pm.telemetry_interval_sources = {"default": "core.interval.test"}
+    pm.interval_plugin_hints = {"factual": ("core.interval.test",)}
+    pm.last_explanation_mode = None
+    pm.plot_plugin_fallbacks = {}
+    pm.last_telemetry = {}
+    ns.plugin_manager = pm
+    ns.preprocessor_metadata = None
+    ns.interval_summary = None
+    ns.latest_explanation = None
+    ns.initialized = True
+    return ns
+
+
+def test_should_include_interval_dependencies_in_batch_telemetry_when_plugin_provides_hints():
+    """ADR-026 gap 2: batch-level last_telemetry must include interval_dependencies key."""
+    expl = make_invoke_explainer_stub()
+    orch = ExplanationOrchestrator(expl)
+
+    mock_plugin = MagicMock()
+    mock_batch = MagicMock()
+    mock_batch.collection_metadata = {}
+    mock_container = MagicMock()
+    mock_batch.container_cls = mock_container
+    mock_result = MagicMock()
+    mock_container.from_batch.return_value = mock_result
+    mock_plugin.explain_batch.return_value = mock_batch
+
+    with (
+        patch.object(orch, "ensure_plugin", return_value=(mock_plugin, "core.test")),
+        patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"),
+        patch.object(ExplanationOrchestrator, "build_instance_telemetry_payload", return_value={}),
+    ):
+        orch.invoke(
+            mode="factual",
+            x=np.array([[1, 2, 3]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
+
+    telemetry = expl.plugin_manager.last_telemetry
+    assert "interval_dependencies" in telemetry
+    assert telemetry["interval_dependencies"] == ("core.interval.test",)

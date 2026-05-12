@@ -15,6 +15,20 @@ from ..utils.exceptions import ValidationError
 from .explain._computation import discretize as _discretize_func
 
 
+def discretizer_is_cached(discretizer_name: str, current_discretizer: Any) -> bool:
+    """Return True if current_discretizer is already the correct type for discretizer_name."""
+    if current_discretizer is None:
+        return False
+    type_map: dict = {
+        "binaryEntropy": BinaryEntropyDiscretizer,
+        "entropy": EntropyDiscretizer,
+        "binaryRegressor": BinaryRegressorDiscretizer,
+        "regressor": RegressorDiscretizer,
+    }
+    expected = type_map.get(discretizer_name)
+    return expected is not None and isinstance(current_discretizer, expected)
+
+
 def validate_discretizer_choice(discretizer: Any, mode: str) -> str:
     """Validate that the discretizer choice is appropriate for the mode.
 

@@ -343,6 +343,7 @@ def test_should_raise_for_unsupported_config_governance_event_type() -> None:
 def valid_plugin_payload() -> dict:
     from datetime import datetime, timezone
     from uuid import uuid4
+
     return {
         "schema_version": "1.0",
         "event_id": str(uuid4()),
@@ -360,6 +361,7 @@ def valid_plugin_payload() -> dict:
 def valid_config_payload() -> dict:
     from datetime import datetime, timezone
     from uuid import uuid4
+
     return {
         "schema_version": "1.0",
         "event_id": str(uuid4()),
@@ -377,6 +379,7 @@ def valid_config_payload() -> dict:
 
 def test_should_validate_plugin_event_via_fallback_when_jsonschema_is_none() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = valid_plugin_payload()
     with unittest.mock.patch.object(evt_module, "jsonschema", None):
         validate_governance_event(payload)
@@ -385,55 +388,74 @@ def test_should_validate_plugin_event_via_fallback_when_jsonschema_is_none() -> 
 
 def test_should_raise_when_plugin_event_missing_required_key_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = valid_plugin_payload()
     del payload["decision"]
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="missing required field"):
-            validate_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="missing required field"),
+    ):
+        validate_governance_event(payload)
 
 
 def test_should_raise_when_plugin_event_schema_version_wrong_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_plugin_payload(), "schema_version": "2.0"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="schema_version"):
-            validate_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="schema_version"),
+    ):
+        validate_governance_event(payload)
 
 
 def test_should_raise_when_plugin_event_decision_invalid_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_plugin_payload(), "decision": "not_a_decision"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="decision is invalid"):
-            validate_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="decision is invalid"),
+    ):
+        validate_governance_event(payload)
 
 
 def test_should_raise_when_plugin_event_trusted_not_bool_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_plugin_payload(), "trusted": "yes"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="trusted must be a bool"):
-            validate_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="trusted must be a bool"),
+    ):
+        validate_governance_event(payload)
 
 
 def test_should_raise_when_plugin_event_timestamp_not_string_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_plugin_payload(), "timestamp": 12345}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="timestamp must be an ISO-8601 string"):
-            validate_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="timestamp must be an ISO-8601 string"),
+    ):
+        validate_governance_event(payload)
 
 
 def test_should_raise_when_plugin_event_timestamp_invalid_iso_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_plugin_payload(), "timestamp": "not-a-date"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="timestamp must be valid ISO-8601"):
-            validate_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="timestamp must be valid ISO-8601"),
+    ):
+        validate_governance_event(payload)
 
 
 def test_should_validate_config_event_via_fallback_when_jsonschema_is_none() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = valid_config_payload()
     with unittest.mock.patch.object(evt_module, "jsonschema", None):
         validate_config_governance_event(payload)
@@ -442,64 +464,90 @@ def test_should_validate_config_event_via_fallback_when_jsonschema_is_none() -> 
 
 def test_should_raise_when_config_event_missing_key_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = valid_config_payload()
     del payload["strict"]
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="missing required field"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="missing required field"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_schema_version_wrong_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "schema_version": "2.0"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="schema_version"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="schema_version"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_name_wrong_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "event_name": "wrong.event"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="event_name"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="event_name"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_type_invalid_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "event_type": "invalid_type"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="event_type is invalid"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="event_type is invalid"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_strict_not_bool_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "strict": "yes"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="strict must be a bool"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="strict must be a bool"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_source_count_negative_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "source_count": -1}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="source_count"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="source_count"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_resolve_has_details_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "event_type": "resolve", "details": {"extra": "data"}}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="resolve details must be null"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="resolve details must be null"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_validate_config_export_event_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
-    payload = {**valid_config_payload(), "event_type": "export", "details": {"diagnostic_only": True}}
+
+    payload = {
+        **valid_config_payload(),
+        "event_type": "export",
+        "details": {"diagnostic_only": True},
+    }
     with unittest.mock.patch.object(evt_module, "jsonschema", None):
         validate_config_governance_event(payload)
     assert payload["details"] == {"diagnostic_only": True}
@@ -507,14 +555,18 @@ def test_should_validate_config_export_event_in_fallback() -> None:
 
 def test_should_raise_when_config_export_details_wrong_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "event_type": "export", "details": {}}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="export details"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="export details"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_validate_config_validation_failure_event_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {
         **valid_config_payload(),
         "event_type": "validation_failure",
@@ -527,63 +579,81 @@ def test_should_validate_config_validation_failure_event_in_fallback() -> None:
 
 def test_should_raise_when_validation_failure_details_not_mapping_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {
         **valid_config_payload(),
         "event_type": "validation_failure",
         "details": "not-a-mapping",
     }
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="details must be an object"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="details must be an object"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_validation_failure_details_extra_key_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {
         **valid_config_payload(),
         "event_type": "validation_failure",
         "details": {"location": None, "issue_count": 1, "extra": "forbidden"},
     }
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="details keys"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="details keys"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_validation_failure_issue_count_negative_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {
         **valid_config_payload(),
         "event_type": "validation_failure",
         "details": {"location": None, "issue_count": -1},
     }
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="issue_count"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="issue_count"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_validation_failure_location_not_string_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {
         **valid_config_payload(),
         "event_type": "validation_failure",
         "details": {"location": 42, "issue_count": 1},
     }
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="location must be a string or null"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="location must be a string or null"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_timestamp_not_string_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "timestamp": 12345}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="timestamp must be an ISO-8601 string"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="timestamp must be an ISO-8601 string"),
+    ):
+        validate_config_governance_event(payload)
 
 
 def test_should_raise_when_config_event_timestamp_invalid_iso_in_fallback() -> None:
     import calibrated_explanations.governance.events as evt_module
+
     payload = {**valid_config_payload(), "timestamp": "not-a-date"}
-    with unittest.mock.patch.object(evt_module, "jsonschema", None):
-        with pytest.raises(ValidationError, match="timestamp must be valid ISO-8601"):
-            validate_config_governance_event(payload)
+    with (
+        unittest.mock.patch.object(evt_module, "jsonschema", None),
+        pytest.raises(ValidationError, match="timestamp must be valid ISO-8601"),
+    ):
+        validate_config_governance_event(payload)

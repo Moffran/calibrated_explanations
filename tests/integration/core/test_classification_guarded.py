@@ -73,6 +73,21 @@ def test_binary_ce(binary_dataset):
     alternative_explanation.counter_explanations()
     alternative_explanation.ensured_explanations()
     alternative_explanation.add_conjunctions(max_rule_size=3)
+
+    # Conjunction guard audit is populated after add_conjunctions
+    factual_audit = factual_explanation[0].get_guarded_audit()
+    for record in factual_audit.get("conjunctions", []):
+        assert record["type"] == "conjunction"
+        assert "p_value" in record
+        assert record["emission_reason"] in ("emitted", "removed_guard")
+        assert record["conforming"] == (record["emission_reason"] == "emitted")
+    alt_audit = alternative_explanation[0].get_guarded_audit()
+    for record in alt_audit.get("conjunctions", []):
+        assert record["type"] == "conjunction"
+        assert "p_value" in record
+        assert record["emission_reason"] in ("emitted", "removed_guard")
+        assert record["conforming"] == (record["emission_reason"] == "emitted")
+
     # Basic sanity assertions to ensure the explainer produced results
     assert factual_explanation is not None
     assert alternative_explanation is not None

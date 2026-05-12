@@ -53,6 +53,16 @@ class TestParallelLifecycle:
         assert results1 == [x * x for x in range(5)]
         assert results2 == [x * x for x in range(5, 10)]
 
+    def test_should_clear_pool_reference_when_executor_exits_context(self):
+        """should_release_executor_pool_reference_when_context_exits."""
+        config = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
+
+        executor = ParallelExecutor(config)
+        with executor:
+            _ = executor.map(square, range(3))
+
+        assert executor.pool is None
+
     def test_force_serial_on_failure(self):
         config = ParallelConfig(
             enabled=True,

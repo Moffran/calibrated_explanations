@@ -15,12 +15,29 @@ APPROVED_REUSABLES = (
     "./.github/workflows/reusable-run-make.yml",
     "./.github/workflows/reusable-build-docs.yml",
 )
+
+FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<ref>[^\s#]+)")
+
+# ADR-035 GAP 4 (v0.11.2): Pre-reusable inline workflows allow-list
+# These workflows pre-date the reusable-first rule and run all jobs inline.
+# Future edits to these workflows must still update scripts/local_checks.py and Makefile
+# per ADR-035 section 3 local reproducibility parity.
+_REUSABLE_FIRST_ALLOWLIST = (
+    ".github/workflows/ci-main.yml",  # Pre-reusable inline workflow; review-by: v0.11.3
+    ".github/workflows/ci-nightly.yml",  # Heavy/scheduled workflow; review-by: v0.11.3
+    ".github/workflows/deprecation-check.yml",  # Single-purpose test workflow; review-by: v0.11.3
+    ".github/workflows/maintenance.yml",  # Maintenance workflow; review-by: v0.11.3
+    ".github/workflows/update_baseline.yml",  # Automated baseline updater; review-by: v0.11.3
+)
+
 HEAVY_KEYWORDS = ("parity", "perf", "notebook-audit", "docs")
 REQUIRED_CHECKLIST_ITEMS = (
     "I used one of the approved reusable workflows OR marked this workflow `experimental: true`",
     "Pip installs in workflow use `-c constraints.txt`",
     "Job `permissions` default to `contents: read`",
     "Heavy job(s) are path-gated, scheduled, or `workflow_dispatch` present",
+    "All external actions are pinned to full commit SHA",
     "`scripts/local_checks.py` / `Makefile` updated for local reproduction",
 )
 REPORT_PATH_GUARD_SCRIPT = "scripts/quality/check_no_local_paths_in_reports.py"
@@ -68,6 +85,9 @@ def _check_reusables(file_path: Path, text: str, errors: list[str]) -> None:
         return
     if _is_experimental(file_path, text):
         return
+    # ADR-035 GAP 4: Skip reusable-first check for pre-reusable inline workflows on allow-list
+    if file_path.as_posix() in _REUSABLE_FIRST_ALLOWLIST:
+        return
     if "jobs:" not in text:
         return
     if not any(f"uses: {reusable}" in text for reusable in APPROVED_REUSABLES):
@@ -90,6 +110,28 @@ def _check_pip_constraints(file_path: Path, text: str, errors: list[str]) -> Non
         stripped = line.strip()
         if "pip install" in stripped and "-c constraints.txt" not in stripped:
             errors.append(f"{file_path.as_posix()}: pip install must include -c constraints.txt -> '{stripped}'.")
+
+
+def _check_action_sha_pins(file_path: Path, text: str, errors: list[str]) -> None:
+    for line_num, line in enumerate(text.splitlines(), start=1):
+        match = USES_PATTERN.match(line)
+        if not match:
+            continue
+
+        ref = match.group("ref")
+        if ref.startswith(("./", "../")):
+            continue
+        if "@" not in ref:
+            errors.append(
+                f"{file_path.as_posix()}:{line_num}: external action '{ref}' must be pinned to a full commit SHA."
+            )
+            continue
+
+        owner_repo, version = ref.rsplit("@", 1)
+        if not FULL_SHA_PATTERN.fullmatch(version):
+            errors.append(
+                f"{file_path.as_posix()}:{line_num}: external action '{owner_repo}' uses '{version}' but must use a full 40-character commit SHA."
+            )
 
 
 def _check_heavy_gating(file_path: Path, text: str, errors: list[str]) -> None:
@@ -194,6 +236,7 @@ def validate_policy(base_sha: str, head_sha: str, repo_root: Path, event_path: P
         _check_reusables(rel_path, text, errors)
         _check_permissions(rel_path, text, errors)
         _check_pip_constraints(rel_path, text, errors)
+        _check_action_sha_pins(rel_path, text, errors)
         _check_heavy_gating(rel_path, text, errors)
 
     changed = {p.as_posix() for p in changed_files}

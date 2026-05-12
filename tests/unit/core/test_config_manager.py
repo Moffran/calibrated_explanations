@@ -193,3 +193,48 @@ def test_effective_export_uses_default_profile_when_no_env_or_pyproject() -> Non
     snapshot = manager.export_effective()
     assert snapshot.values["effective.CE_PLOT_RENDERER"] is None
     assert snapshot.sources["effective.CE_PLOT_RENDERER"] == "default_profile"
+
+
+# ---------------------------------------------------------------------------
+# Phase B: module-specific singleton ownership assertions (ADR-034 Task 1)
+# ---------------------------------------------------------------------------
+
+
+def test_should_instantiate_orchestrator_without_errors() -> None:
+    """PredictionOrchestrator.__init__ must complete successfully (proves ConfigManager.from_sources() wiring is correct)."""
+    from unittest.mock import MagicMock
+
+    from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
+
+    fake_explainer = MagicMock()
+    fake_explainer.plugin_manager.initialize_chains.return_value = None
+    orch = PredictionOrchestrator(fake_explainer)
+    assert orch is not None
+
+
+def test_should_snapshot_ce_cache_env_at_construction_time() -> None:
+    """CacheConfig.from_env reads CE_CACHE from ConfigManager snapshot, not live env."""
+    from calibrated_explanations.cache.cache import CacheConfig
+
+    # Build manager with CE_CACHE enabled.
+    mgr = ConfigManager(env_snapshot={"CE_CACHE": "on"}, pyproject_snapshot=_EMPTY_PYPROJECT)
+    cfg = CacheConfig.from_env(config_manager=mgr)
+    assert cfg.enabled is True
+
+    # A manager with CE_CACHE absent returns disabled (default).
+    mgr_off = ConfigManager(env_snapshot={}, pyproject_snapshot=_EMPTY_PYPROJECT)
+    cfg_off = CacheConfig.from_env(config_manager=mgr_off)
+    assert cfg_off.enabled is False
+
+
+def test_should_snapshot_ce_parallel_env_at_construction_time() -> None:
+    """ParallelConfig.from_env reads CE_PARALLEL from ConfigManager snapshot, not live env."""
+    from calibrated_explanations.parallel.parallel import ParallelConfig
+
+    mgr = ConfigManager(env_snapshot={"CE_PARALLEL": "on"}, pyproject_snapshot=_EMPTY_PYPROJECT)
+    cfg = ParallelConfig.from_env(config_manager=mgr)
+    assert cfg.enabled is True
+
+    mgr_off = ConfigManager(env_snapshot={}, pyproject_snapshot=_EMPTY_PYPROJECT)
+    cfg_off = ParallelConfig.from_env(config_manager=mgr_off)
+    assert cfg_off.enabled is False

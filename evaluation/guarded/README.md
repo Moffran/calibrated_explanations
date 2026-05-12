@@ -28,7 +28,13 @@ Use in the paper:
 - Optional tradeoff metric: factual-mode `rule_count`
 
 Scenario A metric contract:
-- `violation_rate` is computed on emitted rules under the emitted rule format.
+- The default Scenario A profile is 10-dimensional: the first two features
+  define the known constraint, later features add correlated support,
+  nonlinear support, additional predictive signal, and pure noise.
+- `violation_rate` is computed on emitted rules that touch the constrained
+  feature pair, under the emitted rule format. Rules on the other features are
+  excluded from this denominator because changing them cannot test the known
+  constraint.
 - For guarded interval-style rules, plausibility is checked at the
   constraint-facing boundary implied by the rule condition in this synthetic
   setup, and can be stress-tested over interior values via boundary probes,
@@ -185,6 +191,12 @@ python scenario_b_ood_detection_quality.py --paper-focused --large
 ```
 
 Artifacts are written to `evaluation/guarded/artifacts/`.
+
+Scenario A and Scenario B also write intermediate files during long runs:
+
+- `*.partial.csv` files contain rows completed so far.
+- `progress.json` contains completed/total work units, percent complete, elapsed time, and ETA.
+- Final artifact names are unchanged and are written at the end of the run.
 
 ## Paper-use rules
 

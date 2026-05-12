@@ -70,22 +70,6 @@ class WrapCalibratedExplainer:
     _logger: _logging.Logger
     _STATE_SCHEMA_VERSION: int = 1
 
-    @staticmethod
-    def _deprecate_lime_shap_surface(
-        symbol: str,
-        replacement: str,
-        *,
-        removal_version: str,
-    ) -> None:
-        """Emit Task-21 deprecation warning for wrapper LIME/SHAP entry points."""
-        deprecate(
-            f"WrapCalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
-            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
-            "under the pre-v1.0 zero-deprecation closure policy.",
-            key=f"WrapCalibratedExplainer.{symbol}_lime_shap_deprecation",
-            stacklevel=4,
-        )
-
     def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
 
@@ -557,59 +541,6 @@ class WrapCalibratedExplainer:
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         assert self.explainer is not None
         return self.explainer.explain_fast(x_local, **kwargs)
-
-    def explain_lime(self, x: Any, **kwargs: Any) -> Any:
-        """Generate lime explanations for the test data.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
-        """
-        self._deprecate_lime_shap_surface(
-            "explain_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)",
-            removal_version="v0.11.2",
-        )
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-            )
-            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-            .explainer
-            is not None
-        )
-        x_local = self._maybe_preprocess_for_inference(x)
-        kwargs = self._normalize_public_kwargs(kwargs)
-        validate_inputs_matrix(x_local, allow_nan=True)
-        validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        with _warnings.catch_warnings():
-            _warnings.simplefilter("ignore", DeprecationWarning)
-            return self.explainer.explain_lime(x_local, **kwargs)
-
-    def explain_shap(self, x: Any, **kwargs: Any) -> Any:
-        """Generate SHAP explanations for the test data."""
-        self._deprecate_lime_shap_surface(
-            "explain_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)",
-            removal_version="v0.11.2",
-        )
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-            )
-            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-            .explainer
-            is not None
-        )
-        x_local = self._maybe_preprocess_for_inference(x)
-        kwargs = self._normalize_public_kwargs(kwargs)
-        validate_inputs_matrix(x_local, allow_nan=True)
-        validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        with _warnings.catch_warnings():
-            _warnings.simplefilter("ignore", DeprecationWarning)
-            return self.explainer.explain_shap(x_local, **kwargs)
 
     # pylint: disable=too-many-return-statements
     def predict(
