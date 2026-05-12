@@ -1,5 +1,7 @@
 # RELEASE_PLAN Status Appendix
 
+> Status note (2026-05-12): reviewed at the v0.11.2 milestone boundary; summary rows below are synchronized to v0.11.2 deliverables and currently open follow-through only.
+
 > Appendix scope: status-heavy tracking only (ADR/Standard status tables, gap inventory, historical compliance notes).
 
 ## Purpose
@@ -20,30 +22,31 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 
 | Item | Current status | Target milestone or note |
 | --- | --- | --- |
-| ADR-004 | Partially complete | v0.11.1+ hardening remaining |
-| ADR-005 | Partially complete | Remaining payload-provenance closure tracked in milestone plans |
-| ADR-006 | Partially complete | v0.11.1 trust-state + deprecation completion |
-| ADR-008 | Partially complete | Domain-authoritative migration in v0.11.1+ |
-| ADR-009 | Partially complete | Mapping/export hardening follow-through |
-| ADR-010 | Partially complete | Core-only vs extras parity automation follow-through |
-| ADR-011 | Partially complete | Legacy deprecation path closure in v0.11.1 |
-| ADR-012 | Accepted with open hardening | Notebook/runtime ceiling closure in v0.11.1 |
-| ADR-013 | Partially complete | Protocol/fallback strictness follow-through |
-| ADR-015 | Partially complete | Invariant and bridge-surface hardening follow-through |
-| ADR-020 | Accepted with open parity/documentation follow-through | v0.11.1 close-out |
-| ADR-026 | Partially complete | Context immutability + telemetry metadata follow-through |
-| ADR-027 | Partially complete | Observability policy/docs/examples follow-through |
-| ADR-028 | Accepted with open enforcement hardening | v0.11.1 close-out |
+| ADR-004 | Partially complete | Only explicit `strategy="auto"` policy closure remains (v1.0.0-rc) |
+| ADR-005 | Partially complete | Remaining legacy-adapter provenance follows ADR-008 domain-authoritative migration (v1.0.0-rc) |
+| ADR-006 | Partially complete | Accepted-registration audit events and final legacy-list removal remain (v0.11.3) |
+| ADR-008 | Partially complete | Domain-authoritative migration and round-trip hardening remain (v1.0.0-rc) |
+| ADR-009 | Partially complete | JSON-safe export and helper-placement docs in v0.11.3; wrapper/core surface decision in v1.0.0-rc |
+| ADR-010 | Partially complete | Core-only vs extras parity automation follow-through (v0.11.3) |
+| ADR-011 | Partially complete | Remaining serializer/list-path deprecation closure (v0.11.3) |
+| ADR-012 | Accepted with open hardening | Notebook execution/runtime ceilings remain v1.0.0-rc; gallery-tooling decision docs in v0.11.3 |
+| ADR-013 | Partially complete | Protocol/fallback strictness follow-through (v0.11.3) |
+| ADR-015 | Partially complete | Invariant consistency in v0.11.3; direct learner-handle posture in v1.0.0-rc |
+| ADR-020 | Accepted with open parity/documentation follow-through | v0.11.3 close-out |
+| ADR-026 | Partially complete | Context immutability remains (v1.0.0-rc); telemetry quick wins closed in v0.11.2 |
+| ADR-027 | Partially complete | Observability policy/docs/examples follow-through (v0.11.3) |
+| ADR-028 | Accepted with monitoring-only follow-through | Enforcement/docs gaps closed in v0.11.1; monitor regressions at v0.11.3 |
 | ADR-030 | Accepted | Zero-tolerance ratification targeted v0.11.3 |
-| ADR-033 | Accepted | v0.11.1 additive rollout hardening |
+| ADR-033 | Accepted with open removal follow-through | `data_modalities` enforcement closes in v0.11.3; shim removal remains v1.0.0-rc |
 | ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning |
+| ADR-035 | Accepted with rollout follow-through | Advisory-to-required branch-protection promotion remains platform-governed; re-evaluate in v0.11.3 |
 | ADR-036 | Accepted | v0.11.2 default-promotion decision recorded as deferral; zero open severity >= 9 conformance gaps confirmed; Task 9 mending and v0.11.3 Task 6 re-evaluation remain |
 | ADR-037 | Accepted | v0.11.2 default-path follow-up recorded as deferral; zero open severity >= 9 conformance gaps confirmed; Task 9 mending and v0.11.3 Task 6 re-evaluation remain |
 | STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
 | STD-002 | Partially complete | WrapCalibratedExplainer numpydoc closure in v0.11.3 |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
-| STD-005 | Accepted with open enforcement hardening | v0.11.1 close-out |
+| STD-005 | Accepted with monitoring-only follow-through | Enforcement/docs gaps closed in v0.11.1; monitor regressions |
 
 ## Detailed gap inventory and historical notes
 
@@ -92,7 +95,7 @@ _Last gap analysis: 2026-04-22_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | ~~Documentation naming drift (legacy facade term vs `ParallelExecutor`)~~ | 2 | 2 | 4 | **Closed v0.11.2:** Legacy "facade" term removed from ADR-001 and RELEASE_PLAN_v1 changelog entry; `ParallelExecutor` naming is now consistent in active docs. |
-| 2 | Implicit `auto` strategy enables auto-selection contrary to ADR decision | 3 | 3 | 9 | Default `strategy="auto"` allows implicit selection. Target milestone: v1.0.0-rc. Blocker: requires coordinated strategy API change and user-facing migration guide; architecture-heavy, exceeds quick-win thresholdtegy API change and user-facing migration guide; architecture-heavy, exceeds quick-win threshold. |
+| 2 | Implicit `auto` strategy enables auto-selection contrary to ADR decision | 3 | 3 | 9 | Default `strategy="auto"` allows implicit selection. Target milestone: v1.0.0-rc. Blocker: coordinated strategy API change + user-facing migration guide; architecture-heavy and above quick-win threshold. |
 
 ### ADR-005 - Explanation Payload Schema
 
@@ -189,7 +192,7 @@ _Last gap analysis: 2026-02-27_
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Inconsistent invariant enforcement across bridges/validators | 3 | 2 | 6 | Some layers warn while others raise; align to ADR. Target milestone: v0.11.3. |
 | 2 | Explainer handle exposes direct `learner` (bypass bridge) | 4 | 2 | 8 | Restrict direct learner access or document as escape hatch with warnings. Target milestone: v1.0.0-rc (public API semantic). |
-| 3 | Task-scoped enforcement divergence | 3 | 2 | 6 | Ensure interval invariant enforcement is consistent across task types. Target milestone: v0.11.3tone: v0.11.3. |
+| 3 | Task-scoped enforcement divergence | 3 | 2 | 6 | Ensure interval invariant enforcement is consistent across task types. Target milestone: v0.11.3. |
 
 ### ADR-016 - PlotSpec Separation and Schema (superseded; see ADR-036/ADR-037)
 
@@ -233,7 +236,7 @@ _Last gap analysis: 2026-04-22_
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Explanation context exposes mutable dicts | 4 | 3 | 12 | Contexts should be frozen/immutable. Target milestone: v1.0.0-rc (architecture-level change; exceeds quick-win threshold). |
 | 2 | ~~Telemetry omits interval dependency hints~~ | 3 | 2 | 6 | **Closed v0.11.2:** `interval_dependencies` is already emitted in `ExplanationOrchestrator.invoke`; test `test_should_include_interval_dependencies_in_batch_telemetry_when_plugin_provides_hints` in `tests/unit/core/explain/test_orchestrator_core.py` verifies the invariant. |
-| 3 | ~~Mondrian bin objects left mutable in requests~~ | 2 | 2 | 4 | **Closed v0.11.2:** `ExplanationRequest.__post_init__` freezes `bins` to an immutable tuple; test `test_should_freeze_mondrian_bins_at_request_construction_when_caller_mutates` in `tests/unit/core/prediction/test_orchestrator_extras.py` verifies thees `bins` to an immutable tuple; test `test_should_freeze_mondrian_bins_at_request_construction_when_caller_mutates` in `tests/unit/core/prediction/test_orchestrator_extras.py` verifies the contract. |
+| 3 | ~~Mondrian bin objects left mutable in requests~~ | 2 | 2 | 4 | **Closed v0.11.2:** `ExplanationRequest.__post_init__` freezes `bins` to an immutable tuple; test `test_should_freeze_mondrian_bins_at_request_construction_when_caller_mutates` in `tests/unit/core/prediction/test_orchestrator_extras.py` verifies the contract. |
 
 ### ADR-027 - FAST-Based Feature Filtering
 
@@ -251,7 +254,7 @@ _Last gap analysis: 2026-02-27_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Enforcement tooling for logger domains missing | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (logger-domain quality script added). Target milestone: monitor; re-verify at v0.11.3. |
-| 2 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (docs examples updated). Target milestone: monitor; re-verify at v0.11.3et milestone: monitor; re-verify at v0.11.3. |
+| 2 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (docs examples updated). Target milestone: monitor; re-verify at v0.11.3. |
 
 ### ADR-029 - Reject Integration Strategy
 
@@ -261,7 +264,7 @@ _Last gap analysis: 2026-03-03_
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Reject strategy expansion beyond binary conformal rejectors not yet implemented | 3 | 3 | 9 | Delivered in v0.11.1 Task 14 (uncertainty-based and cost-sensitive strategies added). Target milestone: closed; monitor for regressions. |
 | 2 | Strategy lifecycle hooks and configuration surface not finalized | 2 | 2 | 4 | Strategy config API deferred. Target milestone: v0.11.3. |
-| 3 | `RejectResult` public return type not yet migrated to strict `RejectResultV2`; `reject_result_v2_to_legacy()` downgrade active with no deprecation warning | 3 | 2 | 6 | Deprecation warning active from v0.11.x per ADR-011. Target milestone: v1.0.0-rc for public return type switch
+| 3 | `RejectResult` public return type not yet migrated to strict `RejectResultV2`; `reject_result_v2_to_legacy()` downgrade active with no deprecation warning | 3 | 2 | 6 | Deprecation warning active from v0.11.x per ADR-011. Target milestone: v1.0.0-rc for public return type switch. |
 
 ### ADR-030 - Test Quality Priorities and Enforcement
 
@@ -287,7 +290,7 @@ _Last gap analysis: 2026-03-03_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | CLI `--modality` filtering not yet implemented | 3 | 3 | 9 | Delivered in v0.11.1 Task 11. Target milestone: closed. |
-| 2 | `vision.py`/`audio.py` shims not yet present (must raise `MissingExtensionError`) | 3 | 3 | 9 | Delivered in v0.11.1 Task 11; shim removal Target milestone: v1.0.0-rc. |
+| 2 | `vision.py`/`audio.py` shims not yet present (must raise `MissingExtensionError`) | 3 | 3 | 9 | Delivered in v0.11.1 Task 11; shim removal target milestone: v1.0.0-rc. |
 | 3 | Packaging smoke test (extension install + entry-point discovery) missing | 3 | 3 | 9 | Delivered in v0.11.1 Task 13. Target milestone: closed. |
 | 4 | Plugin contributor contract docs not updated for `plugin_api_version`/`data_modalities` requirements | 2 | 2 | 4 | Delivered in v0.11.1 Task 12. Target milestone: closed. |
 
@@ -301,6 +304,15 @@ Runtime conformance closure for v0.11.2 is complete: Phase A and Phase B migrati
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Interim posture remains documented as non-redacted. Target milestone: v1.0.0-rc. |
 | 2 | `export_effective()` payload schema not versioned for external consumers (Open Item 2) | 3 | 2 | 6 | Target milestone: v1.0.0-rc; must be versioned before external tooling can rely on export. |
+
+### ADR-035 - CI Workflow Governance
+
+_Last gap analysis: 2026-04-22_
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Advisory-to-required branch-protection flip is not enforceable from repository code alone | 2 | 2 | 4 | v0.11.2 closed text/validator/CODEOWNERS gaps; remaining follow-through is platform-governed branch-protection promotion. Target milestone: v0.11.3 re-evaluation. |
+| 2 | Two governance caveats remain structurally non-automatable (template auto-application and two-maintainer per-path enforcement) | 1 | 2 | 2 | These are documented governance caveats rather than code defects. Track as accepted operational constraints unless platform capabilities change. |
 
 ## Standards status appendix (unified severity tables)
 
@@ -335,4 +347,4 @@ _Last gap analysis: 2026-03-03_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
-| 2 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions
+| 2 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
