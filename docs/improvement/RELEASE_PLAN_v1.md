@@ -519,6 +519,12 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
       mending evidence. Proposed candidate outcome: broad promotion (1C-family) if
       semantic/visual parity evidence is sufficient; otherwise record another explicit
       deferral rather than promoting by momentum.
+  7. Optional `uv` workflow support: adopt `uv` narrowly as an optional contributor
+     setup and CI install-acceleration path while keeping `pip install
+     calibrated-explanations` as the canonical user install. Add a pinned
+     `uv-install-smoke` validation lane, record pip-vs-uv install timing evidence,
+     refresh or remove/document `uv.lock`, and verify ADR-010/012/028/030/033 plus
+     Standard-001/003/004/005 compliance before closure.
   Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
 
 
