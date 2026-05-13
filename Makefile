@@ -66,6 +66,10 @@ check-ci-policy:
 uv-install-smoke:
 	python scripts/local_checks.py --uv-install-smoke
 
+.PHONY: adr030-ratification
+adr030-ratification:
+	python scripts/local_checks.py --adr030-ratification
+
 .PHONY: governance-status
 governance-status:
 	python scripts/quality/build_governance_status_artifact.py --output reports/governance/governance_status.json --validate

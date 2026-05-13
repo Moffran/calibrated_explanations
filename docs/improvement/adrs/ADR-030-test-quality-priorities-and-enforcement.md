@@ -1,4 +1,4 @@
-> **Status note (2026-01-11):** Last edited 2026-01-11 · Archive after: Retain indefinitely as architectural record · Implementation window: Begin immediately for new/modified tests.
+> **Status note (2026-05-12):** Last edited 2026-05-12 · Archive after: Retain indefinitely as architectural record · Implementation window: Begin immediately for new/modified tests. Ratified v0.11.3 - zero-tolerance CI enforcement confirmed via `detect_test_anti_patterns.py` blocking gates in `ci-pr.yml` and `ci-main.yml`; focused local ratification lane added via `python scripts/local_checks.py --adr030-ratification`; marker hygiene taxonomy documented; mutation testing declared optional. Ratified: 2026-05-12.
 
 # ADR-030: Test Quality Priorities and Enforcement
 
@@ -123,11 +123,65 @@ static audits. Specifically:
     (baseline existing debt, then ratchet down).
 
 - **Marker hygiene**:
-  - Adopt a hybrid taxonomy: auto-infer `unit`, `integration`, `e2e` from directory paths; require explicit `slow` and `viz` markers on new files.
-  - Allow overrides via decorators and use CI warnings for mismatches.
-  - Enforce marker registration and use for slow/integration tests as part of
-    pytest config and CI, starting as advisory and moving to blocking once the
-    suite is fully tagged.
+  - See the formal marker hygiene section below for the binding taxonomy and
+    enforcement posture.
+
+### Marker hygiene
+
+ADR-030 adopts a hybrid pytest marker taxonomy that balances explicit review
+signals with the repository's existing test layout:
+
+- `unit` and `integration` are inferred from test directory paths by
+  `scripts/quality/check_marker_hygiene.py`.
+- `slow`, `viz`, and `viz_render` are explicit markers and must be declared
+  when the test behavior requires them.
+- Every test must be classifiable by this taxonomy either through directory
+  inference or an explicit marker.
+- Marker registration and marker hygiene are enforced by
+  `scripts/quality/check_marker_hygiene.py --check` in the PR/main
+  anti-pattern audit jobs and in the local ADR-030 ratification lane.
+- Existing marker-hygiene debt is tracked in
+  `.github/marker-hygiene-baseline.json`; new violations fail the check rather
+  than silently expanding the baseline.
+
+### Mutation testing policy
+
+Mutation testing is recommended for critical-path logic in
+`src/calibrated_explanations/calibration/` and
+`src/calibrated_explanations/core/`, but it is not a release gate, PR gate, or
+required local check for v0.11.x/v1.0.0. Contributors may use `mutmut` for
+targeted hardening runs, for example:
+
+```bash
+mutmut run --paths-to-mutate src/calibrated_explanations/
+```
+
+Mutation testing remains optional because it can be expensive for the full
+suite and is most valuable as a focused reviewer or maintainer tool for
+deterministic core behavior. Plugins and visualization modules are excluded
+from any recommended nightly mutation-testing scope unless a future ADR or
+standard changes this policy.
+
+### Focused local ratification lane
+
+The ADR-030 gate stack must remain reproducible without running unrelated
+lint, docs, coverage, or packaging checks. The focused local lane is:
+
+```bash
+python scripts/local_checks.py --adr030-ratification
+```
+
+The corresponding Make target is:
+
+```bash
+make adr030-ratification
+```
+
+This lane runs the private-member scan, anti-pattern detector, production
+test-helper export guard, marker hygiene check, and generated-report local-path
+guard, then writes observational timing evidence to
+`reports/anti-pattern-analysis/adr030_ratification_timing.json`. Timing
+evidence is informational only and must not introduce a duration threshold.
 
 ## Alternatives Considered
 
@@ -163,14 +217,6 @@ Negative/Risks:
 - Phase 4: introduce the over-testing density gate in advisory mode, then ratchet
   the threshold once baselines are stable.
 
-## Resolved Questions
-
-Based on analysis of current test practices (directory-based organization, ~2000 tests, coverage gates), the following resolutions are adopted:
-
-- **Marker Taxonomy:** Adopt a hybrid approach with auto-inference from directory paths for `unit`, `integration`, `e2e`, but require explicit `slow` and `viz` markers on new files. Allow overrides via decorators and use CI warnings for mismatches. This balances rigor with practicality, leveraging existing structure while enforcing critical markers to support suite health and runtime budgets.
-
-- **Mutation Testing Modules:** Limit to core calibration and explanation modules (`src/calibrated_explanations/calibration/` and `src/calibrated_explanations/core/`), excluding plugins and viz for nightly CI. This focuses on high-priority, deterministic logic without overloading the large suite, aligning with public-contract testing priorities.
-
 ## Implementation status
 
 - 2026-01-11 – Drafted ADR with priorities and enforcement plan; resolved open questions on marker taxonomy and mutation testing modules; no code changes yet.
@@ -190,3 +236,7 @@ Based on analysis of current test practices (directory-based organization, ~2000
 - 2026-02-23 – Added `scripts/quality/check_no_test_helper_exports.py` and
   wired it into PR/main/compat CI plus local checks as a hard blocker to prevent
   production test-helper wrapper exports.
+- 2026-05-12 - Ratified ADR-030 for v0.11.3: promoted marker hygiene and mutation
+  testing policy into formal sections, confirmed PR/main anti-pattern audit gates
+  are blocking, and added focused local ratification with observational timing
+  evidence via `python scripts/local_checks.py --adr030-ratification`.

@@ -7,13 +7,16 @@ skips environment/bootstrap steps (no virtualenv creation, no pip install).
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -213,6 +216,141 @@ def _run_uv_install_smoke() -> int:
     return 0
 
 
+def adr030_ratification_steps() -> list[Step]:
+    """Return the focused ADR-030 ratification gate sequence."""
+    return [
+        Step(
+            "Private-member scan",
+            ["python", "scripts/anti-pattern-analysis/scan_private_usage.py", "tests", "--check"],
+        ),
+        Step(
+            "ADR-030 anti-pattern detector",
+            [
+                "python",
+                "scripts/anti-pattern-analysis/detect_test_anti_patterns.py",
+                "--tests-dir",
+                "tests",
+                "--check",
+                "--output",
+                "reports/anti-pattern-analysis/test_anti_pattern_report.csv",
+                "--report",
+                "reports/anti-pattern-analysis/test_quality_report.json",
+                "--baseline",
+                ".github/test-quality-baseline.json",
+            ],
+        ),
+        Step(
+            "ADR-030 test-helper export guard",
+            [
+                "python",
+                "scripts/quality/check_no_test_helper_exports.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
+            ],
+        ),
+        Step(
+            "ADR-030 marker hygiene",
+            [
+                "python",
+                "scripts/quality/check_marker_hygiene.py",
+                "--check",
+                "--report",
+                "reports/marker-hygiene/marker_hygiene_report.json",
+                "--baseline",
+                ".github/marker-hygiene-baseline.json",
+            ],
+        ),
+        Step(
+            "Generated report local-path guard",
+            [
+                "python",
+                "scripts/quality/check_no_local_paths_in_reports.py",
+                "--check",
+                "--report",
+                "reports/quality/no_local_paths_report.json",
+            ],
+        ),
+    ]
+
+
+def adr030_expected_reports() -> list[Path]:
+    """Return reports that the ADR-030 ratification lane must produce."""
+    return [
+        Path("reports/anti-pattern-analysis/private_usage_scan.csv"),
+        Path("reports/anti-pattern-analysis/test_anti_pattern_report.csv"),
+        Path("reports/anti-pattern-analysis/test_quality_report.json"),
+        Path("reports/anti-pattern-analysis/test_helper_wrapper_report.json"),
+        Path("reports/marker-hygiene/marker_hygiene_report.json"),
+        Path("reports/quality/no_local_paths_report.json"),
+    ]
+
+
+def _utc_now_iso() -> str:
+    """Return the current UTC timestamp for generated local-check reports."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _command_text(command: list[str]) -> str:
+    """Return a repo-relative command string for timing reports."""
+    return " ".join(command)
+
+
+def _write_adr030_timing_report(records: list[dict[str, object]], started_at: float, output_path: Path) -> None:
+    """Write the focused ADR-030 ratification timing report."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "generated_at": _utc_now_iso(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "steps": records,
+        "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
+    }
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
+
+
+def _validate_adr030_ratification_outputs(timing_report: Path) -> int:
+    """Validate required ADR-030 ratification artifacts exist and are parseable."""
+    missing_reports = [path.as_posix() for path in adr030_expected_reports() if not path.exists()]
+    if missing_reports:
+        print("ERROR: ADR-030 ratification lane did not produce expected reports:")
+        for path in missing_reports:
+            print(f"  {path}")
+        return 1
+    try:
+        json.loads(timing_report.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"ERROR: ADR-030 timing report is not valid JSON: {exc}")
+        return 1
+    return 0
+
+
+def run_adr030_ratification() -> int:
+    """Run the focused ADR-030 ratification lane and emit timing evidence."""
+    timing_report = Path("reports/anti-pattern-analysis/adr030_ratification_timing.json")
+    records: list[dict[str, object]] = []
+    started_at = time.monotonic()
+
+    for step in adr030_ratification_steps():
+        step_started_at = time.monotonic()
+        rc = _run_step(step)
+        records.append(
+            {
+                "name": step.name,
+                "command": _command_text(step.command),
+                "exit_code": rc,
+                "elapsed_seconds": round(time.monotonic() - step_started_at, 3),
+            }
+        )
+        _write_adr030_timing_report(records, started_at, timing_report)
+        if rc != 0:
+            return rc
+
+    return _validate_adr030_ratification_outputs(timing_report)
+
+
 def _is_network_fetch_failure(stderr: str) -> bool:
     text = (stderr or "").lower()
     if "unable to access 'https://github.com" in text:
@@ -247,10 +385,17 @@ def main() -> int:
         action="store_true",
         help="Run the optional uv install smoke and pip-vs-uv install timing lane.",
     )
+    parser.add_argument(
+        "--adr030-ratification",
+        action="store_true",
+        help="Run the focused ADR-030 ratification lane and timing report.",
+    )
     args = parser.parse_args()
 
     if args.uv_install_smoke:
         return _run_uv_install_smoke()
+    if args.adr030_ratification:
+        return run_adr030_ratification()
 
     # CI-parity mode: dynamically read CI workflows and run them locally.
     if args.ci_parity:

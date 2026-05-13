@@ -659,7 +659,9 @@ def test_package_init_lazy_attributes_smoke() -> None:
             continue
 
 
-def test_should_raise_descriptive_attribute_error_when_accessing_unknown_package_attribute() -> None:
+def test_should_raise_descriptive_attribute_error_when_accessing_unknown_package_attribute() -> (
+    None
+):
     import importlib
 
     pkg = importlib.import_module("calibrated_explanations")
