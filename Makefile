@@ -70,6 +70,10 @@ uv-install-smoke:
 adr030-ratification:
 	python scripts/local_checks.py --adr030-ratification
 
+.PHONY: deprecation-closure
+deprecation-closure:
+	python scripts/local_checks.py --deprecation-closure
+
 .PHONY: governance-status
 governance-status:
 	python scripts/quality/build_governance_status_artifact.py --output reports/governance/governance_status.json --validate

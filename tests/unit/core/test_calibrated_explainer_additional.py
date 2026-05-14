@@ -40,7 +40,6 @@ from calibrated_explanations.core.calibration_metrics import compute_calibrated_
 from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.explanations import CalibratedExplanations
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 from tests.helpers.explainer_utils import make_mock_explainer
 
 
@@ -114,35 +113,32 @@ def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch
     )
 
 
-def testinstantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_should_instantiate_plugin_variants_through_canonical_orchestrator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
     explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    with warns_or_raises():
-        assert explainer.instantiate_plugin(None) is None
+    assert not hasattr(explainer, "instantiate_plugin")
+    instantiate = explainer.plugin_manager.explanation_orchestrator.instantiate_plugin
+    assert instantiate(None) is None
 
     def plugin_factory() -> str:
         return "plugin"
 
     plugin_factory.plugin_meta = {"name": "factory"}  # type: ignore[attr-defined]
-    with warns_or_raises():
-        assert explainer.instantiate_plugin(plugin_factory) is plugin_factory
+    assert instantiate(plugin_factory) is plugin_factory
 
     class Prototype:
         def __init__(self) -> None:
             self.value = "fresh"
 
     proto = Prototype()
-    if deprecations_error_enabled():
-        with warns_or_raises():
-            explainer.instantiate_plugin(proto)
-    else:
-        with warns_or_raises():
-            inst = explainer.instantiate_plugin(proto)
-        assert isinstance(inst, Prototype)
-        assert inst is not proto
+    inst = instantiate(proto)
+    assert isinstance(inst, Prototype)
+    assert inst is not proto
 
 
 def test_build_interval_context_uses_stored_fast_calibrators(

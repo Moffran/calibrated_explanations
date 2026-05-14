@@ -155,7 +155,7 @@ and `explainer.reject_ncf` records which NCF was chosen. You can read these attr
 to understand which NCF was used:
 
 ```python
-wrapper.initialize_reject_learner()          # auto-selects based on task type
+wrapper.explainer.reject_orchestrator.initialize_reject_learner()
 print(wrapper.explainer.reject_ncf)          # "default"
 print(wrapper.explainer.reject_ncf_auto_selected)  # True
 ```
@@ -228,7 +228,10 @@ wrapper.calibrate(x_cal, y_cal)
 
 # Threshold is REQUIRED — choose a meaningful decision boundary
 threshold = float(np.median(y_cal))
-wrapper.initialize_reject_learner(threshold=threshold, ncf="default")
+wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+    threshold=threshold,
+    ncf="default",
+)
 
 result = wrapper.predict(x_test, reject_policy=RejectPolicy.FLAG)
 print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
@@ -237,7 +240,11 @@ print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
 To use `ensured` NCF with regression:
 
 ```python
-wrapper.initialize_reject_learner(threshold=threshold, ncf="ensured", w=0.5)
+wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+    threshold=threshold,
+    ncf="ensured",
+    w=0.5,
+)
 ```
 
 ### What the threshold means

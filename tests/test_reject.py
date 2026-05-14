@@ -385,10 +385,10 @@ def test_error_rate_recompute_denominator_preserved():
     assert sliced.metadata["error_rate_defined"] is True
 
 
-def test_deprecation_warning():
-    with pytest.warns(DeprecationWarning):
-        deprecated = reject_policy_module.__getattr__("PREDICT_AND_FLAG")
-    assert deprecated is RejectPolicy.FLAG
+def test_should_raise_attribute_error_when_deprecated_policy_attr_accessed():
+    with pytest.raises(AttributeError):
+        reject_policy_module.__getattr__("PREDICT_AND_FLAG")
+    assert not hasattr(reject_policy_module, "PREDICT_AND_FLAG")
 
 
 def test_metadata_summary_alias_and_memory_profile_after_clear():
@@ -466,28 +466,18 @@ def test_align_reject_field_to_payload_error_paths():
         )
 
 
-def test_deprecated_explainer_reject_wrappers_delegate_to_orchestrator():
+def test_should_raise_attribute_error_when_explainer_reject_wrappers_accessed():
     wrapper, _ = train_wrapper()
 
-    with pytest.warns(DeprecationWarning, match="initialize_reject_learner"):
-        wrapper.explainer.initialize_reject_learner(ncf="default", w=0.5)
-    assert wrapper.explainer.reject_ncf == "default"
-
-    with pytest.warns(DeprecationWarning, match="predict_reject"):
-        rejected, _, _ = wrapper.explainer.predict_reject(wrapper.explainer.x_cal[:5])
-    assert len(rejected) == 5
+    assert not hasattr(wrapper.explainer, "initialize_reject_learner")
+    assert not hasattr(wrapper.explainer, "predict_reject")
 
 
-def test_deprecated_wrapper_reject_wrappers_delegate_to_orchestrator():
+def test_should_raise_attribute_error_when_wrapper_reject_wrappers_accessed():
     wrapper, _ = train_wrapper()
 
-    with pytest.warns(DeprecationWarning, match="initialize_reject_learner"):
-        wrapper.initialize_reject_learner(ncf="default", w=0.5)
-    assert wrapper.explainer.reject_ncf == "default"
-
-    with pytest.warns(DeprecationWarning, match="predict_reject"):
-        rejected, _, _ = wrapper.predict_reject(wrapper.explainer.x_cal[:5])
-    assert len(rejected) == 5
+    assert not hasattr(wrapper, "initialize_reject_learner")
+    assert not hasattr(wrapper, "predict_reject")
 
 
 def test_matched_count_defined_on_explain_error():

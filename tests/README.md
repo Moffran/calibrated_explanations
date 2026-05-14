@@ -569,14 +569,31 @@ def test_plugin_registration_discovery_explain_workflow():
     # 1. Register real plugin
     plugin = SimpleExplainerPlugin()  # ← NOT a mock!
     registry.clear()
-    registry.register(plugin)
+    registry.register_explanation_plugin(
+        "tests.simple",
+        plugin,
+        metadata={
+            **plugin.plugin_meta,
+            "modes": ("factual",),
+            "tasks": ("classification",),
+            "dependencies": (),
+            "trusted": True,
+            "data_modalities": ("tabular",),
+        },
+    )
 
     # 2. Discover plugin
     model = RandomForestClassifier()
     model.fit([[0, 0], [1, 1]], [0, 1])
 
-    found = registry.find_for(model)
-    assert plugin in found, "Plugin should be discoverable"
+    _, found = registry.find_explanation_plugin_for(
+        "tabular",
+        mode="factual",
+        task="classification",
+        model=model,
+        trusted_only=True,
+    )
+    assert found is plugin, "Plugin should be discoverable"
 
     # 3. Initialize plugin
     ctx = ExplanationContext(

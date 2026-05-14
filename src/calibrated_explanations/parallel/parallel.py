@@ -35,6 +35,7 @@ except BaseException:  # pragma: no cover - joblib remains optional
 
 from ..cache import CalibratorCache, TelemetryCallback
 from ..core.config_manager import ConfigManager
+from ..utils.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,18 @@ class ParallelConfig:
     # Optional args to pass to the worker initializer
     worker_init_args: Optional[Tuple] = None
 
+    def __post_init__(self) -> None:
+        """Validate public parallel configuration values."""
+        if self.granularity != "instance":
+            raise ConfigurationError(
+                "ParallelConfig granularity='feature' is not supported. Use granularity='instance'.",
+                details={
+                    "param": "granularity",
+                    "received": self.granularity,
+                    "allowed": ["instance"],
+                },
+            )
+
     @classmethod
     def from_env(
         cls,
@@ -162,15 +175,15 @@ class ParallelConfig:
                 value = token.split("=", 1)[1].strip().lower()
 
                 if value == "feature":
-                    from ..utils.deprecations import deprecate
-
-                    deprecate(
-                        "Feature parallelism is deprecated and removed. Using 'instance' parallelism instead.",
-                        key="parallel:granularity:feature",
-                        stacklevel=2,
+                    raise ConfigurationError(
+                        "CE_PARALLEL granularity='feature' is not supported. Use granularity='instance'.",
+                        details={
+                            "param": "granularity",
+                            "received": "feature",
+                            "allowed": ["instance"],
+                        },
                     )
-                    cfg.granularity = "instance"
-                elif value == "instance":
+                if value == "instance":
                     cfg.granularity = "instance"
         return cfg
 

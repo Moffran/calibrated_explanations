@@ -9,7 +9,7 @@ This document captures the v0.10.3 guidance for opting into ADR-029’s reject i
 
 ## Overview
 
-- **Policy enum:** All call-sites that want reject-aware behavior now accept a `reject_policy: RejectPolicy = RejectPolicy.NONE`. The enum includes `NONE`, `PREDICT_AND_FLAG`, `EXPLAIN_ALL`, `EXPLAIN_REJECTS`, `EXPLAIN_NON_REJECTS`, and `SKIP_ON_REJECT`. See `src/calibrated_explanations/core/reject/policy.py` for the list and docstrings.
+- **Policy enum:** All call-sites that want reject-aware behavior now accept a `reject_policy: RejectPolicy = RejectPolicy.NONE`. The canonical members are `NONE`, `FLAG`, `ONLY_REJECTED`, and `ONLY_ACCEPTED`. See `src/calibrated_explanations/core/reject/policy.py` for the list and docstrings.
 - **Implicit orchestration:** Selecting any policy other than `NONE` automatically initializes and invokes `RejectOrchestrator`, even if the legacy `reject` flag was `False`. The return value becomes a `RejectResult` envelope (`src/calibrated_explanations/explanations/reject.py`) carrying predictions, explanations, reject status, policy, and metadata.
 
 ## Per-call policy overrides
@@ -26,8 +26,8 @@ explainer = CalibratedExplainer(learner, x_cal, y_cal)
 result = explainer.explain_factual(x_test)
 
 # Non-NONE policy returns a RejectResult envelope
-envelope = explainer.explain_factual(x_test, reject_policy=RejectPolicy.EXPLAIN_NON_REJECTS)
-assert envelope.policy == RejectPolicy.EXPLAIN_NON_REJECTS
+envelope = explainer.explain_factual(x_test, reject_policy=RejectPolicy.ONLY_ACCEPTED)
+assert envelope.policy == RejectPolicy.ONLY_ACCEPTED
 ```
 
 - Per-call policies override any explainer default.
@@ -45,12 +45,12 @@ explainer = CalibratedExplainer(
     learner,
     x_cal,
     y_cal,
-    default_reject_policy=RejectPolicy.PREDICT_AND_FLAG,
+    default_reject_policy=RejectPolicy.FLAG,
 )
 
 # Subsequent calls inherit the policy
 envelope = explainer.predict(x_test)
-assert envelope.policy == RejectPolicy.PREDICT_AND_FLAG
+assert envelope.policy == RejectPolicy.FLAG
 ```
 
 For the `WrapCalibratedExplainer`, pass `default_reject_policy` at calibration time only (the wrapper’s constructor intentionally omits this argument to keep defaults centralized):
@@ -60,10 +60,10 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 
 wrapper = WrapCalibratedExplainer(learner)
 wrapper.fit(X_fit, y_fit)
-wrapper.calibrate(x_cal, y_cal, default_reject_policy=RejectPolicy.EXPLAIN_ALL)
+wrapper.calibrate(x_cal, y_cal, default_reject_policy=RejectPolicy.FLAG)
 
 envelope = wrapper.explain_factual(x_test)
-assert envelope.policy == RejectPolicy.EXPLAIN_ALL
+assert envelope.policy == RejectPolicy.FLAG
 ```
 
 ## Release note summary
@@ -115,7 +115,7 @@ from calibrated_explanations import RejectPolicySpec
 spec = RejectPolicySpec.flag(ncf="default", w=0.5)
 
 # Check which NCF was selected:
-wrapper.initialize_reject_learner(ncf="default", w=0.4)
+wrapper.explainer.reject_orchestrator.initialize_reject_learner(ncf="default", w=0.4)
 print(wrapper.explainer.reject_ncf)             # "default"
 print(wrapper.explainer.reject_ncf_auto_selected)  # False
 ```
@@ -158,7 +158,7 @@ encoding callables in policy specs.
 Short example:
 
 ```python
-res = explainer.predict(x_test, reject_policy=RejectPolicy.PREDICT_AND_FLAG)
+res = explainer.predict(x_test, reject_policy=RejectPolicy.FLAG)
 meta = res.metadata or {}
 ambig = meta.get("ambiguity_mask")
 nov = meta.get("novelty_mask")

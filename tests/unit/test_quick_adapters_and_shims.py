@@ -38,10 +38,6 @@ def test_api_quick_explain_delegates_to_core(monkeypatch: pytest.MonkeyPatch) ->
     assert captured["model"] == "m"
     assert captured["task"] == "classification"
     assert captured["threshold"] == 0.5
-    # Keep perf-shim warning tests deterministic by clearing cached shim modules.
-    sys.modules.pop("calibrated_explanations.perf", None)
-    sys.modules.pop("calibrated_explanations.perf.cache", None)
-    sys.modules.pop("calibrated_explanations.perf.parallel", None)
 
 
 def test_core_quick_explain_drives_fit_calibrate_and_explain(

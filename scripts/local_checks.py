@@ -55,6 +55,8 @@ def _run_step(step: Step) -> int:
     print(f"$ {cmd_text}")
     env = dict(os.environ)
     env.setdefault("PRE_COMMIT_HOME", str(Path(".cache/pre-commit").resolve()))
+    if "coverage" in step.name.lower():
+        env.setdefault("COVERAGE_FILE", f".coverage.local_checks.{os.getpid()}")
     if step.name in {"Core tests (no viz/no cov)", "Core tests with coverage"}:
         env.pop("CE_DEPRECATIONS", None)
     try:
@@ -294,7 +296,10 @@ def _utc_now_iso() -> str:
 
 def _command_text(command: list[str]) -> str:
     """Return a repo-relative command string for timing reports."""
-    return " ".join(command)
+    display_command = list(command)
+    if display_command and Path(display_command[0]) == Path(sys.executable):
+        display_command[0] = "python"
+    return " ".join(display_command)
 
 
 def _write_adr030_timing_report(records: list[dict[str, object]], started_at: float, output_path: Path) -> None:
@@ -309,6 +314,141 @@ def _write_adr030_timing_report(records: list[dict[str, object]], started_at: fl
         "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
     }
     output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
+
+
+def _active_deprecation_rows(ledger_path: Path) -> list[dict[str, str]]:
+    """Return data rows from the Active deprecations table."""
+    text = ledger_path.read_text(encoding="utf-8")
+    try:
+        active_section = text.split("### Active deprecations", 1)[1].split(
+            "### Removed deprecations (history)",
+            1,
+        )[0]
+    except IndexError:
+        raise RuntimeError("Could not locate Active deprecations ledger section") from None
+
+    rows: list[dict[str, str]] = []
+    for line in active_section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if stripped.startswith("|---") or "Deprecated symbol" in stripped:
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) < 5:
+            continue
+        rows.append(
+            {
+                "deprecated_symbol": cells[0],
+                "replacement": cells[1],
+                "deprecated_since": cells[2],
+                "removal_eta": cells[3],
+                "notes": cells[4],
+            }
+        )
+    return rows
+
+
+def _write_active_deprecations_report(rows: list[dict[str, str]], output_path: Path) -> int:
+    """Write the active-deprecation ledger artifact and return its gate code."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "generated_at": _utc_now_iso(),
+        "status": "pass" if not rows else "fail",
+        "active_rows_count": len(rows),
+        "active_symbols": [row["deprecated_symbol"] for row in rows],
+    }
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
+    if rows:
+        print("ERROR: Active deprecations remain in docs/migration/deprecations.md:")
+        for row in rows:
+            print(f"  {row['deprecated_symbol']}")
+        return 1
+    return 0
+
+
+def _write_deprecation_closure_timing_report(
+    records: list[dict[str, object]],
+    started_at: float,
+    output_path: Path,
+) -> None:
+    """Write the v0.11.3 deprecation-closure timing report."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "generated_at": _utc_now_iso(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "steps": records,
+        "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
+    }
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
+
+
+def deprecation_closure_steps() -> list[Step]:
+    """Return the v0.11.3 deprecation-closure validation sequence."""
+    return [
+        Step(
+            "Focused deprecation closure tests",
+            _python_cmd(
+                "-m",
+                "pytest",
+                "tests/",
+                "-k",
+                "deprecat or lime or shap or reject or plugin or parallel or calibration",
+                "-v",
+                "--no-cov",
+            ),
+        ),
+        Step("ADR-030 ratification lane", _python_cmd("scripts/local_checks.py", "--adr030-ratification")),
+        Step("PR local checks", ["make", "local-checks-pr"]),
+        Step("Main local checks", ["make", "local-checks"]),
+    ]
+
+
+def run_deprecation_closure() -> int:
+    """Run the v0.11.3 deprecation-closure lane and emit timing evidence."""
+    ledger_report = Path("reports/deprecations/active_deprecations_check.json")
+    timing_report = Path("reports/deprecations/deprecation_closure_timing.json")
+    records: list[dict[str, object]] = []
+    started_at = time.monotonic()
+
+    step_started_at = time.monotonic()
+    try:
+        rows = _active_deprecation_rows(Path("docs/migration/deprecations.md"))
+        rc = _write_active_deprecations_report(rows, ledger_report)
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
+        rc = 1
+    records.append(
+        {
+            "name": "Active deprecations ledger check",
+            "command": "parse docs/migration/deprecations.md",
+            "exit_code": rc,
+            "elapsed_seconds": round(time.monotonic() - step_started_at, 3),
+        }
+    )
+    _write_deprecation_closure_timing_report(records, started_at, timing_report)
+    if rc != 0:
+        return rc
+
+    for step in deprecation_closure_steps():
+        step_started_at = time.monotonic()
+        rc = _run_step(step)
+        records.append(
+            {
+                "name": step.name,
+                "command": _command_text(step.command),
+                "exit_code": rc,
+                "elapsed_seconds": round(time.monotonic() - step_started_at, 3),
+            }
+        )
+        _write_deprecation_closure_timing_report(records, started_at, timing_report)
+        if rc != 0:
+            return rc
+
+    return 0
 
 
 def _validate_adr030_ratification_outputs(timing_report: Path) -> int:
@@ -390,12 +530,19 @@ def main() -> int:
         action="store_true",
         help="Run the focused ADR-030 ratification lane and timing report.",
     )
+    parser.add_argument(
+        "--deprecation-closure",
+        action="store_true",
+        help="Run the v0.11.3 deprecation-closure lane and timing report.",
+    )
     args = parser.parse_args()
 
     if args.uv_install_smoke:
         return _run_uv_install_smoke()
     if args.adr030_ratification:
         return run_adr030_ratification()
+    if args.deprecation_closure:
+        return run_deprecation_closure()
 
     # CI-parity mode: dynamically read CI workflows and run them locally.
     if args.ci_parity:

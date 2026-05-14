@@ -7,7 +7,6 @@ import pytest
 
 from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
-from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 from tests.support.registry_helpers import (
     clear_explanation_plugins,
     clear_env_trust_cache,
@@ -44,31 +43,59 @@ def test_register_and_find_example_plugin(tmp_path, monkeypatch):
     registry.clear()
 
     # Register and find
-    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
-        registry.register(plugin)
+    metadata = dict(plugin.plugin_meta)
+    metadata.update(
+        {
+            "modes": ("factual",),
+            "tasks": ("classification",),
+            "dependencies": (),
+            "data_modalities": ("tabular",),
+        }
+    )
+    registry.register_explanation_plugin(metadata["name"], plugin, metadata=metadata)
     all_plugins = registry.list_plugins()
     assert plugin in all_plugins
 
-    # find_for should return plugin for supported models
-    with pytest.warns(DeprecationWarning, match="find_for\\(\\) is deprecated"):
-        found = registry.find_for("supported-model")
-    assert plugin in found
+    identifier, found = registry.find_explanation_plugin_for(
+        "tabular",
+        mode="factual",
+        task="classification",
+        model="supported-model",
+        trusted_only=False,
+    )
+    assert identifier == metadata["name"]
+    assert found is plugin
 
-    # Not supported model should return empty
-    with pytest.warns(DeprecationWarning, match="find_for\\(\\) is deprecated"):
-        assert registry.find_for("unsupported") == ()
+    with pytest.raises(ValidationError):
+        registry.find_explanation_plugin_for(
+            "tabular",
+            mode="factual",
+            task="classification",
+            model="unsupported",
+            trusted_only=False,
+        )
 
     # Mark as trusted and ensure trusted discovery returns it
-    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
-        registry.trust_plugin(plugin)
-    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
-        trusted = registry.find_for_trusted("supported-model")
-    assert plugin in trusted
+    registry.mark_explanation_trusted(metadata["name"])
+    _, trusted = registry.find_explanation_plugin_for(
+        "tabular",
+        mode="factual",
+        task="classification",
+        model="supported-model",
+        trusted_only=True,
+    )
+    assert trusted is plugin
 
     # Untrust and ensure it's not returned by trusted finder
     registry.untrust_plugin(plugin)
-    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
-        assert plugin not in registry.find_for_trusted("supported-model")
+    with pytest.raises(ValidationError):
+        registry.find_explanation_plugin_for(
+            "tabular",
+            mode="factual",
+            task="classification",
+            model="supported-model",
+            trusted_only=True,
+        )
 
     # Unregister removes the plugin
     registry.unregister(plugin)
@@ -84,6 +111,10 @@ class DummyPlugin:
         "provider": "tests",
         "trusted": False,
         "trust": False,
+        "modes": ("factual",),
+        "tasks": ("classification",),
+        "dependencies": (),
+        "data_modalities": ("tabular",),
     }
 
     def supports(self, model):
@@ -97,31 +128,36 @@ def test_register_and_trust_flow(tmp_path):
     p = DummyPlugin()
     # ensure clean start
     registry.clear()
-    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
-        registry.register(p)
+    registry.register_explanation_plugin("dummy", p)
     assert p in registry.list_plugins()
     assert p not in registry.list_plugins(include_untrusted=False)
 
     # trusting unregistered plugin raises
-    with (
-        pytest.raises(ValidationError),
-        pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"),
-    ):
-        registry.trust_plugin(object())
+    with pytest.raises(KeyError):
+        registry.mark_explanation_trusted("missing")
 
     # trust and find
-    with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
-        registry.trust_plugin(p)
+    registry.mark_explanation_trusted("dummy")
     assert p in registry.list_plugins(include_untrusted=False)
-    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
-        trusted = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
-    assert p in trusted
+    _, trusted = registry.find_explanation_plugin_for(
+        "tabular",
+        mode="factual",
+        task="classification",
+        model=types.SimpleNamespace(is_dummy=True),
+        trusted_only=True,
+    )
+    assert trusted is p
 
     # untrust works
     registry.untrust_plugin("dummy")
-    with pytest.warns(DeprecationWarning, match="find_for_trusted\\(\\) is deprecated"):
-        trusted2 = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
-    assert p not in trusted2
+    with pytest.raises(ValidationError):
+        registry.find_explanation_plugin_for(
+            "tabular",
+            mode="factual",
+            task="classification",
+            model=types.SimpleNamespace(is_dummy=True),
+            trusted_only=True,
+        )
     assert p not in registry.list_plugins(include_untrusted=False)
 
     # cleanup
@@ -188,7 +224,7 @@ def test_register_explanation_plugin_requires_tasks():
         registry.register_explanation_plugin("bad.tasks", NoTasksExplanationPlugin())
 
 
-def test_register_explanation_plugin_translates_aliases():
+def test_should_raise_validation_error_when_old_mode_alias_used():
     clear_explanation_plugins()
 
     class LegacyModePlugin:
@@ -198,20 +234,14 @@ def test_register_explanation_plugin_translates_aliases():
             "name": "legacy",
             "version": "0.0-test",
             "provider": "tests",
-            "modes": ["explanation:factual", "factual"],
+            "modes": ["explanation:factual"],
             "tasks": "classification",
             "dependencies": [],
             "trust": True,
         }
 
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning):
-            registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
-    else:
-        with warns_or_raises():
-            descriptor = registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
-
-        assert descriptor.metadata["modes"] == ("factual",)
+    with pytest.raises(ValidationError):
+        registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
 
 
 def test_register_explanation_plugin_schema_version_future():

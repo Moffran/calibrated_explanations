@@ -15,26 +15,26 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
 
     explainer = explainer_factory(mode=mode)
     explainer.bins = None
-    explainer.plot_style_override = None
-    explainer.interval_plugin_override = None
-    explainer.fast_interval_plugin_override = None
-    explainer.interval_plugin_hints = {}
-    explainer.interval_plugin_fallbacks = {"default": (), "fast": ()}
-    explainer.interval_preferred_identifier = {"default": None, "fast": None}
-    explainer.telemetry_interval_sources = {"default": None, "fast": None}
+    explainer.plugin_manager.plot_style_override = None
+    explainer.plugin_manager.interval_plugin_override = None
+    explainer.plugin_manager.fast_interval_plugin_override = None
+    explainer.plugin_manager.interval_plugin_hints = {}
+    explainer.plugin_manager.interval_plugin_fallbacks = {"default": (), "fast": ()}
+    explainer.plugin_manager.interval_preferred_identifier = {"default": None, "fast": None}
+    explainer.plugin_manager.telemetry_interval_sources = {"default": None, "fast": None}
     explainer.plugin_manager.interval_context_metadata = {"default": {}, "fast": {}}
-    explainer.explanation_plugin_overrides = {
+    explainer.plugin_manager.explanation_plugin_overrides = {
         key: None for key in ("factual", "alternative", "fast")
     }
     explainer.pyproject_explanations = {}
     explainer.pyproject_intervals = {}
     explainer.pyproject_plots = {}
-    explainer.plot_style_override = None
+    explainer.plugin_manager.plot_style_override = None
     explainer.plugin_manager.explanation_plugin_fallbacks = {}
     return explainer
 
 
-def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
+def test_should_instantiate_plugin_through_canonical_orchestrator(monkeypatch, explainer_factory):
     monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     explainer = stub_explainer(explainer_factory)
 
@@ -45,18 +45,16 @@ def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory
             raise AssertionError("should not be invoked")
 
     callable_with_meta = CallableWithMeta()
-    import pytest
-
-    with pytest.warns(DeprecationWarning):
-        assert explainer.instantiate_plugin(callable_with_meta) is callable_with_meta
+    assert not hasattr(explainer, "instantiate_plugin")
+    instantiate = explainer.plugin_manager.explanation_orchestrator.instantiate_plugin
+    assert instantiate(callable_with_meta) is callable_with_meta
 
     class SimplePlugin:
         def __init__(self) -> None:
             self.token = object()
 
     prototype = SimplePlugin()
-    with pytest.warns(DeprecationWarning):
-        clone = explainer.instantiate_plugin(prototype)
+    clone = instantiate(prototype)
     assert isinstance(clone, SimplePlugin)
     assert clone is not prototype
 
@@ -70,16 +68,14 @@ def testinstantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory
     from calibrated_explanations.core.explain import orchestrator as explain_orch
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", lambda value: sentinel)
-    with pytest.warns(DeprecationWarning):
-        assert explainer.instantiate_plugin(broken) is sentinel
+    assert instantiate(broken) is sentinel
 
     # Test fallback when deepcopy itself fails
     def raising_deepcopy(value):
         raise RuntimeError("fail")
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", raising_deepcopy)
-    with pytest.warns(DeprecationWarning):
-        assert explainer.instantiate_plugin(broken) is broken
+    assert instantiate(broken) is broken
 
 
 class RaisingInterval:

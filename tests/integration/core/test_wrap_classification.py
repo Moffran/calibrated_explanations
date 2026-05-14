@@ -673,10 +673,14 @@ def multiple_failing_calls(cal_exp, x, y):
         cal_exp.plot(x, y, show=False)
     with pytest.raises(NotFittedError):
         cal_exp.calibrated_confusion_matrix()
-    with pytest.raises(NotFittedError):
-        cal_exp.initialize_reject_learner()
-    with pytest.raises(NotFittedError):
-        cal_exp.predict_reject(x)
+    if cal_exp.explainer is not None:
+        with pytest.raises(NotFittedError):
+            cal_exp.explainer.reject_orchestrator.initialize_reject_learner()
+        with pytest.raises(NotFittedError):
+            cal_exp.explainer.reject_orchestrator.predict_reject(x)
+    else:
+        assert not hasattr(cal_exp, "initialize_reject_learner")
+        assert not hasattr(cal_exp, "predict_reject")
 
 
 # Add new test for handling missing values

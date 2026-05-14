@@ -19,7 +19,7 @@ Implement a conservative, opt-in plugin registry with explicit trust policy hook
 
 - Discovery via entry points group `calibrated_explanations.plugins` (setuptools) or explicit `register_plugin()` call.
 - Registry stores metadata: name, version, provider, capabilities, checksum or signature metadata (optional), `trusted` status.
-- By default, only built-in plugins auto-load. Third-party plugins require explicit trust action: environment variable `CE_TRUST_PLUGIN=<name>` or programmatic `trust_plugin(name)`.
+- By default, only built-in plugins auto-load. Third-party plugins require explicit trust action: environment variable `CE_TRUST_PLUGIN=<name>`, identifier-based registration metadata (`trusted=True` / `trust=True`) supplied to `register_explanation_plugin(...)`, or keyed trust helpers such as `mark_explanation_trusted(identifier)` and `mark_interval_trusted(identifier)`.
 - Explicit trust allowlists may be stored in `pyproject.toml` under
   `[tool.calibrated_explanations.plugins].trusted = ["plugin.id", ...]` and are
   treated as canonical, auditable configuration.
@@ -72,3 +72,9 @@ Phase E–F (v0.7.0): Enable third-party registration & trust workflow behind ex
 ## Decision Notes
 
 Revisit after first external plugin submissions to evaluate need for stronger isolation.
+
+**Implementation status (2026-05-14):** The legacy list-path trust helper
+`plugins.registry.trust_plugin(...)` was removed in v0.11.3. Programmatic trust
+is now identifier-based: register explanation plugins with explicit trust
+metadata or call the keyed descriptor trust helpers. This keeps ADR-006 trust
+mutation auditable and avoids object-list mutation as a public API.

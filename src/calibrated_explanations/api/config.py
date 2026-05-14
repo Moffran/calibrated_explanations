@@ -14,6 +14,8 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from ..utils.exceptions import ConfigurationError
+
 # Backward-compatible patch point used by tests. When set to a callable, build_config
 # uses it instead of the internal factory builder.
 _perf_from_config = None
@@ -58,7 +60,7 @@ class ExplainerConfig:
     perf_parallel_min_batch: int = 8
     perf_parallel_min_instances: int | None = None
     perf_parallel_tiny_workload: int | None = None
-    perf_parallel_granularity: Literal["feature", "instance"] = "feature"
+    perf_parallel_granularity: Literal["instance"] = "instance"
     perf_telemetry: Any | None = None
 
     # Internal FAST-based feature filtering (disabled by default)
@@ -201,7 +203,7 @@ class ExplainerBuilder:
         min_batch: int | None = None,
         min_instances: int | None = None,
         tiny_workload: int | None = None,
-        granularity: Literal["feature", "instance"] | None = None,
+        granularity: Literal["instance"] | None = None,
     ) -> ExplainerBuilder:
         """Configure the parallel backend used for performance operations.
 
@@ -224,6 +226,15 @@ class ExplainerBuilder:
         if tiny_workload is not None:
             self._cfg.perf_parallel_tiny_workload = tiny_workload
         if granularity is not None:
+            if granularity != "instance":
+                raise ConfigurationError(
+                    "perf_parallel_granularity='feature' is not supported. Use 'instance'.",
+                    details={
+                        "param": "perf_parallel_granularity",
+                        "received": granularity,
+                        "allowed": ["instance"],
+                    },
+                )
             self._cfg.perf_parallel_granularity = granularity
         return self
 
@@ -316,7 +327,7 @@ def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
         min_batch_size=getattr(cfg, "perf_parallel_min_batch", 8),
         min_instances_for_parallel=getattr(cfg, "perf_parallel_min_instances", None),
         tiny_workload_threshold=getattr(cfg, "perf_parallel_tiny_workload", None),
-        granularity=getattr(cfg, "perf_parallel_granularity", "feature"),
+        granularity=getattr(cfg, "perf_parallel_granularity", "instance"),
         telemetry=getattr(cfg, "perf_telemetry", None),
     )
     parallel_cfg = ParallelConfig.from_env(parallel_cfg)

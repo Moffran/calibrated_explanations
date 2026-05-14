@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_explainer_config_dataclass_and_defaults():
@@ -136,6 +137,14 @@ def test_explainer_builder_perf_options(monkeypatch: pytest.MonkeyPatch):
     assert cfg.perf_parallel_tiny_workload == 32
     assert cfg.perf_feature_filter_enabled is True
     assert cfg.perf_feature_filter_per_instance_top_k == 3
+
+
+def test_explainer_builder_rejects_removed_feature_parallel_granularity():
+    model = RandomForestClassifier()
+    builder = ExplainerBuilder(model)
+
+    with pytest.raises(ConfigurationError):
+        builder.perf_parallel(True, granularity="feature")
 
 
 def test_explainer_builder_perf_factory_failure(monkeypatch: pytest.MonkeyPatch):

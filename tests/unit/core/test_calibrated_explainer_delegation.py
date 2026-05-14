@@ -1,4 +1,3 @@
-import warnings
 from unittest.mock import MagicMock
 
 import pytest
@@ -24,77 +23,72 @@ def make_stub_explainer_with_mock_pm():
     return expl, pm
 
 
-def test_property_delegators_to_plugin_manager(monkeypatch: pytest.MonkeyPatch):
+def test_removed_plugin_manager_aliases_fail_closed(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     expl, pm = make_stub_explainer_with_mock_pm()
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        # interval_plugin_hints
-        _ = expl.interval_plugin_hints
-        pm.interval_plugin_hints.__class__
-        expl.interval_plugin_hints = {"a": ("b",)}
-        assert pm.interval_plugin_hints == {"a": ("b",)}
-        del expl.interval_plugin_hints
+    for name in (
+        "interval_plugin_hints",
+        "interval_plugin_fallbacks",
+        "explanation_plugin_overrides",
+        "interval_plugin_override",
+        "fast_interval_plugin_override",
+        "plot_style_override",
+        "interval_preferred_identifier",
+        "telemetry_interval_sources",
+        "interval_plugin_identifiers",
+        "interval_context_metadata",
+    ):
+        assert not hasattr(expl, name)
 
-        # interval_plugin_fallbacks
-        _ = expl.interval_plugin_fallbacks
-        expl.interval_plugin_fallbacks = {}
-        del expl.interval_plugin_fallbacks
+    expl.bridge_monitors = {}
+    assert expl.bridge_monitors == {}
 
-        # explanation_plugin_overrides
-        _ = expl.explanation_plugin_overrides
-        expl.explanation_plugin_overrides = {}
+    expl.explanation_plugin_instances = {}
+    assert pm.explanation_plugin_instances == {}
 
-        # interval_plugin_override
-        _ = expl.interval_plugin_override
-        expl.interval_plugin_override = "foo"
+    expl.pyproject_explanations = {}
+    assert pm.pyproject_explanations == {}
 
-        # fast_interval_plugin_override
-        _ = expl.fast_interval_plugin_override
-        expl.fast_interval_plugin_override = "bar"
+    expl.pyproject_intervals = {}
+    assert pm.pyproject_intervals == {}
 
-        # plot_style_override
-        _ = expl.plot_style_override
-        expl.plot_style_override = "style"
+    expl.pyproject_plots = {}
+    assert pm.pyproject_plots == {}
 
-        # interval_preferred_identifier
-        _ = expl.interval_preferred_identifier
-        expl.interval_preferred_identifier = {}
-        del expl.interval_preferred_identifier
 
-        # telemetry_interval_sources
-        _ = expl.telemetry_interval_sources
-        expl.telemetry_interval_sources = {}
-        del expl.telemetry_interval_sources
+def test_internal_plugin_manager_aliases_delegate_to_manager():
+    expl, pm = make_stub_explainer_with_mock_pm()
 
-        # interval_plugin_identifiers
-        _ = expl.interval_plugin_identifiers
-        expl.interval_plugin_identifiers = {}
-        del expl.interval_plugin_identifiers
+    alias_values = {
+        "_interval_plugin_hints": {"factual": ("core",)},
+        "_interval_plugin_fallbacks": {"default": ("legacy",)},
+        "_interval_preferred_identifier": {"default": "legacy"},
+        "_telemetry_interval_sources": {"default": "core"},
+        "_interval_plugin_identifiers": {"default": "legacy"},
+        "_interval_context_metadata": {"default": {"source": "test"}},
+        "_explanation_plugin_overrides": {"factual": "core"},
+        "_interval_plugin_override": "interval",
+        "_fast_interval_plugin_override": "fast",
+        "_plot_style_override": "plot",
+        "_explanation_plugin_instances": {"core": object()},
+    }
 
-        # interval_context_metadata
-        _ = expl.interval_context_metadata
-        expl.interval_context_metadata = {}
-        del expl.interval_context_metadata
+    for name, value in alias_values.items():
+        setattr(expl, name, value)
+        manager_attr = name[1:]
+        assert getattr(pm, manager_attr) == value
+        assert getattr(expl, name) == value
 
-        # bridge_monitors
-        _ = expl.bridge_monitors
-        expl.bridge_monitors = {}
-
-        # explanation_plugin_instances
-        _ = expl.explanation_plugin_instances
-        expl.explanation_plugin_instances = {}
-
-        # pyproject_explanations/intervals/plots
-        _ = expl.pyproject_explanations
-        expl.pyproject_explanations = {}
-
-        _ = expl.pyproject_intervals
-        expl.pyproject_intervals = {}
-
-        _ = expl.pyproject_plots
-        expl.pyproject_plots = {}
+    for name in (
+        "_interval_plugin_hints",
+        "_interval_plugin_fallbacks",
+        "_interval_preferred_identifier",
+        "_telemetry_interval_sources",
+        "_interval_plugin_identifiers",
+        "_interval_context_metadata",
+    ):
+        delattr(expl, name)
 
 
 def test_feature_names_internal_alias():
@@ -110,6 +104,9 @@ def test_other_properties():
 
     expl.last_explanation_mode = "factual"
     assert expl.last_explanation_mode == "factual"
+
+    expl.fast = True
+    assert expl.fast is True
 
     expl.feature_filter_per_instance_ignore = [1]
     assert expl.feature_filter_per_instance_ignore == [1]

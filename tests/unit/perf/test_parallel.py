@@ -7,7 +7,6 @@ import pytest
 
 from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class DummyCache:
@@ -51,22 +50,23 @@ def test_parallel_metrics_snapshot():
     }
 
 
+def test_should_raise_configuration_error_when_feature_granularity_used(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ConfigurationError
+
+    base = ParallelConfig(enabled=True, min_batch_size=4)
+    monkeypatch.setenv("CE_PARALLEL", "granularity=feature")
+    with pytest.raises(ConfigurationError):
+        ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
+
+
 def test_parallel_config_from_env_extended_tokens(monkeypatch):
     base = ParallelConfig(enabled=True, min_batch_size=4)
     monkeypatch.setenv(
         "CE_PARALLEL",
         "min_instances=3,instance_chunk=5,feature_chunk=7,task_bytes=1024,"
-        "force_serial=true,granularity=feature",
+        "force_serial=true,granularity=instance",
     )
-    if deprecations_error_enabled():
-        with pytest.raises(
-            DeprecationWarning, match="Feature parallelism is deprecated and removed"
-        ):
-            ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
-        return
-
-    with warns_or_raises("Feature parallelism is deprecated and removed"):
-        cfg = ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
+    cfg = ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.min_instances_for_parallel == 3
     assert cfg.instance_chunk_size == 5
     assert cfg.feature_chunk_size == 7
@@ -601,18 +601,6 @@ def test_parallel_executor_cancel_without_shutdown_still_clears_state() -> None:
 
     assert executor.pool is None
     assert executor.active_strategy_name is None
-
-
-def test_map_emits_tiny_workload_fallback_branch(enable_fallbacks) -> None:
-    cfg = ParallelConfig(enabled=True, strategy="sequential", min_batch_size=4)
-    # Exercise the non-instance tiny-workload path.
-    cfg.granularity = "feature"  # type: ignore[assignment]
-    executor = ParallelExecutor(cfg)
-
-    with pytest.warns(UserWarning, match="tiny-workload threshold"):
-        result = executor.map(lambda x: x + 1, [1, 2, 3, 4, 5], work_items=5)
-
-    assert result == [2, 3, 4, 5, 6]
 
 
 def test_get_cgroup_cpu_quota_handles_notimplemented_path(monkeypatch) -> None:

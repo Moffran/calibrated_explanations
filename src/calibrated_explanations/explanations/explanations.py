@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 import numpy as np
 
 from ..core.prediction_helpers import validate_and_prepare_input
-from ..utils import EntropyDiscretizer, RegressorDiscretizer, deprecate, prepare_for_saving
+from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from ..utils.helper import calculate_metrics
 from .adapters import legacy_to_domain
@@ -1523,98 +1523,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault("output_format", "dataframe")
         return self.to_narrative(*args, **kwargs)
 
-    @staticmethod
-    def _deprecate_lime_shap_surface(
-        symbol: str,
-        replacement: str,
-        *,
-        removal_version: str,
-    ) -> None:
-        """Emit Task-21 deprecation warning for collection LIME/SHAP export helpers."""
-        deprecate(
-            f"CalibratedExplanations.{symbol} is deprecated since v0.11.1; use "
-            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
-            "under the pre-v1.0 zero-deprecation closure policy.",
-            key=f"CalibratedExplanations.{symbol}_lime_shap_deprecation",
-            stacklevel=4,
-        )
-
-    # pylint: disable=protected-access
-    def as_lime(self, num_features_to_show=None):
-        """Transform the explanations into LIME explanation objects.
-
-        Returns
-        -------
-        list of lime.Explanation
-            List of LIME explanation objects with the same values as the `CalibratedExplanations`.
-        """
-        self._deprecate_lime_shap_surface(
-            "as_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            _, lime_exp = self.calibrated_explainer.preload_lime()
-        exp = []
-        for explanation in self.explanations:  # range(len(self.x[:,0])):
-            tmp = deepcopy(lime_exp)
-            tmp.intercept[1] = 0
-            tmp.local_pred = explanation.prediction["predict"]
-            if "regression" in self.calibrated_explainer.mode:
-                tmp.predicted_value = explanation.prediction["predict"]
-                tmp.min_value = np.min(self.calibrated_explainer.y_cal)
-                tmp.max_value = np.max(self.calibrated_explainer.y_cal)
-            else:
-                tmp.predict_proba[0], tmp.predict_proba[1] = (
-                    1 - explanation.prediction["predict"],
-                    explanation.prediction["predict"],
-                )
-
-            feature_weights = explanation.feature_weights["predict"]
-            num_to_show = (
-                num_features_to_show
-                if num_features_to_show is not None
-                else self.calibrated_explainer.num_features
-            )
-            features_to_plot = explanation.rank_features(feature_weights, num_to_show=num_to_show)
-            define_conditions = getattr(explanation, "define_conditions", None)
-            if define_conditions is None:
-                define_conditions = getattr(explanation, "_define_conditions", None)
-            rules = define_conditions() if define_conditions is not None else []
-            for j, f in enumerate(features_to_plot[::-1]):  # pylint: disable=invalid-name
-                tmp.local_exp[1][j] = (f, feature_weights[f])
-            del tmp.local_exp[1][num_to_show:]
-            tmp.domain_mapper.discretized_feature_names = rules
-            tmp.domain_mapper.feature_values = explanation.x_test
-            exp.append(tmp)
-        return exp
-
-    def as_shap(self):
-        """Transform the explanations into a SHAP explanation object.
-
-        Returns
-        -------
-        shap.Explanation
-            SHAP explanation object with the same values as the explanation.
-        """
-        self._deprecate_lime_shap_surface(
-            "as_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            _, shap_exp = self.calibrated_explainer.preload_shap()
-        shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
-        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
-        shap_exp.data = self.x_test
-        for i, explanation in enumerate(self.explanations):  # range(len(self.x[:,0])):
-            # shap_exp.base_values[i] = explanation.prediction['predict']
-            for f in range(len(self.x_test[0, :])):
-                shap_exp.values[i][f] = -explanation.feature_weights["predict"][f]
-        return shap_exp
-
 
 class AlternativeExplanations(CalibratedExplanations):
     """A class for storing and visualizing alternative explanations.
@@ -2464,34 +2372,6 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
             {cls_key: exp.get_rules() for cls_key, exp in class_dict.items()}
             for class_dict in self.explanations
         ]
-
-    # Safe adapters / explicit not-implemented for adapters that assume flat lists
-    def as_lime(self):
-        """Raise for multiclass collections where a flat LIME export is undefined."""
-        self._deprecate_lime_shap_surface(
-            "as_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        raise NotImplementedError(
-            "as_lime() is not supported for multi-label collections. "
-            "Call get_explanation(i, cls).as_lime() for a specific class, or iterate over the collection "
-            "to build a per-class LIME mapping. If you need an aggregated LIME export, convert each per-class "
-            "explanation via get_explanation(i, cls).as_lime() and combine the results in your caller."
-        )
-
-    def as_shap(self):
-        """Raise for multiclass collections where a flat SHAP export is undefined."""
-        self._deprecate_lime_shap_surface(
-            "as_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        raise NotImplementedError(
-            "as_shap() is not supported for multi-label collections. "
-            "Call get_explanation(i, cls).as_shap() for a specific class, or iterate and aggregate per-class SHAP outputs. "
-            "Aggregating SHAP across classes is application-specific; prefer per-class SHAP objects for downstream use."
-        )
 
     def to_narrative(self, *args, **kwargs):
         """

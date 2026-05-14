@@ -38,13 +38,12 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 
 # Core imports (no cross-sibling dependencies)
 from ..calibration.interval_wrappers import is_fast_interval_collection
-from ..utils import check_is_fitted, convert_targets_to_numeric, deprecate, safe_isinstance
+from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from ..utils.exceptions import (
     DataShapeError,
     ValidationError,
 )
-from .reject.policy import RejectPolicy
 from .prediction.interval_summary import IntervalSummary, coerce_interval_summary
 
 # Lazy imports deferred to avoid cross-sibling coupling
@@ -315,9 +314,13 @@ class CalibratedExplainer:
         # No direct assignment needed - properties handle the delegation
 
         # Reject learner initialization
-        self.reject_learner = (
-            self.initialize_reject_learner() if kwargs.get("reject", False) else None
-        )
+        if kwargs.get("reject", False):
+            self.plugin_manager.initialize_orchestrators()
+            self.reject_learner = self.reject_orchestrator.initialize_reject_learner(
+                calibration_set=None, threshold=None, ncf=None, w=0.5
+            )
+        else:
+            self.reject_learner = None
 
         self._predict_bridge = LegacyPredictBridge(self)
 
@@ -418,17 +421,6 @@ class CalibratedExplainer:
         manager = self.require_plugin_manager()
         self._enforce_feature_filter_plugin_preferences(manager)
         return manager
-
-    def _deprecate_nonessential_surface(self, symbol: str, replacement: str) -> None:
-        """Emit ADR-011 deprecation for compatibility delegators on explainer."""
-        deprecate(
-            f"CalibratedExplainer.{symbol} is deprecated since v0.11.1; use "
-            f"{replacement} instead. This compatibility delegator will be removed "
-            "no earlier than v0.13.0 and only as a major-release change in v1.0.0+ "
-            "per ADR-020.",
-            key=f"CalibratedExplainer.{symbol}_delegator_deprecation",
-            stacklevel=3,
-        )
 
     def _enforce_feature_filter_plugin_preferences(self, manager: PluginManager) -> None:
         cfg = getattr(self, "_feature_filter_config", None)
@@ -702,148 +694,9 @@ class CalibratedExplainer:
         """Delete the RejectOrchestrator."""
         del self.require_plugin_manager().reject_orchestrator
 
-    def build_plot_style_chain(self) -> Tuple[str, ...]:
-        """Return the plot style chain.
-
-        This is the public replacement for the legacy internal helper. It delegates
-        to :class:`PluginManager` to construct the chain when available and
-        otherwise returns an empty tuple for minimal explainer stubs used in tests.
-        """
-        self._deprecate_nonessential_surface(
-            "build_plot_style_chain", "plugin_manager.build_plot_chain"
-        )
-        return self.plugin_manager.build_plot_chain()
-
-    @property
-    def plot_style_chain(self) -> Tuple[str, ...]:
-        """Return the plot style chain.
-
-        This property provides access to the current plot style chain used by the explainer.
-        """
-        return self.build_plot_style_chain()
-
-    def instantiate_plugin(self, prototype: Any) -> Any:
-        """Delegate to ExplanationOrchestrator."""
-        self._deprecate_nonessential_surface(
-            "instantiate_plugin", "plugin_manager.explanation_orchestrator.instantiate_plugin"
-        )
-        return self.plugin_manager.explanation_orchestrator.instantiate_plugin(prototype)
-
     def build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
         """Delegate to ExplanationOrchestrator."""
         return self.explanation_orchestrator.build_instance_telemetry_payload(explanations)
-
-    def _invoke_explanation_plugin(self, *args, **kwargs) -> Any:
-        """Invoke the explanation plugin with the given parameters."""
-        return self.invoke_explanation_plugin(*args, **kwargs)
-
-    def invoke_explanation_plugin(
-        self,
-        mode: str,
-        x: Any,
-        threshold: Any,
-        low_high_percentiles: Any,
-        bins: Any,
-        features_to_ignore: Any,
-        *,
-        extras: Mapping[str, Any] | None = None,
-        reject_policy: Any | None = None,
-    ) -> Any:
-        """Delegate to ExplanationOrchestrator."""
-        self._deprecate_nonessential_surface(
-            "invoke_explanation_plugin", "explanation_orchestrator.invoke"
-        )
-        # Reject integration (ADR-029):
-        # - default remains RejectPolicy.NONE (no reject)
-        # - per-call reject_policy overrides the explainer-level default_reject_policy
-        # Backward compatibility:
-        # - do not pass reject_policy=None / RejectPolicy.NONE through to orchestrator calls
-
-        from .reject.orchestrator import (  # pylint: disable=import-outside-toplevel
-            resolve_effective_reject_policy,
-        )
-
-        resolution = resolve_effective_reject_policy(
-            reject_policy,
-            self,
-            default_policy=getattr(self, "default_reject_policy", RejectPolicy.NONE),
-            logger=logging.getLogger(__name__),
-        )
-        effective_policy = resolution.policy
-
-        if effective_policy is RejectPolicy.NONE:
-            return self.explanation_orchestrator.invoke(
-                mode,
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                extras=extras,
-            )
-
-        # Policy enabled: ensure reject orchestration and delegate via RejectOrchestrator
-        confidence = extras.get("confidence", 0.95) if isinstance(extras, Mapping) else 0.95
-
-        def _explain_fn(x_subset, **kw):
-            return self.explanation_orchestrator.invoke(
-                mode,
-                x_subset,
-                threshold,
-                low_high_percentiles,
-                kw.get("bins", bins),
-                features_to_ignore,
-                extras=extras,
-                _ce_skip_reject=True,
-            )
-
-        # Implicitly enable reject orchestration
-        try:
-            # ensure plugin manager has set up orchestrators
-            _ = self.reject_orchestrator
-        except Exception:  # adr002_allow
-            # fallback: initialize via plugin manager if available
-            with contextlib.suppress(Exception):
-                self.plugin_manager.initialize_orchestrators()
-
-        result = self.reject_orchestrator.apply_policy(
-            effective_policy,
-            x,
-            explain_fn=_explain_fn,
-            bins=bins,
-            confidence=confidence,
-            threshold=threshold,
-            result_schema="v2",
-        )
-        try:
-            from ..explanations.reject import (
-                RejectResultV2,  # pylint: disable=import-outside-toplevel
-                reject_result_v2_to_legacy,
-            )
-
-            if isinstance(result, RejectResultV2):
-                return reject_result_v2_to_legacy(result, emit_deprecation_warning=False)
-        except Exception as exc:  # adr002_allow
-            logging.getLogger(__name__).debug(
-                "RejectResultV2 compatibility conversion failed in invoke_explanation_plugin: %s",
-                exc,
-                exc_info=True,
-            )
-        return result
-
-    def ensure_interval_runtime_state(self) -> None:
-        """Delegate to PredictionOrchestrator."""
-        self._deprecate_nonessential_surface(
-            "ensure_interval_runtime_state", "prediction_orchestrator.ensure_interval_runtime_state"
-        )
-        return self.prediction_orchestrator.ensure_interval_runtime_state()
-
-    def gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
-        """Delegate to PredictionOrchestrator."""
-        self._deprecate_nonessential_surface(
-            "gather_interval_hints", "prediction_orchestrator.gather_interval_hints"
-        )
-        return self.prediction_orchestrator.gather_interval_hints(fast=fast)
 
     # ===================================================================
     # Backward-compatibility properties for plugin state (via PluginManager)
@@ -1025,143 +878,6 @@ class CalibratedExplainer:
             del self._plugin_manager
 
     @property
-    def interval_plugin_hints(self) -> Dict[str, Tuple[str, ...]]:
-        """Public alias for `_interval_plugin_hints`.
-
-        Tests should use this instead of accessing the private attribute.
-        """
-        self._deprecate_nonessential_surface(
-            "interval_plugin_hints", "plugin_manager.interval_plugin_hints"
-        )
-        return self._interval_plugin_hints
-
-    @interval_plugin_hints.setter
-    def interval_plugin_hints(self, value: Dict[str, Tuple[str, ...]]) -> None:
-        self._interval_plugin_hints = value
-
-    @interval_plugin_hints.deleter
-    def interval_plugin_hints(self) -> None:
-        if hasattr(self, "plugin_manager"):
-            del self.plugin_manager.interval_plugin_hints
-
-    @property
-    def interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
-        """Public alias for `_interval_plugin_fallbacks`."""
-        self._deprecate_nonessential_surface(
-            "interval_plugin_fallbacks", "plugin_manager.interval_plugin_fallbacks"
-        )
-        return self._interval_plugin_fallbacks
-
-    @interval_plugin_fallbacks.setter
-    def interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
-        self._interval_plugin_fallbacks = value
-
-    @interval_plugin_fallbacks.deleter
-    def interval_plugin_fallbacks(self) -> None:
-        if hasattr(self, "plugin_manager"):
-            del self.plugin_manager.interval_plugin_fallbacks
-
-    @property
-    def explanation_plugin_overrides(self) -> Dict[str, Any]:
-        """Public alias for `_explanation_plugin_overrides`."""
-        self._deprecate_nonessential_surface(
-            "explanation_plugin_overrides", "plugin_manager.explanation_plugin_overrides"
-        )
-        if hasattr(self, "plugin_manager"):
-            return self._explanation_plugin_overrides
-        return {}
-
-    @explanation_plugin_overrides.setter
-    def explanation_plugin_overrides(self, value: Dict[str, Any]) -> None:
-        self._explanation_plugin_overrides = value
-
-    @property
-    def interval_plugin_override(self) -> Any:
-        """Public alias for `_interval_plugin_override`."""
-        self._deprecate_nonessential_surface(
-            "interval_plugin_override", "plugin_manager.interval_plugin_override"
-        )
-        if hasattr(self, "plugin_manager"):
-            return self._interval_plugin_override
-        return None
-
-    @interval_plugin_override.setter
-    def interval_plugin_override(self, value: Any) -> None:
-        if hasattr(self, "plugin_manager"):
-            self._interval_plugin_override = value
-        # else do nothing
-
-    @property
-    def fast_interval_plugin_override(self) -> Any:
-        """Public alias for `_fast_interval_plugin_override`."""
-        self._deprecate_nonessential_surface(
-            "fast_interval_plugin_override", "plugin_manager.fast_interval_plugin_override"
-        )
-        return self._fast_interval_plugin_override
-
-    @fast_interval_plugin_override.setter
-    def fast_interval_plugin_override(self, value: Any) -> None:
-        self._fast_interval_plugin_override = value
-
-    @property
-    def plot_style_override(self) -> Any:
-        """Public alias for `_plot_style_override`."""
-        self._deprecate_nonessential_surface(
-            "plot_style_override", "plugin_manager.plot_style_override"
-        )
-        return self._plot_style_override
-
-    @plot_style_override.setter
-    def plot_style_override(self, value: Any) -> None:
-        self._plot_style_override = value
-
-    @property
-    def interval_preferred_identifier(self) -> Dict[str, str | None]:
-        """Public alias for `_interval_preferred_identifier`."""
-        self._deprecate_nonessential_surface(
-            "interval_preferred_identifier", "plugin_manager.interval_preferred_identifier"
-        )
-        return self._interval_preferred_identifier
-
-    @interval_preferred_identifier.setter
-    def interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
-        self._interval_preferred_identifier = value
-
-    @interval_preferred_identifier.deleter
-    def interval_preferred_identifier(self) -> None:
-        """Delete the interval preferred identifier."""
-        del self._interval_preferred_identifier
-
-    @property
-    def telemetry_interval_sources(self) -> Dict[str, str | None]:
-        """Public alias for `_telemetry_interval_sources`."""
-        self._deprecate_nonessential_surface(
-            "telemetry_interval_sources", "plugin_manager.telemetry_interval_sources"
-        )
-        return self._telemetry_interval_sources
-
-    @telemetry_interval_sources.setter
-    def telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
-        self._telemetry_interval_sources = value
-
-    @telemetry_interval_sources.deleter
-    def telemetry_interval_sources(self) -> None:
-        """Delete the telemetry interval sources."""
-        del self._telemetry_interval_sources
-
-    @property
-    def interval_plugin_identifiers(self) -> Dict[str, str | None]:
-        """Public alias for `_interval_plugin_identifiers`."""
-        self._deprecate_nonessential_surface(
-            "interval_plugin_identifiers", "plugin_manager.interval_plugin_identifiers"
-        )
-        return self._interval_plugin_identifiers
-
-    @interval_plugin_identifiers.setter
-    def interval_plugin_identifiers(self, value: Dict[str, str | None]) -> None:
-        self._interval_plugin_identifiers = value
-
-    @property
     def preprocessor_metadata(self) -> Any:
         """Public alias for `_preprocessor_metadata`."""
         return self._preprocessor_metadata
@@ -1202,28 +918,6 @@ class CalibratedExplainer:
         return self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer(
             *args, **kwargs
         )
-
-    @interval_plugin_identifiers.deleter
-    def interval_plugin_identifiers(self) -> None:
-        """Delete the interval plugin identifiers."""
-        del self._interval_plugin_identifiers
-
-    @property
-    def interval_context_metadata(self) -> Dict[str, Dict[str, Any]]:
-        """Public alias for `_interval_context_metadata`."""
-        self._deprecate_nonessential_surface(
-            "interval_context_metadata", "plugin_manager.interval_context_metadata"
-        )
-        return self._interval_context_metadata
-
-    @interval_context_metadata.setter
-    def interval_context_metadata(self, value: Dict[str, Dict[str, Any]]) -> None:
-        self._interval_context_metadata = value
-
-    @interval_context_metadata.deleter
-    def interval_context_metadata(self) -> None:
-        """Delete the interval context metadata."""
-        del self._interval_context_metadata
 
     @property
     def bridge_monitors(self) -> Dict[str, Any]:
@@ -2392,81 +2086,6 @@ class CalibratedExplainer:
         self.mode = mode
         if initialize:
             self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]
-
-    def initialize_reject_learner(  # pylint: disable=invalid-name
-        self, calibration_set=None, threshold=None, ncf=None, w=0.5
-    ):
-        """Initialize the reject learner with a threshold value.
-
-        .. deprecated:: 0.11.1
-            Use ``reject_orchestrator.initialize_reject_learner`` instead.
-            This wrapper will be removed no earlier than v0.13.0.
-
-        Parameters
-        ----------
-        calibration_set : array-like, optional
-            Optional calibration set override.
-        threshold : float, optional
-            Decision threshold (required for regression reject calibration).
-        ncf : str or None, default None
-            Non-conformity function type.
-        w : float, default 0.5
-            Blending weight used only when ``ncf='ensured'``.
-            Ignored for ``ncf='default'``.
-
-        Returns
-        -------
-        Any
-            The initialized reject learner.
-        """
-        deprecate(
-            "CalibratedExplainer.initialize_reject_learner is deprecated since v0.11.1; "
-            "use reject_orchestrator.initialize_reject_learner instead. "
-            "This wrapper will be removed no earlier than v0.13.0.",
-            key=(
-                "calibrated_explanations.core.calibrated_explainer."
-                "CalibratedExplainer.initialize_reject_learner_deprecation"
-            ),
-            stacklevel=2,
-        )
-        self.plugin_manager.initialize_orchestrators()
-        return self.reject_orchestrator.initialize_reject_learner(
-            calibration_set=calibration_set, threshold=threshold, ncf=ncf, w=w
-        )
-
-    def predict_reject(self, x, bins=None, confidence=0.95):
-        """Predict whether to reject the explanations for the test data.
-
-        .. deprecated:: 0.11.1
-            Use ``reject_orchestrator.predict_reject`` instead.
-            This wrapper will be removed no earlier than v0.13.0.
-
-        Parameters
-        ----------
-        x : array-like
-            The test data.
-        bins : array-like, optional
-            Mondrian categories for conditional calibration.
-        confidence : float, default=0.95
-            Confidence level used by the reject predictor.
-
-        Returns
-        -------
-        tuple
-            Rejection decisions and summary rates.
-        """
-        deprecate(
-            "CalibratedExplainer.predict_reject is deprecated since v0.11.1; "
-            "use reject_orchestrator.predict_reject instead. "
-            "This wrapper will be removed no earlier than v0.13.0.",
-            key=(
-                "calibrated_explanations.core.calibrated_explainer."
-                "CalibratedExplainer.predict_reject_deprecation"
-            ),
-            stacklevel=2,
-        )
-        self.plugin_manager.initialize_orchestrators()
-        return self.reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=too-many-branches
     def set_discretizer(

@@ -35,8 +35,8 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 
 ### Plugin registration list-path API (closed by v0.11.3)
 
-The legacy list-path plugin APIs are deprecated in `v0.11.1` and will be
-removed in `v0.11.3`.
+The legacy list-path plugin APIs were deprecated in `v0.11.1` and removed in
+`v0.11.3`.
 
 | Legacy API | Replacement |
 |---|---|
@@ -192,42 +192,6 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 
 | Deprecated symbol | Replacement | Deprecated since | Removal ETA | Notes |
 |---|---|---:|---:|---|
-| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v0.11.3 | ADR-001 Stage 1a. Shims in `core/calibration/__init__.py` and submodule files (`interval_learner`, `interval_regressor`, `state`, `summaries`, `venn_abers`). |
-| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v0.11.3 | Shim in `perf/cache.py`. |
-| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v0.11.3 | Shim in `perf/parallel.py`. |
-| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v0.11.3 | Lazy `__getattr__` shim in `core/calibration_helpers.py`. |
-| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v0.11.3 | Aliases in `explanations/reject.py` (`_missing_`) and `core/reject/policy.py` (`__getattr__`). |
-| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v0.11.3 | Same files. |
-| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v0.11.3 | Same files. |
-| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v0.11.3 | `plugins/registry.py` validates and warns on old mode aliases. |
-| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v0.11.3 | Same. |
-| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v0.11.3 | Same. |
-| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v0.11.3 | `parallel/parallel.py` silently upgrades the value and warns. |
-| `CalibratedExplainer.initialize_reject_learner(...)` | `explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
-| `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Compatibility wrapper retained for migration; emits `deprecate()` warning. |
-| `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Wrapper parity deprecation aligned with explainer-level deprecation. |
-| `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Wrapper parity deprecation aligned with explainer-level deprecation. |
-| `CalibratedExplainer.build_plot_style_chain(...)` | `explainer.plugin_manager.build_plot_chain(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.instantiate_plugin(...)` | `explainer.plugin_manager.explanation_orchestrator.instantiate_plugin(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.invoke_explanation_plugin(...)` | `explainer.explanation_orchestrator.invoke(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.ensure_interval_runtime_state(...)` | `explainer.prediction_orchestrator.ensure_interval_runtime_state(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.gather_interval_hints(...)` | `explainer.prediction_orchestrator.gather_interval_hints(...)` | v0.11.1 | v0.11.3 | Non-essential delegator retained for transition; major-release removal gate under ADR-020. |
-| `CalibratedExplainer.interval_plugin_hints` | `explainer.plugin_manager.interval_plugin_hints` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_plugin_fallbacks` | `explainer.plugin_manager.interval_plugin_fallbacks` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.explanation_plugin_overrides` | `explainer.plugin_manager.explanation_plugin_overrides` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_plugin_override` | `explainer.plugin_manager.interval_plugin_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.fast_interval_plugin_override` | `explainer.plugin_manager.fast_interval_plugin_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.plot_style_override` | `explainer.plugin_manager.plot_style_override` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_preferred_identifier` | `explainer.plugin_manager.interval_preferred_identifier` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.telemetry_interval_sources` | `explainer.plugin_manager.telemetry_interval_sources` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_plugin_identifiers` | `explainer.plugin_manager.interval_plugin_identifiers` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplainer.interval_context_metadata` | `explainer.plugin_manager.interval_context_metadata` | v0.11.1 | v0.11.3 | Explainer alias mirrors plugin-manager state; direct manager access preferred. |
-| `CalibratedExplanations.as_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
-| `CalibratedExplanations.as_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Task-21 inventory item; collection adapter removed after v0.11.2 core hook deletion. |
-| `plugins.registry.register(plugin)` | `register_explanation_plugin(identifier, plugin, metadata)` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
-| `plugins.registry.trust_plugin(plugin)` | `register_explanation_plugin(..., metadata={"trusted": True, ...})` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
-| `plugins.registry.find_for(model)` | `find_explanation_plugin_for(..., trusted_only=False)` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
-| `plugins.registry.find_for_trusted(model)` | `find_explanation_plugin_for(..., trusted_only=True)` | v0.11.1 | v0.11.3 | List-path API; emits deprecation warning via `deprecate()`. See migration guide above. |
 
 ### Removed deprecations (history)
 
@@ -251,6 +215,34 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `CalibratedExplainer.is_shap_enabled(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(explainer).is_shap_enabled(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; core helper toggle removed. |
 | `WrapCalibratedExplainer.explain_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; wrapper forwarding hook deleted. |
 | `WrapCalibratedExplainer.explain_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(wrapper.explainer).explain(...)` | v0.11.1 | v0.11.2 | Task-21 inventory item removed in Task 5A; wrapper forwarding hook deleted. |
+| `calibrated_explanations.perf.cache` | `calibrated_explanations.cache` | v0.10.x | v0.11.3 | Shim `perf/cache.py` deleted; `ImportError` on import. |
+| `calibrated_explanations.perf.parallel` | `calibrated_explanations.parallel` | v0.10.x | v0.11.3 | Shim `perf/parallel.py` deleted; `ImportError` on import. |
+| Imports from `core.calibration_helpers` (`assign_threshold`, `initialize_interval_learner`, `initialize_interval_learner_for_fast_explainer`, `update_interval_learner`) | `calibrated_explanations.calibration.interval_learner` | v0.10.x | v0.11.3 | Lazy `__getattr__` shim removed from `core/calibration_helpers.py`; `AttributeError` on access. |
+| Plugin `modes` value `"explanation:factual"` | `"factual"` | v0.10.x | v0.11.3 | `_EXPLANATION_MODE_ALIASES` removed from `plugins/registry.py`; `ValidationError` on registration with old mode string. |
+| Plugin `modes` value `"explanation:alternative"` | `"alternative"` | v0.10.x | v0.11.3 | Same. |
+| Plugin `modes` value `"explanation:fast"` | `"fast"` | v0.10.x | v0.11.3 | Same. |
+| `ParallelConfig(granularity="feature")` | `granularity="instance"` | v0.10.x | v0.11.3 | `CE_PARALLEL granularity=feature` now raises `ConfigurationError`; `perf_parallel_granularity` config field accepts only `"instance"`. |
+| `RejectPolicy.PREDICT_AND_FLAG`, `RejectPolicy.EXPLAIN_ALL` | `RejectPolicy.FLAG` | v0.10.x | v0.11.3 | `_missing_` removed from `RejectPolicy`; `__getattr__` removed from `core/reject/policy.py`. Old string values raise `ValueError`; module attribute access raises `AttributeError`. |
+| `RejectPolicy.EXPLAIN_REJECTS` | `RejectPolicy.ONLY_REJECTED` | v0.10.x | v0.11.3 | Same. |
+| `RejectPolicy.EXPLAIN_NON_REJECTS`, `RejectPolicy.SKIP_ON_REJECT` | `RejectPolicy.ONLY_ACCEPTED` | v0.10.x | v0.11.3 | Same. |
+| `calibrated_explanations.core.calibration` (package) | `calibrated_explanations.calibration` | v0.10.x | v0.11.3 | ADR-001 Stage 1a shims removed; import from the canonical calibration package. |
+| `CalibratedExplainer.initialize_reject_learner(...)` | `explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Public reject delegator removed; use the reject orchestrator directly. |
+| `CalibratedExplainer.predict_reject(...)` | `explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Public reject delegator removed; use the reject orchestrator directly. |
+| `WrapCalibratedExplainer.initialize_reject_learner(...)` | `wrapper.explainer.reject_orchestrator.initialize_reject_learner(...)` | v0.11.1 | v0.11.3 | Wrapper delegator removed; use the wrapped explainer's reject orchestrator. |
+| `WrapCalibratedExplainer.predict_reject(...)` | `wrapper.explainer.reject_orchestrator.predict_reject(...)` | v0.11.1 | v0.11.3 | Wrapper delegator removed; use the wrapped explainer's reject orchestrator. |
+| `CalibratedExplainer.build_plot_style_chain(...)` | `explainer.plugin_manager.build_plot_chain(...)` | v0.11.1 | v0.11.3 | Non-essential plugin-manager delegator removed. |
+| `CalibratedExplainer.instantiate_plugin(...)` | `explainer.plugin_manager.explanation_orchestrator.instantiate_plugin(...)` | v0.11.1 | v0.11.3 | Non-essential plugin-manager delegator removed. |
+| `CalibratedExplainer.invoke_explanation_plugin(...)` | `explainer.explanation_orchestrator.invoke(...)` | v0.11.1 | v0.11.3 | Non-essential plugin-manager delegator removed. |
+| `CalibratedExplainer.ensure_interval_runtime_state(...)` | `explainer.prediction_orchestrator.ensure_interval_runtime_state(...)` | v0.11.1 | v0.11.3 | Non-essential prediction-orchestrator delegator removed. |
+| `CalibratedExplainer.gather_interval_hints(...)` | `explainer.prediction_orchestrator.gather_interval_hints(...)` | v0.11.1 | v0.11.3 | Non-essential prediction-orchestrator delegator removed. |
+| `CalibratedExplainer.interval_plugin_hints`, `.interval_plugin_fallbacks`, `.interval_preferred_identifier`, `.telemetry_interval_sources`, `.interval_plugin_identifiers`, `.interval_context_metadata` | `explainer.plugin_manager.<same name>` | v0.11.1 | v0.11.3 | Public plugin-manager state aliases removed from `CalibratedExplainer`. |
+| `CalibratedExplainer.explanation_plugin_overrides`, `.interval_plugin_override`, `.fast_interval_plugin_override`, `.plot_style_override` | `explainer.plugin_manager.<same name>` | v0.11.1 | v0.11.3 | Public plugin-manager override aliases removed from `CalibratedExplainer`. |
+| `CalibratedExplanations.as_lime(...)` | `external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Collection adapter removed after v0.11.2 core hook deletion. |
+| `CalibratedExplanations.as_shap(...)` | `external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)` | v0.11.1 | v0.11.3 | Collection adapter removed after v0.11.2 core hook deletion. |
+| `plugins.registry.register(plugin)` | `register_explanation_plugin(identifier, plugin, metadata)` | v0.11.1 | v0.11.3 | List-path API removed; use identifier-based registry APIs. |
+| `plugins.registry.trust_plugin(plugin)` | `register_explanation_plugin(..., metadata={"trusted": True, ...})` or `mark_explanation_trusted(identifier)` | v0.11.1 | v0.11.3 | List-path API removed; use identifier-based trust APIs. |
+| `plugins.registry.find_for(model)` | `find_explanation_plugin_for(..., trusted_only=False)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
+| `plugins.registry.find_for_trusted(model)` | `find_explanation_plugin_for(..., trusted_only=True)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
 
 ## Breaking changes
 

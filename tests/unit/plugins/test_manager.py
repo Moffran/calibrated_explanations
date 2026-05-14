@@ -16,6 +16,25 @@ from calibrated_explanations.plugins.manager import PluginManager
 class TestPluginManagerInitialization:
     """Tests for PluginManager initialization."""
 
+    def test_property_deleters_clear_optional_state(self):
+        """should_clear_optional_plugin_state_when_property_deleters_are_used."""
+        manager = PluginManager(Mock())
+
+        manager.explanation_plugin_fallbacks = {"factual": ("a",)}
+        manager.plot_plugin_fallbacks = {"plot": ("legacy",)}
+        manager.explanation_preferred_identifier = {"factual": "a"}
+        manager.interval_context_metadata = {"default": {"source": "test"}}
+
+        del manager.explanation_plugin_fallbacks
+        del manager.plot_plugin_fallbacks
+        del manager.explanation_preferred_identifier
+        del manager.interval_context_metadata
+
+        assert manager.explanation_plugin_fallbacks == {}
+        assert manager.plot_plugin_fallbacks == {}
+        assert manager.explanation_preferred_identifier == {}
+        assert manager.interval_context_metadata == {}
+
 
 class TestPluginManagerInitializeFromKwargs:
     """Tests for initialize_from_kwargs method."""

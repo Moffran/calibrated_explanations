@@ -117,51 +117,14 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
     assert explainer.initialized is True
 
 
-def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
-    """Accessing names from the deprecated `calibration_helpers` module should
-    emit a DeprecationWarning and delegate to the interval_learner implementation.
-
-    The test avoids importing the real `interval_learner` implementation (which
-    pulls in heavy runtime dependencies) by injecting a lightweight fake module
-    into `sys.modules` before attribute access.
-    """
-    import warnings
-    import sys
-    import types
-
+def test_should_raise_attribute_error_when_deprecated_calibration_helper_accessed() -> None:
     from calibrated_explanations.core import calibration_helpers as ch_helpers
 
-    # Create a fake calibration package + interval_learner submodule
-    # Note: ADR-001 - calibration is extracted to top-level package
-    fake_interval = types.ModuleType("calibrated_explanations.calibration.interval_learner")
-
-    def fake_assign_threshold(explainer, t):
-        return "ok"
-
-    fake_interval.assign_threshold = fake_assign_threshold
-
-    fake_pkg = types.ModuleType("calibrated_explanations.calibration")
-    fake_pkg.interval_learner = fake_interval
-
-    monkeypatch.setitem(sys.modules, "calibrated_explanations.calibration", fake_pkg)
-    monkeypatch.setitem(
-        sys.modules, "calibrated_explanations.calibration.interval_learner", fake_interval
-    )
-
-    from tests.helpers.deprecation import deprecations_error_enabled
-
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning):
-            _ = ch_helpers.assign_threshold
-    else:
-        with warnings.catch_warnings(record=True) as rec:
-            warnings.simplefilter("always")
-            func = ch_helpers.assign_threshold
-
-        assert any(
-            issubclass(w.category, DeprecationWarning) for w in rec
-        ), "expected DeprecationWarning"
-
-        # Calling the delegated function should return the fake result
-        res = func(object(), 0.5)
-        assert res == "ok"
+    for name in (
+        "assign_threshold",
+        "initialize_interval_learner",
+        "initialize_interval_learner_for_fast_explainer",
+        "update_interval_learner",
+    ):
+        with pytest.raises(AttributeError):
+            getattr(ch_helpers, name)

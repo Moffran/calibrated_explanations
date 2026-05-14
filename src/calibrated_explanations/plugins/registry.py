@@ -1,15 +1,14 @@
 """Plugin registry (ADR-006 minimal, opt-in).
 
-Explicit, in-process registry for explainer plugins. Users must call
-``register`` to add plugins or request discovery through the entry-point loader.
+Explicit, in-process registry for explainer plugins. Users must call the
+identifier-based registration APIs or request discovery through the entry-point loader.
 Discovery uses the ``calibrated_explanations.plugins`` entry-point group but
 only trusted plugins are instantiated automatically, mirroring ADR-006's
 conservative trust model.
 
 This module now also exposes identifier-based registries for explanation,
 interval, and plot plugins as outlined by ADR-013/ADR-014/ADR-015. The legacy
-list-based helpers remain available for the interim so callers can migrate
-incrementally.
+list-based helpers were removed in v0.11.3 after the ADR-011 finalization window.
 """
 
 from __future__ import annotations
@@ -31,7 +30,6 @@ from .. import __version__ as package_version
 from ..core.config_manager import ConfigManager
 from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
-from ..utils.deprecations import deprecate
 from ..utils.exceptions import ConfigurationError, ValidationError
 from ._trust import (
     clear_trusted_identifiers,
@@ -338,12 +336,6 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
 _EXPLANATION_PROTOCOL_VERSION = 1
 EXPLANATION_PROTOCOL_VERSION = _EXPLANATION_PROTOCOL_VERSION
 
-_EXPLANATION_MODE_ALIASES = {
-    "explanation:factual": "factual",
-    "explanation:alternative": "alternative",
-    "explanation:fast": "fast",
-}
-
 _EXPLANATION_VALID_MODES = {"factual", "alternative", "fast"}
 
 
@@ -514,32 +506,13 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
             },
         )
 
-    allowed_modes = set(_EXPLANATION_VALID_MODES) | set(_EXPLANATION_MODE_ALIASES)
-    raw_modes = _ensure_sequence(meta, "modes", allowed=allowed_modes)
+    raw_modes = _ensure_sequence(meta, "modes", allowed=_EXPLANATION_VALID_MODES)
     normalised_modes: List[str] = []
     seen: set[str] = set()
-    from ..utils import deprecate
-
     for mode in raw_modes:
-        canonical = _EXPLANATION_MODE_ALIASES.get(mode, mode)
-        if mode in _EXPLANATION_MODE_ALIASES:
-            deprecate(
-                "explanation mode alias '" + mode + "' is deprecated; use '" + canonical + "'",
-                key=f"mode_alias:{mode}",
-                stacklevel=3,
-            )
-        if canonical not in _EXPLANATION_VALID_MODES:
-            raise ValidationError(
-                f"plugin_meta['modes'] has unsupported values: {canonical}",
-                details={
-                    "param": "modes",
-                    "allowed_values": sorted(_EXPLANATION_VALID_MODES),
-                    "unsupported_value": canonical,
-                },
-            )
-        if canonical not in seen:
-            seen.add(canonical)
-            normalised_modes.append(canonical)
+        if mode not in seen:
+            seen.add(mode)
+            normalised_modes.append(mode)
     if not normalised_modes:
         raise ValidationError(
             "explanation plugin must declare at least one mode",
@@ -2343,27 +2316,6 @@ def _register_legacy_plugin(
     )
 
 
-def register(
-    plugin: ExplainerPlugin,
-    *,
-    source: str = "manual",
-    identifier: str | None = None,
-) -> None:
-    """Register a plugin after minimal metadata validation.
-
-    Notes: Registering a plugin executes third-party code at import-time.
-    Only register trusted plugins.
-    """
-    deprecate(
-        "plugins.registry.register() is deprecated and will be removed in v0.11.3; "
-        "use register_explanation_plugin(identifier, plugin, metadata) instead.",
-        key="legacy.plugin:register",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    _register_legacy_plugin(plugin, source=source, identifier=identifier)
-
-
 def unregister(plugin: ExplainerPlugin) -> None:
     """Remove a plugin if present."""
     with contextlib.suppress(ValueError):
@@ -2452,24 +2404,6 @@ def _trust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
     )
 
 
-def trust_plugin(plugin: ExplainerPlugin | str) -> None:
-    """Mark an already-registered plugin as trusted.
-
-    Trust is an explicit, opt-in operation. The function validates metadata
-    before adding to the trusted list. Only trusted plugins will be returned
-    by :func:`find_for` when `trusted_only=True` is passed.
-    """
-    deprecate(
-        "plugins.registry.trust_plugin() is deprecated and will be removed in v0.11.3; "
-        "set metadata={'trusted': True} when calling "
-        "register_explanation_plugin(identifier, plugin, metadata) instead.",
-        key="legacy.plugin:trust_plugin",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    _trust_legacy_plugin(plugin)
-
-
 def _untrust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
     """Remove a plugin from the trusted set if present."""
     if isinstance(plugin, str):
@@ -2506,30 +2440,6 @@ def _untrust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
 def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
     """Remove a plugin from the trusted set if present."""
     _untrust_legacy_plugin(plugin)
-
-
-def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
-    """Find plugins that declare support for the given model."""
-    deprecate(
-        "plugins.registry.find_for() is deprecated and will be removed in v0.11.3; "
-        "use find_explanation_plugin_for(..., trusted_only=False) instead.",
-        key="legacy.plugin:find_for",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    return tuple(p for p in _REGISTRY if _safe_supports(p, model))
-
-
-def find_for_trusted(model: Any) -> Tuple[ExplainerPlugin, ...]:
-    """Find trusted plugins that declare support for the given model."""
-    deprecate(
-        "plugins.registry.find_for_trusted() is deprecated and will be removed in v0.11.3; "
-        "use find_explanation_plugin_for(..., trusted_only=True) instead.",
-        key="legacy.plugin:find_for_trusted",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    return tuple(p for p in _TRUSTED if _safe_supports(p, model))
 
 
 def _safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
@@ -2586,13 +2496,9 @@ __all__ = [
     "mark_explanation_untrusted",
     "mark_interval_trusted",
     "mark_interval_untrusted",
-    "register",
     "unregister",
     "clear",
     "reset_plugin_catalog",
     "list_plugins",
-    "trust_plugin",
     "untrust_plugin",
-    "find_for",
-    "find_for_trusted",
 ]
