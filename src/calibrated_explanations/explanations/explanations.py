@@ -1523,6 +1523,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault("output_format", "dataframe")
         return self.to_narrative(*args, **kwargs)
 
+    def narrate(self, *args, **kwargs):
+        """Alias for :meth:`to_narrative`. Forwards all arguments directly."""
+        return self.to_narrative(*args, **kwargs)
+
 
 class AlternativeExplanations(CalibratedExplanations):
     """A class for storing and visualizing alternative explanations.
@@ -2480,6 +2484,10 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         # Fall back to returning the dict structure for unknown formats
         return per_instance
+
+    def narrate(self, *args, **kwargs):
+        """Alias for :meth:`to_narrative`. Forwards all arguments directly."""
+        return self.to_narrative(*args, **kwargs)
 
     def to_json(self, *, include_version: bool = True) -> Mapping[str, Any]:
         """Return a JSON-friendly payload describing this multiclass collection.

@@ -695,6 +695,10 @@ class CalibratedExplanation(ABC):
         kwargs.setdefault("output_format", "dataframe")
         return self.to_narrative(*args, **kwargs)
 
+    def narrate(self, *args, **kwargs):
+        """Alias for :meth:`to_narrative`. Forwards all arguments directly."""
+        return self.to_narrative(*args, **kwargs)
+
     @abstractmethod
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """
