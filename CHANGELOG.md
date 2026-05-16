@@ -7,6 +7,21 @@
 
 ### Packaging / CI
 
+- **PlotSpec default promotion (v0.11.3 Task 6):** Promoted PlotSpec to the
+  default user-facing plotting path for factual, alternative, triangular, global,
+  and batch explanation plotting entrypoints. Legacy plotting remains available
+  through explicit opt-out (`use_legacy=True`, `style_override="legacy"`, or
+  supported style configuration) and visible failure fallback. Hardened a
+  notebook-discovered factual plotting regression where non-uncertainty
+  probabilistic PlotSpec rendering could index the feature-weight payload by rule
+  id instead of using the canonical `predict` weights.
+
+- **PlotSpec figure parity — layout fixes (v0.11.3 Task 6):** Fixed four layout regressions in PlotSpec-rendered figures vs. legacy:
+  (1) Alternative probabilistic x-axis label now defaults to `"Probability for the positive class"` (was bare `"Probability"`);
+  (2) Alternative regression x-axis label now defaults to `"Prediction interval with 95% confidence"` (was `"Prediction interval"`);
+  (3) Alternative plot side labels (`"Alternative rules"` left, `"Instance values"` right) no longer clipped at the canvas boundary — fixed via `subplots_adjust(left=0.22, right=0.87, bottom=0.15)` for single-panel alternative specs;
+  (4) Dual-header (probabilistic factual/conjunction) P(y=0) x-axis tick labels no longer overlap the body panel — replaced 3-row GridSpec + `subplots_adjust(hspace=0.5)` with a stable 4-row GridSpec (`height_ratios=[1, 1.8, 0.4, num_bars+2]`) where an invisible spacer row absorbs the tick-label overhang.
+  Added 4 new parity tests (27 total in `tests/unit/viz/test_plot_parity_adapter.py`). 1318 unit tests green.
 - **ADR-011 deprecation closure (v0.11.3 Task 5):** Removed all remaining active deprecations before v1.0 (Groups A–K): core calibration shims (deleted `src/calibrated_explanations/core/calibration/` directory; closed namespace-package gap), reject-policy aliases (`RejectPolicy._missing_`, `_DEPRECATED_ATTRS`/`__getattr__`), reject wrapper delegators, plugin-manager delegators/state aliases on `CalibratedExplainer`, collection `as_lime`/`as_shap`, registry list-path APIs (`register`, `trust_plugin`, `find_for`, `find_for_trusted`), legacy plugin mode aliases, `perf.cache`/`perf.parallel`, calibration-helper lazy aliases, and `ParallelConfig(granularity="feature")`. Added fail-closed tests for all 11 groups, emptied the Active deprecations ledger, and introduced `make deprecation-closure` / `python scripts/local_checks.py --deprecation-closure` with timing artifacts under `reports/deprecations/`. Two red-team gaps found and closed post-implementation: (1) empty `src/calibrated_explanations/core/calibration/` directory was creating a Python namespace package after source file deletion — directory deleted and shim test extended to cover parent package; (2) `reports/coverage_task5.json` (1.7 MB) was tracked as a new file, exceeding the `check-added-large-files` pre-commit limit — added to `.gitignore` and untracked. Final gate: `make local-checks-pr` passed (1666 tests green, 96.42% docstring coverage, all quality gates green).
 - **Optional uv contributor workflow (v0.11.3 Task 7):** Added an optional `uv pip install -e .[dev] -c constraints.txt` contributor fast path, introduced a pinned `uv-install-smoke` PR lane that compares pip and uv install timing without replacing existing pip-based CI, and removed stale `uv.lock` so no unvalidated lockfile appears authoritative.
 - **Windows install-smoke wheel hardening:** Updated `uv-install-smoke` to provision CI-aligned Python 3.11 virtualenvs via `uv venv` and require binary wheels for `numpy`, `scipy`, and `scikit-learn` so local host-Python drift (for example, 3.14) does not trigger compiler-dependent source builds. Relaxed the Python >=3.13 NumPy constraint to `numpy>=2.1.2` to avoid over-constraining newer interpreter resolution.

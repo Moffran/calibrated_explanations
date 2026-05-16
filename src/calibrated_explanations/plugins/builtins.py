@@ -1810,7 +1810,7 @@ def _register_builtins() -> None:
         source="builtin",
     )
 
-    # Register legacy plugins as fallback defaults
+    # Register legacy plugins as explicit opt-out/fallback paths.
     register_explanation_plugin(
         "core.explanation.factual",
         LegacyFactualExplanationPlugin(),
@@ -1852,8 +1852,8 @@ def _register_builtins() -> None:
             "renderer_id": "core.plot.legacy",
             "fallbacks": (),
             "legacy_compatible": True,
-            "is_default": True,
-            "default_for": ("global", "alternative"),
+            "is_default": False,
+            "default_for": (),
         },
     )
 
@@ -1877,8 +1877,13 @@ def _register_builtins() -> None:
             "renderer_id": "core.plot.plot_spec.default",
             "fallbacks": ("legacy",),
             "legacy_compatible": True,
-            "is_default": False,
-            "default_for": (),
+            "is_default": True,
+            "default_for": (
+                "factual",
+                "alternative",
+                "triangular",
+                "global",
+            ),
         },
     )
 

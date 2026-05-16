@@ -320,17 +320,8 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 2584,
-      "symbol": "__is_super_explanation",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
       "line": 2585,
-      "symbol": "__is_semi_explanation",
+      "symbol": "__is_super_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
     },
@@ -339,33 +330,6 @@
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
       "line": 2586,
-      "symbol": "__is_counter_explanation",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 2912,
-      "symbol": "__set_up_result",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 2939,
-      "symbol": "__is_super_explanation",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 2943,
       "symbol": "__is_semi_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -374,7 +338,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 2947,
+      "line": 2587,
       "symbol": "__is_counter_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -383,25 +347,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 2949,
-      "symbol": "__append_rule",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 2967,
-      "symbol": "__filter_rules",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 2979,
+      "line": 2913,
       "symbol": "__set_up_result",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -410,7 +356,34 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3034,
+      "line": 2940,
+      "symbol": "__is_super_explanation",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 2944,
+      "symbol": "__is_semi_explanation",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 2948,
+      "symbol": "__is_counter_explanation",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 2950,
       "symbol": "__append_rule",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -419,7 +392,25 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3084,
+      "line": 2968,
+      "symbol": "__filter_rules",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 2980,
+      "symbol": "__set_up_result",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3035,
       "symbol": "__append_rule",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -428,7 +419,16 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3089,
+      "line": 3085,
+      "symbol": "__append_rule",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3090,
       "symbol": "__extracted_non_conjunctive_rules",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -437,7 +437,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3093,
+      "line": 3094,
       "symbol": "__pareto_rule_indexes",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -446,7 +446,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3189,
+      "line": 3190,
       "symbol": "__pareto_filter_rules",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -455,7 +455,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3192,
+      "line": 3193,
       "symbol": "__pareto_rule_indexes",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -464,7 +464,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3194,
+      "line": 3195,
       "symbol": "__set_up_result",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -473,7 +473,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3198,
+      "line": 3199,
       "symbol": "__append_rule",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -482,7 +482,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3202,
+      "line": 3203,
       "symbol": "__extracted_non_conjunctive_rules",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -491,17 +491,8 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3256,
+      "line": 3257,
       "symbol": "__extracted_non_conjunctive_rules",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 3269,
-      "symbol": "__is_super_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
     },
@@ -510,33 +501,6 @@
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
       "line": 3270,
-      "symbol": "__is_semi_explanation",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 3271,
-      "symbol": "__is_counter_explanation",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 3322,
-      "symbol": "__filter_rules",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 3325,
       "symbol": "__is_super_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -545,16 +509,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3373,
-      "symbol": "__filter_rules",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 3376,
+      "line": 3271,
       "symbol": "__is_semi_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -563,16 +518,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3424,
-      "symbol": "__filter_rules",
-      "violation_kind": "compatibility_bridge",
-      "workstream": "compatibility_bridge"
-    },
-    {
-      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
-      "file": "calibrated_explanations/explanations/explanation.py",
-      "is_allowed": true,
-      "line": 3427,
+      "line": 3272,
       "symbol": "__is_counter_explanation",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -581,7 +527,7 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3467,
+      "line": 3323,
       "symbol": "__filter_rules",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -590,7 +536,52 @@
       "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
-      "line": 3509,
+      "line": 3326,
+      "symbol": "__is_super_explanation",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3374,
+      "symbol": "__filter_rules",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3377,
+      "symbol": "__is_semi_explanation",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3425,
+      "symbol": "__filter_rules",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3428,
+      "symbol": "__is_counter_explanation",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3468,
       "symbol": "__filter_rules",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -600,6 +591,15 @@
       "file": "calibrated_explanations/explanations/explanation.py",
       "is_allowed": true,
       "line": 3510,
+      "symbol": "__filter_rules",
+      "violation_kind": "compatibility_bridge",
+      "workstream": "compatibility_bridge"
+    },
+    {
+      "allowed_reason": "approved_compatibility_bridge_remove_by_v0.11.3",
+      "file": "calibrated_explanations/explanations/explanation.py",
+      "is_allowed": true,
+      "line": 3511,
       "symbol": "__pareto_filter_rules",
       "violation_kind": "compatibility_bridge",
       "workstream": "compatibility_bridge"
@@ -824,7 +824,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 469,
+      "line": 513,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -833,7 +833,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 471,
+      "line": 515,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -842,7 +842,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 624,
+      "line": 663,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -851,7 +851,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1136,
+      "line": 1187,
       "symbol": "__plot_proba_triangle",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -860,7 +860,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1254,
+      "line": 1297,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -869,7 +869,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1760,
+      "line": 1861,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -878,16 +878,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1799,
-      "symbol": "__require_matplotlib",
-      "violation_kind": "non_legacy_transitional_shim",
-      "workstream": "shim_confinement"
-    },
-    {
-      "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
-      "file": "calibrated_explanations/plotting.py",
-      "is_allowed": true,
-      "line": 1869,
+      "line": 1931,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -896,7 +887,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 2132,
+      "line": 2194,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -920,7 +911,7 @@
       "workstream": "shim_confinement"
     }
   ],
-  "total_records": 102,
+  "total_records": 101,
   "total_violations": 0,
   "version": 1
 }

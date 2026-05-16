@@ -271,6 +271,9 @@ def build_regression_bars_spec(
             if not isinstance(exc_info, Exception):
                 raise
             confidence_label = "Prediction interval"
+    elif interval and y_minmax is not None:
+        # Legacy default: standard factual regression plots use 95% confidence.
+        confidence_label = "Prediction interval with 95% confidence"
     else:
         confidence_label = (
             "Prediction interval with unknown confidence"
@@ -449,7 +452,9 @@ def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz bu
 
     if xlabel is None:
         body_xlabel = (
-            f"Probability for class '{pos_label}'" if pos_label is not None else "Probability"
+            f"Probability for class '{pos_label}'"
+            if pos_label is not None
+            else "Probability for the positive class"
         )
     else:
         body_xlabel = xlabel
@@ -701,7 +706,7 @@ def build_alternative_regression_spec(  # pragma: no cover  # ADR-023: viz build
         xlim = default_xlim
     xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
 
-    body_xlabel = "Prediction interval" if xlabel is None else xlabel
+    body_xlabel = "Prediction interval with 95% confidence" if xlabel is None else xlabel
 
     xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
 
@@ -929,12 +934,20 @@ def build_probabilistic_bars_spec(
     )
 
     bars: list[BarItem] = []
-    if isinstance(feature_weights, dict) and interval:
+    if isinstance(feature_weights, dict):
         pred_w = feature_weights["predict"]
-        wl = feature_weights["low"]
-        wh = feature_weights["high"]
+        wl = feature_weights.get("low") if interval else None
+        wh = feature_weights.get("high") if interval else None
+        role_overrides = feature_weights.get("color_role")
         for j in features_to_plot:
             val = float(pred_w[j])
+            color_role = "positive" if val > 0 else "negative"
+            if (
+                role_overrides is not None
+                and len(role_overrides) > j
+                and role_overrides[j] is not None
+            ):
+                color_role = str(role_overrides[j])
             bars.append(
                 BarItem(
                     label=(
@@ -943,10 +956,10 @@ def build_probabilistic_bars_spec(
                         else (column_names[j] if column_names is not None else str(j))
                     ),
                     value=val,
-                    interval_low=float(wl[j]),
-                    interval_high=float(wh[j]),
+                    interval_low=float(wl[j]) if wl is not None else None,
+                    interval_high=float(wh[j]) if wh is not None else None,
                     instance_value=(instance[j] if instance is not None else None),
-                    color_role=("positive" if val > 0 else "negative"),
+                    color_role=color_role,
                     solid_on_interval_crosses_zero=legacy_solid_behavior,
                 )
             )
@@ -989,11 +1002,20 @@ def build_probabilistic_bars_spec(
     if sort_by and sort_by.lower() not in ("none", ""):
         bars = sorted(bars, key=_key, reverse=not ascending)
 
-    # For the body we display feature contributions (weights) centered at zero
+    # For the body we display feature contributions (weights) centered at zero.
+    # Determine y-axis label: conjunction plots (multi-line rule labels) use "Rules";
+    # plain factual probabilistic plots (simple feature names) use "Features".
+    if body_ylabel is not None:
+        _resolved_ylabel = body_ylabel
+    else:
+        all_bar_labels = rule_labels or column_names or []
+        _resolved_ylabel = (
+            "Rules" if any("\n" in str(lbl) for lbl in all_bar_labels) else "Features"
+        )
     body = BarHPanelSpec(
         bars=bars,
         xlabel="Feature weights",
-        ylabel=(body_ylabel if body_ylabel is not None else "Rules"),
+        ylabel=_resolved_ylabel,
         solid_on_interval_crosses_zero=legacy_solid_behavior,
         show_base_interval=interval,
     )

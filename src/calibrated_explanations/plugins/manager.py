@@ -61,7 +61,7 @@ EXTERNAL_EXPLANATION_FAST_IDENTIFIER: str = "external.explanation.fast"
 EXTERNAL_INTERVAL_FAST_IDENTIFIER: str = "external.interval.fast"
 
 # Default plot style fallback chain
-DEFAULT_PLOT_STYLE: str = "legacy"
+DEFAULT_PLOT_STYLE: str = "plot_spec.default"
 
 
 def _split_csv(value: str | None) -> tuple[str, ...]:

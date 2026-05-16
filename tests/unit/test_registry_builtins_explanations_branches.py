@@ -216,6 +216,112 @@ def test_alternative_plot_triangle_uses_interval_width_for_regression(monkeypatc
     assert num_to_show == 1
 
 
+def test_should_forward_plotspec_default_when_factual_plot_omits_use_legacy(monkeypatch):
+    factual = types.SimpleNamespace()
+    factual.index = 0
+    factual.prediction = {"predict": 0.8, "low": 0.7, "high": 0.9}
+    factual.get_rules = lambda *a, **k: {
+        "weight": [0.2],
+        "weight_low": [0.1],
+        "weight_high": [0.3],
+        "value": ["v"],
+        "rule": ["r"],
+        "predict": [0.8],
+        "predict_low": [0.7],
+        "predict_high": [0.9],
+    }
+    factual.get_explainer = lambda: types.SimpleNamespace(mode="classification")
+    factual.is_thresholded = lambda: False
+    factual.is_one_sided = lambda: False
+    factual.rank_features = lambda *a, **k: [0]
+    preconditions_attr = "_" + "check_preconditions"
+    impact_attr = "_" + "rules_with_impact"
+    setattr(factual, preconditions_attr, lambda *a, **k: None)
+    setattr(
+        factual,
+        impact_attr,
+        lambda sort=False: [types.SimpleNamespace(direction="positive")],
+    )
+
+    captured = {}
+
+    def fake_plot_probabilistic(*args, **kwargs):
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr(expl_mod, "plot_probabilistic", fake_plot_probabilistic)
+
+    expl_mod.FactualExplanation.plot(factual, show=False)
+
+    forwarded_feature_weights = captured["args"][3]
+    assert captured["kwargs"]["use_legacy"] is None
+    assert forwarded_feature_weights["color_role"] == ["positive"]
+
+
+def test_should_forward_plotspec_default_when_alternative_plot_omits_use_legacy(monkeypatch):
+    fake = types.SimpleNamespace()
+    fake.index = 0
+    fake.prediction = {"predict": 0.8, "low": 0.7, "high": 0.9}
+    fake.rank_features = lambda *a, **k: [0]
+    fake.get_rules = lambda *a, **k: {
+        "predict": [0.85],
+        "predict_low": [0.75],
+        "predict_high": [0.95],
+        "value": ["v"],
+        "rule": ["r"],
+        "weight": [0.2],
+        "weight_low": [0.1],
+        "weight_high": [0.3],
+    }
+    fake.get_mode = lambda: "classification"
+    fake.is_thresholded = lambda: False
+    check_pre_attr = "_" + "check_preconditions"
+    setattr(fake, check_pre_attr, lambda *a, **k: None)
+
+    captured = {}
+
+    def fake_plot_alternative(*args, **kwargs):
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr(expl_mod, "plot_alternative", fake_plot_alternative)
+
+    expl_mod.AlternativeExplanation.plot(fake, show=False)
+
+    assert captured["kwargs"]["use_legacy"] is None
+
+
+def test_should_preserve_legacy_opt_out_when_alternative_plot_sets_use_legacy(monkeypatch):
+    fake = types.SimpleNamespace()
+    fake.index = 0
+    fake.prediction = {"predict": 0.8, "low": 0.7, "high": 0.9}
+    fake.rank_features = lambda *a, **k: [0]
+    fake.get_rules = lambda *a, **k: {
+        "predict": [0.85],
+        "predict_low": [0.75],
+        "predict_high": [0.95],
+        "value": ["v"],
+        "rule": ["r"],
+        "weight": [0.2],
+        "weight_low": [0.1],
+        "weight_high": [0.3],
+    }
+    fake.get_mode = lambda: "classification"
+    fake.is_thresholded = lambda: False
+    check_pre_attr = "_" + "check_preconditions"
+    setattr(fake, check_pre_attr, lambda *a, **k: None)
+
+    captured = {}
+
+    def fake_plot_alternative(*args, **kwargs):
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr(expl_mod, "plot_alternative", fake_plot_alternative)
+
+    expl_mod.AlternativeExplanation.plot(fake, show=False, use_legacy=True)
+
+    assert captured["kwargs"]["use_legacy"] is True
+
+
 def test_add_conjunctions_factual_legacy_simple():
     # Minimal fake object exercising add_conjunctions_factual_legacy via public API
     class FakeExplainer:

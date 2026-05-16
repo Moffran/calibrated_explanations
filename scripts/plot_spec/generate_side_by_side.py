@@ -148,6 +148,7 @@ def render_factual_regression_plotspec(out_dir: Path) -> None:
         instance=instance,
         y_minmax=[100000.0, 500000.0],
         interval=True,
+        confidence=95,
     )
     mpl_adapter.render(spec, show=False, save_path=str(out_dir / "factual_regression_plotspec.png"))
 

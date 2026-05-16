@@ -57,7 +57,7 @@ def test_factual_regression_exports_legacy_sign_colors_and_axis_meaning():
     spec = factual_regression_interval()
     primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
 
-    assert primitives["plot_spec"]["header"]["xlabel"] == "Prediction interval"
+    assert primitives["plot_spec"]["header"]["xlabel"] == "Prediction interval with 95% confidence"
     assert primitives["plot_spec"]["body"]["xlabel"] == "Feature weights"
 
     solids = {item["index"]: item for item in primitives["solids"]}
@@ -255,7 +255,7 @@ def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
     rule_proba = [0.3]
     rule_uncertainty = [0.05]
 
-    # call with show=False and no save_ext -> should no-op and not call adapter.render
+    # PlotSpec is the default/promotion path even when no save extension is supplied.
     _plots.plot_triangular(
         None,
         proba,
@@ -269,7 +269,7 @@ def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
         save_ext=None,
         use_legacy=False,
     )
-    assert len(calls) == 0
+    assert len(calls) == 1
 
     # Reset and call with save_ext to trigger adapter.save behavior
     calls.clear()
@@ -288,3 +288,155 @@ def testplot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
     )  # noqa: E501
     # adapter.render should be invoked for initial render + each save ext
     assert len(calls) >= 2
+
+
+# ---------------------------------------------------------------------------
+# Visual parity regression tests (v0.11.3 Task 6 — A, B, D, E fixes)
+# ---------------------------------------------------------------------------
+
+
+def test_should_use_features_ylabel_when_factual_probabilistic():
+    """Lower-panel y-axis label is 'Features' for a plain factual probabilistic plot (Fix A)."""
+    spec = factual_probabilistic_zero_crossing()
+    assert spec.body is not None
+    assert spec.body.ylabel == "Features"
+
+
+def test_should_use_rules_ylabel_when_conjunction_multiline_labels():
+    """Lower-panel y-axis label is 'Rules' when any bar label contains a newline (Fix A)."""
+    spec = factual_probabilistic_conjunction_multiline()
+    assert spec.body is not None
+    assert spec.body.ylabel == "Rules"
+
+
+def test_should_include_confidence_in_regression_prediction_interval_label():
+    """Regression header x-label includes '95% confidence' by default (Fix B)."""
+    spec = factual_regression_interval()
+    assert spec.header is not None
+    assert spec.header.xlabel == "Prediction interval with 95% confidence"
+
+
+def test_should_preserve_explicit_confidence_value_in_regression_label():
+    """An explicitly supplied confidence value overrides the 95% default (Fix B)."""
+    from calibrated_explanations.viz import build_regression_bars_spec
+
+    spec = build_regression_bars_spec(
+        title=None,
+        predict={"predict": 3.6, "low": 3.2, "high": 4.1},
+        feature_weights=[0.25, -0.1],
+        features_to_plot=[0, 1],
+        column_names=["r0", "r1"],
+        instance=[2.3, 0.5],
+        y_minmax=[-5.0, 100.0],
+        interval=True,
+        confidence=90,
+    )
+    assert spec.header is not None
+    assert spec.header.xlabel == "Prediction interval with 90% confidence"
+
+
+def test_should_not_expand_xlim_symmetrically_for_asymmetric_contributions():
+    """X-axis limits are data-driven, not forced to be symmetric (Fix E).
+
+    For a factual probabilistic plot where positive contributions are larger than
+    negative ones, the negative limit must be much smaller in magnitude than the
+    positive limit, not padded out to match the positive side.
+    """
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
+
+    predict = {"predict": 0.55, "low": 0.45, "high": 0.65}
+    feature_weights = {
+        "predict": [0.4, -0.05, 0.3],
+        "low": [0.35, -0.08, 0.25],
+        "high": [0.45, -0.02, 0.35],
+    }
+    spec = build_probabilistic_bars_spec(
+        title=None,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0, 1, 2],
+        column_names=["f0", "f1", "f2"],
+        instance=[1.0, 2.0, 3.0],
+        y_minmax=[0.0, 1.0],
+        interval=True,
+        neg_caption="P(y=0)",
+        pos_caption="P(y=1)",
+    )
+    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
+
+    # Gather all rendered x-coordinates (solids + overlays)
+    all_x = []
+    for item in primitives.get("solids", []):
+        all_x.extend([item["x0"], item["x1"]])
+    for item in primitives.get("overlays", []):
+        all_x.extend([item["x0"], item["x1"]])
+    if primitives.get("base_interval"):
+        bi = primitives["base_interval"].get("body", {})
+        all_x.extend([bi.get("x0", 0.0), bi.get("x1", 0.0)])
+
+    if all_x:
+        max_pos = max(all_x)
+        min_neg = min(all_x)
+        # With asymmetric data (positives >> negatives), the negative extent should be
+        # well within the positive extent (less than half). Symmetric expansion would make
+        # |min_neg| ≈ max_pos, which is wrong.
+        assert abs(min_neg) < max_pos * 0.5, (
+            f"x-limits appear symmetric: min={min_neg:.3f}, max={max_pos:.3f}. "
+            "The negative side should not be padded to match the positive side."
+        )
+
+
+def test_should_use_positive_class_label_for_alternative_probabilistic_xlabel():
+    """Alternative probabilistic body xlabel defaults to 'Probability for the positive class'."""
+    from tests.unit.viz.test_plot_parity_fixtures import alternative_probabilistic_cross_05
+
+    spec = alternative_probabilistic_cross_05()
+    assert spec.body is not None
+    assert spec.body.xlabel == "Probability for the positive class"
+
+
+def test_should_preserve_explicit_xlabel_for_alternative_probabilistic():
+    """An explicitly supplied xlabel is preserved as-is in the alternative probabilistic body."""
+    from calibrated_explanations.viz import build_alternative_probabilistic_spec
+
+    spec = build_alternative_probabilistic_spec(  # pragma: no cover
+        title=None,
+        predict={"predict": 0.6, "low": 0.5, "high": 0.7},
+        feature_weights={"predict": [0.4, 0.7], "low": [0.3, 0.6], "high": [0.5, 0.8]},
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=[0.1, 0.2],
+        y_minmax=[0.0, 1.0],
+        interval=True,
+        xlabel="Probability for class 'fraud'",
+    )
+    assert spec.body is not None
+    assert spec.body.xlabel == "Probability for class 'fraud'"
+
+
+def test_should_use_confidence_label_for_alternative_regression_xlabel():
+    """Alternative regression body xlabel defaults to 'Prediction interval with 95% confidence'."""
+    from tests.unit.viz.test_plot_parity_fixtures import alternative_regression_interval
+
+    spec = alternative_regression_interval()
+    assert spec.body is not None
+    assert spec.body.xlabel == "Prediction interval with 95% confidence"
+
+
+def test_should_preserve_explicit_xlabel_for_alternative_regression():
+    """An explicitly supplied xlabel is preserved as-is in the alternative regression body."""
+    from calibrated_explanations.viz import build_alternative_regression_spec
+
+    spec = build_alternative_regression_spec(  # pragma: no cover
+        title=None,
+        predict={"predict": 180000.0, "low": 160000.0, "high": 200000.0},
+        feature_weights={"predict": [195000.0], "low": [185000.0], "high": [205000.0]},
+        features_to_plot=[0],
+        column_names=["floor_area"],
+        instance=[60.0],
+        y_minmax=[100000.0, 500000.0],
+        interval=True,
+        xlabel="Custom prediction range",
+    )
+    assert spec.body is not None
+    assert spec.body.xlabel == "Custom prediction range"

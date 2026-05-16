@@ -525,7 +525,13 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      `uv-install-smoke` validation lane, record pip-vs-uv install timing evidence,
      refresh or remove/document `uv.lock`, and verify ADR-010/012/028/030/033 plus
      Standard-001/003/004/005 compliance before closure.
-  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
+  8. ADR-028/STD-005 warning-to-logging correction: classify all runtime
+     `warnings.warn` call sites, migrate fallback/degraded-state visibility to
+     domain-routed `WARNING` logs by default, keep warnings only for
+     deprecations or explicitly user-facing contracts, update tests/instructions,
+     and add enforcement so notebooks are not the primary fallback signal
+     surface.
+  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; ADR-028/STD-005 fallback visibility is log-first with any remaining `UserWarning` paths justified; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history; `make local-checks-pr` passes.
   Packaging workflow gate: optional `uv` support is documented and validated with
   lockfile handling, timing evidence, and CI follow-up completed before v0.11.3 closes.
   Status 2026-05-12: completed with optional constraint-based `uv pip` support,

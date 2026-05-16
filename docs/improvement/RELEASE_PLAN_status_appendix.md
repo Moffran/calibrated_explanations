@@ -35,18 +35,18 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-020 | Accepted with open parity/documentation follow-through | v0.11.3 close-out |
 | ADR-026 | Partially complete | Context immutability remains (v1.0.0-rc); telemetry quick wins closed in v0.11.2 |
 | ADR-027 | Partially complete | Observability policy/docs/examples follow-through (v0.11.3) |
-| ADR-028 | Accepted with monitoring-only follow-through | Enforcement/docs gaps closed in v0.11.1; monitor regressions at v0.11.3 |
+| ADR-028 | Accepted with reopened v0.11.3 correction | Warning-first fallback/degraded-state visibility conflicts with log-first observability posture; Task 8 in `v0.11.3_plan.md` owns classification and migration |
 | ADR-030 | Accepted | Zero-tolerance ratification targeted v0.11.3 |
 | ADR-033 | Accepted with open removal follow-through | `data_modalities` enforcement closes in v0.11.3; shim removal remains v1.0.0-rc |
 | ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning |
 | ADR-035 | Accepted with rollout follow-through | Advisory-to-required branch-protection promotion remains platform-governed; re-evaluate in v0.11.3 |
-| ADR-036 | Accepted | v0.11.2 default-promotion decision recorded as deferral; zero open severity >= 9 conformance gaps confirmed; Task 9 mending and v0.11.3 Task 6 re-evaluation remain |
-| ADR-037 | Accepted | v0.11.2 default-path follow-up recorded as deferral; zero open severity >= 9 conformance gaps confirmed; Task 9 mending and v0.11.3 Task 6 re-evaluation remain |
+| ADR-036 | Accepted | v0.11.3 Task 6 promoted PlotSpec as the default user-facing plotting path after v0.11.2 mending evidence; monitor canonical dataclass validation and legacy fallback behavior |
+| ADR-037 | Accepted | v0.11.3 Task 6 promoted the governed built-in PlotSpec default while preserving the runtime plot-kind extension prohibition and explicit legacy opt-out |
 | STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
 | STD-002 | Partially complete | WrapCalibratedExplainer numpydoc closure in v0.11.3 |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
-| STD-005 | Accepted with monitoring-only follow-through | Enforcement/docs gaps closed in v0.11.1; monitor regressions |
+| STD-005 | Accepted with reopened v0.11.3 correction | Task 8 must align fallback/degraded-state visibility with `WARNING` log-first behavior and justify remaining `UserWarning` paths |
 
 ## Detailed gap inventory and historical notes
 
@@ -249,12 +249,13 @@ _Last gap analysis: 2026-04-22_
 
 ### ADR-028 - Logging and Governance Observability
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-05-16_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Enforcement tooling for logger domains missing | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (logger-domain quality script added). Target milestone: monitor; re-verify at v0.11.3. |
-| 2 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (docs examples updated). Target milestone: monitor; re-verify at v0.11.3. |
+| 1 | Fallback/degraded-state visibility is warning-first in multiple runtime paths | 3 | 4 | 12 | New v0.11.3 red-team finding: source and tests still preserve `UserWarning` plus INFO patterns for fallback/degraded-state events, causing notebook-visible noise and bypassing operator-controlled domain logging. Target milestone: v0.11.3 Task 8. |
+| 2 | Enforcement tooling for logger domains missing | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (logger-domain quality script added). Target milestone: monitor. |
+| 3 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (docs examples updated). Target milestone: monitor. |
 
 ### ADR-029 - Reject Integration Strategy
 
@@ -342,9 +343,10 @@ _Last gap analysis: 2026-04-22_
 
 ### Standard-005 - Logging and Observability Standard
 
-_Last gap analysis: 2026-03-03_
+_Last gap analysis: 2026-05-16_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
-| 2 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
+| 1 | Fallback/degraded-state events rely on `UserWarning` instead of `WARNING` logs | 3 | 4 | 12 | New v0.11.3 red-team finding: STD-005 says degraded behavior with fallbacks belongs at `WARNING`; Task 8 owns inventory, migration, tests, and enforcement. |
+| 2 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
+| 3 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |

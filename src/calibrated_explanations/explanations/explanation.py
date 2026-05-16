@@ -2358,9 +2358,6 @@ class FactualExplanation(CalibratedExplanation):
         # PlotSpec request forces new renderer
         if kwargs.get("return_plot_spec") or custom_plot_style:
             plot_use_legacy = False
-        # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
-        elif plot_use_legacy is None:
-            plot_use_legacy = True
 
         filename = kwargs.pop("filename", "")
         show = kwargs.pop("show", filename == "")
@@ -3854,9 +3851,6 @@ class AlternativeExplanation(CalibratedExplanation):
         # PlotSpec request forces new renderer
         if kwargs.get("return_plot_spec") or custom_plot_style:
             plot_use_legacy = False
-        # Phase 2 Option B: Default to legacy to ensure parity until PlotSpec is fully hardened
-        elif plot_use_legacy is None:
-            plot_use_legacy = True
 
         filename = kwargs.pop("filename", "")
         show = kwargs.pop("show", filename == "")
@@ -3995,6 +3989,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 show=show,
                 save_ext=save_ext,
                 style_override=style_override,
+                use_legacy=plot_use_legacy,
             )
             return
 

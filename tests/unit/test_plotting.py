@@ -553,10 +553,10 @@ def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest
     assert captured["pos_caption"] == "P(y=5)"
 
 
-def test_plot_alternative_defaults_to_legacy_when_style_chain_prefers_legacy(
+def test_plot_alternative_defaults_to_plotspec_when_style_chain_prefers_legacy(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """Should use legacy path when resolved style chain begins with legacy."""
+    """Should ignore legacy-first fallback chains when no opt-out is supplied."""
 
     legacy_calls: list[tuple[tuple, dict]] = []
 
@@ -585,7 +585,7 @@ def test_plot_alternative_defaults_to_legacy_when_style_chain_prefers_legacy(
         use_legacy=None,
     )
 
-    assert legacy_calls
+    assert not legacy_calls
 
 
 def testplot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):

@@ -88,6 +88,9 @@ class FakeAxes:
         self.calls.append(("twinx", (), {}))
         return twin
 
+    def set_axis_off(self, *args, **kwargs):
+        self.calls.append(("set_axis_off", args, kwargs))
+
 
 class FakeGridSpec:
     def __init__(self, figure, nrows, ncols, height_ratios=None):
@@ -109,7 +112,7 @@ class FakeFigure:
         self.calls = []
         CREATED_FIGURES.append(self)
 
-    def add_gridspec(self, nrows, ncols, height_ratios=None):
+    def add_gridspec(self, nrows, ncols, height_ratios=None, **kwargs):
         return FakeGridSpec(self, nrows, ncols, height_ratios)
 
     def add_subplot(self, spec):
@@ -122,6 +125,9 @@ class FakeFigure:
 
     def tight_layout(self, *args, **kwargs):
         self.calls.append(("tight_layout", args, kwargs))
+
+    def subplots_adjust(self, *args, **kwargs):
+        self.calls.append(("subplots_adjust", args, kwargs))
 
     def savefig(self, *args, **kwargs):
         self.calls.append(("savefig", args, kwargs))

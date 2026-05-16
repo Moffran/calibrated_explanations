@@ -83,7 +83,6 @@
       "usage": [
         "calibrate",
         "explain_factual",
-        "explainer",
         "fit",
         "plot"
       ]

@@ -5,32 +5,36 @@ adapters.
 
 ## Current default posture
 
-As of **v0.11.2 task 7 (decision recorded 2026-04-23)**, PlotSpec remains
-**non-default** for user-facing plotting. Legacy plotting is still the default
-route while PlotSpec visual semantics are hardened under v0.11.2 Task 9.
+As of **v0.11.3 Task 6**, PlotSpec is the default user-facing plotting path for:
 
-The v0.11.2 decision is a deliberate **1A-family deferral**:
+- `plot_probabilistic`
+- `plot_regression`
+- `plot_alternative`
+- `plot_triangular`
+- `plot_global`
+- factual, alternative, and batch explanation `.plot()` entrypoints that route
+  into those functions
 
-- `plot_probabilistic`, `plot_regression`, and `plot_alternative` remain
-  non-default for end users.
-- `plot_triangular` and `plot_global` also remain non-default and are deferred
-  to the explicit v0.11.3 promotion re-evaluation/finalization task.
+This default change follows the v0.11.2 semantic/visual mending evidence and
+human review recorded under `docs/improvement/plot_spec/`.
 
-This means PlotSpec may be structurally correct and usable, but is not yet the
-default user-facing visual path.
+## Legacy opt-out and fallback
 
-## Opt-in usage
+Legacy rendering remains available as an explicit opt-out and fallback path:
 
-PlotSpec can still be exercised explicitly in v0.11.2:
+- `use_legacy=True`
+- `style_override="legacy"` where the plotting function accepts style overrides
+- explicit legacy style configuration in plugin/style resolution surfaces
+
+When PlotSpec rendering fails and execution falls back to legacy, the fallback
+must remain visible through a `UserWarning` and an INFO log entry.
+
+PlotSpec can still be requested explicitly with:
 
 - `use_legacy=False`
 - `style_override="plot_spec.default"`
 - `return_plot_spec=True`
 - configuration that explicitly prefers `plot_spec.default`
-
-Task 9 in `docs/improvement/v0.11.2_plan.md` is the active semantic/visual
-mending task for the opt-in PlotSpec path. The default-promotion question is
-re-opened in v0.11.3 Task 6 only after that mending work is complete.
 
 ## v0.11.2 Task 9 mending status
 
@@ -42,8 +46,7 @@ placeholder primitives. Global PlotSpec payloads preserve threshold and
 class-label semantics so thresholded and class-conditioned axis labels remain
 available to renderers.
 
-This does not change the default route. Human side-by-side review and sign-off
-remain required before any later default-promotion decision.
+This evidence is the basis for the v0.11.3 default promotion.
 
 ## Core modules
 
@@ -61,11 +64,13 @@ remain required before any later default-promotion decision.
 Plot kinds are validated by `viz.serializers.PlotKindRegistry` using the
 built-in `_SUPPORTED_KINDS` contract in this release. The PlotSpec
 `kind`/`mode` metadata determines which renderer and validation rules apply.
-Runtime `kind` registration is out of scope in v0.11.1 under ADR-037.
+Runtime `kind` registration remains out of scope under ADR-037.
 Any change to that policy requires a later ADR/amendment and the explicit
-v0.11.2/v0.11.3 follow-up decisions in the release plan.
+follow-up decision in the release plan.
 
 ## Related ADRs
 
 - ADR-036 (PlotSpec canonical contract and validation boundary)
 - ADR-037 (visualization extension and rendering governance)
+
+Entry-point tier: Tier 3.

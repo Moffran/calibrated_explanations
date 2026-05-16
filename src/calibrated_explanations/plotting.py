@@ -158,7 +158,7 @@ def format_save_path(base_path: Any, filename: str) -> str:
 
 def _resolve_explainer_from_explanation(explanation: Any) -> Any:
     """Best-effort resolver for explanation -> explainer references."""
-    resolved = None
+    resolved = explanation if hasattr(explanation, "plugin_manager") else None
     getter = getattr(explanation, "get_explainer", None)
     if callable(getter):
         resolved = getter()
@@ -255,6 +255,50 @@ def _resolve_named_plot_style(
     if isinstance(style, str) and style and style not in _BUILTIN_INSTANCE_PLOT_STYLES:
         return style
     return None
+
+
+def _select_default_plot_style(
+    explanation: Any,
+    explicit_style: str | None,
+) -> tuple[str, bool]:
+    """Return the PlotSpec-first style selection and legacy opt-out flag."""
+    if explicit_style == "legacy":
+        return "legacy", True
+    if explicit_style:
+        return explicit_style, False
+
+    explainer = _resolve_explainer_from_explanation(explanation)
+    manager = getattr(explainer, "plugin_manager", None)
+    manager_style = getattr(manager, "plot_style_override", None)
+    if isinstance(manager_style, str) and manager_style:
+        return manager_style, manager_style == "legacy"
+
+    config_manager = _get_plotting_config_manager()
+    env_style = config_manager.env("CE_PLOT_STYLE")
+    if isinstance(env_style, str) and env_style.strip():
+        env_style = env_style.strip()
+        return env_style, env_style == "legacy"
+
+    py_settings = _read_plot_pyproject()
+    py_style = py_settings.get("style")
+    if isinstance(py_style, str) and py_style:
+        return py_style, py_style == "legacy"
+
+    chain = (
+        _resolve_plot_style_chain(explainer, explicit_style)
+        if explainer is not None
+        else ("plot_spec.default", "legacy")
+    )
+    for identifier in chain:
+        if identifier and identifier != "legacy":
+            return identifier, False
+    return "plot_spec.default", False
+
+
+def _warn_and_log_plotspec_fallback(message: str) -> None:
+    """Emit the visible fallback signals required for PlotSpec -> legacy."""
+    logging.getLogger(__name__).info(message)
+    warnings.warn(message, UserWarning, stacklevel=2)
 
 
 def _render_instance_plot_plugin(
@@ -571,16 +615,11 @@ def plot_probabilistic(
         style_override=style_override,
         style=kwargs.get("style"),
     )
-    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, explicit_style)
-        else:
-            chain = ("plot_spec.default", "legacy")
-        selected_style = chain[0] if chain else "legacy"
-        use_legacy = selected_style == "legacy"
+        selected_style, use_legacy = _select_default_plot_style(explanation, explicit_style)
     else:
         selected_style = explicit_style
+    explainer = _resolve_explainer_from_explanation(explanation)
 
     predict_payload = dict(predict or {})
 
@@ -801,9 +840,8 @@ def plot_probabilistic(
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        warnings.warn(
-            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-            stacklevel=2,
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
         from .legacy import plotting as legacy_module
 
@@ -896,14 +934,8 @@ def plot_regression(
         style_override=style_override,
         style=kwargs.get("style"),
     )
-    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, explicit_style)
-        else:
-            chain = ("plot_spec.default", "legacy")
-        selected_style = chain[0] if chain else "legacy"
-        use_legacy = selected_style == "legacy"
+        selected_style, use_legacy = _select_default_plot_style(explanation, explicit_style)
     else:
         selected_style = explicit_style
 
@@ -1014,9 +1046,8 @@ def plot_regression(
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        warnings.warn(
-            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-            stacklevel=2,
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
         from .legacy import plotting as legacy_module
 
@@ -1051,7 +1082,7 @@ def plot_triangular(
     show,
     save_ext=None,
     style_override=None,
-    use_legacy=True,
+    use_legacy=None,
 ):
     """
     Plot triangular explanations.
@@ -1079,6 +1110,9 @@ def plot_triangular(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    explicit_style = _resolve_named_plot_style(style_override=style_override, style=None)
+    if use_legacy is None:
+        _, use_legacy = _select_default_plot_style(explanation, explicit_style)
     if use_legacy:
         from .legacy import plotting as legacy
 
@@ -1094,13 +1128,6 @@ def plot_triangular(
             show,
             save_ext,
         )
-        return
-
-    # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if not show and plt is None:  # lightweight path for tests/CI without viz extra
-        return
-    # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
-    if not show and (save_ext is None or len(save_ext) == 0):
         return
 
     # Build canonical triangular PlotSpec via the builder and delegate rendering
@@ -1122,13 +1149,37 @@ def plot_triangular(
     )
 
     # Let adapter perform the rendering and handle saving behavior.
-    render_plotspec(spec, show=show, save_path=None)
-    # If caller requested saving in multiple extensions, call adapter for each
-    # extension so it can emit the expected save primitives (and actually save
-    # if matplotlib is available).
-    if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
-        for ext in save_ext:
-            render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
+    if not show and plt is None and (save_ext is None or len(save_ext) == 0):
+        return spec
+
+    try:
+        render_plotspec(spec, show=show, save_path=None)
+        # If caller requested saving in multiple extensions, call adapter for each
+        # extension so it can emit the expected save primitives (and actually save
+        # if matplotlib is available).
+        if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
+            for ext in save_ext:
+                render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
+        )
+        from .legacy import plotting as legacy
+
+        legacy.plot_triangular(
+            explanation,
+            proba,
+            uncertainty,
+            rule_proba,
+            rule_uncertainty,
+            num_to_show,
+            title,
+            path,
+            show,
+            save_ext,
+        )
     return
 
 
@@ -1197,19 +1248,11 @@ def plot_alternative(
         style_override=style_override,
         style=kwargs.get("style"),
     )
-    explainer = _resolve_explainer_from_explanation(explanation)
-    return_plot_spec = kwargs.get("return_plot_spec", False)
-    if return_plot_spec:
-        use_legacy = False
     if use_legacy is None:
-        if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, explicit_style)
-        else:
-            chain = ("plot_spec.default", "legacy")
-        selected_style = chain[0] if chain else "legacy"
-        use_legacy = selected_style == "legacy"
+        selected_style, use_legacy = _select_default_plot_style(explanation, explicit_style)
     else:
         selected_style = explicit_style
+    explainer = _resolve_explainer_from_explanation(explanation)
 
     if use_legacy:
         from .legacy import plotting as legacy
@@ -1622,9 +1665,8 @@ def plot_alternative(
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
-            warnings.warn(
-                f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-                stacklevel=2,
+            _warn_and_log_plotspec_fallback(
+                f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
             )
             from .legacy import plotting as legacy
 
@@ -1645,9 +1687,8 @@ def plot_alternative(
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        warnings.warn(
-            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-            stacklevel=2,
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
         from .legacy import plotting as legacy
 
@@ -1692,15 +1733,21 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """
     show = kwargs.get("show", True)
     bins = kwargs.get("bins")
-    # style_override = kwargs.get("style_override")
-    use_legacy = kwargs.get("use_legacy", True)
+    use_legacy = kwargs.get("use_legacy")
+    explicit_style = _resolve_named_plot_style(
+        style_override=kwargs.get("style_override"),
+        style=kwargs.get("style"),
+    )
+    if use_legacy is None:
+        selected_style, use_legacy = _select_default_plot_style(explainer, explicit_style)
+    else:
+        selected_style = explicit_style
     if use_legacy:
         from .legacy import plotting as legacy
 
         legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
 
-    style = kwargs.get("style")
     path = kwargs.get("path")
     save_ext_value = kwargs.get("save_ext")
     if isinstance(save_ext_value, (list, tuple)):
@@ -1751,13 +1798,19 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         )
 
     plugin, identifier, chain = resolve_plot_plugin(
-        explicit_style=style,
+        explicit_style=selected_style,
         renderer_override=kwargs.get("renderer"),
     )
 
     errors: List[str] = []
     if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
-        __require_matplotlib()
+        _warn_and_log_plotspec_fallback(
+            "PlotSpec rendering resolved to legacy. Falling back to legacy plot."
+        )
+        from .legacy import plotting as legacy
+
+        legacy.plot_global(explainer, x, y, threshold, **kwargs)
+        return
     elif show and plt is None:  # pragma: no cover - optional dep path
         errors.append(f"{identifier}: matplotlib backend unavailable")
     else:
@@ -1783,6 +1836,15 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             errors.append(f"{identifier}: {sys.exc_info()[1]}")
+            if "legacy" in chain:
+                _warn_and_log_plotspec_fallback(
+                    f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. "
+                    "Falling back to legacy plot."
+                )
+                from .legacy import plotting as legacy
+
+                legacy.plot_global(explainer, x, y, threshold, **kwargs)
+                return
         else:
             return result
 

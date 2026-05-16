@@ -834,10 +834,22 @@ def render(
         num_bars = (
             len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
         )
-        gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1, 1, num_bars + 2])
-        axes.append(fig.add_subplot(gs[0]))
-        axes.append(fig.add_subplot(gs[1]))
-        axes.append(fig.add_subplot(gs[2]))
+        # Use a 4-row layout: P(y=1) and P(y=0) at identical height (ratio 1),
+        # followed by an invisible spacer row (ratio 0.8) that provides room for
+        # the P(y=0) x-axis tick labels and xlabel below its axes bbox.
+        # This prevents overlap without making one band taller than the other.
+        gs = fig.add_gridspec(
+            nrows=4,
+            ncols=1,
+            height_ratios=[1, 1, 1.0, num_bars + 2],
+            hspace=0.0,
+        )
+        axes.append(fig.add_subplot(gs[0]))  # panels[0]: header_positive
+        axes.append(fig.add_subplot(gs[1]))  # panels[1]: header_negative (ticks extend below)
+        _spacer_ax = fig.add_subplot(gs[2])  # invisible spacer — not added to panels mapping
+        with suppress(Exception):
+            _spacer_ax.set_axis_off()
+        axes.append(fig.add_subplot(gs[3]))  # panels[2]: body
     elif len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0] == "body":
         num_bars = (
             len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
@@ -1533,14 +1545,17 @@ def render(
                     x_min -= pad
                     x_max += pad
                 else:
-                    # If the data crosses zero, prefer a symmetric range around zero
-                    # and add a small fractional padding (~5%) beyond the max absolute extent.
-                    if x_min < 0.0 < x_max:
-                        max_extent = max(abs(x_min), abs(x_max))
-                        pad_frac = 0.05
-                        padded = max_extent * (1.0 + pad_frac)
-                        x_min = -padded
-                        x_max = padded
+                    # Use data-driven limits with a small fractional padding on each side.
+                    # Do NOT force symmetric bounds around zero; that causes excessive whitespace
+                    # for factual probabilistic plots where contributions are asymmetric.
+                    pad_frac = 0.05
+                    span = x_max - x_min
+                    pad = span * pad_frac
+                    x_min -= pad
+                    x_max += pad
+                    # Keep zero in range so the vertical pivot line is always visible.
+                    x_min = min(x_min, 0.0)
+                    x_max = max(x_max, 0.0)
                 ax.set_xlim([x_min, x_max])
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
@@ -1749,10 +1764,22 @@ def render(
         # Tidy up
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
+        if kind in ("header_positive", "header_negative"):
+            # Hide remaining spines on probability bands to match legacy subfigure appearance.
+            ax.spines["left"].set_visible(False)
+            ax.spines["bottom"].set_visible(False)
 
-    # Reserve room for the title at the top; keep bottom/left/right snug
+    # Reserve room for the title only when suptitle is actually set.
+    is_single_panel_alternative = (
+        len(panels) == 1 and body_spec is not None and getattr(body_spec, "is_alternative", False)
+    )
     try:
-        fig.tight_layout(rect=(0, 0, 1, 0.94))
+        tight_rect = (0, 0, 1, 0.94) if spec.title else (0, 0, 1, 1)
+        fig.tight_layout(rect=tight_rect)
+        if is_single_panel_alternative:
+            # Rotated y-axis labels ("Alternative rules" left, "Instance values" right)
+            # can be clipped at the canvas boundary. Ensure adequate left/right margins.
+            fig.subplots_adjust(left=0.22, right=0.87, bottom=0.15)
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
