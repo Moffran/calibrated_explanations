@@ -414,6 +414,49 @@ def test_should_use_plotspec_default_for_global_when_use_legacy_is_omitted(
     assert not legacy_calls
 
 
+def test_should_not_treat_unimported_matplotlib_as_global_backend_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    render_contexts: list[object] = []
+
+    monkeypatch.setattr(plotting, "plt", None)
+
+    class PlotSpecPlugin:
+        plugin_meta = {"style": "plot_spec.default"}
+
+        def build(self, context: object) -> object:
+            return {"plot_spec": "global"}
+
+        def render(self, artifact: object, *, context: object) -> object:
+            render_contexts.append(context)
+            return {"rendered": artifact}
+
+    class PluginManager:
+        def resolve_plot_plugin(self, *, explicit_style=None, renderer_override=None):
+            return PlotSpecPlugin(), "plot_spec.default", ("plot_spec.default", "legacy")
+
+    class Learner:
+        def predict_proba(self) -> None:
+            return None
+
+    explainer = SimpleNamespace(
+        learner=Learner(),
+        plugin_manager=PluginManager(),
+        class_labels=("negative", "positive"),
+        latest_explanation=None,
+        _last_explanation_mode="classification",
+        predict_proba=lambda x, uq_interval=True, threshold=None, bins=None: (
+            [0.4, 0.6],
+            ([0.3, 0.5], [0.5, 0.7]),
+        ),
+    )
+
+    result = plotting.plot_global(explainer, x=[1, 2], show=True)
+
+    assert result == {"rendered": {"plot_spec": "global"}}
+    assert render_contexts
+
+
 def test_should_preserve_legacy_opt_out_for_global(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

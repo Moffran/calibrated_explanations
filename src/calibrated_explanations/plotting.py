@@ -1811,8 +1811,6 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
         legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
-    elif show and plt is None:  # pragma: no cover - optional dep path
-        errors.append(f"{identifier}: matplotlib backend unavailable")
     else:
         context = PlotRenderContext(
             explanation=getattr(explainer, "latest_explanation", None),
