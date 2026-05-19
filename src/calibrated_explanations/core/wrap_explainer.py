@@ -709,7 +709,8 @@ class WrapCalibratedExplainer:
 
         Returns
         -------
-        None
+        object or None
+            The value returned by the underlying plot implementation.
 
         See Also
         --------
@@ -731,7 +732,7 @@ class WrapCalibratedExplainer:
                 threshold = cfg.threshold
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
         kwargs["bins"] = self._get_bins(x, **kwargs)
-        self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
+        return self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
 
     def _get_bins(self, x: Any, **kwargs: Any) -> Any:
         """Derive bin assignments from the configured Mondrian categorizer."""

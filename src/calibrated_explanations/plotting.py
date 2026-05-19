@@ -1138,6 +1138,13 @@ def plot_triangular(
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
 
+    is_probabilistic = True
+    with contextlib.suppress(Exception):
+        mode = explanation.get_mode()
+        is_probabilistic = mode == "classification" or (
+            mode == "regression" and bool(explanation.is_thresholded())
+        )
+
     spec = build_triangular_plotspec(
         title=title,
         proba=proba,
@@ -1145,7 +1152,7 @@ def plot_triangular(
         rule_proba=rule_proba,
         rule_uncertainty=rule_uncertainty,
         num_to_show=num_to_show,
-        is_probabilistic=True,
+        is_probabilistic=is_probabilistic,
     )
 
     # Let adapter perform the rendering and handle saving behavior.

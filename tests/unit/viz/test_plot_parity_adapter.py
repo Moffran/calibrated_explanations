@@ -32,6 +32,30 @@ REG_BASE_COLOR = REGRESSION_BASE_COLOR
 pytestmark = pytest.mark.viz
 
 
+def axis_height_inches(fig, ax):
+    return float(ax.get_position().height * fig.get_size_inches()[1])
+
+
+def bar_span_height_inches(fig, ax, *, bar_span=0.2):
+    y0, y1 = ax.get_ylim()
+    return axis_height_inches(fig, ax) * (2.0 * bar_span) / abs(float(y1) - float(y0))
+
+
+def row_gap_height_inches(fig, ax):
+    y0, y1 = ax.get_ylim()
+    return axis_height_inches(fig, ax) / abs(float(y1) - float(y0))
+
+
+def y_tick_gaps(ax):
+    ticks = list(ax.get_yticks())
+    return [float(b - a) for a, b in zip(ticks, ticks[1:], strict=False)]
+
+
+def header_bar_height_inches(fig, ax, *, bar_span=0.2):
+    y0, y1 = ax.get_ylim()
+    return axis_height_inches(fig, ax) * (2.0 * bar_span) / abs(float(y1) - float(y0))
+
+
 def test_factual_probabilistic_exports_header_and_contribution_semantics():
     spec = factual_probabilistic_zero_crossing()
     assert spec.header is not None
@@ -158,17 +182,144 @@ def test_factual_probabilistic_feature_order_preserved():
     assert list(spec.feature_order) == list(range(len(spec.body.bars)))
 
 
-def test_conjunction_multiline_labels_expand_rendered_height():
-    """Multiline conjunction labels expand rendered figure height for review legibility."""
-    spec = factual_probabilistic_conjunction_multiline()
+def test_conjunction_multiline_labels_use_compact_variable_rule_spacing():
+    """Multiline conjunction labels get enough, but not excessive, variable row space."""
+    multiline_spec = factual_probabilistic_conjunction_multiline()
+    flat_spec = factual_probabilistic_conjunction_multiline()
+    assert multiline_spec.body is not None
+    assert flat_spec.body is not None
 
-    figure = mpl_adapter.render(spec, show=False, return_fig=True)
+    for bar in flat_spec.body.bars:
+        bar.label = bar.label.replace("\n", " ")
+
+    multiline_figure = mpl_adapter.render(multiline_spec, show=False, return_fig=True)
+    flat_figure = mpl_adapter.render(flat_spec, show=False, return_fig=True)
 
     try:
-        height = float(figure.get_size_inches()[1])
-        assert height == pytest.approx(6.0)
+        multiline_height = float(multiline_figure.get_size_inches()[1])
+        flat_height = float(flat_figure.get_size_inches()[1])
+        multiline_header_height = multiline_figure.axes[0].get_position().height * multiline_height
+        flat_header_height = flat_figure.axes[0].get_position().height * flat_height
+        multiline_body_height = multiline_figure.axes[-1].get_position().height * multiline_height
+        flat_body_height = flat_figure.axes[-1].get_position().height * flat_height
+
+        assert multiline_height > flat_height
+        assert multiline_height < flat_height * 1.5
+        assert multiline_header_height <= flat_header_height * 1.05
+        assert multiline_body_height > flat_body_height
+        gaps = y_tick_gaps(multiline_figure.axes[-1])
+        assert max(gaps) > min(gaps)
+        assert max(gaps) <= min(gaps) * 1.25
     finally:
-        matplotlib.pyplot.close(figure.number)
+        matplotlib.pyplot.close(multiline_figure.number)
+        matplotlib.pyplot.close(flat_figure.number)
+
+
+def test_should_keep_single_prediction_header_height_when_rule_labels_are_multiline():
+    """Multiline regression rules expand label space without stretching the prediction bar."""
+    from calibrated_explanations.viz import build_regression_bars_spec
+
+    predict = {"predict": 3.6, "low": 3.2, "high": 4.1}
+    feature_weights = {"predict": [0.25, -0.1], "low": [0.2, -0.15], "high": [0.3, -0.05]}
+    flat_spec = build_regression_bars_spec(
+        title=None,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0, 1],
+        column_names=["r0", "r1"],
+        instance=[2.3, 0.5],
+        y_minmax=[-5.0, 100.0],
+        interval=True,
+    )
+    multiline_spec = build_regression_bars_spec(
+        title=None,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0, 1],
+        column_names=[
+            "r0 <= 3\nAND r2 > 5\nAND r4 = yes\nAND r6 < 9",
+            "r1 > 0\nAND r3 <= 2",
+        ],
+        instance=[2.3, 0.5],
+        y_minmax=[-5.0, 100.0],
+        interval=True,
+    )
+
+    flat_figure = mpl_adapter.render(flat_spec, show=False, return_fig=True)
+    multiline_figure = mpl_adapter.render(multiline_spec, show=False, return_fig=True)
+    try:
+        assert axis_height_inches(multiline_figure, multiline_figure.axes[0]) <= (
+            axis_height_inches(flat_figure, flat_figure.axes[0]) * 1.05
+        )
+        assert header_bar_height_inches(multiline_figure, multiline_figure.axes[0]) <= (
+            header_bar_height_inches(flat_figure, flat_figure.axes[0]) * 1.05
+        )
+        assert header_bar_height_inches(multiline_figure, multiline_figure.axes[0]) <= 0.25
+        gaps = y_tick_gaps(multiline_figure.axes[1])
+        flat_gaps = y_tick_gaps(flat_figure.axes[1])
+        assert gaps[0] > flat_gaps[0]
+        assert gaps[0] <= flat_gaps[0] * 2.0
+        assert bar_span_height_inches(multiline_figure, multiline_figure.axes[1]) <= (
+            bar_span_height_inches(flat_figure, flat_figure.axes[1]) * 1.05
+        )
+    finally:
+        matplotlib.pyplot.close(flat_figure.number)
+        matplotlib.pyplot.close(multiline_figure.number)
+
+
+def test_should_keep_alternative_rule_bar_height_when_rule_labels_are_multiline():
+    """Alternative rule labels get extra row space without making bars thicker."""
+    from calibrated_explanations.viz import build_alternative_regression_spec
+
+    predict = {"predict": 1.2, "low": 0.5, "high": 2.0}
+    feature_predict = {
+        "predict": [0.9, -0.2],
+        "low": [0.8, -0.4],
+        "high": [1.0, 0.1],
+    }
+    flat_spec = build_alternative_regression_spec(
+        title=None,
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=["r0", "r1"],
+        instance=[0.5, -1.2],
+        y_minmax=[-1.0, 2.5],
+        interval=True,
+    )
+    multiline_spec = build_alternative_regression_spec(
+        title=None,
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=[
+            "r0 <= 3\nAND r2 > 5\nAND r4 = yes\nAND r6 < 9",
+            "r1 > 0\nAND r3 <= 2",
+        ],
+        instance=[0.5, -1.2],
+        y_minmax=[-1.0, 2.5],
+        interval=True,
+    )
+
+    flat_figure = mpl_adapter.render(flat_spec, show=False, return_fig=True)
+    multiline_figure = mpl_adapter.render(multiline_spec, show=False, return_fig=True)
+    try:
+        assert float(multiline_figure.get_size_inches()[1]) > float(
+            flat_figure.get_size_inches()[1]
+        )
+        assert float(multiline_figure.get_size_inches()[1]) < (
+            float(flat_figure.get_size_inches()[1]) * 2.0
+        )
+        gaps = y_tick_gaps(multiline_figure.axes[0])
+        flat_gaps = y_tick_gaps(flat_figure.axes[0])
+        assert gaps[0] > flat_gaps[0]
+        assert gaps[0] <= flat_gaps[0] * 2.0
+        assert bar_span_height_inches(multiline_figure, multiline_figure.axes[0]) <= (
+            bar_span_height_inches(flat_figure, flat_figure.axes[0]) * 1.05
+        )
+    finally:
+        matplotlib.pyplot.close(flat_figure.number)
+        matplotlib.pyplot.close(multiline_figure.number)
 
 
 def test_alternative_probabilistic_both_below_05_single_segment_per_bar():

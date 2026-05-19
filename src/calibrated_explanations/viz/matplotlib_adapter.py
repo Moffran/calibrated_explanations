@@ -24,6 +24,11 @@ from ..utils.exceptions import ValidationError
 from .plotspec import BarHPanelSpec, GlobalPlotSpec, PlotSpec, TriangularPlotSpec
 from .serializers import global_plotspec_to_dict, triangular_plotspec_to_dict
 
+_HEADER_BAR_Y_SPAN = 0.2
+_HEADER_Y_LIMIT = 1.0
+_SINGLE_HEADER_HEIGHT = 0.8
+_EXTRA_RULE_LINE_UNITS = 0.45
+
 
 def _import_pyplot_with_retries() -> object:
     """Import `matplotlib.pyplot` robustly, preloading common submodules on failure.
@@ -206,6 +211,103 @@ def _finish_non_panel_figure(
         logging.getLogger(__name__).debug("Non-panel tight_layout skipped", exc_info=True)
     plt.close(fig)
     return wrapper if export_drawn_primitives else None
+
+
+def _body_has_multiline_labels(body_spec: Any) -> bool:
+    """Return whether the body contains any multiline labels."""
+    if body_spec is None or getattr(body_spec, "bars", None) is None:
+        return False
+    for bar in body_spec.bars:
+        label = getattr(bar, "label", None)
+        if label is None:
+            continue
+        with suppress(Exception):
+            if "\n" in str(label):
+                return True
+    return False
+
+
+def _count_body_extra_lines(body_spec: Any) -> int:
+    """Return the number of extra label lines contributed by multiline bars."""
+    if body_spec is None or getattr(body_spec, "bars", None) is None:
+        return 0
+    extra_lines = 0
+    for bar in body_spec.bars:
+        label = getattr(bar, "label", None)
+        if label is None:
+            continue
+        with suppress(Exception):
+            extra_lines += str(label).count("\n")
+    return extra_lines
+
+
+def _body_y_layout(body_spec: Any) -> tuple[np.ndarray, float, float, float]:
+    """Return compact line-aware y-centres, bounds, and row units."""
+    bars = list(getattr(body_spec, "bars", []) or [])
+    if not bars:
+        return np.asarray([], dtype=float), -0.5, 0.5, 1.0
+
+    units: list[float] = []
+    for bar in bars:
+        label = getattr(bar, "label", None)
+        extra_lines = 0
+        with suppress(Exception):
+            extra_lines = str(label).count("\n")
+        units.append(1.0 + extra_lines * _EXTRA_RULE_LINE_UNITS)
+    centres: list[float] = []
+    cursor = 0.0
+    for unit in units:
+        centres.append(cursor + unit / 2.0 - 0.5)
+        cursor += unit
+    total_units = max(cursor, 1.0)
+    return np.asarray(centres, dtype=float), -0.5, total_units - 0.5, total_units
+
+
+def _set_compact_y_tick_labels(ax: Any, labels: Sequence[Any]) -> None:
+    """Set y tick labels with compact multiline spacing."""
+    try:
+        ax.set_yticklabels(labels, linespacing=0.92)
+    except TypeError:
+        ax.set_yticklabels(labels)
+
+
+def _estimate_body_panel_height(body_spec: Any) -> float:
+    """Estimate the body panel height in inches.
+
+    Multiline conjunction labels should expand the body panel only, not the
+    prediction probability bands above it.
+    """
+    num_bars = (
+        len(body_spec.bars)
+        if body_spec is not None and getattr(body_spec, "bars", None) is not None
+        else 0
+    )
+    _, _, _, row_units = _body_y_layout(body_spec)
+    return max(2.0, float((max(num_bars, row_units)) * 0.5 + 0.5))
+
+
+def _resolve_panel_layout_policy(
+    spec: PlotSpec,
+    *,
+    panels: Sequence[tuple[str, Any]],
+    body_spec: BarHPanelSpec | None,
+) -> tuple[bool, dict[str, Any], bool]:
+    """Choose the panel layout strategy for the current PlotSpec render.
+
+    Returns
+    -------
+    tuple[bool, dict[str, Any], bool]
+        `use_tight_layout`, `savefig_kwargs`, `apply_alternative_margins`
+    """
+    is_single_panel_alternative = (
+        len(panels) == 1 and body_spec is not None and getattr(body_spec, "is_alternative", False)
+    )
+    has_multiline_labels = _body_has_multiline_labels(body_spec)
+
+    if is_single_panel_alternative or has_multiline_labels:
+        return True, {}, is_single_panel_alternative
+
+    return False, {"bbox_inches": "tight"}, False
 
 
 def _render_triangular_spec(
@@ -795,21 +897,22 @@ def render(
     plt = _import_pyplot_with_retries()  # lazy import with preloads and retry
 
     config = _setup_style(None)
-    # Figure sizing: use provided or fall back to width from config and body size heuristic
+    # Figure sizing: use provided or fall back to panel-aware body size heuristics.
     width = float(config["figure"].get("width", 10))
     if spec.figure_size and spec.figure_size[1]:
         height = float(spec.figure_size[1])
     else:
-        num_bars = 0
-        extra_lines = 0
-        if spec.body is not None and getattr(spec.body, "bars", None) is not None:
-            num_bars = len(spec.body.bars)
-            for _bar in spec.body.bars:
-                _lbl = getattr(_bar, "label", None)
-                if _lbl:
-                    with suppress(Exception):  # adr002_allow - bad label must not crash sizing
-                        extra_lines += str(_lbl).count("\n")
-        height = float((num_bars + extra_lines) * 0.5 + 2.0)
+        body_height = _estimate_body_panel_height(spec.body)
+        if (
+            spec.header is not None
+            and getattr(spec.header, "dual", False)
+            and spec.body is not None
+        ):
+            height = 0.6 + 0.6 + 0.6 + body_height
+        elif spec.header is not None and spec.body is not None:
+            height = body_height + _SINGLE_HEADER_HEIGHT
+        else:
+            height = body_height
         if height <= 0:
             height = 2.0
     fig = plt.figure(figsize=(width, height))
@@ -831,9 +934,7 @@ def render(
     # Create axes using a GridSpec so the figure title can reserve space via tight_layout.
     axes = []
     if len(panels) == 3 and panels[0][0] == "header_positive" and panels[1][0] == "header_negative":
-        num_bars = (
-            len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
-        )
+        body_height = _estimate_body_panel_height(body_spec)
         # Use a 4-row layout: P(y=1) and P(y=0) at identical height (ratio 1),
         # followed by an invisible spacer row (ratio 0.8) that provides room for
         # the P(y=0) x-axis tick labels and xlabel below its axes bbox.
@@ -841,7 +942,7 @@ def render(
         gs = fig.add_gridspec(
             nrows=4,
             ncols=1,
-            height_ratios=[1, 1, 1.0, num_bars + 2],
+            height_ratios=[0.6, 0.6, 0.6, body_height],
             hspace=0.0,
         )
         axes.append(fig.add_subplot(gs[0]))  # panels[0]: header_positive
@@ -851,10 +952,12 @@ def render(
             _spacer_ax.set_axis_off()
         axes.append(fig.add_subplot(gs[3]))  # panels[2]: body
     elif len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0] == "body":
-        num_bars = (
-            len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        body_height = _estimate_body_panel_height(body_spec)
+        gs = fig.add_gridspec(
+            nrows=2,
+            ncols=1,
+            height_ratios=[_SINGLE_HEADER_HEIGHT, body_height],
         )
-        gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1, num_bars + 2])
         axes.append(fig.add_subplot(gs[0]))
         axes.append(fig.add_subplot(gs[1]))
     elif (
@@ -957,7 +1060,7 @@ def render(
             "b" if band == "negative" else "r",
         )
         overlay_color = getattr(header, "uncertainty_color", None) or base_color
-        y_coords = np.linspace(-0.2, 0.2, 2)
+        y_coords = np.linspace(-_HEADER_BAR_Y_SPAN, _HEADER_BAR_Y_SPAN, 2)
 
         xlim = header.xlim if getattr(header, "xlim", None) else (0.0, 1.0)
         try:
@@ -1013,6 +1116,7 @@ def render(
             overlay_range = (low, high)
 
         caption = _header_caption(header, band)
+        ax.set_ylim([-_HEADER_Y_LIMIT, _HEADER_Y_LIMIT])
         ax.set_yticks([0])
         ax.set_yticklabels([caption])
 
@@ -1051,7 +1155,7 @@ def render(
         )
         color = config["colors"].get("regression", "r")
         overlay_color = getattr(header, "uncertainty_color", None) or color
-        y_coords = np.linspace(-0.2, 0.2, 2)
+        y_coords = np.linspace(-_HEADER_BAR_Y_SPAN, _HEADER_BAR_Y_SPAN, 2)
         render_intervals = bool(getattr(header, "show_intervals", False)) and not math.isclose(
             low,
             high,
@@ -1079,6 +1183,7 @@ def render(
                 logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
         if header.xlabel:
             ax.set_xlabel(header.xlabel)
+        ax.set_ylim([-_HEADER_Y_LIMIT, _HEADER_Y_LIMIT])
         ax.set_yticks(range(1))
         if header.ylabel:
             ax.set_yticklabels([header.ylabel])
@@ -1089,8 +1194,7 @@ def render(
             n = len(bars)
             if n == 0:
                 return
-            y_min = -0.5
-            y_max = (n - 1) + 0.5
+            y_centres, y_min, y_max, _ = _body_y_layout(body)
             y_base = np.array([y_min, y_max])
             bar_span = float(getattr(body, "bar_span", 0.2))
 
@@ -1197,7 +1301,7 @@ def render(
                         )
 
             for idx, item in enumerate(bars):
-                y_j = np.array([idx - bar_span, idx + bar_span])
+                y_j = np.array([y_centres[idx] - bar_span, y_centres[idx] + bar_span])
                 segments = getattr(item, "segments", None)
                 if segments:
                     for seg in segments:
@@ -1295,8 +1399,8 @@ def render(
                             "Failed to draw alternative marker line: %s", exc
                         )
 
-            ax.set_yticks(range(n))
-            ax.set_yticklabels([bar.label for bar in bars])
+            ax.set_yticks(y_centres)
+            _set_compact_y_tick_labels(ax, [bar.label for bar in bars])
             ax.set_ylim([y_min, y_max])
 
             instance_vals = [
@@ -1304,8 +1408,8 @@ def render(
             ]
             if any(val != "" for val in instance_vals):
                 ax_twin = ax.twinx()
-                ax_twin.set_yticks(range(n))
-                ax_twin.set_yticklabels(instance_vals)
+                ax_twin.set_yticks(y_centres)
+                _set_compact_y_tick_labels(ax_twin, instance_vals)
                 ax_twin.set_ylim([y_min, y_max])
                 ax_twin.set_ylabel("Instance values")
 
@@ -1343,7 +1447,7 @@ def render(
             return
 
         n = len(body.bars)
-        xs = np.linspace(0, n - 1, n)
+        xs, y_min, y_max, _ = _body_y_layout(body)
         alpha_val = float(config["colors"]["alpha"])
         is_dual_header = bool(spec.header is not None and getattr(spec.header, "dual", False))
         if is_dual_header:
@@ -1383,7 +1487,7 @@ def render(
                     base_color = getattr(spec.header, "uncertainty_color", None) or config[
                         "colors"
                     ].get("uncertainty", "k")
-                    y_span = [-0.5, (n - 1) + 0.5] if n > 0 else [-0.5, 0.5]
+                    y_span = [y_min, y_max] if n > 0 else [-0.5, 0.5]
                     ax.fill_betweenx(y_span, gwl, gwh, color=base_color, alpha=alpha_val)
                     if export_drawn_primitives:
                         primitives.setdefault("base_interval", {})["body"] = {
@@ -1410,12 +1514,10 @@ def render(
                 header_pred = 0.0
 
             if n > 0:
-                y_positions = np.linspace(0, n - 1, n)
+                y_positions = xs
                 ax.fill_betweenx(y_positions, 0.0, 0.0, color="k")
-                ax.fill_betweenx(np.linspace(-0.5, y_positions[0], 2), 0.0, 0.0, color="k")
-                ax.fill_betweenx(
-                    np.linspace(y_positions[-1], y_positions[-1] + 0.5, 2), 0.0, 0.0, color="k"
-                )
+                ax.fill_betweenx(np.linspace(y_min, y_positions[0], 2), 0.0, 0.0, color="k")
+                ax.fill_betweenx(np.linspace(y_positions[-1], y_max, 2), 0.0, 0.0, color="k")
             else:
                 ax.fill_betweenx(np.linspace(-0.5, 0.5, 2), 0.0, 0.0, color="k")
 
@@ -1565,16 +1667,16 @@ def render(
                     "Failed to set xlim for probabilistic body: %s", exc
                 )
 
-            ax.set_yticks(range(n))
+            ax.set_yticks(xs)
             labels = [b.label for b in body.bars]
-            ax.set_yticklabels(labels)
+            _set_compact_y_tick_labels(ax, labels)
             instance_vals = [
                 str(b.instance_value) if b.instance_value is not None else "" for b in body.bars
             ]
             if any(val != "" for val in instance_vals):
                 ax_twin = ax.twinx()
-                ax_twin.set_yticks(range(n))
-                ax_twin.set_yticklabels(instance_vals)
+                ax_twin.set_yticks(xs)
+                _set_compact_y_tick_labels(ax_twin, instance_vals)
                 try:
                     ylim = ax.get_ylim()
                     y0f, y1f = float(ylim[0]), float(ylim[1])
@@ -1596,10 +1698,10 @@ def render(
                 ax.set_ylabel(body.ylabel)
         else:
             if n > 0:
-                base_y = np.linspace(0, n - 1, n)
+                base_y = xs
                 ax.fill_betweenx(base_y, 0.0, 0.0, color="k")
-                ax.fill_betweenx(np.linspace(-0.5, base_y[0], 2), 0.0, 0.0, color="k")
-                ax.fill_betweenx(np.linspace(base_y[-1], base_y[-1] + 0.5, 2), 0.0, 0.0, color="k")
+                ax.fill_betweenx(np.linspace(y_min, base_y[0], 2), 0.0, 0.0, color="k")
+                ax.fill_betweenx(np.linspace(base_y[-1], y_max, 2), 0.0, 0.0, color="k")
             else:
                 ax.fill_betweenx(np.linspace(-0.5, 0.5, 2), 0.0, 0.0, color="k")
 
@@ -1706,14 +1808,14 @@ def render(
         if not is_dual_header:
             try:
                 upper = (xs[-1] + 0.5) if n > 0 else 0.5
-                ax.set_ylim([-0.5, upper])
+                ax.set_ylim([y_min, max(y_max, upper)])
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
                 exc = sys.exc_info()[1]
                 logging.getLogger(__name__).debug("Failed to set regression ylim: %s", exc)
 
-        ax.set_yticks(range(n))
+        ax.set_yticks(xs)
 
         def _safe_str(o):
             try:
@@ -1723,14 +1825,14 @@ def render(
                 return ""
 
         labels = [_safe_str(b.label) for b in body.bars]
-        ax.set_yticklabels(labels)
+        _set_compact_y_tick_labels(ax, labels)
         instance_vals = [
             str(b.instance_value) if b.instance_value is not None else "" for b in body.bars
         ]
         if (not is_dual_header) or any(v != "" for v in instance_vals):
             ax_twin = ax.twinx()
-            ax_twin.set_yticks(range(n))
-            ax_twin.set_yticklabels(instance_vals)
+            ax_twin.set_yticks(xs)
+            _set_compact_y_tick_labels(ax_twin, instance_vals)
             try:
                 ylim = ax.get_ylim()
                 y0f, y1f = float(ylim[0]), float(ylim[1])
@@ -1769,23 +1871,25 @@ def render(
             ax.spines["left"].set_visible(False)
             ax.spines["bottom"].set_visible(False)
 
-    # Reserve room for the title only when suptitle is actually set.
-    is_single_panel_alternative = (
-        len(panels) == 1 and body_spec is not None and getattr(body_spec, "is_alternative", False)
+    use_tight_layout, savefig_kwargs, apply_alternative_margins = _resolve_panel_layout_policy(
+        spec,
+        panels=panels,
+        body_spec=body_spec,
     )
-    try:
-        tight_rect = (0, 0, 1, 0.94) if spec.title else (0, 0, 1, 1)
-        fig.tight_layout(rect=tight_rect)
-        if is_single_panel_alternative:
-            # Rotated y-axis labels ("Alternative rules" left, "Instance values" right)
-            # can be clipped at the canvas boundary. Ensure adequate left/right margins.
-            fig.subplots_adjust(left=0.22, right=0.87, bottom=0.15)
-    except:  # noqa: E722
-        if not isinstance(sys.exc_info()[1], Exception):
-            raise
+    if use_tight_layout:
+        try:
+            tight_rect = (0, 0, 1, 0.94) if spec.title else (0, 0, 1, 1)
+            fig.tight_layout(rect=tight_rect)
+            if apply_alternative_margins:
+                # Rotated y-axis labels ("Alternative rules" left, "Instance values" right)
+                # can be clipped at the canvas boundary. Ensure adequate left/right margins.
+                fig.subplots_adjust(left=0.22, right=0.87, bottom=0.15, top=0.85)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
 
     if save_path:
-        fig.savefig(save_path, bbox_inches="tight")
+        fig.savefig(save_path, **savefig_kwargs)
     if show:
         plt.show()
     # If caller requested primitives, return them (close fig unless they also asked for the fig)

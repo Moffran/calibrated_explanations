@@ -2539,7 +2539,7 @@ class CalibratedExplainer:
         # Lazy import plotting function (deferred from module level)
         from ..plotting import plot_global
 
-        plot_global(self, x, y=y, threshold=threshold, **kwargs)
+        return plot_global(self, x, y=y, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
         """Generate a calibrated confusion matrix.

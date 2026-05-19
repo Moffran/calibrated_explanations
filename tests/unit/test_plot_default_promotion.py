@@ -5,8 +5,14 @@ import warnings
 from types import SimpleNamespace
 from typing import Any
 
+import numpy as np
 import pytest
+import calibrated_explanations.plugins as ce_plugins
+from sklearn.linear_model import LogisticRegression
 
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.plugins.plots import PlotRenderResult
 from calibrated_explanations import plotting
 
 
@@ -39,6 +45,51 @@ def explanation_without_explainer() -> SimpleNamespace:
         is_thresholded=lambda: False,
         y_threshold=None,
     )
+
+
+def make_public_plot_wrapper() -> WrapCalibratedExplainer:
+    x_proper = np.array([[0.0], [1.0], [2.0], [3.0]], dtype=float)
+    y_proper = np.array([0, 0, 1, 1], dtype=int)
+    x_cal = np.array([[0.5], [1.5], [2.5], [3.5]], dtype=float)
+    y_cal = np.array([0, 0, 1, 1], dtype=int)
+
+    wrapper = WrapCalibratedExplainer(LogisticRegression(random_state=0, solver="liblinear"))
+    wrapper.fit(x_proper, y_proper)
+    wrapper.calibrate(x_cal, y_cal)
+    return wrapper
+
+
+def install_public_global_plot_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+    explainer: CalibratedExplainer,
+    *,
+    style: str = "plotly.global.instance_explorer",
+) -> list[tuple[str | None, str | None]]:
+    class PlotPlugin:
+        plugin_meta = {"style": style}
+
+        def build(self, context: object) -> object:
+            return {"plot_spec": context.style, "context": context}
+
+        def render(self, artifact: object, *, context: object) -> PlotRenderResult:
+            return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
+
+    resolve_calls: list[tuple[str | None, str | None]] = []
+
+    monkeypatch.setattr(ce_plugins, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(
+        explainer.plugin_manager,
+        "resolve_plot_plugin",
+        lambda *, explicit_style=None, renderer_override=None: resolve_calls.append(
+            (explicit_style, renderer_override)
+        )
+        or (
+            PlotPlugin(),
+            explicit_style or "plot_spec.default",
+            (explicit_style or "plot_spec.default", "legacy"),
+        ),
+    )
+    return resolve_calls
 
 
 def common_chain_kwargs(plot_func_name: str) -> dict[str, object]:
@@ -254,6 +305,46 @@ def test_should_use_plotspec_default_for_triangular_when_use_legacy_is_omitted(
 
     assert render_calls == [spec]
     assert not legacy_calls
+
+
+def test_should_mark_triangular_plotspec_as_regression_when_plain_regression(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    spec = object()
+
+    class PlainRegressionExplanation:
+        def get_mode(self) -> str:
+            return "regression"
+
+        def is_thresholded(self) -> bool:
+            return False
+
+    monkeypatch.setattr(plotting, "plt", object())
+
+    import calibrated_explanations.viz.builders as builders
+    import calibrated_explanations.viz.matplotlib_adapter as matplotlib_adapter
+
+    def fake_builder(**kwargs):
+        captured.update(kwargs)
+        return spec
+
+    monkeypatch.setattr(builders, "build_triangular_plotspec", fake_builder)
+    monkeypatch.setattr(matplotlib_adapter, "render", lambda plot_spec, **kwargs: None)
+
+    plotting.plot_triangular(
+        explanation=PlainRegressionExplanation(),
+        proba=[185000.0],
+        uncertainty=[26000.0],
+        rule_proba=[210000.0],
+        rule_uncertainty=[30000.0],
+        num_to_show=1,
+        title="triangular_regression",
+        path=None,
+        show=False,
+    )
+
+    assert captured["is_probabilistic"] is False
 
 
 def test_should_preserve_legacy_opt_out_for_triangular(
@@ -569,3 +660,82 @@ def test_should_fallback_visibly_when_global_plotspec_rendering_fails(
 
     assert legacy_calls
     assert "Falling back to legacy plot" in caplog.text
+
+
+def test_should_return_plugin_result_from_calibrated_explainer_plot_when_explicit_global_style_provided(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrapper = make_public_plot_wrapper()
+    explainer = wrapper.explainer
+    resolve_calls = install_public_global_plot_plugin(monkeypatch, explainer)
+
+    result = explainer.plot(
+        x=[[1.0], [2.0]],
+        style="plotly.global.instance_explorer",
+        show=False,
+    )
+
+    assert isinstance(result, PlotRenderResult)
+    assert result.artifact is not None
+    assert result.artifact["plot_spec"] == "plotly.global.instance_explorer"
+    assert resolve_calls == [("plotly.global.instance_explorer", None)]
+
+
+def test_should_return_plugin_result_from_wrap_plot_with_targets_when_explicit_global_style_provided(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrapper = make_public_plot_wrapper()
+    resolve_calls = install_public_global_plot_plugin(monkeypatch, wrapper.explainer)
+
+    result = wrapper.plot(
+        x=[[1.0], [2.0]],
+        y=[0, 1],
+        style="plotly.global.instance_explorer",
+        show=False,
+    )
+
+    assert isinstance(result, PlotRenderResult)
+    assert result.artifact is not None
+    assert result.artifact["plot_spec"] == "plotly.global.instance_explorer"
+    assert resolve_calls == [("plotly.global.instance_explorer", None)]
+
+
+def test_should_preserve_default_global_plot_behavior_from_wrap_plot_when_style_is_omitted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrapper = make_public_plot_wrapper()
+    resolve_calls = install_public_global_plot_plugin(monkeypatch, wrapper.explainer)
+
+    result = wrapper.plot(x=[[1.0], [2.0]], show=False)
+
+    assert isinstance(result, PlotRenderResult)
+    assert result.artifact is not None
+    assert result.artifact["plot_spec"] == "plot_spec.default"
+    assert resolve_calls == [("plot_spec.default", None)]
+
+
+def test_should_force_legacy_global_plot_from_wrap_plot_when_use_legacy_true(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrapper = make_public_plot_wrapper()
+    legacy_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+    resolve_calls: list[tuple[str | None, str | None]] = []
+    monkeypatch.setattr(ce_plugins, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(
+        wrapper.explainer.plugin_manager,
+        "resolve_plot_plugin",
+        lambda *, explicit_style=None, renderer_override=None: resolve_calls.append(
+            (explicit_style, renderer_override)
+        ),
+    )
+    monkeypatch.setattr(
+        plotting.legacy,
+        "plot_global",
+        lambda *args, **kwargs: legacy_calls.append((args, kwargs)),
+    )
+
+    result = wrapper.plot(x=[[1.0], [2.0]], show=False, use_legacy=True)
+
+    assert result is None
+    assert legacy_calls
+    assert resolve_calls == []

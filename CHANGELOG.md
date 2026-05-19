@@ -7,6 +7,8 @@
 
 ### Packaging / CI
 
+- **Global plot public API plugin routing:** Restored return-value propagation through `CalibratedExplainer.plot(...)` and `WrapCalibratedExplainer.plot(...)` so explicit non-legacy global styles now return the plugin renderer result through the normal public API, while omitted styles and explicit `use_legacy=True` continue to follow the existing default or forced-legacy behavior.
+
 - **PlotSpec default promotion (v0.11.3 Task 6):** Promoted PlotSpec to the
   default user-facing plotting path for factual, alternative, triangular, global,
   and batch explanation plotting entrypoints. Legacy plotting remains available

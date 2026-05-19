@@ -193,7 +193,7 @@ def test_matplotlib_adapter_auto_height_tracks_bars():
     fig = matplotlib_adapter.render(spec, show=False, save_path=None, return_fig=True)
     try:
         height = fig.get_size_inches()[1]
-        expected = 0.5 * max(1, nfeat) + 2.0
+        expected = (0.5 * max(1, nfeat) + 0.5) + 0.8
         assert height == pytest.approx(expected, rel=0.05)
     finally:
         from matplotlib import pyplot as plt

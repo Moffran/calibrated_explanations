@@ -36,6 +36,7 @@ class BadLabel:
 class FakeAxes:
     def __init__(self):
         self.calls = []
+        self.twin_axes = []
         self.ylim_value = (0.0, 0.0)
         self.spines = {key: FakeSpine() for key in ("top", "right", "bottom", "left")}
 
@@ -85,6 +86,7 @@ class FakeAxes:
 
     def twinx(self):
         twin = FakeAxes()
+        self.twin_axes.append(twin)
         self.calls.append(("twinx", (), {}))
         return twin
 
@@ -248,8 +250,48 @@ def test_auto_height_falls_back_when_label_conversion_fails():
     fig = ma.render(spec, return_fig=True)
 
     assert isinstance(fig, FakeFigure)
-    # Height should stay finite even after the label exception path executes
-    assert fig.figsize[1] >= 3.0
+    # Height should stay finite and compact even after the label exception path executes.
+    assert fig.figsize[1] == pytest.approx(2.8)
+
+
+def test_compact_row_layout_does_not_depend_on_sibling_helper(monkeypatch):
+    header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=False)
+    body = BarHPanelSpec(
+        bars=[
+            BarItem(label="a\nb\nc", value=0.1),
+            BarItem(label="ok", value=-0.2),
+        ],
+    )
+    spec = PlotSpec(title="height", header=header, body=body)
+
+    monkeypatch.delattr(ma, "_rule_label_row_units", raising=False)
+
+    fig = ma.render(spec, return_fig=True)
+
+    assert isinstance(fig, FakeFigure)
+    assert fig.figsize[1] == pytest.approx(2.8)
+
+
+def test_instance_value_labels_use_same_multiline_spacing_as_rules():
+    header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=False)
+    body = BarHPanelSpec(
+        bars=[
+            BarItem(label="a\nb\nc", value=0.1, instance_value="1\n2\n3"),
+            BarItem(label="ok", value=-0.2, instance_value="4"),
+        ],
+    )
+    spec = PlotSpec(title="spacing", header=header, body=body)
+
+    fig = ma.render(spec, return_fig=True)
+
+    assert isinstance(fig, FakeFigure)
+    body_ax = fig.axes[-1]
+    left_label_calls = [call for call in body_ax.calls if call[0] == "set_yticklabels"]
+    assert left_label_calls[-1][2]["linespacing"] == pytest.approx(0.92)
+
+    twin_ax = body_ax.twin_axes[0]
+    right_label_calls = [call for call in twin_ax.calls if call[0] == "set_yticklabels"]
+    assert right_label_calls[-1][2]["linespacing"] == pytest.approx(0.92)
 
 
 def test_render_normalizes_non_panel_plotspecs():
@@ -524,6 +566,83 @@ def test_render_regression_body_handles_intervals(tmp_path):
     # New adapter draws regression overlays directly in value space; just
     # ensure overlays are present and well-ordered, not necessarily crossing 0.
     assert cross_overlays and all(o.get("x0") <= o.get("x1") for o in cross_overlays)
+
+
+def test_should_skip_tight_layout_when_rendering_standard_panel_plot_to_file():
+    header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=True)
+    body = BarHPanelSpec(
+        bars=[
+            BarItem(
+                label="f0", value=0.1, interval_low=-0.1, interval_high=0.2, instance_value=1.0
+            ),
+            BarItem(
+                label="f1", value=-0.2, interval_low=-0.3, interval_high=0.1, instance_value=2.0
+            ),
+        ],
+        xlabel="Contribution",
+        ylabel="Features",
+    )
+    spec = PlotSpec(title="standard-panel", header=header, body=body)
+
+    ma.render(spec, save_path="panel.png")
+
+    figure = CREATED_FIGURES[-1]
+    save_calls = [call for call in figure.calls if call[0] == "savefig"]
+
+    assert not any(call[0] == "tight_layout" for call in figure.calls)
+    assert save_calls
+    assert save_calls[-1][2].get("bbox_inches") == "tight"
+
+
+def test_should_use_tight_layout_when_rendering_multiline_panel_plot_to_file():
+    header = IntervalHeaderSpec(pred=0.6, low=0.3, high=0.9, dual=True)
+    body = BarHPanelSpec(
+        bars=[
+            BarItem(
+                label="first line\nsecond line", value=0.2, interval_low=0.1, interval_high=0.3
+            ),
+            BarItem(label="plain", value=-0.1, interval_low=-0.2, interval_high=0.0),
+        ],
+        xlabel="Contribution",
+        ylabel="Features",
+    )
+    spec = PlotSpec(title="multiline-panel", header=header, body=body)
+
+    ma.render(spec, save_path="multiline.png")
+
+    figure = CREATED_FIGURES[-1]
+    save_calls = [call for call in figure.calls if call[0] == "savefig"]
+
+    assert any(call[0] == "tight_layout" for call in figure.calls)
+    assert save_calls
+    assert "bbox_inches" not in save_calls[-1][2]
+
+
+def test_should_use_alternative_margins_when_rendering_single_panel_alternative_plot_to_file():
+    body = BarHPanelSpec(
+        bars=[
+            BarItem(
+                label="rule 1", value=0.4, interval_low=0.3, interval_high=0.6, instance_value="A"
+            ),
+            BarItem(
+                label="rule 2", value=0.2, interval_low=0.1, interval_high=0.4, instance_value="B"
+            ),
+        ],
+        xlabel="Probability",
+        ylabel="Alternative rules",
+        is_alternative=True,
+    )
+    spec = PlotSpec(title="alternative-panel", body=body)
+
+    ma.render(spec, save_path="alternative.png")
+
+    figure = CREATED_FIGURES[-1]
+    save_calls = [call for call in figure.calls if call[0] == "savefig"]
+
+    assert any(call[0] == "tight_layout" for call in figure.calls)
+    assert any(call[0] == "subplots_adjust" for call in figure.calls)
+    assert save_calls
+    assert "bbox_inches" not in save_calls[-1][2]
 
 
 def test_regression_body_respects_item_solid_flags_and_extent_padding():

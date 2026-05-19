@@ -851,7 +851,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1187,
+      "line": 1194,
       "symbol": "__plot_proba_triangle",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -860,7 +860,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1297,
+      "line": 1304,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -869,7 +869,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1861,
+      "line": 1866,
       "symbol": "__require_matplotlib",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -878,7 +878,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 1931,
+      "line": 1936,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"
@@ -887,7 +887,7 @@
       "allowed_reason": "approved_transitional_shim_remove_by_v0.11.3",
       "file": "calibrated_explanations/plotting.py",
       "is_allowed": true,
-      "line": 2194,
+      "line": 2199,
       "symbol": "__setup_plot_style",
       "violation_kind": "non_legacy_transitional_shim",
       "workstream": "shim_confinement"

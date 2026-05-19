@@ -14,6 +14,8 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
@@ -34,6 +36,95 @@ from calibrated_explanations.viz import (
     build_global_plotspec,
 )
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
+
+
+@dataclass
+class _RenderResult:
+    """Timing and status for one render invocation."""
+
+    duration_seconds: float | None
+    error: Exception | None = None
+
+    @property
+    def succeeded(self) -> bool:
+        return self.error is None
+
+
+def _time_render(render_fn, out_dir: Path) -> _RenderResult:
+    """Execute one render function and capture elapsed wall-clock time."""
+
+    start = time.perf_counter()
+    try:
+        render_fn(out_dir)
+    except Exception as exc:  # pragma: no cover - script-level reporting path
+        return _RenderResult(duration_seconds=None, error=exc)
+    return _RenderResult(duration_seconds=time.perf_counter() - start)
+
+
+def _format_duration(duration_seconds: float | None) -> str:
+    """Format a duration in milliseconds for console output."""
+
+    if duration_seconds is None:
+        return "failed"
+    return f"{duration_seconds * 1000:.1f} ms"
+
+
+def _print_timing_summary(results: list[tuple[str, _RenderResult, _RenderResult]]) -> None:
+    """Print a short timing comparison summary to the terminal."""
+
+    if not results:
+        return
+
+    print("\nTiming summary:")
+
+    legacy_total = 0.0
+    plotspec_total = 0.0
+    comparable_count = 0
+
+    for family, legacy_result, plotspec_result in results:
+        legacy_str = _format_duration(legacy_result.duration_seconds)
+        plotspec_str = _format_duration(plotspec_result.duration_seconds)
+
+        comparison = "n/a"
+        if legacy_result.succeeded and plotspec_result.succeeded:
+            legacy_total += legacy_result.duration_seconds or 0.0
+            plotspec_total += plotspec_result.duration_seconds or 0.0
+            comparable_count += 1
+
+            delta = (plotspec_result.duration_seconds or 0.0) - (legacy_result.duration_seconds or 0.0)
+            if abs(delta) < 1e-9:
+                comparison = "same"
+            elif delta < 0:
+                comparison = f"PlotSpec faster by {abs(delta) * 1000:.1f} ms"
+            else:
+                comparison = f"Legacy faster by {delta * 1000:.1f} ms"
+        elif legacy_result.error is not None:
+            comparison = f"legacy failed: {legacy_result.error}"
+        elif plotspec_result.error is not None:
+            comparison = f"plotspec failed: {plotspec_result.error}"
+
+        print(
+            f"  {family:<25} legacy={legacy_str:<12} plotspec={plotspec_str:<12} {comparison}"
+        )
+
+    if comparable_count == 0:
+        print("\nOverall: no successful legacy/PlotSpec pairs to compare.")
+        return
+
+    overall_delta = plotspec_total - legacy_total
+    if abs(overall_delta) < 1e-9:
+        overall_text = "overall totals matched"
+    elif overall_delta < 0:
+        overall_text = f"PlotSpec faster overall by {abs(overall_delta) * 1000:.1f} ms"
+    else:
+        overall_text = f"Legacy faster overall by {overall_delta * 1000:.1f} ms"
+
+    print(
+        "\nOverall: "
+        f"legacy={legacy_total * 1000:.1f} ms, "
+        f"plotspec={plotspec_total * 1000:.1f} ms across {comparable_count} comparable families; "
+        f"{overall_text}."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +371,44 @@ def render_triangular_plotspec(out_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Triangular (plain regression / ensured)
+# ---------------------------------------------------------------------------
+
+def _triangular_regression_inputs():
+    predict = np.array([185000.0])
+    uncertainty = np.array([26000.0])
+    rule_predict = np.array([210000.0, 168000.0, 192000.0])
+    rule_uncertainty = np.array([30000.0, 32000.0, 26000.0])
+    return predict, uncertainty, rule_predict, rule_uncertainty
+
+
+def render_triangular_regression_legacy(out_dir: Path) -> None:
+    from calibrated_explanations.legacy import plotting as legacy
+
+    predict, uncertainty, rule_predict, rule_uncertainty = _triangular_regression_inputs()
+    exp = _MinimalExplanation(mode="regression", y_minmax=(100000.0, 500000.0))
+    legacy.plot_triangular(
+        exp, predict, uncertainty, rule_predict, rule_uncertainty,
+        3, "triangular_regression_legacy",
+        str(out_dir) + "/", False, save_ext=[".png"],
+    )
+
+
+def render_triangular_regression_plotspec(out_dir: Path) -> None:
+    predict, uncertainty, rule_predict, rule_uncertainty = _triangular_regression_inputs()
+    spec = build_triangular_plotspec(
+        title=None,
+        proba=predict,
+        uncertainty=uncertainty,
+        rule_proba=rule_predict,
+        rule_uncertainty=rule_uncertainty,
+        num_to_show=3,
+        is_probabilistic=False,
+    )
+    mpl_adapter.render(spec, show=False, save_path=str(out_dir / "triangular_regression_plotspec.png"))
+
+
+# ---------------------------------------------------------------------------
 # Shared legacy plt initializer
 # ---------------------------------------------------------------------------
 
@@ -505,6 +634,7 @@ FAMILIES = [
     ("alternative_probabilistic", render_alternative_probabilistic_legacy, render_alternative_probabilistic_plotspec),
     ("alternative_regression", render_alternative_regression_legacy, render_alternative_regression_plotspec),
     ("triangular", render_triangular_legacy, render_triangular_plotspec),
+    ("triangular_regression", render_triangular_regression_legacy, render_triangular_regression_plotspec),
     ("global", render_global_legacy, render_global_plotspec),
     ("global_regression", render_global_legacy_regression, render_global_plotspec_regression),
     ("conjunction", render_conjunction_legacy, render_conjunction_plotspec),
@@ -530,22 +660,26 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     targets = [f for f in FAMILIES if args.family is None or f[0] == args.family]
+    timing_results: list[tuple[str, _RenderResult, _RenderResult]] = []
 
     for name, render_legacy, render_plotspec in targets:
         print(f"  {name}...")
-        try:
-            render_legacy(out_dir)
-        except Exception as exc:
-            print(f"    [warn] legacy render failed: {exc}")
-        try:
-            render_plotspec(out_dir)
-        except Exception as exc:
-            print(f"    [warn] plotspec render failed: {exc}")
+        legacy_result = _time_render(render_legacy, out_dir)
+        if legacy_result.error is not None:
+            print(f"    [warn] legacy render failed: {legacy_result.error}")
+
+        plotspec_result = _time_render(render_plotspec, out_dir)
+        if plotspec_result.error is not None:
+            print(f"    [warn] plotspec render failed: {plotspec_result.error}")
+
+        timing_results.append((name, legacy_result, plotspec_result))
 
     print(f"\nImages written to: {out_dir}")
     written = sorted(out_dir.glob("*.png"))
     for p in written:
         print(f"  {p.name}")
+
+    _print_timing_summary(timing_results)
 
 
 if __name__ == "__main__":

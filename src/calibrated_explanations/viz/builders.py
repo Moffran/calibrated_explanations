@@ -175,6 +175,18 @@ legacy_get_fill_color = _legacy_get_fill_color
 
 REGRESSION_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
 REGRESSION_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
+_EXTRA_RULE_LINE_UNITS = 0.45
+
+
+def _compact_rule_row_units(labels: Sequence[Any] | None, features_to_plot: Sequence[int]) -> float:
+    """Return compact row units needed for rendered rule labels."""
+    if not features_to_plot:
+        return 1.0
+    total = 0.0
+    for index in features_to_plot:
+        label = labels[index] if labels is not None else ""
+        total += 1.0 + str(label).count("\n") * _EXTRA_RULE_LINE_UNITS
+    return max(total, 1.0)
 
 
 def _build_probability_segments(
@@ -593,7 +605,8 @@ def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz bu
         bar_span=0.2,
     )
 
-    height = max(len(bars), 1) * 0.5
+    label_source = rule_labels if rule_labels is not None else column_names
+    body_height = _compact_rule_row_units(label_source, features_to_plot) * 0.5
     # Optionally include a dual header for alternative probabilistic plots
     # when the x-axis is a probability scale and legacy solid behavior is
     # enabled. Some callers/tests expect headerless specs when parity-mode
@@ -631,6 +644,7 @@ def build_alternative_probabilistic_spec(  # pragma: no cover  # ADR-023: viz bu
         except Exception:  # adr002_allow
             body.base_lines = None
 
+    height = body_height + (1.8 if header is not None and header.dual else 0.0)
     spec = PlotSpec(title=title, figure_size=(10.0, height), header=header, body=body)
     spec.kind = "alternative_probabilistic"
     spec.mode = "classification"
@@ -826,7 +840,8 @@ def build_alternative_regression_spec(  # pragma: no cover  # ADR-023: viz build
         bar_span=0.2,
     )
 
-    height = max(len(bars), 1) * 0.5
+    label_source = rule_labels if rule_labels is not None else column_names
+    height = _compact_rule_row_units(label_source, features_to_plot) * 0.5
     spec = PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
     spec.kind = "alternative_regression"
     spec.mode = "regression"
