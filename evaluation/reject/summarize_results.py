@@ -30,7 +30,7 @@ def summarize() -> None:
         "",
     ]
 
-    # RQ mapping for all scenarios (1–7)
+    # Scenario mapping for all registered scenarios.
     rq_map = {
         "scenario_1_binary_coverage": ("RQ1", "Binary marginal coverage preservation", "formal_target"),
         "scenario_2_multiclass_correctness": ("RQ2", "Multiclass correctness classifier", "empirical"),
@@ -39,6 +39,7 @@ def summarize() -> None:
         "scenario_5_explanation_quality": ("RQ5", "Explanation quality on accepted instances", "empirical"),
         "scenario_6_finite_sample_stress": ("RQ6", "Finite-sample stress tests", "empirical"),
         "scenario_7_ncf_coverage_validity": ("C1", "NCF coverage validity sweep (supplementary)", "empirical"),
+        "scenario_8_difficulty_reject_ablation": ("Ablation", "Difficulty estimator reject ablation", "empirical"),
     }
 
     # Collect artifacts
@@ -52,8 +53,8 @@ def summarize() -> None:
     if not scenarios:
         lines.append("_No scenario artifacts found._")
     else:
-        # Core research evaluation section (Scenarios 1–6)
-        lines.extend(["## Core Research Scenarios (1–6)", ""])
+        # Core evaluation section (Scenarios 1–6 and 8)
+        lines.extend(["## Core Scenarios", ""])
         for stem, meta, df in scenarios:
             if stem not in rq_map:
                 continue

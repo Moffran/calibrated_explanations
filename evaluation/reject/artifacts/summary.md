@@ -2,7 +2,7 @@
 
 This report aggregates the outcome of the real `WrapCalibratedExplainer` reject evaluation suite.
 
-## Core Research Scenarios (1–6)
+## Core Scenarios
 
 ### Scenario 1 — Binary marginal coverage sweep — RQ1: Binary marginal coverage preservation
 
@@ -10,16 +10,16 @@ This report aggregates the outcome of the real `WrapCalibratedExplainer` reject 
 
 - Coverage is reported as standard label-set coverage from the conformal prediction sets.
 - Accepted accuracy is included as a separate empirical metric and not treated as the conformal guarantee.
-- Observed coverage violations: 31/78 (0.3974).
-- Structural violations (CI upper bound < 1-epsilon, cannot be attributed to finite-sample noise): 4/78.
+- Observed coverage violations: 5/9 (0.5556).
+- Structural violations (CI upper bound < 1-epsilon, cannot be attributed to finite-sample noise): 0/9.
 Outcome snapshot:
-- **datasets**: 26
-- **rows**: 78
-- **violation_rate**: 0.3974
-- **structural_violations**: 4
-- **mean_coverage**: 0.9424
+- **datasets**: 3
+- **rows**: 9
+- **violation_rate**: 0.5556
+- **structural_violations**: 0
+- **mean_coverage**: 0.9354
 
-Rows: 78
+Rows: 9
 Columns: dataset, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violation, structural_violation, reject_rate, accepted_accuracy_empirical
 
 ### Scenario 2 — Multiclass correctness classifier — RQ2: Multiclass correctness classifier
@@ -29,12 +29,12 @@ Columns: dataset, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violatio
 - Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.
 - This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method.
 Outcome snapshot:
-- **datasets**: 20
+- **datasets**: 2
 - **mean_accepted_top1_accuracy**: nan
 - **mean_reject_rate**: 1.0000
 - **hinge_collapse_events**: 0
 
-Rows: 80
+Rows: 8
 Columns: dataset, epsilon, ncf, n_cal, n_test, n_classes, accepted_top1_accuracy, reject_rate, ambiguity_rate, expected_collapse, guarantee_status
 
 ### Scenario 3 — Threshold regression heuristic baseline — RQ3: Threshold regression heuristic baseline
@@ -47,12 +47,12 @@ Columns: dataset, epsilon, ncf, n_cal, n_test, n_classes, accepted_top1_accuracy
 - Both interval width and MSE are tracked on the accepted subset to capture the trade-off.
 - The difficulty-normalised approach (C3) is deferred to a standalone scenario post-RT2.
 Outcome snapshot:
-- **datasets**: 22
-- **mean_reject_rate**: 0.2083
-- **mean_accepted_mse_empirical**: 0.0092
+- **datasets**: 2
+- **mean_reject_rate**: 0.3275
+- **mean_accepted_mse_empirical**: 0.0217
 - **mean_interval_width_delta**: -0.0000
 
-Rows: 220
+Rows: 12
 Columns: dataset, confidence, effective_confidence, threshold_quantile, effective_threshold, threshold_source, n_cal, n_test, interval_coverage_all, accepted_coverage_empirical, interval_width_all, accepted_interval_width_empirical, interval_width_delta, mse_all, accepted_mse_empirical, reject_rate
 
 ### Scenario 4 — NCF and blend weight grid — RQ4: NCF selection and precision-coverage tradeoff
@@ -64,13 +64,13 @@ Columns: dataset, confidence, effective_confidence, threshold_quantile, effectiv
 - w >= 0.7 converges NCF behavior; w=0.3 amplifies differences between NCFs where present.
 - Accepted accuracy delta is always empirical and benchmarked against the non-reject baseline.
 Outcome snapshot:
-- **rows**: 368
-- **datasets**: 46
-- **best_accuracy_delta**: 0.3810
+- **rows**: 40
+- **datasets**: 5
+- **best_accuracy_delta**: 0.2255
 - **ncfs_tested**: ['default', 'ensured']
 - **w_values_tested**: [0.3, 0.5, 0.7, 1.0]
 
-Rows: 368
+Rows: 40
 Columns: task_type, dataset, ncf, w, accept_rate, accepted_accuracy, accepted_accuracy_delta
 
 ### Scenario 5 — Explanation quality on accepted instances — RQ5: Explanation quality on accepted instances
@@ -82,12 +82,12 @@ Columns: task_type, dataset, ncf, w, accept_rate, accepted_accuracy, accepted_ac
 - Paper finding: accuracy_delta is most reliable in the low regime.
 - mean_feature_weight_variance is not included — it is not a paper metric.
 Outcome snapshot:
-- **datasets**: 46
-- **mean_accuracy_delta**: 0.0893
-- **mean_ece_delta**: -0.0876
+- **datasets**: 5
+- **mean_accuracy_delta**: 0.0798
+- **mean_ece_delta**: -0.0029
 - **regime_summary**: (see json artifact)
 
-Rows: 46
+Rows: 5
 Columns: dataset, task_type, n_test, confidence, reject_rate, regime, baseline_accuracy, accepted_accuracy, accuracy_delta, baseline_ece, accepted_ece, ece_delta
 
 ### Scenario 6 — Finite-sample stress tests — RQ6: Finite-sample stress tests
@@ -99,14 +99,55 @@ Columns: dataset, task_type, n_test, confidence, reject_rate, regime, baseline_a
 - violation is computed from actual coverage, not hard-coded.
 - extreme_confidence probe uses the same violation logic as small_calibration.
 Outcome snapshot:
-- **rows**: 51
-- **violations**: 28
+- **rows**: 22
+- **violations**: 11
 - **max_reject_rate**: 1.0000
-- **small_cal_violations**: 27
+- **small_cal_violations**: 10
 - **extreme_conf_violations**: 1
 
-Rows: 51
+Rows: 22
 Columns: dataset, probe, n_cal, epsilon, coverage, reject_rate, error_rate, violation, matched_count
+
+### Scenario 8 — Difficulty estimator reject ablation — Ablation: Difficulty estimator reject ablation
+
+- **Status**: empirical
+
+- Measures the current indirect difficulty effect through Venn-Abers scaling only; reject scoring itself is unchanged.
+- Arms compare use_difficulty in {False, True} crossed with reject NCF in {default, ensured}.
+- Difficulty summary columns use the same deterministic reference estimator in all arms so selection differences are comparable.
+- This scenario does not test difficulty-normalized reject NCFs; it quantifies the baseline before that experiment.
+- With `default`, enabling difficulty changed accept_rate by -40.6 pp, rejected_error_capture_rate by +24.8 pp, and accepted_accuracy by -44.4 pp.
+- With `default` and difficulty enabled, rejected instances were harder than accepted ones by 0.260 mean difficulty units.
+- For `default`, the current difficulty path acts mainly as a stricter reject gate: it captures more errors, but at the cost of accepting far fewer instances and lowering accepted accuracy.
+- With `ensured`, enabling difficulty changed accept_rate by -26.6 pp, rejected_error_capture_rate by +18.5 pp, and accepted_accuracy by -44.8 pp.
+- With `ensured` and difficulty enabled, rejected instances were harder than accepted ones by 0.252 mean difficulty units.
+- For `ensured`, the current difficulty path acts mainly as a stricter reject gate: it captures more errors, but at the cost of accepting far fewer instances and lowering accepted accuracy.
+Outcome snapshot:
+- **rows**: 160
+- **datasets**: 5
+- **seeds**: 2
+- **mean_accept_rate**: 0.1887
+- **mean_accuracy_delta**: -0.1357
+- **default_accept_rate_no_difficulty**: 0.4280
+- **default_accept_rate_with_difficulty**: 0.0217
+- **default_accept_rate_delta**: -0.4063
+- **default_accepted_accuracy_delta**: -0.4441
+- **default_accuracy_delta_delta**: -0.4242
+- **default_rejected_error_capture_rate_delta**: 0.2484
+- **default_singleton_error_rate_delta**: 0.7870
+- **default_difficulty_gap_with_difficulty**: 0.2595
+- **ensured_accept_rate_no_difficulty**: 0.2852
+- **ensured_accept_rate_with_difficulty**: 0.0197
+- **ensured_accept_rate_delta**: -0.2656
+- **ensured_accepted_accuracy_delta**: -0.4481
+- **ensured_accuracy_delta_delta**: -0.4281
+- **ensured_rejected_error_capture_rate_delta**: 0.1854
+- **ensured_singleton_error_rate_delta**: 0.7633
+- **ensured_difficulty_gap_with_difficulty**: 0.2521
+- **mean_difficulty_gap_with_difficulty**: 0.2610
+
+Rows: 160
+Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, ncf, use_difficulty, arm, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, empty_rate, singleton_rate, multilabel_rate
 
 ## Supplementary Scenarios
 

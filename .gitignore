@@ -222,3 +222,4 @@ evaluation/guarded/artifacts/archive/*
 evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/per_instance_record*
 evaluation/guarded/archive/*
 evaluation/multiclass/real-multiclass/*bib
+evaluation/reject/artifacts/scenario_8_difficulty_reject_ablation.csv

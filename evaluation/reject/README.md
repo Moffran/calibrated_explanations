@@ -3,9 +3,10 @@
 This directory evaluates the repository's implemented reject integration against
 the real `WrapCalibratedExplainer` runtime APIs described by ADR-029.
 
-All scenarios map to a paper contribution (C1–C4) or research question (RQ1–RQ6) from the
-accompanying ESWA paper.  Results are labelled `formal_target` or `empirical` per the paper's
-guarantee map (Table 1).
+Scenarios 1-7 map to a paper contribution (C1-C4) or research question (RQ1-RQ6) from the
+accompanying ESWA paper. Scenario 8 is a repository-focused empirical ablation that measures the
+current indirect effect of `difficulty_estimator` on reject behavior without changing reject
+scoring.
 
 ## Scenarios
 
@@ -46,6 +47,16 @@ guarantee map (Table 1).
   (epsilon in {0.005, 0.01}) across binary datasets.  Violation is computed from actual
   coverage on both probes.  Status: `empirical`.
 
+- **Scenario 8 — Difficulty estimator reject ablation** (`scenario_8_difficulty_reject_ablation.py`):
+  Empirical comparison of four classification arms:
+  1. `difficulty_estimator=None`, reject NCF `default`
+  2. `difficulty_estimator=...`, reject NCF `default`
+  3. `difficulty_estimator=None`, reject NCF `ensured`
+  4. `difficulty_estimator=...`, reject NCF `ensured`
+  It measures whether the existing path `difficulty_estimator -> VennAbers probability scaling ->
+  reject NCF -> ConformalClassifier` already changes accept/reject behavior before any
+  difficulty-normalized reject NCF is added. Status: `empirical`.
+
 ### Supplementary scenarios (pass `--supplementary` flag, requires RT-2 fix)
 
 - **Scenario 7 — NCF coverage validity sweep** (`scenario_7_ncf_coverage_validity.py`):
@@ -58,6 +69,8 @@ guarantee map (Table 1).
 - API routing behavior (FLAG vs ONLY_ACCEPTED vs ONLY_REJECTED) — CI integration concern only.
 - ICP monotonicity as a standalone scenario — implementation invariant for unit tests.
 - Confidence sweep on a single binary dataset — absorbed by Scenario 1 full mode.
+- The current indirect effect of `difficulty_estimator` on classification reject — measured by
+  Scenario 8.
 - Difficulty-normalised regression reject (C3) — deferred to a standalone scenario pending the
   RT-2 sigma-normalisation-only calibration fix.
 
@@ -101,6 +114,7 @@ Run an individual scenario directly:
 ```pwsh
 python -m evaluation.reject.scenario_1_binary_coverage --quick
 python -m evaluation.reject.scenario_2_multiclass_correctness --quick
+python -m evaluation.reject.scenario_8_difficulty_reject_ablation --quick
 ```
 
 ## Interpretation notes
@@ -113,6 +127,8 @@ python -m evaluation.reject.scenario_2_multiclass_correctness --quick
   accepted — not ICP label-set coverage.  Do not confuse the two.
 - For **Scenario 3**, the `interval_width_delta` near zero is the expected null
   result: threshold reject does not select by uncertainty.
+- For **Scenario 8**, any observed difference comes from the existing interval-calibration path;
+  reject scoring formulas themselves remain unchanged.
 
 ## Design constraints followed
 
@@ -122,4 +138,4 @@ python -m evaluation.reject.scenario_2_multiclass_correctness --quick
   split.
 - Uses the implemented `RejectPolicy`, `RejectPolicySpec`, and reject envelope
   contracts instead of synthetic placeholders.
-- NCF set: `hinge`, `margin`, `ensured` only.  Entropy is excluded.
+- Public NCF set exercised by this suite: `default`, `ensured`. Entropy remains excluded.
