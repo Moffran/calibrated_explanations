@@ -305,6 +305,156 @@ def _ncf_scores_test(  # pylint: disable=invalid-name
     return np.repeat(base[:, np.newaxis], k, axis=1)
 
 
+def _clip_difficulty_values(
+    values: Any,
+    min_value: float = 1e-6,
+    max_value: float | None = None,
+) -> np.ndarray:
+    """Return clipped difficulty values as a flat float array."""
+    try:
+        min_clip = float(min_value)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            "min_value must be a positive float for difficulty clipping.",
+            details={"min_value": min_value},
+        ) from exc
+    if min_clip <= 0.0:
+        raise ValidationError(
+            "min_value must be a positive float for difficulty clipping.",
+            details={"min_value": min_clip},
+        )
+
+    max_clip: float | None = None
+    if max_value is not None:
+        try:
+            max_clip = float(max_value)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "max_value must be a float when provided for difficulty clipping.",
+                details={"max_value": max_value},
+            ) from exc
+        if max_clip < min_clip:
+            raise ValidationError(
+                "max_value must be greater than or equal to min_value for difficulty clipping.",
+                details={"min_value": min_clip, "max_value": max_clip},
+            )
+
+    clipped = np.asarray(values, dtype=float).reshape(-1)
+    clipped = np.maximum(clipped, min_clip)
+    if max_clip is not None:
+        clipped = np.minimum(clipped, max_clip)
+    return clipped.astype(float, copy=False)
+
+
+def _difficulty_values(explainer: Any, x: Any) -> np.ndarray:
+    """Return validated per-instance difficulty values for a batch."""
+    n_instances = _safe_length(x)
+    difficulty_estimator = getattr(explainer, "difficulty_estimator", None)
+    if difficulty_estimator is None:
+        return np.ones(n_instances, dtype=float)
+
+    apply = getattr(difficulty_estimator, "apply", None)
+    if not callable(apply):
+        raise ValidationError(
+            "difficulty_estimator must define an apply(x) method.",
+            details={"difficulty_estimator_type": type(difficulty_estimator).__name__},
+        )
+
+    raw_values = apply(x)
+    try:
+        difficulty = np.asarray(raw_values, dtype=float).reshape(-1)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            "difficulty_estimator.apply(x) must return numeric difficulty values.",
+            details={"difficulty_type": type(raw_values).__name__},
+        ) from exc
+
+    if len(difficulty) != n_instances:
+        raise ValidationError(
+            "difficulty_estimator.apply(x) must return one value per instance.",
+            details={"expected_length": n_instances, "actual_length": int(len(difficulty))},
+        )
+    if not np.all(np.isfinite(difficulty)):
+        raise ValidationError(
+            "difficulty values must be finite.",
+            details={"difficulty": difficulty.tolist()},
+        )
+    if np.any(difficulty < 0.0):
+        raise ValidationError(
+            "difficulty values must be non-negative.",
+            details={"difficulty": difficulty.tolist()},
+        )
+    return _clip_difficulty_values(difficulty)
+
+
+def _normalize_scores_by_difficulty(scores: np.ndarray, difficulty: np.ndarray) -> np.ndarray:
+    """Normalize 1-D or 2-D reject scores by per-instance difficulty."""
+    score_array = np.asarray(scores, dtype=float)
+    difficulty_array = _clip_difficulty_values(difficulty)
+
+    if score_array.ndim == 1:
+        if score_array.shape[0] != difficulty_array.shape[0]:
+            raise ValidationError(
+                "difficulty must match the length of 1-D reject scores.",
+                details={
+                    "score_length": int(score_array.shape[0]),
+                    "difficulty_length": int(difficulty_array.shape[0]),
+                },
+            )
+        return score_array / difficulty_array
+
+    if score_array.ndim == 2:
+        if score_array.shape[0] != difficulty_array.shape[0]:
+            raise ValidationError(
+                "difficulty must match the number of rows in 2-D reject scores.",
+                details={
+                    "score_rows": int(score_array.shape[0]),
+                    "difficulty_length": int(difficulty_array.shape[0]),
+                },
+            )
+        return score_array / difficulty_array[:, np.newaxis]
+
+    raise ValidationError(
+        "scores must be a 1-D or 2-D array for difficulty normalization.",
+        details={"scores_ndim": int(score_array.ndim)},
+    )
+
+
+def _ncf_scores_cal_difficulty_normalized(  # pylint: disable=invalid-name
+    proba: np.ndarray,
+    classes: np.ndarray,
+    labels: np.ndarray,
+    ncf: str,
+    w: float,
+    default_kind: str,
+    explainer: Any,
+    x: Any,
+) -> np.ndarray:
+    """Compute calibration non-conformity scores normalized by difficulty."""
+    base_scores = _ncf_scores_cal(proba, classes, labels, ncf, w, default_kind)
+    difficulty = _difficulty_values(explainer, x)
+    return _normalize_scores_by_difficulty(base_scores, difficulty)
+
+
+def _ncf_scores_test_difficulty_normalized(  # pylint: disable=invalid-name
+    proba: np.ndarray,
+    ncf: str,
+    w: float,
+    default_kind: str,
+    explainer: Any,
+    x: Any,
+) -> np.ndarray:
+    """Compute test non-conformity scores normalized by difficulty."""
+    base_scores = _ncf_scores_test(proba, ncf, w, default_kind)
+    difficulty = _difficulty_values(explainer, x)
+    return _normalize_scores_by_difficulty(base_scores, difficulty)
+
+
+def _difficulty_normalized_reject_scores_enabled(explainer: Any) -> bool:
+    """Return whether experimental difficulty-normalized reject scoring is enabled."""
+    return bool(getattr(explainer, "_reject_difficulty_normalized", False))
+
+
 def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
     """Resolve reject policy inputs to a canonical policy value.
 
@@ -645,9 +795,26 @@ class RejectOrchestrator:
             calibration_bins = y_cal
 
         effective_w = canonical_reject_ncf_w(ncf, validated_w)
-        alphas_cal = _ncf_scores_cal(
-            proba, np.unique(calibration_bins), calibration_bins, ncf, effective_w, default_kind
-        )
+        if _difficulty_normalized_reject_scores_enabled(self.explainer):
+            alphas_cal = _ncf_scores_cal_difficulty_normalized(
+                proba,
+                np.unique(calibration_bins),
+                calibration_bins,
+                ncf,
+                effective_w,
+                default_kind,
+                self.explainer,
+                x_cal,
+            )
+        else:
+            alphas_cal = _ncf_scores_cal(
+                proba,
+                np.unique(calibration_bins),
+                calibration_bins,
+                ncf,
+                effective_w,
+                default_kind,
+            )
         self.explainer.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=bins_cal)
         _ = ncf_explicit  # used above; suppress unused-variable warning
         return self.explainer.reject_learner
@@ -679,7 +846,19 @@ class RejectOrchestrator:
         default_kind = _default_ncf_kind(
             bool(self.explainer.is_multiclass())  # pylint: disable=protected-access
         )
-        alphas_test = np.asarray(_ncf_scores_test(proba, ncf, ncf_w, default_kind))
+        if _difficulty_normalized_reject_scores_enabled(self.explainer):
+            alphas_test = np.asarray(
+                _ncf_scores_test_difficulty_normalized(
+                    proba,
+                    ncf,
+                    ncf_w,
+                    default_kind,
+                    self.explainer,
+                    x,
+                )
+            )
+        else:
+            alphas_test = np.asarray(_ncf_scores_test(proba, ncf, ncf_w, default_kind))
 
         seed = getattr(self.explainer, "seed", None)
         epsilon = 1 - confidence
