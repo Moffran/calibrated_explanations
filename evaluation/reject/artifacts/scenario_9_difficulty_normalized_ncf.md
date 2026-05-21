@@ -9,10 +9,10 @@ Rows: 12420
 - Arms D and F are diagnostic for potential difficulty double-counting when VA and score normalization are both enabled.
 - Includes strategy metadata and difficulty_reject_auc for reject-selectivity diagnostics.
 - Includes accepted-accuracy comparison at matched reject-rate bins for A vs C.
-- Direct normalization (C vs A) changed reject_rate by +0.2310, difficulty-gap by +0.3912, and difficulty_reject_auc by +0.2474.
-- At matched reject-rate bins, C minus A mean accepted_accuracy is +0.0689.
-- For C vs A, ambiguity_rate changed by +0.2790 and novelty_rate by -0.0480.
-- Double-count diagnostics: D-B reject_rate delta +0.1130, F-E reject_rate delta +0.0287; difficulty-gap deltas are +0.5649 and +0.1382.
+- Direct normalization (C vs A) changed reject_rate by +0.0108, difficulty-gap by +0.3416, and difficulty_reject_auc by +0.2012.
+- At matched reject-rate bins, C minus A mean accepted_accuracy is -0.0089.
+- For C vs A, ambiguity_rate changed by +0.0051 and novelty_rate by +0.0057.
+- Double-count diagnostics: D-B reject_rate delta -0.0920, F-E reject_rate delta +0.0234; difficulty-gap deltas are +0.3770 and +0.2766.
 - Recommended arm for next iteration: C (primary A-vs-C contrast with direct normalization and no VA double-count risk).
 
 ## Outcome snapshot
@@ -20,18 +20,18 @@ Rows: 12420
 - **rows**: 12420
 - **datasets**: 46
 - **seeds**: 5
-- **mean_accept_rate**: 0.1197
-- **mean_accuracy_delta**: -0.0047
-- **A_vs_C_reject_rate_delta**: 0.2310
-- **A_vs_C_difficulty_gap_delta**: 0.3912
-- **A_vs_C_difficulty_reject_auc_delta**: 0.2474
-- **A_vs_C_ambiguity_rate_delta**: 0.2790
-- **A_vs_C_novelty_rate_delta**: -0.0480
-- **A_vs_C_matched_bin_accepted_accuracy_delta**: 0.0689
-- **D_minus_B_reject_rate_delta**: 0.1130
-- **F_minus_E_reject_rate_delta**: 0.0287
-- **D_minus_B_difficulty_gap_delta**: 0.5649
-- **F_minus_E_difficulty_gap_delta**: 0.1382
+- **mean_accept_rate**: 0.2230
+- **mean_accuracy_delta**: -0.0014
+- **A_vs_C_reject_rate_delta**: 0.0108
+- **A_vs_C_difficulty_gap_delta**: 0.3416
+- **A_vs_C_difficulty_reject_auc_delta**: 0.2012
+- **A_vs_C_ambiguity_rate_delta**: 0.0051
+- **A_vs_C_novelty_rate_delta**: 0.0057
+- **A_vs_C_matched_bin_accepted_accuracy_delta**: -0.0089
+- **D_minus_B_reject_rate_delta**: -0.0920
+- **F_minus_E_reject_rate_delta**: 0.0234
+- **D_minus_B_difficulty_gap_delta**: 0.3770
+- **F_minus_E_difficulty_gap_delta**: 0.2766
 - **recommended_arm**: C
 - **recommendation_reason**: primary A-vs-C contrast with direct normalization and no VA double-count risk
 
@@ -60,10 +60,10 @@ _Showing first 12 of 12420 rows._
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | A | builtin.default | default | no | no | no | 0.3612 | 0.6388 | 0.8653 | 0.0578 | 0.5850 | 0.0538 | 0.7464 | 1.8934 | 1.9243 | 0.0250 | 0.5020 | 0.8965 | 0.0015 |
 | B | builtin.default | default | yes | no | no | 0.1387 | 0.8613 | 0.7567 | -0.0505 | 0.8388 | 0.0224 | 0.8610 | 1.8140 | 1.9065 | 0.0642 | 0.5664 | 0.9403 | 0.0453 |
-| C | experimental.difficulty_normalized | default | no | yes | no | 0.1302 | 0.8698 | 0.9147 | 0.0709 | 0.8640 | 0.0058 | 0.9184 | 1.6847 | 1.9754 | 0.4163 | 0.7494 | 0.9795 | 0.0845 |
-| D | experimental.difficulty_normalized | default | yes | yes | yes | 0.0257 | 0.9743 | 0.8129 | -0.0126 | 0.9741 | 0.0002 | 0.9814 | 1.5547 | 1.9406 | 0.6291 | 0.8219 | 0.9951 | 0.1001 |
-| E | experimental.difficulty_normalized | ensured | no | yes | no | 0.0457 | 0.9543 | 0.8152 | -0.0032 | 0.9498 | 0.0045 | 0.9662 | 1.7461 | 1.9345 | 0.1949 | 0.7033 | 0.9819 | 0.0869 |
-| F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.0170 | 0.9830 | 0.6567 | -0.1483 | 0.9326 | 0.0504 | 0.9720 | 1.5772 | 1.9266 | 0.3330 | 0.7918 | 0.9801 | 0.0851 |
+| C | experimental.difficulty_normalized | default | no | yes | no | 0.3504 | 0.6496 | 0.8556 | 0.0484 | 0.5902 | 0.0595 | 0.7481 | 1.7783 | 2.0430 | 0.3667 | 0.7031 | 0.8840 | -0.0110 |
+| D | experimental.difficulty_normalized | default | yes | yes | yes | 0.2308 | 0.7692 | 0.8056 | -0.0016 | 0.7229 | 0.0464 | 0.7724 | 1.6777 | 2.0292 | 0.4412 | 0.8579 | 0.8879 | -0.0071 |
+| E | experimental.difficulty_normalized | ensured | no | yes | no | 0.1401 | 0.8599 | 0.7924 | -0.0152 | 0.7800 | 0.0798 | 0.8721 | 1.8992 | 1.9310 | 0.0280 | 0.5064 | 0.8917 | -0.0033 |
+| F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.1167 | 0.8833 | 0.7493 | -0.0570 | 0.8173 | 0.0660 | 0.8555 | 1.6892 | 1.9619 | 0.3046 | 0.7991 | 0.8968 | 0.0018 |
 
 ## By Confidence And Arm
 
@@ -87,42 +87,42 @@ _Showing first 12 of 12420 rows._
 | 0.9425 | 0.0575 | B | builtin.default | default | yes | no | no | 0.8999 | 0.7593 | 0.8930 | 0.0070 | 0.0897 | 0.5800 |
 | 0.9663 | 0.0337 | B | builtin.default | default | yes | no | no | 0.9355 | 0.7898 | 0.9309 | 0.0046 | 0.1038 | 0.5933 |
 | 0.9900 | 0.0100 | B | builtin.default | default | yes | no | no | 0.9892 | 0.6679 | 0.9885 | 0.0007 | 0.1301 | 0.6732 |
-| 0.8000 | 0.2000 | C | experimental.difficulty_normalized | default | no | yes | no | 0.7458 | 0.8964 | 0.7285 | 0.0173 | 0.3833 | 0.7240 |
-| 0.8237 | 0.1763 | C | experimental.difficulty_normalized | default | no | yes | no | 0.7695 | 0.9022 | 0.7561 | 0.0134 | 0.3876 | 0.7283 |
-| 0.8475 | 0.1525 | C | experimental.difficulty_normalized | default | no | yes | no | 0.8016 | 0.9082 | 0.7924 | 0.0092 | 0.4027 | 0.7368 |
-| 0.8713 | 0.1287 | C | experimental.difficulty_normalized | default | no | yes | no | 0.8417 | 0.8965 | 0.8356 | 0.0062 | 0.4195 | 0.7636 |
-| 0.8950 | 0.1050 | C | experimental.difficulty_normalized | default | no | yes | no | 0.8711 | 0.9269 | 0.8673 | 0.0038 | 0.4189 | 0.7488 |
-| 0.9187 | 0.0813 | C | experimental.difficulty_normalized | default | no | yes | no | 0.9067 | 0.9591 | 0.9049 | 0.0018 | 0.5264 | 0.7906 |
-| 0.9425 | 0.0575 | C | experimental.difficulty_normalized | default | no | yes | no | 0.9291 | 0.9470 | 0.9284 | 0.0007 | 0.4545 | 0.7690 |
-| 0.9663 | 0.0337 | C | experimental.difficulty_normalized | default | no | yes | no | 0.9641 | 0.9719 | 0.9641 | 0.0000 | 0.4407 | 0.8321 |
-| 0.9900 | 0.0100 | C | experimental.difficulty_normalized | default | no | yes | no | 0.9991 | 1.0000 | 0.9991 | 0.0000 | 0.5659 | 0.9810 |
-| 0.8000 | 0.2000 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9290 | 0.8420 | 0.9277 | 0.0013 | 0.6607 | 0.7637 |
-| 0.8237 | 0.1763 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9410 | 0.8428 | 0.9406 | 0.0004 | 0.6998 | 0.7975 |
-| 0.8475 | 0.1525 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9493 | 0.8387 | 0.9493 | 0.0000 | 0.7177 | 0.8205 |
-| 0.8713 | 0.1287 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9708 | 0.8068 | 0.9707 | 0.0000 | 0.5902 | 0.8289 |
-| 0.8950 | 0.1050 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9877 | 0.7842 | 0.9877 | 0.0000 | 0.4937 | 0.8624 |
-| 0.9187 | 0.0813 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9914 | 0.7895 | 0.9914 | 0.0000 | 0.4603 | 0.8719 |
-| 0.9425 | 0.0575 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9992 | 0.6875 | 0.9992 | 0.0000 | 0.5075 | 0.9624 |
-| 0.9663 | 0.0337 | D | experimental.difficulty_normalized | default | yes | yes | yes | 1.0000 | 0.0000 | 1.0000 | 0.0000 | 0.5757 | 1.0000 |
-| 0.9900 | 0.0100 | D | experimental.difficulty_normalized | default | yes | yes | yes | 1.0000 | nan | 1.0000 | 0.0000 | nan | nan |
-| 0.8000 | 0.2000 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9076 | 0.8074 | 0.8878 | 0.0198 | 0.1828 | 0.6686 |
-| 0.8237 | 0.1763 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9246 | 0.8051 | 0.9152 | 0.0094 | 0.1914 | 0.6873 |
-| 0.8475 | 0.1525 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9426 | 0.8108 | 0.9375 | 0.0051 | 0.1814 | 0.6951 |
-| 0.8713 | 0.1287 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9506 | 0.8038 | 0.9471 | 0.0035 | 0.1482 | 0.6835 |
-| 0.8950 | 0.1050 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9563 | 0.8312 | 0.9544 | 0.0019 | 0.1837 | 0.7018 |
-| 0.9187 | 0.0813 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9641 | 0.8129 | 0.9634 | 0.0006 | 0.2298 | 0.7402 |
-| 0.9425 | 0.0575 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9711 | 0.8195 | 0.9707 | 0.0004 | 0.2251 | 0.7381 |
-| 0.9663 | 0.0337 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9795 | 0.8374 | 0.9795 | 0.0000 | 0.2479 | 0.7470 |
-| 0.9900 | 0.0100 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9925 | 0.9138 | 0.9925 | 0.0000 | 0.3258 | 0.7955 |
-| 0.8000 | 0.2000 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9483 | 0.6601 | 0.8819 | 0.0664 | 0.2751 | 0.6965 |
-| 0.8237 | 0.1763 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9687 | 0.6839 | 0.9104 | 0.0583 | 0.2852 | 0.7366 |
-| 0.8475 | 0.1525 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9733 | 0.6693 | 0.9200 | 0.0533 | 0.3277 | 0.7794 |
-| 0.8713 | 0.1287 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9852 | 0.6584 | 0.9357 | 0.0495 | 0.3289 | 0.7974 |
-| 0.8950 | 0.1050 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9887 | 0.6290 | 0.9408 | 0.0479 | 0.3421 | 0.8119 |
-| 0.9187 | 0.0813 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9922 | 0.6439 | 0.9460 | 0.0462 | 0.3469 | 0.8373 |
-| 0.9425 | 0.0575 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9942 | 0.6469 | 0.9494 | 0.0448 | 0.3976 | 0.8643 |
-| 0.9663 | 0.0337 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9967 | 0.6540 | 0.9530 | 0.0437 | 0.4245 | 0.8892 |
-| 0.9900 | 0.0100 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9998 | 0.6000 | 0.9563 | 0.0435 | 0.4751 | 0.9487 |
+| 0.8000 | 0.2000 | C | experimental.difficulty_normalized | default | no | yes | no | 0.5393 | 0.8383 | 0.4074 | 0.1319 | 0.3280 | 0.6097 |
+| 0.8237 | 0.1763 | C | experimental.difficulty_normalized | default | no | yes | no | 0.5474 | 0.8383 | 0.4365 | 0.1110 | 0.3413 | 0.6331 |
+| 0.8475 | 0.1525 | C | experimental.difficulty_normalized | default | no | yes | no | 0.5552 | 0.8410 | 0.4655 | 0.0897 | 0.3535 | 0.6522 |
+| 0.8713 | 0.1287 | C | experimental.difficulty_normalized | default | no | yes | no | 0.5751 | 0.8438 | 0.5049 | 0.0702 | 0.3688 | 0.6895 |
+| 0.8950 | 0.1050 | C | experimental.difficulty_normalized | default | no | yes | no | 0.5979 | 0.8478 | 0.5450 | 0.0529 | 0.3916 | 0.7139 |
+| 0.9187 | 0.0813 | C | experimental.difficulty_normalized | default | no | yes | no | 0.6361 | 0.8562 | 0.5981 | 0.0380 | 0.4089 | 0.7382 |
+| 0.9425 | 0.0575 | C | experimental.difficulty_normalized | default | no | yes | no | 0.6886 | 0.8691 | 0.6636 | 0.0249 | 0.3524 | 0.7506 |
+| 0.9663 | 0.0337 | C | experimental.difficulty_normalized | default | no | yes | no | 0.7718 | 0.8972 | 0.7577 | 0.0141 | 0.3821 | 0.7963 |
+| 0.9900 | 0.0100 | C | experimental.difficulty_normalized | default | no | yes | no | 0.9355 | 0.9005 | 0.9329 | 0.0025 | 0.3884 | 0.8349 |
+| 0.8000 | 0.2000 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.6377 | 0.8077 | 0.5406 | 0.0971 | 0.4609 | 0.8069 |
+| 0.8237 | 0.1763 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.6555 | 0.8071 | 0.5740 | 0.0814 | 0.4606 | 0.8251 |
+| 0.8475 | 0.1525 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.6772 | 0.8051 | 0.6068 | 0.0703 | 0.4556 | 0.8433 |
+| 0.8713 | 0.1287 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.7041 | 0.8054 | 0.6486 | 0.0555 | 0.4733 | 0.8573 |
+| 0.8950 | 0.1050 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.7411 | 0.8113 | 0.6971 | 0.0440 | 0.4730 | 0.8881 |
+| 0.9187 | 0.0813 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.7911 | 0.8097 | 0.7583 | 0.0327 | 0.4358 | 0.8777 |
+| 0.9425 | 0.0575 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.8369 | 0.8072 | 0.8152 | 0.0216 | 0.4005 | 0.8795 |
+| 0.9663 | 0.0337 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.8970 | 0.7926 | 0.8845 | 0.0124 | 0.3885 | 0.8818 |
+| 0.9900 | 0.0100 | D | experimental.difficulty_normalized | default | yes | yes | yes | 0.9827 | 0.7988 | 0.9806 | 0.0020 | 0.3683 | 0.8741 |
+| 0.8000 | 0.2000 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8103 | 0.8002 | 0.6493 | 0.1610 | 0.0216 | 0.4562 |
+| 0.8237 | 0.1763 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8250 | 0.8080 | 0.6863 | 0.1388 | 0.0195 | 0.4713 |
+| 0.8475 | 0.1525 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8390 | 0.7900 | 0.7185 | 0.1205 | 0.0149 | 0.4734 |
+| 0.8713 | 0.1287 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8463 | 0.7842 | 0.7462 | 0.1001 | -0.0004 | 0.4924 |
+| 0.8950 | 0.1050 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8489 | 0.7891 | 0.7696 | 0.0794 | -0.0022 | 0.4963 |
+| 0.9187 | 0.0813 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8518 | 0.7804 | 0.7932 | 0.0587 | 0.0263 | 0.5173 |
+| 0.9425 | 0.0575 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8632 | 0.7928 | 0.8251 | 0.0382 | 0.0154 | 0.5138 |
+| 0.9663 | 0.0337 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.8908 | 0.7845 | 0.8714 | 0.0194 | 0.0606 | 0.5643 |
+| 0.9900 | 0.0100 | E | experimental.difficulty_normalized | ensured | no | yes | no | 0.9635 | 0.8190 | 0.9608 | 0.0026 | 0.2292 | 0.7082 |
+| 0.8000 | 0.2000 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.7652 | 0.7909 | 0.6346 | 0.1307 | 0.3225 | 0.7639 |
+| 0.8237 | 0.1763 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.8015 | 0.7775 | 0.6887 | 0.1128 | 0.3244 | 0.7913 |
+| 0.8475 | 0.1525 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.8288 | 0.7727 | 0.7308 | 0.0980 | 0.3084 | 0.8059 |
+| 0.8713 | 0.1287 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.8573 | 0.7643 | 0.7760 | 0.0814 | 0.2882 | 0.7877 |
+| 0.8950 | 0.1050 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.8862 | 0.7608 | 0.8195 | 0.0667 | 0.2800 | 0.7849 |
+| 0.9187 | 0.0813 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9156 | 0.7442 | 0.8658 | 0.0498 | 0.2895 | 0.7987 |
+| 0.9425 | 0.0575 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9377 | 0.7086 | 0.9031 | 0.0346 | 0.2971 | 0.8112 |
+| 0.9663 | 0.0337 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9618 | 0.6745 | 0.9438 | 0.0181 | 0.3253 | 0.8440 |
+| 0.9900 | 0.0100 | F | experimental.difficulty_normalized | ensured | yes | yes | yes | 0.9951 | 0.7052 | 0.9932 | 0.0019 | 0.3167 | 0.8430 |
 
 ## Accepted Accuracy At Matched Reject-Rate Bins
 
@@ -130,16 +130,16 @@ A-vs-C matched-bin comparison (primary contrast).
 
 | reject_rate_bin | A_mean_accepted_accuracy | C_mean_accepted_accuracy | accepted_accuracy_delta_C_minus_A | A_mean_reject_rate | C_mean_reject_rate | A_rows | C_rows |
 |---|---|---|---|---|---|---|---|
-| [0.0, 0.1) | 0.8815 | 0.9410 | 0.0595 | 0.0454 | 0.0467 | 286 | 136 |
-| [0.1, 0.2) | 0.9031 | 0.9284 | 0.0253 | 0.1477 | 0.1425 | 208 | 46 |
-| [0.2, 0.3) | 0.8552 | 0.9268 | 0.0716 | 0.2459 | 0.2481 | 140 | 36 |
-| [0.3, 0.4) | 0.8477 | 0.9480 | 0.1004 | 0.3564 | 0.3505 | 116 | 23 |
-| [0.4, 0.5) | 0.8242 | 0.9157 | 0.0916 | 0.4524 | 0.4515 | 81 | 27 |
-| [0.5, 0.6) | 0.8250 | 0.9480 | 0.1230 | 0.5495 | 0.5529 | 68 | 21 |
-| [0.6, 0.7) | 0.8485 | 0.9559 | 0.1074 | 0.6434 | 0.6637 | 66 | 28 |
-| [0.7, 0.8) | 0.8637 | 0.8977 | 0.0340 | 0.7452 | 0.7473 | 45 | 41 |
-| [0.8, 0.9) | 0.8479 | 0.8503 | 0.0024 | 0.8407 | 0.8602 | 35 | 55 |
-| [0.9, 1.0) | 0.8206 | 0.8944 | 0.0738 | 0.9985 | 0.9960 | 1025 | 1657 |
+| [0.0, 0.1) | 0.8815 | 0.8861 | 0.0046 | 0.0454 | 0.0594 | 286 | 205 |
+| [0.1, 0.2) | 0.9031 | 0.8876 | -0.0155 | 0.1477 | 0.1500 | 208 | 263 |
+| [0.2, 0.3) | 0.8552 | 0.8582 | 0.0031 | 0.2459 | 0.2463 | 140 | 132 |
+| [0.3, 0.4) | 0.8477 | 0.8260 | -0.0217 | 0.3564 | 0.3501 | 116 | 128 |
+| [0.4, 0.5) | 0.8242 | 0.8267 | 0.0025 | 0.4524 | 0.4519 | 81 | 97 |
+| [0.5, 0.6) | 0.8250 | 0.8207 | -0.0044 | 0.5495 | 0.5478 | 68 | 70 |
+| [0.6, 0.7) | 0.8485 | 0.8101 | -0.0384 | 0.6434 | 0.6485 | 66 | 53 |
+| [0.7, 0.8) | 0.8637 | 0.8040 | -0.0598 | 0.7452 | 0.7484 | 45 | 61 |
+| [0.8, 0.9) | 0.8479 | 0.8307 | -0.0172 | 0.8407 | 0.8496 | 35 | 41 |
+| [0.9, 1.0) | 0.8206 | 0.8783 | 0.0576 | 0.9985 | 0.9988 | 1025 | 1020 |
 
 ## Per-Arm Reject-Rate Bin Aggregates
 
@@ -147,71 +147,74 @@ A-vs-C matched-bin comparison (primary contrast).
 |---|---|---|---|---|
 | [0.0, 0.1) | A | 286 | 0.0454 | 0.8815 |
 | [0.0, 0.1) | B | 74 | 0.0397 | 0.8826 |
-| [0.0, 0.1) | C | 136 | 0.0467 | 0.9410 |
-| [0.0, 0.1) | D | 17 | 0.0496 | 0.8868 |
-| [0.0, 0.1) | E | 1 | 0.0909 | 0.9000 |
-| [0.0, 0.1) | F | 2 | 0.0923 | 0.9153 |
+| [0.0, 0.1) | C | 205 | 0.0594 | 0.8861 |
+| [0.0, 0.1) | D | 51 | 0.0595 | 0.8610 |
+| [0.0, 0.1) | E | 7 | 0.0586 | 0.8800 |
+| [0.0, 0.1) | F | 8 | 0.0524 | 0.8771 |
 | [0.1, 0.2) | A | 208 | 0.1477 | 0.9031 |
 | [0.1, 0.2) | B | 41 | 0.1456 | 0.9007 |
-| [0.1, 0.2) | C | 46 | 0.1425 | 0.9284 |
-| [0.1, 0.2) | D | 13 | 0.1284 | 0.9087 |
-| [0.1, 0.2) | E | 6 | 0.1490 | 0.9112 |
-| [0.1, 0.2) | F | 9 | 0.1497 | 0.9153 |
+| [0.1, 0.2) | C | 263 | 0.1500 | 0.8876 |
+| [0.1, 0.2) | D | 110 | 0.1473 | 0.8778 |
+| [0.1, 0.2) | E | 8 | 0.1387 | 0.9213 |
+| [0.1, 0.2) | F | 19 | 0.1437 | 0.8743 |
 | [0.2, 0.3) | A | 140 | 0.2459 | 0.8552 |
 | [0.2, 0.3) | B | 40 | 0.2625 | 0.8773 |
-| [0.2, 0.3) | C | 36 | 0.2481 | 0.9268 |
-| [0.2, 0.3) | D | 9 | 0.2385 | 0.9445 |
-| [0.2, 0.3) | E | 6 | 0.2312 | 0.9243 |
+| [0.2, 0.3) | C | 132 | 0.2463 | 0.8582 |
+| [0.2, 0.3) | D | 91 | 0.2511 | 0.8423 |
+| [0.2, 0.3) | E | 6 | 0.2731 | 0.9008 |
+| [0.2, 0.3) | F | 37 | 0.2460 | 0.8286 |
 | [0.3, 0.4) | A | 116 | 0.3564 | 0.8477 |
 | [0.3, 0.4) | B | 37 | 0.3509 | 0.8662 |
-| [0.3, 0.4) | C | 23 | 0.3505 | 0.9480 |
-| [0.3, 0.4) | D | 7 | 0.3441 | 0.9038 |
-| [0.3, 0.4) | E | 2 | 0.3643 | 0.9942 |
-| [0.3, 0.4) | F | 1 | 0.3231 | 0.9318 |
+| [0.3, 0.4) | C | 128 | 0.3501 | 0.8260 |
+| [0.3, 0.4) | D | 93 | 0.3558 | 0.8464 |
+| [0.3, 0.4) | E | 34 | 0.3628 | 0.8407 |
+| [0.3, 0.4) | F | 31 | 0.3564 | 0.8358 |
 | [0.4, 0.5) | A | 81 | 0.4524 | 0.8242 |
 | [0.4, 0.5) | B | 68 | 0.4607 | 0.8815 |
-| [0.4, 0.5) | C | 27 | 0.4515 | 0.9157 |
-| [0.4, 0.5) | D | 10 | 0.4340 | 0.9334 |
-| [0.4, 0.5) | F | 1 | 0.4318 | 0.9200 |
+| [0.4, 0.5) | C | 97 | 0.4519 | 0.8267 |
+| [0.4, 0.5) | D | 89 | 0.4567 | 0.8221 |
+| [0.4, 0.5) | E | 85 | 0.4533 | 0.8595 |
+| [0.4, 0.5) | F | 46 | 0.4507 | 0.7978 |
 | [0.5, 0.6) | A | 68 | 0.5495 | 0.8250 |
 | [0.5, 0.6) | B | 44 | 0.5461 | 0.8650 |
-| [0.5, 0.6) | C | 21 | 0.5529 | 0.9480 |
-| [0.5, 0.6) | D | 7 | 0.5752 | 0.9279 |
-| [0.5, 0.6) | E | 43 | 0.5592 | 0.9805 |
-| [0.5, 0.6) | F | 1 | 0.5385 | 0.8667 |
+| [0.5, 0.6) | C | 70 | 0.5478 | 0.8207 |
+| [0.5, 0.6) | D | 117 | 0.5545 | 0.8417 |
+| [0.5, 0.6) | E | 142 | 0.5575 | 0.8440 |
+| [0.5, 0.6) | F | 57 | 0.5563 | 0.7838 |
 | [0.6, 0.7) | A | 66 | 0.6434 | 0.8485 |
 | [0.6, 0.7) | B | 40 | 0.6508 | 0.8356 |
-| [0.6, 0.7) | C | 28 | 0.6637 | 0.9559 |
-| [0.6, 0.7) | D | 4 | 0.6271 | 0.9437 |
-| [0.6, 0.7) | F | 5 | 0.6471 | 0.8886 |
+| [0.6, 0.7) | C | 53 | 0.6485 | 0.8101 |
+| [0.6, 0.7) | D | 141 | 0.6520 | 0.8027 |
+| [0.6, 0.7) | E | 157 | 0.6497 | 0.8681 |
+| [0.6, 0.7) | F | 107 | 0.6529 | 0.7788 |
 | [0.7, 0.8) | A | 45 | 0.7452 | 0.8637 |
 | [0.7, 0.8) | B | 68 | 0.7497 | 0.7665 |
-| [0.7, 0.8) | C | 41 | 0.7473 | 0.8977 |
-| [0.7, 0.8) | D | 6 | 0.7609 | 0.9141 |
-| [0.7, 0.8) | E | 75 | 0.7562 | 0.8955 |
-| [0.7, 0.8) | F | 10 | 0.7336 | 0.7784 |
+| [0.7, 0.8) | C | 61 | 0.7484 | 0.8040 |
+| [0.7, 0.8) | D | 139 | 0.7506 | 0.7785 |
+| [0.7, 0.8) | E | 194 | 0.7508 | 0.8026 |
+| [0.7, 0.8) | F | 157 | 0.7542 | 0.7547 |
 | [0.8, 0.9) | A | 35 | 0.8407 | 0.8479 |
 | [0.8, 0.9) | B | 131 | 0.8520 | 0.7068 |
-| [0.8, 0.9) | C | 55 | 0.8602 | 0.8503 |
-| [0.8, 0.9) | D | 8 | 0.8737 | 0.9531 |
-| [0.8, 0.9) | E | 151 | 0.8611 | 0.8050 |
-| [0.8, 0.9) | F | 33 | 0.8725 | 0.8019 |
+| [0.8, 0.9) | C | 41 | 0.8496 | 0.8307 |
+| [0.8, 0.9) | D | 105 | 0.8467 | 0.7953 |
+| [0.8, 0.9) | E | 164 | 0.8475 | 0.7431 |
+| [0.8, 0.9) | F | 184 | 0.8533 | 0.7511 |
 | [0.9, 1.0) | A | 1025 | 0.9985 | 0.8206 |
 | [0.9, 1.0) | B | 1527 | 0.9865 | 0.6728 |
-| [0.9, 1.0) | C | 1657 | 0.9960 | 0.8944 |
-| [0.9, 1.0) | D | 1989 | 0.9991 | 0.6721 |
-| [0.9, 1.0) | E | 1786 | 0.9863 | 0.7899 |
-| [0.9, 1.0) | F | 2008 | 0.9924 | 0.6294 |
+| [0.9, 1.0) | C | 1020 | 0.9988 | 0.8783 |
+| [0.9, 1.0) | D | 1134 | 0.9934 | 0.6678 |
+| [0.9, 1.0) | E | 1273 | 0.9898 | 0.7005 |
+| [0.9, 1.0) | F | 1424 | 0.9883 | 0.6999 |
 
 ## Required Analyses
 
 1. Does direct normalization increase rejection among high-difficulty instances?
-Direct normalization (C vs A) changed reject_rate by +0.2310, difficulty-gap by +0.3912, and difficulty_reject_auc by +0.2474.
+Direct normalization (C vs A) changed reject_rate by +0.0108, difficulty-gap by +0.3416, and difficulty_reject_auc by +0.2012.
 2. Does it improve accepted accuracy at comparable reject rates?
-At matched reject-rate bins, C minus A mean accepted_accuracy is +0.0689.
+At matched reject-rate bins, C minus A mean accepted_accuracy is -0.0089.
 3. Does it increase ambiguity rate, novelty rate, or both?
-For C vs A, ambiguity_rate changed by +0.2790 and novelty_rate by -0.0480.
+For C vs A, ambiguity_rate changed by +0.0051 and novelty_rate by +0.0057.
 4. Does using VA difficulty and score normalization together appear to double-count difficulty?
-Double-count diagnostics: D-B reject_rate delta +0.1130, F-E reject_rate delta +0.0287; difficulty-gap deltas are +0.5649 and +0.1382.
+Double-count diagnostics: D-B reject_rate delta -0.0920, F-E reject_rate delta +0.0234; difficulty-gap deltas are +0.3770 and +0.2766.
 5. Which arm is recommended for further development?
 Recommended arm for next iteration: C (primary A-vs-C contrast with direct normalization and no VA double-count risk).

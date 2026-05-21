@@ -1,7 +1,7 @@
 {
   "scenario": "scenario_11_operating_point_selection",
   "display_name": "Scenario 11 - Matched operating-point reject selection",
-  "generated_at": "2026-05-21T11:43:51.452640+00:00",
+  "generated_at": "2026-05-21T17:47:36.386539+00:00",
   "guarantee_status": "empirical",
   "quick": false,
   "target_reject_rates": [

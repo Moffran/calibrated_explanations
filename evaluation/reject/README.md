@@ -174,6 +174,27 @@ python -m evaluation.reject.scenario_11_operating_point_selection --quick
 - For **Scenario 11**, interpret deltas at matched target reject rates. This is the
   decision-gate evidence before any `ncf="difficulty_normalized"` public API promotion.
 
+## Latest Scenario 8-11 snapshot
+
+For the latest run artifacts, read the generated markdown reports first:
+
+- `evaluation/reject/artifacts/scenario_8_difficulty_reject_ablation.md`
+- `evaluation/reject/artifacts/scenario_9_difficulty_normalized_ncf.md`
+- `evaluation/reject/artifacts/scenario_10_ambiguity_novelty_reject.md`
+- `evaluation/reject/artifacts/scenario_11_operating_point_selection.md`
+
+Current artifact-level recommendation trend:
+
+- Scenario 8: indirect VA difficulty path is stricter and captures more errors,
+  with an accepted-accuracy cost in this setup.
+- Scenario 9: arm C (`experimental.difficulty_normalized`, no VA difficulty)
+  is the preferred experimental baseline from the primary A-vs-C contrast.
+- Scenario 10: novelty-aware arm G remains exploratory; C is still the simpler
+  recommended baseline.
+- Scenario 11: matched operating-point evidence is mixed; difficulty-normalized
+  scoring should not be promoted to a public NCF yet, and the novelty-aware
+  strategy remains internal/experimental.
+
 ## Design constraints followed
 
 - Uses `WrapCalibratedExplainer` and CE-first helper utilities instead of

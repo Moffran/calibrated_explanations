@@ -1,8 +1,11 @@
-# Difficulty-Normalized Reject: Current State and Remaining Gap
+# Difficulty-Normalized Reject: Current State and Final Documentation
 
 ## Purpose
 
-This note documents the current repository behavior for difficulty-aware interval calibration and reject-option conformal classification, and pinpoints the exact remaining gap before implementing difficulty-normalized reject nonconformity scores.
+This note documents the repository behavior for difficulty-aware interval
+calibration and reject-option conformal classification, the implemented
+experimental difficulty-normalized reject strategy, and the documentation state
+after the Scenario 8-11 evaluation pass.
 
 This document is intentionally implementation-accurate and does not propose runtime changes in this step. It is grounded by:
 
@@ -14,7 +17,16 @@ This document is intentionally implementation-accurate and does not propose runt
 
 `difficulty_estimator` already affects calibrated probabilities because it is accepted by `CalibratedExplainer`, propagated through the interval plugin context, and used inside `VennAbers` before Venn-Abers calibration.
 
-It does not currently normalize reject nonconformity scores by difficulty. The reject path consumes already-calibrated probabilities from the interval learner and then computes reject nonconformity scores only from probability-derived margin, hinge, or interval-width terms. No sigma or difficulty term is applied in `core/reject/orchestrator.py`.
+The repository now also includes an explicitly experimental direct reject-score
+normalization path selected through:
+
+```python
+strategy="experimental.difficulty_normalized"
+```
+
+This strategy normalizes reject nonconformity scores before conformal p-values
+and prediction sets are computed. The public NCF modes remain `default` and
+`ensured`; the experimental strategy is not a public NCF promotion.
 
 ## 1. Where `difficulty_estimator` enters the wrapper/calibration API
 
@@ -197,11 +209,11 @@ Relevant code:
   - `_ncf_scores_cal(...)`
   - `_ncf_scores_test(...)`
 
-## 7. Does the current implementation normalize reject nonconformity scores by difficulty?
+## 7. Does the implementation normalize reject nonconformity scores by difficulty?
 
-No.
+Yes, but only on the explicit experimental path.
 
-Evidence:
+Baseline evidence:
 
 1. The reject NCF helpers accept only `proba`, class/label arrays, `ncf`, `w`, and `default_kind`.
    - No helper takes `difficulty_estimator`, `sigma`, or any per-instance difficulty array.
@@ -219,9 +231,21 @@ Evidence:
 
 5. `IntervalRegistry.get_sigma_test(...)` exists, but reject does not use it.
 
-Conclusion:
+Baseline conclusion:
 
 The current implementation is difficulty-aware only indirectly through the probability outputs already produced by the interval learner, especially Venn-Abers. It is not difficulty-normalized at the reject nonconformity score level.
+
+Experimental implementation:
+
+- `RejectOrchestrator` registers `experimental.difficulty_normalized`.
+- The strategy applies difficulty to calibration and test reject scores before
+  conformal p-values and prediction sets are computed.
+- The strategy rejects regression mode and remains classification-only.
+- Provenance checks warn or raise when estimator metadata indicates calibration
+  label/residual leakage without cross-fitting.
+- A second diagnostic strategy,
+  `experimental.ambiguity_normalized_novelty_penalized`, adds an evaluation-only
+  novelty penalty for ambiguity-vs-novelty experiments.
 
 ## 8. What should be tested before adding new code
 
@@ -259,11 +283,12 @@ Recommended test and measurement checklist:
    - Verify ADR-029 behavior remains unchanged when no reject policy is selected.
    - Verify ADR-020 wrapper and explainer signatures remain stable if an experimental path is later added.
 
-## 9. What should be implemented only after the existing behavior is measured
+## 9. Implemented experimental path and remaining promotion gates
 
-Only after the current baseline is measured should the repository add an explicitly experimental difficulty-normalized reject path.
+The experimental path has been implemented after measuring the existing
+baseline. Promotion to a public NCF mode remains intentionally deferred.
 
-That implementation should be scoped as follows:
+The implemented scope is:
 
 1. Keep the current public API stable
    - Do not replace the existing public `default` or `ensured` reject NCF modes until the experiment is validated.
@@ -282,32 +307,42 @@ That implementation should be scoped as follows:
    - Keep interval plugin behavior unchanged unless the experiment specifically requires plugin-side metadata or calibration artifacts.
    - The gap is in reject scoring, not in interval plugin transport.
 
-5. Add a standalone evaluation scenario under `evaluation/reject/`
-   - The existing evaluation README already states that difficulty-normalized regression reject is deferred pending the RT-2 sigma-normalisation-only fix.
-   - The experimental implementation should therefore land together with a dedicated evaluation scenario that measures whether the new scoring actually improves selective behavior.
+5. Add standalone evaluation scenarios under `evaluation/reject/`
+   - Scenario 8 measures the existing indirect VA difficulty effect.
+   - Scenario 9 evaluates direct difficulty-normalized reject scoring.
+   - Scenario 10 evaluates the ambiguity-normalized novelty-penalized variant.
+   - Scenario 11 evaluates matched operating-point selection before any public
+     promotion decision.
 
-## Exact Remaining Gap
+## Exact Remaining Promotion Gap
 
-The remaining gap is not API plumbing and not interval-plugin transport.
+The remaining gap is not API plumbing, interval-plugin transport, or a missing
+experimental implementation.
 
-The exact missing piece is:
+The exact remaining promotion question is:
 
-> A reject-orchestrator-level nonconformity computation that incorporates per-instance difficulty, for both calibration and test scores, while keeping the existing CE-first API, reject policy contracts, and interval plugin architecture unchanged by default.
+> Whether difficulty-normalized reject scoring should be promoted from an
+> experimental strategy identifier to a stable public NCF contract.
 
-In practical terms, the repository already has:
+The repository already has:
 
 - wrapper-to-explainer difficulty pass-through,
 - explainer storage and invalidation,
 - plugin-context propagation,
 - Venn-Abers difficulty-aware probability scaling,
-- reject scoring over interval-learner probabilities.
+- reject scoring over interval-learner probabilities,
+- experimental direct difficulty-normalized reject scoring,
+- provenance warnings/strict validation for risky estimator fitting metadata,
+- evaluation artifacts for Scenarios 8-11.
 
 It does not yet have:
 
-- sigma-aware reject score normalization in `_ncf_scores_cal(...)`,
-- sigma-aware reject score normalization in `_ncf_scores_test(...)`,
-- an experimental opt-in control surface for that behavior,
-- a dedicated evaluation scenario proving the experimental path is worth promoting.
+- promotion evidence strong enough to add `difficulty_normalized` as a public NCF,
+- a resolved ambiguity-vs-novelty separation strategy,
+- a resolved policy for combining VA difficulty scaling with direct reject
+  normalization,
+- conditional/Mondrian validity guidance for the strategy,
+- finite-sample characterization across small calibration regimes.
 
 ## File Map
 
@@ -327,3 +362,119 @@ It does not yet have:
   - computes reject NCFs and prediction sets; this is where the remaining gap lives
 - `evaluation/reject/README.md`
   - already documents that difficulty-normalized reject remains deferred pending the RT-2 fix
+
+## Final documentation summary (2026-05-21)
+
+This repository now documents difficulty-normalized reject-option conformal
+classification as an explicitly experimental strategy layered on top of the
+existing CE reject contracts.
+
+Final user-facing documentation lives in:
+
+- `docs/practitioner/advanced/reject-policy.md`
+- `docs/researcher/advanced/difficulty_normalized_reject.md`
+- `evaluation/reject/README.md`
+
+### What reject-option conformal classification does in CE
+
+For classification, CE builds conformal prediction sets and maps set geometry to
+reject outcomes:
+
+- Singleton prediction set: accepted.
+- Empty prediction set: novelty reject.
+- Multi-label prediction set: ambiguity reject.
+
+This mapping is reflected in reject metadata (`reject_rate`, `ambiguity_rate`,
+`novelty_rate`, `prediction_set_size`, masks).
+
+### Existing and new difficulty behavior
+
+- Existing behavior (already implemented):
+  `difficulty_estimator -> VennAbers probability scaling -> reject scoring`
+- New experimental behavior:
+  `difficulty_estimator -> direct reject-score normalization -> conformal p-values`
+
+### Why normalization belongs before conformal p-values
+
+Difficulty normalization is part of nonconformity definition. Applying it only as
+a post-hoc threshold changes the decision cutoff but not the conformal score
+distribution. Therefore, it does not represent difficulty-aware conformal scoring.
+
+## Scenario 8-11 evidence snapshot
+
+Source artifacts:
+
+- `evaluation/reject/artifacts/scenario_8_difficulty_reject_ablation.md`
+- `evaluation/reject/artifacts/scenario_9_difficulty_normalized_ncf.md`
+- `evaluation/reject/artifacts/scenario_10_ambiguity_novelty_reject.md`
+- `evaluation/reject/artifacts/scenario_11_operating_point_selection.md`
+
+### Scenario 8 (indirect VA difficulty effect)
+
+- Difficulty through VA alone tightened rejection strongly (lower accept rate,
+  higher rejected-error capture).
+- Accepted accuracy dropped materially in this setup.
+- Interpretation: current indirect path acts mainly as a stricter reject gate.
+
+### Scenario 9 (difficulty-normalized reject NCF)
+
+- Primary A-vs-C contrast supports direct difficulty normalization as a stronger
+  difficulty-aligned reject selector.
+- Matched reject-rate analysis reported accepted-accuracy gains for arm C.
+- Diagnostic arms with both VA difficulty and direct normalization indicate
+  potential double-counting risk.
+
+### Scenario 10 (ambiguity-normalized novelty-penalized variant)
+
+- Novelty lift versus C was small.
+- Ambiguity did not decrease in aggregate in this run.
+- C remained the recommended simpler experimental baseline.
+
+### Scenario 11 (matched operating-point selection)
+
+- Confidence values were selected closest to target reject rates 0.10, 0.20,
+  0.30, and 0.40 instead of averaging across the confidence sweep.
+- A-vs-C accepted-accuracy deltas by target were +0.0012, -0.0029, -0.0070,
+  and -0.0089.
+- A-vs-C mean difficulty-reject-AUC delta across targets was -0.0040.
+- G-vs-C increased novelty/empty-set rates by +0.0084 on average and novelty
+  reject AUC by +0.0845, but accepted accuracy changed by -0.0005.
+- Recommendation: do not promote difficulty-normalized reject scoring to a
+  public NCF yet; keep the novelty-aware strategy internal/experimental.
+
+## Usage guidance
+
+- Use `ncf="default"` for stable public behavior.
+- Use `ncf="ensured"` when interval-width blending is desired.
+- Use `strategy="experimental.difficulty_normalized"` for opt-in research and
+  ablation runs.
+- Use `strategy="experimental.ambiguity_normalized_novelty_penalized"` only for
+  research diagnostics until promotion evidence is stronger.
+
+## Validity caveats
+
+- Fit/freeze the difficulty estimator before reject calibration.
+- Do not fit on calibration labels/residuals unless cross-fitted.
+- Distinguish empirical utility from formal coverage guarantees.
+- Keep experimental strategy semantics separate from public NCF contracts
+  (`default`, `ensured`) until promotion criteria are met.
+
+## Contribution framing
+
+- Development contribution:
+  difficulty-aware reject routing integrated in CE while preserving CE-first API,
+  reject policy contracts, and plugin architecture.
+- Research contribution:
+  experimental difficulty-normalized nonconformity for reject-option conformal
+  classification, evaluated against baseline and novelty-aware variants.
+
+## Open research questions
+
+- How to separate ambiguity and novelty more effectively without harming accepted
+  decision quality.
+- How to avoid difficulty double-counting when VA difficulty scaling and direct
+  reject normalization are both active.
+- How to extend to conditional/Mondrian validity while preserving useful
+  reject selectivity.
+- How finite-sample behavior changes across calibration-set sizes and
+  confidence regimes.

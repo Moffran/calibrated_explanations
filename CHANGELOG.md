@@ -7,6 +7,15 @@
 
 ### Packaging / CI
 
+- **Difficulty-normalized reject documentation update:** Expanded practitioner and
+  improvement documentation for reject-option conformal classification with
+  difficulty-aware routing, including singleton/empty/multi-label set semantics,
+  explicit pre-p-value normalization rationale, strategy usage guidance
+  (`default`, `ensured`, `experimental.difficulty_normalized`, novelty-aware
+  variant), validity caveats, and Scenario 8-10 evaluation summary. Added a new
+  researcher-facing reference page at
+  `docs/researcher/advanced/difficulty_normalized_reject.md`.
+
 - **Global plot public API plugin routing:** Restored return-value propagation through `CalibratedExplainer.plot(...)` and `WrapCalibratedExplainer.plot(...)` so explicit non-legacy global styles now return the plugin renderer result through the normal public API, while omitted styles and explicit `use_legacy=True` continue to follow the existing default or forced-legacy behavior.
 
 - **PlotSpec default promotion (v0.11.3 Task 6):** Promoted PlotSpec to the

@@ -4,18 +4,18 @@
   "paper_contribution": "C1",
   "paper_rq": "RQ1",
   "guarantee_status": "formal_target",
-  "quick": true,
+  "quick": false,
   "highlights": [
     "Coverage is reported as standard label-set coverage from the conformal prediction sets.",
     "Accepted accuracy is included as a separate empirical metric and not treated as the conformal guarantee.",
-    "Observed coverage violations: 5/9 (0.5556).",
-    "Structural violations (CI upper bound < 1-epsilon, cannot be attributed to finite-sample noise): 0/9."
+    "Observed coverage violations: 31/78 (0.3974).",
+    "Structural violations (CI upper bound < 1-epsilon, cannot be attributed to finite-sample noise): 4/78."
   ],
   "outcome": {
-    "datasets": 3,
-    "rows": 9,
-    "violation_rate": 0.5555555555555556,
-    "structural_violations": 0,
-    "mean_coverage": 0.9353655603655603
+    "datasets": 26,
+    "rows": 78,
+    "violation_rate": 0.3974358974358974,
+    "structural_violations": 4,
+    "mean_coverage": 0.94244588396505
   }
 }
