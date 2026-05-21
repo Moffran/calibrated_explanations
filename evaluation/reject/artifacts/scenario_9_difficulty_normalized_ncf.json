@@ -1,0 +1,37 @@
+{
+  "scenario": "scenario_9_difficulty_normalized_ncf",
+  "display_name": "Scenario 9 - Difficulty-normalized reject NCF strategy ablation",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "highlights": [
+    "Compares indirect VA-difficulty support against direct experimental difficulty-normalized reject scoring.",
+    "Primary scientific contrast is A vs C (default NCF, no VA difficulty in either arm).",
+    "Arms D and F are diagnostic for potential difficulty double-counting when VA and score normalization are both enabled.",
+    "Includes strategy metadata and difficulty_reject_auc for reject-selectivity diagnostics.",
+    "Includes accepted-accuracy comparison at matched reject-rate bins for A vs C.",
+    "Direct normalization (C vs A) changed reject_rate by +0.2310, difficulty-gap by +0.3912, and difficulty_reject_auc by +0.2474.",
+    "At matched reject-rate bins, C minus A mean accepted_accuracy is +0.0689.",
+    "For C vs A, ambiguity_rate changed by +0.2790 and novelty_rate by -0.0480.",
+    "Double-count diagnostics: D-B reject_rate delta +0.1130, F-E reject_rate delta +0.0287; difficulty-gap deltas are +0.5649 and +0.1382.",
+    "Recommended arm for next iteration: C (primary A-vs-C contrast with direct normalization and no VA double-count risk)."
+  ],
+  "outcome": {
+    "rows": 12420,
+    "datasets": 46,
+    "seeds": 5,
+    "mean_accept_rate": 0.11974461233189486,
+    "mean_accuracy_delta": -0.004654051246454357,
+    "A_vs_C_reject_rate_delta": 0.2310248356316278,
+    "A_vs_C_difficulty_gap_delta": 0.3912183360488994,
+    "A_vs_C_difficulty_reject_auc_delta": 0.24743823483751592,
+    "A_vs_C_ambiguity_rate_delta": 0.27900585736134387,
+    "A_vs_C_novelty_rate_delta": -0.04798102172971616,
+    "A_vs_C_matched_bin_accepted_accuracy_delta": 0.06889509744204043,
+    "D_minus_B_reject_rate_delta": 0.11302286669185702,
+    "F_minus_E_reject_rate_delta": 0.028688433820881376,
+    "D_minus_B_difficulty_gap_delta": 0.5648894127541202,
+    "F_minus_E_difficulty_gap_delta": 0.13816405519895034,
+    "recommended_arm": "C",
+    "recommendation_reason": "primary A-vs-C contrast with direct normalization and no VA double-count risk"
+  }
+}

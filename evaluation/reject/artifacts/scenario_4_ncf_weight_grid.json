@@ -4,7 +4,7 @@
   "paper_contribution": "C2",
   "paper_rq": "RQ4",
   "guarantee_status": "empirical",
-  "quick": false,
+  "quick": true,
   "highlights": [
     "NCFs tested: default, ensured. Entropy and explicit hinge/margin modes are excluded from this suite.",
     "accept_rate is the fraction of accepted instances \u2014 NOT ICP label-set coverage.",
@@ -12,9 +12,9 @@
     "Accepted accuracy delta is always empirical and benchmarked against the non-reject baseline."
   ],
   "outcome": {
-    "rows": 368,
-    "datasets": 46,
-    "best_accuracy_delta": 0.38095238095238093,
+    "rows": 40,
+    "datasets": 5,
+    "best_accuracy_delta": 0.22546897546897549,
     "ncfs_tested": [
       "default",
       "ensured"

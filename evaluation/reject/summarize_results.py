@@ -40,6 +40,7 @@ def summarize() -> None:
         "scenario_6_finite_sample_stress": ("RQ6", "Finite-sample stress tests", "empirical"),
         "scenario_7_ncf_coverage_validity": ("C1", "NCF coverage validity sweep (supplementary)", "empirical"),
         "scenario_8_difficulty_reject_ablation": ("Ablation", "Difficulty estimator reject ablation", "empirical"),
+        "scenario_9_difficulty_normalized_ncf": ("Ablation", "Difficulty-normalized reject NCF strategy ablation", "empirical"),
     }
 
     # Collect artifacts

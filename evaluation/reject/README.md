@@ -6,7 +6,8 @@ the real `WrapCalibratedExplainer` runtime APIs described by ADR-029.
 Scenarios 1-7 map to a paper contribution (C1-C4) or research question (RQ1-RQ6) from the
 accompanying ESWA paper. Scenario 8 is a repository-focused empirical ablation that measures the
 current indirect effect of `difficulty_estimator` on reject behavior without changing reject
-scoring.
+scoring. Scenario 9 extends this with a direct strategy comparison for experimental
+difficulty-normalized reject scoring.
 
 ## Scenarios
 
@@ -56,6 +57,19 @@ scoring.
   It measures whether the existing path `difficulty_estimator -> VennAbers probability scaling ->
   reject NCF -> ConformalClassifier` already changes accept/reject behavior before any
   difficulty-normalized reject NCF is added. Status: `empirical`.
+
+- **Scenario 9 — Difficulty-normalized reject NCF strategy ablation** (`scenario_9_difficulty_normalized_ncf.py`):
+  Empirical six-arm comparison between the current indirect difficulty path and the new
+  experimental direct score-normalization strategy:
+  1. A: no VA difficulty, `builtin.default`, `ncf=default`
+  2. B: VA difficulty, `builtin.default`, `ncf=default`
+  3. C: no VA difficulty, `experimental.difficulty_normalized`, `ncf=default`
+  4. D: VA difficulty, `experimental.difficulty_normalized`, `ncf=default`
+  5. E: no VA difficulty, `experimental.difficulty_normalized`, `ncf=ensured`
+  6. F: VA difficulty, `experimental.difficulty_normalized`, `ncf=ensured`
+  Primary scientific contrast is A vs C. D and F are diagnostic for potential
+  difficulty double-counting when both VA difficulty and direct score normalization are enabled.
+  Status: `empirical`.
 
 ### Supplementary scenarios (pass `--supplementary` flag, requires RT-2 fix)
 
@@ -115,6 +129,7 @@ Run an individual scenario directly:
 python -m evaluation.reject.scenario_1_binary_coverage --quick
 python -m evaluation.reject.scenario_2_multiclass_correctness --quick
 python -m evaluation.reject.scenario_8_difficulty_reject_ablation --quick
+python -m evaluation.reject.scenario_9_difficulty_normalized_ncf --quick
 ```
 
 ## Interpretation notes
@@ -129,6 +144,8 @@ python -m evaluation.reject.scenario_8_difficulty_reject_ablation --quick
   result: threshold reject does not select by uncertainty.
 - For **Scenario 8**, any observed difference comes from the existing interval-calibration path;
   reject scoring formulas themselves remain unchanged.
+- For **Scenario 9**, compare A vs C first (cleanest contrast). Treat D/F as diagnostic because
+  they may double-count difficulty (VA scaling + direct score normalization).
 
 ## Design constraints followed
 

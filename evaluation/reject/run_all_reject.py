@@ -25,6 +25,7 @@ CORE_SCENARIOS = [
     "scenario_5_explanation_quality",           # C4 / RQ5 — empirical
     "scenario_6_finite_sample_stress",          # RQ6 — empirical
     "scenario_8_difficulty_reject_ablation",    # Empirical ablation of the existing difficulty path
+    "scenario_9_difficulty_normalized_ncf",     # Empirical ablation of direct difficulty-normalized reject scoring
 ]
 
 # Supplementary scenarios — depend on RT-2 K1 fix being complete

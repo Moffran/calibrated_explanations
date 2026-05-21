@@ -1,6 +1,6 @@
 # Scenario 8 — Difficulty estimator reject ablation
 
-Rows: 8280
+Rows: 160
 
 ## Key findings
 
@@ -8,13 +8,13 @@ Rows: 8280
 - Arms compare use_difficulty in {False, True} crossed with reject NCF in {default, ensured}.
 - Difficulty summary columns use the same deterministic reference estimator in all arms so selection differences are comparable.
 - This scenario does not test difficulty-normalized reject NCFs; it quantifies the baseline before that experiment.
-- With `default`, enabling difficulty changed accept_rate by -22.2 pp, rejected_error_capture_rate by +11.5 pp, and accepted_accuracy by -10.9 pp.
-- With `default`, mean empirical coverage shifted by +4.4 pp across the swept confidence grid.
-- With `default` and difficulty enabled, rejected instances were harder than accepted ones by 0.093 mean difficulty units.
+- With `default`, enabling difficulty changed accept_rate by -40.6 pp, rejected_error_capture_rate by +24.8 pp, and accepted_accuracy by -44.4 pp.
+- With `default`, mean empirical coverage shifted by +8.1 pp across the swept confidence grid.
+- With `default` and difficulty enabled, rejected instances were harder than accepted ones by 0.260 mean difficulty units.
 - For `default`, the current difficulty path acts mainly as a stricter reject gate: it captures more errors, but at the cost of accepting far fewer instances and lowering accepted accuracy.
-- With `ensured`, enabling difficulty changed accept_rate by -9.7 pp, rejected_error_capture_rate by +4.9 pp, and accepted_accuracy by -12.2 pp.
-- With `ensured`, mean empirical coverage shifted by +2.8 pp across the swept confidence grid.
-- With `ensured` and difficulty enabled, rejected instances were harder than accepted ones by 0.173 mean difficulty units.
+- With `ensured`, enabling difficulty changed accept_rate by -26.6 pp, rejected_error_capture_rate by +18.5 pp, and accepted_accuracy by -44.8 pp.
+- With `ensured`, mean empirical coverage shifted by +7.4 pp across the swept confidence grid.
+- With `ensured` and difficulty enabled, rejected instances were harder than accepted ones by 0.252 mean difficulty units.
 - For `ensured`, the current difficulty path acts mainly as a stricter reject gate: it captures more errors, but at the cost of accepting far fewer instances and lowering accepted accuracy.
 - The markdown now includes a by-confidence table so the headline summary is no longer averaged over hidden epsilon values.
 - Integrity checks verify reject_rate = ambiguity_rate + novelty_rate, accepted instances match singleton prediction sets, and no positive ambiguity appears without prediction sets.
@@ -22,63 +22,63 @@ Rows: 8280
 
 ## Outcome snapshot
 
-- **rows**: 8280
-- **datasets**: 46
-- **seeds**: 5
-- **mean_accept_rate**: 0.1736
-- **mean_accuracy_delta**: -0.0321
-- **default_accept_rate_no_difficulty**: 0.3612
-- **default_accept_rate_with_difficulty**: 0.1387
-- **default_accept_rate_delta**: -0.2224
-- **default_accepted_accuracy_delta**: -0.1086
-- **default_accuracy_delta_delta**: -0.1082
-- **default_rejected_error_capture_rate_delta**: 0.1145
-- **default_singleton_error_rate_delta**: 0.4451
-- **default_difficulty_gap_with_difficulty**: 0.0925
-- **default_empirical_coverage_no_difficulty**: 0.8965
-- **default_empirical_coverage_with_difficulty**: 0.9403
-- **default_coverage_gap_delta**: 0.0438
-- **ensured_accept_rate_no_difficulty**: 0.1459
-- **ensured_accept_rate_with_difficulty**: 0.0488
-- **ensured_accept_rate_delta**: -0.0971
-- **ensured_accepted_accuracy_delta**: -0.1223
-- **ensured_accuracy_delta_delta**: -0.1183
-- **ensured_rejected_error_capture_rate_delta**: 0.0488
-- **ensured_singleton_error_rate_delta**: 0.3579
-- **ensured_difficulty_gap_with_difficulty**: 0.1729
-- **ensured_empirical_coverage_no_difficulty**: 0.9130
-- **ensured_empirical_coverage_with_difficulty**: 0.9406
-- **ensured_coverage_gap_delta**: 0.0275
-- **mean_difficulty_gap_with_difficulty**: 0.1118
-- **unique_confidences**: 9
+- **rows**: 160
+- **datasets**: 5
+- **seeds**: 2
+- **mean_accept_rate**: 0.1887
+- **mean_accuracy_delta**: -0.1357
+- **default_accept_rate_no_difficulty**: 0.4280
+- **default_accept_rate_with_difficulty**: 0.0217
+- **default_accept_rate_delta**: -0.4063
+- **default_accepted_accuracy_delta**: -0.4441
+- **default_accuracy_delta_delta**: -0.4242
+- **default_rejected_error_capture_rate_delta**: 0.2484
+- **default_singleton_error_rate_delta**: 0.7870
+- **default_difficulty_gap_with_difficulty**: 0.2595
+- **default_empirical_coverage_no_difficulty**: 0.9025
+- **default_empirical_coverage_with_difficulty**: 0.9839
+- **default_coverage_gap_delta**: 0.0813
+- **ensured_accept_rate_no_difficulty**: 0.2852
+- **ensured_accept_rate_with_difficulty**: 0.0197
+- **ensured_accept_rate_delta**: -0.2656
+- **ensured_accepted_accuracy_delta**: -0.4481
+- **ensured_accuracy_delta_delta**: -0.4281
+- **ensured_rejected_error_capture_rate_delta**: 0.1854
+- **ensured_singleton_error_rate_delta**: 0.7633
+- **ensured_difficulty_gap_with_difficulty**: 0.2521
+- **ensured_empirical_coverage_no_difficulty**: 0.9101
+- **ensured_empirical_coverage_with_difficulty**: 0.9839
+- **ensured_coverage_gap_delta**: 0.0738
+- **mean_difficulty_gap_with_difficulty**: 0.2610
+- **unique_confidences**: 4
 - **min_epsilon**: 0.0100
 - **max_epsilon**: 0.2000
 - **max_abs_reject_partition_residual**: 0.0000
 - **max_abs_accept_singleton_residual**: 0.0000
 - **positive_ambiguity_without_prediction_set_rows**: 0
 - **equal_positive_ambiguity_novelty_rows**: 0
-- **coverage_defined_rows**: 4680
-- **min_empirical_coverage_gap**: -0.2179
+- **coverage_defined_rows**: 96
+- **min_empirical_coverage_gap**: -0.1550
 - **max_empirical_coverage_gap**: 0.2000
 
 ## Result table
 
 | task_type | dataset | seed | confidence | epsilon | n_train | n_cal | n_test | ncf | use_difficulty | arm | accept_rate | reject_rate | ambiguity_rate | novelty_rate | accepted_accuracy | full_accuracy | accuracy_delta | singleton_error_rate | error_rate_defined | rejected_error_capture_rate | mean_difficulty_all | mean_difficulty_accepted | mean_difficulty_rejected | empty_rate | singleton_rate | multilabel_rate | empirical_coverage | coverage_gap | coverage_defined | has_prediction_set | reject_partition_residual | accept_singleton_residual | ambiguity_multilabel_residual | novelty_empty_residual | ambiguity_equals_novelty | ambiguity_equals_novelty_positive | positive_ambiguity_without_prediction_set |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.8333 | 0.1667 | 0.0000 | 0.1667 | 1.0000 | 0.9561 | 0.0439 | 0.0400 | yes | 1.0000 | 1.8789 | 1.9130 | 1.7080 | 0.1667 | 0.8333 | 0.0000 | 0.8333 | 0.0333 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8237 | 0.1763 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.8684 | 0.1316 | 0.0000 | 0.1316 | 0.9899 | 0.9561 | 0.0338 | 0.0514 | yes | 0.8000 | 1.8789 | 1.9139 | 1.6473 | 0.1316 | 0.8684 | 0.0000 | 0.8596 | 0.0359 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8475 | 0.1525 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9035 | 0.0965 | 0.0000 | 0.0965 | 0.9903 | 0.9561 | 0.0342 | 0.0620 | yes | 0.8000 | 1.8789 | 1.9035 | 1.6480 | 0.0965 | 0.9035 | 0.0000 | 0.8947 | 0.0472 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8713 | 0.1287 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9211 | 0.0789 | 0.0000 | 0.0789 | 0.9810 | 0.9561 | 0.0248 | 0.0541 | yes | 0.6000 | 1.8789 | 1.8990 | 1.6439 | 0.0789 | 0.9211 | 0.0000 | 0.9035 | 0.0323 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8950 | 0.1050 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9298 | 0.0702 | 0.0000 | 0.0702 | 0.9811 | 0.9561 | 0.0250 | 0.0375 | yes | 0.6000 | 1.8789 | 1.8996 | 1.6038 | 0.0702 | 0.9298 | 0.0000 | 0.9123 | 0.0173 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9187 | 0.0813 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9474 | 0.0526 | 0.0000 | 0.0526 | 0.9722 | 0.9561 | 0.0161 | 0.0302 | yes | 0.4000 | 1.8789 | 1.8934 | 1.6172 | 0.0526 | 0.9474 | 0.0000 | 0.9211 | 0.0023 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9425 | 0.0575 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9474 | 0.0526 | 0.0000 | 0.0526 | 0.9722 | 0.9561 | 0.0161 | 0.0051 | yes | 0.4000 | 1.8789 | 1.8934 | 1.6172 | 0.0526 | 0.9474 | 0.0000 | 0.9211 | -0.0214 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9663 | 0.0337 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9912 | 0.0088 | 0.0000 | 0.0088 | 0.9646 | 0.9561 | 0.0085 | 0.0252 | yes | 0.2000 | 1.8789 | 1.8820 | 1.5238 | 0.0088 | 0.9912 | 0.0000 | 0.9561 | -0.0101 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9900 | 0.0100 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9474 | 0.0526 | 0.0526 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.0106 | yes | 0.4000 | 1.8789 | 1.8934 | 1.6172 | 0.0000 | 0.9474 | 0.0526 | 0.9737 | -0.0163 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6316 | 0.3684 | 0.3684 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.3167 | yes | 0.6000 | 1.8789 | 1.7423 | 2.1129 | 0.0000 | 0.6316 | 0.3684 | 0.9825 | 0.1825 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8237 | 0.1763 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6316 | 0.3684 | 0.3684 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.2791 | yes | 0.6000 | 1.8789 | 1.7423 | 2.1129 | 0.0000 | 0.6316 | 0.3684 | 0.9825 | 0.1587 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8475 | 0.1525 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6316 | 0.3684 | 0.3684 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.2415 | yes | 0.6000 | 1.8789 | 1.7423 | 2.1129 | 0.0000 | 0.6316 | 0.3684 | 0.9825 | 0.1350 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.8860 | 0.1140 | 0.0000 | 0.1140 | 0.9901 | 0.9649 | 0.0252 | 0.0970 | yes | 0.7500 | 1.8789 | 1.9055 | 1.6721 | 0.1140 | 0.8860 | 0.0000 | 0.8772 | 0.0772 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.8633 | 0.1367 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.8947 | 0.1053 | 0.0000 | 0.1053 | 0.9804 | 0.9649 | 0.0155 | 0.0351 | yes | 0.5000 | 1.8789 | 1.9015 | 1.6863 | 0.1053 | 0.8947 | 0.0000 | 0.8772 | 0.0139 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.9267 | 0.0733 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9649 | 0.0351 | 0.0000 | 0.0351 | 0.9636 | 0.9649 | -0.0013 | 0.0396 | yes | 0.0000 | 1.8789 | 1.8814 | 1.8077 | 0.0351 | 0.9649 | 0.0000 | 0.9298 | 0.0032 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.9900 | 0.0100 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9386 | 0.0614 | 0.0614 | 0.0000 | 0.9720 | 0.9649 | 0.0071 | 0.0107 | yes | 0.2500 | 1.8789 | 1.8927 | 1.6679 | 0.0000 | 0.9386 | 0.0614 | 0.9737 | -0.0163 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6228 | 0.3772 | 0.3772 | 0.0000 | 0.9718 | 0.9649 | 0.0069 | 0.3211 | yes | 0.5000 | 1.8789 | 1.7432 | 2.1028 | 0.0000 | 0.6228 | 0.3772 | 0.9825 | 0.1825 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.8633 | 0.1367 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6228 | 0.3772 | 0.3772 | 0.0000 | 0.9718 | 0.9649 | 0.0069 | 0.2194 | yes | 0.5000 | 1.8789 | 1.7432 | 2.1028 | 0.0000 | 0.6228 | 0.3772 | 0.9825 | 0.1191 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.9267 | 0.0733 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6228 | 0.3772 | 0.3772 | 0.0000 | 0.9718 | 0.9649 | 0.0069 | 0.1177 | yes | 0.5000 | 1.8789 | 1.7432 | 2.1028 | 0.0000 | 0.6228 | 0.3772 | 0.9825 | 0.0558 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.9900 | 0.0100 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6053 | 0.3947 | 0.3947 | 0.0000 | 0.9710 | 0.9649 | 0.0061 | 0.0165 | yes | 0.5000 | 1.8789 | 1.7354 | 2.0989 | 0.0000 | 0.6053 | 0.3947 | 0.9825 | -0.0075 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | default | yes | default|difficulty=1 | 0.0351 | 0.9649 | 0.9649 | 0.0000 | 1.0000 | 0.9649 | 0.0351 | 1.0000 | yes | 1.0000 | 1.8789 | 1.3681 | 1.8974 | 0.0000 | 0.0351 | 0.9649 | 0.9912 | 0.1912 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.8633 | 0.1367 | 341 | 114 | 114 | default | yes | default|difficulty=1 | 0.0351 | 0.9649 | 0.9649 | 0.0000 | 1.0000 | 0.9649 | 0.0351 | 1.0000 | yes | 1.0000 | 1.8789 | 1.3681 | 1.8974 | 0.0000 | 0.0351 | 0.9649 | 0.9912 | 0.1279 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.9267 | 0.0733 | 341 | 114 | 114 | default | yes | default|difficulty=1 | 0.0351 | 0.9649 | 0.9649 | 0.0000 | 1.0000 | 0.9649 | 0.0351 | 1.0000 | yes | 1.0000 | 1.8789 | 1.3681 | 1.8974 | 0.0000 | 0.0351 | 0.9649 | 0.9912 | 0.0646 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
+| binary | breast_cancer | 42 | 0.9900 | 0.0100 | 341 | 114 | 114 | default | yes | default|difficulty=1 | 0.0351 | 0.9649 | 0.9649 | 0.0000 | 1.0000 | 0.9649 | 0.0351 | 0.2850 | yes | 1.0000 | 1.8789 | 1.3681 | 1.8974 | 0.0000 | 0.0351 | 0.9649 | 0.9912 | 0.0012 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
 
-_Showing first 12 of 8280 rows._
+_Showing first 12 of 160 rows._
 
 ## Arm Summary
 
@@ -86,10 +86,10 @@ This table averages each arm across all datasets, seeds, and confidence levels.
 
 | ncf | use_difficulty | accept_rate | accepted_accuracy | accuracy_delta | empirical_coverage | coverage_gap | rejected_error_capture_rate | mean_difficulty_accepted | mean_difficulty_rejected | singleton_rate | empty_rate | multilabel_rate |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| default | no | 0.3612 | 0.8653 | 0.0578 | 0.8965 | 0.0015 | 0.7464 | 1.8934 | 1.9243 | 0.3612 | 0.0538 | 0.5850 |
-| default | yes | 0.1387 | 0.7567 | -0.0505 | 0.9403 | 0.0453 | 0.8610 | 1.8140 | 1.9065 | 0.1387 | 0.0224 | 0.8388 |
-| ensured | no | 0.1459 | 0.7828 | -0.0263 | 0.9130 | 0.0180 | 0.8653 | 1.9815 | 1.9235 | 0.1459 | 0.0260 | 0.8281 |
-| ensured | yes | 0.0488 | 0.6605 | -0.1447 | 0.9406 | 0.0456 | 0.9141 | 1.7542 | 1.9271 | 0.0488 | 0.0293 | 0.9219 |
+| default | no | 0.4280 | 0.8997 | 0.0597 | 0.9025 | 0.0075 | 0.6943 | 1.9229 | 1.8816 | 0.4280 | 0.0562 | 0.5158 |
+| default | yes | 0.0217 | 0.4556 | -0.3645 | 0.9839 | 0.0889 | 0.9426 | 1.6881 | 1.9477 | 0.0217 | 0.0244 | 0.9538 |
+| ensured | no | 0.2852 | 0.8926 | 0.0526 | 0.9101 | 0.0151 | 0.7635 | 1.8564 | 1.9914 | 0.2852 | 0.0234 | 0.6913 |
+| ensured | yes | 0.0197 | 0.4444 | -0.3756 | 0.9839 | 0.0889 | 0.9489 | 1.6949 | 1.9470 | 0.0197 | 0.0239 | 0.9565 |
 
 ## By Confidence And Arm
 
@@ -98,42 +98,22 @@ This table keeps the reject operating point visible instead of averaging across 
 
 | confidence | epsilon | ncf | use_difficulty | accept_rate | accepted_accuracy | rejected_error_capture_rate | empirical_coverage | coverage_gap | ambiguity_rate | novelty_rate | singleton_rate |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 0.8000 | 0.2000 | default | no | 0.4775 | 0.8361 | 0.6242 | 0.8031 | 0.0031 | 0.4051 | 0.1175 | 0.4775 |
-| 0.8000 | 0.2000 | default | yes | 0.2222 | 0.7566 | 0.7819 | 0.8837 | 0.0837 | 0.7255 | 0.0523 | 0.2222 |
-| 0.8237 | 0.1763 | default | no | 0.4686 | 0.8374 | 0.6354 | 0.8206 | -0.0031 | 0.4327 | 0.0987 | 0.4686 |
-| 0.8237 | 0.1763 | default | yes | 0.2072 | 0.7554 | 0.7881 | 0.9003 | 0.0765 | 0.7497 | 0.0431 | 0.2072 |
-| 0.8475 | 0.1525 | default | no | 0.4563 | 0.8413 | 0.6450 | 0.8431 | -0.0044 | 0.4638 | 0.0799 | 0.4563 |
-| 0.8475 | 0.1525 | default | yes | 0.1909 | 0.7507 | 0.7982 | 0.9127 | 0.0652 | 0.7710 | 0.0381 | 0.1909 |
-| 0.8713 | 0.1287 | default | no | 0.4285 | 0.8452 | 0.6799 | 0.8714 | 0.0001 | 0.5074 | 0.0642 | 0.4285 |
-| 0.8713 | 0.1287 | default | yes | 0.1706 | 0.7470 | 0.8168 | 0.9280 | 0.0567 | 0.8056 | 0.0239 | 0.1706 |
-| 0.8950 | 0.1050 | default | no | 0.4079 | 0.8523 | 0.7048 | 0.8949 | -0.0001 | 0.5436 | 0.0485 | 0.4079 |
-| 0.8950 | 0.1050 | default | yes | 0.1495 | 0.7545 | 0.8507 | 0.9427 | 0.0477 | 0.8322 | 0.0183 | 0.1495 |
-| 0.9187 | 0.0813 | default | no | 0.3666 | 0.8686 | 0.7599 | 0.9236 | 0.0049 | 0.5980 | 0.0354 | 0.3666 |
-| 0.9187 | 0.0813 | default | yes | 0.1331 | 0.7708 | 0.8724 | 0.9509 | 0.0321 | 0.8533 | 0.0137 | 0.1331 |
-| 0.9425 | 0.0575 | default | no | 0.3232 | 0.8834 | 0.8053 | 0.9415 | -0.0010 | 0.6533 | 0.0236 | 0.3232 |
-| 0.9425 | 0.0575 | default | yes | 0.1001 | 0.7593 | 0.9065 | 0.9647 | 0.0222 | 0.8930 | 0.0070 | 0.1001 |
-| 0.9663 | 0.0337 | default | no | 0.2474 | 0.9311 | 0.8849 | 0.9729 | 0.0066 | 0.7387 | 0.0139 | 0.2474 |
-| 0.9663 | 0.0337 | default | yes | 0.0645 | 0.7898 | 0.9474 | 0.9820 | 0.0157 | 0.9309 | 0.0046 | 0.0645 |
-| 0.9900 | 0.0100 | default | no | 0.0747 | 0.9621 | 0.9785 | 0.9971 | 0.0071 | 0.9228 | 0.0025 | 0.0747 |
-| 0.9900 | 0.0100 | default | yes | 0.0108 | 0.6679 | 0.9869 | 0.9977 | 0.0077 | 0.9885 | 0.0007 | 0.0108 |
-| 0.8000 | 0.2000 | ensured | no | 0.2000 | 0.7703 | 0.7978 | 0.8274 | 0.0274 | 0.7386 | 0.0614 | 0.2000 |
-| 0.8000 | 0.2000 | ensured | yes | 0.1083 | 0.7096 | 0.8597 | 0.8918 | 0.0918 | 0.8262 | 0.0655 | 0.1083 |
-| 0.8237 | 0.1763 | ensured | no | 0.1872 | 0.7737 | 0.8130 | 0.8506 | 0.0269 | 0.7621 | 0.0507 | 0.1872 |
-| 0.8237 | 0.1763 | ensured | yes | 0.0863 | 0.6868 | 0.8670 | 0.9028 | 0.0791 | 0.8581 | 0.0556 | 0.0863 |
-| 0.8475 | 0.1525 | ensured | no | 0.1741 | 0.7787 | 0.8265 | 0.8731 | 0.0256 | 0.7855 | 0.0403 | 0.1741 |
-| 0.8475 | 0.1525 | ensured | yes | 0.0645 | 0.6764 | 0.8928 | 0.9142 | 0.0667 | 0.8852 | 0.0503 | 0.0645 |
-| 0.8713 | 0.1287 | ensured | no | 0.1584 | 0.7678 | 0.8473 | 0.8939 | 0.0226 | 0.8084 | 0.0332 | 0.1584 |
-| 0.8713 | 0.1287 | ensured | yes | 0.0511 | 0.6768 | 0.9029 | 0.9271 | 0.0558 | 0.9131 | 0.0357 | 0.0511 |
-| 0.8950 | 0.1050 | ensured | no | 0.1593 | 0.7817 | 0.8517 | 0.9125 | 0.0175 | 0.8174 | 0.0233 | 0.1593 |
-| 0.8950 | 0.1050 | ensured | yes | 0.0439 | 0.6836 | 0.9126 | 0.9366 | 0.0416 | 0.9300 | 0.0261 | 0.0439 |
-| 0.9187 | 0.0813 | ensured | no | 0.1493 | 0.7779 | 0.8659 | 0.9348 | 0.0161 | 0.8363 | 0.0144 | 0.1493 |
-| 0.9187 | 0.0813 | ensured | yes | 0.0353 | 0.6668 | 0.9254 | 0.9514 | 0.0326 | 0.9472 | 0.0175 | 0.0353 |
-| 0.9425 | 0.0575 | ensured | no | 0.1386 | 0.7843 | 0.8829 | 0.9534 | 0.0109 | 0.8539 | 0.0074 | 0.1386 |
-| 0.9425 | 0.0575 | ensured | yes | 0.0271 | 0.6076 | 0.9381 | 0.9645 | 0.0220 | 0.9641 | 0.0088 | 0.0271 |
-| 0.9663 | 0.0337 | ensured | no | 0.1095 | 0.8054 | 0.9211 | 0.9746 | 0.0084 | 0.8874 | 0.0031 | 0.1095 |
-| 0.9663 | 0.0337 | ensured | yes | 0.0198 | 0.5942 | 0.9423 | 0.9791 | 0.0128 | 0.9764 | 0.0039 | 0.0198 |
-| 0.9900 | 0.0100 | ensured | no | 0.0366 | 0.8565 | 0.9816 | 0.9971 | 0.0071 | 0.9634 | 0.0000 | 0.0366 |
-| 0.9900 | 0.0100 | ensured | yes | 0.0029 | 0.5657 | 0.9864 | 0.9979 | 0.0079 | 0.9970 | 0.0001 | 0.0029 |
+| 0.8000 | 0.2000 | default | no | 0.5301 | 0.8705 | 0.6198 | 0.8369 | 0.0369 | 0.3652 | 0.1047 | 0.5301 |
+| 0.8000 | 0.2000 | default | yes | 0.0257 | 0.4467 | 0.9288 | 0.9808 | 0.1808 | 0.9169 | 0.0575 | 0.0257 |
+| 0.8633 | 0.1367 | default | no | 0.5118 | 0.8803 | 0.6268 | 0.8632 | -0.0002 | 0.4098 | 0.0784 | 0.5118 |
+| 0.8633 | 0.1367 | default | yes | 0.0257 | 0.4467 | 0.9288 | 0.9808 | 0.1174 | 0.9441 | 0.0303 | 0.0257 |
+| 0.9267 | 0.0733 | default | no | 0.4526 | 0.9103 | 0.6731 | 0.9240 | -0.0027 | 0.5075 | 0.0400 | 0.4526 |
+| 0.9267 | 0.0733 | default | yes | 0.0257 | 0.4467 | 0.9288 | 0.9808 | 0.0541 | 0.9643 | 0.0100 | 0.0257 |
+| 0.9900 | 0.0100 | default | no | 0.2176 | 0.9566 | 0.8572 | 0.9861 | -0.0039 | 0.7808 | 0.0016 | 0.2176 |
+| 0.9900 | 0.0100 | default | yes | 0.0100 | 0.5000 | 0.9841 | 0.9931 | 0.0031 | 0.9900 | 0.0000 | 0.0100 |
+| 0.8000 | 0.2000 | ensured | no | 0.3093 | 0.8640 | 0.7173 | 0.8407 | 0.0407 | 0.6345 | 0.0562 | 0.3093 |
+| 0.8000 | 0.2000 | ensured | yes | 0.0229 | 0.4333 | 0.9371 | 0.9808 | 0.1808 | 0.9223 | 0.0549 | 0.0229 |
+| 0.8633 | 0.1367 | ensured | no | 0.3343 | 0.8754 | 0.7148 | 0.8824 | 0.0190 | 0.6351 | 0.0306 | 0.3343 |
+| 0.8633 | 0.1367 | ensured | yes | 0.0229 | 0.4333 | 0.9371 | 0.9808 | 0.1174 | 0.9487 | 0.0285 | 0.0229 |
+| 0.9267 | 0.0733 | ensured | no | 0.3374 | 0.8927 | 0.7270 | 0.9282 | 0.0016 | 0.6557 | 0.0069 | 0.3374 |
+| 0.9267 | 0.0733 | ensured | yes | 0.0229 | 0.4333 | 0.9371 | 0.9808 | 0.0541 | 0.9649 | 0.0122 | 0.0229 |
+| 0.9900 | 0.0100 | ensured | no | 0.1600 | 0.9609 | 0.8947 | 0.9891 | -0.0009 | 0.8400 | 0.0000 | 0.1600 |
+| 0.9900 | 0.0100 | ensured | yes | 0.0100 | 0.5000 | 0.9841 | 0.9931 | 0.0031 | 0.9900 | 0.0000 | 0.0100 |
 
 ## Difficulty Effect By Confidence And NCF
 
@@ -142,24 +122,14 @@ Negative `coverage_gap_delta` means the difficulty-enabled arm covered fewer tru
 
 | confidence | epsilon | ncf | accept_rate_delta | accepted_accuracy_delta | rejected_error_capture_rate_delta | empirical_coverage_delta | coverage_gap_delta |
 |---|---|---|---|---|---|---|---|
-| 0.8000 | 0.2000 | default | -0.2553 | -0.0795 | 0.1577 | 0.0806 | 0.0806 |
-| 0.8237 | 0.1763 | default | -0.2614 | -0.0820 | 0.1526 | 0.0796 | 0.0796 |
-| 0.8475 | 0.1525 | default | -0.2654 | -0.0906 | 0.1532 | 0.0696 | 0.0696 |
-| 0.8713 | 0.1287 | default | -0.2579 | -0.0982 | 0.1370 | 0.0566 | 0.0566 |
-| 0.8950 | 0.1050 | default | -0.2584 | -0.0978 | 0.1458 | 0.0478 | 0.0478 |
-| 0.9187 | 0.0813 | default | -0.2335 | -0.0978 | 0.1124 | 0.0273 | 0.0273 |
-| 0.9425 | 0.0575 | default | -0.2231 | -0.1241 | 0.1012 | 0.0232 | 0.0232 |
-| 0.9663 | 0.0337 | default | -0.1829 | -0.1412 | 0.0625 | 0.0091 | 0.0091 |
-| 0.9900 | 0.0100 | default | -0.0639 | -0.2943 | 0.0084 | 0.0007 | 0.0007 |
-| 0.8000 | 0.2000 | ensured | -0.0917 | -0.0607 | 0.0619 | 0.0643 | 0.0643 |
-| 0.8237 | 0.1763 | ensured | -0.1009 | -0.0870 | 0.0540 | 0.0522 | 0.0522 |
-| 0.8475 | 0.1525 | ensured | -0.1096 | -0.1022 | 0.0664 | 0.0411 | 0.0411 |
-| 0.8713 | 0.1287 | ensured | -0.1073 | -0.0909 | 0.0556 | 0.0332 | 0.0332 |
-| 0.8950 | 0.1050 | ensured | -0.1154 | -0.0981 | 0.0608 | 0.0241 | 0.0241 |
-| 0.9187 | 0.0813 | ensured | -0.1140 | -0.1112 | 0.0594 | 0.0166 | 0.0166 |
-| 0.9425 | 0.0575 | ensured | -0.1116 | -0.1767 | 0.0552 | 0.0111 | 0.0111 |
-| 0.9663 | 0.0337 | ensured | -0.0897 | -0.2112 | 0.0212 | 0.0044 | 0.0044 |
-| 0.9900 | 0.0100 | ensured | -0.0337 | -0.2907 | 0.0048 | 0.0009 | 0.0009 |
+| 0.8000 | 0.2000 | default | -0.5045 | -0.4238 | 0.3090 | 0.1439 | 0.1439 |
+| 0.8633 | 0.1367 | default | -0.4862 | -0.4336 | 0.3020 | 0.1176 | 0.1176 |
+| 0.9267 | 0.0733 | default | -0.4269 | -0.4636 | 0.2557 | 0.0568 | 0.0568 |
+| 0.9900 | 0.0100 | default | -0.2076 | -0.4566 | 0.1268 | 0.0070 | 0.0070 |
+| 0.8000 | 0.2000 | ensured | -0.2864 | -0.4306 | 0.2198 | 0.1401 | 0.1401 |
+| 0.8633 | 0.1367 | ensured | -0.3114 | -0.4421 | 0.2224 | 0.0984 | 0.0984 |
+| 0.9267 | 0.0733 | ensured | -0.3145 | -0.4593 | 0.2102 | 0.0525 | 0.0525 |
+| 0.9900 | 0.0100 | ensured | -0.1500 | -0.4609 | 0.0893 | 0.0041 | 0.0041 |
 
 ## Difficulty Effect By NCF
 
@@ -169,8 +139,8 @@ Positive `rejected_error_capture_rate_delta` means the difficulty-enabled arm ca
 
 | ncf | accept_rate_delta | accepted_accuracy_delta | accuracy_delta_delta | empirical_coverage_delta | coverage_gap_delta | rejected_error_capture_rate_delta | singleton_error_rate_delta | mean_difficulty_rejected_delta |
 |---|---|---|---|---|---|---|---|---|
-| default | -0.2224 | -0.1086 | -0.1082 | 0.0438 | 0.0438 | 0.1145 | 0.4451 | -0.0178 |
-| ensured | -0.0971 | -0.1223 | -0.1183 | 0.0275 | 0.0275 | 0.0488 | 0.3579 | 0.0036 |
+| default | -0.4063 | -0.4441 | -0.4242 | 0.0813 | 0.0813 | 0.2484 | 0.7870 | 0.0660 |
+| ensured | -0.2656 | -0.4481 | -0.4281 | 0.0738 | 0.0738 | 0.1854 | 0.7633 | -0.0444 |
 
 ## Integrity Audit
 
@@ -179,7 +149,7 @@ All residuals should stay near zero; positive `positive_ambiguity_without_predic
 
 | ncf | use_difficulty | rows | max_abs_reject_partition_residual | max_abs_accept_singleton_residual | max_abs_ambiguity_multilabel_residual | max_abs_novelty_empty_residual | equal_ambiguity_novelty_rows | equal_positive_ambiguity_novelty_rows | coverage_defined_rows | positive_ambiguity_without_prediction_set_rows | min_coverage_gap | max_coverage_gap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| default | no | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 54 | 0 | 1170 | 0 | -0.1936 | 0.1524 |
-| default | yes | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 20 | 0 | 1170 | 0 | -0.2179 | 0.2000 |
-| ensured | no | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 1 | 0 | 1170 | 0 | -0.1579 | 0.1912 |
-| ensured | yes | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0 | 0 | 1170 | 0 | -0.1357 | 0.2000 |
+| default | no | 40 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 1 | 0 | 24 | 0 | -0.0717 | 0.0831 |
+| default | yes | 40 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0 | 0 | 24 | 0 | -0.0095 | 0.2000 |
+| ensured | no | 40 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0 | 0 | 24 | 0 | -0.1550 | 0.1825 |
+| ensured | yes | 40 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0 | 0 | 24 | 0 | -0.0095 | 0.2000 |
