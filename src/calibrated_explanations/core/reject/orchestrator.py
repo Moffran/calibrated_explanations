@@ -25,6 +25,7 @@ from ...explanations.reject import (
     reject_result_v2_to_legacy,
 )
 from ...utils.exceptions import ValidationError
+from ..difficulty_estimator_helpers import validate_difficulty_estimator_provenance
 from .policy import RejectPolicy
 
 _VALID_NCF = frozenset({"default", "ensured"})
@@ -663,8 +664,30 @@ class RejectOrchestrator:
 
         # Enable difficulty-normalized scoring for this call
         prev_flag = getattr(self.explainer, "_reject_difficulty_normalized", False)
+        prev_reject_learner = getattr(self.explainer, "reject_learner", None)
+        prev_reject_threshold = getattr(self.explainer, "reject_threshold", None)
+        prev_reject_ncf = getattr(self.explainer, "reject_ncf", None)
+        prev_reject_ncf_w = getattr(self.explainer, "reject_ncf_w", None)
+        prev_reject_ncf_auto_selected = getattr(self.explainer, "reject_ncf_auto_selected", None)
         self.explainer._reject_difficulty_normalized = True
         try:
+            provenance_policy = (
+                str(getattr(self.explainer, "reject_difficulty_provenance_policy", "permissive"))
+                .strip()
+                .lower()
+            )
+            strict_provenance = provenance_policy == "strict"
+            provenance_report = validate_difficulty_estimator_provenance(
+                getattr(self.explainer, "difficulty_estimator", None),
+                strict=strict_provenance,
+                logger=self._logger,
+            )
+            self.initialize_reject_learner(
+                threshold=threshold,
+                ncf=prev_reject_ncf,
+                w=prev_reject_ncf_w if prev_reject_ncf_w is not None else 0.5,
+            )
+
             # Use the same logic as the builtin strategy, but ensure normalization is active
             breakdown = self.predict_reject_breakdown(
                 x, bins=bins, confidence=confidence, threshold=threshold
@@ -816,6 +839,23 @@ class RejectOrchestrator:
                     "base_ncf": getattr(self.explainer, "reject_ncf", None),
                     "base_default_kind": _default_ncf_kind(bool(self.explainer.is_multiclass())),
                     "normalization_epsilon": 1e-6,
+                    "difficulty_estimator_provenance_available": (
+                        provenance_report.provenance_available
+                    ),
+                    "difficulty_estimator_provenance_warning_emitted": (
+                        provenance_report.warning_emitted
+                    ),
+                    "difficulty_estimator_provenance_validation_mode": (
+                        provenance_report.validation_mode
+                    ),
+                    "difficulty_estimator_fit_source": provenance_report.fit_source,
+                    "difficulty_estimator_uses_calibration_labels": (
+                        provenance_report.uses_calibration_labels
+                    ),
+                    "difficulty_estimator_uses_calibration_residuals": (
+                        provenance_report.uses_calibration_residuals
+                    ),
+                    "difficulty_estimator_cross_fitted": provenance_report.cross_fitted,
                     **difficulty_stats,
                 },
             )
@@ -847,6 +887,11 @@ class RejectOrchestrator:
             return reject_result_v2_to_legacy(result_v2, emit_deprecation_warning=False)
         finally:
             self.explainer._reject_difficulty_normalized = prev_flag
+            self.explainer.reject_learner = prev_reject_learner
+            self.explainer.reject_threshold = prev_reject_threshold
+            self.explainer.reject_ncf = prev_reject_ncf
+            self.explainer.reject_ncf_w = prev_reject_ncf_w
+            self.explainer.reject_ncf_auto_selected = prev_reject_ncf_auto_selected
 
     def __getstate__(self) -> dict:
         """Support pickling by excluding unpicklable attributes (RLock/loggers).

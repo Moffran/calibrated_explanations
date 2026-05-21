@@ -185,6 +185,54 @@ For `default`, `w` is accepted for API compatibility but ignored.
 > **w=0.0 guard:** Passing `w=0.0` with `ncf='ensured'` raises a `ValidationError`.
 > Values `w < 0.1` with `ensured` emit a `UserWarning`.
 
+## Difficulty Estimator Provenance (Experimental Strategy)
+
+The experimental reject strategy `experimental.difficulty_normalized` modifies
+the non-conformity scores directly by dividing by per-instance difficulty before
+conformal p-values and prediction sets are computed.
+
+This is different from post-hoc thresholding. Post-hoc thresholding changes only
+the final decision boundary and does not change the conformal score distribution.
+Difficulty-aware conformal reject scoring must act on the scores themselves.
+
+### Why provenance matters
+
+Conformal validity depends on calibration/test exchangeability with respect to the
+scoring pipeline. If a difficulty estimator is fitted using calibration labels or
+calibration residuals without cross-fitting, score calibration can be biased.
+
+### Safe and unsafe provenance patterns
+
+- Safe: estimator fitted on proper-training data only.
+- Safe: unsupervised feature-only use of calibration features when explicitly
+    marked by estimator metadata.
+- Risky: estimator fitted on calibration labels/residuals without cross-fitting.
+
+### Runtime behavior and compatibility
+
+By default, provenance checks are permissive and backward compatible:
+
+- Estimators with only `fitted` + `apply(x)` continue to work.
+- If optional provenance metadata is absent, CE does not fail.
+- If metadata indicates calibration-label/residual leakage without cross-fitting,
+    CE emits a `UserWarning` and INFO log in permissive mode.
+
+You can request strict enforcement per explainer:
+
+```python
+wrapper.explainer.reject_difficulty_provenance_policy = "strict"
+```
+
+In strict mode, the same leakage pattern raises `ValidationError`.
+
+When `experimental.difficulty_normalized` is used, result metadata includes:
+
+- `difficulty_estimator_provenance_available`
+- `difficulty_estimator_provenance_warning_emitted`
+- `difficulty_estimator_provenance_validation_mode`
+
+plus optional fields such as fit source and calibration-label/residual markers.
+
 ## Regression and the reject framework
 
 > **Important:** The reject framework supports regression **only when a decision threshold
