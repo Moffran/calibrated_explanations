@@ -8,7 +8,8 @@ accompanying ESWA paper. Scenario 8 is a repository-focused empirical ablation t
 current indirect effect of `difficulty_estimator` on reject behavior without changing reject
 scoring. Scenario 9 extends this with a direct strategy comparison for experimental
 difficulty-normalized reject scoring. Scenario 10 evaluates the second experimental
-ambiguity-normalized novelty-penalized strategy.
+ambiguity-normalized novelty-penalized strategy. Scenario 11 evaluates matched
+reject-rate operating points before any public API promotion decision.
 
 ## Scenarios
 
@@ -82,6 +83,15 @@ ambiguity-normalized novelty-penalized strategy.
   toward novelty empty sets without losing the accepted-accuracy benefit observed
   in Scenario 9. Status: `empirical`.
 
+- **Scenario 11 - Matched operating-point reject selection** (`scenario_11_operating_point_selection.py`):
+  Matched reject-rate operating-point comparison at target reject rates
+  `{0.10, 0.20, 0.30, 0.40}`. The primary comparison is A vs C:
+  `builtin.default` against `experimental.difficulty_normalized`, both with
+  `ncf=default` and no VA difficulty. The secondary comparison is C vs G:
+  direct difficulty normalization against the novelty-aware variant. This is an
+  operating-guidance experiment and does not promote public API. Status:
+  `empirical`.
+
 ### Supplementary scenarios (pass `--supplementary` flag, requires RT-2 fix)
 
 - **Scenario 7 — NCF coverage validity sweep** (`scenario_7_ncf_coverage_validity.py`):
@@ -142,6 +152,7 @@ python -m evaluation.reject.scenario_2_multiclass_correctness --quick
 python -m evaluation.reject.scenario_8_difficulty_reject_ablation --quick
 python -m evaluation.reject.scenario_9_difficulty_normalized_ncf --quick
 python -m evaluation.reject.scenario_10_ambiguity_novelty_reject --quick
+python -m evaluation.reject.scenario_11_operating_point_selection --quick
 ```
 
 ## Interpretation notes
@@ -160,6 +171,8 @@ python -m evaluation.reject.scenario_10_ambiguity_novelty_reject --quick
   they may double-count difficulty (VA scaling + direct score normalization).
 - For **Scenario 10**, compare C vs G first. G is still experimental and uses an
   evaluation-only novelty estimator; it should not be interpreted as a public API recommendation.
+- For **Scenario 11**, interpret deltas at matched target reject rates. This is the
+  decision-gate evidence before any `ncf="difficulty_normalized"` public API promotion.
 
 ## Design constraints followed
 

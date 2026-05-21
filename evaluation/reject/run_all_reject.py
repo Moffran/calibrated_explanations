@@ -27,6 +27,7 @@ CORE_SCENARIOS = [
     "scenario_8_difficulty_reject_ablation",    # Empirical ablation of the existing difficulty path
     "scenario_9_difficulty_normalized_ncf",     # Empirical ablation of direct difficulty-normalized reject scoring
     "scenario_10_ambiguity_novelty_reject",     # Empirical ablation of novelty-aware experimental reject scoring
+    "scenario_11_operating_point_selection",    # Matched reject-rate operating-point selection
 ]
 
 # Supplementary scenarios — depend on RT-2 K1 fix being complete
