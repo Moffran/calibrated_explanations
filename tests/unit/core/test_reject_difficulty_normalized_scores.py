@@ -1,5 +1,3 @@
-"""Focused unit tests for experimental difficulty-normalized reject scoring."""
-
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -10,6 +8,135 @@ import pytest
 from calibrated_explanations.core.reject import orchestrator as orch
 from calibrated_explanations.core.reject.orchestrator import default_score_cal, default_score_test
 from calibrated_explanations.utils.exceptions import ValidationError
+
+
+def test_strategy_is_registered():
+    explainer = make_explainer([[0.2, 0.8], [0.6, 0.4]], [1, 0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    # Should not raise
+    fn = orchestrator.resolve_strategy("experimental.difficulty_normalized")
+    assert callable(fn)
+
+
+def test_unknown_strategy_raises():
+    explainer = make_explainer([[0.2, 0.8], [0.6, 0.4]], [1, 0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    with pytest.raises(KeyError, match="not registered"):
+        orchestrator.resolve_strategy("not.a.strategy")
+
+
+def test_experimental_matches_builtin_without_difficulty(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)
+    orchestrator = orch.RejectOrchestrator(explainer)
+    # Use both strategies
+    res_builtin = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="builtin.default"
+    )
+    res_experimental = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    np.testing.assert_array_equal(res_builtin.rejected, res_experimental.rejected)
+    np.testing.assert_array_equal(
+        res_builtin.metadata["prediction_set_size"],
+        res_experimental.metadata["prediction_set_size"],
+    )
+    assert res_experimental.metadata["difficulty_normalized"] is True
+    assert res_experimental.metadata["reject_strategy"] == "experimental.difficulty_normalized"
+
+
+def test_experimental_changes_with_difficulty(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    # Difficulty: first easy, second hard
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 10.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    res_builtin = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="builtin.default"
+    )
+    res_experimental = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    # Should differ in prediction set size or rejected mask
+    assert not np.all(res_builtin.rejected == res_experimental.rejected)
+    # Difficulty stats present
+    assert "difficulty_min" in res_experimental.metadata
+    assert "difficulty_max" in res_experimental.metadata
+    assert "difficulty_mean" in res_experimental.metadata
+
+
+def test_experimental_flag_and_subset_policies(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 2.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    # FLAG
+    res_flag = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    # ONLY_ACCEPTED
+    res_acc = orchestrator.apply_policy(
+        policy="only_accepted", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    # ONLY_REJECTED
+    res_rej = orchestrator.apply_policy(
+        policy="only_rejected", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    # Sizes add up
+    total = 0
+    if res_acc.metadata["matched_count"]:
+        total += res_acc.metadata["matched_count"]
+    if res_rej.metadata["matched_count"]:
+        total += res_rej.metadata["matched_count"]
+    assert total + (res_flag.metadata["matched_count"] or 0) >= len(explainer.x_cal)
+
+
+def test_metadata_fields_and_monotonicity(monkeypatch):
+    proba = np.array([[0.1, 0.9], [0.6, 0.4], [0.8, 0.2]], dtype=float)
+    labels = np.array([1, 0, 1])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 2.0, 3.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    # Check metadata fields
+    res = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    for key in [
+        "reject_strategy",
+        "difficulty_normalized",
+        "difficulty_min",
+        "difficulty_max",
+        "difficulty_mean",
+        "base_ncf",
+        "base_default_kind",
+        "normalization_epsilon",
+    ]:
+        assert key in res.metadata
+    # Monotonicity: as confidence increases, reject rate should not increase
+    confs = [0.7, 0.8, 0.9, 0.95]
+    prev_reject = None
+    for conf in confs:
+        out = orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.difficulty_normalized",
+            confidence=conf,
+        )
+        if prev_reject is not None:
+            assert np.sum(out.rejected) <= np.sum(prev_reject)
+        prev_reject = out.rejected
+
+
+def test_experimental_strategy_regression_mode_raises():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)
+    explainer.mode = "regression"
+    orchestrator = orch.RejectOrchestrator(explainer)
+    with pytest.raises(ValidationError, match="does not support regression"):
+        orchestrator.apply_policy(
+            policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+        )
 
 
 class DifficultyEstimator:
@@ -49,7 +176,7 @@ def make_explainer(proba, labels, difficulty_values=None):
         y_cal=np.asarray(labels, dtype=int),
         bins=None,
         interval_learner=IntervalLearnerStub(proba),
-        reject_learner=None,
+        reject_learner=RecordingConformalClassifier(),
         difficulty_estimator=(
             None if difficulty_values is None else DifficultyEstimator(difficulty_values)
         ),

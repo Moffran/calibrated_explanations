@@ -615,6 +615,239 @@ class RejectOrchestrator:
         # under the well-known identifier `builtin.default`.
         self.register_strategy("builtin.default", self._builtin_strategy)
 
+        # Register the experimental difficulty-normalized strategy
+        self.register_strategy(
+            "experimental.difficulty_normalized",
+            self._experimental_difficulty_normalized_strategy,
+        )
+
+    def _experimental_difficulty_normalized_strategy(
+        self,
+        policy: RejectPolicy,
+        x,
+        explain_fn=None,
+        bins=None,
+        confidence=0.95,
+        threshold=None,
+        **kwargs,
+    ):
+        """Experimental strategy: difficulty-normalized reject conformal classification."""
+        result_schema_raw = kwargs.pop("result_schema", "legacy")
+        result_schema = str(result_schema_raw).strip().lower()
+        return_v2 = result_schema in {"v2", "2", "2.0"}
+        include_prediction_set_kw = kwargs.pop("include_prediction_set", None)
+        include_prediction_payload = kwargs.pop("include_prediction_payload", explain_fn is None)
+        confidence = validate_reject_confidence(confidence)
+        try:
+            policy = RejectPolicy(policy)
+        except Exception:
+            policy = RejectPolicy.NONE
+
+        # If NONE, return a simple envelope indicating no action
+        if policy is RejectPolicy.NONE:
+            if return_v2:
+                raise ValidationError(
+                    "RejectResultV2 is only available for non-NONE reject policies.",
+                    details={"policy": policy.value},
+                )
+            return RejectResult(
+                prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
+            )
+
+        # Explicitly reject regression mode for this experimental strategy
+        if getattr(self.explainer, "mode", "classification") == "regression":
+            raise ValidationError(
+                "experimental.difficulty_normalized strategy does not support regression mode.",
+                details={"mode": self.explainer.mode},
+            )
+
+        # Enable difficulty-normalized scoring for this call
+        prev_flag = getattr(self.explainer, "_reject_difficulty_normalized", False)
+        self.explainer._reject_difficulty_normalized = True
+        try:
+            # Use the same logic as the builtin strategy, but ensure normalization is active
+            breakdown = self.predict_reject_breakdown(
+                x, bins=bins, confidence=confidence, threshold=threshold
+            )
+            degraded_mode_markers = list(breakdown.get("degraded_mode") or ())
+            include_prediction_set = (
+                bool(include_prediction_set_kw)
+                if include_prediction_set_kw is not None
+                else (policy is RejectPolicy.FLAG)
+            )
+            rejected = breakdown["rejected"]
+            error_rate = breakdown["error_rate"]
+            reject_rate = breakdown["reject_rate"]
+
+            prediction = None
+            explanation = None
+
+            if include_prediction_payload and policy in (
+                RejectPolicy.FLAG,
+                RejectPolicy.ONLY_REJECTED,
+                RejectPolicy.ONLY_ACCEPTED,
+            ):
+                try:
+                    prediction_kwargs = dict(kwargs)
+                    if getattr(self.explainer, "mode", "classification") == "regression":
+                        prediction_kwargs["threshold"] = threshold
+                    prediction = self.explainer.prediction_orchestrator.predict(
+                        x, **prediction_kwargs
+                    )
+                except Exception as exc:
+                    self._logger.info(
+                        "Reject policy prediction failed; returning prediction=None.",
+                        exc_info=True,
+                    )
+                    warnings.warn(
+                        f"Reject policy prediction failed; returning prediction=None ({exc!s}).",
+                        RejectContractWarning,
+                        stacklevel=2,
+                    )
+                    prediction = None
+                    degraded_mode_markers.append("prediction_payload_failed")
+
+            matched_count = None
+            source_indices: list[int] = list(range(len(rejected)))
+            if policy is RejectPolicy.ONLY_REJECTED:
+                source_indices = [i for i, r in enumerate(rejected) if r]
+            elif policy is RejectPolicy.ONLY_ACCEPTED:
+                source_indices = [i for i, r in enumerate(rejected) if not r]
+
+            if explain_fn is not None:
+                try:
+                    if policy is RejectPolicy.FLAG:
+                        explanation = explain_fn(x, **kwargs)
+                    elif (
+                        policy is RejectPolicy.ONLY_REJECTED or policy is RejectPolicy.ONLY_ACCEPTED
+                    ):
+                        idx = source_indices
+                        matched_count = len(idx)
+                        if idx:
+                            subset = (
+                                np.asarray(x)[idx]
+                                if isinstance(x, np.ndarray)
+                                else [x[i] for i in idx]
+                            )
+                            explanation = explain_fn(subset, **kwargs)
+                        else:
+                            explanation = None
+                except Exception as exc:
+                    self._logger.info(
+                        "Reject policy explanation failed; returning explanation=None.",
+                        exc_info=True,
+                    )
+                    warnings.warn(
+                        f"Reject policy explanation failed; returning explanation=None ({exc!s}).",
+                        RejectContractWarning,
+                        stacklevel=2,
+                    )
+                    explanation = None
+                    degraded_mode_markers.append("explanation_payload_failed")
+                    if kwargs.get("_reject_raise", False):
+                        raise
+
+            # Compute difficulty stats for metadata
+            difficulty_estimator = getattr(self.explainer, "difficulty_estimator", None)
+            difficulty_stats = {}
+            if difficulty_estimator is not None and hasattr(difficulty_estimator, "apply"):
+                try:
+                    difficulty_values = np.asarray(
+                        difficulty_estimator.apply(x), dtype=float
+                    ).reshape(-1)
+                    difficulty_stats = {
+                        "difficulty_min": float(np.min(difficulty_values)),
+                        "difficulty_max": float(np.max(difficulty_values)),
+                        "difficulty_mean": float(np.mean(difficulty_values)),
+                    }
+                except Exception:
+                    self._logger.info(
+                        "Difficulty metadata collection failed; omitting difficulty stats.",
+                        exc_info=True,
+                    )
+
+            # Metadata
+            metadata = self._build_contract_metadata(
+                policy=policy,
+                rejected=rejected,
+                source_indices=source_indices,
+                original_count=len(rejected),
+                effective_confidence=confidence,
+                effective_threshold=threshold,
+                init_ok=True,
+                init_error=False,
+                fallback_used=bool(breakdown.get("fallback_used", False)),
+                degraded_mode=degraded_mode_markers,
+                base_metadata={
+                    "error_rate": error_rate,
+                    "error_rate_defined": breakdown.get("error_rate_defined", True),
+                    "reject_rate": reject_rate,
+                    "ambiguity_rate": breakdown.get("ambiguity_rate"),
+                    "novelty_rate": breakdown.get("novelty_rate"),
+                    "ambiguity_mask": breakdown.get("ambiguity"),
+                    "novelty_mask": breakdown.get("novelty"),
+                    "prediction_set_size": breakdown.get("prediction_set_size"),
+                    "prediction_set": (
+                        breakdown.get("prediction_set") if include_prediction_set else None
+                    ),
+                    "epsilon": breakdown.get("epsilon"),
+                    "raw_total_examples": breakdown.get("raw_total_examples"),
+                    "raw_reject_counts": breakdown.get("raw_reject_counts"),
+                    "reject_ncf": getattr(self.explainer, "reject_ncf", None),
+                    "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
+                    "reject_ncf_auto_selected": getattr(
+                        self.explainer, "reject_ncf_auto_selected", None
+                    ),
+                    "matched_count": matched_count,
+                    "source_indices": source_indices,
+                    "original_count": int(len(rejected)),
+                    "effective_confidence": confidence,
+                    "effective_threshold": threshold,
+                    "threshold_source": None,
+                    "schema_version": "2.0",
+                    "effective_w": validate_reject_w(
+                        getattr(self.explainer, "reject_ncf_w", 0.0)
+                        if getattr(self.explainer, "reject_ncf_w", None) is not None
+                        else 0.0
+                    ),
+                    # Experimental metadata
+                    "reject_strategy": "experimental.difficulty_normalized",
+                    "difficulty_normalized": True,
+                    "base_ncf": getattr(self.explainer, "reject_ncf", None),
+                    "base_default_kind": _default_ncf_kind(bool(self.explainer.is_multiclass())),
+                    "normalization_epsilon": 1e-6,
+                    **difficulty_stats,
+                },
+            )
+            decision = self._build_decision_artifact(
+                rejected=np.asarray(rejected, dtype=bool),
+                breakdown=breakdown,
+                confidence=confidence,
+                include_prediction_set=include_prediction_set,
+                fallback_used=bool(metadata.get("fallback_used", False)),
+                degraded_mode=tuple(metadata.get("degraded_mode", ())),
+            )
+            payload = self._build_payload_artifact(
+                policy=policy,
+                source_indices=source_indices,
+                original_count=len(rejected),
+                matched_count=matched_count,
+                prediction=prediction,
+                explanation=explanation,
+            )
+            result_v2 = RejectResultV2(
+                schema_version="2.0",
+                policy=policy,
+                decision=decision,
+                payload=payload,
+                metadata=metadata,
+            )
+            if return_v2:
+                return result_v2
+            return reject_result_v2_to_legacy(result_v2, emit_deprecation_warning=False)
+        finally:
+            self.explainer._reject_difficulty_normalized = prev_flag
+
     def __getstate__(self) -> dict:
         """Support pickling by excluding unpicklable attributes (RLock/loggers).
 
