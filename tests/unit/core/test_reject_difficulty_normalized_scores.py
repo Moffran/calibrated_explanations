@@ -16,6 +16,8 @@ def test_strategy_is_registered():
     # Should not raise
     fn = orchestrator.resolve_strategy("experimental.difficulty_normalized")
     assert callable(fn)
+    fn2 = orchestrator.resolve_strategy("experimental.ambiguity_normalized_novelty_penalized")
+    assert callable(fn2)
 
 
 def test_unknown_strategy_raises():
@@ -150,6 +152,10 @@ class DifficultyEstimator:
 
     def apply(self, x):
         return self.values
+
+
+class NoveltyEstimator(DifficultyEstimator):
+    pass
 
 
 class ProvenanceDifficultyEstimator(DifficultyEstimator):
@@ -382,3 +388,143 @@ def test_should_clip_near_zero_difficulty_when_normalizing_scores(monkeypatch):
     base_scores = default_score_cal(proba, np.unique(labels), labels, "hinge")
 
     np.testing.assert_allclose(conformal.fit_alphas, base_scores / np.array([1e-6, 1e-6]))
+
+
+def test_novelty_penalized_matches_difficulty_normalized_when_no_estimators(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)
+    orchestrator = orch.RejectOrchestrator(explainer)
+    monkeypatch.setattr(orch, "ConformalClassifier", InverseAlphaConformalClassifier)
+
+    res_diff = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.difficulty_normalized",
+        confidence=0.5,
+        include_prediction_payload=False,
+    )
+    res_novelty = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.ambiguity_normalized_novelty_penalized",
+        confidence=0.5,
+        include_prediction_payload=False,
+    )
+    np.testing.assert_array_equal(res_diff.rejected, res_novelty.rejected)
+    np.testing.assert_array_equal(
+        res_diff.metadata["prediction_set_size"],
+        res_novelty.metadata["prediction_set_size"],
+    )
+
+
+def test_novelty_penalized_higher_ambiguity_difficulty_lowers_normalized_alpha(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)
+    setattr(explainer, "_reject_ambiguity_novelty_normalized", True)
+    explainer.difficulty_estimator = DifficultyEstimator([1.0, 4.0])
+    setattr(explainer, "_reject_novelty_estimator", None)
+    setattr(explainer, "_reject_novelty_weight", 0.0)
+    conformal = RecordingConformalClassifier()
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: conformal)
+
+    orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
+    base_scores = default_score_cal(proba, np.unique(labels), labels, "hinge")
+
+    np.testing.assert_allclose(conformal.fit_alphas, base_scores / np.array([1.0, 4.0]))
+    assert conformal.fit_alphas[1] < base_scores[1]
+
+
+def test_novelty_penalty_increases_alpha_for_all_labels(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)
+    setattr(explainer, "_reject_ambiguity_novelty_normalized", True)
+    explainer.difficulty_estimator = DifficultyEstimator([1.0, 1.0])
+    setattr(explainer, "_reject_novelty_estimator", NoveltyEstimator([0.5, 1.0]))
+    setattr(explainer, "_reject_novelty_weight", 0.4)
+    conformal = RecordingConformalClassifier()
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: conformal)
+
+    orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
+    base_scores = default_score_cal(proba, np.unique(labels), labels, "hinge")
+    expected = base_scores + 0.4 * np.array([0.5, 1.0])
+    np.testing.assert_allclose(conformal.fit_alphas, expected)
+
+
+def test_novelty_penalty_can_increase_empty_set_rate(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4], [0.52, 0.48]], dtype=float)
+    labels = np.array([1, 0, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    monkeypatch.setattr(orch, "ConformalClassifier", InverseAlphaConformalClassifier)
+
+    no_penalty = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.ambiguity_normalized_novelty_penalized",
+        confidence=0.5,
+        novelty_weight=0.0,
+        novelty_estimator=NoveltyEstimator([0.0, 0.0, 0.0]),
+        include_prediction_payload=False,
+    )
+    penalty = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.ambiguity_normalized_novelty_penalized",
+        confidence=0.5,
+        novelty_weight=0.8,
+        novelty_estimator=NoveltyEstimator([0.0, 0.0, 2.0]),
+        include_prediction_payload=False,
+    )
+    assert penalty.metadata["novelty_rate"] >= no_penalty.metadata["novelty_rate"]
+
+
+def test_novelty_penalized_confidence_monotonicity_and_metadata(monkeypatch):
+    proba = np.array([[0.1, 0.9], [0.6, 0.4], [0.8, 0.2]], dtype=float)
+    labels = np.array([1, 0, 1])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 2.0, 3.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    monkeypatch.setattr(orch, "ConformalClassifier", InverseAlphaConformalClassifier)
+
+    novelty = NoveltyEstimator([0.1, 0.2, 0.3])
+    res = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.ambiguity_normalized_novelty_penalized",
+        confidence=0.7,
+        novelty_estimator=novelty,
+        novelty_weight=0.1,
+        include_prediction_payload=False,
+    )
+    for key in [
+        "reject_strategy",
+        "difficulty_normalized",
+        "novelty_penalized",
+        "novelty_weight",
+        "ambiguity_difficulty_min",
+        "ambiguity_difficulty_max",
+        "ambiguity_difficulty_mean",
+        "novelty_score_min",
+        "novelty_score_max",
+        "novelty_score_mean",
+        "base_ncf",
+    ]:
+        assert key in res.metadata
+
+    prev_prediction_set = None
+    for conf in [0.7, 0.8, 0.9, 0.95]:
+        out = orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=conf,
+            novelty_estimator=novelty,
+            novelty_weight=0.1,
+            include_prediction_payload=False,
+        )
+        prediction_set = np.asarray(out.metadata["prediction_set"], dtype=bool)
+        if prev_prediction_set is not None:
+            assert np.all(prev_prediction_set <= prediction_set)
+        prev_prediction_set = prediction_set

@@ -179,31 +179,31 @@ Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, 
 - Arms D and F are diagnostic for potential difficulty double-counting when VA and score normalization are both enabled.
 - Includes strategy metadata and difficulty_reject_auc for reject-selectivity diagnostics.
 - Includes accepted-accuracy comparison at matched reject-rate bins for A vs C.
-- Direct normalization (C vs A) changed reject_rate by +0.2108, difficulty-gap by +0.8689, and difficulty_reject_auc by +0.3247.
-- At matched reject-rate bins, C minus A mean accepted_accuracy is +0.0101.
-- For C vs A, ambiguity_rate changed by +0.2558 and novelty_rate by -0.0449.
-- Double-count diagnostics: D-B reject_rate delta +0.0217, F-E reject_rate delta +0.1043; difficulty-gap deltas are +nan and +0.2386.
+- Direct normalization (C vs A) changed reject_rate by +0.2310, difficulty-gap by +0.3912, and difficulty_reject_auc by +0.2474.
+- At matched reject-rate bins, C minus A mean accepted_accuracy is +0.0689.
+- For C vs A, ambiguity_rate changed by +0.2790 and novelty_rate by -0.0480.
+- Double-count diagnostics: D-B reject_rate delta +0.1130, F-E reject_rate delta +0.0287; difficulty-gap deltas are +0.5649 and +0.1382.
 - Recommended arm for next iteration: C (primary A-vs-C contrast with direct normalization and no VA double-count risk).
 Outcome snapshot:
-- **rows**: 240
-- **datasets**: 5
-- **seeds**: 2
-- **mean_accept_rate**: 0.1298
-- **mean_accuracy_delta**: -0.1000
-- **A_vs_C_reject_rate_delta**: 0.2108
-- **A_vs_C_difficulty_gap_delta**: 0.8689
-- **A_vs_C_difficulty_reject_auc_delta**: 0.3247
-- **A_vs_C_ambiguity_rate_delta**: 0.2558
-- **A_vs_C_novelty_rate_delta**: -0.0449
-- **A_vs_C_matched_bin_accepted_accuracy_delta**: 0.0101
-- **D_minus_B_reject_rate_delta**: 0.0217
-- **F_minus_E_reject_rate_delta**: 0.1043
-- **D_minus_B_difficulty_gap_delta**: nan
-- **F_minus_E_difficulty_gap_delta**: 0.2386
+- **rows**: 12420
+- **datasets**: 46
+- **seeds**: 5
+- **mean_accept_rate**: 0.1197
+- **mean_accuracy_delta**: -0.0047
+- **A_vs_C_reject_rate_delta**: 0.2310
+- **A_vs_C_difficulty_gap_delta**: 0.3912
+- **A_vs_C_difficulty_reject_auc_delta**: 0.2474
+- **A_vs_C_ambiguity_rate_delta**: 0.2790
+- **A_vs_C_novelty_rate_delta**: -0.0480
+- **A_vs_C_matched_bin_accepted_accuracy_delta**: 0.0689
+- **D_minus_B_reject_rate_delta**: 0.1130
+- **F_minus_E_reject_rate_delta**: 0.0287
+- **D_minus_B_difficulty_gap_delta**: 0.5649
+- **F_minus_E_difficulty_gap_delta**: 0.1382
 - **recommended_arm**: C
 - **recommendation_reason**: primary A-vs-C contrast with direct normalization and no VA double-count risk
 
-Rows: 240
+Rows: 12420
 Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, arm_code, arm_label, ncf, strategy, use_va_difficulty, difficulty_normalized, double_count_difficulty, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, difficulty_gap_rejected_minus_accepted, difficulty_reject_auc, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined
 
 ## Supplementary Scenarios

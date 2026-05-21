@@ -7,7 +7,8 @@ Scenarios 1-7 map to a paper contribution (C1-C4) or research question (RQ1-RQ6)
 accompanying ESWA paper. Scenario 8 is a repository-focused empirical ablation that measures the
 current indirect effect of `difficulty_estimator` on reject behavior without changing reject
 scoring. Scenario 9 extends this with a direct strategy comparison for experimental
-difficulty-normalized reject scoring.
+difficulty-normalized reject scoring. Scenario 10 evaluates the second experimental
+ambiguity-normalized novelty-penalized strategy.
 
 ## Scenarios
 
@@ -71,6 +72,16 @@ difficulty-normalized reject scoring.
   difficulty double-counting when both VA difficulty and direct score normalization are enabled.
   Status: `empirical`.
 
+- **Scenario 10 - Ambiguity-normalized novelty-penalized reject strategy** (`scenario_10_ambiguity_novelty_reject.py`):
+  Empirical comparison of three classification arms:
+  1. A: `builtin.default`, `ncf=default`
+  2. C: `experimental.difficulty_normalized`, `ncf=default`
+  3. G: `experimental.ambiguity_normalized_novelty_penalized`, `ncf=default`
+  Primary scientific contrast is C vs G. The scenario tests whether a separate
+  novelty penalty can shift some difficult cases from ambiguous multi-label sets
+  toward novelty empty sets without losing the accepted-accuracy benefit observed
+  in Scenario 9. Status: `empirical`.
+
 ### Supplementary scenarios (pass `--supplementary` flag, requires RT-2 fix)
 
 - **Scenario 7 — NCF coverage validity sweep** (`scenario_7_ncf_coverage_validity.py`):
@@ -130,6 +141,7 @@ python -m evaluation.reject.scenario_1_binary_coverage --quick
 python -m evaluation.reject.scenario_2_multiclass_correctness --quick
 python -m evaluation.reject.scenario_8_difficulty_reject_ablation --quick
 python -m evaluation.reject.scenario_9_difficulty_normalized_ncf --quick
+python -m evaluation.reject.scenario_10_ambiguity_novelty_reject --quick
 ```
 
 ## Interpretation notes
@@ -146,6 +158,8 @@ python -m evaluation.reject.scenario_9_difficulty_normalized_ncf --quick
   reject scoring formulas themselves remain unchanged.
 - For **Scenario 9**, compare A vs C first (cleanest contrast). Treat D/F as diagnostic because
   they may double-count difficulty (VA scaling + direct score normalization).
+- For **Scenario 10**, compare C vs G first. G is still experimental and uses an
+  evaluation-only novelty estimator; it should not be interpreted as a public API recommendation.
 
 ## Design constraints followed
 

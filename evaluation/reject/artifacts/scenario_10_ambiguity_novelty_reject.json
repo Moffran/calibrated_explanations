@@ -1,0 +1,31 @@
+{
+  "scenario": "scenario_10_ambiguity_novelty_reject",
+  "display_name": "Scenario 10 - Ambiguity-normalized novelty-penalized reject strategy",
+  "guarantee_status": "empirical",
+  "quick": false,
+  "highlights": [
+    "Compares built-in default, direct difficulty-normalized, and novelty-aware experimental reject strategies.",
+    "Primary contrast is C vs G: direct difficulty normalization with and without novelty penalty.",
+    "Novelty estimator is deterministic, fitted on proper-training features only, and uses no calibration labels/residuals.",
+    "G vs C changed novelty_rate by +0.0019, empty_rate by +0.0019, and novelty_reject_auc by -0.0371.",
+    "G vs C changed ambiguity_rate by +0.0047 and multilabel_rate by +0.0047.",
+    "G vs C changed accepted_accuracy by +0.0037.",
+    "Recommended arm for next iteration: C (difficulty-normalized remains the simpler experimental baseline)."
+  ],
+  "outcome": {
+    "rows": 6210,
+    "datasets": 46,
+    "seeds": 5,
+    "novelty_weight": 0.1,
+    "mean_accept_rate": 0.3517535655528631,
+    "mean_accuracy_delta": 0.05233633600092868,
+    "G_minus_C_novelty_rate_delta": 0.001897350388883931,
+    "G_minus_C_empty_rate_delta": 0.001897350388883931,
+    "G_minus_C_ambiguity_rate_delta": 0.0047215568680133435,
+    "G_minus_C_multilabel_rate_delta": 0.0047215568680133435,
+    "G_minus_C_accepted_accuracy_delta": 0.003657265726543013,
+    "G_minus_C_novelty_reject_auc_delta": -0.03705418299160046,
+    "recommended_arm": "C",
+    "recommendation_reason": "difficulty-normalized remains the simpler experimental baseline"
+  }
+}

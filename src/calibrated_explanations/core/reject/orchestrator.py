@@ -456,6 +456,157 @@ def _difficulty_normalized_reject_scores_enabled(explainer: Any) -> bool:
     return bool(getattr(explainer, "_reject_difficulty_normalized", False))
 
 
+def _ambiguity_novelty_reject_scores_enabled(explainer: Any) -> bool:
+    """Return whether ambiguity-normalized novelty-penalized scoring is enabled."""
+    return bool(getattr(explainer, "_reject_ambiguity_novelty_normalized", False))
+
+
+def _novelty_values(explainer: Any, x: Any) -> np.ndarray:
+    """Return validated per-instance novelty scores for a batch.
+
+    The novelty estimator is experimental and optional. When absent, zeros are
+    returned so no novelty penalty is added.
+    """
+    n_instances = _safe_length(x)
+    novelty_estimator = getattr(explainer, "_reject_novelty_estimator", None)
+    if novelty_estimator is None:
+        return np.zeros(n_instances, dtype=float)
+
+    apply = getattr(novelty_estimator, "apply", None)
+    if not callable(apply):
+        raise ValidationError(
+            "novelty_estimator must define an apply(x) method.",
+            details={"novelty_estimator_type": type(novelty_estimator).__name__},
+        )
+
+    raw_values = apply(x)
+    try:
+        novelty = np.asarray(raw_values, dtype=float).reshape(-1)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            "novelty_estimator.apply(x) must return numeric novelty values.",
+            details={"novelty_type": type(raw_values).__name__},
+        ) from exc
+
+    if len(novelty) != n_instances:
+        raise ValidationError(
+            "novelty_estimator.apply(x) must return one value per instance.",
+            details={"expected_length": n_instances, "actual_length": int(len(novelty))},
+        )
+    if not np.all(np.isfinite(novelty)):
+        raise ValidationError(
+            "novelty values must be finite.",
+            details={"novelty": novelty.tolist()},
+        )
+    if np.any(novelty < 0.0):
+        raise ValidationError(
+            "novelty values must be non-negative.",
+            details={"novelty": novelty.tolist()},
+        )
+    return novelty.astype(float, copy=False)
+
+
+def _novelty_weight(explainer: Any) -> float:
+    """Return validated novelty penalty weight for experimental strategy."""
+    raw = getattr(explainer, "_reject_novelty_weight", 0.0)
+    try:
+        value = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            "novelty_weight must be a non-negative float.",
+            details={"novelty_weight": raw},
+        ) from exc
+    if value < 0.0:
+        raise ValidationError(
+            "novelty_weight must be a non-negative float.",
+            details={"novelty_weight": value},
+        )
+    return value
+
+
+def _apply_novelty_penalty(
+    scores: np.ndarray, novelty: np.ndarray, novelty_weight: float
+) -> np.ndarray:
+    """Add novelty penalty to 1-D or 2-D reject scores."""
+    score_array = np.asarray(scores, dtype=float)
+    novelty_array = np.asarray(novelty, dtype=float).reshape(-1)
+    if novelty_weight == 0.0:
+        return score_array
+
+    if score_array.ndim == 1:
+        if score_array.shape[0] != novelty_array.shape[0]:
+            raise ValidationError(
+                "novelty must match the length of 1-D reject scores.",
+                details={
+                    "score_length": int(score_array.shape[0]),
+                    "novelty_length": int(novelty_array.shape[0]),
+                },
+            )
+        return score_array + novelty_weight * novelty_array
+
+    if score_array.ndim == 2:
+        if score_array.shape[0] != novelty_array.shape[0]:
+            raise ValidationError(
+                "novelty must match the number of rows in 2-D reject scores.",
+                details={
+                    "score_rows": int(score_array.shape[0]),
+                    "novelty_length": int(novelty_array.shape[0]),
+                },
+            )
+        return score_array + novelty_weight * novelty_array[:, np.newaxis]
+
+    raise ValidationError(
+        "scores must be a 1-D or 2-D array for novelty penalty.",
+        details={"scores_ndim": int(score_array.ndim)},
+    )
+
+
+def _ncf_scores_cal_ambiguity_normalized_novelty_penalized(  # pylint: disable=invalid-name
+    proba: np.ndarray,
+    classes: np.ndarray,
+    labels: np.ndarray,
+    ncf: str,
+    w: float,
+    default_kind: str,
+    explainer: Any,
+    x: Any,
+) -> np.ndarray:
+    """Compute calibration scores: alpha_base / d_amb + lambda * d_nov."""
+    normalized = _ncf_scores_cal_difficulty_normalized(
+        proba,
+        classes,
+        labels,
+        ncf,
+        w,
+        default_kind,
+        explainer,
+        x,
+    )
+    novelty = _novelty_values(explainer, x)
+    return _apply_novelty_penalty(normalized, novelty, _novelty_weight(explainer))
+
+
+def _ncf_scores_test_ambiguity_normalized_novelty_penalized(  # pylint: disable=invalid-name
+    proba: np.ndarray,
+    ncf: str,
+    w: float,
+    default_kind: str,
+    explainer: Any,
+    x: Any,
+) -> np.ndarray:
+    """Compute test scores: alpha_base / d_amb + lambda * d_nov."""
+    normalized = _ncf_scores_test_difficulty_normalized(
+        proba,
+        ncf,
+        w,
+        default_kind,
+        explainer,
+        x,
+    )
+    novelty = _novelty_values(explainer, x)
+    return _apply_novelty_penalty(normalized, novelty, _novelty_weight(explainer))
+
+
 def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
     """Resolve reject policy inputs to a canonical policy value.
 
@@ -621,6 +772,106 @@ class RejectOrchestrator:
             "experimental.difficulty_normalized",
             self._experimental_difficulty_normalized_strategy,
         )
+
+        # Register the experimental ambiguity-normalized novelty-penalized strategy
+        self.register_strategy(
+            "experimental.ambiguity_normalized_novelty_penalized",
+            self._experimental_ambiguity_normalized_novelty_penalized_strategy,
+        )
+
+    def _experimental_ambiguity_normalized_novelty_penalized_strategy(
+        self,
+        policy: RejectPolicy,
+        x,
+        explain_fn=None,
+        bins=None,
+        confidence=0.95,
+        threshold=None,
+        **kwargs,
+    ):
+        """Experimental strategy: alpha_base/d_amb + lambda*d_nov."""
+        novelty_weight = kwargs.pop("novelty_weight", None)
+        novelty_estimator = kwargs.pop("novelty_estimator", None)
+        ambiguity_estimator = kwargs.pop("ambiguity_estimator", None)
+        if novelty_weight is None:
+            novelty_weight = 0.0
+        if novelty_estimator is None:
+            novelty_estimator = getattr(self.explainer, "_reject_novelty_estimator", None)
+        if ambiguity_estimator is None:
+            ambiguity_estimator = getattr(self.explainer, "difficulty_estimator", None)
+
+        prev_flag = getattr(self.explainer, "_reject_ambiguity_novelty_normalized", False)
+        prev_novelty_estimator = getattr(self.explainer, "_reject_novelty_estimator", None)
+        prev_novelty_weight = getattr(self.explainer, "_reject_novelty_weight", 0.0)
+        prev_ambiguity_estimator = getattr(self.explainer, "difficulty_estimator", None)
+
+        self.explainer._reject_ambiguity_novelty_normalized = True
+        self.explainer._reject_novelty_estimator = novelty_estimator
+        self.explainer._reject_novelty_weight = novelty_weight
+        self.explainer.difficulty_estimator = ambiguity_estimator
+        try:
+            result = self._experimental_difficulty_normalized_strategy(
+                policy,
+                x,
+                explain_fn=explain_fn,
+                bins=bins,
+                confidence=confidence,
+                threshold=threshold,
+                **kwargs,
+            )
+
+            metadata = getattr(result, "metadata", None)
+            if isinstance(metadata, dict):
+                ambiguity_stats: dict[str, float] = {}
+                novelty_stats: dict[str, float] = {}
+                if ambiguity_estimator is not None and hasattr(ambiguity_estimator, "apply"):
+                    try:
+                        ambiguity_values = np.asarray(
+                            ambiguity_estimator.apply(x), dtype=float
+                        ).reshape(-1)
+                        ambiguity_stats = {
+                            "ambiguity_difficulty_min": float(np.min(ambiguity_values)),
+                            "ambiguity_difficulty_max": float(np.max(ambiguity_values)),
+                            "ambiguity_difficulty_mean": float(np.mean(ambiguity_values)),
+                        }
+                    except Exception:
+                        self._logger.info(
+                            "Ambiguity-difficulty metadata collection failed.",
+                            exc_info=True,
+                        )
+                if novelty_estimator is not None and hasattr(novelty_estimator, "apply"):
+                    try:
+                        novelty_values = np.asarray(
+                            novelty_estimator.apply(x), dtype=float
+                        ).reshape(-1)
+                        novelty_stats = {
+                            "novelty_score_min": float(np.min(novelty_values)),
+                            "novelty_score_max": float(np.max(novelty_values)),
+                            "novelty_score_mean": float(np.mean(novelty_values)),
+                        }
+                    except Exception:
+                        self._logger.info(
+                            "Novelty-score metadata collection failed.",
+                            exc_info=True,
+                        )
+
+                metadata.update(
+                    {
+                        "reject_strategy": "experimental.ambiguity_normalized_novelty_penalized",
+                        "difficulty_normalized": True,
+                        "novelty_penalized": True,
+                        "novelty_weight": float(novelty_weight),
+                        "base_ncf": getattr(self.explainer, "reject_ncf", None),
+                        **ambiguity_stats,
+                        **novelty_stats,
+                    }
+                )
+            return result
+        finally:
+            self.explainer._reject_ambiguity_novelty_normalized = prev_flag
+            self.explainer._reject_novelty_estimator = prev_novelty_estimator
+            self.explainer._reject_novelty_weight = prev_novelty_weight
+            self.explainer.difficulty_estimator = prev_ambiguity_estimator
 
     def _experimental_difficulty_normalized_strategy(
         self,
@@ -1073,7 +1324,18 @@ class RejectOrchestrator:
             calibration_bins = y_cal
 
         effective_w = canonical_reject_ncf_w(ncf, validated_w)
-        if _difficulty_normalized_reject_scores_enabled(self.explainer):
+        if _ambiguity_novelty_reject_scores_enabled(self.explainer):
+            alphas_cal = _ncf_scores_cal_ambiguity_normalized_novelty_penalized(
+                proba,
+                np.unique(calibration_bins),
+                calibration_bins,
+                ncf,
+                effective_w,
+                default_kind,
+                self.explainer,
+                x_cal,
+            )
+        elif _difficulty_normalized_reject_scores_enabled(self.explainer):
             alphas_cal = _ncf_scores_cal_difficulty_normalized(
                 proba,
                 np.unique(calibration_bins),
@@ -1124,7 +1386,18 @@ class RejectOrchestrator:
         default_kind = _default_ncf_kind(
             bool(self.explainer.is_multiclass())  # pylint: disable=protected-access
         )
-        if _difficulty_normalized_reject_scores_enabled(self.explainer):
+        if _ambiguity_novelty_reject_scores_enabled(self.explainer):
+            alphas_test = np.asarray(
+                _ncf_scores_test_ambiguity_normalized_novelty_penalized(
+                    proba,
+                    ncf,
+                    ncf_w,
+                    default_kind,
+                    self.explainer,
+                    x,
+                )
+            )
+        elif _difficulty_normalized_reject_scores_enabled(self.explainer):
             alphas_test = np.asarray(
                 _ncf_scores_test_difficulty_normalized(
                     proba,
