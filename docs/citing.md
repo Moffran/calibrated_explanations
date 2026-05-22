@@ -15,6 +15,10 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
+- Hallberg Szabadváry, J., Löfström, T., Johansson, U., Sönströd, C., Ahlberg, E., and Carlsson, L. (2025). [Classification with reject option: Distribution-free error guarantees via conformal prediction](https://doi.org/10.1016/j.mlwa.2025.100664). Machine Learning with Applications, 20, 100664. https://doi.org/10.1016/j.mlwa.2025.100664
+
+This package's conformal reject singleton-error accounting follows the paper above: epsilon controls conformal set miscoverage, while accepted singleton error is estimated separately via sigma-hat.
+
 ## Master Theses
 -  [Ayham Hanna](https://github.com/Aiham00) (2025) [Explainable AI for Multi-Class Machine Failure Prediction: A Focus on Calibrated Explainability and Model Uncertainty](https://hj.diva-portal.org/smash/record.jsf?pid=diva2%3A1968367)
 
@@ -152,6 +156,22 @@ Bibtex entry for the ensured paper:
 	eprint =          {2410.05479},
 	archivePrefix =   {arXiv},
 	primaryClass =    {cs.LG}
+}
+```
+
+
+Bibtex entry for reject-option conformal singleton accounting paper:
+
+```bibtex
+@article{hallbergszabadvary2025reject,
+  author = {Johan Hallberg Szabadváry and Tuwe Löfström and Ulf Johansson and Cecilia Sönströd and Ernst Ahlberg and Lars Carlsson},
+  title = {Classification with reject option: Distribution-free error guarantees via conformal prediction},
+  journal = {Machine Learning with Applications},
+  volume = {20},
+  pages = {100664},
+  year = {2025},
+  doi = {10.1016/j.mlwa.2025.100664},
+  url = {https://doi.org/10.1016/j.mlwa.2025.100664}
 }
 ```
 

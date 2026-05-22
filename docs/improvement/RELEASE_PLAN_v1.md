@@ -525,7 +525,11 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
      `uv-install-smoke` validation lane, record pip-vs-uv install timing evidence,
      refresh or remove/document `uv.lock`, and verify ADR-010/012/028/030/033 plus
      Standard-001/003/004/005 compliance before closure.
-  8. Close v0.11.3 ADR contract gaps not otherwise owned: close the remaining
+  8. Reject hardening for v0.11.3: difficulty-aware reject evaluation,
+     experimental strategy containment, paper-aligned singleton reporting, and
+     validity metadata. Full scope, subtasks, and red-team findings tracked in
+     Task 8 of `docs/improvement/v0.11.3_plan.md`.
+  9. Close v0.11.3 ADR contract gaps not otherwise owned: close the remaining
      v0.11.3-targeted ADR/standard appendix gaps not already covered by Tasks
      1-7, including ADR-006 accepted-registration audit events and legacy
      registry-list closure; ADR-009 JSON-safe mapping export and helper-placement

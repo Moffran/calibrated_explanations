@@ -144,8 +144,17 @@ def margin_score(proba: np.ndarray) -> np.ndarray:
 
 
 def _default_ncf_kind(is_multiclass: bool) -> str:
-    """Return internal default score kind for the current task."""
-    return "margin" if is_multiclass else "hinge"
+    """Return internal default score kind for the current task.
+
+    Hinge is used for all tasks including multiclass. In the multiclass case,
+    probabilities are binarized to [1-p_max, p_max] (correctness encoding:
+    col 0 = wrong, col 1 = correct). Hinge produces column-specific scores
+    (alpha[:,0]=p_max, alpha[:,1]=1-p_max), allowing the conformal classifier
+    to return {1} singletons (confident correct) and {0} singletons (confident
+    wrong). Margin would produce a scalar broadcast identically to both columns,
+    making singletons geometrically impossible and causing 100% rejection.
+    """
+    return "hinge"
 
 
 def _default_score_cal(
@@ -189,9 +198,53 @@ def _default_score_test(proba: np.ndarray, default_kind: str) -> np.ndarray:
     )
 
 
+def default_ncf_kind(is_multiclass: bool) -> str:
+    """Public wrapper for default NCF kind selection."""
+    return _default_ncf_kind(is_multiclass)
+
+
 def default_score_test(proba: np.ndarray, default_kind: str) -> np.ndarray:
     """Public wrapper for default test-score computation."""
     return _default_score_test(proba, default_kind)
+
+
+def compute_singleton_accounting(prediction_set: np.ndarray, significance: float) -> dict[str, Any]:
+    """Compute paper-aligned singleton accounting for conformal reject metadata."""
+    prediction_set = np.asarray(prediction_set, dtype=bool)
+    if prediction_set.ndim != 2:
+        raise ValidationError("prediction_set must be a 2D boolean array")
+    set_sizes = np.sum(prediction_set, axis=1)
+    n_total = int(set_sizes.shape[0])
+    n_empty = int(np.sum(set_sizes == 0))
+    n_singleton = int(np.sum(set_sizes == 1))
+    n_ambiguity = int(np.sum(set_sizes >= 2))
+    empty_rate = 0.0 if n_total == 0 else float(n_empty / n_total)
+    singleton_rate = 0.0 if n_total == 0 else float(n_singleton / n_total)
+    ambiguity_rate = 0.0 if n_total == 0 else float(n_ambiguity / n_total)
+    novelty_rate = empty_rate
+    raw = None
+    clamped = None
+    defined = n_singleton > 0
+    clamped_flag = False
+    if defined:
+        raw = float((n_total * float(significance) - n_empty) / n_singleton)
+        clamped = float(max(0.0, min(1.0, raw)))
+        clamped_flag = not isclose(raw, clamped)
+    return {
+        "prediction_set_size": set_sizes,
+        "n_total": n_total,
+        "n_empty": n_empty,
+        "n_singleton": n_singleton,
+        "n_ambiguity": n_ambiguity,
+        "empty_rate": empty_rate,
+        "singleton_rate": singleton_rate,
+        "ambiguity_rate": ambiguity_rate,
+        "novelty_rate": novelty_rate,
+        "singleton_error_rate_estimate_raw": raw,
+        "singleton_error_rate_estimate_clamped": clamped,
+        "singleton_error_rate_estimate_defined": defined,
+        "singleton_error_rate_estimate_clamped_flag": clamped_flag,
+    }
 
 
 def _normalize_stored_ncf(value: Any) -> str | None:
@@ -834,7 +887,7 @@ class RejectOrchestrator:
                             "ambiguity_difficulty_max": float(np.max(ambiguity_values)),
                             "ambiguity_difficulty_mean": float(np.mean(ambiguity_values)),
                         }
-                    except Exception:
+                    except Exception:  # adr002_allow
                         self._logger.info(
                             "Ambiguity-difficulty metadata collection failed.",
                             exc_info=True,
@@ -849,7 +902,7 @@ class RejectOrchestrator:
                             "novelty_score_max": float(np.max(novelty_values)),
                             "novelty_score_mean": float(np.mean(novelty_values)),
                         }
-                    except Exception:
+                    except Exception:  # adr002_allow
                         self._logger.info(
                             "Novelty-score metadata collection failed.",
                             exc_info=True,
@@ -892,7 +945,7 @@ class RejectOrchestrator:
         confidence = validate_reject_confidence(confidence)
         try:
             policy = RejectPolicy(policy)
-        except Exception:
+        except Exception:  # adr002_allow
             policy = RejectPolicy.NONE
 
         # If NONE, return a simple envelope indicating no action
@@ -968,7 +1021,7 @@ class RejectOrchestrator:
                     prediction = self.explainer.prediction_orchestrator.predict(
                         x, **prediction_kwargs
                     )
-                except Exception as exc:
+                except Exception as exc:  # adr002_allow
                     self._logger.info(
                         "Reject policy prediction failed; returning prediction=None.",
                         exc_info=True,
@@ -1006,7 +1059,7 @@ class RejectOrchestrator:
                             explanation = explain_fn(subset, **kwargs)
                         else:
                             explanation = None
-                except Exception as exc:
+                except Exception as exc:  # adr002_allow
                     self._logger.info(
                         "Reject policy explanation failed; returning explanation=None.",
                         exc_info=True,
@@ -1034,7 +1087,7 @@ class RejectOrchestrator:
                         "difficulty_max": float(np.max(difficulty_values)),
                         "difficulty_mean": float(np.mean(difficulty_values)),
                     }
-                except Exception:
+                except Exception:  # adr002_allow
                     self._logger.info(
                         "Difficulty metadata collection failed; omitting difficulty stats.",
                         exc_info=True,
@@ -1664,31 +1717,20 @@ class RejectOrchestrator:
         prediction_set, epsilon, degraded_mode = self._compute_prediction_set(
             x, bins=bins, confidence=confidence, threshold=threshold
         )
-        set_sizes = np.sum(prediction_set, axis=1)
+        accounting = compute_singleton_accounting(prediction_set, epsilon)
+        set_sizes = accounting["prediction_set_size"]
         rejected = set_sizes != 1
         ambiguity = set_sizes >= 2
         novelty = set_sizes == 0
 
         num_instances = len(x)
-        singleton = int(np.sum(set_sizes == 1))
-        empty = int(np.sum(novelty))
-        # When there are no singleton prediction sets (all empty or ambiguous),
-        # fall back to a numeric sentinel (0.0) rather than None so callers
-        # expecting a numeric error_rate do not error on np.isnan checks.
-        # error_rate_defined=False signals the value is a sentinel, not a
-        # meaningful estimate (e.g. all instances were rejected as novel/ambiguous).
-        if num_instances == 0 or singleton == 0:
-            error_rate = 0.0
-            error_rate_defined = False
-        else:
-            # Clamp to [0, 1]: the formula can go negative when empty > n*epsilon
-            # (high novelty rate with small epsilon), which is not a valid rate.
-            error_rate = max(0.0, min(1.0, (num_instances * epsilon - empty) / singleton))
-            error_rate_defined = True
-
         reject_rate = 0.0 if num_instances == 0 else float(np.mean(rejected))
-        ambiguity_rate = 0.0 if num_instances == 0 else float(np.mean(ambiguity))
-        novelty_rate = 0.0 if num_instances == 0 else float(np.mean(novelty))
+        error_rate = (
+            float(accounting["singleton_error_rate_estimate_clamped"])
+            if accounting["singleton_error_rate_estimate_defined"]
+            else 0.0
+        )
+        error_rate_defined = bool(accounting["singleton_error_rate_estimate_defined"])
 
         return {
             "rejected": rejected,
@@ -1697,12 +1739,40 @@ class RejectOrchestrator:
             "prediction_set_size": set_sizes,
             "prediction_set": prediction_set,
             "reject_rate": reject_rate,
-            "ambiguity_rate": ambiguity_rate,
-            "novelty_rate": novelty_rate,
+            "ambiguity_rate": accounting["ambiguity_rate"],
+            "novelty_rate": accounting["novelty_rate"],
             "error_rate": error_rate,
             "error_rate_defined": error_rate_defined,
+            "singleton_error_rate_estimate": accounting["singleton_error_rate_estimate_clamped"],
+            "singleton_error_rate_estimate_raw": accounting["singleton_error_rate_estimate_raw"],
+            "singleton_error_rate_estimate_clamped": accounting[
+                "singleton_error_rate_estimate_clamped"
+            ],
+            "singleton_error_rate_estimate_defined": accounting[
+                "singleton_error_rate_estimate_defined"
+            ],
+            "singleton_error_rate_estimate_clamped_flag": accounting[
+                "singleton_error_rate_estimate_clamped_flag"
+            ],
+            "singleton_error_rate_estimate_method": "epsilon_plugin",
+            "singleton_error_rate_estimate_significance": epsilon,
+            "singleton_validity_mode": "epsilon_plugin",
+            "decision_epsilon": epsilon,
+            "decision_confidence": confidence,
+            "singleton_bound_epsilon": epsilon,
+            "singleton_bound_confidence": confidence,
+            "singleton_bound_uses_separate_prediction_sets": False,
+            "smoothing": False,
+            "exact_validity_claimed": False,
+            "validity_claim": "deterministic split-conformal singleton plug-in estimate; not an empirical error rate",
             "epsilon": epsilon,
             "raw_total_examples": int(num_instances),
+            "n_total": accounting["n_total"],
+            "n_empty": accounting["n_empty"],
+            "n_singleton": accounting["n_singleton"],
+            "n_ambiguity": accounting["n_ambiguity"],
+            "empty_rate": accounting["empty_rate"],
+            "singleton_rate": accounting["singleton_rate"],
             "raw_reject_counts": {
                 "rejected": int(np.sum(rejected)),
                 "ambiguity_mask": int(np.sum(ambiguity)),

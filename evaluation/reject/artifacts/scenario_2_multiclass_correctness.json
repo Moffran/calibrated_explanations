@@ -7,12 +7,17 @@
   "quick": false,
   "highlights": [
     "Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.",
-    "This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method."
+    "This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method.",
+    "Accepted instances are restricted to {1} singletons (confident correct); {0} singletons (confident wrong) are error-rejected.",
+    "Hinge NCF is used for both 'default' and 'ensured' paths. Margin NCF was removed (it produced identical scores for both columns, making singletons impossible)."
   ],
   "outcome": {
     "datasets": 20,
-    "mean_accepted_top1_accuracy": NaN,
-    "mean_reject_rate": 1.0,
-    "hinge_collapse_events": 0
+    "mean_accepted_top1_accuracy": 0.9006290527870698,
+    "mean_reject_rate": 0.471097236886007,
+    "mean_correct_singleton_rate": 0.5289027631139929,
+    "mean_error_singleton_rate": 0.02000778713270527,
+    "collapse_events": 8,
+    "bug_fix_note": "Previous run reported mean_reject_rate=1.0 and mean_accepted_top1_accuracy=nan. Root cause (RT-14): _default_ncf_kind returned 'margin' for multiclass, producing identical scores for both binary columns and making singletons geometrically impossible. Fix: _default_ncf_kind now returns 'hinge'. Measurement fix (RT-15): accepted restricted to {1} singletons only. This run reflects post-fix results."
   }
 }
