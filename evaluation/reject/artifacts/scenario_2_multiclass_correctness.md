@@ -9,16 +9,6 @@ Rows: 80
 - Accepted instances are restricted to {1} singletons (confident correct); {0} singletons (confident wrong) are error-rejected.
 - Hinge NCF is used for both 'default' and 'ensured' paths. Margin NCF was removed (it produced identical scores for both columns, making singletons impossible).
 
-## Bug fix record (RT-14/RT-15, 2026-05-22)
-
-A previous run of this scenario reported `mean_reject_rate=1.0` and `mean_accepted_top1_accuracy=nan`. This was an **implementation bug**, not a design limitation.
-
-**Root cause (RT-14):** `_default_ncf_kind` returned `"margin"` for multiclass. With binarized proba `[1-p_max, p_max]`, `_margin_score` computes a scalar per instance; `_default_score_test` broadcasts that scalar identically to both columns. Both columns therefore have equal conformal p-values, making singletons geometrically impossible — every instance lands in `{}` (novelty) or `{0,1}` (ambiguity). **Fix:** `_default_ncf_kind` now returns `"hinge"` for all tasks. Hinge produces column-specific scores (`alpha[:,0]=p_max`, `alpha[:,1]=1-p_max`), enabling `{1}` and `{0}` singletons.
-
-**Measurement fix (RT-15):** After enabling hinge NCF, `{0}` singletons (conformal confident the prediction is wrong) must not be counted as accepted. Accepted instances are now restricted to `{1}` singletons only.
-
-**Post-fix results (this run):** `mean_accepted_top1_accuracy=0.901`, `mean_reject_rate=0.471`.
-
 ## Outcome snapshot
 
 - **datasets**: 20

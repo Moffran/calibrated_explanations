@@ -23,7 +23,41 @@
   corrupting the accuracy metric. New columns `correct_singleton_rate` and
   `error_singleton_rate` are reported separately.
 
+- **RT-9: Fix regression mode support for `experimental.difficulty_normalized`.** The
+  explicit regression guard was removed from `_experimental_difficulty_normalized_strategy`.
+  `resolve_policy_spec` now stores NCF settings directly for regression mode instead of
+  calling `initialize_reject_learner` (which requires a call-time threshold). All four
+  `crepes.extras.DifficultyEstimator` setups are supported in both classification and
+  regression mode. 32 unit tests pass.
+
+- **RT-11: Guard `experimental.difficulty_normalized` against missing difficulty estimator.**
+  `apply_policy()` now raises `ConfigurationError` (not silent fallback) when any
+  `_DIFFICULTY_STRATEGIES` member is requested without `difficulty_estimator` set.
+
+- **RT-6: Add zero-value guard to `_difficulty_values()`.** Zero difficulty values now
+  raise `ValidationError` (division by zero is mathematically invalid).
+
 ### Packaging / CI
+
+- **RT-1 through RT-13 red-team remediation (difficulty_reject branch):** Completed
+  all 15 red-team items identified in the v0.11.3 Task 8 review:
+  - RT-1: Corrected Scenario 9 description in practitioner doc (sign error on AUC
+    delta — full-grid positive delta is a high-rejection-rate selection effect, not a
+    matched-operating-point improvement).
+  - RT-3: New `scenario_12_coverage_validity_difficulty_normalized.py` providing
+    coverage validity sweep for arm C, registered as supplementary in `run_all_reject.py`.
+  - RT-4: Added "Matching Quality" section to Scenario 11 artifact (mean abs error
+    0.045–0.088 per target).
+  - RT-5: Added "Metric Consistency Note" to Scenario 9 and 11 artifacts explaining
+    the AUC direction reversal (high-conf selection effect).
+  - RT-7: Added `--crepes-ablation` flag to Scenario 9 and 11 running all four
+    `crepes.extras.DifficultyEstimator` setups (knn_dist, knn_std, knn_res, rf_var).
+  - RT-8: Added `--diagnose-db` flag to Scenario 9 for D-B paradox score-distribution
+    diagnostics.
+  - RT-10: Added statistical significance note (t-test, none reach α=0.05) to
+    Scenario 11 artifact and JSON.
+  - RT-12: Added "Experimental API stability contract" section to researcher doc.
+  - RT-13: Added "Known limitations and fairness" section to researcher doc.
 
 - **Difficulty-normalized reject documentation update:** Expanded practitioner and
   improvement documentation for reject-option conformal classification with

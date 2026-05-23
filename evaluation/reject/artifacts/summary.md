@@ -28,14 +28,18 @@ Columns: dataset, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violatio
 
 - Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.
 - This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method.
+- Accepted instances are restricted to {1} singletons (confident correct); {0} singletons (confident wrong) are error-rejected.
+- Hinge NCF is used for both 'default' and 'ensured' paths. Margin NCF was removed (it produced identical scores for both columns, making singletons impossible).
 Outcome snapshot:
 - **datasets**: 20
-- **mean_accepted_top1_accuracy**: nan
-- **mean_reject_rate**: 1.0000
-- **hinge_collapse_events**: 0
+- **mean_accepted_top1_accuracy**: 0.9006
+- **mean_reject_rate**: 0.4711
+- **mean_correct_singleton_rate**: 0.5289
+- **mean_error_singleton_rate**: 0.0200
+- **collapse_events**: 8
 
 Rows: 80
-Columns: dataset, epsilon, ncf, n_cal, n_test, n_classes, accepted_top1_accuracy, reject_rate, ambiguity_rate, expected_collapse, guarantee_status
+Columns: dataset, epsilon, ncf, n_cal, n_test, n_classes, accepted_top1_accuracy, reject_rate, correct_singleton_rate, error_singleton_rate, ambiguity_rate, novelty_rate, expected_collapse, guarantee_status
 
 ### Scenario 3 — Threshold regression heuristic baseline — RQ3: Threshold regression heuristic baseline
 
@@ -83,8 +87,8 @@ Columns: task_type, dataset, ncf, w, accept_rate, accepted_accuracy, accepted_ac
 - mean_feature_weight_variance is not included — it is not a paper metric.
 Outcome snapshot:
 - **datasets**: 46
-- **mean_accuracy_delta**: 0.0893
-- **mean_ece_delta**: -0.0876
+- **mean_accuracy_delta**: 0.0934
+- **mean_ece_delta**: -0.0593
 - **regime_summary**: (see json artifact)
 
 Rows: 46
@@ -116,13 +120,13 @@ Columns: dataset, probe, n_cal, epsilon, coverage, reject_rate, error_rate, viol
 - Arms compare use_difficulty in {False, True} crossed with reject NCF in {default, ensured}.
 - Difficulty summary columns use the same deterministic reference estimator in all arms so selection differences are comparable.
 - This scenario does not test difficulty-normalized reject NCFs; it quantifies the baseline before that experiment.
-- With `default`, enabling difficulty changed accept_rate by -22.2 pp, rejected_error_capture_rate by +11.5 pp, and accepted_accuracy by -10.9 pp.
+- With `default`, enabling difficulty changed accept_rate by -42.0 pp, rejected_error_capture_rate by +18.8 pp, and accepted_accuracy by -10.1 pp.
 - With `default`, mean empirical coverage shifted by +4.4 pp across the swept confidence grid.
-- With `default` and difficulty enabled, rejected instances were harder than accepted ones by 0.093 mean difficulty units.
+- With `default` and difficulty enabled, rejected instances were harder than accepted ones by 0.039 mean difficulty units.
 - For `default`, the current difficulty path acts mainly as a stricter reject gate: it captures more errors, but at the cost of accepting far fewer instances and lowering accepted accuracy.
-- With `ensured`, enabling difficulty changed accept_rate by -9.7 pp, rejected_error_capture_rate by +4.9 pp, and accepted_accuracy by -12.2 pp.
+- With `ensured`, enabling difficulty changed accept_rate by -24.7 pp, rejected_error_capture_rate by +7.6 pp, and accepted_accuracy by -10.5 pp.
 - With `ensured`, mean empirical coverage shifted by +2.8 pp across the swept confidence grid.
-- With `ensured` and difficulty enabled, rejected instances were harder than accepted ones by 0.173 mean difficulty units.
+- With `ensured` and difficulty enabled, rejected instances were harder than accepted ones by 0.076 mean difficulty units.
 - For `ensured`, the current difficulty path acts mainly as a stricter reject gate: it captures more errors, but at the cost of accepting far fewer instances and lowering accepted accuracy.
 - The markdown now includes a by-confidence table so the headline summary is no longer averaged over hidden epsilon values.
 - Integrity checks verify reject_rate = ambiguity_rate + novelty_rate, accepted instances match singleton prediction sets, and no positive ambiguity appears without prediction sets.
@@ -131,38 +135,38 @@ Outcome snapshot:
 - **rows**: 8280
 - **datasets**: 46
 - **seeds**: 5
-- **mean_accept_rate**: 0.1736
-- **mean_accuracy_delta**: -0.0321
-- **default_accept_rate_no_difficulty**: 0.3612
-- **default_accept_rate_with_difficulty**: 0.1387
-- **default_accept_rate_delta**: -0.2224
-- **default_accepted_accuracy_delta**: -0.1086
-- **default_accuracy_delta_delta**: -0.1082
-- **default_rejected_error_capture_rate_delta**: 0.1145
-- **default_singleton_error_rate_delta**: 0.4451
-- **default_difficulty_gap_with_difficulty**: 0.0925
+- **mean_accept_rate**: 0.3344
+- **mean_accuracy_delta**: 0.0007
+- **default_accept_rate_no_difficulty**: 0.6332
+- **default_accept_rate_with_difficulty**: 0.2132
+- **default_accept_rate_delta**: -0.4200
+- **default_accepted_accuracy_delta**: -0.1006
+- **default_accuracy_delta_delta**: -0.0956
+- **default_rejected_error_capture_rate_delta**: 0.1883
+- **default_singleton_error_rate_delta**: 0.4576
+- **default_difficulty_gap_with_difficulty**: 0.0395
 - **default_empirical_coverage_no_difficulty**: 0.8965
 - **default_empirical_coverage_with_difficulty**: 0.9403
 - **default_coverage_gap_delta**: 0.0438
-- **ensured_accept_rate_no_difficulty**: 0.1459
-- **ensured_accept_rate_with_difficulty**: 0.0488
-- **ensured_accept_rate_delta**: -0.0971
-- **ensured_accepted_accuracy_delta**: -0.1223
-- **ensured_accuracy_delta_delta**: -0.1183
-- **ensured_rejected_error_capture_rate_delta**: 0.0488
-- **ensured_singleton_error_rate_delta**: 0.3579
-- **ensured_difficulty_gap_with_difficulty**: 0.1729
+- **ensured_accept_rate_no_difficulty**: 0.3693
+- **ensured_accept_rate_with_difficulty**: 0.1220
+- **ensured_accept_rate_delta**: -0.2474
+- **ensured_accepted_accuracy_delta**: -0.1051
+- **ensured_accuracy_delta_delta**: -0.0923
+- **ensured_rejected_error_capture_rate_delta**: 0.0762
+- **ensured_singleton_error_rate_delta**: 0.3665
+- **ensured_difficulty_gap_with_difficulty**: 0.0758
 - **ensured_empirical_coverage_no_difficulty**: 0.9130
 - **ensured_empirical_coverage_with_difficulty**: 0.9406
 - **ensured_coverage_gap_delta**: 0.0275
-- **mean_difficulty_gap_with_difficulty**: 0.1118
+- **mean_difficulty_gap_with_difficulty**: 0.0501
 - **unique_confidences**: 9
 - **min_epsilon**: 0.0100
 - **max_epsilon**: 0.2000
 - **max_abs_reject_partition_residual**: 0.0000
 - **max_abs_accept_singleton_residual**: 0.0000
 - **positive_ambiguity_without_prediction_set_rows**: 0
-- **equal_positive_ambiguity_novelty_rows**: 0
+- **equal_positive_ambiguity_novelty_rows**: 4
 - **coverage_defined_rows**: 4680
 - **min_empirical_coverage_gap**: -0.2179
 - **max_empirical_coverage_gap**: 0.2000
@@ -179,32 +183,33 @@ Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, 
 - Arms D and F are diagnostic for potential difficulty double-counting when VA and score normalization are both enabled.
 - Includes strategy metadata and difficulty_reject_auc for reject-selectivity diagnostics.
 - Includes accepted-accuracy comparison at matched reject-rate bins for A vs C.
-- Direct normalization (C vs A) changed reject_rate by +0.0108, difficulty-gap by +0.3416, and difficulty_reject_auc by +0.2012.
-- At matched reject-rate bins, C minus A mean accepted_accuracy is -0.0089.
-- For C vs A, ambiguity_rate changed by +0.0051 and novelty_rate by +0.0057.
-- Double-count diagnostics: D-B reject_rate delta -0.0920, F-E reject_rate delta +0.0234; difficulty-gap deltas are +0.3770 and +0.2766.
+- Direct normalization (C vs A) changed reject_rate by +0.0313, difficulty-gap by +0.2950, and difficulty_reject_auc by +0.1985.
+- At matched reject-rate bins, C minus A mean accepted_accuracy is -0.0053.
+- For C vs A, ambiguity_rate changed by +0.0217 and novelty_rate by +0.0096.
+- Double-count diagnostics: D-B reject_rate delta -0.1473, F-E reject_rate delta +0.1093; difficulty-gap deltas are +0.3909 and +0.2846.
 - Recommended arm for next iteration: C (primary A-vs-C contrast with direct normalization and no VA double-count risk).
 Outcome snapshot:
 - **rows**: 12420
 - **datasets**: 46
 - **seeds**: 5
-- **mean_accept_rate**: 0.2230
-- **mean_accuracy_delta**: -0.0014
-- **A_vs_C_reject_rate_delta**: 0.0108
-- **A_vs_C_difficulty_gap_delta**: 0.3416
-- **A_vs_C_difficulty_reject_auc_delta**: 0.2012
-- **A_vs_C_ambiguity_rate_delta**: 0.0051
-- **A_vs_C_novelty_rate_delta**: 0.0057
-- **A_vs_C_matched_bin_accepted_accuracy_delta**: -0.0089
-- **D_minus_B_reject_rate_delta**: -0.0920
-- **F_minus_E_reject_rate_delta**: 0.0234
-- **D_minus_B_difficulty_gap_delta**: 0.3770
-- **F_minus_E_difficulty_gap_delta**: 0.2766
+- **mean_accept_rate**: 0.3959
+- **mean_accuracy_delta**: 0.0136
+- **A_vs_C_reject_rate_delta**: 0.0313
+- **A_vs_C_difficulty_gap_delta**: 0.2950
+- **A_vs_C_difficulty_reject_auc_delta**: 0.1985
+- **A_vs_C_ambiguity_rate_delta**: 0.0217
+- **A_vs_C_novelty_rate_delta**: 0.0096
+- **A_vs_C_matched_bin_accepted_accuracy_delta**: -0.0053
+- **D_minus_B_reject_rate_delta**: -0.1473
+- **F_minus_E_reject_rate_delta**: 0.1093
+- **D_minus_B_difficulty_gap_delta**: 0.3909
+- **F_minus_E_difficulty_gap_delta**: 0.2846
 - **recommended_arm**: C
 - **recommendation_reason**: primary A-vs-C contrast with direct normalization and no VA double-count risk
+- **metric_consistency_note**: (see json artifact)
 
 Rows: 12420
-Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, arm_code, arm_label, ncf, strategy, use_va_difficulty, difficulty_normalized, double_count_difficulty, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, difficulty_gap_rejected_minus_accepted, difficulty_reject_auc, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined
+Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, arm_code, arm_label, estimator_type, ncf, strategy, use_va_difficulty, difficulty_normalized, double_count_difficulty, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, difficulty_gap_rejected_minus_accepted, difficulty_reject_auc, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined
 
 ## Supplementary Scenarios
 
@@ -216,10 +221,10 @@ Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, 
 - Empirical companion to Proposition 1: coverage >= 1-epsilon across (NCF, w, epsilon) grid.
 - structural_violation: CI upper bound < 1-epsilon; cannot be attributed to finite-sample noise.
 Outcome snapshot:
-- **datasets**: 3
+- **datasets**: 26
 - **total_violations**: 0
 - **structural_violations**: 0
 - **violations_by_ncf_w**: (see json artifact)
 
-Rows: 48
+Rows: 416
 Columns: dataset, ncf, w, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violation, structural_violation, accept_rate

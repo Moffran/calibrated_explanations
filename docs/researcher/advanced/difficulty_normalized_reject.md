@@ -222,4 +222,42 @@ print(result.metadata["reject_rate"])
 print(result.metadata["ambiguity_rate"], result.metadata["novelty_rate"])
 ```
 
+The experimental difficulty strategies fail fast with `ConfigurationError` when
+`difficulty_estimator` is omitted. This prevents a missing estimator from
+silently turning the run into the built-in reject score.
+
+## Experimental API stability contract (RT-12)
+
+The strategy identifiers `"experimental.difficulty_normalized"` and
+`"experimental.ambiguity_normalized_novelty_penalized"` are experimental and
+carry **no compatibility guarantee** until explicitly promoted to a stable tier.
+
+- Any rename or removal will emit a `DeprecationWarning` for at least one minor
+  version before taking effect.
+- Do not hard-code experimental strategy strings in production callers. Wrap
+  them in a constant or configuration key so they can be updated without
+  searching the codebase.
+- Promotion to a public API tier will be recorded in `CHANGELOG.md` with a
+  concrete target milestone. Until then, treat experimental strategy strings as
+  internal-only identifiers subject to change.
+
+## Known limitations and research directions (RT-13)
+
+**Fairness and subgroup effects.** Difficulty normalization concentrates
+rejection on instances the difficulty estimator scores as hard. If the
+estimator correlates with protected attributes (e.g., age, gender, race), it
+may systematically over-reject instances from certain demographic subgroups.
+None of the 46 datasets in Scenarios 8–11 were analyzed by subgroup.
+
+Before deploying difficulty-normalized reject in fairness-sensitive contexts,
+practitioners should:
+
+1. Audit reject rates stratified by relevant demographic attributes.
+2. Check for correlation between difficulty scores and protected features.
+3. Apply Mondrian conformal prediction or post-hoc calibration if subgroup
+   reject-rate disparities are detected.
+
+This is an open research direction. Conditional validity and Mondrian variants
+are listed under Open Questions above.
+
 Entry-point tier: Tier 3

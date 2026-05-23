@@ -99,6 +99,13 @@ reject-rate operating points before any public API promotion decision.
   across the full (NCF, w) grid on binary datasets.  Separates coverage validity check from
   accuracy analysis in Scenario 4.
 
+- **Scenario 12 — Coverage validity: arm A vs arm C** (`scenario_12_coverage_validity_difficulty_normalized.py`):
+  RT-3 red-team obligation. Mirrors Scenario 1 but runs arm A (`builtin.default`) and arm C
+  (`experimental.difficulty_normalized`) side by side across binary datasets at epsilon in
+  {0.05, 0.10}. Difficulty normalization changes the nonconformity score definition, so coverage
+  validity must be verified empirically for arm C separately. Structural violations (CI upper bound
+  below 1-epsilon) are flagged per arm. Status: `empirical`.
+
 ### What this suite does NOT measure
 
 - API routing behavior (FLAG vs ONLY_ACCEPTED vs ONLY_REJECTED) — CI integration concern only.

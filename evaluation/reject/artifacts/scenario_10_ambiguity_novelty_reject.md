@@ -7,9 +7,9 @@ Rows: 6210
 - Compares built-in default, direct difficulty-normalized, and novelty-aware experimental reject strategies.
 - Primary contrast is C vs G: direct difficulty normalization with and without novelty penalty.
 - Novelty estimator is deterministic, fitted on proper-training features only, and uses no calibration labels/residuals.
-- G vs C changed novelty_rate by +0.0019, empty_rate by +0.0019, and novelty_reject_auc by -0.0371.
-- G vs C changed ambiguity_rate by +0.0047 and multilabel_rate by +0.0047.
-- G vs C changed accepted_accuracy by +0.0037.
+- G vs C changed novelty_rate by +0.0036, empty_rate by +0.0036, and novelty_reject_auc by -0.0302.
+- G vs C changed ambiguity_rate by +0.0065 and multilabel_rate by +0.0065.
+- G vs C changed accepted_accuracy by +0.0041.
 - Recommended arm for next iteration: C (difficulty-normalized remains the simpler experimental baseline).
 
 ## Outcome snapshot
@@ -18,14 +18,14 @@ Rows: 6210
 - **datasets**: 46
 - **seeds**: 5
 - **novelty_weight**: 0.1000
-- **mean_accept_rate**: 0.3518
-- **mean_accuracy_delta**: 0.0523
-- **G_minus_C_novelty_rate_delta**: 0.0019
-- **G_minus_C_empty_rate_delta**: 0.0019
-- **G_minus_C_ambiguity_rate_delta**: 0.0047
-- **G_minus_C_multilabel_rate_delta**: 0.0047
-- **G_minus_C_accepted_accuracy_delta**: 0.0037
-- **G_minus_C_novelty_reject_auc_delta**: -0.0371
+- **mean_accept_rate**: 0.6090
+- **mean_accuracy_delta**: 0.0514
+- **G_minus_C_novelty_rate_delta**: 0.0036
+- **G_minus_C_empty_rate_delta**: 0.0036
+- **G_minus_C_ambiguity_rate_delta**: 0.0065
+- **G_minus_C_multilabel_rate_delta**: 0.0065
+- **G_minus_C_accepted_accuracy_delta**: 0.0041
+- **G_minus_C_novelty_reject_auc_delta**: -0.0302
 - **recommended_arm**: C
 - **recommendation_reason**: difficulty-normalized remains the simpler experimental baseline
 
@@ -52,49 +52,49 @@ _Showing first 12 of 6210 rows._
 
 | arm_code | strategy | ncf | difficulty_normalized | novelty_penalized | novelty_weight | accept_rate | reject_rate | accepted_accuracy | accuracy_delta | ambiguity_rate | novelty_rate | empty_rate | multilabel_rate | rejected_error_capture_rate | difficulty_gap_rejected_minus_accepted | difficulty_reject_auc | novelty_gap_rejected_minus_accepted | novelty_reject_auc | empirical_coverage | coverage_gap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A | builtin.default | default | no | no | 0.0000 | 0.3612 | 0.6388 | 0.8653 | 0.0578 | 0.5850 | 0.0538 | 0.0538 | 0.5850 | 0.7464 | 0.0250 | 0.5020 | 0.0442 | 0.5140 | 0.8965 | 0.0015 |
-| C | experimental.difficulty_normalized | default | yes | no | 0.0000 | 0.3504 | 0.6496 | 0.8556 | 0.0484 | 0.5902 | 0.0595 | 0.0595 | 0.5902 | 0.7481 | 0.3667 | 0.7031 | 0.4191 | 0.6540 | 0.8840 | -0.0110 |
-| G | experimental.ambiguity_normalized_novelty_penalized | default | yes | yes | 0.1000 | 0.3437 | 0.6563 | 0.8593 | 0.0508 | 0.5949 | 0.0614 | 0.0614 | 0.5949 | 0.7475 | 0.3087 | 0.6850 | 0.3266 | 0.6170 | 0.8845 | -0.0105 |
+| A | builtin.default | default | no | no | 0.0000 | 0.6332 | 0.3668 | 0.8614 | 0.0551 | 0.3431 | 0.0237 | 0.0237 | 0.3431 | 0.5878 | 0.0100 | 0.4986 | 0.0255 | 0.5076 | 0.8965 | 0.0015 |
+| C | experimental.difficulty_normalized | default | yes | no | 0.0000 | 0.6019 | 0.3981 | 0.8548 | 0.0478 | 0.3648 | 0.0333 | 0.0333 | 0.3648 | 0.6123 | 0.3049 | 0.6971 | 0.3412 | 0.6369 | 0.8840 | -0.0110 |
+| G | experimental.ambiguity_normalized_novelty_penalized | default | yes | yes | 0.1000 | 0.5918 | 0.4082 | 0.8589 | 0.0512 | 0.3713 | 0.0369 | 0.0369 | 0.3713 | 0.6093 | 0.2466 | 0.6824 | 0.2623 | 0.6067 | 0.8845 | -0.0105 |
 
 ## By Confidence And Arm
 
 | confidence | epsilon | arm_code | strategy | reject_rate | accepted_accuracy | ambiguity_rate | novelty_rate | novelty_gap_rejected_minus_accepted | novelty_reject_auc |
 |---|---|---|---|---|---|---|---|---|---|
-| 0.8000 | 0.2000 | A | builtin.default | 0.5225 | 0.8361 | 0.4051 | 0.1175 | 0.0384 | 0.5085 |
-| 0.8237 | 0.1763 | A | builtin.default | 0.5314 | 0.8374 | 0.4327 | 0.0987 | 0.0416 | 0.5111 |
-| 0.8475 | 0.1525 | A | builtin.default | 0.5437 | 0.8413 | 0.4638 | 0.0799 | 0.0259 | 0.5114 |
-| 0.8713 | 0.1287 | A | builtin.default | 0.5715 | 0.8452 | 0.5074 | 0.0642 | 0.0451 | 0.5216 |
-| 0.8950 | 0.1050 | A | builtin.default | 0.5921 | 0.8523 | 0.5436 | 0.0485 | 0.0598 | 0.5219 |
-| 0.9187 | 0.0813 | A | builtin.default | 0.6334 | 0.8686 | 0.5980 | 0.0354 | 0.0511 | 0.5132 |
-| 0.9425 | 0.0575 | A | builtin.default | 0.6768 | 0.8834 | 0.6533 | 0.0236 | 0.0469 | 0.5111 |
-| 0.9663 | 0.0337 | A | builtin.default | 0.7526 | 0.9311 | 0.7387 | 0.0139 | 0.0447 | 0.5123 |
-| 0.9900 | 0.0100 | A | builtin.default | 0.9253 | 0.9621 | 0.9228 | 0.0025 | 0.0379 | 0.5146 |
-| 0.8000 | 0.2000 | C | experimental.difficulty_normalized | 0.5393 | 0.8383 | 0.4074 | 0.1319 | 0.4312 | 0.6209 |
-| 0.8237 | 0.1763 | C | experimental.difficulty_normalized | 0.5474 | 0.8383 | 0.4365 | 0.1110 | 0.4404 | 0.6287 |
-| 0.8475 | 0.1525 | C | experimental.difficulty_normalized | 0.5552 | 0.8410 | 0.4655 | 0.0897 | 0.4555 | 0.6369 |
-| 0.8713 | 0.1287 | C | experimental.difficulty_normalized | 0.5751 | 0.8438 | 0.5049 | 0.0702 | 0.4618 | 0.6584 |
-| 0.8950 | 0.1050 | C | experimental.difficulty_normalized | 0.5979 | 0.8478 | 0.5450 | 0.0529 | 0.4512 | 0.6691 |
-| 0.9187 | 0.0813 | C | experimental.difficulty_normalized | 0.6361 | 0.8562 | 0.5981 | 0.0380 | 0.4543 | 0.6736 |
-| 0.9425 | 0.0575 | C | experimental.difficulty_normalized | 0.6886 | 0.8691 | 0.6636 | 0.0249 | 0.3566 | 0.6649 |
-| 0.9663 | 0.0337 | C | experimental.difficulty_normalized | 0.7718 | 0.8972 | 0.7577 | 0.0141 | 0.3533 | 0.6809 |
-| 0.9900 | 0.0100 | C | experimental.difficulty_normalized | 0.9355 | 0.9005 | 0.9329 | 0.0025 | 0.2642 | 0.6542 |
-| 0.8000 | 0.2000 | G | experimental.ambiguity_normalized_novelty_penalized | 0.5379 | 0.8350 | 0.4085 | 0.1295 | 0.6098 | 0.6643 |
-| 0.8237 | 0.1763 | G | experimental.ambiguity_normalized_novelty_penalized | 0.5494 | 0.8393 | 0.4387 | 0.1107 | 0.5659 | 0.6628 |
-| 0.8475 | 0.1525 | G | experimental.ambiguity_normalized_novelty_penalized | 0.5574 | 0.8423 | 0.4653 | 0.0921 | 0.5142 | 0.6428 |
-| 0.8713 | 0.1287 | G | experimental.ambiguity_normalized_novelty_penalized | 0.5782 | 0.8457 | 0.5039 | 0.0743 | 0.4111 | 0.6225 |
-| 0.8950 | 0.1050 | G | experimental.ambiguity_normalized_novelty_penalized | 0.6062 | 0.8540 | 0.5486 | 0.0576 | 0.3249 | 0.6064 |
-| 0.9187 | 0.0813 | G | experimental.ambiguity_normalized_novelty_penalized | 0.6481 | 0.8664 | 0.6065 | 0.0416 | 0.2778 | 0.5982 |
-| 0.9425 | 0.0575 | G | experimental.ambiguity_normalized_novelty_penalized | 0.6963 | 0.8789 | 0.6686 | 0.0278 | 0.1632 | 0.5850 |
-| 0.9663 | 0.0337 | G | experimental.ambiguity_normalized_novelty_penalized | 0.7899 | 0.9110 | 0.7739 | 0.0160 | -0.1006 | 0.5670 |
-| 0.9900 | 0.0100 | G | experimental.ambiguity_normalized_novelty_penalized | 0.9429 | 0.8815 | 0.9401 | 0.0028 | -0.2981 | 0.5572 |
+| 0.8000 | 0.2000 | A | builtin.default | 0.1982 | 0.8349 | 0.1341 | 0.0641 | 0.0242 | 0.5056 |
+| 0.8237 | 0.1763 | A | builtin.default | 0.2129 | 0.8323 | 0.1625 | 0.0504 | 0.0241 | 0.5064 |
+| 0.8475 | 0.1525 | A | builtin.default | 0.2312 | 0.8349 | 0.1936 | 0.0375 | 0.0166 | 0.5063 |
+| 0.8713 | 0.1287 | A | builtin.default | 0.2716 | 0.8413 | 0.2449 | 0.0267 | 0.0233 | 0.5097 |
+| 0.8950 | 0.1050 | A | builtin.default | 0.3023 | 0.8473 | 0.2859 | 0.0164 | 0.0316 | 0.5134 |
+| 0.9187 | 0.0813 | A | builtin.default | 0.3578 | 0.8652 | 0.3477 | 0.0101 | 0.0309 | 0.5073 |
+| 0.9425 | 0.0575 | A | builtin.default | 0.4224 | 0.8758 | 0.4165 | 0.0059 | 0.0266 | 0.5066 |
+| 0.9663 | 0.0337 | A | builtin.default | 0.5188 | 0.9130 | 0.5166 | 0.0022 | 0.0311 | 0.5090 |
+| 0.9900 | 0.0100 | A | builtin.default | 0.7859 | 0.9681 | 0.7859 | 0.0000 | 0.0170 | 0.4991 |
+| 0.8000 | 0.2000 | C | experimental.difficulty_normalized | 0.2415 | 0.8365 | 0.1529 | 0.0886 | 0.3477 | 0.6148 |
+| 0.8237 | 0.1763 | C | experimental.difficulty_normalized | 0.2507 | 0.8352 | 0.1801 | 0.0706 | 0.3498 | 0.6186 |
+| 0.8475 | 0.1525 | C | experimental.difficulty_normalized | 0.2636 | 0.8387 | 0.2116 | 0.0521 | 0.3605 | 0.6266 |
+| 0.8713 | 0.1287 | C | experimental.difficulty_normalized | 0.2922 | 0.8428 | 0.2558 | 0.0364 | 0.3670 | 0.6407 |
+| 0.8950 | 0.1050 | C | experimental.difficulty_normalized | 0.3253 | 0.8471 | 0.3004 | 0.0249 | 0.3575 | 0.6462 |
+| 0.9187 | 0.0813 | C | experimental.difficulty_normalized | 0.3779 | 0.8572 | 0.3628 | 0.0151 | 0.3579 | 0.6481 |
+| 0.9425 | 0.0575 | C | experimental.difficulty_normalized | 0.4536 | 0.8663 | 0.4451 | 0.0086 | 0.3013 | 0.6427 |
+| 0.9663 | 0.0337 | C | experimental.difficulty_normalized | 0.5607 | 0.8842 | 0.5571 | 0.0035 | 0.3140 | 0.6528 |
+| 0.9900 | 0.0100 | C | experimental.difficulty_normalized | 0.8170 | 0.9218 | 0.8170 | 0.0000 | 0.2828 | 0.6481 |
+| 0.8000 | 0.2000 | G | experimental.ambiguity_normalized_novelty_penalized | 0.2369 | 0.8357 | 0.1494 | 0.0875 | 0.4939 | 0.6525 |
+| 0.8237 | 0.1763 | G | experimental.ambiguity_normalized_novelty_penalized | 0.2545 | 0.8398 | 0.1816 | 0.0729 | 0.4565 | 0.6492 |
+| 0.8475 | 0.1525 | G | experimental.ambiguity_normalized_novelty_penalized | 0.2681 | 0.8426 | 0.2103 | 0.0578 | 0.4139 | 0.6323 |
+| 0.8713 | 0.1287 | G | experimental.ambiguity_normalized_novelty_penalized | 0.2986 | 0.8461 | 0.2559 | 0.0428 | 0.3407 | 0.6162 |
+| 0.8950 | 0.1050 | G | experimental.ambiguity_normalized_novelty_penalized | 0.3359 | 0.8532 | 0.3053 | 0.0307 | 0.2851 | 0.6040 |
+| 0.9187 | 0.0813 | G | experimental.ambiguity_normalized_novelty_penalized | 0.3950 | 0.8667 | 0.3739 | 0.0210 | 0.2404 | 0.5928 |
+| 0.9425 | 0.0575 | G | experimental.ambiguity_normalized_novelty_penalized | 0.4663 | 0.8702 | 0.4536 | 0.0127 | 0.1687 | 0.5831 |
+| 0.9663 | 0.0337 | G | experimental.ambiguity_normalized_novelty_penalized | 0.5847 | 0.8927 | 0.5784 | 0.0063 | -0.0148 | 0.5631 |
+| 0.9900 | 0.0100 | G | experimental.ambiguity_normalized_novelty_penalized | 0.8338 | 0.9186 | 0.8332 | 0.0006 | -0.4244 | 0.5095 |
 
 ## Required Analyses
 
 1. Does novelty penalization increase novelty/empty-set rejection relative to C?
-G vs C changed novelty_rate by +0.0019, empty_rate by +0.0019, and novelty_reject_auc by -0.0371.
+G vs C changed novelty_rate by +0.0036, empty_rate by +0.0036, and novelty_reject_auc by -0.0302.
 2. Does it reduce ambiguity/multi-label rejection relative to C?
-G vs C changed ambiguity_rate by +0.0047 and multilabel_rate by +0.0047.
+G vs C changed ambiguity_rate by +0.0065 and multilabel_rate by +0.0065.
 3. Does it preserve accepted accuracy relative to C?
-G vs C changed accepted_accuracy by +0.0037.
+G vs C changed accepted_accuracy by +0.0041.
 4. Which arm is recommended for further development?
 Recommended arm for next iteration: C (difficulty-normalized remains the simpler experimental baseline).

@@ -454,22 +454,6 @@ def _difficulty_values(explainer: Any, x: Any) -> np.ndarray:
                 "min_value": float(np.min(difficulty)),
             },
         )
-    _min_val = float(np.min(difficulty))
-    _max_val = float(np.max(difficulty))
-    if _min_val > 0.0 and (_max_val / _min_val) > 20.0:
-        warnings.warn(
-            f"difficulty_estimator.apply() returned values with max/min ratio"
-            f" {_max_val / _min_val:.1f} > 20; this may indicate estimator miscalibration."
-            " Difficulty-normalized reject scoring may be unstable.",
-            RejectContractWarning,
-            stacklevel=3,
-        )
-        logging.getLogger(__name__).info(
-            "difficulty scale warning: max=%.4f min=%.4f ratio=%.1f",
-            _max_val,
-            _min_val,
-            _max_val / _min_val,
-        )
     return _clip_difficulty_values(difficulty)
 
 
@@ -784,7 +768,17 @@ def resolve_policy_spec(reject_policy_kw: Any, explainer: Any) -> Any:
                     "Reject orchestrator is unavailable for policy initialization.",
                     details={"reason": "missing_reject_orchestrator"},
                 )
-            reject_orchestrator.initialize_reject_learner(ncf=spec.ncf, w=effective_spec_w)
+            if getattr(explainer, "mode", "classification") == "regression":
+                # For regression, the reject learner cannot be built without a call-time
+                # threshold. Store the NCF settings now so the strategy can read them
+                # via reject_ncf/reject_ncf_w; the learner is built inside the strategy
+                # or _resolve_regression_effective_threshold when threshold is available.
+                _normalized_ncf = normalize_reject_ncf_choice(spec.ncf)
+                explainer.reject_ncf = _normalized_ncf
+                explainer.reject_ncf_w = canonical_reject_ncf_w(_normalized_ncf, float(spec.w))
+                explainer.reject_ncf_auto_selected = False
+            else:
+                reject_orchestrator.initialize_reject_learner(ncf=spec.ncf, w=effective_spec_w)
         return spec.policy
 
     raise ValidationError(
@@ -989,13 +983,6 @@ class RejectOrchestrator:
                 )
             return RejectResult(
                 prediction=None, explanation=None, rejected=None, policy=policy, metadata=None
-            )
-
-        # Explicitly reject regression mode for this experimental strategy
-        if getattr(self.explainer, "mode", "classification") == "regression":
-            raise ValidationError(
-                "experimental.difficulty_normalized strategy does not support regression mode.",
-                details={"mode": self.explainer.mode},
             )
 
         # Enable difficulty-normalized scoring for this call

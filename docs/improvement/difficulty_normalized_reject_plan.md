@@ -468,6 +468,41 @@ Source artifacts:
   experimental difficulty-normalized nonconformity for reject-option conformal
   classification, evaluated against baseline and novelty-aware variants.
 
+## Regression mode support (RT-9)
+
+`strategy="experimental.difficulty_normalized"` now supports regression mode with
+`crepes.extras.DifficultyEstimator` and all other estimators implementing `apply(x)`.
+
+Implementation note: the regression path already binarizes probabilities to `[[1-p, p]]`
+where `p = P(y <= threshold)` before computing NCF scores. Difficulty normalization divides
+these scores by `difficulty_estimator.apply(x)` identically to the classification case.
+No separate sigma-based path is needed; the binarized-probability structure is sufficient.
+
+Two fixes were required:
+
+1. The explicit regression guard (`raise ValidationError("does not support regression mode")`)
+   inside `_experimental_difficulty_normalized_strategy` was removed.
+2. `resolve_policy_spec` was updated to skip the threshold-requiring `initialize_reject_learner`
+   pre-flight for regression mode, instead only storing the NCF settings (ncf, w) on the
+   explainer. The threshold-aware learner build happens inside the strategy at call time.
+
+Usage:
+
+```python
+from crepes.extras import DifficultyEstimator
+
+de = DifficultyEstimator().fit(x_fit)
+wrapper.explainer.difficulty_estimator = de
+
+result = wrapper.predict(
+    x_test,
+    reject_policy=RejectPolicySpec.flag(ncf="default", w=0.5),
+    confidence=0.90,
+    strategy="experimental.difficulty_normalized",
+    threshold=threshold,
+)
+```
+
 ## Open research questions
 
 - How to separate ambiguity and novelty more effectively without harming accepted
@@ -478,3 +513,4 @@ Source artifacts:
   reject selectivity.
 - How finite-sample behavior changes across calibration-set sizes and
   confidence regimes.
+- How to design a sigma-based normalization for regression reject NCFs (C3 path).

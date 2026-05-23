@@ -270,9 +270,13 @@ The reject evaluation suite under `evaluation/reject/` reports:
     enabling VA difficulty made reject stricter (`accept_rate` down; error capture up),
     with strong accepted-accuracy cost in this setup.
 - Scenario 9 (direct difficulty-normalized scores):
-    primary contrast A vs C showed higher difficulty-aligned rejection and improved
-    accepted accuracy at matched reject-rate bins; arm C is the current recommended
-    experimental baseline.
+    primary contrast A vs C showed that arm C selects harder instances for rejection
+    (`difficulty_reject_auc` delta +0.1651 full-grid, driven by high-confidence rows).
+    At matched reject-rate operating points (10–40% targets), accepted-accuracy delta
+    was marginally negative (−0.0089 at target 0.40). The AUC advantage seen in the
+    full confidence grid is a selection effect at high rejection rates (>40%), not a
+    benefit in the deployment-relevant 10–40% range. Arm C remains the current
+    experimental baseline but is not yet promoted to the public API.
 - Scenario 10 (ambiguity-normalized novelty-penalized variant):
     novelty increase was small and did not clearly outperform arm C; C remains the
     simpler recommended experimental path.
@@ -338,6 +342,9 @@ print(result.metadata["difficulty_normalized"])
 
 Keep this path explicitly experimental. It preserves the public `RejectPolicy`
 contract, but the strategy identifier is not a promoted public NCF mode.
+The experimental difficulty strategies require `difficulty_estimator` to be set
+on the calibrated explainer; omitting it raises `ConfigurationError` instead of
+silently falling back to the built-in reject score.
 
 ### Why provenance matters
 

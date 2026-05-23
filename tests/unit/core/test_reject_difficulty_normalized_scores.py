@@ -7,7 +7,6 @@ import pytest
 
 from calibrated_explanations.core.reject import orchestrator as orch
 from calibrated_explanations.core.reject.orchestrator import default_score_cal, default_score_test
-from calibrated_explanations.explanations.reject import RejectContractWarning
 from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
 
 
@@ -135,16 +134,52 @@ def test_metadata_fields_and_monotonicity(monkeypatch):
         prev_prediction_set = prediction_set
 
 
-def test_experimental_strategy_regression_mode_raises():
-    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
-    labels = np.array([1, 0])
-    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
-    explainer.mode = "regression"
+def test_experimental_strategy_regression_mode_works():
+    # Regression mode must be fully supported with difficulty normalization.
+    # P(y <= 0.5) values for 3 calibration instances, y_cal continuous.
+    proba_1 = [0.2, 0.7, 0.9]
+    y_cal = [0.1, 0.8, 0.6]
+    explainer = make_regression_explainer(
+        proba_1, y_cal, threshold=0.5, difficulty_values=[1.0, 1.0, 1.0]
+    )
     orchestrator = orch.RejectOrchestrator(explainer)
-    with pytest.raises(ValidationError, match="does not support regression"):
-        orchestrator.apply_policy(
-            policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
-        )
+    result = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.difficulty_normalized",
+        threshold=0.5,
+    )
+    assert result is not None
+    assert result.metadata["difficulty_normalized"] is True
+    assert result.metadata["reject_strategy"] == "experimental.difficulty_normalized"
+    assert result.rejected is not None
+    assert len(result.rejected) == len(proba_1)
+
+
+def test_experimental_strategy_regression_trivial_difficulty_matches_builtin():
+    # With uniform difficulty=1, normalized scores must equal builtin scores.
+    proba_1 = [0.2, 0.7, 0.9]
+    y_cal = [0.1, 0.8, 0.6]
+    explainer_builtin = make_regression_explainer(proba_1, y_cal, threshold=0.5)
+    explainer_diff = make_regression_explainer(
+        proba_1, y_cal, threshold=0.5, difficulty_values=[1.0, 1.0, 1.0]
+    )
+    orch_builtin = orch.RejectOrchestrator(explainer_builtin)
+    orch_diff = orch.RejectOrchestrator(explainer_diff)
+    res_builtin = orch_builtin.apply_policy(
+        policy="flag", x=explainer_builtin.x_cal, strategy="builtin.default", threshold=0.5
+    )
+    res_diff = orch_diff.apply_policy(
+        policy="flag",
+        x=explainer_diff.x_cal,
+        strategy="experimental.difficulty_normalized",
+        threshold=0.5,
+    )
+    np.testing.assert_array_equal(res_builtin.rejected, res_diff.rejected)
+    np.testing.assert_array_equal(
+        res_builtin.metadata["prediction_set_size"],
+        res_diff.metadata["prediction_set_size"],
+    )
 
 
 class DifficultyEstimator:
@@ -203,6 +238,10 @@ class IntervalLearnerStub:
     def predict_proba(self, x, bins=None):
         return np.array(self.proba, copy=True)
 
+    def predict_probability(self, x, y_threshold=None, bins=None):
+        # For regression stubs: return P(y <= threshold) from proba[:,1], plus three None slots.
+        return self.proba[:, 1].copy(), None, None, None
+
 
 def make_explainer(proba, labels, difficulty_values=None):
     proba_array = np.asarray(proba, dtype=float)
@@ -216,6 +255,26 @@ def make_explainer(proba, labels, difficulty_values=None):
         difficulty_estimator=(
             None if difficulty_values is None else DifficultyEstimator(difficulty_values)
         ),
+        seed=7,
+    )
+    explainer.is_multiclass = lambda: False
+    return explainer
+
+
+def make_regression_explainer(proba_1, y_cal, *, threshold=0.5, difficulty_values=None):
+    """Regression-mode explainer stub.  proba_1[i] = P(y_i <= threshold)."""
+    proba_array = np.column_stack([1.0 - np.asarray(proba_1), np.asarray(proba_1)]).astype(float)
+    explainer = SimpleNamespace(
+        mode="regression",
+        x_cal=np.arange(len(proba_1), dtype=float).reshape(-1, 1),
+        y_cal=np.asarray(y_cal, dtype=float),
+        bins=None,
+        interval_learner=IntervalLearnerStub(proba_array),
+        reject_learner=RecordingConformalClassifier(),
+        difficulty_estimator=(
+            None if difficulty_values is None else DifficultyEstimator(difficulty_values)
+        ),
+        reject_threshold=threshold,
         seed=7,
     )
     explainer.is_multiclass = lambda: False
@@ -543,10 +602,14 @@ def test_difficulty_strategy_without_estimator_raises_configuration_error():
     labels = np.array([1, 0])
     explainer = make_explainer(proba, labels)  # difficulty_estimator=None
     orchestrator = orch.RejectOrchestrator(explainer)
-    with pytest.raises(ConfigurationError, match="requires difficulty_estimator"):
+    with pytest.raises(ConfigurationError, match="requires difficulty_estimator") as exc_info:
         orchestrator.apply_policy(
             policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
         )
+    assert exc_info.value.details == {
+        "strategy": "experimental.difficulty_normalized",
+        "requirement": "difficulty_estimator",
+    }
 
 
 def test_ambiguity_novelty_strategy_without_estimator_raises_configuration_error():
@@ -554,12 +617,16 @@ def test_ambiguity_novelty_strategy_without_estimator_raises_configuration_error
     labels = np.array([1, 0])
     explainer = make_explainer(proba, labels)  # difficulty_estimator=None
     orchestrator = orch.RejectOrchestrator(explainer)
-    with pytest.raises(ConfigurationError, match="requires difficulty_estimator"):
+    with pytest.raises(ConfigurationError, match="requires difficulty_estimator") as exc_info:
         orchestrator.apply_policy(
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
         )
+    assert exc_info.value.details == {
+        "strategy": "experimental.ambiguity_normalized_novelty_penalized",
+        "requirement": "difficulty_estimator",
+    }
 
 
 def test_builtin_default_without_estimator_does_not_raise():
@@ -583,7 +650,7 @@ def test_experimental_with_estimator_set_does_not_raise():
 
 
 # ---------------------------------------------------------------------------
-# RT-6: ValidationError for zero difficulty + RejectContractWarning for large ratio
+# RT-6: ValidationError for zero difficulty; large ratios are legitimate and do not warn
 # ---------------------------------------------------------------------------
 
 
@@ -597,21 +664,25 @@ def test_zero_difficulty_values_raise_validation_error(monkeypatch):
         orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
 
 
-def test_large_ratio_difficulty_emits_reject_contract_warning(monkeypatch):
+def test_large_ratio_difficulty_no_warning(monkeypatch):
     proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
     labels = np.array([1, 0])
-    # ratio = 22.0 / 1.0 = 22.0 > 20 — must emit RejectContractWarning
+    # ratio = 22.0 — legitimate for crepes.extras.DifficultyEstimator on real data
     explainer = make_explainer(proba, labels, difficulty_values=[1.0, 22.0])
     setattr(explainer, "_reject_difficulty_normalized", True)
-    monkeypatch.setattr(orch, "ConformalClassifier", RecordingConformalClassifier)
-    with pytest.warns(RejectContractWarning, match="max/min ratio"):
+    conformal = RecordingConformalClassifier()
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: conformal)
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
+    assert conformal.fit_alphas is not None
 
 
 def test_normal_difficulty_range_no_warning_or_error(monkeypatch):
     proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
     labels = np.array([1, 0])
-    # ratio = 2.0 / 1.0 = 2.0 — well within bounds
     explainer = make_explainer(proba, labels, difficulty_values=[1.0, 2.0])
     setattr(explainer, "_reject_difficulty_normalized", True)
     conformal = RecordingConformalClassifier()

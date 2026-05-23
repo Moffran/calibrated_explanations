@@ -32,7 +32,8 @@ CORE_SCENARIOS = [
 
 # Supplementary scenarios — depend on RT-2 K1 fix being complete
 SUPPLEMENTARY_SCENARIOS = [
-    "scenario_7_ncf_coverage_validity",         # Empirical companion to Proposition 1
+    "scenario_7_ncf_coverage_validity",                                # Empirical companion to Proposition 1
+    "scenario_12_coverage_validity_difficulty_normalized",             # RT-3: coverage validity for arm C
 ]
 
 SCENARIOS = CORE_SCENARIOS + SUPPLEMENTARY_SCENARIOS

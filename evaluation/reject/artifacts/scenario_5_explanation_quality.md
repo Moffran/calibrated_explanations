@@ -12,9 +12,9 @@ Rows: 46
 ## Outcome snapshot
 
 - **datasets**: 46
-- **mean_accuracy_delta**: 0.0893
-- **mean_ece_delta**: -0.0876
-- **regime_summary**: {'low': {'n': 5, 'mean_accuracy_delta': 0.02230552841599498, 'mean_ece_delta': -0.017276155882782633, 'mean_reject_rate': 0.05860652570897099}, 'moderate': {'n': 7, 'mean_accuracy_delta': 0.044176926729057105, 'mean_ece_delta': -0.03214269544410237, 'mean_reject_rate': 0.25941715669318577}, 'high': {'n': 34, 'mean_accuracy_delta': 0.1357305498837686, 'mean_ece_delta': -0.14042452287327015, 'mean_reject_rate': 0.836226443922933}}
+- **mean_accuracy_delta**: 0.0934
+- **mean_ece_delta**: -0.0593
+- **regime_summary**: {'low': {'n': 12, 'mean_accuracy_delta': 0.021164084270489786, 'mean_ece_delta': -0.005245520481660015, 'mean_reject_rate': 0.05843210797399068}, 'moderate': {'n': 9, 'mean_accuracy_delta': 0.061159300207046456, 'mean_ece_delta': -0.02685838297914815, 'mean_reject_rate': 0.27568393232999416}, 'high': {'n': 25, 'mean_accuracy_delta': 0.14361366739484643, 'mean_ece_delta': -0.10028716516834928, 'mean_reject_rate': 0.6550079657533209}}
 
 ## Result table
 

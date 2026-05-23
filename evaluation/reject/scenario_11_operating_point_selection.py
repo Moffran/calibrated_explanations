@@ -26,15 +26,17 @@ import numpy as np
 import pandas as pd
 
 from .common_reject import RunConfig, seed_grid, task_specs, write_csv_json_md
+from .scenario_9_difficulty_normalized_ncf import (
+    _CREPES_ESTIMATOR_CODES,
+    _build_classification_bundle,
+    _build_crepes_estimators,
+    _markdown_table,
+)
 from .scenario_10_ambiguity_novelty_reject import (
     _ARMS,
+    ArmSpec,
     DeterministicNoveltyEstimator,
     _run_arm,
-)
-from .scenario_9_difficulty_normalized_ncf import (
-    _build_classification_bundle,
-    _format_scalar,
-    _markdown_table,
 )
 
 _PREFIX = "scenario_11_operating_point_selection"
@@ -414,9 +416,76 @@ def _write_delta_csv(deltas: pd.DataFrame) -> None:
     deltas.to_csv(path, index=False)
 
 
-def run(config: RunConfig) -> None:
-    """Run Scenario 11 matched operating-point selection."""
+def _crepes_delta_summary(crepes_selected: pd.DataFrame) -> pd.DataFrame:
+    """Per-estimator A-vs-C accepted-accuracy delta at matched operating points."""
+    if crepes_selected.empty:
+        return pd.DataFrame()
+    rows: list[dict[str, Any]] = []
+    for est_code in _CREPES_ESTIMATOR_CODES:
+        subset = crepes_selected[crepes_selected["estimator_type"] == est_code]
+        for target in _TARGET_REJECT_RATES:
+            t_sub = subset[np.isclose(subset["target_reject_rate"].astype(float), float(target))]
+            a_rows = t_sub[t_sub["arm_code"] == "A"]
+            c_rows = t_sub[t_sub["arm_code"] == "C"]
+            if a_rows.empty or c_rows.empty:
+                continue
+            merged = a_rows[["dataset", "seed", "accepted_accuracy"]].merge(
+                c_rows[["dataset", "seed", "accepted_accuracy"]],
+                on=["dataset", "seed"],
+                suffixes=("_A", "_C"),
+            )
+            if merged.empty:
+                continue
+            delta = float(
+                (merged["accepted_accuracy_C"] - merged["accepted_accuracy_A"]).mean()
+            )
+            rows.append(
+                {
+                    "estimator_type": est_code,
+                    "target_reject_rate": float(target),
+                    "C_minus_A_accepted_accuracy_mean": delta,
+                    "mean_target_abs_error": float(t_sub["reject_rate_target_abs_error"].mean()),
+                    "paired_groups": int(len(merged)),
+                }
+            )
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values(
+        ["estimator_type", "target_reject_rate"], kind="mergesort"
+    )
+
+
+def _append_crepes_section(crepes_summary: pd.DataFrame) -> None:
+    md_path = Path(__file__).resolve().parent / "artifacts" / f"{_PREFIX}.md"
+    content = md_path.read_text(encoding="utf-8")
+    extra = [
+        "## Crepes Estimator Ablation (RT-7)",
+        "",
+        "A-vs-C accepted-accuracy delta at matched target reject rates for each "
+        "`crepes.extras.DifficultyEstimator` setup.",
+        "Arms: A (`builtin.default`) vs C (`experimental.difficulty_normalized`), "
+        "both with `ncf=default`, no VA difficulty.",
+        "",
+        _markdown_table(crepes_summary) if not crepes_summary.empty else "_No crepes data._",
+        "",
+    ]
+    md_path.write_text(content + "\n" + "\n".join(extra), encoding="utf-8")
+
+
+def run(config: RunConfig, *, crepes_ablation: bool = False) -> None:
+    """Run Scenario 11 matched operating-point selection.
+
+    Parameters
+    ----------
+    config:
+        Run configuration.
+    crepes_ablation:
+        If True, additionally run arm A and arm C with each of the four
+        ``crepes.extras.DifficultyEstimator`` setups (RT-7) on binary datasets.
+        Results are written as a secondary summary block in the artefact.
+    """
     sweep_rows: list[dict[str, Any]] = []
+    crepes_sweep_rows: list[dict[str, Any]] = []
     datasets = task_specs("binary", quick=config.quick) + task_specs("multiclass", quick=config.quick)
     confidences = tuple(float(c) for c in _confidence_grid(config.quick))
 
@@ -449,6 +518,42 @@ def run(config: RunConfig) -> None:
                     row["observed_reject_rate"] = float(row["reject_rate"])
                     row["empty_set_rate"] = float(row["empty_rate"])
                     sweep_rows.append(row)
+
+            # RT-7: crepes.extras.DifficultyEstimator ablation (opt-in)
+            if crepes_ablation and spec.task_type == "binary":
+                model_obj = bundle.wrapper.explainer.interval_learner
+                base_model = getattr(model_obj, "learner", None)
+                if base_model is not None:
+                    crepes_estimators = _build_crepes_estimators(
+                        bundle.x_fit, bundle.y_fit, base_model
+                    )
+                    for est_code, crepes_est in crepes_estimators.items():
+                        diff_scores_crepes = np.asarray(
+                            crepes_est.apply(bundle.x_test), dtype=float
+                        )
+                        for arm_code_c, strategy_c in [
+                            ("A", "builtin.default"),
+                            ("C", "experimental.difficulty_normalized"),
+                        ]:
+                            crepes_arm = ArmSpec(code=arm_code_c, strategy=strategy_c)
+                            for confidence in confidences:
+                                row_c = _run_arm(
+                                    arm=crepes_arm,
+                                    bundle=bundle,
+                                    difficulty_estimator=crepes_est,
+                                    novelty_estimator=novelty_estimator,
+                                    difficulty_scores=diff_scores_crepes,
+                                    novelty_scores=novelty_scores,
+                                    confidence=confidence,
+                                )
+                                row_c["seed"] = seed
+                                row_c["task_type"] = spec.task_type
+                                row_c["estimator_type"] = est_code
+                                row_c["sweep_confidence"] = float(confidence)
+                                row_c["selected_confidence"] = float(confidence)
+                                row_c["observed_reject_rate"] = float(row_c["reject_rate"])
+                                row_c["empty_set_rate"] = float(row_c["empty_rate"])
+                                crepes_sweep_rows.append(row_c)
 
     sweep = pd.DataFrame(sweep_rows)
     selected = _select_operating_points(sweep)
@@ -506,9 +611,33 @@ def run(config: RunConfig) -> None:
     write_csv_json_md(_PREFIX, selected, meta)
     _append_readable_sections(selected, deltas, aggregate, analyses)
 
+    if crepes_sweep_rows:
+        crepes_sweep = pd.DataFrame(crepes_sweep_rows)
+        # Select operating points per estimator type: avoid mixing rows across estimators
+        # when _select_operating_points groups by (dataset, seed, arm_code).
+        crepes_selected_parts: list[pd.DataFrame] = []
+        for est_code in _CREPES_ESTIMATOR_CODES:
+            est_subset = crepes_sweep[crepes_sweep["estimator_type"] == est_code]
+            if est_subset.empty:
+                continue
+            est_selected = _select_operating_points(est_subset)
+            crepes_selected_parts.append(est_selected)
+        if crepes_selected_parts:
+            crepes_selected = pd.concat(crepes_selected_parts, ignore_index=True)
+            crepes_summary = _crepes_delta_summary(crepes_selected)
+            _append_crepes_section(crepes_summary)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument(
+        "--crepes-ablation",
+        action="store_true",
+        help="Additionally run A/C arms with each crepes.extras.DifficultyEstimator setup (RT-7).",
+    )
     arguments = parser.parse_args()
-    run(RunConfig(seed=42, quick=arguments.quick))
+    run(
+        RunConfig(seed=42, quick=arguments.quick),
+        crepes_ablation=arguments.crepes_ablation,
+    )
