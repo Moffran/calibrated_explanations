@@ -27,6 +27,7 @@ from calibrated_explanations import RejectPolicySpec
 from .common_reject import (
     RunConfig,
     build_classification_bundle,
+    classification_singleton_precision_recall,
     expected_calibration_error,
     task_specs,
     write_csv_json_md,
@@ -55,6 +56,11 @@ def run(config: RunConfig) -> None:
         rejected = np.asarray(result.rejected, dtype=bool)
         accepted = ~rejected
         reject_rate = float(np.mean(rejected))
+        metadata = getattr(result, "metadata", {}) or {}
+        singleton_metrics = classification_singleton_precision_recall(
+            bundle,
+            metadata.get("prediction_set"),
+        )
 
         if bundle.baseline_proba.shape[1] == 2:
             proba_all = bundle.baseline_proba[:, 1]
@@ -103,6 +109,7 @@ def run(config: RunConfig) -> None:
                 "ece_delta": (
                     baseline_ece - accepted_ece if np.isfinite(accepted_ece) else float("nan")
                 ),
+                **singleton_metrics,
             }
         )
 

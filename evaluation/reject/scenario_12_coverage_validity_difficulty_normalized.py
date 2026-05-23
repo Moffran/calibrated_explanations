@@ -31,6 +31,7 @@ from .common_reject import (
     empirical_coverage,
     load_dataset,
     seed_grid,
+    singleton_precision_recall,
     split_dataset,
     task_specs,
     write_csv_json_md,
@@ -119,6 +120,7 @@ def run(config: RunConfig) -> None:
                         continue
 
                     cov = empirical_coverage(prediction_set, y_test)
+                    singleton_metrics = singleton_precision_recall(prediction_set, y_test)
                     successes = int(
                         np.sum(prediction_set[np.arange(len(y_test)), y_test])
                     )
@@ -142,6 +144,7 @@ def run(config: RunConfig) -> None:
                             "violation": violation,
                             "structural_violation": structural_violation,
                             "reject_rate": float(meta.get("reject_rate", float("nan"))),
+                            **singleton_metrics,
                         }
                     )
 

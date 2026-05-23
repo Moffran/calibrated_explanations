@@ -20,8 +20,9 @@ from .common_reject import (
     accepted_interval_metrics,
     build_regression_bundle,
     quantile_grid,
-    reject_breakdown,
     regression_mse,
+    reject_breakdown,
+    singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -46,6 +47,11 @@ def run(config: RunConfig) -> None:
                 )
                 rejected = np.asarray(breakdown["rejected"], dtype=bool)
                 accepted = ~rejected
+                threshold_labels = (np.asarray(bundle.y_test) < threshold).astype(int)
+                singleton_metrics = singleton_precision_recall(
+                    breakdown.get("prediction_set"),
+                    threshold_labels,
+                )
                 metrics = accepted_interval_metrics(
                     bundle.y_test,
                     bundle.baseline_pred,
@@ -85,6 +91,7 @@ def run(config: RunConfig) -> None:
                         "mse_all": regression_mse(bundle.y_test, bundle.baseline_pred),
                         "accepted_mse_empirical": metrics["accepted_mse"],
                         "reject_rate": float(breakdown["reject_rate"]),
+                        **singleton_metrics,
                     }
                 )
 

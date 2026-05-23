@@ -40,6 +40,7 @@ from .common_reject import (
     RunConfig,
     accepted_accuracy,
     breakdown_from_reject_output,
+    classification_singleton_precision_recall,
     confidence_grid,
     empirical_coverage,
     load_dataset,
@@ -634,6 +635,10 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
                         else float("nan")
                     )
                     empirical_cov = _empirical_coverage_or_nan(prediction_set, bundle.y_test)
+                    singleton_metrics = classification_singleton_precision_recall(
+                        bundle,
+                        prediction_set,
+                    )
                     coverage_gap = (
                         empirical_cov - float(confidence)
                         if np.isfinite(empirical_cov)
@@ -679,6 +684,7 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
                                 else float("nan")
                             ),
                             "singleton_error_rate": _singleton_error_rate(breakdown),
+                            **singleton_metrics,
                             "error_rate_defined": bool(breakdown["error_rate_defined"]),
                             "rejected_error_capture_rate": rejected_error_capture_rate,
                             "mean_difficulty_all": _safe_mean(difficulty_scores),
@@ -746,6 +752,10 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
                                 else float("nan")
                             )
                             emp_cov_c = _empirical_coverage_or_nan(pred_set_c, bundle_no_va.y_test)
+                            singleton_metrics_c = classification_singleton_precision_recall(
+                                bundle_no_va,
+                                pred_set_c,
+                            )
                             rows.append(
                                 {
                                     "task_type": spec.task_type,
@@ -774,6 +784,7 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
                                         acc_c - full_acc_nova if np.isfinite(acc_c) else float("nan")
                                     ),
                                     "singleton_error_rate": _singleton_error_rate(bd_c),
+                                    **singleton_metrics_c,
                                     "error_rate_defined": bool(bd_c["error_rate_defined"]),
                                     "rejected_error_capture_rate": rej_err_c,
                                     "mean_difficulty_all": _safe_mean(diff_scores_crepes),

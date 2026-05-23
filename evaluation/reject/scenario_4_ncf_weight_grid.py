@@ -27,6 +27,7 @@ from .common_reject import (
     RunConfig,
     accepted_accuracy,
     build_classification_bundle,
+    classification_singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -53,6 +54,11 @@ def run(config: RunConfig) -> None:
                 accepted = ~rejected
                 acc = accepted_accuracy(bundle.y_test, bundle.baseline_pred, accepted)
                 accept_rate = float(np.mean(accepted))
+                metadata = getattr(result, "metadata", {}) or {}
+                singleton_metrics = classification_singleton_precision_recall(
+                    bundle,
+                    metadata.get("prediction_set"),
+                )
                 rows.append(
                     {
                         "task_type": spec.task_type,
@@ -64,6 +70,7 @@ def run(config: RunConfig) -> None:
                         "accept_rate": accept_rate,
                         "accepted_accuracy": acc,
                         "accepted_accuracy_delta": acc - baseline_accuracy if np.isfinite(acc) else float("nan"),
+                        **singleton_metrics,
                     }
                 )
 

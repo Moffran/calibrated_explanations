@@ -51,6 +51,8 @@ _DELTA_METRICS: dict[str, tuple[str, ...]] = {
         "rejected_error_capture_rate",
         "difficulty_reject_auc",
         "difficulty_gap_rejected_minus_accepted",
+        "singleton_precision",
+        "singleton_recall",
     ),
     "C_vs_G": (
         "accepted_accuracy",
@@ -61,6 +63,8 @@ _DELTA_METRICS: dict[str, tuple[str, ...]] = {
         "difficulty_reject_auc",
         "empty_set_rate",
         "multilabel_rate",
+        "singleton_precision",
+        "singleton_recall",
     ),
 }
 
@@ -138,6 +142,8 @@ def _delta_frame(selected: pd.DataFrame) -> pd.DataFrame:
                 "novelty_reject_auc",
                 "empty_set_rate",
                 "multilabel_rate",
+                "singleton_precision",
+                "singleton_recall",
                 "selected_confidence",
                 "reject_rate_target_abs_error",
             ],
@@ -238,6 +244,8 @@ def _append_readable_sections(
                 "ambiguity_rate",
                 "novelty_rate",
                 "difficulty_reject_auc",
+                "singleton_precision",
+                "singleton_recall",
             ]
         ]
         .mean(numeric_only=True)

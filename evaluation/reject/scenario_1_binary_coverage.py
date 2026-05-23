@@ -21,6 +21,7 @@ from .common_reject import (
     clopper_pearson_interval,
     empirical_coverage,
     reject_breakdown,
+    singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -40,6 +41,7 @@ def run(config: RunConfig) -> None:
             rejected = np.asarray(breakdown["rejected"], dtype=bool)
             accepted = ~rejected
             coverage = empirical_coverage(prediction_set, bundle.y_test)
+            singleton_metrics = singleton_precision_recall(prediction_set, bundle.y_test)
             successes = int(np.sum(prediction_set[np.arange(len(bundle.y_test)), bundle.y_test]))
             lower_ci, upper_ci = clopper_pearson_interval(successes, len(bundle.y_test))
             # A structural violation is when the CI upper bound is below 1-epsilon:
@@ -57,6 +59,7 @@ def run(config: RunConfig) -> None:
                     "violation": bool(coverage < 1.0 - epsilon),
                     "structural_violation": structural_violation,
                     "reject_rate": float(breakdown["reject_rate"]),
+                    **singleton_metrics,
                     "accepted_accuracy_empirical": accepted_accuracy(
                         bundle.y_test,
                         bundle.baseline_pred,

@@ -17,19 +17,19 @@ Rows: 416
 
 ## Result table
 
-| dataset | ncf | w | epsilon | n_cal | n_test | coverage | lower_ci | upper_ci | violation | structural_violation | accept_rate |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| breast_cancer | default | 0.3000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 |
-| breast_cancer | default | 0.3000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 |
-| breast_cancer | default | 0.5000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 |
-| breast_cancer | default | 0.5000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 |
-| breast_cancer | default | 0.7000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 |
-| breast_cancer | default | 0.7000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 |
-| breast_cancer | default | 1.0000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 |
-| breast_cancer | default | 1.0000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 |
-| breast_cancer | ensured | 0.3000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.5877 |
-| breast_cancer | ensured | 0.3000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.5877 |
-| breast_cancer | ensured | 0.5000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.6316 |
-| breast_cancer | ensured | 0.5000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.6316 |
+| dataset | ncf | w | epsilon | n_cal | n_test | coverage | lower_ci | upper_ci | violation | structural_violation | accept_rate | singleton_precision | singleton_recall | singleton_correct_count | singleton_count | singleton_precision_recall_defined |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| breast_cancer | default | 0.3000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 0.3000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 0.5000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 0.5000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 0.7000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 0.7000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 1.0000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.9737 | nan | nan | 0 | 0 | no |
+| breast_cancer | default | 1.0000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.9474 | nan | nan | 0 | 0 | no |
+| breast_cancer | ensured | 0.3000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.5877 | nan | nan | 0 | 0 | no |
+| breast_cancer | ensured | 0.3000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.5877 | nan | nan | 0 | 0 | no |
+| breast_cancer | ensured | 0.5000 | 0.0500 | 114 | 114 | nan | nan | nan | no | no | 0.6316 | nan | nan | 0 | 0 | no |
+| breast_cancer | ensured | 0.5000 | 0.1000 | 114 | 114 | nan | nan | nan | no | no | 0.6316 | nan | nan | 0 | 0 | no |
 
 _Showing first 12 of 416 rows._

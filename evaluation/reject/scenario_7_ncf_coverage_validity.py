@@ -31,6 +31,7 @@ from .common_reject import (
     build_classification_bundle,
     clopper_pearson_interval,
     empirical_coverage,
+    singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -64,6 +65,10 @@ def run(config: RunConfig) -> None:
                     if prediction_set_attr is not None:
                         prediction_set = np.asarray(prediction_set_attr, dtype=bool)
                         coverage = empirical_coverage(prediction_set, bundle.y_test)
+                        singleton_metrics = singleton_precision_recall(
+                            prediction_set,
+                            bundle.y_test,
+                        )
                         successes = int(
                             np.sum(prediction_set[np.arange(len(bundle.y_test)), bundle.y_test])
                         )
@@ -71,6 +76,7 @@ def run(config: RunConfig) -> None:
                     else:
                         coverage = float("nan")
                         lower_ci, upper_ci = float("nan"), float("nan")
+                        singleton_metrics = singleton_precision_recall(None, bundle.y_test)
 
                     rows.append(
                         {
@@ -88,6 +94,7 @@ def run(config: RunConfig) -> None:
                                 np.isfinite(upper_ci) and upper_ci < 1.0 - epsilon
                             ),
                             "accept_rate": float(np.mean(accepted)),
+                            **singleton_metrics,
                         }
                     )
 

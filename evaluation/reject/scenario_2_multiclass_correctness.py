@@ -2,21 +2,28 @@
 
 Paper mapping: C2 / RQ2 (empirical).
 
-Contribution C2: CE multiclass reject acts as a conformal correctness classifier.
+Contribution C2: CE multiclass reject can optionally act as a binary correctness proxy.
 Multiclass probabilities are binarized to [1-p_max, p_max] before conformal scoring
-(correctness encoding: col-0 = wrong, col-1 = correct). Hinge NCF is used for
-both 'default' and 'ensured', producing column-specific nonconformity scores:
-  - alpha[:,0] = p_max  (score for "wrong" class)
-  - alpha[:,1] = 1-p_max  (score for "correct" class)
+(correctness encoding: col-0 = top-1 is not correct, col-1 = top-1 is correct).
+Hinge NCF is used for both 'default' and 'ensured', producing column-specific
+nonconformity scores:
+  - alpha[:,0] = p_max  (score for "top-1 is not correct")
+  - alpha[:,1] = 1-p_max  (score for "top-1 is correct")
 
 This enables four prediction set outcomes:
-  - {1} singleton: conformal confident prediction is correct → accepted
-  - {0} singleton: conformal confident prediction is wrong → error-rejected
-  - {0,1}: ambiguity rejection (can't distinguish correct from wrong)
-  - {}: novelty rejection (neither class is plausible)
+  - {1} singleton: positive correctness-proxy singleton; accepted for top-1 use
+  - {0} singleton: negative correctness-proxy singleton; top-1 is not accepted
+  - {0,1}: ambiguity; the correctness proxy cannot distinguish the two events
+  - {}: novelty; neither correctness-proxy event is conforming
 
-Accepted instances are restricted to {1} singletons only. The reject rate counts
-all non-{1}-singleton outcomes, including {0} singletons (error-rejected).
+This scenario intentionally opts into the multiclass-only
+experimental.multiclass_top1_correctness strategy, where accepted instances are
+restricted to {1} singletons. The reject_rate column is therefore a selective
+non-acceptance rate for the top-1 prediction, not a default multiclass reject rule
+and not a K-class conformal label-set reject rate. A {0} singleton is reported as a
+proxy-negative singleton; it can occur even when the top-1 class remains the most
+likely individual class because the other classes' probability mass is aggregated
+into col-0.
 
 An `expected_collapse` flag marks rows where reject_rate > 0.95, indicating
 near-complete rejection which may occur on small or uniform-probability datasets.
@@ -33,15 +40,56 @@ from calibrated_explanations import RejectPolicySpec
 
 from .common_reject import (
     RunConfig,
-    accepted_accuracy,
     build_classification_bundle,
+    singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
 
 
+def _mean_or_nan(values: np.ndarray, mask: np.ndarray) -> float:
+    """Return the masked mean or NaN when the mask is empty."""
+    if not np.any(mask):
+        return float("nan")
+    return float(np.mean(np.asarray(values)[mask]))
+
+
+def proxy_correctness_diagnostics(
+    y_true: np.ndarray,
+    top1_pred: np.ndarray,
+    positive_singleton: np.ndarray,
+    proxy_negative_singleton: np.ndarray,
+) -> dict[str, float | int | bool]:
+    """Compute empirical diagnostics in the binary top-1 correctness proxy space."""
+    true_proxy_label = (np.asarray(top1_pred) == np.asarray(y_true)).astype(int)
+    positive_singleton = np.asarray(positive_singleton, dtype=bool)
+    proxy_negative_singleton = np.asarray(proxy_negative_singleton, dtype=bool)
+    singleton_mask = positive_singleton | proxy_negative_singleton
+
+    predicted_proxy_label = np.full(len(true_proxy_label), -1, dtype=int)
+    predicted_proxy_label[positive_singleton] = 1
+    predicted_proxy_label[proxy_negative_singleton] = 0
+    proxy_correct = predicted_proxy_label == true_proxy_label
+    singleton_metrics = singleton_precision_recall(
+        np.column_stack([proxy_negative_singleton, positive_singleton]),
+        true_proxy_label,
+    )
+
+    return {
+        "proxy_singleton_count": int(np.sum(singleton_mask)),
+        "proxy_singleton_accuracy_defined": bool(np.any(singleton_mask)),
+        "proxy_singleton_accuracy": _mean_or_nan(proxy_correct, singleton_mask),
+        **singleton_metrics,
+        "accepted_top1_accuracy": _mean_or_nan(true_proxy_label == 1, positive_singleton),
+        "proxy_negative_singleton_accuracy": _mean_or_nan(
+            true_proxy_label == 0,
+            proxy_negative_singleton,
+        ),
+    }
+
+
 def run(config: RunConfig) -> None:
-    """Measure empirical multiclass correctness on the accepted subset."""
+    """Measure empirical multiclass correctness-proxy behavior."""
     rows: list[dict[str, float | str | int | bool]] = []
     for spec in task_specs("multiclass", quick=config.quick):
         bundle = build_classification_bundle(spec, config)
@@ -51,6 +99,7 @@ def run(config: RunConfig) -> None:
                 result = bundle.wrapper.predict(
                     bundle.x_test,
                     reject_policy=RejectPolicySpec.flag(ncf=ncf, w=0.5),
+                    strategy="experimental.multiclass_top1_correctness",
                     confidence=confidence,
                 )
                 metadata = result.metadata or {}
@@ -65,26 +114,31 @@ def run(config: RunConfig) -> None:
 
                 if prediction_set_raw is not None:
                     prediction_set = np.asarray(prediction_set_raw, dtype=bool)
-                    # {1} singleton: size==1 and the "correct" column is in the set
-                    correct_singleton = (set_sizes == 1) & prediction_set[:, 1]
-                    # {0} singleton: size==1 and only the "wrong" column is in the set
-                    error_singleton = (set_sizes == 1) & ~prediction_set[:, 1]
+                    # {1}: positive correctness-proxy singleton for the top-1 class.
+                    positive_singleton = (set_sizes == 1) & prediction_set[:, 1]
+                    # {0}: negative correctness-proxy singleton, not an alternative-label set.
+                    proxy_negative_singleton = (set_sizes == 1) & ~prediction_set[:, 1]
                 else:
                     # Fallback when prediction_set is unavailable: use rejected mask;
                     # cannot distinguish {0} from {1} singletons in this path.
                     rejected_fallback = np.asarray(result.rejected, dtype=bool)
-                    correct_singleton = ~rejected_fallback
-                    error_singleton = np.zeros(len(bundle.x_test), dtype=bool)
+                    positive_singleton = ~rejected_fallback
+                    proxy_negative_singleton = np.zeros(len(bundle.x_test), dtype=bool)
 
-                # Accepted = only {1} singletons (confident correct)
-                accepted = correct_singleton
-                reject_rate = float(np.mean(~accepted))
-                top1_accuracy = accepted_accuracy(bundle.y_test, bundle.baseline_pred, accepted)
-                correct_singleton_rate = float(np.mean(correct_singleton))
-                error_singleton_rate = float(np.mean(error_singleton))
+                # Accepted = only {1} correctness-proxy singletons.
+                accepted = positive_singleton
+                non_accepted_rate = float(np.mean(~accepted))
+                diagnostics = proxy_correctness_diagnostics(
+                    bundle.y_test,
+                    bundle.baseline_pred,
+                    positive_singleton,
+                    proxy_negative_singleton,
+                )
+                positive_singleton_rate = float(np.mean(positive_singleton))
+                proxy_negative_singleton_rate = float(np.mean(proxy_negative_singleton))
 
                 # Collapse: near-total rejection (can occur on small or uniform datasets)
-                expected_collapse = reject_rate > 0.95
+                expected_collapse = non_accepted_rate > 0.95
 
                 ambiguity_mask_raw = metadata.get("ambiguity_mask")
                 if ambiguity_mask_raw is not None:
@@ -106,10 +160,28 @@ def run(config: RunConfig) -> None:
                         "n_cal": int(len(bundle.x_cal)),
                         "n_test": int(len(bundle.x_test)),
                         "n_classes": int(len(np.unique(bundle.y_test))),
-                        "accepted_top1_accuracy": top1_accuracy,
-                        "reject_rate": reject_rate,
-                        "correct_singleton_rate": correct_singleton_rate,
-                        "error_singleton_rate": error_singleton_rate,
+                        "proxy_singleton_accuracy": diagnostics["proxy_singleton_accuracy"],
+                        "proxy_singleton_accuracy_defined": diagnostics[
+                            "proxy_singleton_accuracy_defined"
+                        ],
+                        "proxy_singleton_count": diagnostics["proxy_singleton_count"],
+                        "singleton_precision": diagnostics["singleton_precision"],
+                        "singleton_recall": diagnostics["singleton_recall"],
+                        "singleton_correct_count": diagnostics["singleton_correct_count"],
+                        "singleton_count": diagnostics["singleton_count"],
+                        "singleton_precision_recall_defined": diagnostics[
+                            "singleton_precision_recall_defined"
+                        ],
+                        "accepted_top1_accuracy": diagnostics["accepted_top1_accuracy"],
+                        "proxy_negative_singleton_accuracy": diagnostics[
+                            "proxy_negative_singleton_accuracy"
+                        ],
+                        "non_accepted_rate": non_accepted_rate,
+                        "reject_rate": non_accepted_rate,
+                        "positive_singleton_rate": positive_singleton_rate,
+                        "correct_singleton_rate": positive_singleton_rate,
+                        "proxy_negative_singleton_rate": proxy_negative_singleton_rate,
+                        "error_singleton_rate": proxy_negative_singleton_rate,
                         "ambiguity_rate": ambiguity_rate,
                         "novelty_rate": novelty_rate,
                         "expected_collapse": expected_collapse,
@@ -121,25 +193,52 @@ def run(config: RunConfig) -> None:
     collapse_count = int(df["expected_collapse"].sum()) if not df.empty else 0
     meta = {
         "scenario": "scenario_2_multiclass_correctness",
-        "display_name": "Scenario 2 — Multiclass correctness classifier",
+        "display_name": "Scenario 2 - Multiclass correctness proxy",
         "paper_contribution": "C2",
         "paper_rq": "RQ2",
         "guarantee_status": "empirical",
         "quick": config.quick,
         "highlights": [
-            "Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.",
-            "This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method.",
-            "Accepted instances are restricted to {1} singletons (confident correct); {0} singletons (confident wrong) are error-rejected.",
+            "Primary empirical accuracy is computed in the binary proxy space: singleton {1}/{0} is compared with 1[top-1 prediction is correct].",
+            "Accepted top-1 accuracy remains a precision-style diagnostic on {1} rows only; it is not the proxy classifier accuracy.",
+            "This scenario opts into the multiclass-only experimental.multiclass_top1_correctness strategy.",
+            "It evaluates CE multiclass reject as a binary correctness proxy, not a default rule and not a K-class prediction-set method.",
+            "Accepted instances are restricted to {1} positive correctness-proxy singletons.",
+            "{0} singletons are proxy-negative singletons: the aggregate non-top1 event is conforming, but no specific alternative class is selected.",
+            "reject_rate is retained as a compatibility alias for non_accepted_rate in this proxy scenario.",
             "Hinge NCF is used for both 'default' and 'ensured' paths. Margin NCF was removed (it produced identical scores for both columns, making singletons impossible).",
         ],
         "outcome": {
             "datasets": int(df["dataset"].nunique()) if not df.empty else 0,
+            "mean_proxy_singleton_accuracy": (
+                float(df["proxy_singleton_accuracy"].mean()) if not df.empty else float("nan")
+            ),
+            "mean_singleton_precision": (
+                float(df["singleton_precision"].mean()) if not df.empty else float("nan")
+            ),
+            "mean_singleton_recall": (
+                float(df["singleton_recall"].mean()) if not df.empty else float("nan")
+            ),
             "mean_accepted_top1_accuracy": (
                 float(df["accepted_top1_accuracy"].mean()) if not df.empty else float("nan")
             ),
+            "mean_proxy_negative_singleton_accuracy": (
+                float(df["proxy_negative_singleton_accuracy"].mean())
+                if not df.empty
+                else float("nan")
+            ),
+            "mean_non_accepted_rate": (
+                float(df["non_accepted_rate"].mean()) if not df.empty else float("nan")
+            ),
             "mean_reject_rate": float(df["reject_rate"].mean()) if not df.empty else float("nan"),
+            "mean_positive_singleton_rate": (
+                float(df["positive_singleton_rate"].mean()) if not df.empty else float("nan")
+            ),
             "mean_correct_singleton_rate": (
                 float(df["correct_singleton_rate"].mean()) if not df.empty else float("nan")
+            ),
+            "mean_proxy_negative_singleton_rate": (
+                float(df["proxy_negative_singleton_rate"].mean()) if not df.empty else float("nan")
             ),
             "mean_error_singleton_rate": (
                 float(df["error_singleton_rate"].mean()) if not df.empty else float("nan")

@@ -33,6 +33,7 @@ from .common_reject import (
     RunConfig,
     accepted_accuracy,
     breakdown_from_reject_output,
+    classification_singleton_precision_recall,
     confidence_grid,
     seed_grid,
     task_specs,
@@ -214,6 +215,7 @@ def _run_arm(
         float(np.sum(errors & rejected) / total_errors) if total_errors > 0 else float("nan")
     )
     empirical_cov = _empirical_coverage_or_nan(prediction_set, bundle.y_test)
+    singleton_metrics = classification_singleton_precision_recall(bundle, prediction_set)
     coverage_gap = empirical_cov - float(confidence) if np.isfinite(empirical_cov) else float("nan")
 
     return {
@@ -244,6 +246,7 @@ def _run_arm(
         "full_accuracy": full_accuracy,
         "accuracy_delta": accepted_acc - full_accuracy if np.isfinite(accepted_acc) else float("nan"),
         "singleton_error_rate": _singleton_error_rate(breakdown),
+        **singleton_metrics,
         "error_rate_defined": bool(breakdown["error_rate_defined"]),
         "rejected_error_capture_rate": rejected_error_capture_rate,
         "mean_difficulty_all": _safe_mean(difficulty_scores),

@@ -12,16 +12,28 @@
   produced a scalar broadcast identically to both columns, making singleton prediction
   sets geometrically impossible and causing 100% rejection (mean_reject_rate = 1.0 in
   Scenario 2). Hinge NCF produces column-specific scores (`alpha[:,0]=p_max`,
-  `alpha[:,1]=1-p_max`), restoring correct `{1}` singletons (confident correct) and
-  `{0}` singletons (confident wrong). Added `default_ncf_kind()` public wrapper and
-  three new tests in `test_reject_ncf_redteam.py`. Scenario 2 re-run: mean accepted
-  top-1 accuracy 0.901 (was NaN), mean reject rate 0.471 (was 1.0).
+  `alpha[:,1]=1-p_max`), restoring `{1}` positive correctness-proxy singletons and
+  `{0}` proxy-negative singletons. Added `default_ncf_kind()` public wrapper and
+  tests in `test_reject_ncf_redteam.py`. Scenario 2 re-run: mean accepted top-1
+  accuracy 0.901 (was NaN), mean non-accepted rate 0.471 (was 1.0).
 
-- **RT-15: Fix multiclass accepted-accuracy mask in Scenario 2.** Accepted instances
-  are now restricted to `{1}` singletons only (conformal confident the prediction is
-  correct). Previously, `{0}` singletons (confident wrong) were counted as accepted,
-  corrupting the accuracy metric. New columns `correct_singleton_rate` and
-  `error_singleton_rate` are reported separately.
+- **RT-15: Reframe Scenario 2 as an explicit multiclass top-1 correctness proxy.**
+  The `{1}`-only acceptance rule is no longer presented as a general multiclass
+  reject decision. It is now exposed through the opt-in
+  `experimental.multiclass_top1_correctness` strategy, which is valid only for
+  multiclass classification and treats `{0}` proxy singletons as non-accepted top-1
+  predictions. Scenario 2 now reports `positive_singleton_rate`,
+  `proxy_negative_singleton_rate`, `proxy_singleton_accuracy`, and
+  `non_accepted_rate`, with legacy aliases kept for artifact compatibility. Proxy
+  accuracy is computed against `1[top-1 prediction is correct]`, not only on the
+  `{1}` accepted subset.
+
+- **Reject scenario singleton precision/recall diagnostics.** All reject scenario
+  CSV/JSON/Markdown artifacts now include singleton precision and recall where
+  prediction-set labels align with empirical labels. For binary classification this
+  uses true class labels; for multiclass correctness-proxy rows it uses
+  `1[top-1 prediction is correct]`; for threshold-regression rows it uses the
+  threshold event label.
 
 - **RT-9: Fix regression mode support for `experimental.difficulty_normalized`.** The
   explicit regression guard was removed from `_experimental_difficulty_normalized_strategy`.

@@ -21,6 +21,7 @@ from .common_reject import (
     build_classification_bundle,
     empirical_coverage,
     reject_breakdown,
+    singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -42,7 +43,9 @@ def run(config: RunConfig) -> None:
             for epsilon in epsilons:
                 breakdown = reject_breakdown(bundle.wrapper, bundle.x_test, confidence=1.0 - epsilon)
                 rejected = np.asarray(breakdown["rejected"], dtype=bool)
-                coverage = empirical_coverage(np.asarray(breakdown["prediction_set"], dtype=bool), bundle.y_test)
+                prediction_set = np.asarray(breakdown["prediction_set"], dtype=bool)
+                coverage = empirical_coverage(prediction_set, bundle.y_test)
+                singleton_metrics = singleton_precision_recall(prediction_set, bundle.y_test)
                 rows.append(
                     {
                         "dataset": spec.name,
@@ -55,6 +58,7 @@ def run(config: RunConfig) -> None:
                         # Actual coverage check — not a hard-coded constant
                         "violation": bool(coverage < 1.0 - epsilon),
                         "matched_count": int(np.sum(~rejected)),
+                        **singleton_metrics,
                     }
                 )
 
@@ -64,9 +68,9 @@ def run(config: RunConfig) -> None:
             epsilon = 1.0 - confidence
             breakdown = reject_breakdown(full_bundle.wrapper, full_bundle.x_test, confidence=confidence)
             rejected = np.asarray(breakdown["rejected"], dtype=bool)
-            coverage = empirical_coverage(
-                np.asarray(breakdown["prediction_set"], dtype=bool), full_bundle.y_test
-            )
+            prediction_set = np.asarray(breakdown["prediction_set"], dtype=bool)
+            coverage = empirical_coverage(prediction_set, full_bundle.y_test)
+            singleton_metrics = singleton_precision_recall(prediction_set, full_bundle.y_test)
             rows.append(
                 {
                     "dataset": spec.name,
@@ -79,6 +83,7 @@ def run(config: RunConfig) -> None:
                     # Bug fix: actual coverage check, not unconditional False
                     "violation": bool(coverage < 1.0 - epsilon),
                     "matched_count": int(np.sum(~rejected)),
+                    **singleton_metrics,
                 }
             )
 

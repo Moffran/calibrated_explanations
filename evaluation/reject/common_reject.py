@@ -837,6 +837,64 @@ def empirical_coverage(prediction_set: np.ndarray, y_true: np.ndarray) -> float:
     return float(np.mean(np.asarray(prediction_set, dtype=bool)[rows, np.asarray(y_true, dtype=int)]))
 
 
+def singleton_precision_recall(prediction_set: Any, y_true: np.ndarray) -> dict[str, float | int | bool]:
+    """Return precision/recall diagnostics for singleton conformal sets.
+
+    ``singleton_precision`` is the empirical correctness rate conditional on a
+    singleton set. ``singleton_recall`` is the fraction of all labelled rows
+    resolved as a correct singleton. If labels do not align with prediction-set
+    columns, the metrics are marked undefined rather than guessed.
+    """
+    try:
+        prediction_set_arr = np.asarray(prediction_set, dtype=bool)
+    except Exception:  # pragma: no cover - defensive for malformed artifacts
+        prediction_set_arr = np.empty((0, 0), dtype=bool)
+    y_arr = np.asarray(y_true, dtype=int).reshape(-1)
+    if (
+        prediction_set_arr.ndim != 2
+        or prediction_set_arr.shape[0] != len(y_arr)
+        or len(y_arr) == 0
+        or (len(y_arr) and (np.min(y_arr) < 0 or np.max(y_arr) >= prediction_set_arr.shape[1]))
+    ):
+        return {
+            "singleton_precision": float("nan"),
+            "singleton_recall": float("nan"),
+            "singleton_correct_count": 0,
+            "singleton_count": 0,
+            "singleton_precision_recall_defined": False,
+        }
+
+    set_sizes = np.sum(prediction_set_arr, axis=1)
+    singleton_mask = set_sizes == 1
+    correct_mask = prediction_set_arr[np.arange(len(y_arr)), y_arr]
+    correct_singleton = singleton_mask & correct_mask
+    singleton_count = int(np.sum(singleton_mask))
+    correct_count = int(np.sum(correct_singleton))
+    return {
+        "singleton_precision": (
+            float(correct_count / singleton_count) if singleton_count > 0 else float("nan")
+        ),
+        "singleton_recall": float(correct_count / len(y_arr)),
+        "singleton_correct_count": correct_count,
+        "singleton_count": singleton_count,
+        "singleton_precision_recall_defined": bool(singleton_count > 0),
+    }
+
+
+def classification_singleton_precision_recall(
+    bundle: ClassificationBundle,
+    prediction_set: Any,
+) -> dict[str, float | int | bool]:
+    """Return singleton diagnostics using label-set or multiclass proxy labels."""
+    labels = (
+        (np.asarray(bundle.baseline_pred) == np.asarray(bundle.y_test)).astype(int)
+        if np.asarray(bundle.baseline_proba).ndim == 2
+        and np.asarray(bundle.baseline_proba).shape[1] > 2
+        else np.asarray(bundle.y_test, dtype=int)
+    )
+    return singleton_precision_recall(prediction_set, labels)
+
+
 def clopper_pearson_interval(successes: int, total: int, *, confidence: float = 0.95) -> tuple[float, float]:
     """Return an exact Clopper-Pearson interval."""
     if total <= 0:

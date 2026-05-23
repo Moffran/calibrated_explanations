@@ -20,26 +20,37 @@ Outcome snapshot:
 - **mean_coverage**: 0.9424
 
 Rows: 78
-Columns: dataset, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violation, structural_violation, reject_rate, accepted_accuracy_empirical
+Columns: dataset, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violation, structural_violation, reject_rate, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined, accepted_accuracy_empirical
 
-### Scenario 2 — Multiclass correctness classifier — RQ2: Multiclass correctness classifier
+### Scenario 2 - Multiclass correctness proxy — RQ2: Multiclass correctness proxy
 
 - **Status**: empirical
 
-- Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.
-- This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method.
-- Accepted instances are restricted to {1} singletons (confident correct); {0} singletons (confident wrong) are error-rejected.
+- Primary empirical accuracy is computed in the binary proxy space: singleton {1}/{0} is compared with 1[top-1 prediction is correct].
+- Accepted top-1 accuracy remains a precision-style diagnostic on {1} rows only; it is not the proxy classifier accuracy.
+- This scenario opts into the multiclass-only experimental.multiclass_top1_correctness strategy.
+- It evaluates CE multiclass reject as a binary correctness proxy, not a default rule and not a K-class prediction-set method.
+- Accepted instances are restricted to {1} positive correctness-proxy singletons.
+- {0} singletons are proxy-negative singletons: the aggregate non-top1 event is conforming, but no specific alternative class is selected.
+- reject_rate is retained as a compatibility alias for non_accepted_rate in this proxy scenario.
 - Hinge NCF is used for both 'default' and 'ensured' paths. Margin NCF was removed (it produced identical scores for both columns, making singletons impossible).
 Outcome snapshot:
 - **datasets**: 20
+- **mean_proxy_singleton_accuracy**: 0.8841
+- **mean_singleton_precision**: 0.8841
+- **mean_singleton_recall**: 0.5031
 - **mean_accepted_top1_accuracy**: 0.9006
+- **mean_proxy_negative_singleton_accuracy**: 0.5289
+- **mean_non_accepted_rate**: 0.4711
 - **mean_reject_rate**: 0.4711
+- **mean_positive_singleton_rate**: 0.5289
 - **mean_correct_singleton_rate**: 0.5289
+- **mean_proxy_negative_singleton_rate**: 0.0200
 - **mean_error_singleton_rate**: 0.0200
 - **collapse_events**: 8
 
 Rows: 80
-Columns: dataset, epsilon, ncf, n_cal, n_test, n_classes, accepted_top1_accuracy, reject_rate, correct_singleton_rate, error_singleton_rate, ambiguity_rate, novelty_rate, expected_collapse, guarantee_status
+Columns: dataset, epsilon, ncf, n_cal, n_test, n_classes, proxy_singleton_accuracy, proxy_singleton_accuracy_defined, proxy_singleton_count, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined, accepted_top1_accuracy, proxy_negative_singleton_accuracy, non_accepted_rate, reject_rate, positive_singleton_rate, correct_singleton_rate, proxy_negative_singleton_rate, error_singleton_rate, ambiguity_rate, novelty_rate, expected_collapse, guarantee_status
 
 ### Scenario 3 — Threshold regression heuristic baseline — RQ3: Threshold regression heuristic baseline
 
@@ -57,7 +68,7 @@ Outcome snapshot:
 - **mean_interval_width_delta**: -0.0000
 
 Rows: 220
-Columns: dataset, confidence, effective_confidence, threshold_quantile, effective_threshold, threshold_source, n_cal, n_test, interval_coverage_all, accepted_coverage_empirical, interval_width_all, accepted_interval_width_empirical, interval_width_delta, mse_all, accepted_mse_empirical, reject_rate
+Columns: dataset, confidence, effective_confidence, threshold_quantile, effective_threshold, threshold_source, n_cal, n_test, interval_coverage_all, accepted_coverage_empirical, interval_width_all, accepted_interval_width_empirical, interval_width_delta, mse_all, accepted_mse_empirical, reject_rate, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined
 
 ### Scenario 4 — NCF and blend weight grid — RQ4: NCF selection and precision-coverage tradeoff
 
@@ -75,7 +86,7 @@ Outcome snapshot:
 - **w_values_tested**: [0.3, 0.5, 0.7, 1.0]
 
 Rows: 368
-Columns: task_type, dataset, ncf, w, accept_rate, accepted_accuracy, accepted_accuracy_delta
+Columns: task_type, dataset, ncf, w, accept_rate, accepted_accuracy, accepted_accuracy_delta, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined
 
 ### Scenario 5 — Explanation quality on accepted instances — RQ5: Explanation quality on accepted instances
 
@@ -92,7 +103,7 @@ Outcome snapshot:
 - **regime_summary**: (see json artifact)
 
 Rows: 46
-Columns: dataset, task_type, n_test, confidence, reject_rate, regime, baseline_accuracy, accepted_accuracy, accuracy_delta, baseline_ece, accepted_ece, ece_delta
+Columns: dataset, task_type, n_test, confidence, reject_rate, regime, baseline_accuracy, accepted_accuracy, accuracy_delta, baseline_ece, accepted_ece, ece_delta, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined
 
 ### Scenario 6 — Finite-sample stress tests — RQ6: Finite-sample stress tests
 
@@ -110,7 +121,7 @@ Outcome snapshot:
 - **extreme_conf_violations**: 1
 
 Rows: 51
-Columns: dataset, probe, n_cal, epsilon, coverage, reject_rate, error_rate, violation, matched_count
+Columns: dataset, probe, n_cal, epsilon, coverage, reject_rate, error_rate, violation, matched_count, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined
 
 ### Scenario 8 — Difficulty estimator reject ablation — Ablation: Difficulty estimator reject ablation
 
@@ -172,7 +183,7 @@ Outcome snapshot:
 - **max_empirical_coverage_gap**: 0.2000
 
 Rows: 8280
-Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, ncf, use_difficulty, arm, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined, has_prediction_set, reject_partition_residual, accept_singleton_residual, ambiguity_multilabel_residual, novelty_empty_residual, ambiguity_equals_novelty, ambiguity_equals_novelty_positive, positive_ambiguity_without_prediction_set
+Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, ncf, use_difficulty, arm, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined, has_prediction_set, reject_partition_residual, accept_singleton_residual, ambiguity_multilabel_residual, novelty_empty_residual, ambiguity_equals_novelty, ambiguity_equals_novelty_positive, positive_ambiguity_without_prediction_set
 
 ### Scenario 9 - Difficulty-normalized reject NCF strategy ablation — Ablation: Difficulty-normalized reject NCF strategy ablation
 
@@ -209,7 +220,7 @@ Outcome snapshot:
 - **metric_consistency_note**: (see json artifact)
 
 Rows: 12420
-Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, arm_code, arm_label, estimator_type, ncf, strategy, use_va_difficulty, difficulty_normalized, double_count_difficulty, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, difficulty_gap_rejected_minus_accepted, difficulty_reject_auc, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined
+Columns: task_type, dataset, seed, confidence, epsilon, n_train, n_cal, n_test, arm_code, arm_label, estimator_type, ncf, strategy, use_va_difficulty, difficulty_normalized, double_count_difficulty, accept_rate, reject_rate, ambiguity_rate, novelty_rate, accepted_accuracy, full_accuracy, accuracy_delta, singleton_error_rate, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined, error_rate_defined, rejected_error_capture_rate, mean_difficulty_all, mean_difficulty_accepted, mean_difficulty_rejected, difficulty_gap_rejected_minus_accepted, difficulty_reject_auc, empty_rate, singleton_rate, multilabel_rate, empirical_coverage, coverage_gap, coverage_defined
 
 ## Supplementary Scenarios
 
@@ -227,4 +238,4 @@ Outcome snapshot:
 - **violations_by_ncf_w**: (see json artifact)
 
 Rows: 416
-Columns: dataset, ncf, w, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violation, structural_violation, accept_rate
+Columns: dataset, ncf, w, epsilon, n_cal, n_test, coverage, lower_ci, upper_ci, violation, structural_violation, accept_rate, singleton_precision, singleton_recall, singleton_correct_count, singleton_count, singleton_precision_recall_defined

@@ -27,19 +27,19 @@ Rows: 520
 
 ## Result table
 
-| arm | strategy | dataset | seed | epsilon | confidence | n_cal | n_test | coverage | lower_ci | upper_ci | violation | structural_violation | reject_rate |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A | builtin.default | breast_cancer | 42 | 0.0500 | 0.9500 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | yes | no | 0.0263 |
-| C | experimental.difficulty_normalized | breast_cancer | 42 | 0.0500 | 0.9500 | 114 | 114 | 0.9298 | 0.8664 | 0.9692 | yes | no | 0.0439 |
-| A | builtin.default | breast_cancer | 42 | 0.1000 | 0.9000 | 114 | 114 | 0.9211 | 0.8554 | 0.9633 | no | no | 0.0526 |
-| C | experimental.difficulty_normalized | breast_cancer | 42 | 0.1000 | 0.9000 | 114 | 114 | 0.9298 | 0.8664 | 0.9692 | no | no | 0.0439 |
-| A | builtin.default | breast_cancer | 43 | 0.0500 | 0.9500 | 114 | 114 | 0.9211 | 0.8554 | 0.9633 | yes | no | 0.0263 |
-| C | experimental.difficulty_normalized | breast_cancer | 43 | 0.0500 | 0.9500 | 114 | 114 | 0.9123 | 0.8446 | 0.9571 | yes | no | 0.0351 |
-| A | builtin.default | breast_cancer | 43 | 0.1000 | 0.9000 | 114 | 114 | 0.9035 | 0.8339 | 0.9508 | no | no | 0.0526 |
-| C | experimental.difficulty_normalized | breast_cancer | 43 | 0.1000 | 0.9000 | 114 | 114 | 0.9035 | 0.8339 | 0.9508 | no | no | 0.0526 |
-| A | builtin.default | breast_cancer | 44 | 0.0500 | 0.9500 | 114 | 114 | 0.9825 | 0.9381 | 0.9979 | no | no | 0.0000 |
-| C | experimental.difficulty_normalized | breast_cancer | 44 | 0.0500 | 0.9500 | 114 | 114 | 0.9737 | 0.9250 | 0.9945 | no | no | 0.0351 |
-| A | builtin.default | breast_cancer | 44 | 0.1000 | 0.9000 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | no | no | 0.0526 |
-| C | experimental.difficulty_normalized | breast_cancer | 44 | 0.1000 | 0.9000 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | no | no | 0.0526 |
+| arm | strategy | dataset | seed | epsilon | confidence | n_cal | n_test | coverage | lower_ci | upper_ci | violation | structural_violation | reject_rate | singleton_precision | singleton_recall | singleton_correct_count | singleton_count | singleton_precision_recall_defined |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A | builtin.default | breast_cancer | 42 | 0.0500 | 0.9500 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | yes | no | 0.0263 | 0.9640 | 0.9386 | 107 | 111 | yes |
+| C | experimental.difficulty_normalized | breast_cancer | 42 | 0.0500 | 0.9500 | 114 | 114 | 0.9298 | 0.8664 | 0.9692 | yes | no | 0.0439 | 0.9725 | 0.9298 | 106 | 109 | yes |
+| A | builtin.default | breast_cancer | 42 | 0.1000 | 0.9000 | 114 | 114 | 0.9211 | 0.8554 | 0.9633 | no | no | 0.0526 | 0.9722 | 0.9211 | 105 | 108 | yes |
+| C | experimental.difficulty_normalized | breast_cancer | 42 | 0.1000 | 0.9000 | 114 | 114 | 0.9298 | 0.8664 | 0.9692 | no | no | 0.0439 | 0.9725 | 0.9298 | 106 | 109 | yes |
+| A | builtin.default | breast_cancer | 43 | 0.0500 | 0.9500 | 114 | 114 | 0.9211 | 0.8554 | 0.9633 | yes | no | 0.0263 | 0.9459 | 0.9211 | 105 | 111 | yes |
+| C | experimental.difficulty_normalized | breast_cancer | 43 | 0.0500 | 0.9500 | 114 | 114 | 0.9123 | 0.8446 | 0.9571 | yes | no | 0.0351 | 0.9455 | 0.9123 | 104 | 110 | yes |
+| A | builtin.default | breast_cancer | 43 | 0.1000 | 0.9000 | 114 | 114 | 0.9035 | 0.8339 | 0.9508 | no | no | 0.0526 | 0.9537 | 0.9035 | 103 | 108 | yes |
+| C | experimental.difficulty_normalized | breast_cancer | 43 | 0.1000 | 0.9000 | 114 | 114 | 0.9035 | 0.8339 | 0.9508 | no | no | 0.0526 | 0.9537 | 0.9035 | 103 | 108 | yes |
+| A | builtin.default | breast_cancer | 44 | 0.0500 | 0.9500 | 114 | 114 | 0.9825 | 0.9381 | 0.9979 | no | no | 0.0000 | 0.9825 | 0.9825 | 112 | 114 | yes |
+| C | experimental.difficulty_normalized | breast_cancer | 44 | 0.0500 | 0.9500 | 114 | 114 | 0.9737 | 0.9250 | 0.9945 | no | no | 0.0351 | 0.9818 | 0.9474 | 108 | 110 | yes |
+| A | builtin.default | breast_cancer | 44 | 0.1000 | 0.9000 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | no | no | 0.0526 | 0.9907 | 0.9386 | 107 | 108 | yes |
+| C | experimental.difficulty_normalized | breast_cancer | 44 | 0.1000 | 0.9000 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | no | no | 0.0526 | 0.9907 | 0.9386 | 107 | 108 | yes |
 
 _Showing first 12 of 520 rows._

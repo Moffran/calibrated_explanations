@@ -33,7 +33,7 @@ def summarize() -> None:
     # Scenario mapping for all registered scenarios.
     rq_map = {
         "scenario_1_binary_coverage": ("RQ1", "Binary marginal coverage preservation", "formal_target"),
-        "scenario_2_multiclass_correctness": ("RQ2", "Multiclass correctness classifier", "empirical"),
+        "scenario_2_multiclass_correctness": ("RQ2", "Multiclass correctness proxy", "empirical"),
         "scenario_3_regression_threshold_baseline": ("RQ3", "Threshold regression heuristic baseline", "empirical"),
         "scenario_4_ncf_weight_grid": ("RQ4", "NCF selection and precision-coverage tradeoff", "empirical"),
         "scenario_5_explanation_quality": ("RQ5", "Explanation quality on accepted instances", "empirical"),

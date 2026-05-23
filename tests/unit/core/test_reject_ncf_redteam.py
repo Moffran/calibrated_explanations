@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core.reject import orchestrator as orch
+from calibrated_explanations.explanations.reject import RejectPolicy
 from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
@@ -327,11 +328,11 @@ def test_multiclass_hinge_test_scores_differ_per_column():
 
 
 def test_multiclass_default_ncf_can_produce_singletons(monkeypatch):
-    """With hinge NCF, multiclass conformal can return {1} singleton prediction sets.
+    """With hinge NCF, multiclass conformal can return {1} proxy singleton sets.
 
     Before RT-14 fix, margin NCF produced 100% rejection (no singletons).
     After fix: a conformal mock with col-1 p-value above threshold and col-0
-    below threshold correctly produces {1} singletons (confident-correct accepts).
+    below threshold correctly produces {1} positive correctness-proxy singletons.
     """
 
     class MulticlassIntervalLearner:
@@ -359,15 +360,15 @@ def test_multiclass_default_ncf_can_produce_singletons(monkeypatch):
         def is_multiclass(self):
             return True
 
-    # Conformal returns: col-1 (correct class) has p=0.9 > 0.05 epsilon,
-    # col-0 (wrong class) has p=0.02 < 0.05 epsilon → {1} singletons for all instances.
+    # Conformal returns: col-1 (top-1 correct event) has p=0.9 > 0.05 epsilon,
+    # while col-0 (top-1 not-correct event) fails, producing {1} proxy singletons.
     class DummyConformal:
         def fit(self, *args, **kwargs):
             return self
 
         def predict_p(self, alphas, **kwargs):
             n = np.atleast_2d(alphas).shape[0]
-            # p-value layout: [p_wrong_class, p_correct_class]
+            # p-value layout: [p_top1_not_correct, p_top1_correct]
             return np.tile(np.array([[0.02, 0.9]]), (n, 1))
 
     monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
@@ -379,19 +380,92 @@ def test_multiclass_default_ncf_can_produce_singletons(monkeypatch):
     breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.95)
     prediction_set = breakdown["prediction_set"]
 
-    # With correct-class p-value high and wrong-class p-value low:
-    # prediction set = {1} (correct-class singleton) for all instances
+    # With positive-proxy p-value high and negative-proxy p-value low:
+    # prediction set = {1} for all instances
     assert prediction_set.shape == (3, 2)
     expected = np.array([[False, True]] * 3, dtype=bool)
     np.testing.assert_array_equal(prediction_set, expected)
 
-    # Reject rate should be 0 (all {1} singletons = all accepted)
+    # Reject rate should be 0 (all {1} positive proxy singletons = all accepted)
     assert breakdown["reject_rate"] == 0.0
 
 
 # ---------------------------------------------------------------------------
 # MT-10 — w=0.0 raises ValidationError only for ensured NCF
 # ---------------------------------------------------------------------------
+
+
+def test_multiclass_top1_correctness_strategy_rejects_proxy_negative_singletons(monkeypatch):
+    """The stricter multiclass proxy policy is opt-in, not the default singleton rule."""
+
+    class MulticlassIntervalLearner:
+        def predict_proba(self, x, bins=None):
+            n = len(x)
+            proba = np.tile(np.array([[0.15, 0.15, 0.7]]), (n, 1))
+            predicted_labels = np.full(n, 2, dtype=int)
+            return proba, predicted_labels
+
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            return np.zeros(len(x)), None, None, None
+
+    class MulticlassExplainerStub(SimpleNamespace):
+        def __init__(self):
+            super().__init__()
+            self.mode = "classification"
+            self.x_cal = np.array([[0]] * 6)
+            self.y_cal = np.array([0, 0, 0, 2, 2, 2])
+            self.bins = None
+            self.interval_learner = MulticlassIntervalLearner()
+            self.reject_learner = None
+
+        def is_multiclass(self):
+            return True
+
+    class DummyConformal:
+        def fit(self, *args, **kwargs):
+            return self
+
+        def predict_p(self, alphas, **kwargs):
+            n = np.atleast_2d(alphas).shape[0]
+            return np.tile(np.array([[0.9, 0.02]]), (n, 1))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
+    expl = MulticlassExplainerStub()
+    orchestrator = orch.RejectOrchestrator(expl)
+    orchestrator.initialize_reject_learner(ncf="default")
+
+    default_result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        [[0], [1]],
+        confidence=0.95,
+    )
+    strict_result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        [[0], [1]],
+        confidence=0.95,
+        strategy="experimental.multiclass_top1_correctness",
+    )
+
+    np.testing.assert_array_equal(default_result.rejected, np.array([False, False]))
+    np.testing.assert_array_equal(strict_result.rejected, np.array([True, True]))
+    assert strict_result.metadata["reject_strategy"] == ("experimental.multiclass_top1_correctness")
+    assert strict_result.metadata["proxy_negative_singleton_rate"] == 1.0
+    assert strict_result.metadata["validity_claim"].startswith(
+        "multiclass binary correctness proxy"
+    )
+
+
+def test_multiclass_top1_correctness_strategy_rejects_non_multiclass(monkeypatch):
+    """The top-1 correctness proxy strategy must not silently run on binary tasks."""
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    with pytest.raises(orch.ValidationError, match="only valid for multiclass"):
+        orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            [[0], [1]],
+            confidence=0.95,
+            strategy="experimental.multiclass_top1_correctness",
+        )
 
 
 def test_w_zero_raises_for_ensured_ncf(monkeypatch):

@@ -154,11 +154,13 @@ def _default_ncf_kind(is_multiclass: bool) -> str:
 
     Hinge is used for all tasks including multiclass. In the multiclass case,
     probabilities are binarized to [1-p_max, p_max] (correctness encoding:
-    col 0 = wrong, col 1 = correct). Hinge produces column-specific scores
-    (alpha[:,0]=p_max, alpha[:,1]=1-p_max), allowing the conformal classifier
-    to return {1} singletons (confident correct) and {0} singletons (confident
-    wrong). Margin would produce a scalar broadcast identically to both columns,
-    making singletons geometrically impossible and causing 100% rejection.
+    col 0 = top-1 is not correct, col 1 = top-1 is correct). Hinge produces
+    column-specific scores (alpha[:,0]=p_max, alpha[:,1]=1-p_max), allowing the
+    conformal classifier to return {1} positive correctness-proxy singletons and
+    {0} negative correctness-proxy singletons. A {0} singleton aggregates all
+    non-top1 classes; it is not a K-class alternative-label prediction set.
+    Margin would produce a scalar broadcast identically to both columns, making
+    singletons geometrically impossible and causing 100% rejection.
     """
     return "hinge"
 
@@ -856,6 +858,110 @@ class RejectOrchestrator:
         self.register_strategy(
             "experimental.ambiguity_normalized_novelty_penalized",
             self._experimental_ambiguity_normalized_novelty_penalized_strategy,
+        )
+
+        # Multiclass-only top-1 selective strategy. This intentionally treats
+        # {0} proxy singletons as non-accepted, but only when callers ask for it.
+        self.register_strategy(
+            "experimental.multiclass_top1_correctness",
+            self._experimental_multiclass_top1_correctness_strategy,
+        )
+
+    def _experimental_multiclass_top1_correctness_strategy(
+        self,
+        policy: RejectPolicy,
+        x,
+        explain_fn=None,
+        bins=None,
+        confidence=0.95,
+        threshold=None,
+        **kwargs,
+    ):
+        """Multiclass-only strategy accepting only {1} correctness-proxy singletons."""
+        if not bool(self.explainer.is_multiclass()):  # pylint: disable=protected-access
+            raise ValidationError(
+                'strategy="experimental.multiclass_top1_correctness" is only valid '
+                "for multiclass classification.",
+                details={
+                    "strategy": "experimental.multiclass_top1_correctness",
+                    "task_mode": getattr(self.explainer, "mode", None),
+                },
+            )
+        breakdown = self.predict_reject_breakdown(
+            x,
+            bins=bins,
+            confidence=confidence,
+            threshold=threshold,
+        )
+        prediction_set_raw = breakdown.get("prediction_set")
+        if prediction_set_raw is None:
+            raise ValidationError(
+                'strategy="experimental.multiclass_top1_correctness" requires '
+                "prediction_set metadata.",
+                details={"strategy": "experimental.multiclass_top1_correctness"},
+            )
+        prediction_set = np.asarray(prediction_set_raw, dtype=bool)
+        if prediction_set.ndim != 2 or prediction_set.shape[1] != 2:
+            raise ValidationError(
+                'strategy="experimental.multiclass_top1_correctness" expects the '
+                "multiclass binary correctness proxy with two prediction-set columns.",
+                details={
+                    "strategy": "experimental.multiclass_top1_correctness",
+                    "prediction_set_shape": tuple(prediction_set.shape),
+                },
+            )
+
+        set_sizes = np.asarray(breakdown["prediction_set_size"], dtype=int)
+        positive_singleton = (set_sizes == 1) & prediction_set[:, 1]
+        proxy_negative_singleton = (set_sizes == 1) & prediction_set[:, 0]
+        top1_rejected = ~positive_singleton
+        n_total = int(len(top1_rejected))
+        reject_rate = 0.0 if n_total == 0 else float(np.mean(top1_rejected))
+
+        multiclass_breakdown = dict(breakdown)
+        multiclass_breakdown.update(
+            {
+                "rejected": top1_rejected,
+                "reject_rate": reject_rate,
+                "raw_reject_counts": {
+                    **dict(breakdown.get("raw_reject_counts") or {}),
+                    "rejected": int(np.sum(top1_rejected)),
+                    "positive_singleton": int(np.sum(positive_singleton)),
+                    "proxy_negative_singleton": int(np.sum(proxy_negative_singleton)),
+                },
+            }
+        )
+        metadata_overrides = {
+            "reject_strategy": "experimental.multiclass_top1_correctness",
+            "reject_decision_rule": "multiclass_top1_correctness_proxy",
+            "task_mode": "multiclass",
+            "multiclass_semantics": "binary_correctness_proxy",
+            "paper_aligned": False,
+            "multiclass_paper_aligned": False,
+            "positive_singleton_mask": positive_singleton,
+            "proxy_negative_singleton_mask": proxy_negative_singleton,
+            "positive_singleton_rate": (
+                0.0 if n_total == 0 else float(np.mean(positive_singleton))
+            ),
+            "proxy_negative_singleton_rate": (
+                0.0 if n_total == 0 else float(np.mean(proxy_negative_singleton))
+            ),
+            "non_accepted_rate": reject_rate,
+            "validity_claim": (
+                "multiclass binary correctness proxy; {0} aggregates all non-top1 "
+                "classes and is not a K-class conformal label-set reject"
+            ),
+        }
+        return self._builtin_strategy(
+            policy,
+            x,
+            explain_fn=explain_fn,
+            bins=bins,
+            confidence=confidence,
+            threshold=threshold,
+            _precomputed_breakdown=multiclass_breakdown,
+            _metadata_overrides=metadata_overrides,
+            **kwargs,
         )
 
     def _experimental_ambiguity_normalized_novelty_penalized_strategy(
@@ -2028,6 +2134,8 @@ class RejectOrchestrator:
         result_schema_raw = kwargs.pop("result_schema", "legacy")
         result_schema = str(result_schema_raw).strip().lower()
         return_v2 = result_schema in {"v2", "2", "2.0"}
+        precomputed_breakdown = kwargs.pop("_precomputed_breakdown", None)
+        metadata_overrides = dict(kwargs.pop("_metadata_overrides", {}) or {})
         include_prediction_set_kw = kwargs.pop("include_prediction_set", None)
         include_prediction_payload = kwargs.pop("include_prediction_payload", explain_fn is None)
         confidence = validate_reject_confidence(confidence)
@@ -2146,12 +2254,15 @@ class RejectOrchestrator:
                 metadata=metadata,
             )
 
-        breakdown = self.predict_reject_breakdown(
-            x,
-            bins=bins,
-            confidence=confidence,
-            threshold=effective_threshold,
-        )
+        if precomputed_breakdown is None:
+            breakdown = self.predict_reject_breakdown(
+                x,
+                bins=bins,
+                confidence=confidence,
+                threshold=effective_threshold,
+            )
+        else:
+            breakdown = dict(precomputed_breakdown)
         degraded_mode_markers.extend(list(breakdown.get("degraded_mode") or ()))
         include_prediction_set = (
             bool(include_prediction_set_kw)
@@ -2246,6 +2357,39 @@ class RejectOrchestrator:
                 if kwargs.get("_reject_raise", False):
                     raise
 
+        base_metadata = {
+            "error_rate": error_rate,
+            "error_rate_defined": breakdown.get("error_rate_defined", True),
+            "reject_rate": reject_rate,
+            "ambiguity_rate": breakdown.get("ambiguity_rate"),
+            "novelty_rate": breakdown.get("novelty_rate"),
+            # Per-instance breakdown so callers can inspect ambiguity vs novelty
+            "ambiguity_mask": breakdown.get("ambiguity"),
+            "novelty_mask": breakdown.get("novelty"),
+            "prediction_set_size": breakdown.get("prediction_set_size"),
+            "prediction_set": (breakdown.get("prediction_set") if include_prediction_set else None),
+            "epsilon": breakdown.get("epsilon"),
+            "raw_total_examples": breakdown.get("raw_total_examples"),
+            "raw_reject_counts": breakdown.get("raw_reject_counts"),
+            # NCF provenance: which function was used and whether it was auto-selected
+            "reject_ncf": getattr(self.explainer, "reject_ncf", None),
+            "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
+            "reject_ncf_auto_selected": getattr(self.explainer, "reject_ncf_auto_selected", None),
+            # How many instances matched the policy filter (None for FLAG, 0 when empty)
+            "matched_count": matched_count,
+            "source_indices": source_indices,
+            "original_count": int(len(rejected)),
+            "effective_confidence": confidence,
+            "effective_threshold": effective_threshold,
+            "threshold_source": threshold_source,
+            "schema_version": "2.0",
+            "effective_w": validate_reject_w(
+                getattr(self.explainer, "reject_ncf_w", 0.0)
+                if getattr(self.explainer, "reject_ncf_w", None) is not None
+                else 0.0
+            ),
+        }
+        base_metadata.update(metadata_overrides)
         metadata = self._build_contract_metadata(
             policy=policy,
             rejected=rejected,
@@ -2257,42 +2401,7 @@ class RejectOrchestrator:
             init_error=False,
             fallback_used=bool(breakdown.get("fallback_used", False)),
             degraded_mode=degraded_mode_markers,
-            base_metadata={
-                "error_rate": error_rate,
-                "error_rate_defined": breakdown.get("error_rate_defined", True),
-                "reject_rate": reject_rate,
-                "ambiguity_rate": breakdown.get("ambiguity_rate"),
-                "novelty_rate": breakdown.get("novelty_rate"),
-                # Per-instance breakdown so callers can inspect ambiguity vs novelty
-                "ambiguity_mask": breakdown.get("ambiguity"),
-                "novelty_mask": breakdown.get("novelty"),
-                "prediction_set_size": breakdown.get("prediction_set_size"),
-                "prediction_set": (
-                    breakdown.get("prediction_set") if include_prediction_set else None
-                ),
-                "epsilon": breakdown.get("epsilon"),
-                "raw_total_examples": breakdown.get("raw_total_examples"),
-                "raw_reject_counts": breakdown.get("raw_reject_counts"),
-                # NCF provenance: which function was used and whether it was auto-selected
-                "reject_ncf": getattr(self.explainer, "reject_ncf", None),
-                "reject_ncf_w": getattr(self.explainer, "reject_ncf_w", None),
-                "reject_ncf_auto_selected": getattr(
-                    self.explainer, "reject_ncf_auto_selected", None
-                ),
-                # How many instances matched the policy filter (None for FLAG, 0 when empty)
-                "matched_count": matched_count,
-                "source_indices": source_indices,
-                "original_count": int(len(rejected)),
-                "effective_confidence": confidence,
-                "effective_threshold": effective_threshold,
-                "threshold_source": threshold_source,
-                "schema_version": "2.0",
-                "effective_w": validate_reject_w(
-                    getattr(self.explainer, "reject_ncf_w", 0.0)
-                    if getattr(self.explainer, "reject_ncf_w", None) is not None
-                    else 0.0
-                ),
-            },
+            base_metadata=base_metadata,
         )
         decision = self._build_decision_artifact(
             rejected=np.asarray(rejected, dtype=bool),
