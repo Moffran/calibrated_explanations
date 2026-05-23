@@ -359,6 +359,7 @@ def _append_readable_sections(
     matched_bins_table: pd.DataFrame,
     per_arm_bins_table: pd.DataFrame,
     analyses: list[str],
+    metric_consistency_note: dict[str, Any] | None = None,
 ) -> None:
     md_path = Path(__file__).resolve().parent / "artifacts" / f"{prefix}.md"
     content = md_path.read_text(encoding="utf-8")
@@ -395,6 +396,44 @@ def _append_readable_sections(
         analyses[4],
         "",
     ]
+    if metric_consistency_note is not None:
+        extra.extend(
+            [
+                "",
+                "## Metric Consistency Note (RT-5)",
+                "",
+                (
+                    "Scenario 9 reports a full-grid A-vs-C difficulty_reject_auc delta "
+                    f"of {metric_consistency_note['full_grid_auc_delta']:+.4f}, while "
+                    "Scenario 11 reports +0.0155 at matched operating points. This "
+                    "reduction is a selection effect, not a contradiction:"
+                ),
+                "",
+                (
+                    "- Scenario 9 averages over all confidence values. The positive "
+                    "delta is strongest in high-confidence rows "
+                    f"(conf >= 0.91), where the AUC delta is "
+                    f"{metric_consistency_note['hi_conf_auc_delta']:+.4f}."
+                ),
+                (
+                    "- At moderate confidence (conf < 0.91), the Scenario 9 AUC delta "
+                    f"is {metric_consistency_note['lo_conf_auc_delta']:+.4f}: smaller "
+                    "than the high-confidence tail, but still positive."
+                ),
+                (
+                    "- Scenario 11 targets reject rates of 10-40%, uses matched "
+                    "operating-point selection, and reduces the observed "
+                    "difficulty-AUC effect to +0.0155."
+                ),
+                "",
+                (
+                    "Conclusion: the full-grid Scenario 9 AUC advantage is not "
+                    "sufficient evidence for public promotion. At matched operating "
+                    "points, accepted-accuracy gains are tiny or negative and the "
+                    "difficulty-selection advantage is much smaller."
+                ),
+            ]
+        )
     md_path.write_text(content + "\n" + "\n".join(extra), encoding="utf-8")
 
 
@@ -441,7 +480,7 @@ def _diagnose_db_paradox(
         x_cal, y_cal, feature_names=list(feature_names),
         difficulty_estimator=difficulty_estimator,
     )
-    wrapper_b.explainer.difficulty_estimator = difficulty_estimator
+    wrapper_b.set_difficulty_estimator(difficulty_estimator, initialize=False)
 
     # Arm D: VA difficulty + experimental strategy
     wrapper_d = WrapCalibratedExplainer(model)
@@ -450,7 +489,7 @@ def _diagnose_db_paradox(
         x_cal, y_cal, feature_names=list(feature_names),
         difficulty_estimator=difficulty_estimator,
     )
-    wrapper_d.explainer.difficulty_estimator = difficulty_estimator
+    wrapper_d.set_difficulty_estimator(difficulty_estimator, initialize=False)
 
     policy = RejectPolicySpec.flag(ncf="default", w=_W)
     res_b = wrapper_b.predict(x_test, reject_policy=policy, confidence=confidence, strategy="builtin.default")
@@ -565,9 +604,9 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
                 # Red-team critical: enable reject-only difficulty for non-VA experimental
                 # arms so A vs C isolates direct reject-score normalization.
                 if arm.use_va_difficulty or arm.difficulty_normalized:
-                    bundle.wrapper.explainer.difficulty_estimator = difficulty_estimator
+                    bundle.wrapper.set_difficulty_estimator(difficulty_estimator, initialize=False)
                 else:
-                    bundle.wrapper.explainer.difficulty_estimator = None
+                    bundle.wrapper.set_difficulty_estimator(None, initialize=False)
 
                 for confidence in confidences:
                     result = bundle.wrapper.predict(
@@ -679,8 +718,9 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
                         ("A_crepes", "builtin.default"),
                         ("C_crepes", "experimental.difficulty_normalized"),
                     ]:
-                        bundle_no_va.wrapper.explainer.difficulty_estimator = (
-                            crepes_est if arm_code_crepes == "C_crepes" else None
+                        bundle_no_va.wrapper.set_difficulty_estimator(
+                            crepes_est if arm_code_crepes == "C_crepes" else None,
+                            initialize=False,
                         )
                         policy_crepes = RejectPolicySpec.flag(ncf="default", w=_W)
                         for confidence in confidences:
@@ -917,6 +957,29 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
         outcome_summary["recommended_arm"] = recommendation
         outcome_summary["recommendation_reason"] = reason
 
+        def _a_vs_c_auc_delta(subset: pd.DataFrame) -> float:
+            means = subset[subset["arm_code"].isin(["A", "C"])].groupby("arm_code")[
+                "difficulty_reject_auc"
+            ].mean()
+            if "A" not in means or "C" not in means:
+                return float("nan")
+            return float(means["C"] - means["A"])
+
+        metric_consistency_note = {
+            "full_grid_auc_delta": float(outcome_summary.get("A_vs_C_difficulty_reject_auc_delta", float("nan"))),
+            "hi_conf_auc_delta": _a_vs_c_auc_delta(df[df["confidence"] >= 0.91]),
+            "lo_conf_auc_delta": _a_vs_c_auc_delta(df[df["confidence"] < 0.91]),
+            "scenario_11_matched_delta": 0.0155,
+            "note": (
+                "Full-grid positive delta is strongest in high-confidence rows. "
+                "Scenario 11 matched operating-point selection reduces the observed "
+                "difficulty-AUC effect and remains the promotion decision gate."
+            ),
+        }
+        outcome_summary["metric_consistency_note"] = metric_consistency_note
+    else:
+        metric_consistency_note = None
+
     meta = {
         "scenario": "scenario_9_difficulty_normalized_ncf",
         "display_name": "Scenario 9 - Difficulty-normalized reject NCF strategy ablation",
@@ -941,6 +1004,7 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
         matched_bins,
         per_arm_bins,
         analyses,
+        metric_consistency_note,
     )
 
 

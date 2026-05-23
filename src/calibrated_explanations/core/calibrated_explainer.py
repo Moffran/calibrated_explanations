@@ -2031,7 +2031,8 @@ class CalibratedExplainer:
         )
 
         validate_difficulty_estimator(difficulty_estimator)
-        self.__initialized = False
+        if initialize:
+            self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
 
         # Invalidate cached interval plugin metadata.
@@ -2040,7 +2041,7 @@ class CalibratedExplainer:
         # we must drop that cache so the regression backend (IntervalRegressor)
         # re-fits crepes' ConformalPredictiveSystem with the updated `sigmas`.
         plugin_manager = getattr(self, "_plugin_manager", None)
-        if plugin_manager is not None:
+        if initialize and plugin_manager is not None:
             meta = getattr(plugin_manager, "interval_context_metadata", None)
             if isinstance(meta, dict):
                 for key in ("default", "fast"):
@@ -2051,13 +2052,14 @@ class CalibratedExplainer:
                         bucket.pop("existing_fast_calibrators", None)
                         bucket.pop("difficulty_estimator", None)
 
-        # Clear the active interval learner if orchestrators are available.
-        # (During __init__ we call set_difficulty_estimator before orchestrator setup.)
+        # Clear the active interval learner only when reinitializing. With
+        # initialize=False, callers intentionally update metadata without
+        # changing calibrated prediction internals.
         orchestrator_ready = (
             plugin_manager is not None
             and getattr(plugin_manager, "_prediction_orchestrator", None) is not None
         )
-        if orchestrator_ready:
+        if initialize and orchestrator_ready:
             self.interval_learner = None
         if initialize:
             self.prediction_orchestrator.interval_registry.initialize()  # type: ignore[attr-defined]

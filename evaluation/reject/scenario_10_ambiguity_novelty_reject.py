@@ -43,7 +43,6 @@ from .scenario_9_difficulty_normalized_ncf import (
     _build_classification_bundle,
     _difficulty_reject_auc,
     _empirical_coverage_or_nan,
-    _format_scalar,
     _markdown_table,
     _safe_mean,
     _safe_rate,
@@ -188,9 +187,9 @@ def _run_arm(
     full_accuracy = float(np.mean(bundle.baseline_pred == bundle.y_test))
 
     if arm.difficulty_normalized:
-        bundle.wrapper.explainer.difficulty_estimator = difficulty_estimator
+        bundle.wrapper.set_difficulty_estimator(difficulty_estimator, initialize=False)
     else:
-        bundle.wrapper.explainer.difficulty_estimator = None
+        bundle.wrapper.set_difficulty_estimator(None, initialize=False)
 
     predict_kwargs: dict[str, Any] = {
         "reject_policy": policy,

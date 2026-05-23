@@ -150,6 +150,21 @@ def test_set_difficulty_estimator_enforces_fitted_contract(explainer_factory):
     np.testing.assert_array_equal(explainer.get_sigma_test(np.ones((2, 2))), np.full(2, 2.5))
 
 
+def test_set_difficulty_estimator_without_initialize_preserves_interval_learner(
+    explainer_factory,
+):
+    """Changing difficulty metadata without initialization keeps calibration intact."""
+    explainer = explainer_factory()
+    sentinel = object()
+    explainer.interval_learner = sentinel
+    explainer.initialized = True
+
+    explainer.set_difficulty_estimator(None, initialize=False)
+
+    assert explainer.interval_learner is sentinel
+    assert explainer.initialized is True
+
+
 def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pandas):
     explainer = explainer_factory()
 

@@ -34,6 +34,7 @@ Rows: 12420
 - **F_minus_E_difficulty_gap_delta**: 0.2846
 - **recommended_arm**: C
 - **recommendation_reason**: primary A-vs-C contrast with direct normalization and no VA double-count risk
+- **metric_consistency_note**: {'full_grid_auc_delta': 0.19847119235003774, 'hi_conf_auc_delta': 0.24921106666866505, 'lo_conf_auc_delta': 0.16366233970904076, 'scenario_11_matched_delta': 0.0155, 'note': 'Full-grid positive delta is strongest in high-confidence rows. Scenario 11 matched operating-point selection reduces the observed difficulty-AUC effect and remains the promotion decision gate.'}
 
 ## Result table
 
@@ -222,10 +223,10 @@ Recommended arm for next iteration: C (primary A-vs-C contrast with direct norma
 
 ## Metric Consistency Note (RT-5)
 
-Scenario 9 reports a full-grid A-vs-C difficulty_reject_auc delta of +0.2013, while Scenario 11 reports +0.0153 at matched operating points. This apparent reversal is a selection effect, not a contradiction:
+Scenario 9 reports a full-grid A-vs-C difficulty_reject_auc delta of +0.1985, while Scenario 11 reports +0.0155 at matched operating points. This reduction is a selection effect, not a contradiction:
 
-- Scenario 9 averages over all confidence values. The positive delta is dominated by high-confidence rows (conf >= 0.91), where reject rates reach ~52% (A) / ~55% (C) and the AUC delta is +0.2496.
-- At moderate confidence (conf < 0.91), the AUC delta is +0.1678: smaller than the high-confidence tail, but still positive.
-- Scenario 11 targets reject rates of 10-40%, which land in the moderate-confidence regime and do not include the high-reject-rate tail driving Scenario 9 positively.
+- Scenario 9 averages over all confidence values. The positive delta is strongest in high-confidence rows (conf >= 0.91), where the AUC delta is +0.2492.
+- At moderate confidence (conf < 0.91), the Scenario 9 AUC delta is +0.1637: smaller than the high-confidence tail, but still positive.
+- Scenario 11 targets reject rates of 10-40%, uses matched operating-point selection, and reduces the observed difficulty-AUC effect to +0.0155.
 
-Conclusion: Scenario 9 still shows a positive AUC signal at moderate confidence, but Scenario 11 reduces that signal to +0.0155 after matched operating-point selection. The full-grid Scenario 9 AUC advantage is therefore not sufficient evidence for promotion; it is strongest in the high-reject-rate regime (>40% rejection) where difficulty normalization is most effective.
+Conclusion: the full-grid Scenario 9 AUC advantage is not sufficient evidence for public promotion. At matched operating points, accepted-accuracy gains are tiny or negative and the difficulty-selection advantage is much smaller.

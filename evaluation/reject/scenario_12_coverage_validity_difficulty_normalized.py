@@ -45,6 +45,7 @@ class _DeterministicDifficultyEstimator:
 
     center_: np.ndarray
     scale_: np.ndarray
+    fitted: bool = True
 
     @classmethod
     def fit(cls, x: np.ndarray) -> _DeterministicDifficultyEstimator:
@@ -52,7 +53,7 @@ class _DeterministicDifficultyEstimator:
         center = np.mean(x_arr, axis=0)
         scale = np.std(x_arr, axis=0)
         scale = np.where(np.isfinite(scale) & (scale > 1e-9), scale, 1.0)
-        return cls(center_=center, scale_=scale)
+        return cls(center_=center, scale_=scale, fitted=True)
 
     def apply(self, x: np.ndarray) -> np.ndarray:
         x_arr = np.asarray(x, dtype=float)
@@ -87,13 +88,13 @@ def run(config: RunConfig) -> None:
             wrapper_a = WrapCalibratedExplainer(model)
             wrapper_a.fit(x_fit, y_fit)
             wrapper_a.calibrate(x_cal, y_cal, feature_names=list(feature_names))
-            wrapper_a.explainer.difficulty_estimator = None
+            wrapper_a.set_difficulty_estimator(None, initialize=False)
 
             # Arm C: experimental.difficulty_normalized — difficulty estimator required
             wrapper_c = WrapCalibratedExplainer(model)
             wrapper_c.fit(x_fit, y_fit)
             wrapper_c.calibrate(x_cal, y_cal, feature_names=list(feature_names))
-            wrapper_c.explainer.difficulty_estimator = difficulty_estimator
+            wrapper_c.set_difficulty_estimator(difficulty_estimator, initialize=False)
 
             for epsilon in epsilons:
                 confidence = 1.0 - float(epsilon)

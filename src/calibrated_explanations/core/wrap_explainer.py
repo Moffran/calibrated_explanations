@@ -673,8 +673,19 @@ class WrapCalibratedExplainer:
         )
         return self.explainer.calibrated_confusion_matrix()
 
-    def set_difficulty_estimator(self, difficulty_estimator: Any) -> None:
+    def set_difficulty_estimator(
+        self, difficulty_estimator: Any, *, initialize: bool = True
+    ) -> None:
         """Assign or update the difficulty estimator.
+
+        Parameters
+        ----------
+        difficulty_estimator : Any
+            Difficulty estimator to assign, or ``None`` to clear it.
+        initialize : bool, default=True
+            Whether to reinitialize calibrated prediction internals after assignment.
+            Use ``False`` only for advanced workflows that need to update reject
+            strategy metadata without changing the calibrated probability path.
 
         See Also
         --------
@@ -690,7 +701,7 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        self.explainer.set_difficulty_estimator(difficulty_estimator)
+        self.explainer.set_difficulty_estimator(difficulty_estimator, initialize=initialize)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> Any:

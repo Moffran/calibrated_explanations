@@ -34,10 +34,11 @@
     "recommended_arm": "C",
     "recommendation_reason": "primary A-vs-C contrast with direct normalization and no VA double-count risk",
     "metric_consistency_note": {
-      "full_grid_auc_delta": 0.20126857794972353,
-      "hi_conf_auc_delta": 0.24955108902128212,
-      "lo_conf_auc_delta": 0.16783538427954664,
-      "note": "Full-grid positive delta is driven by high-confidence rows (conf>=0.91). At moderate confidence the delta is small, consistent with Scenario 11 matched results."
+      "full_grid_auc_delta": 0.19847119235003774,
+      "hi_conf_auc_delta": 0.24921106666866505,
+      "lo_conf_auc_delta": 0.16366233970904076,
+      "scenario_11_matched_delta": 0.0155,
+      "note": "Full-grid positive delta is strongest in high-confidence rows. Scenario 11 matched operating-point selection reduces the observed difficulty-AUC effect and remains the promotion decision gate."
     }
   }
 }
