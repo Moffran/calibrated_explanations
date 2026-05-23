@@ -24,11 +24,17 @@ from ...explanations.reject import (
     normalize_reject_ncf_choice,
     reject_result_v2_to_legacy,
 )
-from ...utils.exceptions import ValidationError
+from ...utils.exceptions import ConfigurationError, ValidationError
 from ..difficulty_estimator_helpers import validate_difficulty_estimator_provenance
 from .policy import RejectPolicy
 
 _VALID_NCF = frozenset({"default", "ensured"})
+_DIFFICULTY_STRATEGIES = frozenset(
+    {
+        "experimental.difficulty_normalized",
+        "experimental.ambiguity_normalized_novelty_penalized",
+    }
+)
 _DEGRADED_MODE_ORDER = (
     "reject_init_failure",
     "predict_p_to_predict_set_fallback",
@@ -437,6 +443,32 @@ def _difficulty_values(explainer: Any, x: Any) -> np.ndarray:
         raise ValidationError(
             "difficulty values must be non-negative.",
             details={"difficulty": difficulty.tolist()},
+        )
+    if np.any(difficulty == 0.0):
+        raise ValidationError(
+            "difficulty_estimator.apply() returned zero values; strictly positive values are"
+            " required for difficulty-normalized reject scoring.",
+            details={
+                "issue": "zero_difficulty",
+                "zero_count": int(np.sum(difficulty == 0.0)),
+                "min_value": float(np.min(difficulty)),
+            },
+        )
+    _min_val = float(np.min(difficulty))
+    _max_val = float(np.max(difficulty))
+    if _min_val > 0.0 and (_max_val / _min_val) > 20.0:
+        warnings.warn(
+            f"difficulty_estimator.apply() returned values with max/min ratio"
+            f" {_max_val / _min_val:.1f} > 20; this may indicate estimator miscalibration."
+            " Difficulty-normalized reject scoring may be unstable.",
+            RejectContractWarning,
+            stacklevel=3,
+        )
+        logging.getLogger(__name__).info(
+            "difficulty scale warning: max=%.4f min=%.4f ratio=%.1f",
+            _max_val,
+            _min_val,
+            _max_val / _min_val,
         )
     return _clip_difficulty_values(difficulty)
 
@@ -1824,6 +1856,15 @@ class RejectOrchestrator:
         # Allow callers to select a strategy identifier via the `strategy` kwarg.
         # By default, resolve to `builtin.default` which preserves legacy semantics.
         strategy_name = kwargs.pop("strategy", None)
+        if (
+            strategy_name in _DIFFICULTY_STRATEGIES
+            and getattr(self.explainer, "difficulty_estimator", None) is None
+        ):
+            raise ConfigurationError(
+                f'strategy="{strategy_name}" requires difficulty_estimator to be set'
+                " on the explainer.",
+                details={"strategy": strategy_name, "requirement": "difficulty_estimator"},
+            )
         strategy = self.resolve_strategy(strategy_name)
         return strategy(
             policy,

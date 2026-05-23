@@ -7,7 +7,8 @@ import pytest
 
 from calibrated_explanations.core.reject import orchestrator as orch
 from calibrated_explanations.core.reject.orchestrator import default_score_cal, default_score_test
-from calibrated_explanations.utils.exceptions import ValidationError
+from calibrated_explanations.explanations.reject import RejectContractWarning
+from calibrated_explanations.utils.exceptions import ConfigurationError, ValidationError
 
 
 def test_strategy_is_registered():
@@ -27,12 +28,12 @@ def test_unknown_strategy_raises():
         orchestrator.resolve_strategy("not.a.strategy")
 
 
-def test_experimental_matches_builtin_without_difficulty(monkeypatch):
+def test_experimental_matches_builtin_with_trivial_difficulty(monkeypatch):
     proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
     labels = np.array([1, 0])
-    explainer = make_explainer(proba, labels)
+    # Uniform difficulty of 1.0 is a no-op normalisation — results must match builtin.
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
     orchestrator = orch.RejectOrchestrator(explainer)
-    # Use both strategies
     res_builtin = orchestrator.apply_policy(
         policy="flag", x=explainer.x_cal, strategy="builtin.default"
     )
@@ -137,7 +138,7 @@ def test_metadata_fields_and_monotonicity(monkeypatch):
 def test_experimental_strategy_regression_mode_raises():
     proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
     labels = np.array([1, 0])
-    explainer = make_explainer(proba, labels)
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
     explainer.mode = "regression"
     orchestrator = orch.RejectOrchestrator(explainer)
     with pytest.raises(ValidationError, match="does not support regression"):
@@ -379,7 +380,8 @@ def test_should_raise_validation_error_when_difficulty_values_are_negative(monke
 def test_should_clip_near_zero_difficulty_when_normalizing_scores(monkeypatch):
     proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
     labels = np.array([1, 0])
-    explainer = make_explainer(proba, labels, difficulty_values=[0.0, 1e-12])
+    # Sub-threshold but strictly positive — must be clipped to 1e-6 floor (not zero).
+    explainer = make_explainer(proba, labels, difficulty_values=[1e-12, 2e-12])
     setattr(explainer, "_reject_difficulty_normalized", True)
     conformal = RecordingConformalClassifier()
     monkeypatch.setattr(orch, "ConformalClassifier", lambda: conformal)
@@ -390,10 +392,11 @@ def test_should_clip_near_zero_difficulty_when_normalizing_scores(monkeypatch):
     np.testing.assert_allclose(conformal.fit_alphas, base_scores / np.array([1e-6, 1e-6]))
 
 
-def test_novelty_penalized_matches_difficulty_normalized_when_no_estimators(monkeypatch):
+def test_novelty_penalized_matches_difficulty_normalized_when_trivial_estimators(monkeypatch):
     proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
     labels = np.array([1, 0])
-    explainer = make_explainer(proba, labels)
+    # Uniform difficulty [1.0, 1.0] makes normalization a no-op; both strategies must agree.
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
     orchestrator = orch.RejectOrchestrator(explainer)
     monkeypatch.setattr(orch, "ConformalClassifier", InverseAlphaConformalClassifier)
 
@@ -528,3 +531,94 @@ def test_novelty_penalized_confidence_monotonicity_and_metadata(monkeypatch):
         if prev_prediction_set is not None:
             assert np.all(prev_prediction_set <= prediction_set)
         prev_prediction_set = prediction_set
+
+
+# ---------------------------------------------------------------------------
+# RT-11: ConfigurationError guard — experimental strategy without estimator
+# ---------------------------------------------------------------------------
+
+
+def test_difficulty_strategy_without_estimator_raises_configuration_error():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)  # difficulty_estimator=None
+    orchestrator = orch.RejectOrchestrator(explainer)
+    with pytest.raises(ConfigurationError, match="requires difficulty_estimator"):
+        orchestrator.apply_policy(
+            policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+        )
+
+
+def test_ambiguity_novelty_strategy_without_estimator_raises_configuration_error():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)  # difficulty_estimator=None
+    orchestrator = orch.RejectOrchestrator(explainer)
+    with pytest.raises(ConfigurationError, match="requires difficulty_estimator"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+        )
+
+
+def test_builtin_default_without_estimator_does_not_raise():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels)  # difficulty_estimator=None
+    orchestrator = orch.RejectOrchestrator(explainer)
+    result = orchestrator.apply_policy(policy="flag", x=explainer.x_cal, strategy="builtin.default")
+    assert result is not None
+
+
+def test_experimental_with_estimator_set_does_not_raise():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 2.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    result = orchestrator.apply_policy(
+        policy="flag", x=explainer.x_cal, strategy="experimental.difficulty_normalized"
+    )
+    assert result is not None
+
+
+# ---------------------------------------------------------------------------
+# RT-6: ValidationError for zero difficulty + RejectContractWarning for large ratio
+# ---------------------------------------------------------------------------
+
+
+def test_zero_difficulty_values_raise_validation_error(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[0.0, 1.0])
+    setattr(explainer, "_reject_difficulty_normalized", True)
+    monkeypatch.setattr(orch, "ConformalClassifier", RecordingConformalClassifier)
+    with pytest.raises(ValidationError, match="zero values"):
+        orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
+
+
+def test_large_ratio_difficulty_emits_reject_contract_warning(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    # ratio = 22.0 / 1.0 = 22.0 > 20 — must emit RejectContractWarning
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 22.0])
+    setattr(explainer, "_reject_difficulty_normalized", True)
+    monkeypatch.setattr(orch, "ConformalClassifier", RecordingConformalClassifier)
+    with pytest.warns(RejectContractWarning, match="max/min ratio"):
+        orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
+
+
+def test_normal_difficulty_range_no_warning_or_error(monkeypatch):
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    # ratio = 2.0 / 1.0 = 2.0 — well within bounds
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 2.0])
+    setattr(explainer, "_reject_difficulty_normalized", True)
+    conformal = RecordingConformalClassifier()
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: conformal)
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
+    assert conformal.fit_alphas is not None
