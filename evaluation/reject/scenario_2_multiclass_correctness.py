@@ -40,6 +40,7 @@ from calibrated_explanations import RejectPolicySpec
 
 from .common_reject import (
     RunConfig,
+    _markdown_table_from_df,
     build_classification_bundle,
     singleton_precision_recall,
     task_specs,
@@ -246,7 +247,50 @@ def run(config: RunConfig) -> None:
             "collapse_events": collapse_count,
         },
     }
-    write_csv_json_md("scenario_2_multiclass_correctness", df, meta)
+    # --- Extra sections ---
+    extra_sections: list[str] = []
+
+    if not df.empty:
+        # Section: Per-dataset proxy accuracy (mean over epsilon for each ncf)
+        per_dataset = (
+            df.groupby(["dataset", "ncf"])
+            .agg(
+                n_classes=("n_classes", "first"),
+                proxy_singleton_accuracy=("proxy_singleton_accuracy", "mean"),
+                singleton_precision=("singleton_precision", "mean"),
+                singleton_recall=("singleton_recall", "mean"),
+                non_accepted_rate=("non_accepted_rate", "mean"),
+            )
+            .reset_index()
+        )
+        extra_sections += [
+            "## Per-dataset proxy accuracy",
+            "",
+            _markdown_table_from_df(per_dataset),
+            "",
+        ]
+
+        # Section: NCF comparison
+        ncf_comp = (
+            df.groupby("ncf")
+            .agg(
+                mean_proxy_singleton_accuracy=("proxy_singleton_accuracy", "mean"),
+                mean_singleton_precision=("singleton_precision", "mean"),
+                mean_singleton_recall=("singleton_recall", "mean"),
+                mean_non_accepted_rate=("non_accepted_rate", "mean"),
+                mean_ambiguity_rate=("ambiguity_rate", "mean"),
+                collapse_events=("expected_collapse", "sum"),
+            )
+            .reset_index()
+        )
+        extra_sections += [
+            "## NCF comparison",
+            "",
+            _markdown_table_from_df(ncf_comp),
+            "",
+        ]
+
+    write_csv_json_md("scenario_2_multiclass_correctness", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

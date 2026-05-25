@@ -36,11 +36,13 @@ labelled rows resolved as correct singletons.
   `1[top-1 prediction is correct]`; accepted top-1 accuracy is only a diagnostic on
   `{1}` rows. Status: `empirical`.
 
-- **Scenario 3 — Threshold regression heuristic baseline** (`scenario_3_regression_threshold_baseline.py`, RQ3):
-  Multi-dataset empirical analysis of threshold-based regression reject.  Establishes the null
-  result: threshold reject does not select by uncertainty — accepted-subset interval width equals
-  full-set interval width (the threshold rejects by predicted value quantile, not interval
-  width).  Status: `empirical`.
+- **Scenario 3 - Thresholded regression binary-event reject validity** (`scenario_3_regression_threshold_baseline.py`, RQ3):
+  Multi-dataset empirical analysis of thresholded regression reject as binary conformal
+  classification over user-defined regression events. Scalar thresholds use `y <= threshold`;
+  interval thresholds use `low < y <= high`. The scenario reports event-label coverage,
+  empty/singleton/ambiguity counts, novelty/ambiguity/reject rates, and singleton
+  precision/recall/error. It is not an interval-width selector and does not evaluate
+  conformal prediction interval regression. Status: `empirical`.
 
 - **Scenario 4 — NCF and blend weight grid** (`scenario_4_ncf_weight_grid.py`, RQ4):
   Grid of `hinge`, `margin`, `ensured` × w in {0.3, 0.5, 0.7, 1.0} across binary and
@@ -101,12 +103,13 @@ labelled rows resolved as correct singletons.
   operating-guidance experiment and does not promote public API. Status:
   `empirical`.
 
-### Supplementary scenarios (pass `--supplementary` flag, requires RT-2 fix)
+### Supplementary scenarios (pass `--supplementary` flag)
 
 - **Scenario 7 — NCF coverage validity sweep** (`scenario_7_ncf_coverage_validity.py`):
-  Empirical companion to Proposition 1.  Verifies coverage ≥ 1-epsilon at epsilon in {0.05, 0.10}
-  across the full (NCF, w) grid on binary datasets.  Separates coverage validity check from
-  accuracy analysis in Scenario 4.
+  Empirical companion to Proposition 1. Measures coverage at epsilon in {0.05, 0.10}
+  across the full (NCF, w) grid on binary datasets and 5 seeds. The scenario reports
+  row-level and collapsed-by-condition violations separately because `default` ignores `w`.
+  Separates coverage validity diagnostics from accuracy analysis in Scenario 4.
 
 - **Scenario 12 — Coverage validity: arm A vs arm C** (`scenario_12_coverage_validity_difficulty_normalized.py`):
   RT-3 red-team obligation. Mirrors Scenario 1 but runs arm A (`builtin.default`) and arm C
@@ -115,15 +118,41 @@ labelled rows resolved as correct singletons.
   validity must be verified empirically for arm C separately. Structural violations (CI upper bound
   below 1-epsilon) are flagged per arm. Status: `empirical`.
 
+- **Scenario 13 — n_cal sweep: arm A vs arm C structural violations** (`scenario_13_ncal_coverage_sweep.py`):
+  RT-3 follow-up. Sweeps calibration set size n_cal ∈ {50, 100, 200, 400} to test the
+  variance-inflation hypothesis for arm C structural violations observed in Scenario 12. If
+  difficulty normalization inflates calibration score variance (a finite-sample effect), arm C
+  structural violation rates should decrease monotonically as n_cal grows and converge toward arm A
+  rates at large n_cal. If rates do not decrease, a genuine exchangeability violation is indicated
+  and arm C requires a redesign before any public promotion. Status: `empirical`.
+
+- **Scenario 14 — Routing policy contract validation** (`scenario_14_routing_policy_contract.py`):
+  Validates seven routing contract invariants for FLAG / ONLY_ACCEPTED / ONLY_REJECTED policies
+  across all binary datasets. The red-team analysis (Bug 1) showed that an incorrect
+  `prediction_set` access path produced vacuously-true "0 violations" in Scenario 7 — a routing
+  contract bug that silently contaminated a formal validity measurement. Invariants tested: FLAG
+  rejected mask shape; FLAG prediction_set accessible via `result.metadata["prediction_set"]`; FLAG
+  original_count; ONLY_ACCEPTED source_indices cardinality; ONLY_REJECTED source_indices
+  cardinality; disjoint union covers all n_test instances; no degraded_mode markers on healthy
+  data. Status: `contract`.
+
 ### What this suite does NOT measure
 
-- API routing behavior (FLAG vs ONLY_ACCEPTED vs ONLY_REJECTED) — CI integration concern only.
 - ICP monotonicity as a standalone scenario — implementation invariant for unit tests.
 - Confidence sweep on a single binary dataset — absorbed by Scenario 1 full mode.
 - The current indirect effect of `difficulty_estimator` on classification reject — measured by
   Scenario 8.
-- Difficulty-normalised regression reject (C3) — deferred to a standalone scenario pending the
-  RT-2 sigma-normalisation-only calibration fix.
+- **Difficulty-normalised regression reject (C3)** — blocked by RT-2 sigma-normalisation fix.
+  Scenario 3 now validates the ordinary thresholded-regression binary event contract. C3 still
+  requires a calibration path that normalises sigma without changing the event probability
+  calibration used by other features. Unblock condition: RT-2 merged and validated.
+- **Fallback-mode coverage validity** — the orchestrator has three fallback paths
+  (`predict_p_to_predict_set_fallback`, `bulk_to_per_instance_fallback`) recorded in
+  `degraded_mode_markers`. Coverage under these fallback paths is not validated by any current
+  scenario. Scenario 14 (I7 invariant) verifies that healthy data does not trigger fallbacks; a
+  separate obligation exists to verify coverage still holds when fallbacks ARE triggered. Unblock
+  condition: create a scenario that injects controlled failures (e.g. a `ConformalClassifier`
+  subclass with a broken `predict_p`) and measures coverage on the fallback path.
 
 ## Artifact layout
 
@@ -172,6 +201,8 @@ python -m evaluation.reject.scenario_8_difficulty_reject_ablation --quick
 python -m evaluation.reject.scenario_9_difficulty_normalized_ncf --quick
 python -m evaluation.reject.scenario_10_ambiguity_novelty_reject --quick
 python -m evaluation.reject.scenario_11_operating_point_selection --quick
+python -m evaluation.reject.scenario_13_ncal_coverage_sweep --quick
+python -m evaluation.reject.scenario_14_routing_policy_contract --quick
 ```
 
 ## Interpretation notes
@@ -182,8 +213,8 @@ python -m evaluation.reject.scenario_11_operating_point_selection --quick
   after rejection.
 - For **Scenario 4**, the `accept_rate` column is fraction of test instances
   accepted — not ICP label-set coverage.  Do not confuse the two.
-- For **Scenario 3**, the `interval_width_delta` near zero is the expected null
-  result: threshold reject does not select by uncertainty.
+- For **Scenario 3**, coverage and singleton diagnostics are computed against derived binary
+  event labels, not against regression interval coverage or interval width.
 - For **Scenario 8**, any observed difference comes from the existing interval-calibration path;
   reject scoring formulas themselves remain unchanged.
 - For **Scenario 9**, compare A vs C first (cleanest contrast). Treat D/F as diagnostic because

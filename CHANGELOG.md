@@ -7,6 +7,14 @@
 
 ### Bug fixes
 
+- **RT-16: Treat thresholded regression reject as pure binary event classification.**
+  Runtime regression reject now derives calibration labels from the same central
+  event helper used by evaluation: scalar thresholds use `y <= threshold`, interval
+  thresholds use `low < y <= high`, invalid intervals raise `ValidationError`, and
+  per-instance threshold arrays are rejected. Scenario 3 was rebuilt around
+  event-label coverage, singleton precision/recall/error, and empty/singleton/
+  ambiguity accounting instead of interval-width selection.
+
 - **RT-14: Fix multiclass reject NCF — `_default_ncf_kind` now returns `"hinge"` for
   multiclass (was `"margin"`).** With binarized proba `[1-p_max, p_max]`, margin NCF
   produced a scalar broadcast identically to both columns, making singleton prediction

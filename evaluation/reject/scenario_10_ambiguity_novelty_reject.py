@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -133,36 +132,6 @@ _ARMS: tuple[ArmSpec, ...] = (
 )
 
 
-def _append_readable_sections(
-    prefix: str,
-    arm_summary: pd.DataFrame,
-    confidence_arm_summary: pd.DataFrame,
-    analyses: list[str],
-) -> None:
-    md_path = Path(__file__).resolve().parent / "artifacts" / f"{prefix}.md"
-    content = md_path.read_text(encoding="utf-8")
-    extra = [
-        "## Arm Summary",
-        "",
-        _markdown_table(arm_summary),
-        "",
-        "## By Confidence And Arm",
-        "",
-        _markdown_table(confidence_arm_summary),
-        "",
-        "## Required Analyses",
-        "",
-        "1. Does novelty penalization increase novelty/empty-set rejection relative to C?",
-        analyses[0],
-        "2. Does it reduce ambiguity/multi-label rejection relative to C?",
-        analyses[1],
-        "3. Does it preserve accepted accuracy relative to C?",
-        analyses[2],
-        "4. Which arm is recommended for further development?",
-        analyses[3],
-        "",
-    ]
-    md_path.write_text(content + "\n" + "\n".join(extra), encoding="utf-8")
 
 
 def _arm_row(table: pd.DataFrame, arm_code: str) -> pd.Series | None:
@@ -433,13 +402,55 @@ def run(config: RunConfig) -> None:
         "outcome": outcome_summary,
     }
 
-    write_csv_json_md("scenario_10_ambiguity_novelty_reject", df, meta)
-    _append_readable_sections(
-        "scenario_10_ambiguity_novelty_reject",
-        arm_summary,
-        confidence_arm_summary,
-        analyses,
-    )
+    # --- Extra sections ---
+    extra_sections: list[str] = [
+        "## Arm Summary",
+        "",
+        _markdown_table(arm_summary),
+        "",
+        "## By Confidence And Arm",
+        "",
+        _markdown_table(confidence_arm_summary),
+        "",
+        "## Required Analyses",
+        "",
+        "1. Does novelty penalization increase novelty/empty-set rejection relative to C?",
+        analyses[0],
+        "2. Does it reduce ambiguity/multi-label rejection relative to C?",
+        analyses[1],
+        "3. Does it preserve accepted accuracy relative to C?",
+        analyses[2],
+        "4. Which arm is recommended for further development?",
+        analyses[3],
+        "",
+    ]
+    # Per-dataset arm comparison (all datasets, mean over seeds and confidence)
+    if not df.empty:
+        per_dataset = (
+            df.groupby(["dataset", "arm_code", "strategy"])[
+                [
+                    "accept_rate",
+                    "accepted_accuracy",
+                    "accuracy_delta",
+                    "novelty_rate",
+                    "ambiguity_rate",
+                    "rejected_error_capture_rate",
+                ]
+            ]
+            .mean(numeric_only=True)
+            .reset_index()
+            .sort_values(["arm_code", "dataset"], kind="mergesort")
+        )
+        extra_sections += [
+            "## Per-Dataset Arm Comparison (all datasets)",
+            "",
+            "Mean over seeds and confidence levels. Rows sorted by arm_code, dataset.",
+            "",
+            _markdown_table(per_dataset),
+            "",
+        ]
+
+    write_csv_json_md("scenario_10_ambiguity_novelty_reject", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

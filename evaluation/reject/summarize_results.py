@@ -34,7 +34,11 @@ def summarize() -> None:
     rq_map = {
         "scenario_1_binary_coverage": ("RQ1", "Binary marginal coverage preservation", "formal_target"),
         "scenario_2_multiclass_correctness": ("RQ2", "Multiclass correctness proxy", "empirical"),
-        "scenario_3_regression_threshold_baseline": ("RQ3", "Threshold regression heuristic baseline", "empirical"),
+        "scenario_3_regression_threshold_baseline": (
+            "RQ3",
+            "Thresholded regression binary-event reject validity",
+            "empirical",
+        ),
         "scenario_4_ncf_weight_grid": ("RQ4", "NCF selection and precision-coverage tradeoff", "empirical"),
         "scenario_5_explanation_quality": ("RQ5", "Explanation quality on accepted instances", "empirical"),
         "scenario_6_finite_sample_stress": ("RQ6", "Finite-sample stress tests", "empirical"),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+import numbers
 import threading
 import warnings
 from dataclasses import dataclass
@@ -28,6 +29,11 @@ from ...utils.exceptions import ConfigurationError, ValidationError
 from ..difficulty_estimator_helpers import validate_difficulty_estimator_provenance
 from .policy import RejectPolicy
 
+# Module-level flag: emit the 100% ambiguity UserWarning at most once per process.
+# Python's __warningregistry__ deduplication is unreliable here because venn_abers.py
+# calls warnings.filterwarnings() globally (not inside catch_warnings()), which
+# increments _filters_version and clears all registries every time calibration runs.
+_AMBIGUITY_WARNING_ISSUED = False
 _VALID_NCF = frozenset({"default", "ensured"})
 _DIFFICULTY_STRATEGIES = frozenset(
     {
@@ -120,6 +126,54 @@ def _thresholds_equal(lhs: Any, rhs: Any) -> bool:
         return False
     with np.errstate(invalid="ignore"):
         return bool(np.allclose(left, right, equal_nan=True))
+
+
+def validate_regression_reject_threshold(threshold: Any) -> float | tuple[float, float]:
+    """Validate a regression reject threshold and return its canonical value."""
+    if isinstance(threshold, tuple):
+        if len(threshold) != 2:
+            raise ValidationError(
+                "regression reject interval threshold must be a (low, high) tuple.",
+                details={"threshold": threshold},
+            )
+        low, high = threshold
+        if not isinstance(low, numbers.Real) or not isinstance(high, numbers.Real):
+            raise ValidationError(
+                "regression reject interval threshold bounds must be numeric.",
+                details={"threshold": threshold},
+            )
+        low_f = float(low)
+        high_f = float(high)
+        if not np.isfinite(low_f) or not np.isfinite(high_f) or low_f >= high_f:
+            raise ValidationError(
+                "regression reject interval threshold must satisfy finite low < high.",
+                details={"threshold": threshold},
+            )
+        return (low_f, high_f)
+
+    if isinstance(threshold, numbers.Real):
+        value = float(threshold)
+        if np.isfinite(value):
+            return value
+
+    raise ValidationError(
+        "regression reject threshold must be a scalar numeric threshold or a "
+        "(low, high) interval tuple; per-instance thresholds are not supported.",
+        details={"threshold": threshold},
+    )
+
+
+def regression_threshold_event_labels(
+    y: Any,
+    threshold: Any,
+) -> np.ndarray:
+    """Return binary event labels for thresholded-regression reject."""
+    event_threshold = validate_regression_reject_threshold(threshold)
+    y_arr = np.asarray(y, dtype=float).reshape(-1)
+    if isinstance(event_threshold, tuple):
+        low, high = event_threshold
+        return ((low < y_arr) & (y_arr <= high)).astype(int)
+    return (y_arr <= event_threshold).astype(int)
 
 
 def _interval_width_score(proba: np.ndarray) -> np.ndarray:
@@ -642,8 +696,15 @@ def _ncf_scores_cal_ambiguity_normalized_novelty_penalized(  # pylint: disable=i
     explainer: Any,
     x: Any,
 ) -> np.ndarray:
-    """Compute calibration scores: alpha_base / d_amb + lambda * d_nov."""
-    normalized = _ncf_scores_cal_difficulty_normalized(
+    """Compute calibration scores: alpha_base / d_amb (no novelty term on calibration side).
+
+    The novelty penalty must NOT be applied to calibration scores.  Adding it to calibration
+    nonconformity scores raises the ICP quantile threshold, which makes prediction sets larger
+    (more classes pass the p-value test) and increases ambiguity — the opposite of the
+    strategy's intent.  The penalty is applied asymmetrically to test scores only via
+    _ncf_scores_test_ambiguity_normalized_novelty_penalized.
+    """
+    return _ncf_scores_cal_difficulty_normalized(
         proba,
         classes,
         labels,
@@ -653,8 +714,6 @@ def _ncf_scores_cal_ambiguity_normalized_novelty_penalized(  # pylint: disable=i
         explainer,
         x,
     )
-    novelty = _novelty_values(explainer, x)
-    return _apply_novelty_penalty(normalized, novelty, _novelty_weight(explainer))
 
 
 def _ncf_scores_test_ambiguity_normalized_novelty_penalized(  # pylint: disable=invalid-name
@@ -1111,6 +1170,12 @@ class RejectOrchestrator:
                 strict=strict_provenance,
                 logger=self._logger,
             )
+            # Always rebuild the ConformalClassifier here, even when a reject_learner
+            # already exists.  The caller may have changed difficulty_estimator between
+            # calls (e.g. the evaluation suite does set_difficulty_estimator per arm), so
+            # a cached learner built under the previous estimator would produce wrong
+            # normalized calibration scores.  The finally block restores the previous
+            # learner so callers are not affected.
             self.initialize_reject_learner(
                 threshold=threshold,
                 ncf=prev_reject_ncf,
@@ -1362,7 +1427,7 @@ class RejectOrchestrator:
         if threshold is None:
             raise ValidationError("reject learner unavailable for regression without threshold")
 
-        effective_threshold = threshold
+        effective_threshold = validate_regression_reject_threshold(threshold)
         threshold_source = "call"
         current_threshold = getattr(self.explainer, "reject_threshold", None)
         learner_missing = getattr(self.explainer, "reject_learner", None) is None
@@ -1401,17 +1466,19 @@ class RejectOrchestrator:
         ----------
         calibration_set : tuple (x_cal, y_cal) or None
             Calibration data. Uses the explainer's calibration set when None.
-        threshold : float or None
+        threshold : float, tuple[float, float], or None
             Decision threshold for **regression only**. **Required** when the
             explainer is in regression mode — omitting it raises
             ``ValidationError``.
 
-            The threshold defines a binary event: *"will the target be below
-            this value?"*  The framework converts regression into threshold-
-            binarized conformal classification (``P(y ≤ threshold)``). This is
+            The threshold defines a binary event. Scalar thresholds use
+            ``y <= threshold``; interval thresholds use ``low < y <= high``.
+            The framework converts regression into threshold-binarized
+            conformal classification (``P(event)``). This is
             **not** conformal prediction interval regression; it is conformal
-            prediction for a user-defined threshold crossing. For classification
-            this parameter is unused and should remain ``None``.
+            prediction for a user-defined regression event. Per-instance
+            threshold arrays are not supported. For classification this
+            parameter is unused and should remain ``None``.
         ncf : str or None, default None
             Non-conformity function type: 'default' or 'ensured'. The
             internal default score is task-dependent: margin for multiclass
@@ -1483,11 +1550,12 @@ class RejectOrchestrator:
         if self.explainer.mode == "regression":
             if threshold is None:
                 raise ValidationError("reject learner unavailable for regression without threshold")
+            threshold = validate_regression_reject_threshold(threshold)
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
                 x_cal, y_threshold=threshold, bins=bins_cal
             )
             proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
-            calibration_bins = (y_cal < threshold).astype(int)
+            calibration_bins = regression_threshold_event_labels(y_cal, threshold)
             self.explainer.reject_threshold = threshold
         elif self.explainer.is_multiclass():  # pylint: disable=protected-access
             proba, predicted_labels = self.explainer.interval_learner.predict_proba(
@@ -1547,6 +1615,7 @@ class RejectOrchestrator:
         if self.explainer.mode == "regression":
             if threshold is None:
                 raise ValidationError("reject learner unavailable for regression without threshold")
+            threshold = validate_regression_reject_threshold(threshold)
             proba_1, _, _, _ = self.explainer.interval_learner.predict_probability(
                 x, y_threshold=threshold, bins=bins
             )
@@ -1609,7 +1678,10 @@ class RejectOrchestrator:
             try:
                 p_values = self.explainer.reject_learner.predict_p(alphas_test, **predict_p_kwargs)
                 p_values = np.asarray(p_values, dtype=float)
-                prediction_set = p_values > epsilon
+                # Match crepes.ConformalClassifier.predict_set semantics for
+                # deterministic p-values: labels on the significance boundary
+                # are included in the conformal prediction set.
+                prediction_set = p_values >= epsilon
             except Exception as exc:  # adr002_allow
                 self._logger.info(
                     "Reject predict_p failed; falling back to predict_set.",
@@ -1709,7 +1781,7 @@ class RejectOrchestrator:
                         **kwargs_i,
                     )
                     per_p = np.asarray(per_p, dtype=float).reshape(-1)
-                    collected.append((per_p > epsilon).astype(bool))
+                    collected.append((per_p >= epsilon).astype(bool))
                 else:
                     # Ensure per-instance calls also receive a classes_array
                     # hint when the conformal implementation expects it.
@@ -1850,6 +1922,27 @@ class RejectOrchestrator:
 
         num_instances = len(x)
         reject_rate = 0.0 if num_instances == 0 else float(np.mean(rejected))
+
+        # Warn when the score distribution has been flattened so severely that every
+        # instance becomes an ambiguous multi-label prediction set.  The module-level
+        # flag gates the UserWarning to one emission per process: Python's normal
+        # __warningregistry__ deduplication is unreliable here because venn_abers.py
+        # calls warnings.filterwarnings() globally (not inside catch_warnings()), which
+        # increments _filters_version and clears all registries on every calibration run.
+        if num_instances > 0 and float(np.mean(ambiguity)) >= 1.0:
+            global _AMBIGUITY_WARNING_ISSUED
+            _msg = (
+                "All test instances were rejected as ambiguous (multi-label prediction sets). "
+                "This typically means the nonconformity score distribution has been flattened "
+                "by VA probability rescaling at low confidence, making every p-value exceed "
+                "epsilon for every class.  Consider raising confidence or disabling "
+                "difficulty_estimator at this confidence level."
+            )
+            self._logger.warning(_msg)
+            if not _AMBIGUITY_WARNING_ISSUED:
+                _AMBIGUITY_WARNING_ISSUED = True
+                warnings.warn(_msg, UserWarning, stacklevel=1)
+
         error_rate = (
             float(accounting["singleton_error_rate_estimate_clamped"])
             if accounting["singleton_error_rate_estimate_defined"]

@@ -1,0 +1,35 @@
+{
+  "scenario": "scenario_14_routing_policy_contract",
+  "display_name": "Scenario 14 \u2014 Routing policy contract validation",
+  "paper_contribution": "infrastructure",
+  "guarantee_status": "contract",
+  "quick": false,
+  "highlights": [
+    "Validates FLAG / ONLY_ACCEPTED / ONLY_REJECTED routing invariants on binary datasets.",
+    "I1: FLAG rejected mask length == n_test.",
+    "I2: FLAG prediction_set is a (n_test, n_classes) boolean array in result.metadata.",
+    "I3: FLAG original_count == n_test.",
+    "I4: ONLY_ACCEPTED source_indices count matches expected accepted count.",
+    "I5: ONLY_REJECTED source_indices count matches expected rejected count.",
+    "I6: ONLY_ACCEPTED + ONLY_REJECTED source_indices are disjoint and cover all n_test.",
+    "I7: No degraded_mode markers on healthy data.",
+    "Contract passes: 130/130. Failures: 0. Degraded: 0."
+  ],
+  "outcome": {
+    "rows": 130,
+    "datasets": 26,
+    "seeds": 5,
+    "contract_passes": 130,
+    "contract_failures": 0,
+    "degraded_rows": 0,
+    "invariant_failures": {
+      "i1_flag_rejected_length": 0,
+      "i2_flag_prediction_set_shape": 0,
+      "i3_flag_original_count": 0,
+      "i4_only_accepted_indices": 0,
+      "i5_only_rejected_indices": 0,
+      "i6_index_consistency": 0,
+      "i7_no_degraded_mode": 0
+    }
+  }
+}

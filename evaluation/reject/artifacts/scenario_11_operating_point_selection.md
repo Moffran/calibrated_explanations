@@ -7,14 +7,14 @@ Rows: 2760
 - Selects confidence values closest to target reject rates instead of averaging over the confidence grid.
 - Primary decision gate is A vs C for direct difficulty-normalized scoring.
 - Secondary diagnostic is C vs G for the novelty-aware variant.
-- C minus A accepted-accuracy deltas by target reject rate are 0.10: +0.0037, 0.20: -0.0001, 0.30: -0.0046, 0.40: -0.0062.
+- C minus A accepted-accuracy deltas by target reject rate are 0.10: +0.0037, 0.20: +0.0000, 0.30: -0.0050, 0.40: -0.0060.
 - The strongest matched operating point is target 0.10, with mean accepted-accuracy delta +0.0037.
-- Across targets, C increased ambiguity in mean fraction-positive 0.4217 and increased novelty in fraction-positive 0.4054. This operating-point quick run does not show the same consistent ambiguity-up, novelty-down geometry seen in Scenario 9.
-- Across targets, C minus A mean difficulty-reject-AUC delta is +0.0155.
+- Across targets, C increased ambiguity in mean fraction-positive 0.4217 and increased novelty in fraction-positive 0.4076. This operating-point quick run does not show the same consistent ambiguity-up, novelty-down geometry seen in Scenario 9.
+- Across targets, C minus A mean difficulty-reject-AUC delta is +0.0169.
 - Step 8 is not justified yet; matched operating-point evidence is mixed and does not support public API promotion.
-- G minus C mean novelty-rate delta across targets is +0.0102; empty-set delta is +0.0102.
-- G minus C mean accepted-accuracy delta across targets is -0.0023.
-- G minus C novelty-reject-AUC delta is +0.0611; ambiguity-rate delta is -0.0194.
+- G minus C mean novelty-rate delta across targets is +0.0208; empty-set delta is +0.0208.
+- G minus C mean accepted-accuracy delta across targets is -0.0009.
+- G minus C novelty-reject-AUC delta is +0.0551; ambiguity-rate delta is -0.0341.
 - The novelty-aware strategy should remain internal only; it is not promotion-ready.
 
 ## Outcome snapshot
@@ -25,132 +25,213 @@ Rows: 2760
 - **datasets**: 46
 - **seeds**: 5
 - **target_reject_rates**: [0.1, 0.2, 0.3, 0.4]
-- **A_vs_C_accepted_accuracy_delta_by_target**: {'0.10': 0.003667105136906213, '0.20': -6.494566915854048e-05, '0.30': -0.004555356131457974, '0.40': -0.0061995401974281935}
+- **A_vs_C_accepted_accuracy_delta_by_target**: {'0.10': 0.003667105136906213, '0.20': 4.1067336827315746e-05, '0.30': -0.004969011196508569, '0.40': -0.006037448182867154}
 - **A_vs_C_best_target_by_accepted_accuracy**: 0.1000
 - **A_vs_C_best_accepted_accuracy_delta**: 0.0037
-- **A_vs_C_mean_difficulty_reject_auc_delta**: 0.0155
-- **C_vs_G_mean_novelty_rate_delta**: 0.0102
-- **C_vs_G_mean_accepted_accuracy_delta**: -0.0023
-- **C_vs_G_mean_novelty_reject_auc_delta**: 0.0611
+- **A_vs_C_mean_difficulty_reject_auc_delta**: 0.0169
+- **C_vs_G_mean_novelty_rate_delta**: 0.0208
+- **C_vs_G_mean_accepted_accuracy_delta**: -0.0009
+- **C_vs_G_mean_novelty_reject_auc_delta**: 0.0551
 - **promotion_recommendation**: do_not_promote
 - **novelty_strategy_recommendation**: continue_experimental
-
-## Result table
-
-| task_type | dataset | confidence | epsilon | n_train | n_cal | n_test | arm_code | arm_label | ncf | strategy | difficulty_normalized | novelty_penalized | novelty_weight | accept_rate | reject_rate | ambiguity_rate | novelty_rate | accepted_accuracy | full_accuracy | accuracy_delta | singleton_error_rate | singleton_precision | singleton_recall | singleton_correct_count | singleton_count | singleton_precision_recall_defined | error_rate_defined | rejected_error_capture_rate | mean_difficulty_all | mean_difficulty_accepted | mean_difficulty_rejected | difficulty_gap_rejected_minus_accepted | difficulty_reject_auc | mean_novelty_all | mean_novelty_accepted | mean_novelty_rejected | novelty_gap_rejected_minus_accepted | novelty_reject_auc | empty_rate | singleton_rate | multilabel_rate | empirical_coverage | coverage_gap | coverage_defined | seed | sweep_confidence | selected_confidence | observed_reject_rate | empty_set_rate | target_reject_rate | reject_rate_target_abs_error | comparison_group |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| multiclass | balance | 0.7777 | 0.2223 | 375 | 125 | 125 | A | A|strategy=builtin.default|ncf=default|novelty_weight=0.0 | default | builtin.default | no | no | 0.0000 | 0.9120 | 0.0880 | 0.0000 | 0.0880 | 0.9035 | 0.8480 | 0.0555 | 0.1473 | 0.9298 | 0.8480 | 106 | 114 | yes | yes | 0.4211 | 1.9772 | 1.9746 | 2.0041 | 0.0294 | 0.5726 | 0.1212 | 0.1149 | 0.1862 | 0.0712 | 0.5263 | 0.0880 | 0.9120 | 0.0000 | nan | nan | no | 42 | 0.7777 | 0.7777 | 0.0880 | 0.0880 | 0.1000 | 0.0120 | A_vs_C |
-| multiclass | balance | 0.9737 | 0.0263 | 375 | 125 | 125 | A | A|strategy=builtin.default|ncf=default|novelty_weight=0.0 | default | builtin.default | no | no | 0.0000 | 0.7920 | 0.2080 | 0.2080 | 0.0000 | 0.9596 | 0.8480 | 0.1116 | 0.0332 | 0.9697 | 0.7680 | 96 | 99 | yes | yes | 0.7895 | 1.9772 | 1.9773 | 1.9769 | -0.0004 | 0.5427 | 0.1212 | 0.1112 | 0.1592 | 0.0479 | 0.5427 | 0.0000 | 0.7920 | 0.2080 | nan | nan | no | 42 | 0.9737 | 0.9737 | 0.2080 | 0.0000 | 0.2000 | 0.0080 | A_vs_C |
-| multiclass | balance | 0.6797 | 0.3203 | 375 | 125 | 125 | A | A|strategy=builtin.default|ncf=default|novelty_weight=0.0 | default | builtin.default | no | no | 0.0000 | 0.6960 | 0.3040 | 0.0000 | 0.3040 | 0.9885 | 0.8480 | 0.1405 | 0.0235 | 0.9885 | 0.6880 | 86 | 87 | yes | yes | 0.9474 | 1.9772 | 1.9850 | 1.9595 | -0.0254 | 0.4767 | 0.1212 | 0.0937 | 0.1841 | 0.0904 | 0.5227 | 0.3040 | 0.6960 | 0.0000 | nan | nan | no | 42 | 0.6797 | 0.6797 | 0.3040 | 0.3040 | 0.3000 | 0.0040 | A_vs_C |
-| multiclass | balance | 0.6307 | 0.3693 | 375 | 125 | 125 | A | A|strategy=builtin.default|ncf=default|novelty_weight=0.0 | default | builtin.default | no | no | 0.0000 | 0.5920 | 0.4080 | 0.0000 | 0.4080 | 0.9865 | 0.8480 | 0.1385 | 0.0000 | 0.9865 | 0.5840 | 73 | 74 | yes | yes | 0.9474 | 1.9772 | 2.0135 | 1.9246 | -0.0888 | 0.3882 | 0.1212 | 0.1017 | 0.1495 | 0.0478 | 0.4833 | 0.4080 | 0.5920 | 0.0000 | nan | nan | no | 42 | 0.6307 | 0.6307 | 0.4080 | 0.4080 | 0.4000 | 0.0080 | A_vs_C |
-| multiclass | balance | 0.8430 | 0.1570 | 375 | 125 | 125 | C | C|strategy=experimental.difficulty_normalized|ncf=default|novelty_weight=0.0 | default | experimental.difficulty_normalized | yes | no | 0.0000 | 0.8960 | 0.1040 | 0.0320 | 0.0720 | 0.9107 | 0.8480 | 0.0627 | 0.0949 | 0.9375 | 0.8400 | 105 | 112 | yes | yes | 0.4737 | 1.9772 | 1.9917 | 1.8526 | -0.1391 | 0.3578 | 0.1212 | 0.1179 | 0.1499 | 0.0320 | 0.4591 | 0.0720 | 0.8960 | 0.0320 | nan | nan | no | 42 | 0.8430 | 0.8430 | 0.1040 | 0.0720 | 0.1000 | 0.0040 | A_vs_C;C_vs_G |
-| multiclass | balance | 0.7613 | 0.2387 | 375 | 125 | 125 | C | C|strategy=experimental.difficulty_normalized|ncf=default|novelty_weight=0.0 | default | experimental.difficulty_normalized | yes | no | 0.0000 | 0.7920 | 0.2080 | 0.0000 | 0.2080 | 0.9596 | 0.8480 | 0.1116 | 0.0387 | 0.9697 | 0.7680 | 96 | 99 | yes | yes | 0.7895 | 1.9772 | 2.0007 | 1.8877 | -0.1130 | 0.3963 | 0.1212 | 0.1408 | 0.0467 | -0.0941 | 0.4606 | 0.2080 | 0.7920 | 0.0000 | nan | nan | no | 42 | 0.7613 | 0.7613 | 0.2080 | 0.2080 | 0.2000 | 0.0080 | A_vs_C;C_vs_G |
-| multiclass | balance | 0.7123 | 0.2877 | 375 | 125 | 125 | C | C|strategy=experimental.difficulty_normalized|ncf=default|novelty_weight=0.0 | default | experimental.difficulty_normalized | yes | no | 0.0000 | 0.6960 | 0.3040 | 0.0000 | 0.3040 | 0.9655 | 0.8480 | 0.1175 | 0.0000 | 0.9655 | 0.6720 | 84 | 87 | yes | yes | 0.8421 | 1.9772 | 2.0103 | 1.9016 | -0.1086 | 0.3851 | 0.1212 | 0.1266 | 0.1089 | -0.0177 | 0.4770 | 0.3040 | 0.6960 | 0.0000 | nan | nan | no | 42 | 0.7123 | 0.7123 | 0.3040 | 0.3040 | 0.3000 | 0.0040 | A_vs_C;C_vs_G |
-| multiclass | balance | 0.6143 | 0.3857 | 375 | 125 | 125 | C | C|strategy=experimental.difficulty_normalized|ncf=default|novelty_weight=0.0 | default | experimental.difficulty_normalized | yes | no | 0.0000 | 0.5920 | 0.4080 | 0.0000 | 0.4080 | 1.0000 | 0.8480 | 0.1520 | 0.0000 | 1.0000 | 0.5920 | 74 | 74 | yes | yes | 1.0000 | 1.9772 | 2.0162 | 1.9207 | -0.0954 | 0.3752 | 0.1212 | 0.1102 | 0.1372 | 0.0270 | 0.4665 | 0.4080 | 0.5920 | 0.0000 | nan | nan | no | 42 | 0.6143 | 0.6143 | 0.4080 | 0.4080 | 0.4000 | 0.0080 | A_vs_C;C_vs_G |
-| multiclass | balance | 0.8430 | 0.1570 | 375 | 125 | 125 | G | G|strategy=experimental.ambiguity_normalized_novelty_penalized|ncf=default|novelty_weight=0.1 | default | experimental.ambiguity_normalized_novelty_penalized | yes | yes | 0.1000 | 0.8800 | 0.1200 | 0.0400 | 0.0800 | 0.9273 | 0.8480 | 0.0793 | 0.0875 | 0.9364 | 0.8240 | 103 | 110 | yes | yes | 0.5789 | 1.9772 | 1.9703 | 2.0281 | 0.0578 | 0.6412 | 0.1212 | 0.0758 | 0.4540 | 0.3781 | 0.6570 | 0.0800 | 0.8800 | 0.0400 | nan | nan | no | 42 | 0.8430 | 0.8430 | 0.1200 | 0.0800 | 0.1000 | 0.0200 | C_vs_G |
-| multiclass | balance | 0.7287 | 0.2713 | 375 | 125 | 125 | G | G|strategy=experimental.ambiguity_normalized_novelty_penalized|ncf=default|novelty_weight=0.1 | default | experimental.ambiguity_normalized_novelty_penalized | yes | yes | 0.1000 | 0.7920 | 0.2080 | 0.0000 | 0.2080 | 0.9798 | 0.8480 | 0.1318 | 0.0800 | 0.9899 | 0.7840 | 98 | 99 | yes | yes | 0.8947 | 1.9772 | 1.9847 | 1.9486 | -0.0361 | 0.5008 | 0.1212 | 0.0831 | 0.2662 | 0.1830 | 0.5587 | 0.2080 | 0.7920 | 0.0000 | nan | nan | no | 42 | 0.7287 | 0.7287 | 0.2080 | 0.2080 | 0.2000 | 0.0080 | C_vs_G |
-| multiclass | balance | 0.6633 | 0.3367 | 375 | 125 | 125 | G | G|strategy=experimental.ambiguity_normalized_novelty_penalized|ncf=default|novelty_weight=0.1 | default | experimental.ambiguity_normalized_novelty_penalized | yes | yes | 0.1000 | 0.6800 | 0.3200 | 0.0000 | 0.3200 | 0.9882 | 0.8480 | 0.1402 | 0.0245 | 0.9882 | 0.6720 | 84 | 85 | yes | yes | 0.9474 | 1.9772 | 1.9950 | 1.9394 | -0.0556 | 0.4541 | 0.1212 | 0.0885 | 0.1906 | 0.1021 | 0.5316 | 0.3200 | 0.6800 | 0.0000 | nan | nan | no | 42 | 0.6633 | 0.6633 | 0.3200 | 0.3200 | 0.3000 | 0.0200 | C_vs_G |
-| multiclass | balance | 0.5817 | 0.4183 | 375 | 125 | 125 | G | G|strategy=experimental.ambiguity_normalized_novelty_penalized|ncf=default|novelty_weight=0.1 | default | experimental.ambiguity_normalized_novelty_penalized | yes | yes | 0.1000 | 0.6080 | 0.3920 | 0.0000 | 0.3920 | 0.9868 | 0.8480 | 0.1388 | 0.0433 | 0.9868 | 0.6000 | 75 | 76 | yes | yes | 0.9474 | 1.9772 | 1.9988 | 1.9438 | -0.0550 | 0.4463 | 0.1212 | 0.0647 | 0.2089 | 0.1442 | 0.5477 | 0.3920 | 0.6080 | 0.0000 | nan | nan | no | 42 | 0.5817 | 0.5817 | 0.3920 | 0.3920 | 0.4000 | 0.0080 | C_vs_G |
-
-_Showing first 12 of 2760 rows._
 
 ## Selected Operating Points
 
 | arm_code | target_reject_rate | observed_reject_rate | reject_rate_target_abs_error | selected_confidence | accepted_accuracy | ambiguity_rate | novelty_rate | difficulty_reject_auc | singleton_precision | singleton_recall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| A | 0.1000 | 0.1100 | 0.0334 | 0.7367 | 0.8280 | 0.0360 | 0.0740 | 0.5097 | 0.8299 | 0.7361 |
-| A | 0.2000 | 0.2079 | 0.0314 | 0.6900 | 0.8445 | 0.0520 | 0.1559 | 0.5129 | 0.8479 | 0.6698 |
-| A | 0.3000 | 0.3040 | 0.0273 | 0.6341 | 0.8617 | 0.0719 | 0.2321 | 0.5118 | 0.8656 | 0.6010 |
-| A | 0.4000 | 0.3961 | 0.0302 | 0.6417 | 0.8762 | 0.1395 | 0.2566 | 0.5138 | 0.8794 | 0.5298 |
-| C | 0.1000 | 0.1640 | 0.0691 | 0.7781 | 0.8317 | 0.0876 | 0.0764 | 0.5648 | 0.8323 | 0.7012 |
+| A | 0.1000 | 0.1100 | 0.0334 | 0.7365 | 0.8280 | 0.0360 | 0.0740 | 0.5097 | 0.8299 | 0.7361 |
+| A | 0.2000 | 0.2078 | 0.0314 | 0.6909 | 0.8444 | 0.0532 | 0.1546 | 0.5131 | 0.8477 | 0.6698 |
+| A | 0.3000 | 0.3040 | 0.0273 | 0.6388 | 0.8617 | 0.0766 | 0.2274 | 0.5118 | 0.8656 | 0.6010 |
+| A | 0.4000 | 0.3959 | 0.0304 | 0.6445 | 0.8762 | 0.1426 | 0.2533 | 0.5142 | 0.8794 | 0.5300 |
+| C | 0.1000 | 0.1640 | 0.0691 | 0.7780 | 0.8317 | 0.0876 | 0.0764 | 0.5648 | 0.8323 | 0.7012 |
 | C | 0.2000 | 0.2331 | 0.0388 | 0.7242 | 0.8445 | 0.0871 | 0.1460 | 0.5157 | 0.8446 | 0.6508 |
-| C | 0.3000 | 0.3122 | 0.0213 | 0.6556 | 0.8571 | 0.0766 | 0.2356 | 0.4812 | 0.8569 | 0.5905 |
-| C | 0.4000 | 0.4044 | 0.0176 | 0.6573 | 0.8700 | 0.1474 | 0.2571 | 0.5479 | 0.8683 | 0.5174 |
-| G | 0.1000 | 0.1446 | 0.0497 | 0.7589 | 0.8273 | 0.0544 | 0.0902 | 0.6030 | 0.8294 | 0.7116 |
-| G | 0.2000 | 0.2201 | 0.0275 | 0.7082 | 0.8414 | 0.0612 | 0.1589 | 0.5874 | 0.8441 | 0.6589 |
-| G | 0.3000 | 0.3088 | 0.0195 | 0.6557 | 0.8579 | 0.0738 | 0.2350 | 0.5878 | 0.8573 | 0.5924 |
-| G | 0.4000 | 0.4031 | 0.0183 | 0.6488 | 0.8678 | 0.1315 | 0.2717 | 0.6340 | 0.8701 | 0.5190 |
+| C | 0.3000 | 0.3121 | 0.0213 | 0.6567 | 0.8567 | 0.0778 | 0.2343 | 0.4841 | 0.8564 | 0.5902 |
+| C | 0.4000 | 0.4049 | 0.0178 | 0.6611 | 0.8702 | 0.1516 | 0.2533 | 0.5511 | 0.8688 | 0.5173 |
+| G | 0.1000 | 0.1394 | 0.0470 | 0.8037 | 0.8276 | 0.0499 | 0.0896 | 0.5922 | 0.8290 | 0.7163 |
+| G | 0.2000 | 0.2153 | 0.0239 | 0.7714 | 0.8420 | 0.0610 | 0.1543 | 0.5819 | 0.8442 | 0.6637 |
+| G | 0.3000 | 0.3051 | 0.0160 | 0.7250 | 0.8598 | 0.0716 | 0.2334 | 0.5842 | 0.8582 | 0.5966 |
+| G | 0.4000 | 0.4010 | 0.0129 | 0.6764 | 0.8703 | 0.0853 | 0.3157 | 0.6076 | 0.8716 | 0.5220 |
 
 ## Pairwise Delta Aggregates
 
 | comparison_group | target_reject_rate | paired_groups | base_mean_selected_confidence | candidate_mean_selected_confidence | base_mean_target_abs_error | candidate_mean_target_abs_error | C_minus_A_accepted_accuracy_mean | C_minus_A_accepted_accuracy_median | C_minus_A_accepted_accuracy_std | C_minus_A_accepted_accuracy_fraction_positive | C_minus_A_accepted_accuracy_finite_groups | C_minus_A_empirical_coverage_mean | C_minus_A_empirical_coverage_median | C_minus_A_empirical_coverage_std | C_minus_A_empirical_coverage_fraction_positive | C_minus_A_empirical_coverage_finite_groups | C_minus_A_observed_reject_rate_mean | C_minus_A_observed_reject_rate_median | C_minus_A_observed_reject_rate_std | C_minus_A_observed_reject_rate_fraction_positive | C_minus_A_observed_reject_rate_finite_groups | C_minus_A_ambiguity_rate_mean | C_minus_A_ambiguity_rate_median | C_minus_A_ambiguity_rate_std | C_minus_A_ambiguity_rate_fraction_positive | C_minus_A_ambiguity_rate_finite_groups | C_minus_A_novelty_rate_mean | C_minus_A_novelty_rate_median | C_minus_A_novelty_rate_std | C_minus_A_novelty_rate_fraction_positive | C_minus_A_novelty_rate_finite_groups | C_minus_A_rejected_error_capture_rate_mean | C_minus_A_rejected_error_capture_rate_median | C_minus_A_rejected_error_capture_rate_std | C_minus_A_rejected_error_capture_rate_fraction_positive | C_minus_A_rejected_error_capture_rate_finite_groups | C_minus_A_difficulty_reject_auc_mean | C_minus_A_difficulty_reject_auc_median | C_minus_A_difficulty_reject_auc_std | C_minus_A_difficulty_reject_auc_fraction_positive | C_minus_A_difficulty_reject_auc_finite_groups | C_minus_A_difficulty_gap_rejected_minus_accepted_mean | C_minus_A_difficulty_gap_rejected_minus_accepted_median | C_minus_A_difficulty_gap_rejected_minus_accepted_std | C_minus_A_difficulty_gap_rejected_minus_accepted_fraction_positive | C_minus_A_difficulty_gap_rejected_minus_accepted_finite_groups | C_minus_A_singleton_precision_mean | C_minus_A_singleton_precision_median | C_minus_A_singleton_precision_std | C_minus_A_singleton_precision_fraction_positive | C_minus_A_singleton_precision_finite_groups | C_minus_A_singleton_recall_mean | C_minus_A_singleton_recall_median | C_minus_A_singleton_recall_std | C_minus_A_singleton_recall_fraction_positive | C_minus_A_singleton_recall_finite_groups | G_minus_C_accepted_accuracy_mean | G_minus_C_accepted_accuracy_median | G_minus_C_accepted_accuracy_std | G_minus_C_accepted_accuracy_fraction_positive | G_minus_C_accepted_accuracy_finite_groups | G_minus_C_novelty_rate_mean | G_minus_C_novelty_rate_median | G_minus_C_novelty_rate_std | G_minus_C_novelty_rate_fraction_positive | G_minus_C_novelty_rate_finite_groups | G_minus_C_ambiguity_rate_mean | G_minus_C_ambiguity_rate_median | G_minus_C_ambiguity_rate_std | G_minus_C_ambiguity_rate_fraction_positive | G_minus_C_ambiguity_rate_finite_groups | G_minus_C_novelty_reject_auc_mean | G_minus_C_novelty_reject_auc_median | G_minus_C_novelty_reject_auc_std | G_minus_C_novelty_reject_auc_fraction_positive | G_minus_C_novelty_reject_auc_finite_groups | G_minus_C_rejected_error_capture_rate_mean | G_minus_C_rejected_error_capture_rate_median | G_minus_C_rejected_error_capture_rate_std | G_minus_C_rejected_error_capture_rate_fraction_positive | G_minus_C_rejected_error_capture_rate_finite_groups | G_minus_C_difficulty_reject_auc_mean | G_minus_C_difficulty_reject_auc_median | G_minus_C_difficulty_reject_auc_std | G_minus_C_difficulty_reject_auc_fraction_positive | G_minus_C_difficulty_reject_auc_finite_groups | G_minus_C_empty_set_rate_mean | G_minus_C_empty_set_rate_median | G_minus_C_empty_set_rate_std | G_minus_C_empty_set_rate_fraction_positive | G_minus_C_empty_set_rate_finite_groups | G_minus_C_multilabel_rate_mean | G_minus_C_multilabel_rate_median | G_minus_C_multilabel_rate_std | G_minus_C_multilabel_rate_fraction_positive | G_minus_C_multilabel_rate_finite_groups | G_minus_C_singleton_precision_mean | G_minus_C_singleton_precision_median | G_minus_C_singleton_precision_std | G_minus_C_singleton_precision_fraction_positive | G_minus_C_singleton_precision_finite_groups | G_minus_C_singleton_recall_mean | G_minus_C_singleton_recall_median | G_minus_C_singleton_recall_std | G_minus_C_singleton_recall_fraction_positive | G_minus_C_singleton_recall_finite_groups |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A_vs_C | 0.1000 | 230 | 0.7367 | 0.7781 | 0.0334 | 0.0691 | 0.0037 | 0.0000 | 0.0249 | 0.4565 | 230.0000 | 0.0127 | 0.0140 | 0.0672 | 0.5615 | 130.0000 | 0.0540 | 0.0180 | 0.0976 | 0.6609 | 230.0000 | 0.0516 | 0.0458 | 0.0854 | 0.6174 | 230.0000 | 0.0024 | 0.0000 | 0.0721 | 0.3957 | 230.0000 | 0.0555 | 0.0000 | 0.1735 | 0.4649 | 228.0000 | 0.0559 | 0.0060 | 0.1967 | 0.5156 | 225.0000 | 0.2455 | 0.1317 | 0.5137 | 0.6356 | 225.0000 | 0.0024 | 0.0000 | 0.0288 | 0.4522 | 230.0000 | -0.0349 | -0.0130 | 0.0656 | 0.1739 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | 0.2000 | 230 | 0.6900 | 0.7242 | 0.0314 | 0.0388 | -0.0001 | 0.0000 | 0.0243 | 0.3696 | 230.0000 | 0.0254 | 0.0108 | 0.0981 | 0.5231 | 130.0000 | 0.0252 | 0.0092 | 0.0693 | 0.5696 | 230.0000 | 0.0351 | 0.0000 | 0.1054 | 0.4478 | 230.0000 | -0.0100 | 0.0000 | 0.1017 | 0.3783 | 230.0000 | 0.0170 | 0.0000 | 0.1324 | 0.3509 | 228.0000 | 0.0028 | -0.0238 | 0.1797 | 0.3826 | 230.0000 | 0.1033 | 0.0000 | 0.3469 | 0.4652 | 230.0000 | -0.0033 | 0.0000 | 0.0306 | 0.3478 | 230.0000 | -0.0190 | -0.0114 | 0.0522 | 0.2478 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | 0.3000 | 230 | 0.6341 | 0.6556 | 0.0273 | 0.0213 | -0.0046 | 0.0000 | 0.0278 | 0.3087 | 230.0000 | -0.0084 | 0.0000 | 0.1380 | 0.4154 | 130.0000 | 0.0081 | 0.0000 | 0.0533 | 0.4609 | 230.0000 | 0.0047 | 0.0000 | 0.1380 | 0.3348 | 230.0000 | 0.0035 | 0.0000 | 0.1320 | 0.3913 | 230.0000 | -0.0088 | 0.0000 | 0.1163 | 0.2588 | 228.0000 | -0.0306 | -0.0459 | 0.1811 | 0.2478 | 230.0000 | 0.0112 | -0.0248 | 0.2921 | 0.3261 | 230.0000 | -0.0087 | 0.0000 | 0.0326 | 0.2696 | 230.0000 | -0.0105 | -0.0037 | 0.0463 | 0.3348 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | 0.4000 | 230 | 0.6417 | 0.6573 | 0.0302 | 0.0176 | -0.0062 | 0.0000 | 0.0316 | 0.2826 | 230.0000 | 0.0195 | 0.0000 | 0.2096 | 0.4154 | 130.0000 | 0.0083 | 0.0000 | 0.0499 | 0.4870 | 230.0000 | 0.0078 | 0.0000 | 0.2021 | 0.2870 | 230.0000 | 0.0005 | 0.0000 | 0.1909 | 0.4565 | 230.0000 | -0.0130 | 0.0000 | 0.1106 | 0.2544 | 228.0000 | 0.0340 | -0.0196 | 0.1997 | 0.3739 | 230.0000 | 0.0559 | -0.0065 | 0.2706 | 0.4000 | 230.0000 | -0.0111 | -0.0001 | 0.0361 | 0.2304 | 230.0000 | -0.0124 | -0.0065 | 0.0484 | 0.2913 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| C_vs_G | 0.1000 | 230 | 0.7781 | 0.7589 | 0.0691 | 0.0497 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | -0.0044 | -0.0023 | 0.0168 | 0.2739 | 230.0000 | 0.0138 | 0.0000 | 0.0516 | 0.4957 | 230.0000 | -0.0332 | -0.0233 | 0.0602 | 0.1696 | 230.0000 | 0.0278 | 0.0003 | 0.1799 | 0.5000 | 230.0000 | -0.0544 | -0.0258 | 0.1373 | 0.1360 | 228.0000 | 0.0382 | 0.0040 | 0.2046 | 0.5043 | 230.0000 | 0.0138 | 0.0000 | 0.0516 | 0.4957 | 230.0000 | -0.0332 | -0.0233 | 0.0602 | 0.1696 | 230.0000 | -0.0030 | -0.0002 | 0.0223 | 0.3087 | 230.0000 | 0.0105 | 0.0044 | 0.0354 | 0.5087 | 230.0000 |
-| C_vs_G | 0.2000 | 230 | 0.7242 | 0.7082 | 0.0388 | 0.0275 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | -0.0031 | -0.0002 | 0.0219 | 0.2870 | 230.0000 | 0.0129 | 0.0000 | 0.0879 | 0.4913 | 230.0000 | -0.0258 | 0.0000 | 0.0949 | 0.1478 | 230.0000 | 0.0556 | 0.0697 | 0.1834 | 0.5913 | 230.0000 | -0.0380 | 0.0000 | 0.1453 | 0.2061 | 228.0000 | 0.0717 | 0.0748 | 0.2112 | 0.6304 | 230.0000 | 0.0129 | 0.0000 | 0.0879 | 0.4913 | 230.0000 | -0.0258 | 0.0000 | 0.0949 | 0.1478 | 230.0000 | -0.0005 | 0.0000 | 0.0262 | 0.3261 | 230.0000 | 0.0081 | 0.0000 | 0.0354 | 0.4652 | 230.0000 |
-| C_vs_G | 0.3000 | 230 | 0.6556 | 0.6557 | 0.0213 | 0.0195 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | 0.0007 | 0.0000 | 0.0235 | 0.3609 | 230.0000 | -0.0006 | 0.0000 | 0.1293 | 0.4957 | 230.0000 | -0.0028 | 0.0000 | 0.1318 | 0.1652 | 230.0000 | 0.0906 | 0.1073 | 0.1740 | 0.7000 | 230.0000 | -0.0116 | 0.0000 | 0.1066 | 0.2412 | 228.0000 | 0.1066 | 0.1157 | 0.2099 | 0.7304 | 230.0000 | -0.0006 | 0.0000 | 0.1293 | 0.4957 | 230.0000 | -0.0028 | 0.0000 | 0.1318 | 0.1652 | 230.0000 | 0.0004 | 0.0000 | 0.0306 | 0.3565 | 230.0000 | 0.0019 | 0.0000 | 0.0337 | 0.4217 | 230.0000 |
-| C_vs_G | 0.4000 | 230 | 0.6573 | 0.6488 | 0.0176 | 0.0183 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | -0.0022 | 0.0000 | 0.0305 | 0.3304 | 230.0000 | 0.0146 | 0.0000 | 0.1917 | 0.4783 | 230.0000 | -0.0159 | 0.0000 | 0.1939 | 0.1826 | 230.0000 | 0.0704 | 0.0931 | 0.1672 | 0.6174 | 230.0000 | -0.0122 | 0.0000 | 0.1094 | 0.2325 | 228.0000 | 0.0861 | 0.1138 | 0.2160 | 0.6348 | 230.0000 | 0.0146 | 0.0000 | 0.1917 | 0.4783 | 230.0000 | -0.0159 | 0.0000 | 0.1939 | 0.1826 | 230.0000 | 0.0017 | 0.0000 | 0.0329 | 0.3435 | 230.0000 | 0.0016 | 0.0000 | 0.0354 | 0.4348 | 230.0000 |
-
-## Pairwise Delta Rows
-
-| comparison_group | dataset | seed | target_reject_rate | base_arm | candidate_arm | base_selected_confidence | candidate_selected_confidence | base_target_abs_error | candidate_target_abs_error | C_minus_A_accepted_accuracy | base_accepted_accuracy | candidate_accepted_accuracy | C_minus_A_empirical_coverage | base_empirical_coverage | candidate_empirical_coverage | C_minus_A_observed_reject_rate | base_observed_reject_rate | candidate_observed_reject_rate | C_minus_A_ambiguity_rate | base_ambiguity_rate | candidate_ambiguity_rate | C_minus_A_novelty_rate | base_novelty_rate | candidate_novelty_rate | C_minus_A_rejected_error_capture_rate | base_rejected_error_capture_rate | candidate_rejected_error_capture_rate | C_minus_A_difficulty_reject_auc | base_difficulty_reject_auc | candidate_difficulty_reject_auc | C_minus_A_difficulty_gap_rejected_minus_accepted | base_difficulty_gap_rejected_minus_accepted | candidate_difficulty_gap_rejected_minus_accepted | C_minus_A_singleton_precision | base_singleton_precision | candidate_singleton_precision | C_minus_A_singleton_recall | base_singleton_recall | candidate_singleton_recall | G_minus_C_accepted_accuracy | G_minus_C_novelty_rate | G_minus_C_ambiguity_rate | G_minus_C_novelty_reject_auc | base_novelty_reject_auc | candidate_novelty_reject_auc | G_minus_C_rejected_error_capture_rate | G_minus_C_difficulty_reject_auc | G_minus_C_empty_set_rate | base_empty_set_rate | candidate_empty_set_rate | G_minus_C_multilabel_rate | base_multilabel_rate | candidate_multilabel_rate | G_minus_C_singleton_precision | G_minus_C_singleton_recall |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A_vs_C | balance | 42 | 0.1000 | A | C | 0.7777 | 0.8430 | 0.0120 | 0.0040 | 0.0072 | 0.9035 | 0.9107 | nan | nan | nan | 0.0160 | 0.0880 | 0.1040 | 0.0320 | 0.0000 | 0.0320 | -0.0160 | 0.0880 | 0.0720 | 0.0526 | 0.4211 | 0.4737 | -0.2147 | 0.5726 | 0.3578 | -0.1685 | 0.0294 | -0.1391 | 0.0077 | 0.9298 | 0.9375 | -0.0080 | 0.8480 | 0.8400 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | balance | 43 | 0.1000 | A | C | 0.9410 | 0.8593 | 0.0200 | 0.0040 | 0.0153 | 0.9043 | 0.9196 | nan | nan | nan | 0.0240 | 0.0800 | 0.1040 | -0.0240 | 0.0800 | 0.0560 | 0.0480 | 0.0000 | 0.0480 | 0.1250 | 0.3125 | 0.4375 | 0.0665 | 0.4548 | 0.5213 | -0.0048 | -0.0140 | -0.0188 | -0.0110 | 0.9217 | 0.9107 | -0.0320 | 0.8480 | 0.8160 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | balance | 44 | 0.1000 | A | C | 0.7940 | 0.8593 | 0.0040 | 0.0040 | 0.0089 | 0.8750 | 0.8839 | nan | nan | nan | 0.0000 | 0.1040 | 0.1040 | 0.0560 | 0.0000 | 0.0560 | -0.0560 | 0.1040 | 0.0480 | 0.0400 | 0.4400 | 0.4800 | -0.0446 | 0.5501 | 0.5055 | -0.0491 | -0.0583 | -0.1073 | 0.0000 | 0.8929 | 0.8929 | 0.0000 | 0.8000 | 0.8000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | balance | 45 | 0.1000 | A | C | 0.8103 | 0.8103 | 0.0040 | 0.0040 | -0.0089 | 0.8661 | 0.8571 | nan | nan | nan | 0.0000 | 0.1040 | 0.1040 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.1040 | 0.1040 | -0.0455 | 0.3182 | 0.2727 | -0.1195 | 0.4519 | 0.3324 | -0.1092 | -0.0357 | -0.1449 | 0.0000 | 0.8571 | 0.8571 | 0.0000 | 0.7680 | 0.7680 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | balance | 46 | 0.1000 | A | C | 0.9247 | 0.8593 | 0.0120 | 0.0040 | 0.0074 | 0.9123 | 0.9196 | nan | nan | nan | 0.0160 | 0.0880 | 0.1040 | -0.0720 | 0.0880 | 0.0160 | 0.0880 | 0.0000 | 0.0880 | 0.0500 | 0.5000 | 0.5500 | -0.1192 | 0.4976 | 0.3784 | -0.1155 | 0.0232 | -0.0923 | 0.0075 | 0.9211 | 0.9286 | -0.0080 | 0.8400 | 0.8320 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | breast_cancer | 42 | 0.1000 | A | C | 0.8593 | 0.8757 | 0.0035 | 0.0123 | 0.0001 | 0.9903 | 0.9904 | 0.0088 | 0.8947 | 0.9035 | -0.0088 | 0.0965 | 0.0877 | 0.0000 | 0.0000 | 0.0000 | -0.0088 | 0.0965 | 0.0877 | 0.0000 | 0.8000 | 0.8000 | -0.1028 | 0.2701 | 0.1673 | -0.0865 | -0.2555 | -0.3421 | 0.0001 | 0.9903 | 0.9904 | 0.0088 | 0.8947 | 0.9035 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | breast_cancer | 43 | 0.1000 | A | C | 0.8267 | 0.8593 | 0.0053 | 0.0035 | -0.0094 | 0.9706 | 0.9612 | 0.0000 | 0.8684 | 0.8684 | -0.0088 | 0.1053 | 0.0965 | 0.0000 | 0.0000 | 0.0000 | -0.0088 | 0.1053 | 0.0965 | -0.1429 | 0.5714 | 0.4286 | -0.1021 | 0.2451 | 0.1430 | -0.0733 | -0.2655 | -0.3388 | -0.0094 | 0.9706 | 0.9612 | 0.0000 | 0.8684 | 0.8684 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | breast_cancer | 44 | 0.1000 | A | C | 0.7777 | 0.8430 | 0.0053 | 0.0035 | 0.0000 | 1.0000 | 1.0000 | 0.0088 | 0.8947 | 0.9035 | -0.0088 | 0.1053 | 0.0965 | 0.0000 | 0.0000 | 0.0000 | -0.0088 | 0.1053 | 0.0965 | 0.0000 | 1.0000 | 1.0000 | -0.0317 | 0.2206 | 0.1889 | -0.0283 | -0.4032 | -0.4315 | 0.0000 | 1.0000 | 1.0000 | 0.0088 | 0.8947 | 0.9035 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | breast_cancer | 45 | 0.1000 | A | C | 0.8757 | 0.9083 | 0.0123 | 0.0035 | -0.0002 | 0.9808 | 0.9806 | 0.0000 | 0.8947 | 0.8947 | 0.0088 | 0.0877 | 0.0965 | 0.0088 | 0.0000 | 0.0088 | 0.0000 | 0.0877 | 0.0877 | 0.0000 | 0.6000 | 0.6000 | 0.0735 | 0.2125 | 0.2860 | 0.3897 | -0.3313 | 0.0585 | -0.0002 | 0.9808 | 0.9806 | -0.0088 | 0.8947 | 0.8860 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | breast_cancer | 46 | 0.1000 | A | C | 0.9083 | 0.9083 | 0.0211 | 0.0123 | -0.0002 | 0.9810 | 0.9808 | 0.0000 | 0.9035 | 0.9035 | 0.0088 | 0.0789 | 0.0877 | 0.0088 | 0.0000 | 0.0088 | 0.0000 | 0.0789 | 0.0789 | 0.0000 | 0.6667 | 0.6667 | -0.0272 | 0.2455 | 0.2183 | -0.0276 | -0.2411 | -0.2688 | -0.0002 | 0.9810 | 0.9808 | -0.0088 | 0.9035 | 0.8947 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cars | 42 | 0.1000 | A | C | 0.8920 | 0.8920 | 0.0104 | 0.0040 | 0.0094 | 0.9841 | 0.9935 | nan | nan | nan | 0.0145 | 0.0896 | 0.1040 | 0.0000 | 0.0000 | 0.0000 | 0.0145 | 0.0896 | 0.1040 | 0.2143 | 0.6429 | 0.8571 | -0.0794 | 0.3932 | 0.3139 | -0.0561 | -0.0619 | -0.1180 | 0.0094 | 0.9841 | 0.9935 | -0.0058 | 0.8960 | 0.8902 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cars | 43 | 0.1000 | A | C | 0.9083 | 0.9083 | 0.0017 | 0.0017 | 0.0000 | 0.9936 | 0.9936 | nan | nan | nan | 0.0000 | 0.0983 | 0.0983 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0983 | 0.0983 | 0.0000 | 0.8000 | 0.8000 | -0.0267 | 0.4137 | 0.3870 | -0.0166 | -0.0748 | -0.0914 | 0.0000 | 0.9936 | 0.9936 | 0.0000 | 0.8960 | 0.8960 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cars | 44 | 0.1000 | A | C | 0.8920 | 0.9900 | 0.0156 | 0.0098 | -0.0032 | 1.0000 | 0.9968 | nan | nan | nan | -0.0058 | 0.1156 | 0.1098 | 0.1098 | 0.0000 | 0.1098 | -0.1156 | 0.1156 | 0.0000 | -0.0909 | 1.0000 | 0.9091 | 0.1247 | 0.4056 | 0.5302 | 0.1112 | -0.0874 | 0.0238 | -0.0032 | 1.0000 | 0.9968 | 0.0029 | 0.8844 | 0.8873 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cars | 45 | 0.1000 | A | C | 0.8757 | 0.8920 | 0.0069 | 0.0104 | 0.0001 | 0.9968 | 0.9968 | nan | nan | nan | -0.0173 | 0.1069 | 0.0896 | 0.0000 | 0.0000 | 0.0000 | -0.0173 | 0.1069 | 0.0896 | 0.0000 | 0.8889 | 0.8889 | -0.0229 | 0.4497 | 0.4267 | -0.0274 | -0.0293 | -0.0567 | 0.0001 | 0.9968 | 0.9968 | 0.0173 | 0.8902 | 0.9075 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cars | 46 | 0.1000 | A | C | 0.8920 | 0.8920 | 0.0040 | 0.0040 | 0.0000 | 0.9935 | 0.9935 | nan | nan | nan | 0.0000 | 0.1040 | 0.1040 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.1040 | 0.1040 | 0.0000 | 0.8667 | 0.8667 | -0.0283 | 0.3187 | 0.2904 | -0.0185 | -0.1336 | -0.1521 | 0.0000 | 0.9935 | 0.9935 | 0.0000 | 0.8902 | 0.8902 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cmc | 42 | 0.1000 | A | C | 0.5817 | 0.6307 | 0.0085 | 0.3068 | 0.0413 | 0.5187 | 0.5600 | nan | nan | nan | 0.3153 | 0.0915 | 0.4068 | 0.1966 | 0.0915 | 0.2881 | 0.1186 | 0.0000 | 0.1186 | 0.3636 | 0.0979 | 0.4615 | 0.0216 | 0.6527 | 0.6743 | 0.0463 | 0.1764 | 0.2227 | -0.0117 | 0.6231 | 0.6114 | -0.2034 | 0.5661 | 0.3627 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cmc | 43 | 0.1000 | A | C | 0.5490 | 0.6143 | 0.0153 | 0.1881 | 0.0371 | 0.5057 | 0.5429 | nan | nan | nan | 0.1729 | 0.1153 | 0.2881 | 0.1763 | 0.0000 | 0.1763 | -0.0034 | 0.1153 | 0.1119 | 0.2292 | 0.1042 | 0.3333 | 0.1151 | 0.4651 | 0.5802 | 0.1506 | -0.0202 | 0.1304 | -0.0084 | 0.6322 | 0.6238 | -0.1153 | 0.5593 | 0.4441 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cmc | 44 | 0.1000 | A | C | 0.5653 | 0.6633 | 0.0051 | 0.2492 | 0.0050 | 0.4794 | 0.4844 | nan | nan | nan | 0.2542 | 0.0949 | 0.3492 | 0.2610 | 0.0000 | 0.2610 | -0.0068 | 0.0949 | 0.0881 | 0.2516 | 0.1258 | 0.3774 | 0.2660 | 0.4391 | 0.7051 | 0.3296 | -0.0953 | 0.2344 | -0.0226 | 0.5955 | 0.5729 | -0.1661 | 0.5390 | 0.3729 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cmc | 45 | 0.1000 | A | C | 0.5327 | 0.5817 | 0.0051 | 0.2051 | 0.0014 | 0.5206 | 0.5220 | nan | nan | nan | 0.2102 | 0.0949 | 0.3051 | 0.1559 | 0.0000 | 0.1559 | 0.0542 | 0.0949 | 0.1492 | 0.2128 | 0.0922 | 0.3050 | -0.0545 | 0.5550 | 0.5005 | 0.0237 | 0.0362 | 0.0599 | 0.0045 | 0.5955 | 0.6000 | -0.1220 | 0.5390 | 0.4169 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cmc | 46 | 0.1000 | A | C | 0.5653 | 0.7287 | 0.0017 | 0.2288 | 0.0159 | 0.5396 | 0.5556 | nan | nan | nan | 0.2271 | 0.1017 | 0.3288 | 0.2542 | 0.0000 | 0.2542 | -0.0271 | 0.1017 | 0.0746 | 0.2482 | 0.1095 | 0.3577 | 0.2809 | 0.4647 | 0.7456 | 0.3478 | -0.0458 | 0.3020 | -0.0167 | 0.5925 | 0.5758 | -0.1458 | 0.5322 | 0.3864 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | colic | 42 | 0.1000 | A | C | 0.7450 | 0.7777 | 0.0111 | 0.0111 | -0.0156 | 0.8594 | 0.8438 | -0.0139 | 0.7639 | 0.7500 | 0.0000 | 0.1111 | 0.1111 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.1111 | 0.1111 | -0.0833 | 0.2500 | 0.1667 | -0.0430 | 0.3047 | 0.2617 | -0.0296 | -0.1607 | -0.1904 | -0.0156 | 0.8594 | 0.8438 | -0.0139 | 0.7639 | 0.7500 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | colic | 43 | 0.1000 | A | C | 0.7123 | 0.8920 | 0.0306 | 0.0028 | -0.0354 | 0.8507 | 0.8154 | 0.0417 | 0.7917 | 0.8333 | 0.0278 | 0.0694 | 0.0972 | 0.0972 | 0.0000 | 0.0972 | -0.0694 | 0.0694 | 0.0000 | -0.1429 | 0.2857 | 0.1429 | 0.3943 | 0.5134 | 0.9077 | 0.3483 | -0.0056 | 0.3427 | -0.0354 | 0.8507 | 0.8154 | -0.0556 | 0.7917 | 0.7361 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | colic | 44 | 0.1000 | A | C | 0.9083 | 0.9083 | 0.0111 | 0.0028 | -0.0135 | 0.8750 | 0.8615 | -0.0139 | 0.8889 | 0.8750 | -0.0139 | 0.1111 | 0.0972 | -0.0139 | 0.1111 | 0.0972 | 0.0000 | 0.0000 | 0.0000 | -0.0909 | 0.2727 | 0.1818 | 0.1838 | 0.5547 | 0.7385 | 0.1212 | 0.0317 | 0.1530 | -0.0135 | 0.8750 | 0.8615 | 0.0000 | 0.7778 | 0.7778 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | colic | 45 | 0.1000 | A | C | 0.7613 | 0.7287 | 0.0306 | 0.0028 | -0.0055 | 0.8209 | 0.8154 | -0.0278 | 0.7639 | 0.7361 | 0.0278 | 0.0694 | 0.0972 | 0.0000 | 0.0000 | 0.0000 | 0.0278 | 0.0694 | 0.0972 | 0.0000 | 0.2000 | 0.2000 | -0.1000 | 0.5373 | 0.4374 | -0.0615 | 0.0292 | -0.0322 | -0.0055 | 0.8209 | 0.8154 | -0.0278 | 0.7639 | 0.7361 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | colic | 46 | 0.1000 | A | C | 0.8267 | 0.8267 | 0.0028 | 0.0389 | -0.0067 | 0.8615 | 0.8548 | -0.0417 | 0.7778 | 0.7361 | 0.0417 | 0.0972 | 0.1389 | 0.0000 | 0.0000 | 0.0000 | 0.0417 | 0.0972 | 0.1389 | 0.0000 | 0.3077 | 0.3077 | -0.0421 | 0.3582 | 0.3161 | -0.0009 | -0.1217 | -0.1226 | -0.0067 | 0.8615 | 0.8548 | -0.0417 | 0.7778 | 0.7361 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cool | 42 | 0.1000 | A | C | 0.9083 | 0.9247 | 0.0286 | 0.0091 | 0.0068 | 0.9860 | 0.9929 | nan | nan | nan | 0.0195 | 0.0714 | 0.0909 | 0.0000 | 0.0000 | 0.0000 | 0.0195 | 0.0714 | 0.0909 | 0.1667 | 0.6667 | 0.8333 | -0.3617 | 0.8010 | 0.4393 | -0.2500 | 0.2095 | -0.0405 | 0.0068 | 0.9860 | 0.9929 | -0.0130 | 0.9156 | 0.9026 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cool | 43 | 0.1000 | A | C | 0.8430 | 0.8430 | 0.0156 | 0.0091 | -0.0001 | 0.9858 | 0.9857 | nan | nan | nan | 0.0065 | 0.0844 | 0.0909 | 0.0000 | 0.0000 | 0.0000 | 0.0065 | 0.0844 | 0.0909 | 0.0000 | 0.7143 | 0.7143 | -0.0217 | 0.5003 | 0.4786 | -0.0119 | 0.0012 | -0.0106 | -0.0001 | 0.9858 | 0.9857 | -0.0065 | 0.9026 | 0.8961 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cool | 44 | 0.1000 | A | C | 0.9410 | 0.9573 | 0.0104 | 0.0039 | -0.0071 | 0.9854 | 0.9783 | nan | nan | nan | -0.0065 | 0.1104 | 0.1039 | -0.0065 | 0.1104 | 0.1039 | 0.0000 | 0.0000 | 0.0000 | -0.1429 | 0.7143 | 0.5714 | 0.2514 | 0.5131 | 0.7645 | 0.1808 | 0.0058 | 0.1866 | -0.0071 | 0.9854 | 0.9783 | 0.0000 | 0.8766 | 0.8766 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cool | 45 | 0.1000 | A | C | 0.8593 | 0.8593 | 0.0026 | 0.0026 | 0.0000 | 0.9856 | 0.9856 | nan | nan | nan | 0.0000 | 0.0974 | 0.0974 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0974 | 0.0974 | 0.0000 | 0.8182 | 0.8182 | 0.0000 | 0.5727 | 0.5727 | 0.0000 | 0.0263 | 0.0263 | 0.0000 | 0.9856 | 0.9856 | 0.0000 | 0.8896 | 0.8896 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | cool | 46 | 0.1000 | A | C | 0.9083 | 0.9083 | 0.0091 | 0.0026 | -0.0001 | 0.9929 | 0.9928 | nan | nan | nan | 0.0065 | 0.0909 | 0.0974 | 0.0000 | 0.0000 | 0.0000 | 0.0065 | 0.0909 | 0.0974 | 0.0000 | 0.8750 | 0.8750 | -0.0473 | 0.4770 | 0.4297 | -0.0219 | -0.0368 | -0.0587 | -0.0001 | 0.9929 | 0.9928 | -0.0065 | 0.9026 | 0.8961 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | creditA | 42 | 0.1000 | A | C | 0.8593 | 0.8430 | 0.0058 | 0.0058 | 0.0000 | 0.8720 | 0.8720 | 0.0072 | 0.7899 | 0.7971 | 0.0000 | 0.0942 | 0.0942 | 0.0072 | 0.0000 | 0.0072 | -0.0072 | 0.0942 | 0.0870 | 0.0000 | 0.2381 | 0.2381 | -0.1391 | 0.5858 | 0.4468 | -0.1515 | 0.3275 | 0.1760 | 0.0000 | 0.8720 | 0.8720 | 0.0000 | 0.7899 | 0.7899 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | creditA | 43 | 0.1000 | A | C | 0.7287 | 0.7613 | 0.0014 | 0.0014 | 0.0000 | 0.9113 | 0.9113 | 0.0072 | 0.8188 | 0.8261 | 0.0000 | 0.1014 | 0.1014 | 0.0072 | 0.0000 | 0.0072 | -0.0072 | 0.1014 | 0.0942 | 0.0000 | 0.3125 | 0.3125 | 0.0000 | 0.5069 | 0.5069 | 0.0000 | 0.0769 | 0.0769 | 0.0000 | 0.9113 | 0.9113 | 0.0000 | 0.8188 | 0.8188 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | creditA | 44 | 0.1000 | A | C | 0.8103 | 0.8757 | 0.0014 | 0.0275 | -0.0040 | 0.8790 | 0.8750 | 0.0000 | 0.7754 | 0.7754 | -0.0290 | 0.1014 | 0.0725 | 0.0072 | 0.0000 | 0.0072 | -0.0362 | 0.1014 | 0.0652 | -0.0476 | 0.2857 | 0.2381 | -0.2305 | 0.6446 | 0.4141 | 0.2331 | 0.0237 | 0.2568 | -0.0348 | 0.8629 | 0.8281 | -0.0072 | 0.7754 | 0.7681 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | creditA | 45 | 0.1000 | A | C | 0.8267 | 0.8430 | 0.0058 | 0.0014 | 0.0069 | 0.8560 | 0.8629 | -0.0072 | 0.7754 | 0.7681 | 0.0072 | 0.0942 | 0.1014 | 0.0000 | 0.0000 | 0.0000 | 0.0072 | 0.0942 | 0.1014 | 0.0476 | 0.1429 | 0.1905 | -0.1022 | 0.5175 | 0.4153 | -0.0633 | -0.0419 | -0.1052 | -0.0012 | 0.8560 | 0.8548 | -0.0072 | 0.7754 | 0.7681 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | creditA | 46 | 0.1000 | A | C | 0.8103 | 0.8430 | 0.0087 | 0.0014 | -0.0073 | 0.9024 | 0.8952 | 0.0435 | 0.8043 | 0.8478 | -0.0072 | 0.1087 | 0.1014 | 0.0290 | 0.0000 | 0.0290 | -0.0362 | 0.1087 | 0.0725 | -0.0526 | 0.3684 | 0.3158 | 0.0001 | 0.5604 | 0.5605 | 0.4588 | 0.1018 | 0.5606 | 0.0089 | 0.9024 | 0.9113 | 0.0145 | 0.8043 | 0.8188 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | diabetes | 42 | 0.1000 | A | C | 0.6960 | 0.7613 | 0.0351 | 0.0039 | 0.0184 | 0.7569 | 0.7754 | 0.0714 | 0.6818 | 0.7532 | 0.0390 | 0.0649 | 0.1039 | 0.0714 | 0.0000 | 0.0714 | -0.0325 | 0.0649 | 0.0325 | 0.1000 | 0.1250 | 0.2250 | 0.0060 | 0.7444 | 0.7505 | 0.1186 | 0.2663 | 0.3848 | 0.0317 | 0.7292 | 0.7609 | 0.0000 | 0.6818 | 0.6818 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | diabetes | 43 | 0.1000 | A | C | 0.6960 | 0.7450 | 0.0091 | 0.0883 | 0.0223 | 0.7857 | 0.8080 | 0.0325 | 0.7143 | 0.7468 | 0.0974 | 0.0909 | 0.1883 | 0.0909 | 0.0000 | 0.0909 | 0.0065 | 0.0909 | 0.0974 | 0.1765 | 0.1176 | 0.2941 | 0.0560 | 0.4403 | 0.4963 | 0.1460 | -0.0783 | 0.0677 | 0.0223 | 0.7857 | 0.8080 | -0.0584 | 0.7143 | 0.6558 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | diabetes | 44 | 0.1000 | A | C | 0.6960 | 0.7777 | 0.0091 | 0.0494 | -0.0091 | 0.7571 | 0.7481 | 0.0195 | 0.6948 | 0.7143 | 0.0584 | 0.0909 | 0.1494 | 0.0714 | 0.0000 | 0.0714 | -0.0130 | 0.0909 | 0.0779 | 0.0238 | 0.1905 | 0.2143 | 0.0580 | 0.5454 | 0.6034 | 0.1891 | 0.0326 | 0.2216 | -0.0086 | 0.7643 | 0.7557 | -0.0519 | 0.6948 | 0.6429 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | diabetes | 45 | 0.1000 | A | C | 0.6470 | 0.7613 | 0.0091 | 0.0039 | 0.0042 | 0.7929 | 0.7971 | 0.0649 | 0.7143 | 0.7792 | 0.0130 | 0.0909 | 0.1039 | 0.0779 | 0.0000 | 0.0779 | -0.0649 | 0.0909 | 0.0260 | 0.0286 | 0.1714 | 0.2000 | 0.3199 | 0.4459 | 0.7659 | 0.6454 | -0.0937 | 0.5516 | -0.0031 | 0.7857 | 0.7826 | -0.0130 | 0.7143 | 0.7013 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
-| A_vs_C | diabetes | 46 | 0.1000 | A | C | 0.6633 | 0.7777 | 0.0026 | 0.0883 | -0.0306 | 0.7986 | 0.7680 | 0.0390 | 0.7208 | 0.7597 | 0.0909 | 0.0974 | 0.1883 | 0.1364 | 0.0000 | 0.1364 | -0.0455 | 0.0974 | 0.0519 | -0.0270 | 0.2432 | 0.2162 | 0.1523 | 0.5669 | 0.7192 | 0.4275 | 0.0351 | 0.4625 | -0.0306 | 0.7986 | 0.7680 | -0.0974 | 0.7208 | 0.6234 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
+| A_vs_C | 0.1000 | 230 | 0.7365 | 0.7780 | 0.0334 | 0.0691 | 0.0037 | 0.0000 | 0.0249 | 0.4565 | 230.0000 | 0.0127 | 0.0140 | 0.0672 | 0.5615 | 130.0000 | 0.0540 | 0.0180 | 0.0976 | 0.6609 | 230.0000 | 0.0516 | 0.0458 | 0.0854 | 0.6174 | 230.0000 | 0.0024 | 0.0000 | 0.0721 | 0.3957 | 230.0000 | 0.0555 | 0.0000 | 0.1735 | 0.4649 | 228.0000 | 0.0559 | 0.0060 | 0.1967 | 0.5156 | 225.0000 | 0.2455 | 0.1317 | 0.5137 | 0.6356 | 225.0000 | 0.0024 | 0.0000 | 0.0288 | 0.4522 | 230.0000 | -0.0349 | -0.0130 | 0.0656 | 0.1739 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
+| A_vs_C | 0.2000 | 230 | 0.6909 | 0.7242 | 0.0314 | 0.0388 | 0.0000 | 0.0000 | 0.0243 | 0.3739 | 230.0000 | 0.0232 | 0.0103 | 0.1008 | 0.5154 | 130.0000 | 0.0253 | 0.0092 | 0.0693 | 0.5696 | 230.0000 | 0.0339 | 0.0000 | 0.1075 | 0.4478 | 230.0000 | -0.0086 | 0.0000 | 0.1035 | 0.3826 | 230.0000 | 0.0174 | 0.0000 | 0.1324 | 0.3553 | 228.0000 | 0.0026 | -0.0249 | 0.1797 | 0.3826 | 230.0000 | 0.1031 | 0.0000 | 0.3468 | 0.4652 | 230.0000 | -0.0032 | 0.0000 | 0.0306 | 0.3522 | 230.0000 | -0.0190 | -0.0114 | 0.0522 | 0.2478 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
+| A_vs_C | 0.3000 | 230 | 0.6388 | 0.6567 | 0.0273 | 0.0213 | -0.0050 | 0.0000 | 0.0278 | 0.3043 | 230.0000 | -0.0129 | 0.0000 | 0.1407 | 0.4000 | 130.0000 | 0.0081 | 0.0000 | 0.0533 | 0.4609 | 230.0000 | 0.0012 | 0.0000 | 0.1401 | 0.3261 | 230.0000 | 0.0068 | 0.0000 | 0.1340 | 0.4000 | 230.0000 | -0.0098 | 0.0000 | 0.1157 | 0.2544 | 228.0000 | -0.0277 | -0.0421 | 0.1843 | 0.2522 | 230.0000 | 0.0141 | -0.0248 | 0.2962 | 0.3261 | 230.0000 | -0.0092 | 0.0000 | 0.0326 | 0.2652 | 230.0000 | -0.0108 | -0.0037 | 0.0466 | 0.3348 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
+| A_vs_C | 0.4000 | 230 | 0.6445 | 0.6611 | 0.0304 | 0.0178 | -0.0060 | 0.0000 | 0.0317 | 0.2826 | 230.0000 | 0.0225 | 0.0000 | 0.2195 | 0.4231 | 130.0000 | 0.0090 | 0.0015 | 0.0505 | 0.5000 | 230.0000 | 0.0090 | 0.0000 | 0.2078 | 0.2957 | 230.0000 | -0.0000 | 0.0000 | 0.1948 | 0.4522 | 230.0000 | -0.0123 | 0.0000 | 0.1108 | 0.2588 | 228.0000 | 0.0369 | -0.0154 | 0.1990 | 0.3826 | 230.0000 | 0.0602 | -0.0048 | 0.2688 | 0.4087 | 230.0000 | -0.0106 | 0.0000 | 0.0363 | 0.2348 | 230.0000 | -0.0127 | -0.0070 | 0.0490 | 0.2913 | 230.0000 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan |
+| C_vs_G | 0.1000 | 230 | 0.7780 | 0.8037 | 0.0691 | 0.0470 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | -0.0042 | -0.0011 | 0.0169 | 0.2826 | 230.0000 | 0.0132 | 0.0067 | 0.0540 | 0.5261 | 230.0000 | -0.0378 | -0.0292 | 0.0628 | 0.1435 | 230.0000 | 0.0170 | 0.0000 | 0.1858 | 0.4652 | 230.0000 | -0.0551 | -0.0061 | 0.1354 | 0.1316 | 228.0000 | 0.0275 | 0.0000 | 0.2101 | 0.4783 | 230.0000 | 0.0132 | 0.0067 | 0.0540 | 0.5261 | 230.0000 | -0.0378 | -0.0292 | 0.0628 | 0.1435 | 230.0000 | -0.0034 | -0.0000 | 0.0198 | 0.3043 | 230.0000 | 0.0151 | 0.0052 | 0.0348 | 0.5217 | 230.0000 |
+| C_vs_G | 0.2000 | 230 | 0.7242 | 0.7714 | 0.0388 | 0.0239 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | -0.0025 | -0.0000 | 0.0227 | 0.2957 | 230.0000 | 0.0083 | 0.0000 | 0.0923 | 0.4696 | 230.0000 | -0.0261 | 0.0000 | 0.0986 | 0.1565 | 230.0000 | 0.0512 | 0.0563 | 0.1854 | 0.6000 | 230.0000 | -0.0374 | 0.0000 | 0.1459 | 0.2061 | 228.0000 | 0.0663 | 0.0710 | 0.2151 | 0.6261 | 230.0000 | 0.0083 | 0.0000 | 0.0923 | 0.4696 | 230.0000 | -0.0261 | 0.0000 | 0.0986 | 0.1565 | 230.0000 | -0.0004 | 0.0000 | 0.0242 | 0.3217 | 230.0000 | 0.0129 | 0.0000 | 0.0345 | 0.4913 | 230.0000 |
+| C_vs_G | 0.3000 | 230 | 0.6567 | 0.7250 | 0.0213 | 0.0160 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | 0.0031 | 0.0000 | 0.0267 | 0.3739 | 230.0000 | -0.0009 | 0.0005 | 0.1344 | 0.5000 | 230.0000 | -0.0062 | 0.0000 | 0.1392 | 0.1652 | 230.0000 | 0.0886 | 0.1078 | 0.1754 | 0.7043 | 230.0000 | -0.0062 | 0.0000 | 0.1117 | 0.2719 | 228.0000 | 0.1001 | 0.1186 | 0.2181 | 0.7174 | 230.0000 | -0.0009 | 0.0005 | 0.1344 | 0.5000 | 230.0000 | -0.0062 | 0.0000 | 0.1392 | 0.1652 | 230.0000 | 0.0018 | 0.0000 | 0.0303 | 0.3522 | 230.0000 | 0.0064 | 0.0000 | 0.0349 | 0.4478 | 230.0000 |
+| C_vs_G | 0.4000 | 230 | 0.6611 | 0.6764 | 0.0178 | 0.0129 | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | nan | 0.0001 | 0.0000 | 0.0266 | 0.3478 | 230.0000 | 0.0624 | 0.0089 | 0.1784 | 0.5609 | 230.0000 | -0.0663 | 0.0000 | 0.1779 | 0.0870 | 230.0000 | 0.0637 | 0.0838 | 0.1699 | 0.5957 | 230.0000 | -0.0088 | 0.0000 | 0.1117 | 0.2588 | 228.0000 | 0.0565 | 0.0920 | 0.2166 | 0.5913 | 230.0000 | 0.0624 | 0.0089 | 0.1784 | 0.5609 | 230.0000 | -0.0663 | 0.0000 | 0.1779 | 0.0870 | 230.0000 | 0.0028 | 0.0000 | 0.0312 | 0.3696 | 230.0000 | 0.0047 | 0.0000 | 0.0342 | 0.4087 | 230.0000 |
 
 ## Required Analyses
 
 ### A vs C
 
 1. Does direct difficulty normalization improve accepted accuracy at matched reject rates?
-C minus A accepted-accuracy deltas by target reject rate are 0.10: +0.0037, 0.20: -0.0001, 0.30: -0.0046, 0.40: -0.0062.
+C minus A accepted-accuracy deltas by target reject rate are 0.10: +0.0037, 0.20: +0.0000, 0.30: -0.0050, 0.40: -0.0060.
 2. At which reject-rate targets is it most useful?
 The strongest matched operating point is target 0.10, with mean accepted-accuracy delta +0.0037.
 3. Does it consistently increase ambiguity and decrease novelty rejection?
-Across targets, C increased ambiguity in mean fraction-positive 0.4217 and increased novelty in fraction-positive 0.4054. This operating-point quick run does not show the same consistent ambiguity-up, novelty-down geometry seen in Scenario 9.
+Across targets, C increased ambiguity in mean fraction-positive 0.4217 and increased novelty in fraction-positive 0.4076. This operating-point quick run does not show the same consistent ambiguity-up, novelty-down geometry seen in Scenario 9.
 4. Does it select higher-difficulty cases for rejection?
-Across targets, C minus A mean difficulty-reject-AUC delta is +0.0155.
+Across targets, C minus A mean difficulty-reject-AUC delta is +0.0169.
 5. Is Step 8 justified?
 Step 8 is not justified yet; matched operating-point evidence is mixed and does not support public API promotion.
 
 ### C vs G
 
 1. Does the novelty-aware variant improve novelty routing at matched reject rates?
-G minus C mean novelty-rate delta across targets is +0.0102; empty-set delta is +0.0102.
+G minus C mean novelty-rate delta across targets is +0.0208; empty-set delta is +0.0208.
 2. Does it improve or harm accepted accuracy?
-G minus C mean accepted-accuracy delta across targets is -0.0023.
+G minus C mean accepted-accuracy delta across targets is -0.0009.
 3. Does it improve novelty selectivity or merely increase empty sets?
-G minus C novelty-reject-AUC delta is +0.0611; ambiguity-rate delta is -0.0194.
+G minus C novelty-reject-AUC delta is +0.0551; ambiguity-rate delta is -0.0341.
 4. Should it remain internal only?
 The novelty-aware strategy should remain internal only; it is not promotion-ready.
+
+## Per-Dataset Arm Comparison (all datasets)
+
+Mean over seeds and selected operating points. Rows sorted by arm_code, dataset.
+
+| dataset | arm_code | observed_reject_rate | accepted_accuracy | accuracy_delta | difficulty_reject_auc |
+|---|---|---|---|---|---|
+| balance | A | 0.2456 | 0.9612 | 0.1244 | 0.4844 |
+| breast_cancer | A | 0.2434 | 0.9880 | 0.0319 | 0.3568 |
+| cars | A | 0.2513 | 0.9982 | 0.0323 | 0.3990 |
+| cmc | A | 0.2449 | 0.5267 | 0.0175 | 0.4854 |
+| colic | A | 0.2410 | 0.8817 | 0.0623 | 0.4959 |
+| cool | A | 0.2448 | 0.9960 | 0.0466 | 0.5803 |
+| creditA | A | 0.2496 | 0.9185 | 0.0605 | 0.5525 |
+| diabetes | A | 0.2386 | 0.8152 | 0.0594 | 0.5717 |
+| ecoli | A | 0.2471 | 0.9064 | 0.0476 | 0.6046 |
+| german | A | 0.2194 | 0.6999 | 0.0434 | 0.6106 |
+| glass | A | 0.2407 | 0.7656 | 0.0028 | 0.5671 |
+| haberman | A | 0.2421 | 0.7129 | 0.0673 | 0.6170 |
+| heartC | A | 0.2541 | 0.8738 | 0.0738 | 0.5079 |
+| heartH | A | 0.2525 | 0.8841 | 0.0536 | 0.5085 |
+| heartS | A | 0.2481 | 0.8251 | 0.0399 | 0.5738 |
+| heat | A | 0.2474 | 0.9996 | 0.0061 | 0.6898 |
+| hepati | A | 0.2403 | 0.9332 | 0.0816 | 0.8529 |
+| image | A | 0.2496 | 0.9994 | 0.0241 | 0.3668 |
+| iono | A | 0.2521 | 0.9790 | 0.0504 | 0.5252 |
+| iris | A | 0.2950 | 0.9876 | 0.0409 | 0.4041 |
+| je4042 | A | 0.2352 | 0.7817 | 0.0372 | 0.5084 |
+| je4243 | A | 0.2473 | 0.6370 | 0.0178 | 0.4139 |
+| kc1 | A | 0.2345 | 0.7973 | 0.0500 | 0.6875 |
+| kc2 | A | 0.2392 | 0.8616 | 0.0670 | 0.5138 |
+| kc3 | A | 0.2562 | 0.9374 | 0.0759 | 0.6814 |
+| liver | A | 0.2442 | 0.7245 | 0.0608 | 0.5647 |
+| pc1req | A | 0.2357 | 0.6429 | -0.0237 | 0.3230 |
+| pc4 | A | 0.2559 | 0.9705 | 0.0746 | 0.4905 |
+| sonar | A | 0.2488 | 0.9253 | 0.0444 | 0.4885 |
+| spect | A | 0.2455 | 0.8926 | 0.0108 | 0.2897 |
+| spectf | A | 0.2472 | 0.8650 | 0.0539 | 0.3867 |
+| steel | A | 0.2501 | 0.8457 | 0.0838 | 0.4076 |
+| tae | A | 0.2548 | 0.5223 | -0.0132 | 0.4649 |
+| transfusion | A | 0.2386 | 0.7765 | 0.0537 | 0.4876 |
+| ttt | A | 0.2510 | 0.9994 | 0.0234 | 0.3465 |
+| user | A | 0.2488 | 0.9442 | 0.0553 | 0.6642 |
+| vehicle | A | 0.2468 | 0.8323 | 0.0864 | 0.5309 |
+| vote | A | 0.2543 | 0.9179 | 0.0833 | 0.6964 |
+| vowel | A | 0.2965 | 0.9914 | 0.0490 | 0.4160 |
+| wave | A | 0.2497 | 0.9288 | 0.0724 | 0.6645 |
+| wbc | A | 0.2543 | 0.9787 | 0.0174 | 0.3087 |
+| whole | A | 0.2403 | 0.7289 | 0.0289 | 0.5446 |
+| wine | A | 0.5389 | 1.0000 | 0.0389 | 0.4781 |
+| wineR | A | 0.2503 | 0.7183 | 0.0452 | 0.4784 |
+| wineW | A | 0.2478 | 0.7193 | 0.0539 | 0.5074 |
+| yeast | A | 0.2438 | 0.6276 | 0.0195 | 0.4422 |
+| balance | C | 0.2508 | 0.9606 | 0.1238 | 0.4369 |
+| breast_cancer | C | 0.2535 | 0.9868 | 0.0307 | 0.3262 |
+| cars | C | 0.2506 | 0.9987 | 0.0328 | 0.3825 |
+| cmc | C | 0.3544 | 0.5348 | 0.0256 | 0.6557 |
+| colic | C | 0.2507 | 0.8682 | 0.0488 | 0.4927 |
+| cool | C | 0.2500 | 0.9959 | 0.0466 | 0.5502 |
+| creditA | C | 0.2478 | 0.9167 | 0.0587 | 0.5069 |
+| diabetes | C | 0.2581 | 0.8067 | 0.0508 | 0.6541 |
+| ecoli | C | 0.2647 | 0.8975 | 0.0387 | 0.6036 |
+| german | C | 0.2505 | 0.6930 | 0.0364 | 0.6698 |
+| glass | C | 0.3349 | 0.8014 | 0.0386 | 0.6768 |
+| haberman | C | 0.2719 | 0.7034 | 0.0578 | 0.5223 |
+| heartC | C | 0.2516 | 0.8588 | 0.0588 | 0.4809 |
+| heartH | C | 0.2754 | 0.8732 | 0.0427 | 0.5752 |
+| heartS | C | 0.2435 | 0.8269 | 0.0418 | 0.5450 |
+| heat | C | 0.2487 | 0.9996 | 0.0061 | 0.6408 |
+| hepati | C | 0.2452 | 0.9282 | 0.0766 | 0.8157 |
+| image | C | 0.2492 | 0.9981 | 0.0228 | 0.3402 |
+| iono | C | 0.2571 | 0.9784 | 0.0499 | 0.4879 |
+| iris | C | 0.3183 | 0.9733 | 0.0266 | 0.4334 |
+| je4042 | C | 0.3028 | 0.8027 | 0.0583 | 0.6206 |
+| je4243 | C | 0.2932 | 0.6289 | 0.0097 | 0.5588 |
+| kc1 | C | 0.2632 | 0.7845 | 0.0372 | 0.5944 |
+| kc2 | C | 0.2520 | 0.8463 | 0.0517 | 0.5352 |
+| kc3 | C | 0.2508 | 0.9112 | 0.0497 | 0.5685 |
+| liver | C | 0.2746 | 0.7271 | 0.0633 | 0.6078 |
+| pc1req | C | 0.2619 | 0.6553 | -0.0114 | 0.3536 |
+| pc4 | C | 0.2524 | 0.9657 | 0.0698 | 0.4518 |
+| sonar | C | 0.2524 | 0.9217 | 0.0407 | 0.5265 |
+| spect | C | 0.2545 | 0.8951 | 0.0133 | 0.2748 |
+| spectf | C | 0.2648 | 0.8481 | 0.0370 | 0.4728 |
+| steel | C | 0.2536 | 0.8423 | 0.0803 | 0.4310 |
+| tae | C | 0.4855 | 0.5252 | -0.0103 | 0.6825 |
+| transfusion | C | 0.2644 | 0.7773 | 0.0545 | 0.4488 |
+| ttt | C | 0.2518 | 0.9997 | 0.0237 | 0.3358 |
+| user | C | 0.2519 | 0.9369 | 0.0480 | 0.6178 |
+| vehicle | C | 0.2918 | 0.8462 | 0.1004 | 0.4908 |
+| vote | C | 0.2505 | 0.9145 | 0.0799 | 0.6770 |
+| vowel | C | 0.3008 | 0.9913 | 0.0489 | 0.3995 |
+| wave | C | 0.2518 | 0.9299 | 0.0735 | 0.6351 |
+| wbc | C | 0.2478 | 0.9812 | 0.0199 | 0.2496 |
+| whole | C | 0.2449 | 0.7189 | 0.0189 | 0.5556 |
+| wine | C | 0.4889 | 1.0000 | 0.0389 | 0.7443 |
+| wineR | C | 0.3144 | 0.7218 | 0.0487 | 0.5901 |
+| wineW | C | 0.3137 | 0.7342 | 0.0689 | 0.5786 |
+| yeast | C | 0.3508 | 0.6288 | 0.0207 | 0.5317 |
+| balance | G | 0.2556 | 0.9580 | 0.1212 | 0.5476 |
+| breast_cancer | G | 0.2518 | 0.9835 | 0.0273 | 0.5586 |
+| cars | G | 0.2501 | 0.9960 | 0.0301 | 0.6754 |
+| cmc | G | 0.3005 | 0.5360 | 0.0268 | 0.5802 |
+| colic | G | 0.2542 | 0.8715 | 0.0521 | 0.6662 |
+| cool | G | 0.2455 | 0.9931 | 0.0438 | 0.6945 |
+| creditA | G | 0.2514 | 0.9176 | 0.0597 | 0.6310 |
+| diabetes | G | 0.2568 | 0.8097 | 0.0538 | 0.6398 |
+| ecoli | G | 0.2610 | 0.9013 | 0.0425 | 0.6228 |
+| german | G | 0.2537 | 0.6901 | 0.0335 | 0.6891 |
+| glass | G | 0.2895 | 0.7791 | 0.0163 | 0.5655 |
+| haberman | G | 0.2570 | 0.7235 | 0.0779 | 0.5538 |
+| heartC | G | 0.2467 | 0.8609 | 0.0609 | 0.6003 |
+| heartH | G | 0.2602 | 0.8707 | 0.0402 | 0.5827 |
+| heartS | G | 0.2444 | 0.8317 | 0.0465 | 0.6794 |
+| heat | G | 0.2487 | 0.9989 | 0.0054 | 0.8418 |
+| hepati | G | 0.2484 | 0.9238 | 0.0722 | 0.8763 |
+| image | G | 0.2489 | 0.9977 | 0.0224 | 0.5897 |
+| iono | G | 0.2521 | 0.9717 | 0.0432 | 0.6015 |
+| iris | G | 0.2867 | 0.9706 | 0.0239 | 0.4781 |
+| je4042 | G | 0.2926 | 0.8022 | 0.0577 | 0.6127 |
+| je4243 | G | 0.2692 | 0.6463 | 0.0271 | 0.4824 |
+| kc1 | G | 0.2538 | 0.7897 | 0.0424 | 0.6213 |
+| kc2 | G | 0.2541 | 0.8519 | 0.0573 | 0.5423 |
+| kc3 | G | 0.2538 | 0.9394 | 0.0779 | 0.7154 |
+| liver | G | 0.2667 | 0.7285 | 0.0648 | 0.5992 |
+| pc1req | G | 0.2571 | 0.6547 | -0.0120 | 0.3795 |
+| pc4 | G | 0.2500 | 0.9609 | 0.0650 | 0.5637 |
+| sonar | G | 0.2512 | 0.9167 | 0.0358 | 0.6046 |
+| spect | G | 0.2455 | 0.8796 | -0.0022 | 0.5429 |
+| spectf | G | 0.2602 | 0.8597 | 0.0485 | 0.4205 |
+| steel | G | 0.2490 | 0.8373 | 0.0753 | 0.4596 |
+| tae | G | 0.3790 | 0.5318 | -0.0037 | 0.5012 |
+| transfusion | G | 0.2510 | 0.7639 | 0.0411 | 0.5271 |
+| ttt | G | 0.2487 | 0.9970 | 0.0209 | 0.6458 |
+| user | G | 0.2512 | 0.9307 | 0.0418 | 0.7268 |
+| vehicle | G | 0.2741 | 0.8316 | 0.0857 | 0.5090 |
+| vote | G | 0.2481 | 0.9085 | 0.0739 | 0.7807 |
+| vowel | G | 0.2841 | 0.9881 | 0.0456 | 0.4841 |
+| wave | G | 0.2500 | 0.9265 | 0.0701 | 0.7481 |
+| wbc | G | 0.2495 | 0.9722 | 0.0109 | 0.4631 |
+| whole | G | 0.2494 | 0.7246 | 0.0246 | 0.5529 |
+| wine | G | 0.3792 | 1.0000 | 0.0389 | 0.5467 |
+| wineR | G | 0.2786 | 0.7182 | 0.0450 | 0.4899 |
+| wineW | G | 0.2892 | 0.7257 | 0.0604 | 0.5808 |
+| yeast | G | 0.3013 | 0.6246 | 0.0165 | 0.4337 |

@@ -226,15 +226,11 @@ def _aggregate_deltas(deltas: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def _append_readable_sections(
-    selected: pd.DataFrame,
-    deltas: pd.DataFrame,
-    aggregate: pd.DataFrame,
-    analyses: list[str],
-) -> None:
-    md_path = Path(__file__).resolve().parent / "artifacts" / f"{_PREFIX}.md"
-    content = md_path.read_text(encoding="utf-8")
-    selected_summary = (
+def _build_selected_summary(selected: pd.DataFrame) -> pd.DataFrame:
+    """Build selected operating points summary table."""
+    if selected.empty:
+        return pd.DataFrame()
+    return (
         selected.groupby(["arm_code", "target_reject_rate"])[
             [
                 "observed_reject_rate",
@@ -250,50 +246,7 @@ def _append_readable_sections(
         ]
         .mean(numeric_only=True)
         .reset_index()
-        if not selected.empty
-        else pd.DataFrame()
     )
-    extra = [
-        "## Selected Operating Points",
-        "",
-        _markdown_table(selected_summary),
-        "",
-        "## Pairwise Delta Aggregates",
-        "",
-        _markdown_table(aggregate),
-        "",
-        "## Pairwise Delta Rows",
-        "",
-        _markdown_table(deltas.head(40) if not deltas.empty else deltas),
-        "",
-        "## Required Analyses",
-        "",
-        "### A vs C",
-        "",
-        "1. Does direct difficulty normalization improve accepted accuracy at matched reject rates?",
-        analyses[0],
-        "2. At which reject-rate targets is it most useful?",
-        analyses[1],
-        "3. Does it consistently increase ambiguity and decrease novelty rejection?",
-        analyses[2],
-        "4. Does it select higher-difficulty cases for rejection?",
-        analyses[3],
-        "5. Is Step 8 justified?",
-        analyses[4],
-        "",
-        "### C vs G",
-        "",
-        "1. Does the novelty-aware variant improve novelty routing at matched reject rates?",
-        analyses[5],
-        "2. Does it improve or harm accepted accuracy?",
-        analyses[6],
-        "3. Does it improve novelty selectivity or merely increase empty sets?",
-        analyses[7],
-        "4. Should it remain internal only?",
-        analyses[8],
-        "",
-    ]
-    md_path.write_text(content + "\n" + "\n".join(extra), encoding="utf-8")
 
 
 def _metric_from_aggregate(
@@ -463,21 +416,6 @@ def _crepes_delta_summary(crepes_selected: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def _append_crepes_section(crepes_summary: pd.DataFrame) -> None:
-    md_path = Path(__file__).resolve().parent / "artifacts" / f"{_PREFIX}.md"
-    content = md_path.read_text(encoding="utf-8")
-    extra = [
-        "## Crepes Estimator Ablation (RT-7)",
-        "",
-        "A-vs-C accepted-accuracy delta at matched target reject rates for each "
-        "`crepes.extras.DifficultyEstimator` setup.",
-        "Arms: A (`builtin.default`) vs C (`experimental.difficulty_normalized`), "
-        "both with `ncf=default`, no VA difficulty.",
-        "",
-        _markdown_table(crepes_summary) if not crepes_summary.empty else "_No crepes data._",
-        "",
-    ]
-    md_path.write_text(content + "\n" + "\n".join(extra), encoding="utf-8")
 
 
 def run(config: RunConfig, *, crepes_ablation: bool = False) -> None:
@@ -615,9 +553,44 @@ def run(config: RunConfig, *, crepes_ablation: bool = False) -> None:
         "delta_aggregate": aggregate.to_dict(orient="records"),
     }
 
-    _write_delta_csv(deltas)
-    write_csv_json_md(_PREFIX, selected, meta)
-    _append_readable_sections(selected, deltas, aggregate, analyses)
+    selected_summary = _build_selected_summary(selected)
+    # --- Extra sections ---
+    extra_sections: list[str] = [
+        "## Selected Operating Points",
+        "",
+        _markdown_table(selected_summary),
+        "",
+        "## Pairwise Delta Aggregates",
+        "",
+        _markdown_table(aggregate),
+        "",
+        "## Required Analyses",
+        "",
+        "### A vs C",
+        "",
+        "1. Does direct difficulty normalization improve accepted accuracy at matched reject rates?",
+        analyses[0],
+        "2. At which reject-rate targets is it most useful?",
+        analyses[1],
+        "3. Does it consistently increase ambiguity and decrease novelty rejection?",
+        analyses[2],
+        "4. Does it select higher-difficulty cases for rejection?",
+        analyses[3],
+        "5. Is Step 8 justified?",
+        analyses[4],
+        "",
+        "### C vs G",
+        "",
+        "1. Does the novelty-aware variant improve novelty routing at matched reject rates?",
+        analyses[5],
+        "2. Does it improve or harm accepted accuracy?",
+        analyses[6],
+        "3. Does it improve novelty selectivity or merely increase empty sets?",
+        analyses[7],
+        "4. Should it remain internal only?",
+        analyses[8],
+        "",
+    ]
 
     if crepes_sweep_rows:
         crepes_sweep = pd.DataFrame(crepes_sweep_rows)
@@ -633,7 +606,44 @@ def run(config: RunConfig, *, crepes_ablation: bool = False) -> None:
         if crepes_selected_parts:
             crepes_selected = pd.concat(crepes_selected_parts, ignore_index=True)
             crepes_summary = _crepes_delta_summary(crepes_selected)
-            _append_crepes_section(crepes_summary)
+            extra_sections.extend([
+                "## Crepes Estimator Ablation (RT-7)",
+                "",
+                "A-vs-C accepted-accuracy delta at matched target reject rates for each "
+                "`crepes.extras.DifficultyEstimator` setup.",
+                "Arms: A (`builtin.default`) vs C (`experimental.difficulty_normalized`), "
+                "both with `ncf=default`, no VA difficulty.",
+                "",
+                _markdown_table(crepes_summary) if not crepes_summary.empty else "_No crepes data._",
+                "",
+            ])
+
+    # Per-dataset arm comparison at selected operating points (all datasets)
+    if selected is not None and not selected.empty:
+        per_dataset = (
+            selected.groupby(["dataset", "arm_code"])[
+                [
+                    "observed_reject_rate",
+                    "accepted_accuracy",
+                    "accuracy_delta",
+                    "difficulty_reject_auc",
+                ]
+            ]
+            .mean(numeric_only=True)
+            .reset_index()
+            .sort_values(["arm_code", "dataset"], kind="mergesort")
+        )
+        extra_sections += [
+            "## Per-Dataset Arm Comparison (all datasets)",
+            "",
+            "Mean over seeds and selected operating points. Rows sorted by arm_code, dataset.",
+            "",
+            _markdown_table(per_dataset),
+            "",
+        ]
+
+    _write_delta_csv(deltas)
+    write_csv_json_md(_PREFIX, selected, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

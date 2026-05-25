@@ -61,25 +61,6 @@ Rows: 8280
 - **min_empirical_coverage_gap**: -0.2179
 - **max_empirical_coverage_gap**: 0.2000
 
-## Result table
-
-| task_type | dataset | seed | confidence | epsilon | n_train | n_cal | n_test | ncf | use_difficulty | arm | accept_rate | reject_rate | ambiguity_rate | novelty_rate | accepted_accuracy | full_accuracy | accuracy_delta | singleton_error_rate | singleton_precision | singleton_recall | singleton_correct_count | singleton_count | singleton_precision_recall_defined | error_rate_defined | rejected_error_capture_rate | mean_difficulty_all | mean_difficulty_accepted | mean_difficulty_rejected | empty_rate | singleton_rate | multilabel_rate | empirical_coverage | coverage_gap | coverage_defined | has_prediction_set | reject_partition_residual | accept_singleton_residual | ambiguity_multilabel_residual | novelty_empty_residual | ambiguity_equals_novelty | ambiguity_equals_novelty_positive | positive_ambiguity_without_prediction_set |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.8333 | 0.1667 | 0.0000 | 0.1667 | 1.0000 | 0.9561 | 0.0439 | 0.0400 | 1.0000 | 0.8333 | 95 | 95 | yes | yes | 1.0000 | 1.8789 | 1.9130 | 1.7080 | 0.1667 | 0.8333 | 0.0000 | 0.8333 | 0.0333 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8237 | 0.1763 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.8684 | 0.1316 | 0.0000 | 0.1316 | 0.9899 | 0.9561 | 0.0338 | 0.0514 | 0.9899 | 0.8596 | 98 | 99 | yes | yes | 0.8000 | 1.8789 | 1.9139 | 1.6473 | 0.1316 | 0.8684 | 0.0000 | 0.8596 | 0.0359 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8475 | 0.1525 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9035 | 0.0965 | 0.0000 | 0.0965 | 0.9903 | 0.9561 | 0.0342 | 0.0620 | 0.9903 | 0.8947 | 102 | 103 | yes | yes | 0.8000 | 1.8789 | 1.9035 | 1.6480 | 0.0965 | 0.9035 | 0.0000 | 0.8947 | 0.0472 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8713 | 0.1287 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9211 | 0.0789 | 0.0000 | 0.0789 | 0.9810 | 0.9561 | 0.0248 | 0.0541 | 0.9810 | 0.9035 | 103 | 105 | yes | yes | 0.6000 | 1.8789 | 1.8990 | 1.6439 | 0.0789 | 0.9211 | 0.0000 | 0.9035 | 0.0323 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8950 | 0.1050 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9298 | 0.0702 | 0.0000 | 0.0702 | 0.9811 | 0.9561 | 0.0250 | 0.0375 | 0.9811 | 0.9123 | 104 | 106 | yes | yes | 0.6000 | 1.8789 | 1.8996 | 1.6038 | 0.0702 | 0.9298 | 0.0000 | 0.9123 | 0.0173 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9187 | 0.0813 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9474 | 0.0526 | 0.0000 | 0.0526 | 0.9722 | 0.9561 | 0.0161 | 0.0302 | 0.9722 | 0.9211 | 105 | 108 | yes | yes | 0.4000 | 1.8789 | 1.8934 | 1.6172 | 0.0526 | 0.9474 | 0.0000 | 0.9211 | 0.0023 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9425 | 0.0575 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9474 | 0.0526 | 0.0000 | 0.0526 | 0.9722 | 0.9561 | 0.0161 | 0.0051 | 0.9722 | 0.9211 | 105 | 108 | yes | yes | 0.4000 | 1.8789 | 1.8934 | 1.6172 | 0.0526 | 0.9474 | 0.0000 | 0.9211 | -0.0214 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9663 | 0.0337 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9912 | 0.0088 | 0.0000 | 0.0088 | 0.9646 | 0.9561 | 0.0085 | 0.0252 | 0.9646 | 0.9561 | 109 | 113 | yes | yes | 0.2000 | 1.8789 | 1.8820 | 1.5238 | 0.0088 | 0.9912 | 0.0000 | 0.9561 | -0.0101 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.9900 | 0.0100 | 341 | 114 | 114 | default | no | default|difficulty=0 | 0.9474 | 0.0526 | 0.0526 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.0106 | 0.9722 | 0.9211 | 105 | 108 | yes | yes | 0.4000 | 1.8789 | 1.8934 | 1.6172 | 0.0000 | 0.9474 | 0.0526 | 0.9737 | -0.0163 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8000 | 0.2000 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6316 | 0.3684 | 0.3684 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.3167 | 0.9722 | 0.6140 | 70 | 72 | yes | yes | 0.6000 | 1.8789 | 1.7423 | 2.1129 | 0.0000 | 0.6316 | 0.3684 | 0.9825 | 0.1825 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8237 | 0.1763 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6316 | 0.3684 | 0.3684 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.2791 | 0.9722 | 0.6140 | 70 | 72 | yes | yes | 0.6000 | 1.8789 | 1.7423 | 2.1129 | 0.0000 | 0.6316 | 0.3684 | 0.9825 | 0.1587 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-| binary | breast_cancer | 42 | 0.8475 | 0.1525 | 341 | 114 | 114 | ensured | no | ensured|difficulty=0 | 0.6316 | 0.3684 | 0.3684 | 0.0000 | 0.9722 | 0.9561 | 0.0161 | 0.2415 | 0.9722 | 0.6140 | 70 | 72 | yes | yes | 0.6000 | 1.8789 | 1.7423 | 2.1129 | 0.0000 | 0.6316 | 0.3684 | 0.9825 | 0.1350 | yes | yes | 0.0000 | 0.0000 | 0.0000 | 0.0000 | no | no | no |
-
-_Showing first 12 of 8280 rows._
-
 ## Arm Summary
 
 This table averages each arm across all datasets, seeds, and confidence levels.
@@ -183,3 +164,194 @@ All residuals should stay near zero; positive `positive_ambiguity_without_predic
 | default | yes | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 41 | 0 | 1170 | 0 | -0.2179 | 0.2000 |
 | ensured | no | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 5 | 4 | 1170 | 0 | -0.1579 | 0.1912 |
 | ensured | yes | 2070 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 19 | 0 | 1170 | 0 | -0.1357 | 0.2000 |
+
+## Per-Dataset Arm Comparison (all datasets)
+
+Mean over seeds and confidence levels. Rows are sorted by ncf, use_difficulty, dataset.
+
+| dataset | ncf | use_difficulty | accept_rate | accepted_accuracy | accuracy_delta | rejected_error_capture_rate | empirical_coverage |
+|---|---|---|---|---|---|---|---|
+| balance | default | no | 0.8939 | 0.8946 | 0.0578 | 0.3891 | nan |
+| breast_cancer | default | no | 0.9181 | 0.9779 | 0.0218 | 0.5326 | 0.9078 |
+| cars | default | no | 0.8920 | 0.9912 | 0.0253 | 0.7552 | nan |
+| cmc | default | no | 0.3333 | 0.6612 | 0.1521 | 0.7374 | nan |
+| colic | default | no | 0.7136 | 0.8680 | 0.0485 | 0.4294 | 0.8796 |
+| cool | default | no | 0.8935 | 0.9836 | 0.0342 | 0.6982 | nan |
+| creditA | default | no | 0.7862 | 0.8968 | 0.0388 | 0.3823 | 0.8720 |
+| diabetes | default | no | 0.5541 | 0.8723 | 0.1164 | 0.6490 | 0.9140 |
+| ecoli | default | no | 0.6147 | 0.9116 | 0.0528 | 0.6046 | nan |
+| german | default | no | 0.3732 | 0.7873 | 0.1307 | 0.7383 | 0.9118 |
+| glass | default | no | 0.4610 | 0.8120 | 0.0492 | 0.6043 | nan |
+| haberman | default | no | 0.4499 | 0.8003 | 0.1547 | 0.7027 | 0.8967 |
+| heartC | default | no | 0.6350 | 0.8779 | 0.0779 | 0.5656 | 0.9100 |
+| heartH | default | no | 0.6919 | 0.8716 | 0.0410 | 0.4645 | 0.9055 |
+| heartS | default | no | 0.6720 | 0.8148 | 0.0318 | 0.4070 | 0.8642 |
+| heat | default | no | 0.8831 | 0.9986 | 0.0051 | 0.8611 | nan |
+| hepati | default | no | 0.6717 | 0.9271 | 0.0755 | 0.5994 | 0.9226 |
+| image | default | no | 0.8969 | 0.9939 | 0.0186 | 0.7848 | nan |
+| iono | default | no | 0.7635 | 0.9634 | 0.0348 | 0.6207 | 0.8933 |
+| iris | default | no | 0.6511 | 0.9682 | 0.0182 | 0.6593 | nan |
+| je4042 | default | no | 0.4613 | 0.8261 | 0.0817 | 0.6371 | 0.9123 |
+| je4243 | default | no | 0.4618 | 0.6814 | 0.0622 | 0.5969 | 0.8426 |
+| kc1 | default | no | 0.4187 | 0.8399 | 0.0919 | 0.6958 | 0.9234 |
+| kc2 | default | no | 0.6168 | 0.8820 | 0.0874 | 0.6001 | 0.9126 |
+| kc3 | default | no | 0.7303 | 0.9053 | 0.0438 | 0.4576 | 0.9026 |
+| liver | default | no | 0.4870 | 0.7631 | 0.0994 | 0.6414 | 0.8770 |
+| pc1req | default | no | 0.3429 | 0.5539 | -0.1127 | 0.6025 | 0.8688 |
+| pc4 | default | no | 0.8777 | 0.9378 | 0.0419 | 0.4506 | 0.8989 |
+| sonar | default | no | 0.7153 | 0.9114 | 0.0305 | 0.4425 | 0.9233 |
+| spect | default | no | 0.6429 | 0.9012 | 0.0194 | 0.4000 | 0.9056 |
+| spectf | default | no | 0.6432 | 0.8752 | 0.0641 | 0.5230 | 0.8984 |
+| steel | default | no | 0.7556 | 0.8427 | 0.0807 | 0.4494 | nan |
+| tae | default | no | 0.2667 | 0.3863 | -0.1456 | 0.7018 | nan |
+| transfusion | default | no | 0.5285 | 0.8194 | 0.0961 | 0.6039 | 0.8920 |
+| ttt | default | no | 0.9010 | 0.9946 | 0.0186 | 0.8055 | 0.9079 |
+| user | default | no | 0.7951 | 0.9151 | 0.0263 | 0.3743 | nan |
+| vehicle | default | no | 0.7292 | 0.8443 | 0.0984 | 0.5060 | nan |
+| vote | default | no | 0.7746 | 0.9020 | 0.0673 | 0.4969 | 0.8795 |
+| vowel | default | no | 0.7384 | 0.9735 | 0.0311 | 0.5485 | nan |
+| wave | default | no | 0.8292 | 0.9058 | 0.0494 | 0.4148 | nan |
+| wbc | default | no | 0.7830 | 0.9706 | 0.0093 | 0.3926 | 0.8858 |
+| whole | default | no | 0.3227 | 0.7393 | 0.0393 | 0.7195 | nan |
+| wine | default | no | 0.1056 | 1.0000 | 0.0403 | 1.0000 | nan |
+| wineR | default | no | 0.4863 | 0.8042 | 0.1311 | 0.6628 | nan |
+| wineW | default | no | 0.5191 | 0.8089 | 0.1436 | 0.6619 | nan |
+| yeast | default | no | 0.4460 | 0.6830 | 0.0749 | 0.6035 | nan |
+| balance | default | yes | 0.0476 | 0.9419 | 0.1081 | 0.9394 | nan |
+| breast_cancer | default | yes | 0.0507 | 0.7752 | -0.1812 | 0.7418 | 0.9756 |
+| cars | default | yes | 0.8067 | 0.9798 | 0.0139 | 0.4861 | nan |
+| cmc | default | yes | 0.2365 | 0.4808 | -0.0294 | 0.7552 | nan |
+| colic | default | yes | 0.0790 | 0.7562 | -0.0772 | 0.8678 | 0.9571 |
+| cool | default | yes | 0.0550 | 0.7580 | -0.1914 | 0.7622 | nan |
+| creditA | default | yes | 0.0386 | 0.7293 | -0.1323 | 0.9056 | 0.9747 |
+| diabetes | default | yes | 0.0560 | 0.5442 | -0.2079 | 0.8989 | 0.9690 |
+| ecoli | default | yes | 0.2304 | 0.7845 | -0.0704 | 0.6862 | nan |
+| german | default | yes | 0.3317 | 0.7527 | 0.0941 | 0.7329 | 0.9173 |
+| glass | default | yes | 0.1726 | 0.8160 | 0.0534 | 0.8257 | nan |
+| haberman | default | yes | 0.3563 | 0.7616 | 0.1151 | 0.7220 | 0.9099 |
+| heartC | default | yes | 0.0769 | 0.6920 | -0.1045 | 0.8962 | 0.9508 |
+| heartH | default | yes | 0.1250 | 0.8271 | 0.0063 | 0.9124 | 0.9556 |
+| heartS | default | yes | 0.1037 | 0.5896 | -0.1934 | 0.8285 | 0.9399 |
+| heat | default | yes | 0.0511 | 0.8303 | -0.1615 | 0.2083 | nan |
+| hepati | default | yes | 0.5125 | 0.9577 | 0.1061 | 0.7822 | 0.9477 |
+| image | default | yes | 0.3236 | 0.9912 | 0.0180 | 0.7010 | nan |
+| iono | default | yes | 0.0559 | 1.0000 | 0.0786 | 1.0000 | 0.9730 |
+| iris | default | yes | 0.0178 | 0.6667 | -0.2333 | 0.9407 | nan |
+| je4042 | default | yes | 0.1004 | 0.6009 | -0.1441 | 0.8422 | 0.9617 |
+| je4243 | default | yes | 0.1409 | 0.7623 | 0.1326 | 0.9029 | 0.9266 |
+| kc1 | default | yes | 0.2346 | 0.6494 | -0.0978 | 0.8106 | 0.9398 |
+| kc2 | default | yes | 0.3222 | 0.8965 | 0.1024 | 0.8109 | 0.9267 |
+| kc3 | default | yes | 0.6742 | 0.8950 | 0.0338 | 0.4565 | 0.9166 |
+| liver | default | yes | 0.0953 | 0.5871 | -0.0767 | 0.8566 | 0.9504 |
+| pc1req | default | yes | 0.0995 | 0.5485 | -0.1261 | 0.8922 | 0.9344 |
+| pc4 | default | yes | 0.8226 | 0.9128 | 0.0169 | 0.4308 | 0.9005 |
+| sonar | default | yes | 0.1032 | 0.8229 | -0.0595 | 0.8843 | 0.9323 |
+| spect | default | yes | 0.6404 | 0.9066 | 0.0238 | 0.4244 | 0.9111 |
+| spectf | default | yes | 0.6572 | 0.8874 | 0.0763 | 0.5504 | 0.8704 |
+| steel | default | yes | 0.0490 | 0.8741 | 0.1081 | 0.9736 | nan |
+| tae | default | yes | 0.1333 | 0.4061 | -0.1193 | 0.8381 | nan |
+| transfusion | default | yes | 0.0517 | 0.7386 | 0.0161 | 0.9424 | 0.9875 |
+| ttt | default | yes | 0.4870 | 0.9062 | -0.0699 | 0.2485 | 0.9035 |
+| user | default | yes | 0.0508 | 0.9032 | 0.0513 | 0.9667 | nan |
+| vehicle | default | yes | 0.0648 | 0.6456 | -0.0954 | 0.9293 | nan |
+| vote | default | yes | 0.0363 | 0.4444 | -0.3902 | 0.8442 | 0.9808 |
+| vowel | default | yes | 0.3338 | 0.9281 | -0.0137 | 0.6492 | nan |
+| wave | default | yes | 0.0318 | 0.6702 | -0.1867 | 0.9302 | nan |
+| wbc | default | yes | 0.1305 | 0.7361 | -0.2249 | 0.4759 | 0.9348 |
+| whole | default | yes | 0.2722 | 0.7170 | 0.0170 | 0.7679 | nan |
+| wine | default | yes | 0.1123 | 0.9866 | 0.0074 | 0.9167 | nan |
+| wineR | default | yes | 0.3067 | 0.7645 | 0.0912 | 0.7805 | nan |
+| wineW | default | yes | 0.0809 | 0.8061 | 0.1451 | 0.9334 | nan |
+| yeast | default | yes | 0.0462 | 0.7179 | 0.1099 | 0.9603 | nan |
+| balance | ensured | no | 0.7228 | 0.9589 | 0.1221 | 0.8171 | nan |
+| breast_cancer | ensured | no | 0.6131 | 0.9694 | 0.0133 | 0.5670 | 0.9809 |
+| cars | ensured | no | 0.9492 | 0.9837 | 0.0178 | 0.5593 | nan |
+| cmc | ensured | no | 0.1518 | 0.6899 | 0.1808 | 0.8953 | nan |
+| colic | ensured | no | 0.4765 | 0.8566 | 0.0372 | 0.5862 | 0.8907 |
+| cool | ensured | no | 0.9141 | 0.9808 | 0.0314 | 0.6287 | nan |
+| creditA | ensured | no | 0.4053 | 0.9069 | 0.0489 | 0.7223 | 0.9185 |
+| diabetes | ensured | no | 0.3830 | 0.8922 | 0.1364 | 0.8097 | 0.9190 |
+| ecoli | ensured | no | 0.4526 | 0.9509 | 0.0921 | 0.8463 | nan |
+| german | ensured | no | 0.1088 | 0.4536 | -0.2026 | 0.8499 | 0.9260 |
+| glass | ensured | no | 0.2693 | 0.9267 | 0.1639 | 0.9149 | nan |
+| haberman | ensured | no | 0.0534 | 0.2677 | -0.3611 | 0.9020 | 0.9224 |
+| heartC | ensured | no | 0.1945 | 0.8975 | 0.0975 | 0.8954 | 0.9129 |
+| heartH | ensured | no | 0.0968 | 0.8329 | 0.0024 | 0.8897 | 0.9262 |
+| heartS | ensured | no | 0.3399 | 0.8153 | 0.0323 | 0.6928 | 0.9008 |
+| heat | ensured | no | 0.9130 | 0.9976 | 0.0041 | 0.6667 | nan |
+| hepati | ensured | no | 0.0452 | 0.7413 | -0.1160 | 0.8870 | 0.9290 |
+| image | ensured | no | 0.8823 | 0.9956 | 0.0203 | 0.8656 | nan |
+| iono | ensured | no | 0.2048 | 0.9333 | 0.0047 | 0.8284 | 0.9244 |
+| iris | ensured | no | 0.5556 | 0.9886 | 0.0386 | 0.9407 | nan |
+| je4042 | ensured | no | 0.2547 | 0.7100 | -0.0386 | 0.6999 | 0.9016 |
+| je4243 | ensured | no | 0.1842 | 0.5634 | -0.0557 | 0.7846 | 0.8700 |
+| kc1 | ensured | no | 0.0590 | 0.6219 | -0.1257 | 0.9015 | 0.9119 |
+| kc2 | ensured | no | 0.0862 | 0.7117 | -0.0868 | 0.8563 | 0.9015 |
+| kc3 | ensured | no | 0.2161 | 0.6769 | -0.1837 | 0.7200 | 0.8875 |
+| liver | ensured | no | 0.3311 | 0.7776 | 0.1138 | 0.7609 | 0.8979 |
+| pc1req | ensured | no | 0.2074 | 0.6852 | 0.0308 | 0.8115 | 0.9228 |
+| pc4 | ensured | no | 0.1590 | 0.6580 | -0.2380 | 0.7321 | 0.9103 |
+| sonar | ensured | no | 0.3143 | 0.8693 | -0.0116 | 0.6974 | 0.8926 |
+| spect | ensured | no | 0.2631 | 0.8202 | -0.0620 | 0.6681 | 0.9202 |
+| spectf | ensured | no | 0.0490 | 0.6002 | -0.2084 | 0.9036 | 0.8988 |
+| steel | ensured | no | 0.5164 | 0.9159 | 0.1540 | 0.8184 | nan |
+| tae | ensured | no | 0.1935 | 0.5319 | -0.0012 | 0.8180 | nan |
+| transfusion | ensured | no | 0.4810 | 0.8323 | 0.1090 | 0.6748 | 0.9054 |
+| ttt | ensured | no | 0.2410 | 0.9655 | -0.0105 | 0.7321 | 0.9029 |
+| user | ensured | no | 0.6414 | 0.9414 | 0.0525 | 0.6391 | nan |
+| vehicle | ensured | no | 0.4511 | 0.9558 | 0.2099 | 0.9128 | nan |
+| vote | ensured | no | 0.5526 | 0.9265 | 0.0919 | 0.7371 | 0.9214 |
+| vowel | ensured | no | 0.5705 | 0.9971 | 0.0547 | 0.9669 | nan |
+| wave | ensured | no | 0.7083 | 0.9222 | 0.0658 | 0.6050 | nan |
+| wbc | ensured | no | 0.3909 | 0.9553 | -0.0060 | 0.5481 | 0.9434 |
+| whole | ensured | no | 0.3227 | 0.7393 | 0.0393 | 0.7195 | nan |
+| wine | ensured | no | 0.1056 | 1.0000 | 0.0403 | 1.0000 | nan |
+| wineR | ensured | no | 0.3399 | 0.8365 | 0.1634 | 0.8193 | nan |
+| wineW | ensured | no | 0.3332 | 0.8462 | 0.1809 | 0.8421 | nan |
+| yeast | ensured | no | 0.2851 | 0.7366 | 0.1286 | 0.7964 | nan |
+| balance | ensured | yes | 0.1543 | 0.8686 | 0.0326 | 0.9192 | nan |
+| breast_cancer | ensured | yes | 0.0454 | 0.7752 | -0.1812 | 0.7418 | 0.9809 |
+| cars | ensured | yes | 0.7696 | 0.9828 | 0.0169 | 0.5715 | nan |
+| cmc | ensured | yes | 0.0876 | 0.6772 | 0.1667 | 0.9536 | nan |
+| colic | ensured | yes | 0.0565 | 0.7826 | -0.0507 | 0.9080 | 0.9586 |
+| cool | ensured | yes | 0.0020 | 0.8125 | -0.1274 | 0.9932 | nan |
+| creditA | ensured | yes | 0.0291 | 0.6966 | -0.1703 | 0.9167 | 0.9791 |
+| diabetes | ensured | yes | 0.0548 | 0.5050 | -0.2471 | 0.8989 | 0.9701 |
+| ecoli | ensured | yes | 0.1206 | 0.9205 | 0.0558 | 0.9402 | nan |
+| german | ensured | yes | 0.0955 | 0.6264 | -0.0291 | 0.8875 | 0.9173 |
+| glass | ensured | yes | 0.0755 | 0.7887 | 0.0235 | 0.9492 | nan |
+| haberman | ensured | yes | 0.1088 | 0.6706 | 0.0225 | 0.8804 | 0.9361 |
+| heartC | ensured | yes | 0.0270 | 0.5509 | -0.2596 | 0.9308 | 0.9315 |
+| heartH | ensured | yes | 0.0467 | 0.5789 | -0.2397 | 0.9037 | 0.9375 |
+| heartS | ensured | yes | 0.0399 | 0.4188 | -0.3548 | 0.9171 | 0.9572 |
+| heat | ensured | yes | 0.0548 | 1.0000 | 0.0065 | 1.0000 | nan |
+| hepati | ensured | yes | 0.1097 | 0.6612 | -0.1846 | 0.7546 | 0.9355 |
+| image | ensured | yes | 0.3362 | 0.9547 | -0.0206 | 0.5495 | nan |
+| iono | ensured | yes | 0.0857 | 0.8697 | -0.0622 | 0.7892 | 0.9314 |
+| iris | ensured | yes | 0.0919 | 1.0000 | 0.0505 | 1.0000 | nan |
+| je4042 | ensured | yes | 0.0317 | 0.7160 | -0.0240 | 0.9576 | 0.9263 |
+| je4243 | ensured | yes | 0.0399 | 0.4844 | -0.1405 | 0.9524 | 0.9300 |
+| kc1 | ensured | yes | 0.1848 | 0.7682 | 0.0207 | 0.7912 | 0.9352 |
+| kc2 | ensured | yes | 0.0784 | 0.7036 | -0.0779 | 0.8808 | 0.9447 |
+| kc3 | ensured | yes | 0.3350 | 0.8106 | -0.0577 | 0.6375 | 0.9176 |
+| liver | ensured | yes | 0.0605 | 0.3607 | -0.2867 | 0.8938 | 0.9607 |
+| pc1req | ensured | yes | 0.0561 | 0.4467 | -0.2367 | 0.9110 | 0.9386 |
+| pc4 | ensured | yes | 0.1005 | 0.6850 | -0.2103 | 0.8225 | 0.9057 |
+| sonar | ensured | yes | 0.0529 | 0.4290 | -0.4099 | 0.8855 | 0.9529 |
+| spect | ensured | yes | 0.2530 | 0.7735 | -0.1074 | 0.6881 | 0.9192 |
+| spectf | ensured | yes | 0.1086 | 0.6243 | -0.1943 | 0.8039 | 0.8881 |
+| steel | ensured | yes | 0.0000 | nan | nan | 1.0000 | nan |
+| tae | ensured | yes | 0.1921 | 0.5628 | 0.0258 | 0.8117 | nan |
+| transfusion | ensured | yes | 0.0517 | 0.7386 | 0.0161 | 0.9424 | 0.9875 |
+| ttt | ensured | yes | 0.0933 | 0.8636 | -0.1119 | 0.6527 | 0.9113 |
+| user | ensured | yes | 0.0000 | nan | nan | 1.0000 | nan |
+| vehicle | ensured | yes | 0.1576 | 0.5459 | -0.1993 | 0.7709 | nan |
+| vote | ensured | yes | 0.0363 | 0.4444 | -0.3902 | 0.8442 | 0.9808 |
+| vowel | ensured | yes | 0.4342 | 0.9400 | -0.0017 | 0.5524 | nan |
+| wave | ensured | yes | 0.1202 | 0.9385 | 0.0827 | 0.8914 | nan |
+| wbc | ensured | yes | 0.0619 | 0.9160 | -0.0497 | 0.8926 | 0.9216 |
+| whole | ensured | yes | 0.2722 | 0.7170 | 0.0170 | 0.7679 | nan |
+| wine | ensured | yes | 0.0907 | 0.9857 | 0.0260 | 0.9722 | nan |
+| wineR | ensured | yes | 0.1834 | 0.8294 | 0.1561 | 0.8983 | nan |
+| wineW | ensured | yes | 0.1156 | 0.7473 | 0.0820 | 0.9163 | nan |
+| yeast | ensured | yes | 0.1074 | 0.7033 | 0.0931 | 0.9221 | nan |

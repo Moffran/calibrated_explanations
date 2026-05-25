@@ -26,6 +26,101 @@ def test_reject_input_validators_reject_non_numeric_payloads():
         orch.validate_reject_w("bad")
 
 
+def test_regression_threshold_event_labels_scalar_includes_tie():
+    labels = orch.regression_threshold_event_labels(np.array([0.4, 0.5, 0.6]), 0.5)
+    assert labels.tolist() == [1, 1, 0]
+
+
+def test_regression_threshold_event_labels_interval_is_low_open_high_closed():
+    labels = orch.regression_threshold_event_labels(
+        np.array([0.2, 0.3, 0.5, 0.6]),
+        (0.2, 0.5),
+    )
+    assert labels.tolist() == [0, 1, 1, 0]
+
+
+def test_regression_threshold_event_labels_rejects_invalid_interval():
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    with pytest.raises(ValidationError, match="finite low < high"):
+        orch.regression_threshold_event_labels(np.array([0.1, 0.2]), (0.5, 0.5))
+
+
+def test_regression_threshold_event_labels_rejects_per_instance_thresholds():
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    with pytest.raises(ValidationError, match="per-instance thresholds are not supported"):
+        orch.regression_threshold_event_labels(np.array([0.1, 0.2]), np.array([0.1, 0.2]))
+
+
+def test_initialize_regression_reject_learner_uses_scalar_event_labels(monkeypatch):
+    captured: dict[str, np.ndarray] = {}
+
+    class StubIntervalLearner:
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            assert y_threshold == 0.5
+            return np.full(len(x), 0.6), None, None, None
+
+    class DummyLearner:
+        def fit(self, *args, **kwargs):
+            return self
+
+    def fake_ncf_scores_cal(proba, classes, labels, ncf, w, default_kind):
+        captured["labels"] = np.asarray(labels, dtype=int)
+        return np.zeros(len(labels))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyLearner())
+    monkeypatch.setattr(orch, "_ncf_scores_cal", fake_ncf_scores_cal)
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.4, 0.5, 0.6]),
+        bins=None,
+        interval_learner=StubIntervalLearner(),
+        reject_learner=None,
+        is_multiclass=lambda: False,
+    )
+    orch.RejectOrchestrator(expl).initialize_reject_learner(threshold=0.5)
+
+    assert captured["labels"].tolist() == [1, 1, 0]
+    assert expl.reject_threshold == pytest.approx(0.5)
+
+
+def test_initialize_regression_reject_learner_uses_interval_event_labels(monkeypatch):
+    captured: dict[str, np.ndarray] = {}
+
+    class StubIntervalLearner:
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            assert y_threshold == (0.2, 0.5)
+            return np.full(len(x), 0.6), None, None, None
+
+    class DummyLearner:
+        def fit(self, *args, **kwargs):
+            return self
+
+    def fake_ncf_scores_cal(proba, classes, labels, ncf, w, default_kind):
+        captured["labels"] = np.asarray(labels, dtype=int)
+        return np.zeros(len(labels))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyLearner())
+    monkeypatch.setattr(orch, "_ncf_scores_cal", fake_ncf_scores_cal)
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0], [3.0]]),
+        y_cal=np.array([0.2, 0.3, 0.5, 0.6]),
+        bins=None,
+        interval_learner=StubIntervalLearner(),
+        reject_learner=None,
+        is_multiclass=lambda: False,
+    )
+    orch.RejectOrchestrator(expl).initialize_reject_learner(threshold=(0.2, 0.5))
+
+    assert captured["labels"].tolist() == [0, 1, 1, 0]
+    assert expl.reject_threshold == (0.2, 0.5)
+
+
 def test_initialize_reject_learner_warns_on_low_w(monkeypatch):
     # Create a minimal explainer stub that the orchestrator expects.
     class StubIntervalLearner:
@@ -915,7 +1010,7 @@ def test_regression_apply_policy_same_threshold_does_not_reinitialize(monkeypatc
         interval_learner=SimpleNamespace(),
         prediction_orchestrator=DummyPredictionOrchestrator(),
         reject_learner=object(),
-        reject_threshold=np.array([0.8, 0.8, 0.8]),
+        reject_threshold=0.8,
         reject_ncf="default",
         reject_ncf_w=0.5,
         reject_ncf_auto_selected=False,
@@ -952,10 +1047,38 @@ def test_regression_apply_policy_same_threshold_does_not_reinitialize(monkeypatc
     result = orchestrator.apply_policy(
         RejectPolicy.FLAG,
         np.array([[0.0], [1.0], [2.0]]),
-        threshold=np.array([0.8, 0.8, 0.8]),
+        threshold=0.8,
     )
     assert init_calls == []
     assert result.metadata["threshold_source"] == "call"
+
+
+def test_regression_apply_policy_rejects_per_instance_threshold_array():
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.0, 1.0, 2.0]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        prediction_orchestrator=SimpleNamespace(),
+        reject_learner=object(),
+        reject_threshold=0.8,
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+
+    with pytest.raises(ValidationError, match="per-instance thresholds are not supported"):
+        orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            np.array([[0.0], [1.0], [2.0]]),
+            threshold=np.array([0.8, 0.8, 0.8]),
+        )
 
 
 def test_predict_reject_breakdown_legacy_override_without_threshold_arg_fallback():

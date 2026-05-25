@@ -7,25 +7,25 @@
     "Compares built-in default, direct difficulty-normalized, and novelty-aware experimental reject strategies.",
     "Primary contrast is C vs G: direct difficulty normalization with and without novelty penalty.",
     "Novelty estimator is deterministic, fitted on proper-training features only, and uses no calibration labels/residuals.",
-    "G vs C changed novelty_rate by +0.0036, empty_rate by +0.0036, and novelty_reject_auc by -0.0302.",
-    "G vs C changed ambiguity_rate by +0.0065 and multilabel_rate by +0.0065.",
-    "G vs C changed accepted_accuracy by +0.0041.",
-    "Recommended arm for next iteration: C (difficulty-normalized remains the simpler experimental baseline)."
+    "G vs C changed novelty_rate by +0.0283, empty_rate by +0.0283, and novelty_reject_auc by -0.0136.",
+    "G vs C changed ambiguity_rate by -0.0418 and multilabel_rate by -0.0418.",
+    "G vs C changed accepted_accuracy by -0.0008.",
+    "Recommended arm for next iteration: G (novelty penalty adds novelty routing without large accepted-accuracy loss)."
   ],
   "outcome": {
     "rows": 6210,
     "datasets": 46,
     "seeds": 5,
     "novelty_weight": 0.1,
-    "mean_accept_rate": 0.6089755640169224,
-    "mean_accuracy_delta": 0.05137348400577006,
-    "G_minus_C_novelty_rate_delta": 0.0036246022667497726,
-    "G_minus_C_empty_rate_delta": 0.0036246022667497726,
-    "G_minus_C_ambiguity_rate_delta": 0.006509384114607386,
-    "G_minus_C_multilabel_rate_delta": 0.006509384114607386,
-    "G_minus_C_accepted_accuracy_delta": 0.00413137142704556,
-    "G_minus_C_novelty_reject_auc_delta": -0.030192357039957707,
-    "recommended_arm": "C",
-    "recommendation_reason": "difficulty-normalized remains the simpler experimental baseline"
+    "mean_accept_rate": 0.6168475546183321,
+    "mean_accuracy_delta": 0.04994807108597553,
+    "G_minus_C_novelty_rate_delta": 0.028321516263759054,
+    "G_minus_C_empty_rate_delta": 0.028321516263759054,
+    "G_minus_C_ambiguity_rate_delta": -0.04180350168663072,
+    "G_minus_C_multilabel_rate_delta": -0.04180350168663072,
+    "G_minus_C_accepted_accuracy_delta": -0.0008202731893622861,
+    "G_minus_C_novelty_reject_auc_delta": -0.013588344801307994,
+    "recommended_arm": "G",
+    "recommendation_reason": "novelty penalty adds novelty routing without large accepted-accuracy loss"
   }
 }

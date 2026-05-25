@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import logging
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -38,6 +37,7 @@ from .common_reject import (
     ClassificationBundle,
     DatasetSpec,
     RunConfig,
+    _markdown_table_from_df,
     accepted_accuracy,
     breakdown_from_reject_output,
     classification_singleton_precision_recall,
@@ -353,89 +353,6 @@ def _matched_reject_bin_tables(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataF
     return per_arm, matched
 
 
-def _append_readable_sections(
-    prefix: str,
-    arm_summary: pd.DataFrame,
-    confidence_arm_summary: pd.DataFrame,
-    matched_bins_table: pd.DataFrame,
-    per_arm_bins_table: pd.DataFrame,
-    analyses: list[str],
-    metric_consistency_note: dict[str, Any] | None = None,
-) -> None:
-    md_path = Path(__file__).resolve().parent / "artifacts" / f"{prefix}.md"
-    content = md_path.read_text(encoding="utf-8")
-    extra = [
-        "## Arm Summary",
-        "",
-        _markdown_table(arm_summary),
-        "",
-        "## By Confidence And Arm",
-        "",
-        _markdown_table(confidence_arm_summary),
-        "",
-        "## Accepted Accuracy At Matched Reject-Rate Bins",
-        "",
-        "A-vs-C matched-bin comparison (primary contrast).",
-        "",
-        _markdown_table(matched_bins_table),
-        "",
-        "## Per-Arm Reject-Rate Bin Aggregates",
-        "",
-        _markdown_table(per_arm_bins_table),
-        "",
-        "## Required Analyses",
-        "",
-        "1. Does direct normalization increase rejection among high-difficulty instances?",
-        analyses[0],
-        "2. Does it improve accepted accuracy at comparable reject rates?",
-        analyses[1],
-        "3. Does it increase ambiguity rate, novelty rate, or both?",
-        analyses[2],
-        "4. Does using VA difficulty and score normalization together appear to double-count difficulty?",
-        analyses[3],
-        "5. Which arm is recommended for further development?",
-        analyses[4],
-        "",
-    ]
-    if metric_consistency_note is not None:
-        extra.extend(
-            [
-                "",
-                "## Metric Consistency Note (RT-5)",
-                "",
-                (
-                    "Scenario 9 reports a full-grid A-vs-C difficulty_reject_auc delta "
-                    f"of {metric_consistency_note['full_grid_auc_delta']:+.4f}, while "
-                    "Scenario 11 reports +0.0155 at matched operating points. This "
-                    "reduction is a selection effect, not a contradiction:"
-                ),
-                "",
-                (
-                    "- Scenario 9 averages over all confidence values. The positive "
-                    "delta is strongest in high-confidence rows "
-                    f"(conf >= 0.91), where the AUC delta is "
-                    f"{metric_consistency_note['hi_conf_auc_delta']:+.4f}."
-                ),
-                (
-                    "- At moderate confidence (conf < 0.91), the Scenario 9 AUC delta "
-                    f"is {metric_consistency_note['lo_conf_auc_delta']:+.4f}: smaller "
-                    "than the high-confidence tail, but still positive."
-                ),
-                (
-                    "- Scenario 11 targets reject rates of 10-40%, uses matched "
-                    "operating-point selection, and reduces the observed "
-                    "difficulty-AUC effect to +0.0155."
-                ),
-                "",
-                (
-                    "Conclusion: the full-grid Scenario 9 AUC advantage is not "
-                    "sufficient evidence for public promotion. At matched operating "
-                    "points, accepted-accuracy gains are tiny or negative and the "
-                    "difficulty-selection advantage is much smaller."
-                ),
-            ]
-        )
-    md_path.write_text(content + "\n" + "\n".join(extra), encoding="utf-8")
 
 
 def _diagnose_db_paradox(
@@ -964,9 +881,20 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
             if c_acc_delta < -0.01 and c_reject_delta > 0.05:
                 recommendation = "A"
                 reason = "direct normalization appears too conservative in quick run"
-        analyses[4] = f"Recommended arm for next iteration: {recommendation} ({reason})."
+        # Coverage-validity caveat: Scenario 12 shows arm C has 77% more structural coverage
+        # violations than arm A (23 vs 13 out of 260 rows).  This recommendation reflects the
+        # selectivity/accuracy picture only.  Arm C must not be promoted to a public NCF until
+        # Scenario 13 (n_cal sweep) confirms the violations are finite-sample artefacts.
+        coverage_caveat = (
+            "NOTE: Scenario 12 shows arm C has more structural coverage violations than arm A. "
+            "This recommendation is for selectivity/accuracy only; promotion requires Scenario 13 clearance."
+        )
+        analyses[4] = (
+            f"Recommended arm for next iteration: {recommendation} ({reason}). {coverage_caveat}"
+        )
         outcome_summary["recommended_arm"] = recommendation
         outcome_summary["recommendation_reason"] = reason
+        outcome_summary["coverage_validity_caveat"] = coverage_caveat
 
         def _a_vs_c_auc_delta(subset: pd.DataFrame) -> float:
             means = subset[subset["arm_code"].isin(["A", "C"])].groupby("arm_code")[
@@ -1007,16 +935,105 @@ def run(config: RunConfig, *, diagnose_db: bool = False, crepes_ablation: bool =
         "outcome": outcome_summary,
     }
 
-    write_csv_json_md("scenario_9_difficulty_normalized_ncf", df, meta)
-    _append_readable_sections(
-        "scenario_9_difficulty_normalized_ncf",
-        arm_summary,
-        confidence_arm_summary,
-        matched_bins,
-        per_arm_bins,
-        analyses,
-        metric_consistency_note,
-    )
+    # --- Extra sections ---
+    extra_sections: list[str] = [
+        "## Arm Summary",
+        "",
+        _markdown_table(arm_summary),
+        "",
+        "## By Confidence And Arm",
+        "",
+        _markdown_table(confidence_arm_summary),
+        "",
+        "## Accepted Accuracy At Matched Reject-Rate Bins",
+        "",
+        "A-vs-C matched-bin comparison (primary contrast).",
+        "",
+        _markdown_table(matched_bins),
+        "",
+        "## Per-Arm Reject-Rate Bin Aggregates",
+        "",
+        _markdown_table(per_arm_bins),
+        "",
+        "## Required Analyses",
+        "",
+        "1. Does direct normalization increase rejection among high-difficulty instances?",
+        analyses[0],
+        "2. Does it improve accepted accuracy at comparable reject rates?",
+        analyses[1],
+        "3. Does it increase ambiguity rate, novelty rate, or both?",
+        analyses[2],
+        "4. Does using VA difficulty and score normalization together appear to double-count difficulty?",
+        analyses[3],
+        "5. Which arm is recommended for further development?",
+        analyses[4],
+        "",
+    ]
+    # Per-dataset arm comparison (all datasets, mean over seeds and confidence)
+    if not df.empty:
+        per_dataset = (
+            df.groupby(["dataset", "arm_code", "strategy"])[
+                [
+                    "accept_rate",
+                    "accepted_accuracy",
+                    "accuracy_delta",
+                    "rejected_error_capture_rate",
+                    "difficulty_reject_auc",
+                    "empirical_coverage",
+                ]
+            ]
+            .mean(numeric_only=True)
+            .reset_index()
+            .sort_values(["arm_code", "dataset"], kind="mergesort")
+        )
+        extra_sections += [
+            "## Per-Dataset Arm Comparison (all datasets)",
+            "",
+            "Mean over seeds and confidence levels. Rows sorted by arm_code, dataset.",
+            "",
+            _markdown_table(per_dataset),
+            "",
+        ]
+
+    if metric_consistency_note is not None:
+        extra_sections.extend(
+            [
+                "",
+                "## Metric Consistency Note (RT-5)",
+                "",
+                (
+                    "Scenario 9 reports a full-grid A-vs-C difficulty_reject_auc delta "
+                    f"of {metric_consistency_note['full_grid_auc_delta']:+.4f}, while "
+                    "Scenario 11 reports +0.0155 at matched operating points. This "
+                    "reduction is a selection effect, not a contradiction:"
+                ),
+                "",
+                (
+                    "- Scenario 9 averages over all confidence values. The positive "
+                    "delta is strongest in high-confidence rows "
+                    f"(conf >= 0.91), where the AUC delta is "
+                    f"{metric_consistency_note['hi_conf_auc_delta']:+.4f}."
+                ),
+                (
+                    "- At moderate confidence (conf < 0.91), the Scenario 9 AUC delta "
+                    f"is {metric_consistency_note['lo_conf_auc_delta']:+.4f}: smaller "
+                    "than the high-confidence tail, but still positive."
+                ),
+                (
+                    "- Scenario 11 targets reject rates of 10-40%, uses matched "
+                    "operating-point selection, and reduces the observed "
+                    "difficulty-AUC effect to +0.0155."
+                ),
+                "",
+                (
+                    "Conclusion: the full-grid Scenario 9 AUC advantage is not "
+                    "sufficient evidence for public promotion. At matched operating "
+                    "points, accepted-accuracy gains are tiny or negative and the "
+                    "difficulty-selection advantage is much smaller."
+                ),
+            ]
+        )
+    write_csv_json_md("scenario_9_difficulty_normalized_ncf", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

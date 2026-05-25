@@ -29,6 +29,7 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import RejectPolicySpec
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
+from calibrated_explanations.core.reject.orchestrator import regression_threshold_event_labels
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
 ROOT = Path(__file__).resolve().parent
@@ -129,11 +130,14 @@ def _format_scalar(value: Any) -> str:
     return str(value)
 
 
-def _markdown_table_from_df(table: pd.DataFrame, max_rows: int = 12) -> str:
-    """Render a small markdown table without external formatting dependencies."""
+def _markdown_table_from_df(table: pd.DataFrame, max_rows: int | None = None) -> str:
+    """Render a markdown table without external formatting dependencies.
+
+    All rows are shown by default. Pass max_rows to explicitly truncate.
+    """
     if table.empty:
         return "_No rows generated._"
-    clipped = table.head(max_rows).copy()
+    clipped = table if max_rows is None else table.head(max_rows)
     headers = list(clipped.columns)
     lines = [
         "| " + " | ".join(headers) + " |",
@@ -143,7 +147,7 @@ def _markdown_table_from_df(table: pd.DataFrame, max_rows: int = 12) -> str:
         lines.append(
             "| " + " | ".join(_format_scalar(row[col]) for col in headers) + " |"
         )
-    if len(table) > max_rows:
+    if max_rows is not None and len(table) > max_rows:
         lines.append("")
         lines.append(f"_Showing first {max_rows} of {len(table)} rows._")
     return "\n".join(lines)
@@ -157,7 +161,12 @@ def save_plot(prefix: str, fig: plt.Figure, suffix: str) -> str:
     return path.name
 
 
-def write_csv_json_md(prefix: str, table: pd.DataFrame, meta: Mapping[str, Any]) -> None:
+def write_csv_json_md(
+    prefix: str,
+    table: pd.DataFrame,
+    meta: Mapping[str, Any],
+    extra_sections: list[str] | None = None,
+) -> None:
     """Write a scenario artifact bundle."""
     csv_path = ARTIFACTS_DIR / f"{prefix}.csv"
     json_path = ARTIFACTS_DIR / f"{prefix}.json"
@@ -191,7 +200,9 @@ def write_csv_json_md(prefix: str, table: pd.DataFrame, meta: Mapping[str, Any])
             lines.append(f"- ![{plot}]({plot})")
         lines.append("")
 
-    lines.extend(["## Result table", "", _markdown_table_from_df(table), ""])
+    if extra_sections:
+        lines.extend(extra_sections)
+
     md_path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -388,7 +399,11 @@ def split_dataset(
     if n_cal is None:
         cal_size: float | int = cal_fraction
     else:
-        cal_size = min(max(1, int(n_cal)), len(x_train) - 1)
+        # Reserve at least n_classes samples for x_fit so stratified splitting never
+        # fails (sklearn requires >= n_classes in each part of the split).
+        n_classes = max(2, len(np.unique(y_train)))
+        max_cal = len(x_train) - n_classes
+        cal_size = min(max(1, int(n_cal)), max(1, max_cal))
     x_fit, x_cal, y_fit, y_cal = train_test_split(
         x_train,
         y_train,
@@ -808,7 +823,10 @@ def binary_accuracy_from_threshold(
 ) -> float:
     """Evaluate regression predictions as thresholded binary decisions."""
     return float(
-        accuracy_score((y_true >= threshold).astype(int), (y_pred >= threshold).astype(int))
+        accuracy_score(
+            regression_threshold_event_labels(y_true, threshold),
+            regression_threshold_event_labels(y_pred, threshold),
+        )
     )
 
 

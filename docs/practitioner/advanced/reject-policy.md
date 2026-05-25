@@ -395,8 +395,9 @@ plus optional fields such as fit source and calibration-label/residual markers.
 
 For classification, the reject learner works directly with calibrated class probabilities
 (`predict_proba`). For regression there are no inherent class probabilities, so the
-framework converts the problem into a binary event: *"will the target be below the
-threshold?"* It then applies conformal prediction to that binary event.
+framework converts the problem into a binary event. For a scalar threshold, the event
+is `y <= threshold`. For an interval threshold `(low, high)`, the event is
+`low < y <= high`. It then applies conformal prediction to that binary event.
 
 Concretely, `initialize_reject_learner(threshold=t)` calls
 `predict_probability(x, y_threshold=t)` to obtain calibrated probabilities
@@ -409,10 +410,16 @@ immediately.
 
 ### Threshold tie behavior
 
-Regression threshold binarization uses strict `< threshold` semantics on calibration
-targets (`y_cal < threshold`). Values equal to `threshold` are treated as the
-non-event class. This tie policy is deterministic and should be reflected in
-downstream analysis.
+Regression threshold binarization uses the same binary event contract at calibration
+and test time:
+
+- Scalar threshold: `y <= threshold`; values equal to the threshold are event class `1`.
+- Interval threshold `(low, high)`: `low < y <= high`; values equal to `low` are event
+  class `0`, and values equal to `high` are event class `1`.
+
+Per-instance threshold arrays are not supported for reject. They raise
+`ValidationError` because the calibration labels, event probabilities, prediction sets,
+and coverage diagnostics must all refer to one shared binary event contract.
 
 ### Regression usage example
 
@@ -432,7 +439,7 @@ wrapper.explainer.reject_orchestrator.initialize_reject_learner(
     ncf="default",
 )
 
-result = wrapper.predict(x_test, reject_policy=RejectPolicy.FLAG)
+result = wrapper.predict(x_test, reject_policy=RejectPolicy.FLAG, threshold=threshold)
 print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
 ```
 

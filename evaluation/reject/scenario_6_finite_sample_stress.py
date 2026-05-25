@@ -18,6 +18,7 @@ import pandas as pd
 
 from .common_reject import (
     RunConfig,
+    _markdown_table_from_df,
     build_classification_bundle,
     empirical_coverage,
     reject_breakdown,
@@ -112,7 +113,48 @@ def run(config: RunConfig) -> None:
             ) if not df.empty else 0,
         },
     }
-    write_csv_json_md("scenario_6_finite_sample_stress", df, meta)
+    # --- Extra sections ---
+    extra_sections: list[str] = []
+
+    if not df.empty:
+        # Section: Violation rates by n_cal (small_calibration probe)
+        small_cal = df[df["probe"] == "small_calibration"]
+        if not small_cal.empty:
+            by_ncal = (
+                small_cal.groupby("n_cal")
+                .agg(
+                    total_rows=("violation", "size"),
+                    violations=("violation", "sum"),
+                    violation_rate=("violation", "mean"),
+                    mean_reject_rate=("reject_rate", "mean"),
+                )
+                .reset_index()
+            )
+            extra_sections += [
+                "## Violation rates by n_cal (small_calibration probe)",
+                "",
+                _markdown_table_from_df(by_ncal),
+                "",
+            ]
+
+        # Section: Violation rates by epsilon
+        by_eps = (
+            df.groupby("epsilon")
+            .agg(
+                violations=("violation", "sum"),
+                violation_rate=("violation", "mean"),
+                mean_coverage=("coverage", "mean"),
+            )
+            .reset_index()
+        )
+        extra_sections += [
+            "## Violation rates by epsilon",
+            "",
+            _markdown_table_from_df(by_eps),
+            "",
+        ]
+
+    write_csv_json_md("scenario_6_finite_sample_stress", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ from calibrated_explanations import RejectPolicySpec, WrapCalibratedExplainer
 
 from .common_reject import (
     RunConfig,
+    _markdown_table_from_df,
     clopper_pearson_interval,
     empirical_coverage,
     load_dataset,
@@ -198,7 +199,53 @@ def run(config: RunConfig) -> None:
             "arm_C_mean_coverage": mean_cov_c,
         },
     }
-    write_csv_json_md("scenario_12_coverage_validity_difficulty_normalized", df, meta_out)
+
+    # --- Extra sections ---
+    extra_sections: list[str] = []
+
+    # Section: Coverage validity by arm and epsilon
+    by_arm_eps = (
+        df.groupby(["arm", "epsilon"])
+        .agg(
+            violations=("violation", "sum"),
+            structural_violations=("structural_violation", "sum"),
+            violation_rate=("violation", "mean"),
+            structural_violation_rate=("structural_violation", "mean"),
+            mean_coverage=("coverage", "mean"),
+        )
+        .reset_index()
+    )
+    extra_sections += [
+        "## Coverage validity by arm and epsilon",
+        "",
+        _markdown_table_from_df(by_arm_eps),
+        "",
+    ]
+
+    # Section: All datasets by structural violations per arm (shows clean datasets too)
+    by_arm_dataset = (
+        df.groupby(["arm", "dataset"])
+        .agg(
+            structural_violations=("structural_violation", "sum"),
+            violations=("violation", "sum"),
+            mean_coverage=("coverage", "mean"),
+        )
+        .reset_index()
+        .sort_values(["arm", "structural_violations"], ascending=[True, False])
+    )
+    extra_sections += [
+        "## Structural violations by arm and dataset (all datasets)",
+        "",
+        _markdown_table_from_df(by_arm_dataset),
+        "",
+    ]
+
+    write_csv_json_md(
+        "scenario_12_coverage_validity_difficulty_normalized",
+        df,
+        meta_out,
+        extra_sections=extra_sections,
+    )
 
 
 if __name__ == "__main__":

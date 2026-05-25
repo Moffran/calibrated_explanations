@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -28,6 +27,7 @@ from .common_reject import (
     ClassificationBundle,
     DatasetSpec,
     RunConfig,
+    _markdown_table_from_df,
     accepted_accuracy,
     breakdown_from_reject_output,
     classification_singleton_precision_recall,
@@ -196,54 +196,6 @@ def _markdown_table(table: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
-def _append_readable_sections(
-    prefix: str,
-    arm_summary: pd.DataFrame,
-    confidence_arm_summary: pd.DataFrame,
-    confidence_pairwise_table: pd.DataFrame,
-    pairwise_table: pd.DataFrame,
-    integrity_table: pd.DataFrame,
-) -> None:
-    md_path = Path(__file__).resolve().parent / "artifacts" / f"{prefix}.md"
-    content = md_path.read_text(encoding="utf-8")
-    extra_sections = [
-        "## Arm Summary",
-        "",
-        "This table averages each arm across all datasets, seeds, and confidence levels.",
-        "",
-        _markdown_table(arm_summary),
-        "",
-        "## By Confidence And Arm",
-        "",
-        "This table keeps the reject operating point visible instead of averaging across the whole epsilon sweep.",
-        "`empirical_coverage` is computed from the returned prediction sets; `coverage_gap = empirical_coverage - confidence`.",
-        "",
-        _markdown_table(confidence_arm_summary),
-        "",
-        "## Difficulty Effect By Confidence And NCF",
-        "",
-        "This table compares `use_difficulty=yes` against `use_difficulty=no` at the same confidence and NCF.",
-        "Negative `coverage_gap_delta` means the difficulty-enabled arm covered fewer true labels at that operating point.",
-        "",
-        _markdown_table(confidence_pairwise_table),
-        "",
-        "## Difficulty Effect By NCF",
-        "",
-        "This table compares `use_difficulty=yes` against `use_difficulty=no` within each public reject NCF.",
-        "Negative `accept_rate_delta` means the difficulty-enabled arm rejects more aggressively.",
-        "Positive `rejected_error_capture_rate_delta` means the difficulty-enabled arm captures more mistakes in the rejected subset.",
-        "",
-        _markdown_table(pairwise_table),
-        "",
-        "## Integrity Audit",
-        "",
-        "These checks flag impossible reject geometry and whether ambiguity could be coming from a fallback path without prediction sets.",
-        "All residuals should stay near zero; positive `positive_ambiguity_without_prediction_set_rows` would be suspicious.",
-        "",
-        _markdown_table(integrity_table),
-        "",
-    ]
-    md_path.write_text(content + "\n" + "\n".join(extra_sections), encoding="utf-8")
 
 
 def run(config: RunConfig) -> None:
@@ -709,15 +661,74 @@ def run(config: RunConfig) -> None:
         "outcome": outcome_summary,
         "pairwise_summary": paired_summary,
     }
-    write_csv_json_md("scenario_8_difficulty_reject_ablation", df, meta)
-    _append_readable_sections(
-        "scenario_8_difficulty_reject_ablation",
-        arm_summary,
-        confidence_arm_summary,
-        confidence_pairwise_table,
-        pairwise_table,
-        integrity_table,
-    )
+    # --- Extra sections ---
+    extra_sections: list[str] = [
+        "## Arm Summary",
+        "",
+        "This table averages each arm across all datasets, seeds, and confidence levels.",
+        "",
+        _markdown_table(arm_summary),
+        "",
+        "## By Confidence And Arm",
+        "",
+        "This table keeps the reject operating point visible instead of averaging across the whole epsilon sweep.",
+        "`empirical_coverage` is computed from the returned prediction sets; `coverage_gap = empirical_coverage - confidence`.",
+        "",
+        _markdown_table(confidence_arm_summary),
+        "",
+        "## Difficulty Effect By Confidence And NCF",
+        "",
+        "This table compares `use_difficulty=yes` against `use_difficulty=no` at the same confidence and NCF.",
+        "Negative `coverage_gap_delta` means the difficulty-enabled arm covered fewer true labels at that operating point.",
+        "",
+        _markdown_table(confidence_pairwise_table),
+        "",
+        "## Difficulty Effect By NCF",
+        "",
+        "This table compares `use_difficulty=yes` against `use_difficulty=no` within each public reject NCF.",
+        "Negative `accept_rate_delta` means the difficulty-enabled arm rejects more aggressively.",
+        "Positive `rejected_error_capture_rate_delta` means the difficulty-enabled arm captures more mistakes in the rejected subset.",
+        "",
+        _markdown_table(pairwise_table),
+        "",
+        "## Integrity Audit",
+        "",
+        "These checks flag impossible reject geometry and whether ambiguity could be coming from a fallback path without prediction sets.",
+        "All residuals should stay near zero; positive `positive_ambiguity_without_prediction_set_rows` would be suspicious.",
+        "",
+        _markdown_table(integrity_table),
+        "",
+    ]
+
+    # Per-dataset arm comparison (all datasets, mean over seeds and confidence)
+    if not df.empty:
+        per_dataset = (
+            df.groupby(["dataset", "ncf", "use_difficulty"])[
+                [
+                    "accept_rate",
+                    "accepted_accuracy",
+                    "accuracy_delta",
+                    "rejected_error_capture_rate",
+                    "empirical_coverage",
+                ]
+            ]
+            .mean(numeric_only=True)
+            .reset_index()
+            .sort_values(["ncf", "use_difficulty", "dataset"], kind="mergesort")
+        )
+        per_dataset["use_difficulty"] = per_dataset["use_difficulty"].map(
+            lambda v: "yes" if bool(v) else "no"
+        )
+        extra_sections += [
+            "## Per-Dataset Arm Comparison (all datasets)",
+            "",
+            "Mean over seeds and confidence levels. Rows are sorted by ncf, use_difficulty, dataset.",
+            "",
+            _markdown_table(per_dataset),
+            "",
+        ]
+
+    write_csv_json_md("scenario_8_difficulty_reject_ablation", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

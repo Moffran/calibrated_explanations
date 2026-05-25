@@ -25,21 +25,68 @@ Rows: 520
 - **arm_C_total_rows**: 260
 - **arm_C_mean_coverage**: 0.9146
 
-## Result table
+## Coverage validity by arm and epsilon
 
-| arm | strategy | dataset | seed | epsilon | confidence | n_cal | n_test | coverage | lower_ci | upper_ci | violation | structural_violation | reject_rate | singleton_precision | singleton_recall | singleton_correct_count | singleton_count | singleton_precision_recall_defined |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A | builtin.default | breast_cancer | 42 | 0.0500 | 0.9500 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | yes | no | 0.0263 | 0.9640 | 0.9386 | 107 | 111 | yes |
-| C | experimental.difficulty_normalized | breast_cancer | 42 | 0.0500 | 0.9500 | 114 | 114 | 0.9298 | 0.8664 | 0.9692 | yes | no | 0.0439 | 0.9725 | 0.9298 | 106 | 109 | yes |
-| A | builtin.default | breast_cancer | 42 | 0.1000 | 0.9000 | 114 | 114 | 0.9211 | 0.8554 | 0.9633 | no | no | 0.0526 | 0.9722 | 0.9211 | 105 | 108 | yes |
-| C | experimental.difficulty_normalized | breast_cancer | 42 | 0.1000 | 0.9000 | 114 | 114 | 0.9298 | 0.8664 | 0.9692 | no | no | 0.0439 | 0.9725 | 0.9298 | 106 | 109 | yes |
-| A | builtin.default | breast_cancer | 43 | 0.0500 | 0.9500 | 114 | 114 | 0.9211 | 0.8554 | 0.9633 | yes | no | 0.0263 | 0.9459 | 0.9211 | 105 | 111 | yes |
-| C | experimental.difficulty_normalized | breast_cancer | 43 | 0.0500 | 0.9500 | 114 | 114 | 0.9123 | 0.8446 | 0.9571 | yes | no | 0.0351 | 0.9455 | 0.9123 | 104 | 110 | yes |
-| A | builtin.default | breast_cancer | 43 | 0.1000 | 0.9000 | 114 | 114 | 0.9035 | 0.8339 | 0.9508 | no | no | 0.0526 | 0.9537 | 0.9035 | 103 | 108 | yes |
-| C | experimental.difficulty_normalized | breast_cancer | 43 | 0.1000 | 0.9000 | 114 | 114 | 0.9035 | 0.8339 | 0.9508 | no | no | 0.0526 | 0.9537 | 0.9035 | 103 | 108 | yes |
-| A | builtin.default | breast_cancer | 44 | 0.0500 | 0.9500 | 114 | 114 | 0.9825 | 0.9381 | 0.9979 | no | no | 0.0000 | 0.9825 | 0.9825 | 112 | 114 | yes |
-| C | experimental.difficulty_normalized | breast_cancer | 44 | 0.0500 | 0.9500 | 114 | 114 | 0.9737 | 0.9250 | 0.9945 | no | no | 0.0351 | 0.9818 | 0.9474 | 108 | 110 | yes |
-| A | builtin.default | breast_cancer | 44 | 0.1000 | 0.9000 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | no | no | 0.0526 | 0.9907 | 0.9386 | 107 | 108 | yes |
-| C | experimental.difficulty_normalized | breast_cancer | 44 | 0.1000 | 0.9000 | 114 | 114 | 0.9386 | 0.8776 | 0.9750 | no | no | 0.0526 | 0.9907 | 0.9386 | 107 | 108 | yes |
+| arm | epsilon | violations | structural_violations | violation_rate | structural_violation_rate | mean_coverage |
+|---|---|---|---|---|---|---|
+| A | 0.0500 | 54 | 6 | 0.4154 | 0.0462 | 0.9497 |
+| A | 0.1000 | 61 | 7 | 0.4692 | 0.0538 | 0.8980 |
+| C | 0.0500 | 66 | 12 | 0.5077 | 0.0923 | 0.9428 |
+| C | 0.1000 | 69 | 11 | 0.5308 | 0.0846 | 0.8865 |
 
-_Showing first 12 of 520 rows._
+## Structural violations by arm and dataset (all datasets)
+
+| arm | dataset | structural_violations | violations | mean_coverage |
+|---|---|---|---|---|
+| A | creditA | 3 | 7 | 0.9036 |
+| A | heartS | 3 | 7 | 0.8778 |
+| A | je4243 | 2 | 8 | 0.8726 |
+| A | liver | 2 | 4 | 0.9159 |
+| A | colic | 1 | 7 | 0.9028 |
+| A | kc3 | 1 | 4 | 0.9292 |
+| A | pc1req | 1 | 6 | 0.8762 |
+| A | breast_cancer | 0 | 4 | 0.9325 |
+| A | diabetes | 0 | 1 | 0.9455 |
+| A | german | 0 | 3 | 0.9377 |
+| A | haberman | 0 | 5 | 0.9246 |
+| A | heartC | 0 | 4 | 0.9377 |
+| A | heartH | 0 | 7 | 0.9102 |
+| A | hepati | 0 | 0 | 0.9645 |
+| A | iono | 0 | 4 | 0.9314 |
+| A | je4042 | 0 | 4 | 0.9333 |
+| A | kc1 | 0 | 2 | 0.9469 |
+| A | kc2 | 0 | 2 | 0.9459 |
+| A | pc4 | 0 | 6 | 0.9238 |
+| A | sonar | 0 | 4 | 0.9357 |
+| A | spect | 0 | 3 | 0.9341 |
+| A | spectf | 0 | 3 | 0.9296 |
+| A | transfusion | 0 | 7 | 0.9129 |
+| A | ttt | 0 | 4 | 0.9323 |
+| A | vote | 0 | 5 | 0.9308 |
+| A | wbc | 0 | 4 | 0.9323 |
+| C | creditA | 3 | 9 | 0.8891 |
+| C | haberman | 2 | 5 | 0.9193 |
+| C | heartS | 2 | 6 | 0.8815 |
+| C | je4243 | 2 | 5 | 0.8945 |
+| C | liver | 2 | 5 | 0.9203 |
+| C | pc1req | 2 | 7 | 0.8619 |
+| C | spectf | 2 | 5 | 0.9093 |
+| C | transfusion | 2 | 6 | 0.9040 |
+| C | colic | 1 | 7 | 0.9000 |
+| C | diabetes | 1 | 3 | 0.9260 |
+| C | heartC | 1 | 4 | 0.9115 |
+| C | iono | 1 | 7 | 0.9086 |
+| C | je4042 | 1 | 5 | 0.9111 |
+| C | kc2 | 1 | 5 | 0.9243 |
+| C | breast_cancer | 0 | 5 | 0.9254 |
+| C | german | 0 | 5 | 0.9241 |
+| C | heartH | 0 | 7 | 0.9102 |
+| C | hepati | 0 | 3 | 0.9452 |
+| C | kc1 | 0 | 4 | 0.9285 |
+| C | kc3 | 0 | 3 | 0.9338 |
+| C | pc4 | 0 | 5 | 0.9204 |
+| C | sonar | 0 | 3 | 0.9452 |
+| C | spect | 0 | 6 | 0.9182 |
+| C | ttt | 0 | 4 | 0.9255 |
+| C | vote | 0 | 6 | 0.9221 |
+| C | wbc | 0 | 5 | 0.9204 |
