@@ -90,4 +90,3 @@ Generated tables are written under:
 ## Notebook / Paper Workflow
 
 - `analysis_ensure.ipynb` can be used for inspection/plots from the saved `.pkl` files.
-- `paper.tex` consumes generated LaTeX tables from `latex_tables/`.
