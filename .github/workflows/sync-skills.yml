@@ -1,0 +1,69 @@
+name: Sync Skills from generic-skill-library
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Optional skill prefix filter (e.g. ce- for only OSS skills)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 06:00 UTC
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Checkout generic-skill-library
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/generic-skill-library
+          path: _skill_source
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Build SKILL.md files from source (if not pre-built)
+        run: |
+          python _skill_source/adapters/to_claude.py --all --skills-dir _skill_source/skills
+          python _skill_source/adapters/to_codex.py  --all --skills-dir _skill_source/skills
+
+      - name: Deploy skills to .github/skills/ (Copilot)
+        run: |
+          FILTER="${{ github.event.inputs.filter }}"
+          python _skill_source/adapters/deploy_to_copilot.py \
+            --skills-dir _skill_source/skills \
+            --target-dir . \
+            ${FILTER:+--filter "$FILTER"}
+
+      - name: Deploy skills to .codex/skills/ (Codex CLI)
+        run: |
+          FILTER="${{ github.event.inputs.filter }}"
+          python _skill_source/adapters/deploy_to_codex.py \
+            --skills-dir _skill_source/skills \
+            --target-dir . \
+            ${FILTER:+--filter "$FILTER"}
+
+      - name: Commit deployed skills
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/skills/ .codex/skills/
+          git diff --staged --quiet || git commit -m "chore: sync skills from generic-skill-library [skip ci]"
+          git push
+
+      - name: Clean up
+        if: always()
+        run: rm -rf _skill_source

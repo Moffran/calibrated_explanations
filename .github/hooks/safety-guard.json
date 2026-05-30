@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "python3 .github/hooks/scripts/safety-guard.py",
+        "windows": "python .github/hooks/scripts/safety-guard.py",
+        "timeout": 5
+      }
+    ]
+  }
+}
