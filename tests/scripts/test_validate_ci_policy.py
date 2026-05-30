@@ -1,21 +1,42 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
 
 from scripts.quality.validate_ci_policy import _REUSABLE_FIRST_ALLOWLIST, validate_policy
 
 
+def _run_git(args: list[str], tmp_path: Path, *, capture_output: bool = False, text: bool = False) -> subprocess.CompletedProcess:
+    git_bin = shutil.which("git")
+    if git_bin is None:
+        pytest.skip("git executable is not available in PATH")
+    try:
+        return subprocess.run(
+            [git_bin, *args],
+            cwd=tmp_path,
+            check=True,
+            capture_output=capture_output,
+            text=text,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        pytest.skip(f"git command is unavailable in this environment: {exc}")
+
+
 def init_repo(tmp_path: Path) -> None:
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "ci@example.com"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "config", "user.name", "CI"], cwd=tmp_path, check=True)
+    _run_git(["init"], tmp_path, capture_output=True)
+    if not (tmp_path / ".git").is_dir():
+        pytest.skip("git init did not create a repository in temporary test path")
+    _run_git(["config", "user.email", "ci@example.com"], tmp_path)
+    _run_git(["config", "user.name", "CI"], tmp_path)
 
 
 def commit_all(tmp_path: Path, message: str) -> str:
-    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-    subprocess.run(["git", "commit", "-m", message], cwd=tmp_path, check=True)
-    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, text=True, capture_output=True)
+    _run_git(["add", "."], tmp_path)
+    _run_git(["commit", "-m", message], tmp_path)
+    sha = _run_git(["rev-parse", "HEAD"], tmp_path, text=True, capture_output=True)
     return sha.stdout.strip()
 
 

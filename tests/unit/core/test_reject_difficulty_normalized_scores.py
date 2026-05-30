@@ -511,8 +511,208 @@ def test_novelty_penalty_increases_alpha_for_all_labels(monkeypatch):
 
     orch.RejectOrchestrator(explainer).initialize_reject_learner(ncf="default", w=0.5)
     base_scores = default_score_cal(proba, np.unique(labels), labels, "hinge")
-    expected = base_scores + 0.4 * np.array([0.5, 1.0])
+    # Novelty penalty is applied only on the test side; calibration alphas stay difficulty-normalized.
+    expected = base_scores
     np.testing.assert_allclose(conformal.fit_alphas, expected)
+
+
+def test_novelty_estimator_requires_apply_method_via_policy():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    with pytest.raises(ValidationError, match=r"must define an apply\(x\) method"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=object(),
+            novelty_weight=0.2,
+            include_prediction_payload=False,
+        )
+
+
+def test_novelty_estimator_requires_numeric_outputs_via_policy():
+    class NonNumericNoveltyEstimator:
+        def apply(self, x):
+            return ["bad", "values"]
+
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    with pytest.raises(ValidationError, match="must return numeric novelty values"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=NonNumericNoveltyEstimator(),
+            novelty_weight=0.2,
+            include_prediction_payload=False,
+        )
+
+
+def test_novelty_estimator_requires_per_instance_values_via_policy():
+    class WrongLengthNoveltyEstimator:
+        def apply(self, x):
+            return [0.1]
+
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    with pytest.raises(ValidationError, match="must return one value per instance"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=WrongLengthNoveltyEstimator(),
+            novelty_weight=0.2,
+            include_prediction_payload=False,
+        )
+
+
+def test_novelty_estimator_rejects_nonfinite_and_negative_values_via_policy():
+    class NonFiniteNoveltyEstimator:
+        def apply(self, x):
+            return [0.1, np.inf]
+
+    class NegativeNoveltyEstimator:
+        def apply(self, x):
+            return [0.1, -0.2]
+
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    with pytest.raises(ValidationError, match="novelty values must be finite"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=NonFiniteNoveltyEstimator(),
+            novelty_weight=0.2,
+            include_prediction_payload=False,
+        )
+
+    with pytest.raises(ValidationError, match="novelty values must be non-negative"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=NegativeNoveltyEstimator(),
+            novelty_weight=0.2,
+            include_prediction_payload=False,
+        )
+
+
+def test_novelty_weight_requires_non_negative_float_via_policy():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    with pytest.raises(ValidationError, match="must be a non-negative float"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=NoveltyEstimator([0.1, 0.2]),
+            novelty_weight="not-a-number",
+            include_prediction_payload=False,
+        )
+
+    with pytest.raises(ValidationError, match="must be a non-negative float"):
+        orchestrator.apply_policy(
+            policy="flag",
+            x=explainer.x_cal,
+            strategy="experimental.ambiguity_normalized_novelty_penalized",
+            confidence=0.5,
+            novelty_estimator=NoveltyEstimator([0.1, 0.2]),
+            novelty_weight=-0.1,
+            include_prediction_payload=False,
+        )
+
+
+def test_novelty_strategy_metadata_collection_falls_back_on_estimator_errors(monkeypatch):
+    class FlakyNoveltyEstimator:
+        def __init__(self, first_values):
+            self.first_values = np.asarray(first_values, dtype=float)
+            self.calls = 0
+
+        def apply(self, x):
+            self.calls += 1
+            if self.calls == 1:
+                return self.first_values
+            raise RuntimeError("metadata sampling failed")
+
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+    monkeypatch.setattr(orch, "ConformalClassifier", InverseAlphaConformalClassifier)
+
+    ambiguity = DifficultyEstimator([1.0, 2.0])
+    novelty = FlakyNoveltyEstimator([0.1, 0.2])
+    result = orchestrator.apply_policy(
+        policy="flag",
+        x=explainer.x_cal,
+        strategy="experimental.ambiguity_normalized_novelty_penalized",
+        confidence=0.5,
+        ambiguity_estimator=ambiguity,
+        novelty_estimator=novelty,
+        novelty_weight=0.2,
+        include_prediction_payload=False,
+    )
+
+    assert result.metadata["reject_strategy"] == "experimental.ambiguity_normalized_novelty_penalized"
+    assert result.metadata["novelty_penalized"] is True
+    assert "ambiguity_difficulty_min" in result.metadata
+    assert "novelty_score_min" not in result.metadata
+
+
+def test_experimental_difficulty_strategy_none_policy_v2_raises_validation_error():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    with pytest.raises(ValidationError, match="only available for non-NONE reject policies"):
+        orchestrator.apply_policy(
+            policy="none",
+            x=explainer.x_cal,
+            strategy="experimental.difficulty_normalized",
+            result_schema="v2",
+        )
+
+
+def test_experimental_difficulty_strategy_none_policy_legacy_returns_empty_result():
+    proba = np.array([[0.2, 0.8], [0.6, 0.4]], dtype=float)
+    labels = np.array([1, 0])
+    explainer = make_explainer(proba, labels, difficulty_values=[1.0, 1.0])
+    orchestrator = orch.RejectOrchestrator(explainer)
+
+    result = orchestrator.apply_policy(
+        policy="none",
+        x=explainer.x_cal,
+        strategy="experimental.difficulty_normalized",
+        result_schema="legacy",
+    )
+
+    assert result.rejected is None
+    assert result.prediction is None
+    assert result.explanation is None
+    assert result.metadata is None
 
 
 def test_novelty_penalty_can_increase_empty_set_rate(monkeypatch):

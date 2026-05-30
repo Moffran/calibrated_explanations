@@ -15,7 +15,7 @@ class ParallelBackend(Protocol):
         self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
     ) -> List[R]:
         """Apply *fn* to *items* using the backend's execution strategy."""
-        ...
+        ...  # pragma: no cover
 
 
 class JoblibBackend:

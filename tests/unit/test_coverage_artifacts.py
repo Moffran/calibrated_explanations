@@ -7,7 +7,7 @@ import pytest
 
 from calibrated_explanations.calibration.state import CalibrationState
 from calibrated_explanations.core.explain.sequential import SequentialExplainExecutor
-from calibrated_explanations.core.test import JoblibBackend
+from calibrated_explanations.core.test import JoblibBackend, ParallelBackend
 
 
 class ExplainerStub:
@@ -67,6 +67,35 @@ def test_calibration_state_dict_rows_append_and_getters(monkeypatch: pytest.Monk
     assert CalibrationState.get_y_cal(explainer).shape[0] == 3
 
 
+def test_calibration_state_set_x_cal_reshapes_1d_input(monkeypatch: pytest.MonkeyPatch) -> None:
+    explainer = ExplainerStub()
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.summaries.invalidate_calibration_summaries",
+        lambda _e: None,
+    )
+
+    CalibrationState.set_x_cal(explainer, np.asarray([1.0, 2.0]))
+    assert CalibrationState.get_x_cal(explainer).shape == (1, 2)
+
+
+def test_calibration_state_set_x_cal_uses_dataframe_values_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FrameLike:
+        def __init__(self) -> None:
+            self.values = np.asarray([[7.0, 8.0]])
+
+    explainer = ExplainerStub()
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.summaries.invalidate_calibration_summaries",
+        lambda _e: None,
+    )
+    monkeypatch.setattr("calibrated_explanations.calibration.state.safe_isinstance", lambda *_: True)
+
+    CalibrationState.set_x_cal(explainer, FrameLike())
+    assert CalibrationState.get_x_cal(explainer).shape == (1, 2)
+
+
 def test_sequential_executor_identity_contract() -> None:
     executor = SequentialExplainExecutor()
     assert executor.name == "sequential"
@@ -104,3 +133,8 @@ def test_joblib_backend_falls_back_when_joblib_submodule_import_fails(
 
     result = backend.map(lambda x: x * 2, [2, 3], workers=1)
     assert result == [4, 6]
+
+
+def test_parallel_backend_protocol_method_body_executes() -> None:
+    result = ParallelBackend.map(object(), lambda x: x, [1, 2, 3], workers=None)
+    assert result is None
