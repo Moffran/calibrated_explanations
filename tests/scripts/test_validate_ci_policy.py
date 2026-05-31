@@ -9,7 +9,8 @@ import pytest
 from scripts.quality.validate_ci_policy import _REUSABLE_FIRST_ALLOWLIST, validate_policy
 
 
-def _run_git(args: list[str], tmp_path: Path, *, capture_output: bool = False, text: bool = False) -> subprocess.CompletedProcess:
+def run_git(args: list[str], tmp_path: Path, *, capture_output: bool = False, text: bool = False) -> subprocess.CompletedProcess:
+    """Execute a git command in a test repository."""
     git_bin = shutil.which("git")
     if git_bin is None:
         pytest.skip("git executable is not available in PATH")
@@ -26,17 +27,19 @@ def _run_git(args: list[str], tmp_path: Path, *, capture_output: bool = False, t
 
 
 def init_repo(tmp_path: Path) -> None:
-    _run_git(["init"], tmp_path, capture_output=True)
+    """Initialize a test git repository."""
+    run_git(["init"], tmp_path, capture_output=True)
     if not (tmp_path / ".git").is_dir():
         pytest.skip("git init did not create a repository in temporary test path")
-    _run_git(["config", "user.email", "ci@example.com"], tmp_path)
-    _run_git(["config", "user.name", "CI"], tmp_path)
+    run_git(["config", "user.email", "ci@example.com"], tmp_path)
+    run_git(["config", "user.name", "CI"], tmp_path)
 
 
 def commit_all(tmp_path: Path, message: str) -> str:
-    _run_git(["add", "."], tmp_path)
-    _run_git(["commit", "-m", message], tmp_path)
-    sha = _run_git(["rev-parse", "HEAD"], tmp_path, text=True, capture_output=True)
+    """Commit all changes in a test repository and return commit SHA."""
+    run_git(["add", "."], tmp_path)
+    run_git(["commit", "-m", message], tmp_path)
+    sha = run_git(["rev-parse", "HEAD"], tmp_path, text=True, capture_output=True)
     return sha.stdout.strip()
 
 

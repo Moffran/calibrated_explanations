@@ -675,7 +675,9 @@ def test_novelty_strategy_metadata_collection_falls_back_on_estimator_errors(mon
         include_prediction_payload=False,
     )
 
-    assert result.metadata["reject_strategy"] == "experimental.ambiguity_normalized_novelty_penalized"
+    assert (
+        result.metadata["reject_strategy"] == "experimental.ambiguity_normalized_novelty_penalized"
+    )
     assert result.metadata["novelty_penalized"] is True
     assert "ambiguity_difficulty_min" in result.metadata
     assert "novelty_score_min" not in result.metadata

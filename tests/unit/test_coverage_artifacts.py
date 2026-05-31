@@ -90,7 +90,9 @@ def test_calibration_state_set_x_cal_uses_dataframe_values_branch(
         "calibrated_explanations.calibration.summaries.invalidate_calibration_summaries",
         lambda _e: None,
     )
-    monkeypatch.setattr("calibrated_explanations.calibration.state.safe_isinstance", lambda *_: True)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.state.safe_isinstance", lambda *_: True
+    )
 
     CalibrationState.set_x_cal(explainer, FrameLike())
     assert CalibrationState.get_x_cal(explainer).shape == (1, 2)
