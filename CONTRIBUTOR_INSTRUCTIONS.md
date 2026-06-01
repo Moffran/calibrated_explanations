@@ -204,24 +204,61 @@ every existing skill directory under `.claude/skills/`.
 
 ## 7. Development Workflow
 
+### First-time setup (required before running any checks)
+
 ```bash
-# Install (editable, with dev extras)
+# Install the package in editable mode with all dev dependencies
 pip install -e .[dev] -c constraints.txt
 
-# Optional fast path if uv is already installed
+# Optional: faster install if uv is available
 uv pip install -e .[dev] -c constraints.txt
 
-# Run tests
-make test
-# or
-pytest --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-fail-under=90
-
-# Run full local CI (lint + type-check + tests)
-make ci-local
-
-# Pre-commit hooks
-pre-commit install && pre-commit run --all-files
+# Install pre-commit hooks (run once per clone)
+pre-commit install
 ```
+
+Verify the environment is healthy:
+
+```bash
+python -m ruff --version    # must be present
+python -m mypy --version    # must be present
+python -m pytest --version  # must be present
+```
+
+### Routine local validation
+
+```bash
+# Fast PR-scope checks (lint + type-check + core tests + policy scanners)
+# This is the primary local validation path — run before every commit.
+make local-checks-pr
+
+# Full local CI including main-branch gates (coverage, perf, over-testing)
+make local-checks
+
+# Run tests only
+make test
+
+# Run only non-viz tests (faster; avoids matplotlib import)
+make test-core
+```
+
+### Governance status artifact
+
+`reports/governance/governance_status.json` is a CI-derived artifact.
+The `lint` fields (`ruff`, `mypy`) show **"unavailable"** when generated
+without running lint tools. Use the local target to populate them:
+
+```bash
+# Run ruff + mypy locally, write results into the artifact
+make governance-status-local
+```
+
+`local_checks_pr` always shows **"unavailable"** locally — only CI can
+set it after the full test suite passes. The `schema_checks` fields are
+populated from local report files and reflect the last time those scripts ran.
+
+`make local-checks-pr` calls `make governance-status-local` internally,
+so after a full local checks run the artifact will have real ruff/mypy results.
 
 Before any implementation work:
 1. Read `docs/improvement/RELEASE_PLAN_v1.md` to identify the active milestone.

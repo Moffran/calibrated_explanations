@@ -612,6 +612,7 @@ def main() -> int:
                 "--output",
                 "reports/governance/governance_status.json",
                 "--validate",
+                "--run-lint",
             ),
         ),
         Step(
