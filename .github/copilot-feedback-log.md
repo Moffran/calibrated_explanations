@@ -22,7 +22,7 @@ Format:
 ## 2026-02-22 – Copilot optimization loop initialization
 **Feedback:** Copilot/agents do not consistently learn from feedback or update canonical instructions.
 **Root cause:** Feedback log not actively used; instruction files not updated after feedback.
-**Durable fix:** Added feedback log entry template; will update copilot-instructions.md and AGENT_INSTRUCTIONS.md after each feedback.
+**Durable fix:** Added feedback log entry template; will update copilot-instructions.md and CONTRIBUTOR_INSTRUCTIONS.md after each feedback.
 **Verification:** Check that feedback log and instructions are updated after each PR/release.
 **Status:** open
 

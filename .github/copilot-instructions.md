@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions for `calibrated_explanations`
 
-> **Canonical agent instructions:** `AGENT_INSTRUCTIONS.md` — the single source of
+> **Canonical agent instructions:** `CONTRIBUTOR_INSTRUCTIONS.md` — the single source of
 > truth shared by all agent platforms (Copilot, Codex, Claude Code, Gemini). Read
 > that first. This file adds **only** GitHub Copilot-specific context.
 > canonical `CONTRIBUTOR_INSTRUCTIONS.md` is the single source of truth.
@@ -137,6 +137,6 @@ Type `/` in Copilot Chat to invoke these CE workflows:
 ## 11. Copilot-Specific: Chat Tips
 
 - Use `@workspace` for questions about CE internals — it indexes local files.
-- Use `#file:AGENT_INSTRUCTIONS.md` to explicitly pin the canonical instructions in chat.
+- Use `#file:CONTRIBUTOR_INSTRUCTIONS.md` to explicitly pin the canonical instructions in chat.
 - Commit instruction-file updates in the same PR as the code change so history stays in sync.
 - Persist feedback in `.github/copilot-feedback-log.md` with `Feedback`, `Root cause`, `Durable fix`, `Verification`, and `Status` fields.
