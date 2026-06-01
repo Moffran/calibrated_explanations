@@ -55,9 +55,7 @@ class CalibrationState:
         explainer._X_cal = value
 
         if isinstance(explainer._X_cal[0], dict):
-            explainer._CalibratedExplainer__X_cal = np.array(
-                [[x[f] for f in x] for x in explainer._X_cal]
-            )
+            explainer._X_cal = np.array([[x[f] for f in x] for x in explainer._X_cal])
 
         # Invalidate summary caches when data changes
         from .summaries import invalidate_calibration_summaries
@@ -74,11 +72,7 @@ class CalibrationState:
             The calibration input data. Returns the dict-converted numpy array
             if input data is dict format, otherwise returns the raw array.
         """
-        return (
-            explainer._CalibratedExplainer__X_cal
-            if isinstance(explainer._X_cal[0], dict)
-            else explainer._X_cal
-        )
+        return explainer._X_cal
 
     @staticmethod
     def set_y_cal(explainer: CalibratedExplainer, value: Any) -> None:

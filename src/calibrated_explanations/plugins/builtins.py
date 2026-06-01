@@ -1214,7 +1214,7 @@ class LegacyPlotRenderer(PlotRenderer):
         """Render using the legacy plotting pathway."""
         legacy_function = artifact.get("legacy_function")
         if legacy_function == "global":
-            from ..legacy import plotting as legacy
+            from ..viz import _matplotlib_compat as legacy
 
             legacy.plot_global(
                 explainer=artifact["explainer"],

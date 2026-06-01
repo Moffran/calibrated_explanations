@@ -1,4 +1,10 @@
-"""Module containing all plotting functionality."""
+"""Matplotlib-based legacy plotting helpers (canonical internal module).
+
+These functions implement the ``style="legacy"`` opt-out and PlotSpec fallback
+paths. They are not part of the public API. Callers in ``plotting.py`` and
+``plugins/builtins.py`` import this module directly; the ``legacy/plotting``
+namespace no longer exists as of v0.11.3.
+"""
 
 import contextlib
 import math
@@ -22,12 +28,8 @@ except (ImportError, RuntimeError) as e:
     _MATPLOTLIB_IMPORT_ERROR = e
 
 
-def __require_matplotlib():
-    """Raise a helpful error if matplotlib is not available.
-
-    Many tests import the package but don't need plotting. Guarding imports
-    prevents import-time failures; call this before performing plotting.
-    """
+def _require_matplotlib():
+    """Raise a helpful error if matplotlib is not available."""
     global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
     if plt is None:
         try:
@@ -105,7 +107,7 @@ def _plot_probabilistic(
     # Also treat as no-op if caller does not request saving (no path/title).
     if not show and (path is None or title is None):
         return
-    __require_matplotlib()
+    _require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
@@ -268,7 +270,7 @@ def plot_regression(
     # or when no saving is requested (no path/title provided).
     if not show and (path is None or title is None):
         return
-    __require_matplotlib()
+    _require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
@@ -315,7 +317,6 @@ def plot_regression(
         gwh = p - predict["high"]
 
         gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
-        # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
         x_min, x_max = gwl, gwh
     # For each feature, plot the weight
@@ -384,12 +385,9 @@ def plot_triangular(
     # If user only requested no display (and no saving), avoid requiring matplotlib
     if not show and (path is None or title is None):
         return
-    __require_matplotlib()
+    _require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    # assert explanation.get_mode() == 'classification' or \
-    #     (explanation.get_mode() == 'regression' and explanation.is_thresholded()), \
-    #     'Triangular plot is only available for classification or probabilistic regression'
     marker_size = 50
     min_x, min_y = 0, 0
     max_x, max_y = 1, 1
@@ -398,14 +396,10 @@ def plot_triangular(
     if explanation.get_mode() == "classification" or (
         explanation.get_mode() == "regression" and explanation.is_thresholded()
     ):
-        __plot_proba_triangle()
+        _draw_proba_triangle_lines()
     else:
-        min_x = min(
-            np.min(rule_proba), np.min(proba)
-        )  # np.min(self.get_explainer().y_cal) # pylint: disable=protected-access
-        max_x = max(
-            np.max(rule_proba), np.max(proba)
-        )  # np.max(self.get_explainer().y_cal) # pylint: disable=protected-access
+        min_x = min(np.min(rule_proba), np.min(proba))
+        max_x = max(np.max(rule_proba), np.max(proba))
         min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
         max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
         if math.isclose(min_x, max_x, rel_tol=1e-9):
@@ -455,8 +449,7 @@ def plot_triangular(
         plt.show()
 
 
-# `__plot_triangular`
-def __plot_proba_triangle():
+def _draw_proba_triangle_lines():
     """Draw the static probability triangle reference lines."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -486,7 +479,7 @@ def plot_alternative(
     # path/title are provided (so nothing would be written).
     if not show and (path is None or title is None):
         return
-    __require_matplotlib()
+    _require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     fig = plt.figure(figsize=(10, num_to_show * 0.5))
@@ -506,9 +499,9 @@ def plot_alternative(
         or "regression" in explanation.get_mode()
     ):
         color = (
-            __get_fill_color({"predict": 1}, 0.15)
+            _get_fill_color({"predict": 1}, 0.15)
             if "regression" in explanation.get_mode()
-            else __get_fill_color(venn_abers, 0.15)
+            else _get_fill_color(venn_abers, 0.15)
         )
         ax_main.fill_betweenx(x, [p_l] * (num_to_show), [p_h] * (num_to_show), color=color)
         # Fill up to the edges
@@ -521,13 +514,13 @@ def plot_alternative(
             ax_main.fill_betweenx(xh, p, p, color="r", alpha=0.3)
     else:
         venn_abers["predict"] = p_l
-        color = __get_fill_color(venn_abers, 0.15)
+        color = _get_fill_color(venn_abers, 0.15)
         ax_main.fill_betweenx(x, [p_l] * (num_to_show), [0.5] * (num_to_show), color=color)
         # Fill up to the edges
         ax_main.fill_betweenx(xl, [p_l] * (2), [0.5] * (2), color=color)
         ax_main.fill_betweenx(xh, [p_l] * (2), [0.5] * (2), color=color)
         venn_abers["predict"] = p_h
-        color = __get_fill_color(venn_abers, 0.15)
+        color = _get_fill_color(venn_abers, 0.15)
         ax_main.fill_betweenx(x, [0.5] * (num_to_show), [p_h] * (num_to_show), color=color)
         # Fill up to the edges
         ax_main.fill_betweenx(xl, [0.5] * (2), [p_h] * (2), color=color)
@@ -552,12 +545,12 @@ def plot_alternative(
             ax_main.fill_betweenx(xj, p_l, p_h, color="r", alpha=0.40)
             ax_main.fill_betweenx(xj, p, p, color="r")
         elif (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5):
-            ax_main.fill_betweenx(xj, p_l, p_h, color=__get_fill_color(venn_abers, 0.99))
+            ax_main.fill_betweenx(xj, p_l, p_h, color=_get_fill_color(venn_abers, 0.99))
         else:
             venn_abers["predict"] = p_l
-            ax_main.fill_betweenx(xj, p_l, 0.5, color=__get_fill_color(venn_abers, 0.99))
+            ax_main.fill_betweenx(xj, p_l, 0.5, color=_get_fill_color(venn_abers, 0.99))
             venn_abers["predict"] = p_h
-            ax_main.fill_betweenx(xj, 0.5, p_h, color=__get_fill_color(venn_abers, 0.99))
+            ax_main.fill_betweenx(xj, 0.5, p_h, color=_get_fill_color(venn_abers, 0.99))
 
     ax_main.set_yticks(range(num_to_show))
     ax_main.set_yticklabels(
@@ -620,23 +613,7 @@ def plot_alternative(
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
 def plot_global(explainer, x, y=None, threshold=None, **kwargs):
-    """Plot a global explanation overview for the given test data.
-
-    This plot is based on the probability distribution and the uncertainty quantification
-    intervals. The plot is only available for calibrated probabilistic learners (both
-    classification and thresholded regression).
-
-    Parameters
-    ----------
-    x : array-like
-        The input data for which predictions are to be made. This should be in a format compatible
-        with sklearn (e.g., numpy arrays, pandas DataFrames).
-    y : array-like, optional
-        The true labels of the test data.
-    threshold : float, int, optional
-        The threshold value used with regression to get probability of being below the threshold.
-        Only applicable to regression.
-    """
+    """Plot a global explanation overview for the given test data."""
     show = kwargs.get("show", True)
     if y is not None:
         y = np.asarray(y)
@@ -644,7 +621,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     if not show and plt is None:
         return
     # Otherwise require matplotlib to proceed with plotting
-    __require_matplotlib()
+    _require_matplotlib()
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
         predict, (low, high) = explainer.predict(x, uq_interval=True, **kwargs)
@@ -663,7 +640,6 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         _plot_proba_triangle()
     else:
         _, ax = plt.subplots()
-        # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
         min_x = np.min(explainer.y_cal)
         max_x = np.max(explainer.y_cal)
         min_y = np.min(uncertainty)
@@ -675,19 +651,10 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             min_x - min(0.1 * (max_x - min_x), 0) if min_x > 0 else min_x - 0.1 * (max_x - min_x)
         )  # pylint: disable=line-too-long
         max_x = max_x + 0.1 * (max_x - min_x)
-        # min_y = min_y - max(0.1 * (max_y - min_y), 0) # uncertainty is always positive
         max_y = max_y + 0.1 * (max_y - min_y)
-        # mid_x = (min_x + max_x) / 2
-        # mid_y = (min_y + max_y) / 2
-        # ax.plot([min_x, mid_x], [min_y, max_y], color='black')
-        # ax.plot([max_x, mid_x], [min_y, max_y], color='black')
-        # # draw a line from (0.5,0) to halfway between (0.5,0) and (0,1)
-        # ax.plot([mid_x, mid_x / 2], [min_y, mid_y], color='black')
-        # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
-        # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
 
     if y is None:
-        if "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
+        if "predict_proba" not in dir(explainer.learner) and threshold is None:
             plt.scatter(predict, uncertainty, label="Predictions", marker=".", s=marker_size)
         else:
             if explainer.is_multiclass():  # pylint: disable=protected-access
@@ -698,21 +665,13 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
                 proba = proba[:, 1]
             plt.scatter(proba, uncertainty, label="Predictions", marker=".", s=marker_size)
 
-    elif "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
+    elif "predict_proba" not in dir(explainer.learner) and threshold is None:
         norm = mcolors.Normalize(vmin=y.min(), vmax=y.max())
-        # Choose a colormap
         colormap = plt.cm.viridis  # pylint: disable=no-member
-        # Map the normalized values to colors
         colors = colormap(norm(y))
         ax.scatter(
             predict, uncertainty, label="Predictions", color=colors, marker=".", s=marker_size
         )
-        # # Create a new axes for the colorbar
-        # divider = make_axes_locatable(ax)
-        # cax = divider.append_axes("right", size="5%", pad=0.05)
-        # # Add the colorbar to the new axes
-        # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap),
-        #                                       cax=cax, label='Target Values')
     else:
         if "predict_proba" not in dir(explainer.learner):
             if not np.isscalar(threshold):
@@ -774,7 +733,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
                 s=marker_size,
             )
         plt.legend()
-    if "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
+    if "predict_proba" not in dir(explainer.learner) and threshold is None:
         plt.xlabel("Predictions", loc="center")
         plt.ylabel("Uncertainty", loc="center")
     else:
@@ -810,54 +769,38 @@ def _plot_proba_triangle():
 
 
 def plot_proba_triangle():
-    """Public wrapper for drawing the probability triangle in legacy API.
-
-    This calls the internal plotting helper but guards optional matplotlib
-    availability like other public plotting helpers.
-    """
-    __require_matplotlib()
+    """Public wrapper for drawing the probability triangle."""
+    _require_matplotlib()
     return _plot_proba_triangle()
 
 
 # pylint: disable=invalid-name
-def __color_brew(n):
+def _color_brew(n):
     """Return ``n`` visually distinct colors using a HSV sweep."""
     color_list = []
-
-    # Initialize saturation & value; calculate chroma & value shift
     s, v = 0.75, 0.9
     c = s * v
     m = v - c
-
-    # for h in np.arange(25, 385, 360. / n).astype(int):
     for h in np.arange(5, 385, 490.0 / n).astype(int):
-        # Calculate some intermediate values
         h_bar = h / 60.0
         x = c * (1 - abs((h_bar % 2) - 1))
-        # Initialize RGB with same hue & chroma as our color
         rgb = [(c, x, 0), (x, c, 0), (0, c, x), (0, x, c), (x, 0, c), (c, 0, x), (c, x, 0)]
         r, g, b = rgb[int(h_bar)]
-        # Shift the initial RGB values to match value and store
         rgb = [(int(255 * (r + m))), (int(255 * (g + m))), (int(255 * (b + m)))]
         color_list.append(rgb)
     color_list.reverse()
     return color_list
 
 
-def __get_fill_color(venn_abers, reduction=1):  # pylint: disable=unused-private-member
+def _get_fill_color(venn_abers, reduction=1):  # pylint: disable=unused-private-member
     """Select fill color/alpha for a Venn-Abers region."""
-    colors = __color_brew(2)
+    colors = _color_brew(2)
     winner_class = int(venn_abers["predict"] >= 0.5)
     color = colors[winner_class]
-
     alpha = venn_abers["predict"] if winner_class == 1 else 1 - venn_abers["predict"]
-    alpha = ((alpha - 0.5) / (1 - 0.5)) * (1 - 0.25) + 0.25  # normalize values to the range [.25,1]
+    alpha = ((alpha - 0.5) / (1 - 0.5)) * (1 - 0.25) + 0.25
     if reduction != 1:
         alpha = reduction
-
-    # unpack numpy scalars
     alpha = float(alpha)
-    # compute the color as alpha against white
     color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
-    # Return html color code in #RRGGBB format
     return "#%2x%2x%2x" % tuple(color)  # pylint: disable=consider-using-f-string

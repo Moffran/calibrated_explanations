@@ -2,7 +2,7 @@ import types
 import numpy as np
 import pytest
 
-from calibrated_explanations.legacy import plotting
+from calibrated_explanations.viz import _matplotlib_compat as plotting
 
 
 class FakeAxes:
@@ -232,7 +232,7 @@ def test_require_matplotlib_reports_original_error(monkeypatch):
         # Verify public behavior: attempting to use plotting raises ConfigurationError
         # with the original import error message
         with pytest.raises(ConfigurationError) as exc_info:
-            plotting.__require_matplotlib()
+            plotting.plot_proba_triangle()
         assert "Original import error: boom" in str(exc_info.value)
 
     # Restore the module
@@ -242,8 +242,7 @@ def test_require_matplotlib_reports_original_error(monkeypatch):
 def test_require_matplotlib_retries_after_stale_cached_import_error(monkeypatch):
     """Legacy plotting must recover when a stale cached import error is no longer valid."""
     pytest.importorskip("matplotlib")
-    require_name = "__" + "require_matplotlib"
-    error_name = "_" + "MATPLOTLIB_IMPORT_ERROR"
+    error_name = "_MATPLOTLIB_IMPORT_ERROR"
 
     original_plt = plotting.plt
     original_mcolors = plotting.mcolors
@@ -252,7 +251,8 @@ def test_require_matplotlib_retries_after_stale_cached_import_error(monkeypatch)
     monkeypatch.setattr(plotting, "mcolors", None)
     monkeypatch.setattr(plotting, error_name, ImportError("stale failure"))
 
-    getattr(plotting, require_name)()
+    # Exercise the lazy matplotlib bootstrap through a public plotting wrapper.
+    plotting.plot_proba_triangle()
 
     assert plotting.plt is not None
     assert plotting.mcolors is not None

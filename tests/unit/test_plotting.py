@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.viz, pytest.mark.filterwarnings("ignore::DeprecationWa
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting._require_matplotlib")
 def testplot_alternative_classification_labels(mock_require, mock_render):
     """Should correctly determine axis labels for classification."""
     explanation = MagicMock()
@@ -52,7 +52,7 @@ def testplot_alternative_classification_labels(mock_require, mock_render):
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting._require_matplotlib")
 def testplot_alternative_thresholded_scalar(mock_require, mock_render):
     """Should correctly determine axis labels for thresholded classification (scalar)."""
     explanation = MagicMock()
@@ -85,7 +85,7 @@ def testplot_alternative_thresholded_scalar(mock_require, mock_render):
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting._require_matplotlib")
 def testplot_alternative_thresholded_tuple(mock_require, mock_render):
     """Should correctly determine axis labels for thresholded classification (tuple)."""
     explanation = MagicMock()
@@ -118,7 +118,7 @@ def testplot_alternative_thresholded_tuple(mock_require, mock_render):
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting._require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy.plot_alternative")
 def testplot_alternative_fallback_on_error(
     mock_legacy, mock_require, mock_render, enable_fallbacks
@@ -158,7 +158,7 @@ def testplot_alternative_fallback_on_error(
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting._require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy.plot_regression")
 def testplot_regression_fallback_on_error(mock_legacy, mock_require, mock_render, enable_fallbacks):
     """Should fall back to legacy plotting if render_plotspec raises exception.
@@ -257,7 +257,7 @@ def test_plot_regression_interval_guard_exception_logs_and_continues(caplog):
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
-@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting._require_matplotlib")
 def testplot_triangular(mock_require, mock_render):
     """Should correctly render triangular plots."""
     explanation = MagicMock()
@@ -287,7 +287,7 @@ def testplot_triangular(mock_require, mock_render):
 
 def test_plot_probabilistic_noop_when_matplotlib_missing(monkeypatch: pytest.MonkeyPatch):
     """Should exit early when matplotlib is unavailable and nothing is shown."""
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", None)
 
     result = plotting.plot_probabilistic(
@@ -310,7 +310,7 @@ def test_plot_probabilistic_noop_when_matplotlib_missing(monkeypatch: pytest.Mon
 
 def test_plot_probabilistic_noop_without_show_or_save(monkeypatch: pytest.MonkeyPatch):
     """Should avoid building specs when no rendering or saving is requested."""
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
 
     result = plotting.plot_probabilistic(
@@ -368,7 +368,7 @@ def probabilistic_explanation(
 def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch, enable_fallbacks):
     """Should warn and invoke legacy plotting when rendering fails."""
 
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
     monkeypatch.setattr(
         "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
@@ -421,7 +421,7 @@ def test_plot_probabilistic_thresholded_interval_captions(monkeypatch: pytest.Mo
         captured.update(kwargs)
         return kwargs
 
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
     monkeypatch.setattr(
         "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
@@ -469,7 +469,7 @@ def test_plot_probabilistic_multiclass_without_labels(monkeypatch: pytest.Monkey
         captured.update(kwargs)
         return kwargs
 
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
     monkeypatch.setattr(
         "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
@@ -515,7 +515,7 @@ def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest
         captured.update(kwargs)
         return kwargs
 
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
     monkeypatch.setattr(
         "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
@@ -591,7 +591,7 @@ def test_plot_alternative_defaults_to_plotspec_when_style_chain_prefers_legacy(
 def testplot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
     """Should invoke plot plugins when not using the legacy path."""
 
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
 
     class DummyPlugin:
@@ -638,7 +638,7 @@ def testplot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         plotting, "_resolve_plot_style_chain", lambda explainer, style: ("missing",)
     )
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", SimpleNamespace())
 
     class DummyExplainer:
@@ -668,7 +668,7 @@ def test_plot_proba_triangle_invokes_matplotlib(monkeypatch: pytest.MonkeyPatch)
             self.plots.append((args, kwargs))
 
     fake = FakePlt()
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
     monkeypatch.setattr(plotting, "plt", fake)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)

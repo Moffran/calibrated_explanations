@@ -5,7 +5,7 @@ import types
 import numpy as np
 import pytest
 
-from calibrated_explanations.legacy import plotting
+from calibrated_explanations.viz import _matplotlib_compat as plotting
 
 pytestmark = pytest.mark.viz
 
@@ -112,8 +112,8 @@ def disable_show(monkeypatch):
 
     try:
         # If it has the lazy loader, trigger it
-        if hasattr(plotting, "__require_matplotlib"):
-            plotting.__require_matplotlib()
+        if hasattr(plotting, "plot_proba_triangle"):
+            plotting.plot_proba_triangle()
     except Exception:
         pass
 
@@ -602,10 +602,10 @@ def testplot_global_headless_short_circuit(monkeypatch):
     explainer = types.SimpleNamespace(learner=types.SimpleNamespace())
 
     def fail():  # pragma: no cover - guard should prevent execution
-        raise AssertionError("__require_matplotlib should not be called")
+        raise AssertionError("_require_matplotlib should not be called")
 
     monkeypatch.setattr(plotting, "plt", None)
-    monkeypatch.setattr(plotting, "__require_matplotlib", fail)
+    monkeypatch.setattr(plotting, "_require_matplotlib", fail)
 
     plotting.plot_global(explainer, x=np.zeros((1, 1)), show=False)
 
@@ -657,7 +657,7 @@ def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
         raise AssertionError("matplotlib should not be required for headless no-op")
 
     monkeypatch.setattr(plotting, "plt", None)
-    monkeypatch.setattr(plotting, "__require_matplotlib", fail)
+    monkeypatch.setattr(plotting, "_require_matplotlib", fail)
 
     plotting.plot_probabilistic(
         explanation=explanation,

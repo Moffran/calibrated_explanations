@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Mapping, Sequence
 import numpy as np
 
 from .core.config_manager import ConfigManager
+from .viz import _matplotlib_compat as legacy  # noqa: F401 - re-exported as plotting.legacy
 
 _plotting_config_manager: ConfigManager | None = None
 
@@ -38,12 +39,6 @@ def reset_plotting_config_manager() -> None:
 
 
 def __getattr__(name: str) -> Any:
-    """Lazily load legacy plotting module."""
-    if name == "legacy":
-        from .legacy import plotting as legacy
-
-        globals()["legacy"] = legacy
-        return legacy
     raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
@@ -76,7 +71,7 @@ mcolors = None
 plt = None
 
 
-def __require_matplotlib() -> None:
+def _require_matplotlib() -> None:
     """Ensure matplotlib is available before using plotting functions."""
     global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
     from .utils.exceptions import ConfigurationError
@@ -510,9 +505,9 @@ def update_plot_config(new_config):
         f.write(text)
 
 
-def __setup_plot_style(style_override=None):
+def _setup_plot_style(style_override=None):
     """Set up plot style using configuration with optional runtime overrides."""
-    __require_matplotlib()
+    _require_matplotlib()
     config = load_plot_config()
 
     # Apply style overrides if provided
@@ -624,7 +619,7 @@ def plot_probabilistic(
     predict_payload = dict(predict or {})
 
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy._plot_probabilistic(
             explanation,
@@ -660,7 +655,7 @@ def plot_probabilistic(
         return plugin_result
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    __require_matplotlib()
+    _require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if (
@@ -843,7 +838,7 @@ def plot_probabilistic(
         _warn_and_log_plotspec_fallback(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy_module
+        from .viz import _matplotlib_compat as legacy_module
 
         legacy_module._plot_probabilistic(
             explanation,
@@ -940,7 +935,7 @@ def plot_regression(
         selected_style = explicit_style
 
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_regression(
             explanation,
@@ -1049,7 +1044,7 @@ def plot_regression(
         _warn_and_log_plotspec_fallback(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy_module
+        from .viz import _matplotlib_compat as legacy_module
 
         legacy_module.plot_regression(
             explanation,
@@ -1114,7 +1109,7 @@ def plot_triangular(
     if use_legacy is None:
         _, use_legacy = _select_default_plot_style(explanation, explicit_style)
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_triangular(
             explanation,
@@ -1173,7 +1168,7 @@ def plot_triangular(
         _warn_and_log_plotspec_fallback(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_triangular(
             explanation,
@@ -1191,7 +1186,7 @@ def plot_triangular(
 
 
 # `__plot_triangular`
-def __plot_proba_triangle():
+def _draw_proba_triangle_overlay():
     """Render the static probability triangle overlay."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -1262,7 +1257,7 @@ def plot_alternative(
     explainer = _resolve_explainer_from_explanation(explanation)
 
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_alternative(
             explanation,
@@ -1301,7 +1296,7 @@ def plot_alternative(
         return
 
     if not return_plot_spec:
-        __require_matplotlib()
+        _require_matplotlib()
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -1675,7 +1670,7 @@ def plot_alternative(
             _warn_and_log_plotspec_fallback(
                 f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
             )
-            from .legacy import plotting as legacy
+            from .viz import _matplotlib_compat as legacy
 
             legacy.plot_alternative(
                 explanation,
@@ -1697,7 +1692,7 @@ def plot_alternative(
         _warn_and_log_plotspec_fallback(
             f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_alternative(
             explanation,
@@ -1750,7 +1745,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     else:
         selected_style = explicit_style
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
@@ -1814,7 +1809,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         _warn_and_log_plotspec_fallback(
             "PlotSpec rendering resolved to legacy. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
@@ -1846,7 +1841,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
                     f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. "
                     "Falling back to legacy plot."
                 )
-                from .legacy import plotting as legacy
+                from .viz import _matplotlib_compat as legacy
 
                 legacy.plot_global(explainer, x, y, threshold, **kwargs)
                 return
@@ -1863,7 +1858,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
 def _plot_proba_triangle():
     """Build a Matplotlib figure showcasing the probability triangle layout."""
-    __require_matplotlib()
+    _require_matplotlib()
     fig = plt.figure()
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -1933,7 +1928,7 @@ def _plot_alternative_dict(  # pragma: no cover  # ADR-023: multiclass visualiza
         The list of file extensions to save the plot.
     """
     # Set default values
-    config = __setup_plot_style(style_override)
+    config = _setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -2196,7 +2191,7 @@ def _plot_probabilistic_dict(  # pragma: no cover  # ADR-023: multiclass visuali
         The list of file extensions to save the plot.
     """
     # Set default values
-    config = __setup_plot_style(style_override)
+    config = _setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]

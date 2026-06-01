@@ -18,7 +18,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     from calibrated_explanations.viz import plots as plotspec_plotting
 
-from calibrated_explanations.legacy import plotting as legacy_plotting
+from calibrated_explanations.viz import _matplotlib_compat as legacy_plotting
 from calibrated_explanations.viz import (
     REGRESSION_BASE_COLOR,
     REGRESSION_BAR_COLOR,
@@ -226,7 +226,7 @@ def collect_plotspec_summary(
     mp = MonkeyPatch()
     captured: dict = {}
     try:
-        mp.setattr(plotspec_plotting, "__require_matplotlib", lambda: None)
+        mp.setattr(plotspec_plotting, "_require_matplotlib", lambda: None)
 
         def capture(spec, **_kwargs):
             captured["spec"] = spec

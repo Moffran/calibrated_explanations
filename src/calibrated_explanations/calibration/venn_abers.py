@@ -100,9 +100,9 @@ class VennAbers:
             predict_function if predict_function is not None else learner.predict_proba
         )
         self.x_cal = x_cal
-        self.__is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
+        self._is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
 
-        cprobs = self.__predict_proba_with_difficulty(x_cal) if cprobs is None else cprobs
+        cprobs = self._predict_proba_with_difficulty(x_cal) if cprobs is None else cprobs
         self.cprobs = cprobs
         self.bins = bins
 
@@ -146,7 +146,7 @@ class VennAbers:
             self.va.fit(cprobs, self.ctargets, precision=4)
         warnings.filterwarnings("default", category=RuntimeWarning)
 
-    def __predict_proba_with_difficulty(self, x, bins=None):
+    def _predict_proba_with_difficulty(self, x, bins=None):
         """Augment raw probabilities with optional difficulty adjustments."""
         if "bins" in self._predict_proba.__code__.co_varnames:
             probs = self._predict_proba(x, bins=bins)
@@ -246,7 +246,7 @@ class VennAbers:
             normalization = coerce_normalization_strategy(normalize)
         else:
             normalization = coerce_normalization_strategy(normalization)
-        tprobs = self.__predict_proba_with_difficulty(x, bins=bins)
+        tprobs = self._predict_proba_with_difficulty(x, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
         interval_summary = coerce_interval_summary(interval_summary)
@@ -361,7 +361,7 @@ class VennAbers:
         -------
             bool: True if more than two classes.
         """
-        return self.__is_multiclass
+        return self._is_multiclass
 
     def is_mondrian(self) -> bool:
         """Return true if Mondrian categories are used.

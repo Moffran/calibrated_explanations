@@ -1,4 +1,12 @@
-> **Status note (2026-04-14):** Last edited 2026-04-14 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2026-06-01):** Last edited 2026-06-01 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+>
+> **v0.11.3 final-removal completed (2026-06-01):** All three bounded compatibility surfaces removed in v0.11.3:
+> - `legacy/plotting.py` deleted; functions migrated to `viz/_matplotlib_compat.py`; callers in `plotting.py` and `plugins/builtins.py` updated.
+> - `serialization.validate_payload` wrapper deleted; internal call at line 72 updated to `_schema_validate_payload`.
+> - `viz/builders.legacy_get_fill_color` alias deleted from `builders.py` and `viz/__init__.py`.
+> - `check_std001_nomenclature.py` `APPROVED_SHIM_SURFACES` and `/legacy/` exception block removed.
+> - Fail-closed tests added confirming absence of all three surfaces.
+> Standard-001 is **CLOSED**.
 
 # Standard-001 Nomenclature Remediation
 

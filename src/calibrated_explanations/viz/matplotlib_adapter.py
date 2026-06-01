@@ -18,8 +18,8 @@ from typing import Any, Sequence
 import numpy as np
 
 from ..plotting import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
-from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
-from ..plotting import __setup_plot_style as _setup_style
+from ..plotting import _require_matplotlib as _require_mpl  # reuse lazy guard
+from ..plotting import _setup_plot_style as _setup_style
 from ..utils.exceptions import ValidationError
 from .plotspec import BarHPanelSpec, GlobalPlotSpec, PlotSpec, TriangularPlotSpec
 from .serializers import global_plotspec_to_dict, triangular_plotspec_to_dict

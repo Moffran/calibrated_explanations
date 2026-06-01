@@ -441,7 +441,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "Calibra
 
     def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        setattr(explainer, "_CalibratedExplainer__initialized", True)  # noqa: SLF001
+        setattr(explainer, "_initialized", True)  # noqa: SLF001
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",

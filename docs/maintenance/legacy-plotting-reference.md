@@ -1,9 +1,13 @@
 # Legacy Plotting Reference (Maintenance Only)
 
-This document captures the **legacy plotting contracts** and **rendering semantics** for maintenance and debugging. It is **not** a normative architecture decision and is not required for new rendering backends. The legacy matplotlib renderer remains the canonical reference for pixel-level behaviour.
+> **v0.11.3 removal note:** `legacy/plotting.py` was removed in v0.11.3 as part of Standard-001 closure.
+> The canonical internal module is now `src/calibrated_explanations/viz/_matplotlib_compat.py`.
+> Update any maintenance references accordingly.
 
-Source of truth:
-- `src/calibrated_explanations/legacy/plotting.py`
+This document captures the **legacy plotting contracts** and **rendering semantics** for maintenance and debugging. It is **not** a normative architecture decision and is not required for new rendering backends. The `style="legacy"` matplotlib renderer remains the canonical reference for pixel-level behaviour.
+
+Source of truth (v0.11.3+):
+- `src/calibrated_explanations/viz/_matplotlib_compat.py`
 
 ## Status
 - ADR-024 / ADR-025: superseded — do not reintroduce ADR-enforced contract changes for legacy plotting. This maintenance reference documents the current observed behaviors and conventions and is the canonical source for stability-focused fixes.
@@ -27,7 +31,7 @@ Source of truth:
 - Legacy plot code follows the repo-wide fallback visibility policy: any runtime fallback or simplification MUST emit an `INFO` log and a `warnings.warn(..., UserWarning)` (see `.github/copilot-instructions.md` and `docs/improvement/RELEASE_PLAN_v1.md`). Tests that rely on fallbacks should assert the warning via `pytest.warns(UserWarning)`.
 
 ## Testing guidance
-- Existing legacy plotting regression tests live in `tests/legacy/test_plotting.py`. Prefer extending these for fixes to preserve image parity.
+- Existing legacy plotting regression tests live in `tests/legacy/test_plotting.py` (migrated to use `viz._matplotlib_compat`). Prefer extending these for fixes to preserve image parity.
 - For new tests that exercise fallback behavior, use `pytest.warns(UserWarning)` to assert visible fallbacks.
 - When comparing images, prefer pixel-tolerant assertions or checksum comparisons produced by the existing image-fixture tooling (see `tests/legacy/README.md` if present).
 

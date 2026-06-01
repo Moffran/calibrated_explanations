@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import importlib
+
 import numpy as np
+import pytest
 
 from calibrated_explanations import serialization
 from calibrated_explanations.calibration.state import CalibrationState
 from calibrated_explanations.utils import safe_mean
 from calibrated_explanations.utils.helper import safe_mean as safe_mean_helper
-from calibrated_explanations.viz.builders import legacy_get_fill_color
 
 
 class ExplainerStub:
@@ -25,27 +27,23 @@ class DictRows:
         return self.rows[idx]
 
 
-def test_should_delegate_serialization_validate_payload_to_schema_validator(monkeypatch) -> None:
-    calls: list[dict[str, object]] = []
-
-    def _fake_schema_validate(payload):
-        calls.append(payload)
-
-    monkeypatch.setattr(serialization, "_schema_validate_payload", _fake_schema_validate)
-    payload = {"schema_version": "1.0.0"}
-
-    serialization.validate_payload(payload)
-
-    assert calls == [payload]
+def test_validate_payload_removed_from_serialization() -> None:
+    assert not hasattr(serialization, "validate_payload")
 
 
 def test_should_keep_utility_import_bridge_parity_for_safe_mean() -> None:
     assert safe_mean is safe_mean_helper
 
 
-def test_should_keep_builders_legacy_color_alias_parity() -> None:
-    assert legacy_get_fill_color(0.7, 0.9) == "#e8594d"
-    assert legacy_get_fill_color(1.0, 1.0) == "#ff0000"
+def test_legacy_get_fill_color_alias_removed_from_builders() -> None:
+    import calibrated_explanations.viz.builders as builders
+
+    assert not hasattr(builders, "legacy_get_fill_color")
+
+
+def test_legacy_plotting_module_removed() -> None:
+    with pytest.raises((ImportError, ModuleNotFoundError)):
+        importlib.import_module("calibrated_explanations.legacy.plotting")
 
 
 def test_should_keep_calibration_state_dict_row_bridge_working(monkeypatch) -> None:
@@ -57,5 +55,5 @@ def test_should_keep_calibration_state_dict_row_bridge_working(monkeypatch) -> N
 
     CalibrationState.set_x_cal(explainer, DictRows())
 
-    assert hasattr(explainer, "_CalibratedExplainer__X_cal")
+    assert hasattr(explainer, "_X_cal")
     assert CalibrationState.get_x_cal(explainer).shape == (2, 2)

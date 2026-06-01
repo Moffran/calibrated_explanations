@@ -169,10 +169,6 @@ def _legacy_get_fill_color(probability: float, reduction: float = 1.0) -> str:
     return hex_color
 
 
-# Public alias for legacy function
-legacy_get_fill_color = _legacy_get_fill_color
-
-
 REGRESSION_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
 REGRESSION_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
 _EXTRA_RULE_LINE_UNITS = 0.45

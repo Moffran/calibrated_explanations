@@ -127,7 +127,7 @@ class CalibratedExplainer:
         perf_parallel = kwargs.pop("perf_parallel", None)
 
         init_time = time()
-        self.__initialized = False
+        self._initialized = False
         preprocessor_metadata = kwargs.pop("preprocessor_metadata", None)
         if isinstance(preprocessor_metadata, Mapping):
             self._preprocessor_metadata: Dict[str, Any] | None = dict(preprocessor_metadata)
@@ -185,10 +185,10 @@ class CalibratedExplainer:
             kwargs.get("interval_summary", IntervalSummary.REGULARIZED_MEAN)
         )
 
-        self.__fast = kwargs.get("fast", False)
-        self.__noise_type = kwargs.get("noise_type", "uniform")
-        self.__scale_factor = kwargs.get("scale_factor", 5)
-        self.__severity = kwargs.get("severity", 1)
+        self._fast = kwargs.get("fast", False)
+        self._noise_type = kwargs.get("noise_type", "uniform")
+        self._scale_factor = kwargs.get("scale_factor", 5)
+        self._severity = kwargs.get("severity", 1)
         # Prefer explicit caller value; otherwise default to 'prediction' as of v0.10.3
         if "condition_source" in kwargs:
             self.condition_source = kwargs.get("condition_source")
@@ -915,9 +915,7 @@ class CalibratedExplainer:
 
     def initialize_interval_learner_for_fast_explainer(self, *args, **kwargs) -> Any:
         """Public alias for internal interval learner initialization."""
-        return self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer(
-            *args, **kwargs
-        )
+        return self._initialize_interval_learner_for_fast_explainer(*args, **kwargs)
 
     @property
     def bridge_monitors(self) -> Dict[str, Any]:
@@ -1001,12 +999,12 @@ class CalibratedExplainer:
     @property
     def initialized(self) -> bool:
         """Return True if the explainer is initialized."""
-        return getattr(self, "_CalibratedExplainer__initialized", False)
+        return getattr(self, "_initialized", False)
 
     @initialized.setter
     def initialized(self, value: bool) -> None:
         """Set the initialization state of the explainer."""
-        self.__initialized = value
+        self._initialized = value
 
     @property
     def is_initialized(self) -> bool:
@@ -1110,7 +1108,7 @@ class CalibratedExplainer:
         """
         if not self.is_fast():
             try:
-                self._CalibratedExplainer__fast = True
+                self._fast = True
                 # Prefer calling the public method name so unit tests that patch
                 # `initialize_interval_learner_for_fast_explainer` observe the
                 # raised exception. Fall back to the name-mangled implementation
@@ -1119,9 +1117,9 @@ class CalibratedExplainer:
                 if callable(init_fn):
                     init_fn()
                 else:
-                    self._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+                    self._initialize_interval_learner_for_fast_explainer()
             except Exception:  # adr002_allow
-                self._CalibratedExplainer__fast = False
+                self._fast = False
                 raise
 
     @property
@@ -1380,7 +1378,7 @@ class CalibratedExplainer:
         """
         return self._get_sigma_test(x)
 
-    def _CalibratedExplainer__initialize_interval_learner_for_fast_explainer(self) -> None:  # noqa: N802
+    def _initialize_interval_learner_for_fast_explainer(self) -> None:  # noqa: N802
         """Backward-compatible wrapper for fast-mode interval learner initialization.
 
         Notes
@@ -1412,7 +1410,7 @@ class CalibratedExplainer:
         :class:`.CalibratedExplainer`
             A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
         """
-        self.__initialized = False
+        self._initialized = False
         check_is_fitted(learner)
         self.learner = learner
         if xs is not None and ys is not None:
@@ -1433,7 +1431,7 @@ class CalibratedExplainer:
             from ..calibration.interval_learner import initialize_interval_learner as _init_il
 
             _init_il(self)
-        self.__initialized = True
+        self._initialized = True
 
     def __repr__(self):
         """Return the string representation of the CalibratedExplainer."""
@@ -1966,7 +1964,7 @@ class CalibratedExplainer:
         bool
             True if fast mode is enabled.
         """
-        return self.__fast
+        return self._fast
 
     def is_mondrian(self) -> bool:
         """Test if Mondrian (per-bin) calibration is enabled.
@@ -2032,7 +2030,7 @@ class CalibratedExplainer:
 
         validate_difficulty_estimator(difficulty_estimator)
         if initialize:
-            self.__initialized = False
+            self._initialized = False
         self.difficulty_estimator = difficulty_estimator
 
         # Invalidate cached interval plugin metadata.
@@ -2076,7 +2074,7 @@ class CalibratedExplainer:
         ------
             ValueError: The mode can be either 'classification' or 'regression'.
         """
-        self.__initialized = False
+        self._initialized = False
         if mode == "classification":
             # assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
             self.num_classes = len(np.unique(self.y_cal))
@@ -2590,19 +2588,11 @@ class CalibratedExplainer:
         bool
             True if fast mode is enabled.
         """
-        return self.__fast
+        return self._fast
 
     @fast.setter
     def fast(self, value: bool) -> None:
-        self.__fast = value
-
-    @property
-    def _fast(self) -> bool:
-        return self.fast
-
-    @_fast.setter
-    def _fast(self, value: bool) -> None:
-        self.fast = value
+        self._fast = value
 
     @property
     def noise_type(self) -> str:
@@ -2613,19 +2603,11 @@ class CalibratedExplainer:
         str
             The noise type.
         """
-        return self.__noise_type
+        return self._noise_type
 
     @noise_type.setter
     def noise_type(self, value: str) -> None:
-        self.__noise_type = value
-
-    @property
-    def _noise_type(self) -> str:
-        return self.noise_type
-
-    @_noise_type.setter
-    def _noise_type(self, value: str) -> None:
-        self.noise_type = value
+        self._noise_type = value
 
     @property
     def scale_factor(self) -> float | None:
@@ -2636,19 +2618,11 @@ class CalibratedExplainer:
         float | None
             The scale factor.
         """
-        return self.__scale_factor
+        return self._scale_factor
 
     @scale_factor.setter
     def scale_factor(self, value: float | None) -> None:
-        self.__scale_factor = value
-
-    @property
-    def _scale_factor(self) -> float | None:
-        return self.scale_factor
-
-    @_scale_factor.setter
-    def _scale_factor(self, value: float | None) -> None:
-        self.scale_factor = value
+        self._scale_factor = value
 
     @property
     def severity(self) -> float | None:
@@ -2659,19 +2633,11 @@ class CalibratedExplainer:
         float | None
             The severity.
         """
-        return self.__severity
+        return self._severity
 
     @severity.setter
     def severity(self, value: float | None) -> None:
-        self.__severity = value
-
-    @property
-    def _severity(self) -> float | None:
-        return self.severity
-
-    @_severity.setter
-    def _severity(self, value: float | None) -> None:
-        self.severity = value
+        self._severity = value
 
 
 __all__ = ["CalibratedExplainer"]

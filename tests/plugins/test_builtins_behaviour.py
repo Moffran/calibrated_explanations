@@ -178,7 +178,7 @@ def test_legacy_plot_renderer_invokes_global(monkeypatch):
         calls.update(kwargs)
 
     monkeypatch.setattr(
-        "calibrated_explanations.legacy.plotting.plot_global",
+        "calibrated_explanations.viz._matplotlib_compat.plot_global",
         fake_plot_global,
     )
 

@@ -846,9 +846,7 @@ class CalibratedExplanation(ABC):
         target = self.copy() if copy else self
         has_conjunctive = bool(getattr(target, "has_conjunctive_rules", False))
 
-        extractor = getattr(
-            target, "_AlternativeExplanation__extracted_non_conjunctive_rules", None
-        )
+        extractor = getattr(target, "_extracted_non_conjunctive_rules", None)
         if has_conjunctive and callable(extractor):
             extractor(filtered_rules)
             target.has_conjunctive_rules = True
@@ -2582,9 +2580,9 @@ class AlternativeExplanation(CalibratedExplanation):
         self._check_preconditions()
         self.has_rules = False
         self.get_rules()
-        self.__is_super_explanation = False
-        self.__is_semi_explanation = False
-        self.__is_counter_explanation = False
+        self._is_super_explanation = False
+        self._is_semi_explanation = False
+        self._is_counter_explanation = False
 
     def __repr__(self):
         """Return a string representation of the alternative explanation."""
@@ -2910,7 +2908,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self.has_rules = True
         return self.rules
 
-    def __set_up_result(self):
+    def _set_up_result(self):
         """Initialise the container used to build alternative explanation rules."""
         result = {
             "base_predict": [],
@@ -2937,17 +2935,17 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def is_super_explanation(self):
         """Determine if the explanation is a super-explanation."""
-        return self.__is_super_explanation
+        return self._is_super_explanation
 
     def is_semi_explanation(self):
         """Determine if the explanation is a semi-explanation."""
-        return self.__is_semi_explanation
+        return self._is_semi_explanation
 
     def is_counter_explanation(self):
         """Determine if the explanation is a counter-explanation."""
-        return self.__is_counter_explanation
+        return self._is_counter_explanation
 
-    def __append_rule(self, new_rules, rules, rule):
+    def _append_rule(self, new_rules, rules, rule):
         """Append a single rule from *rules* at index *rule* to *new_rules*."""
         new_rules["predict"].append(rules["predict"][rule])
         new_rules["predict_low"].append(rules["predict_low"][rule])
@@ -2965,7 +2963,7 @@ class AlternativeExplanation(CalibratedExplanation):
             new_rules["feature_value"].append(None)
         new_rules["is_conjunctive"].append(rules["is_conjunctive"][rule])
 
-    def __filter_rules(
+    def _filter_rules(
         self,
         only_ensured=False,
         make_super=False,
@@ -2977,7 +2975,7 @@ class AlternativeExplanation(CalibratedExplanation):
         is_plain_regression = self.is_regression() and not self.is_probabilistic()
         initial_uncertainty = np.abs(self.prediction["high"] - self.prediction["low"])
 
-        new_rules = self.__set_up_result()
+        new_rules = self._set_up_result()
         rules = self.get_rules()  # pylint: disable=protected-access
 
         if is_plain_regression:
@@ -3032,7 +3030,7 @@ class AlternativeExplanation(CalibratedExplanation):
                     and rules["predict"][rule] == self.prediction["predict"]
                 ):
                     continue
-                self.__append_rule(new_rules, rules, rule)
+                self._append_rule(new_rules, rules, rule)
         else:
             positive_class = self.prediction["predict"] > 0.5
             for rule in range(len(rules["rule"])):
@@ -3082,16 +3080,16 @@ class AlternativeExplanation(CalibratedExplanation):
                     and rules["base_predict_high"] == rules["predict_high"][rule]
                 ):
                     continue
-                self.__append_rule(new_rules, rules, rule)
+                self._append_rule(new_rules, rules, rule)
 
         new_rules["classes"] = rules["classes"]
 
         if self.has_conjunctive_rules:  # pylint: disable=protected-access
-            self.__extracted_non_conjunctive_rules(new_rules)
+            self._extracted_non_conjunctive_rules(new_rules)
         self.rules = new_rules
         return self
 
-    def __pareto_rule_indexes(self, rules, *, pareto_cost: str):
+    def _pareto_rule_indexes(self, rules, *, pareto_cost: str):
         """Return rule indices on the output-envelope Pareto frontier.
 
         The output value (probability for classification or calibrated output
@@ -3187,20 +3185,20 @@ class AlternativeExplanation(CalibratedExplanation):
 
         return sorted(kept_indexes)
 
-    def __pareto_filter_rules(self, *, pareto_cost: str):
+    def _pareto_filter_rules(self, *, pareto_cost: str):
         """Reduce current rules to the output-envelope Pareto frontier."""
         rules = self.get_rules()  # pylint: disable=protected-access
-        pareto_indexes = set(self.__pareto_rule_indexes(rules, pareto_cost=pareto_cost))
+        pareto_indexes = set(self._pareto_rule_indexes(rules, pareto_cost=pareto_cost))
 
-        new_rules = self.__set_up_result()
+        new_rules = self._set_up_result()
         for rule in range(len(rules.get("rule", []))):
             if rule not in pareto_indexes:
                 continue
-            self.__append_rule(new_rules, rules, rule)
+            self._append_rule(new_rules, rules, rule)
         new_rules["classes"] = rules["classes"]
 
         if self.has_conjunctive_rules:  # pylint: disable=protected-access
-            self.__extracted_non_conjunctive_rules(new_rules)
+            self._extracted_non_conjunctive_rules(new_rules)
         self.rules = new_rules
         return self
 
@@ -3254,7 +3252,7 @@ class AlternativeExplanation(CalibratedExplanation):
         rules = self.get_rules()
         return [self._alternative_rule_to_dict(rules, i) for i in range(len(rules.get("rule", [])))]
 
-    def __extracted_non_conjunctive_rules(self, new_rules):
+    def _extracted_non_conjunctive_rules(self, new_rules):
         """Split out non-conjunctive rules while preserving the original mapping."""
         self.conjunctive_rules = MappingProxyType(
             {k: list(v) if isinstance(v, list) else v for k, v in new_rules.items()}
@@ -3267,9 +3265,9 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def reset(self):
         """Reset the explanation to its original state."""
-        self.__is_super_explanation = False
-        self.__is_semi_explanation = False
-        self.__is_counter_explanation = False
+        self._is_super_explanation = False
+        self._is_semi_explanation = False
+        self._is_counter_explanation = False
         self.has_rules = False
         self.get_rules()
         return self
@@ -3320,10 +3318,10 @@ class AlternativeExplanation(CalibratedExplanation):
         >>> super_alts = alternatives[0].super_explanations()
         """
         target = self.copy() if copy else self
-        target.__filter_rules(
+        target._filter_rules(
             only_ensured=only_ensured, make_super=True, include_potential=include_potential
         )
-        target._AlternativeExplanation__is_super_explanation = True  # pylint: disable=protected-access
+        target._is_super_explanation = True  # pylint: disable=protected-access
         return target
 
     def super(self, only_ensured=False, include_potential=True, copy=True):
@@ -3371,10 +3369,10 @@ class AlternativeExplanation(CalibratedExplanation):
         >>> semi_alts = alternatives[0].semi_explanations()
         """
         target = self.copy() if copy else self
-        target.__filter_rules(
+        target._filter_rules(
             only_ensured=only_ensured, make_semi=True, include_potential=include_potential
         )
-        target._AlternativeExplanation__is_semi_explanation = True  # pylint: disable=protected-access
+        target._is_semi_explanation = True  # pylint: disable=protected-access
         return target
 
     def semi(self, only_ensured=False, include_potential=True, copy=True):
@@ -3422,10 +3420,10 @@ class AlternativeExplanation(CalibratedExplanation):
         >>> counter_alts = alternatives[0].counter_explanations()
         """
         target = self.copy() if copy else self
-        target.__filter_rules(
+        target._filter_rules(
             only_ensured=only_ensured, make_counter=True, include_potential=include_potential
         )
-        target._AlternativeExplanation__is_counter_explanation = True  # pylint: disable=protected-access
+        target._is_counter_explanation = True  # pylint: disable=protected-access
         return target
 
     def counter(self, only_ensured=False, include_potential=True, copy=True):
@@ -3465,7 +3463,7 @@ class AlternativeExplanation(CalibratedExplanation):
         >>> ensured = alternatives[0].ensured_explanations()
         """
         target = self.copy() if copy else self
-        target.__filter_rules(only_ensured=True, include_potential=include_potential)
+        target._filter_rules(only_ensured=True, include_potential=include_potential)
         return target
 
     def ensured(self, include_potential=True, copy=True):
@@ -3507,8 +3505,8 @@ class AlternativeExplanation(CalibratedExplanation):
         probabilistic regression) or the calibrated numeric output (regression).
         """
         target = self.copy() if copy else self
-        target.__filter_rules(include_potential=include_potential)
-        target.__pareto_filter_rules(pareto_cost=pareto_cost)
+        target._filter_rules(include_potential=include_potential)
+        target._pareto_filter_rules(pareto_cost=pareto_cost)
         return target
 
     def pareto(

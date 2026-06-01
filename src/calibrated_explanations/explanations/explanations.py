@@ -1090,10 +1090,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
         if self.is_alternative():
-            return self.__convert_to_alternative_explanations()
+            return self._convert_to_alternative_explanations()
         return self
 
-    def __convert_to_alternative_explanations(self) -> "AlternativeExplanations":
+    def _convert_to_alternative_explanations(self) -> "AlternativeExplanations":
         """Return an ``AlternativeExplanations`` view sharing this collection's backing data."""
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)

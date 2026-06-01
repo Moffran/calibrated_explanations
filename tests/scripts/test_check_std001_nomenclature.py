@@ -47,7 +47,7 @@ def test_should_fail_when_non_legacy_dunder_exists_outside_allowlist(tmp_path: P
     assert "non_legacy_dunder_definition" in result.stdout
 
 
-def test_should_pass_when_only_allowlisted_bridge_symbols_are_present(tmp_path: Path) -> None:
+def test_should_fail_when_expired_bridge_symbol_is_present(tmp_path: Path) -> None:
     write(
         tmp_path / "src/calibrated_explanations/core/calibrated_explainer.py",
         """
@@ -59,8 +59,9 @@ def test_should_pass_when_only_allowlisted_bridge_symbols_are_present(tmp_path: 
 
     result = run_checker(tmp_path)
 
-    assert result.returncode == 0
-    assert "STD-001 nomenclature check passed" in result.stdout
+    assert result.returncode == 1
+    assert "STD-001 nomenclature violations detected" in result.stdout
+    assert "__initialized" in result.stdout
 
 
 def test_should_report_utility_import_bridge_records(tmp_path: Path) -> None:
@@ -99,12 +100,15 @@ def test_should_fail_when_mangled_private_symbol_is_not_allowlisted(tmp_path: Pa
     assert "__secret" in result.stdout
 
 
-def test_should_record_shim_surface_decisions_for_serialization_and_builders(tmp_path: Path) -> None:
+def test_should_not_detect_removed_shim_surfaces_for_serialization_and_builders(tmp_path: Path) -> None:
     write(
         tmp_path / "src/calibrated_explanations/serialization.py",
         """
-        def validate_payload(obj):
-            return _schema_validate_payload(obj)
+        def _schema_validate_payload(obj):
+            pass
+
+        def to_json(exp):
+            _schema_validate_payload(exp)
         """,
     )
     write(
@@ -112,7 +116,6 @@ def test_should_record_shim_surface_decisions_for_serialization_and_builders(tmp
         """
         def _legacy_get_fill_color(x):
             return x
-        legacy_get_fill_color = _legacy_get_fill_color
         """,
     )
 
@@ -121,29 +124,5 @@ def test_should_record_shim_surface_decisions_for_serialization_and_builders(tmp
     assert result.returncode == 0
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     shim_records = [row for row in report["records"] if row["violation_kind"] == "non_legacy_transitional_shim"]
-    assert any("validate_payload:schema.validate_payload_compat_wrapper" == row["symbol"] for row in shim_records)
-    assert any("legacy_get_fill_color:legacy_color_api_alias" == row["symbol"] for row in shim_records)
-
-
-def test_should_fail_when_shim_surface_is_not_thin(tmp_path: Path) -> None:
-    write(
-        tmp_path / "src/calibrated_explanations/serialization.py",
-        """
-        def validate_payload(obj):
-            tmp = dict(obj)
-            return tmp
-        """,
-    )
-    write(
-        tmp_path / "src/calibrated_explanations/viz/builders.py",
-        """
-        def _legacy_get_fill_color(x):
-            return x
-        legacy_get_fill_color = _legacy_get_fill_color
-        """,
-    )
-
-    result = run_checker(tmp_path)
-
-    assert result.returncode == 1
-    assert "validate_payload:schema.validate_payload_compat_wrapper" in result.stdout
+    assert not any("validate_payload" in row["symbol"] for row in shim_records)
+    assert not any("legacy_get_fill_color" in row["symbol"] for row in shim_records)

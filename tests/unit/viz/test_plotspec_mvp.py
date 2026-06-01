@@ -20,7 +20,7 @@ pytestmark = pytest.mark.viz
 def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
     """PlotSpec-backed probabilistic plots must enforce the interval guard."""
 
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
 
     explanation = types.SimpleNamespace(
         y_minmax=(0.0, 1.0),
@@ -216,7 +216,7 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
         "calibrated_explanations.viz.builders.build_probabilistic_bars_spec", fake_builder
     )
     monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
 
     class Explanation:
         y_minmax = (0.0, 1.0)
@@ -265,7 +265,7 @@ def testplot_alternative_sanitises_non_finite_payloads(monkeypatch):
         "calibrated_explanations.viz.builders.build_alternative_regression_spec", fake_builder
     )
     monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
-    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "_require_matplotlib", lambda: None)
 
     explanation = types.SimpleNamespace(
         y_minmax=(0.0, 1.0),
