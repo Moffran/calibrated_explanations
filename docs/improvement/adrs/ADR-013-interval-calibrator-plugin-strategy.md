@@ -72,7 +72,7 @@ We therefore need a plugin model that lets external contributors add new interva
    - Incremental calibration hooks (insert_calibration, CPS updates) remain the responsibility of IntervalRegressor; plugin authors extending those flows must invoke the superclass logic and only layer extra behaviour afterwards.
    - Provide a `LegacyIntervalContext` adaptor that wraps the existing `CalibratedExplainer` state without mutating it. Plugins receive a frozen view (read-only mappings, tuples) so they cannot accidentally leak mutations back into the explainer. The default plugin simply stores the objects it receives and returns them during `create()`.
    - The FAST path must return a protocol-compliant wrapper (located in
-     `src/calibrated_explanations/plugins/interval_wrappers.py`) that presents
+     `src/calibrated_explanations/calibration/interval_wrappers.py`) that presents
      the full calibrator interface while preserving per-feature indexing
      semantics and exposing `.calibrators` for introspection.
    - Immutability follows a hybrid approach: freeze critical structures such as
@@ -117,7 +117,7 @@ Each alternative scenario is evaluated with the same interval calibrator:
 - Feature-weight deltas may be computed but are auxiliary; the primary
   payload is the calibrated prediction interval for the alternative scenario.
 
-## Implementation status (2025-10-10)
+## Implementation status (2025-10-10; path correction 2026-06-02)
 
 - `CalibratedExplainer` now resolves both legacy and FAST interval calibrators
   through the registry, honouring environment/pyproject overrides and metadata
@@ -126,6 +126,7 @@ Each alternative scenario is evaluated with the same interval calibrator:
   `proba_source`) and exposed alongside explanation results.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1006-L1099】
 - Registry protocols and trusted defaults remain the same; no sandboxing or
   distribution changes are required.【F:src/calibrated_explanations/plugins/intervals.py†L1-L80】【F:src/calibrated_explanations/plugins/builtins.py†L120-L183】
+- **2026-06-02 (v0.11.3 Task 9 Workstream D):** ADR-013 §4 Lifecycle previously cited `src/calibrated_explanations/plugins/interval_wrappers.py` as the FAST wrapper location. That file does not exist. The wrapper is at `src/calibrated_explanations/calibration/interval_wrappers.py`. §4 text has been corrected. This is a documentation-only fix; no code change required.
 
 ## Consequences
 

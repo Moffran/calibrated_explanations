@@ -83,3 +83,14 @@ Changes to `.github/actions/ci-policy/**` are high-integrity and require two cor
 Normative implementation details and migration sequence are documented in:
 
 - `docs/improvement/CI-upgrade.md`
+
+## v0.11.3 Re-evaluation Record (2026-06-02)
+
+**Gap 1 — Advisory-to-required branch-protection flip:** Re-evaluated as required by `v0.11.3_plan.md` Task 9 Workstream D. Outcome: the advisory-to-required promotion of `ci-policy/validate-workflows` to a required branch-protection status check is a **platform-governed** setting that cannot be enforced from repository code alone. It requires repository administrator access and GitHub branch-protection rule changes that are outside the scope of PR-level governance. This is recorded as an **accepted operational constraint** for v0.11.3:
+
+- The `ci-policy/validate-workflows` check runs on PRs touching CI-governed files and reports violations (advisory mode, Rollout step 1).
+- The validator logic and CODEOWNERS coverage for workflow/policy paths are complete.
+- Promotion to required status is recorded as a pending platform action for repository administrators; it is not a code or ADR gap.
+- No milestone-blocking work remains in-repo; further promotion follows the Rollout plan in ADR-035 §Rollout when administrators apply the change.
+
+This re-evaluation closes the v0.11.3 appendix gap with an accepted-constraint record.

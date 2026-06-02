@@ -61,9 +61,9 @@ Negative/Risks:
 - Before each release branch cut: resolve doc warnings and linkcheck failures so the release
   gate is green.
 
-## Open Questions
+## Resolved Questions
 
-- Choose between sphinx-gallery vs nbconvert for MVP; proposal: start with nbconvert then switch to gallery.
+- **Gallery tooling decision (closed 2026-06-02, v0.11.3 Task 9 Workstream D):** nbconvert is used for v1.0.0 as the gallery rendering tool, consistent with the ADR proposal ("start with nbconvert then switch to gallery"). sphinx-gallery adoption is explicitly deferred to post-v1.0. Contributors adding notebooks should ensure headless execution with seeded randomness and datasets meeting the <30s CI runtime ceiling. The nbconvert pipeline renders examples to HTML; no sphinx-gallery integration is planned for the v1.0 release branch.
 
 ## Implementation status
 

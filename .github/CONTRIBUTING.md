@@ -17,6 +17,7 @@ Since we are now open to contributions, we welcome your feedback, suggestions, a
 - Milestone Plan: see `vx.y.z_plan.md` (e.g., `v0.10.1_plan.md`) for detailed checklists that map to each release plan milestone.
 - ADRs: see `docs/improvement/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
 - Documentation: Follow [Standard-004](docs/standards/STD-004-documentation-audience-standard.md) for all documentation structure and audience guidelines.
+- Legacy API: If your change affects `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods, update `docs/improvement/legacy_user_api_contract.md` and the associated parity tests in the same PR (ADR-020).
 
 Current highlights coming from reported issues and the release plan:
 
