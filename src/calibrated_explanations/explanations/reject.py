@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 
-from ..utils.deprecations import deprecate
 from ..utils.exceptions import DataShapeError, ValidationError
 from .explanations import AlternativeExplanations, CalibratedExplanations
 
@@ -194,10 +193,10 @@ class RejectResult:
 
     Notes
     -----
-    **Deprecation status:** ``RejectResult`` is the public return type only
-    during the v0.11.x transition period.  It will be replaced by
-    :class:`RejectResultV2` at v1.0.0-rc.  Do not add new fields to this
-    class; add them to the V2 artifacts instead.
+    **Stability status:** ``RejectResult`` remains the stable public return
+    type for v1.0.0. ``RejectResultV2`` is available as an opt-in strict
+    schema. Migration to a V2-first public return surface is planned for
+    v1.1+ via the standard ADR-011 deprecation cycle.
 
     **Synchronisation contract:** This class and :class:`RejectResultV2` must
     be kept in sync whenever the reject envelope schema changes:
@@ -296,13 +295,7 @@ def reject_result_v2_to_legacy(
     """Convert `RejectResultV2` to legacy `RejectResult` with additive metadata."""
     # SYNC: If RejectResultV2 / RejectDecisionArtifact / RejectPayloadArtifact gain
     # new fields, mirror them into `metadata` below and update upgrade_reject_result.
-    if emit_deprecation_warning:
-        deprecate(
-            "RejectResult is deprecated and will be removed at v1.0.0-rc. "
-            "The public API will return RejectResultV2 directly. "
-            "Use result.decision / result.payload for structured access.",
-            key="RejectResult:legacy_return_type",
-        )
+    del emit_deprecation_warning
     metadata = dict(result.metadata or {})
     metadata.setdefault("schema_version", result.schema_version)
     metadata.setdefault("source_indices", list(result.payload.source_indices))

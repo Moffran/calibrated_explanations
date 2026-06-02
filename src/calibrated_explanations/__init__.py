@@ -49,6 +49,7 @@ __all__ = [
     "CalibratedExplainer",
     "NormalizationStrategy",
     "RejectPolicySpec",
+    "RejectResultV2",
     "WrapCalibratedExplainer",
     "transform_to_numeric",
 ]
@@ -94,6 +95,12 @@ def __getattr__(name: str) -> Any:
 
         globals()[name] = RejectPolicySpec
         return RejectPolicySpec
+
+    if name == "RejectResultV2":
+        from .explanations.reject import RejectResultV2
+
+        globals()[name] = RejectResultV2
+        return RejectResultV2
 
     if name == "NormalizationStrategy":
         from .calibration.normalization_strategy import NormalizationStrategy

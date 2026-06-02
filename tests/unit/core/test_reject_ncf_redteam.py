@@ -7,13 +7,13 @@ legacy ``entropy`` input mapping to ``default``.
 from __future__ import annotations
 
 from types import SimpleNamespace
+import warnings
 
 import numpy as np
 import pytest
 
 from calibrated_explanations.core.reject import orchestrator as orch
 from calibrated_explanations.explanations.reject import RejectPolicy
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 def test_reject_input_validators_reject_non_numeric_payloads():
@@ -1375,15 +1375,13 @@ def test_apply_policy_result_schema_v2_returns_strict_artifacts(monkeypatch):
     assert isinstance(result.payload, RejectPayloadArtifact)
     assert result.metadata["schema_version"] == "2.0"
 
-    if deprecations_error_enabled():
-        with warns_or_raises():
-            result.to_legacy()
-    else:
-        with warns_or_raises():
-            legacy = result.to_legacy()
-        assert legacy.policy is RejectPolicy.FLAG
-        np.testing.assert_array_equal(legacy.rejected, result.decision.rejected)
-        assert legacy.metadata["schema_version"] == "2.0"
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
+        legacy = result.to_legacy()
+    assert not any(isinstance(item.message, DeprecationWarning) for item in caught)
+    assert legacy.policy is RejectPolicy.FLAG
+    np.testing.assert_array_equal(legacy.rejected, result.decision.rejected)
+    assert legacy.metadata["schema_version"] == "2.0"
 
 
 def test_reject_result_v2_round_trip_from_legacy(monkeypatch):
@@ -1398,15 +1396,13 @@ def test_reject_result_v2_round_trip_from_legacy(monkeypatch):
         explain_fn=lambda arr, **_: arr,
     )
     upgraded = RejectResultV2.from_legacy(legacy)
-    if deprecations_error_enabled():
-        with warns_or_raises():
-            upgraded.to_legacy()
-    else:
-        with warns_or_raises():
-            downgraded = upgraded.to_legacy()
-        np.testing.assert_array_equal(downgraded.rejected, legacy.rejected)
-        assert downgraded.policy is legacy.policy
-        assert downgraded.metadata["policy"] == legacy.metadata["policy"]
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
+        downgraded = upgraded.to_legacy()
+    assert not any(isinstance(item.message, DeprecationWarning) for item in caught)
+    np.testing.assert_array_equal(downgraded.rejected, legacy.rejected)
+    assert downgraded.policy is legacy.policy
+    assert downgraded.metadata["policy"] == legacy.metadata["policy"]
 
 
 def test_apply_policy_skips_prediction_payload_when_explain_fn_is_present(monkeypatch):

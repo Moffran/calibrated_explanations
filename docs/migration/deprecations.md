@@ -243,6 +243,7 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `plugins.registry.trust_plugin(plugin)` | `register_explanation_plugin(..., metadata={"trusted": True, ...})` or `mark_explanation_trusted(identifier)` | v0.11.1 | v0.11.3 | List-path API removed; use identifier-based trust APIs. |
 | `plugins.registry.find_for(model)` | `find_explanation_plugin_for(..., trusted_only=False)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
 | `plugins.registry.find_for_trusted(model)` | `find_explanation_plugin_for(..., trusted_only=True)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
+| `RejectResult` active deprecation warning path in `reject_result_v2_to_legacy()` | `RejectResult` remains stable in v1.0.0; use `RejectResultV2` as opt-in strict schema | v0.11.x | v0.11.3 | Group L resolved via deprecation reset path: removed active warning targeting v1.0.0-rc to comply with ADR-011 finalization exception. |
 
 ## Breaking changes
 

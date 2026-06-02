@@ -1,4 +1,4 @@
-> **Status note (2025-12-23):** Last edited 2025-12-23 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2026-06-02):** Last edited 2026-06-02 · Standard-002 gap closed in v0.11.3 Task 2. Coverage: 96.73% overall (tool: `scripts/quality/check_docstring_coverage.py`); `pydocstyle wrap_explainer.py` = zero violations. Gap row in `RELEASE_PLAN_status_appendix.md` marked resolved. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
 # Code Documentation Uplift (Standard-002)
 

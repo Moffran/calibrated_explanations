@@ -43,7 +43,7 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-036 | Accepted | v0.11.3 Task 6 promoted PlotSpec as the default user-facing plotting path after v0.11.2 mending evidence; monitor canonical dataclass validation and legacy fallback behavior |
 | ADR-037 | Accepted | v0.11.3 Task 6 promoted the governed built-in PlotSpec default while preserving the runtime plot-kind extension prohibition and explicit legacy opt-out |
 | STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
-| STD-002 | Partially complete | WrapCalibratedExplainer numpydoc closure in v0.11.3 |
+| STD-002 | Completed | WrapCalibratedExplainer numpydoc gap closed in v0.11.3 Task 2; coverage 96.73%, zero pydocstyle violations (2026-06-02) |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
 | STD-005 | Accepted with reopened v0.11.3 correction | Task 8 must align fallback/degraded-state visibility with `WARNING` log-first behavior and justify remaining `UserWarning` paths |
@@ -265,7 +265,7 @@ _Last gap analysis: 2026-03-03_
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Reject strategy expansion beyond binary conformal rejectors not yet implemented | 3 | 3 | 9 | Delivered in v0.11.1 Task 14 (uncertainty-based and cost-sensitive strategies added). Target milestone: closed; monitor for regressions. |
 | 2 | Strategy lifecycle hooks and configuration surface not finalized | 2 | 2 | 4 | Strategy config API deferred. Target milestone: v0.11.3. |
-| 3 | `RejectResult` public return type not yet migrated to strict `RejectResultV2`; `reject_result_v2_to_legacy()` downgrade active with no deprecation warning | 3 | 2 | 6 | Deprecation warning active from v0.11.x per ADR-011. Target milestone: v1.0.0-rc for public return type switch. |
+ | 3 | `RejectResult` public return type not yet migrated to strict `RejectResultV2` | 2 | 2 | 4 | Group L reset-path closure landed in v0.11.3: removed active deprecation warning from `reject_result_v2_to_legacy()` and kept `RejectResult` as stable v1.0.0 return type. Optional `RejectResultV2` remains available; full public return-type migration is deferred to a new post-v1.0 ADR-011 deprecation cycle (v1.1+ planning). |
 
 ### ADR-030 - Test Quality Priorities and Enforcement
 
@@ -327,11 +327,13 @@ _Last gap analysis: 2026-04-22_
 
 ### Standard-002 - Documentation Standardisation
 
-_Last gap analysis: 2026-04-22_
+**Compliance verification (2026-06-02):** Task 2 closed in v0.11.3. `python scripts/quality/check_docstring_coverage.py` reports 96.73% overall (Modules 99.17%, Classes 100%, Functions 95.75%, Methods 96.52%); `pydocstyle src/calibrated_explanations/core/wrap_explainer.py` reports zero violations. No open gaps.
+
+_Last gap analysis: 2026-06-02 (post-Task-5 stable surface)_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Wrapper public APIs lack full numpydoc blocks | 4 | 3 | 12 | Add full numpydoc blocks to `WrapCalibratedExplainer` and stable public surfaces. Target milestone: v0.11.3. |
+| 1 | Wrapper public APIs lack full numpydoc blocks | 0 | 0 | 0 | **Resolved 2026-06-02.** Coverage 96.73% ≥ 90% threshold; zero pydocstyle violations on `wrap_explainer.py`. No code changes required — gap was already satisfied on the post-Task-5 stable surface. |
 
 ### Standard-003 - Test Coverage Standard
 

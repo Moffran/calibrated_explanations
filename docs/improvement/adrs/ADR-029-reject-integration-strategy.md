@@ -1,4 +1,4 @@
-> **Status note (2026-01-06):** Last edited 2026-01-06 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-06-02):** Last edited 2026-06-02 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-029 — Reject Integration Strategy
 
@@ -67,6 +67,8 @@ Defined `RejectPolicy` members (implemented in `core.reject.policy`):
 - `ONLY_ACCEPTED` — Always predict; produce explanations only for non-rejected instances.
 
 **Implementation status (2026-05-14):** Deprecated aliases `PREDICT_AND_FLAG`, `EXPLAIN_ALL`, `EXPLAIN_REJECTS`, `EXPLAIN_NON_REJECTS`, and `SKIP_ON_REJECT` were removed in v0.11.3. Use the canonical members above. Old string values passed to `RejectPolicy(...)` now raise `ValueError`; module-level attribute access raises `AttributeError`.
+
+**Implementation status (2026-06-02):** Task 5 Group L resolved via deprecation reset path. `RejectResult` remains the stable public return type for v1.0.0; the active deprecation warning in `reject_result_v2_to_legacy()` was removed to satisfy ADR-011 finalization exception (no active deprecations may survive into v1.0.0). `RejectResultV2` remains available as an opt-in strict schema and migration target for a future v1.1+ deprecation cycle.
 
 ### Strategy extensibility
 - What lifecycle hooks are required for registry-managed strategies (init, fit, update, invalidate)?

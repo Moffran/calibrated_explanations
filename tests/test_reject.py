@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 import numpy as np
 import pytest
 from sklearn.datasets import make_classification
@@ -737,9 +738,11 @@ def test_reject_result_v2_to_legacy_adapter_preserves_core_fields():
         payload=payload,
         metadata={"schema_version": "2.0"},
     )
-    with pytest.warns(DeprecationWarning):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
         legacy = result_v2.to_legacy()
     assert isinstance(legacy, RejectResult)
+    assert not any(isinstance(item.message, DeprecationWarning) for item in caught)
     assert legacy.policy is RejectPolicy.FLAG
     np.testing.assert_array_equal(legacy.rejected, np.array([True, False]))
     assert legacy.metadata["schema_version"] == "2.0"
