@@ -103,18 +103,21 @@ class TestParallelExecutor:
             strategy = executor.resolve_strategy()
             assert strategy.func == executor.joblib_strategy
 
-    def test_joblib_missing_fallback(self, enable_fallbacks):
+    def test_joblib_missing_fallback(self, enable_fallbacks, caplog):
         """Test fallback to threads if joblib is requested but missing."""
+        import logging
+
         cfg = ParallelConfig(enabled=True, strategy="joblib")
         executor = ParallelExecutor(cfg)
         # Force joblib to be None
         with (
             patch("calibrated_explanations.parallel.parallel._JoblibParallel", None),
             patch.object(executor, "thread_strategy") as mock_thread,
+            caplog.at_level(logging.WARNING, logger="calibrated_explanations"),
         ):
-            with pytest.warns(UserWarning, match=r"fall.*back"):
-                executor.joblib_strategy(lambda x: x, [1])
+            executor.joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
+        assert any("Joblib" in r.message and "fall" in r.message for r in caplog.records)
 
     def test_metrics_tracking_with_failures(self):
         """Test that metrics track failures correctly when strategy raises."""

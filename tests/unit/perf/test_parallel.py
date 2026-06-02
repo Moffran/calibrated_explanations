@@ -278,7 +278,9 @@ def test_emit_with_telemetry(monkeypatch):
     executor.emit("test", {"value": 2})  # should not raise
 
 
-def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, enable_fallbacks):
+def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, caplog):
+    import logging
+
     class ExplodingPool:
         def __init__(self, *args, **kwargs):
             raise RuntimeError("boom")
@@ -290,9 +292,13 @@ def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, ena
     )
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
     executor = ParallelExecutor(cfg)
-    with pytest.warns(UserWarning, match="Failed to initialize parallel pool"), executor as ctx:
+    with caplog.at_level(logging.WARNING, logger="calibrated_explanations"), executor as ctx:
         assert ctx.active_strategy_name == "sequential"
         assert ctx.pool is None
+    assert any(
+        "Failed to initialize parallel pool" in r.message and r.levelno == logging.WARNING
+        for r in caplog.records
+    ), f"Expected WARNING log about pool init failure; got: {[r.message for r in caplog.records]}"
 
 
 def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):

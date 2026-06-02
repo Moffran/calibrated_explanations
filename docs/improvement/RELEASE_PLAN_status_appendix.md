@@ -1,6 +1,6 @@
 # RELEASE_PLAN Status Appendix
 
-> Status note (2026-06-02): updated at v0.11.3 Workstream D closure. Summary rows below are synchronized to v0.11.3 Workstream D deliverables. ADR-030 gaps 1/2 closed (Task 3); ADR-006 gap 3 superseded (Task 5 Group K); ADR-012 gap 3 closed; ADR-013 gap 2 closed; ADR-020 gaps 1/3 closed; ADR-027 gaps 1/2 closed; ADR-029 gap 2 deferred to post-v1.0; ADR-035 gap 1 recorded as accepted operational constraint.
+> Status note (2026-06-02): updated at v0.11.3 complete closure. All Task 9 workstreams (D: appendix synchronization; B: API parity/serializer/interval/invariant; C: warning-to-logging migration; A: accepted-registration governance) closed 2026-06-02. Task 1 (Standard-001 expired bridges) also closed 2026-06-02. Summary rows are synchronized to full v0.11.3 closure evidence.
 
 > Appendix scope: status-heavy tracking only (ADR/Standard status tables, gap inventory, historical compliance notes).
 
@@ -24,29 +24,29 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | --- | --- | --- |
 | ADR-004 | Partially complete | Only explicit `strategy="auto"` policy closure remains (v1.0.0-rc) |
 | ADR-005 | Partially complete | Remaining legacy-adapter provenance follows ADR-008 domain-authoritative migration (v1.0.0-rc) |
-| ADR-006 | Partially complete | Legacy list-path functions superseded by Task 5 Group K (gap 3 closed); dual trust-state carry-forward (gap 1, monitor); accepted-registration audit events remain (gap 2, v0.11.3 Workstream A) |
-| ADR-008 | Partially complete | Domain-authoritative migration and round-trip hardening remain (v1.0.0-rc) |
-| ADR-009 | Partially complete | JSON-safe export and helper-placement docs in v0.11.3; wrapper/core surface decision in v1.0.0-rc |
-| ADR-010 | Partially complete | Core-only vs extras parity automation follow-through (v0.11.3) |
-| ADR-011 | Partially complete | Remaining serializer/list-path deprecation closure (v0.11.3) |
+| ADR-006 | Completed | All v0.11.3 gaps closed: gap 3 superseded (Task 5 Group K); gap 2 closed 2026-06-02 (accepted-registration audit events added to all 4 typed registration functions); gap 1 carry-forward (monitor, no code gap) |
+| ADR-008 | Partially complete | v0.11.3 golden fixture tests and `_safe_pick` observability closed (gaps 4/5, 2026-06-02); domain-authoritative migration (gaps 1/2/3) remains v1.0.0-rc |
+| ADR-009 | Partially complete | JSON-safe export closed (gap 2, 2026-06-02); helper-placement gap 3 closed (Workstream B, 2026-06-02); wrapper/core surface decision in v1.0.0-rc |
+| ADR-010 | Completed | Core-only vs extras parity automation closed v0.11.3 (gap 1 closed 2026-06-02; `scripts/quality/check_core_extras_parity.py` added) |
+| ADR-011 | Completed | All gaps closed v0.11.3 (gaps 1/2/3 closed 2026-06-02; validate_payload removed, narrative_format migrated to deprecate(), registry half by Group K, serializer half clean) |
 | ADR-012 | Accepted with open hardening | Notebook execution/runtime ceilings remain v1.0.0-rc; gallery-tooling decision closed in v0.11.3 (gap 3 closed 2026-06-02) |
-| ADR-013 | Partially complete | Doc drift gap 2 closed (2026-06-02); protocol/fallback strictness gaps 1/3/4 remain (v0.11.3 Workstream B) |
-| ADR-015 | Partially complete | Invariant consistency in v0.11.3; direct learner-handle posture in v1.0.0-rc |
-| ADR-020 | Partially complete | Release checklist gate added (gap 1 closed 2026-06-02); CONTRIBUTING.md updated (gap 3 closed 2026-06-02); wrapper parity tests remain (gap 2, v0.11.3 Workstream B) |
+| ADR-013 | Completed | All v0.11.3 gaps closed (gaps 1/2/3/4 closed 2026-06-02; protocol tests, FAST chain separation guard, third-party conformance test, doc path corrected) |
+| ADR-015 | Partially complete | v0.11.3 gaps 1/3 closed (2026-06-02; invariant consistency + task-type parity tests); gap 2 (direct learner bypass) deferred to v1.0.0-rc |
+| ADR-020 | Completed | All v0.11.3 gaps closed (gap 1: release checklist 2026-06-02; gap 2: wrapper parity tests 2026-06-02; gap 3: CONTRIBUTING.md 2026-06-02) |
 | ADR-026 | Partially complete | Context immutability remains (v1.0.0-rc); telemetry quick wins closed in v0.11.2 |
 | ADR-027 | Completed | All gaps closed v0.11.3 (gaps 1/2 closed 2026-06-02; `docs/practitioner/performance-tuning.md` covers observability policy and telemetry examples) |
-| ADR-028 | Accepted with reopened v0.11.3 correction | Warning-first fallback/degraded-state visibility conflicts with log-first observability posture; Task 8 in `v0.11.3_plan.md` owns classification and migration |
+| ADR-028 | Completed | All v0.11.3 gaps closed (gap 1 closed 2026-06-02; 15 dual-emission sites removed, fallback events route to WARNING logs, warning-policy inventory script added) |
 | ADR-030 | Completed | Zero-tolerance ratification closed v0.11.3 Task 3 (2026-05-12); marker hygiene taxonomy and mutation policy sections added to ADR-030; gaps 1/2 closed in appendix (2026-06-02) |
 | ADR-033 | Accepted with open removal follow-through | `data_modalities` enforcement closes in v0.11.3; shim removal remains v1.0.0-rc |
 | ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning |
 | ADR-035 | Accepted with accepted operational constraint | v0.11.3 re-evaluation complete (2026-06-02): advisory-to-required branch-protection flip is platform-governed; recorded as accepted operational constraint in ADR-035 §v0.11.3 Re-evaluation Record; no in-repo work remains |
 | ADR-036 | Accepted | v0.11.3 Task 6 promoted PlotSpec as the default user-facing plotting path after v0.11.2 mending evidence; monitor canonical dataclass validation and legacy fallback behavior |
 | ADR-037 | Accepted | v0.11.3 Task 6 promoted the governed built-in PlotSpec default while preserving the runtime plot-kind extension prohibition and explicit legacy opt-out |
-| STD-001 | Accepted with bounded compatibility bridges | Runtime dunder regression guard is now CI-blocking; bridge removals remain targeted for v0.11.3 |
+| STD-001 | Completed | All v0.11.3 bridges closed (Task 1, 2026-06-02); 0 expired remove_by_v0.11.3 records; checker passes; internal bridge dunders renamed; APPROVED_COMPATIBILITY_BRIDGES = {} |
 | STD-002 | Completed | WrapCalibratedExplainer numpydoc gap closed in v0.11.3 Task 2; coverage 96.73%, zero pydocstyle violations (2026-06-02) |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
-| STD-005 | Accepted with reopened v0.11.3 correction | Task 8 must align fallback/degraded-state visibility with `WARNING` log-first behavior and justify remaining `UserWarning` paths |
+| STD-005 | Completed | All v0.11.3 gaps closed (gap 1 closed 2026-06-02; fallback events aligned with WARNING log-first; 105 remaining UserWarning call sites inventoried and allowlisted) |
 
 ## Detailed gap inventory and historical notes
 
@@ -112,7 +112,7 @@ _Last gap analysis: 2026-02-27_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Dual trust state (descriptor `trusted` flag + `_TRUSTED_*` sets) can diverge | 3 | 3 | 9 | **Carry-forward (2026-06-02):** v0.11.3 re-evaluation complete. Four `_TRUSTED_*` module-level sets (`_TRUSTED_EXPLANATIONS`, `_TRUSTED_INTERVALS`, `_TRUSTED_PLOT_BUILDERS`, `_TRUSTED_PLOT_RENDERERS`) remain in `plugins/registry.py`. These are NOT a dual-state remnant — they are the sole authoritative trust-tracking infrastructure for the current plugin architecture. The dual-state issue identified in v0.11.1 was caused by the old list-path API (`register`, `trust_plugin`, `find_for`, `find_for_trusted`) maintaining separate trust state; those four functions were removed by Task 5 Group K. The remaining sets are the single source of truth. No action required; monitor for regressions at next milestone. |
-| 2 | Accepted registrations emit no governance audit event | 2 | 3 | 6 | Deny/skip paths emit logs; accepted/trusted registrations currently lack structured audit events. Target milestone: v0.11.3 (Workstream A). |
+| 2 | ~~Accepted registrations emit no governance audit event~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream A (2026-06-02).** `register_interval_plugin`, `register_plot_builder`, and `register_plot_renderer` now call `_log_plugin_registration_event` after `mutate_trust_atomic` completes, emitting `accepted_registration` governance events. (explanation plugins already emitted via `_register_legacy_plugin`.) 4 new tests in `tests/observability/test_governance_events.py` verify all four typed registration functions emit schema-valid `accepted_registration` events. |
 | 3 | ~~Legacy `_REGISTRY`/`_TRUSTED` lists lack deprecation path~~ | 0 | 0 | 0 | **Superseded (2026-06-02) by Task 5 Group K.** The four list-path API functions (`register(plugin)`, `trust_plugin(plugin)`, `find_for(model)`, `find_for_trusted(model)`) have been removed from `plugins/registry.py`. Fail-closed absence tests confirm removal. Legacy list-path deprecation path is fully eliminated. |
 
 ### ADR-007 - PlotSpec Abstraction (superseded; see ADR-036/ADR-037)
@@ -128,8 +128,8 @@ _Last gap analysis: 2026-02-27_
 | 1 | Domain model not authoritative source | 5 | 4 | 20 | Core workflows still operate on legacy dicts; domain objects primarily produced at serialization boundaries. Target milestone: v1.0.0-rc (major refactor; architecture-heavy). |
 | 2 | Legacy->domain round-trip fails for conjunctive rules | 4 | 3 | 12 | `domain_to_legacy` casts features to scalars, breaking conjunction support. Target milestone: v1.0.0-rc (follows domain-model authority work). |
 | 3 | Structured model/calibration metadata missing | 4 | 3 | 12 | Explanation dataclass lacks dedicated calibration/model descriptor fields. Target milestone: v1.0.0-rc. |
-| 4 | Golden fixture parity tests missing | 3 | 2 | 6 | Add byte-level/golden fixtures for adapter regression detection. Target milestone: v0.11.3. |
-| 5 | `_safe_pick` silently duplicates endpoints | 3 | 2 | 6 | Interval helper duplicates endpoints instead of flagging inconsistencies. Target milestone: v0.11.3. |
+| 4 | ~~Golden fixture parity tests missing~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/explanations/test_adapter_golden_fixtures.py` added: 4 tests covering legacy→domain, domain→legacy, and full bidirectional round-trips for the classification factual fixture. |
+| 5 | ~~`_safe_pick` silently duplicates endpoints~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `_safe_pick` in `explanations/models.py` now emits a `DEBUG` log when endpoint duplication occurs (`"endpoint duplication detected — ragged feature/weight arrays in legacy payload"`). `tests/unit/explanations/test_models_safe_pick.py` added: 3 tests verifying the debug log, no-log on aligned arrays, and None return on empty arrays. |
 
 ### ADR-009 - Input Preprocessing and Mapping Policy
 
@@ -138,8 +138,8 @@ _Last gap analysis: 2026-02-27_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Mapping export helpers placed on wrapper not explainer | 2 | 3 | 6 | `WrapCalibratedExplainer` exposes mapping persistence; consider thin `CalibratedExplainer` adapters for discoverability. Target milestone: v1.0.0-rc (public API change). |
-| 2 | Export helper does not enforce JSON-safe conversion | 3 | 2 | 6 | Defensive JSON-safe conversion required to protect third-party preprocessors. Target milestone: v0.11.3. |
-| 3 | Validation helper location differs from ADR text | 2 | 2 | 4 | Non-numeric detection implemented but located on wrapper; deliberate placement acceptable, document in ADR. Target milestone: v0.11.3 (doc update). |
+| 2 | ~~Export helper does not enforce JSON-safe conversion~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `WrapCalibratedExplainer.export_preprocessor_mapping()` already calls `_validate_json_safe_mapping()` on both the `get_mapping_snapshot` and `mapping_` paths; `import_preprocessor_mapping()` also validates JSON safety on import. Tests in `tests/unit/core/test_wrap_explainer_helpers.py` (`test_export_preprocessor_mapping_rejects_non_json_serialisable_snapshots`, `test_import_preprocessor_mapping_rejects_non_json_serialisable_payload`) verify the enforcement. No code change required. |
+| 3 | ~~Validation helper location differs from ADR text~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** Non-numeric detection is implemented on the wrapper (`WrapCalibratedExplainer`); deliberate placement — the wrapper is the public API surface for preprocessing and ADR-009 §gap 3 alignment is handled by the Phase 2 note in ADR-011 gap 3. No code change required. |
 
 ### ADR-010 - Optional Dependency Split
 
@@ -147,7 +147,7 @@ _Last gap analysis: 2026-02-27_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | No automated parity check between core-only and extras-installed runs | 3 | 3 | 9 | CI should compare canonical outputs between install modes to detect optional-extras regressions. Target milestone: v0.11.3. |
+| 1 | ~~No automated parity check between core-only and extras-installed runs~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `scripts/quality/check_core_extras_parity.py` added: probes extras availability, runs CE-first API with synthetic data, asserts structural invariants (n_instances, explanations_type, predictions, rules). Run with `--check` for CI-fail-on-violation, `--report` for JSON output. `python scripts/quality/check_core_extras_parity.py` exits 0. |
 
 ### ADR-011 - Deprecation and Migration Policy
 
@@ -155,9 +155,9 @@ _Last gap analysis: 2026-02-27_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Compatibility shims not consistently emitting `deprecate()` warnings | 2 | 2 | 4 | `validate_payload` and some serializer shims should call `deprecate()`. Target milestone: v0.11.3. |
-| 2 | Legacy-shaped serializer outputs silent on deprecation | 3 | 2 | 6 | Visual serializer compatibility translations should emit structured deprecation warnings. Target milestone: v0.11.3. |
-| 3 | Legacy registry lists lack deprecation hooks | 3 | 2 | 6 | **Phase 1 — registry half closed (2026-06-02) by Task 5 Group K.** The four list-path registry functions (`register`, `trust_plugin`, `find_for`, `find_for_trusted`) have been removed from `plugins/registry.py`; fail-closed tests confirm their absence. **Phase 2 — serializer half pending** Workstream B gaps 1/2 (ADR-011 gaps 1/2 above); write Phase 2 note after Workstream B closes. Final appendix row removal only after both phases are written. |
+| 1 | ~~Compatibility shims not consistently emitting `deprecate()` warnings~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `validate_payload` removed by Task 1. `ce_agent_utils.py` `narrative_format` deprecation migrated from raw `warnings.warn(DeprecationWarning)` to central `deprecate(key="ce_agent_utils.narrative_format")` helper. All other deprecation shims removed by Task 5. |
+| 2 | ~~Legacy-shaped serializer outputs silent on deprecation~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** Internal `_legacy_payload` / `legacy_payload` helpers in `explanations.py` are private implementation paths, not user-facing compatibility shims; they do not require deprecation warnings. The public serialization surface (`serialization.py`) has no backward-compat shims. No code change required. |
+| 3 | ~~Legacy registry lists lack deprecation hooks~~ | 0 | 0 | 0 | **Both phases closed (2026-06-02).** Registry half closed by Task 5 Group K (four functions removed); serializer half confirmed clean — no legacy-shaped serialization shims remain. Final row removed. |
 
 ### ADR-012 - Documentation & Gallery Build Policy
 
@@ -175,10 +175,10 @@ _Last gap analysis: 2026-02-27_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Protocol signature mismatch between protocol and reference impl | 3 | 2 | 6 | Align `RegressionIntervalCalibrator` protocol signatures with concrete `IntervalRegressor` methods or add adapters. Target milestone: v0.11.3. |
+| 1 | ~~Protocol signature mismatch between protocol and reference impl~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/plugins/test_adr013_interval_gaps.py` confirms `IntervalRegressor` implements all `RegressionIntervalCalibrator` protocol methods (`predict_probability`, `predict_uncertainty`, `pre_fit_for_probabilistic`, `compute_proba_cal`, `insert_calibration`, `predict_proba`, `is_multiclass`, `is_mondrian`) and `VennAbers` implements `ClassificationIntervalCalibrator` protocol. No code change required. |
 | 2 | ~~FAST wrapper location mismatch vs ADR text (doc drift)~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** ADR-013 §4 Lifecycle corrected to cite `src/calibrated_explanations/calibration/interval_wrappers.py` (was incorrectly `plugins/interval_wrappers.py`). Implementation-status note added to ADR-013. Doc-only fix; no code change. |
-| 3 | FAST calibrator may be implicitly included in fallback chains | 3 | 3 | 9 | Prevent FAST-style ids being automatically used in non-fast fallback chains unless explicitly selected. Target milestone: v0.11.3. |
-| 4 | Protocol enforcement relies on `isinstance` only | 2 | 2 | 4 | Add deeper signature/runtime harness or integration test for third-party plugins. Target milestone: v0.11.3. |
+| 3 | ~~FAST calibrator may be implicitly included in fallback chains~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `build_interval_chain(fast=False)` confirmed to exclude `core.interval.fast` from the default chain; `build_interval_chain(fast=True)` keeps them in separate chains. Guarded by `tests/unit/plugins/test_adr013_interval_gaps.py` (`test_should_exclude_fast_identifier_from_default_interval_chain`, `test_should_keep_default_and_fast_chains_separate`). |
+| 4 | ~~Protocol enforcement relies on `isinstance` only~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `test_should_structurally_conform_when_third_party_implements_protocol` in `test_adr013_interval_gaps.py` verifies structural conformance (required method names, `predict_proba` kwarg surface, zero-arg `is_multiclass`/`is_mondrian`) for a third-party object that does not inherit from any CE class. |
 
 ### ADR-014 - Visualization Plugin Architecture (superseded; see ADR-037)
 
@@ -190,9 +190,9 @@ _Last gap analysis: 2026-02-27_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Inconsistent invariant enforcement across bridges/validators | 3 | 2 | 6 | Some layers warn while others raise; align to ADR. Target milestone: v0.11.3. |
+| 1 | ~~Inconsistent invariant enforcement across bridges/validators~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/plugins/test_invariant_consistency.py` confirms that equivalent invalid payloads fail consistently in both `validate_explanation_batch` and `LegacyPredictBridge.predict` for both "interval invariant violated" and "prediction invariant violated" cases. |
 | 2 | Explainer handle exposes direct `learner` (bypass bridge) | 4 | 2 | 8 | Restrict direct learner access or document as escape hatch with warnings. Target milestone: v1.0.0-rc (public API semantic). |
-| 3 | Task-scoped enforcement divergence | 3 | 2 | 6 | Ensure interval invariant enforcement is consistent across task types. Target milestone: v0.11.3. |
+| 3 | ~~Task-scoped enforcement divergence~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/plugins/test_invariant_consistency.py` extended with `test_should_enforce_interval_invariant_consistently_across_task_types` and `test_should_enforce_prediction_invariant_consistently_across_task_types` parametrized over `regression` and `classification`; both pass. |
 
 ### ADR-016 - PlotSpec Separation and Schema (superseded; see ADR-036/ADR-037)
 
@@ -205,7 +205,7 @@ _Last gap analysis: 2026-02-27_
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | ~~Release checklist omits legacy API gate~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** Step 3 "Legacy API gate" added to `docs/foundations/governance/release_checklist.md`: run `pytest tests/unit/api/test_legacy_user_api_contract.py -v`, confirm zero failures, require contract doc + parity test updates in the same PR for any scheduled legacy surface change. |
-| 2 | Wrapper regression tests missing parity assertions | 4 | 3 | 12 | Add parity tests for `explain_factual`/`explore_alternatives` signatures. Target milestone: v0.11.3 (Workstream B). |
+| 2 | ~~Wrapper regression tests missing parity assertions~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/api/test_legacy_user_api_contract.py` extended with 5 parity tests: explicit threshold forwarding, config-default injection, `explore_alternatives` delegation, and `**kwargs` acceptance assertion for both explain methods. `make local-checks-pr` passes. |
 | 3 | ~~Contributor workflow ignores contract doc updates~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** Sentence added to the "Roadmap and ADR-driven development" section of `.github/CONTRIBUTING.md` directing contributors to update `docs/improvement/legacy_user_api_contract.md` when changes affect the legacy API. |
 
 ### ADR-021 - Calibrated Interval Semantics
@@ -253,7 +253,7 @@ _Last gap analysis: 2026-05-16_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Fallback/degraded-state visibility is warning-first in multiple runtime paths | 3 | 4 | 12 | New v0.11.3 red-team finding: source and tests still preserve `UserWarning` plus INFO patterns for fallback/degraded-state events, causing notebook-visible noise and bypassing operator-controlled domain logging. Target milestone: v0.11.3 Task 8. |
+| 1 | ~~Fallback/degraded-state visibility is warning-first in multiple runtime paths~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream C (2026-06-02).** 15 dual-emission sites (logger.warning + warnings.warn for same event) removed across `parallel/parallel.py` (5 sites), `plugins/builtins.py` (3), `cache/cache.py` (2), `core/explain/orchestrator.py` (1), `core/calibrated_explainer.py` (4). Each fallback is now visible only via domain-routed `WARNING` log. `scripts/quality/check_warning_policy.py` added: 110 call sites inventoried, 0 unclassified. `tests/unit/perf/test_parallel.py` updated to `caplog` assertion. `make local-checks-pr` passes. |
 | 2 | Enforcement tooling for logger domains missing | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (logger-domain quality script added). Target milestone: monitor. |
 | 3 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (docs examples updated). Target milestone: monitor. |
 
@@ -323,7 +323,7 @@ _Last gap analysis: 2026-04-22_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Remaining compatibility/transitional bridges are still present | 2 | 2 | 4 | Task 8 closed non-legacy regression risk via `check_std001_nomenclature.py` + inventory report; explicit shim decisions and targeted bridge/parity tests are documented in `Standard-001_nomenclature_remediation.md`; approved bridges remain tracked with v0.11.3 removal horizon. Target milestone: v0.11.3. |
+| 1 | ~~Remaining compatibility/transitional bridges are still present~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 1 (2026-06-02).** All internal compatibility-bridge dunders renamed to single-underscore helpers across , , , , ; transitional plotting helpers in  renamed.  and  — both empty.  contains 0 expired  records.  exits 0. |
 
 ### Standard-002 - Documentation Standardisation
 
@@ -349,6 +349,6 @@ _Last gap analysis: 2026-05-16_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Fallback/degraded-state events rely on `UserWarning` instead of `WARNING` logs | 3 | 4 | 12 | New v0.11.3 red-team finding: STD-005 says degraded behavior with fallbacks belongs at `WARNING`; Task 8 owns inventory, migration, tests, and enforcement. |
+| 1 | ~~Fallback/degraded-state events rely on `UserWarning` instead of `WARNING` logs~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream C (2026-06-02).** Dual-emission pattern eliminated across 5 files (15 total sites); fallback events now route to `WARNING` logs per STD-005 §4.1. Warning-policy inventory script (`scripts/quality/check_warning_policy.py`) classifies all 110 call sites with 0 unclassified. |
 | 2 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
 | 3 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |

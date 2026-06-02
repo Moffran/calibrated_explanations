@@ -18,7 +18,6 @@ import contextlib
 import logging
 import sys
 import threading
-import warnings
 from dataclasses import dataclass as _dataclass
 from dataclasses import field
 from hashlib import blake2b
@@ -47,11 +46,8 @@ except:  # noqa: E722
     _HAVE_CACHETOOLS = False
     # Visible notification: cachetools missing, falling back to minimal backend
     _logger = logging.getLogger(__name__)
-    _logger.info("cachetools not available; falling back to minimal LRU/TTL cache backend")
-    warnings.warn(
-        "Cache backend fallback: using minimal in-package LRU/TTL implementation due to missing 'cachetools'",
-        UserWarning,
-        stacklevel=2,
+    _logger.warning(
+        "Cache backend fallback: cachetools not available; using minimal in-package LRU/TTL implementation"
     )
     # Provide a tiny, well-tested fallback for environments where
     # `cachetools` is not installed (CI minimal images). The fallback
@@ -660,13 +656,9 @@ class LRUCache(Generic[K, V]):
         if estimator is default_size_estimator:
             state["_size_estimator"] = "__default_size_estimator__"
         elif callable(estimator):
-            logger.info(
-                "Dropping non-default size_estimator during pickle to keep cache state portable"
-            )
-            warnings.warn(
-                "Cache pickle fallback: non-default size_estimator is not preserved; restored to default_size_estimator on unpickle",
-                UserWarning,
-                stacklevel=2,
+            logger.warning(
+                "Cache pickle: non-default size_estimator is not preserved; "
+                "restored to default_size_estimator on unpickle"
             )
             state["_size_estimator"] = "__dropped_size_estimator__"
         return state

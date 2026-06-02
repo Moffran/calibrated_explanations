@@ -411,13 +411,8 @@ class ExplanationOrchestrator:
                 # producing an empty calibration set — fall back to observed
                 # labels so discretization can proceed.
                 if mask.sum() == 0:
-                    _TELEMETRY_LOGGER.info(
+                    _TELEMETRY_LOGGER.warning(
                         "All prediction-derived condition labels are NaN; falling back to observed y_cal"
-                    )
-                    warnings.warn(
-                        "All prediction-derived condition labels are NaN; falling back to observed y_cal.",
-                        UserWarning,
-                        stacklevel=2,
                     )
                     condition_labels = None
                 else:

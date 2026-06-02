@@ -1297,7 +1297,7 @@ def register_interval_plugin(
             update_trusted_identifier(_TRUSTED_INTERVALS, identifier, trusted)
             return descriptor
 
-        return mutate_trust_atomic(
+        result = mutate_trust_atomic(
             identifier=identifier,
             trusted=trusted,
             actor="register_interval_plugin",
@@ -1306,6 +1306,13 @@ def register_interval_plugin(
             mutation=_mutation,
             verify=_verify_trust_invariants_if_enabled,
         )
+        _log_plugin_registration_event(
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=trusted,
+        )
+        return result
 
 
 def find_interval_descriptor(identifier: str) -> IntervalPluginDescriptor | None:
@@ -1402,7 +1409,7 @@ def register_plot_builder(
         update_trusted_identifier(_TRUSTED_PLOT_BUILDERS, identifier, trusted)
         return descriptor
 
-    return mutate_trust_atomic(
+    result = mutate_trust_atomic(
         identifier=identifier,
         trusted=trusted,
         actor="register_plot_builder",
@@ -1411,6 +1418,13 @@ def register_plot_builder(
         mutation=_mutation,
         verify=_verify_trust_invariants_if_enabled,
     )
+    _log_plugin_registration_event(
+        identifier=identifier,
+        provider=meta.get("provider"),
+        source=source,
+        trusted=trusted,
+    )
+    return result
 
 
 def register_plot_renderer(
@@ -1488,7 +1502,7 @@ def register_plot_renderer(
         update_trusted_identifier(_TRUSTED_PLOT_RENDERERS, identifier, trusted)
         return descriptor
 
-    return mutate_trust_atomic(
+    result = mutate_trust_atomic(
         identifier=identifier,
         trusted=trusted,
         actor="register_plot_renderer",
@@ -1497,6 +1511,13 @@ def register_plot_renderer(
         mutation=_mutation,
         verify=_verify_trust_invariants_if_enabled,
     )
+    _log_plugin_registration_event(
+        identifier=identifier,
+        provider=meta.get("provider"),
+        source=source,
+        trusted=trusted,
+    )
+    return result
 
 
 def register_plot_style(

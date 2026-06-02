@@ -1,12 +1,28 @@
-> **Status note (2026-06-01):** Last edited 2026-06-01 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2026-06-02):** Last edited 2026-06-02 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 >
-> **v0.11.3 final-removal completed (2026-06-01):** All three bounded compatibility surfaces removed in v0.11.3:
-> - `legacy/plotting.py` deleted; functions migrated to `viz/_matplotlib_compat.py`; callers in `plotting.py` and `plugins/builtins.py` updated.
-> - `serialization.validate_payload` wrapper deleted; internal call at line 72 updated to `_schema_validate_payload`.
-> - `viz/builders.legacy_get_fill_color` alias deleted from `builders.py` and `viz/__init__.py`.
-> - `check_std001_nomenclature.py` `APPROVED_SHIM_SURFACES` and `/legacy/` exception block removed.
-> - Fail-closed tests added confirming absence of all three surfaces.
-> Standard-001 is **CLOSED**.
+> **v0.11.3 full closure completed (2026-06-02):** All Standard-001 v0.11.3 obligations closed:
+>
+> **Public surface removals (2026-06-01):**
+> - `legacy/plotting.py` deleted; functions migrated to `viz/_matplotlib_compat.py`; callers updated.
+> - `serialization.validate_payload` removed; `_schema_validate_payload` (private) retained for internal use.
+> - `viz/builders.legacy_get_fill_color` alias removed; `_legacy_get_fill_color` (private) retained.
+> - Fail-closed attribute-absence tests added for all three surfaces.
+>
+> **Internal bridge and transitional helper renames (2026-06-02):**
+> - `calibration/state.py`: `__X_cal` bridge replaced with canonical protected accessor.
+> - `calibration/venn_abers.py`: `__is_multiclass`, `__predict_proba_with_difficulty` → single-underscore names.
+> - `core/calibrated_explainer.py`: all expired dunder state and helper symbols → single-underscore names.
+> - `explanations/explanation.py`: expired dunder helpers and fields → single-underscore names.
+> - `explanations/explanations.py`: `__convert_to_alternative_explanations` → single-underscore helper.
+> - `plotting.py`: `__require_matplotlib`, `__setup_plot_style`, `__plot_proba_triangle` → single-underscore helpers.
+>
+> **Checker cleanup:**
+> - `APPROVED_COMPATIBILITY_BRIDGES = {}` and `APPROVED_TRANSITIONAL_SHIMS = {}` — both empty.
+> - `reports/nomenclature_violation_inventory.json`: **0 expired `remove_by_v0.11.3` records**.
+>
+> **Verification:** `check_std001_nomenclature.py --check` exits 0. `pytest tests/unit/test_std001_task8_closure.py tests/unit/test_explanations_validate_payload.py` → 6 passed. `make local-checks-pr` → exit 0.
+>
+> Standard-001 is **CLOSED** for v0.11.3.
 
 # Standard-001 Nomenclature Remediation
 

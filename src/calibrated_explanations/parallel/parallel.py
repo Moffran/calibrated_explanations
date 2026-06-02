@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 import time
-import warnings
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
@@ -255,12 +254,6 @@ class ParallelExecutor:
             if not isinstance(exc, Exception):
                 raise
             logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
-            logger.info("Parallel pool init failure; switching to sequential execution")
-            warnings.warn(
-                f"Failed to initialize parallel pool ({exc!r}); falling back to sequential execution.",
-                UserWarning,
-                stacklevel=2,
-            )
             self.pool = None
             self.active_strategy_name = "sequential"
 
@@ -356,16 +349,6 @@ class ParallelExecutor:
                     candidate,
                     min_batch_threshold,
                 )
-                logger.info(
-                    "Parallel decision: sequential (reason=below_min_batch_size, workload=%d, threshold=%d)",
-                    candidate,
-                    min_batch_threshold,
-                )
-                warnings.warn(
-                    f"Parallel execution disabled: workload ({candidate}) below minimum parallel threshold ({min_batch_threshold}); running sequential.",
-                    UserWarning,
-                    stacklevel=2,
-                )
                 self._warned_min_batch = True
             self._emit(
                 "parallel_decision",
@@ -387,16 +370,6 @@ class ParallelExecutor:
                     "Parallel execution disabled: workload (%d) below tiny-workload threshold (%d); running sequential.",
                     candidate,
                     tiny_threshold,
-                )
-                logger.info(
-                    "Parallel decision: sequential (reason=tiny_workload, workload=%d, threshold=%d)",
-                    candidate,
-                    tiny_threshold,
-                )
-                warnings.warn(
-                    f"Parallel execution disabled: workload ({candidate}) below tiny-workload threshold ({tiny_threshold}); running sequential.",
-                    UserWarning,
-                    stacklevel=2,
                 )
                 self._warned_tiny_workload = True
             self._emit(
@@ -431,14 +404,9 @@ class ParallelExecutor:
                 # via the testing fixture (the autouse disable sets
                 # `CE_PARALLEL_MIN_BATCH_SIZE` to a large value; enabling
                 # fallbacks removes that env var). Otherwise log info.
-                if self._config_manager.env("CE_PARALLEL_MIN_BATCH_SIZE") is None:
-                    warnings.warn(
-                        f"Parallel execution failed ({exc!r}); falling back to sequential execution.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                else:
-                    logger.info("Parallel failure; forced serial fallback engaged: %s", exc)
+                logger.warning(
+                    "Parallel execution failed (%s); falling back to sequential execution.", exc
+                )
                 results = [fn(item) for item in items_list]
             else:
                 raise exc from None
@@ -732,17 +700,9 @@ class ParallelExecutor:
     ) -> List[R]:
         """Dispatch work through joblib's Parallel abstraction when available."""
         if _JoblibParallel is None:
-            # Emit a UserWarning only when parallel fallbacks are enabled by
-            # the test fixture; otherwise log info to avoid triggering the
-            # fallback enforcement that converts such warnings to test failures.
-            if self._config_manager.env("CE_PARALLEL_MIN_BATCH_SIZE") is None:
-                warnings.warn(
-                    "Joblib is not available; falling back to thread-based parallel execution.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-            else:
-                logger.info("Joblib not available; falling back to threads")
+            logger.warning(
+                "Joblib is not available; falling back to thread-based parallel execution."
+            )
             return self.thread_strategy(fn, items, workers=workers, chunksize=chunksize)
 
         # joblib uses 'batch_size' instead of 'chunksize'

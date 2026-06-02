@@ -439,12 +439,6 @@ class CalibratedExplainer:
                 exc,
                 exc_info=True,
             )
-            warnings.warn(
-                "Feature filter is enabled but plugin fallback chain could not be read; "
-                "continuing with the configured explanation plugin selection.",
-                UserWarning,
-                stacklevel=3,
-            )
             return
 
         if chain and chain[0] == override_id:
@@ -460,12 +454,6 @@ class CalibratedExplainer:
                     exc,
                     exc_info=True,
                 )
-                warnings.warn(
-                    "Feature filter is enabled but plugin chains could not be initialized; "
-                    "continuing with the configured explanation plugin selection.",
-                    UserWarning,
-                    stacklevel=3,
-                )
                 return
 
             if chain and chain[0] == override_id:
@@ -478,12 +466,6 @@ class CalibratedExplainer:
             previous,
             extra={"mode": "factual", "plugin_identifier": override_id},
         )
-        warnings.warn(
-            f"Feature filter is enabled; overriding the factual explanation plugin from '{previous}' "
-            f"to '{override_id}'.",
-            UserWarning,
-            stacklevel=3,
-        )
 
         try:
             manager.explanation_plugin_overrides["factual"] = override_id
@@ -495,12 +477,6 @@ class CalibratedExplainer:
                 "Failed to enforce factual explanation plugin for feature filter: %s",
                 exc,
                 exc_info=True,
-            )
-            warnings.warn(
-                "Feature filter is enabled but forcing the factual explanation plugin failed; "
-                "continuing with the configured explanation plugin selection.",
-                UserWarning,
-                stacklevel=3,
             )
 
     def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:

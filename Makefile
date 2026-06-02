@@ -70,6 +70,14 @@ uv-install-smoke:
 adr030-ratification:
 	python scripts/local_checks.py --adr030-ratification
 
+.PHONY: warning-policy
+warning-policy:
+	python scripts/quality/check_warning_policy.py --check --report reports/quality/warning_policy.json
+
+.PHONY: check-extras-parity
+check-extras-parity:
+	python scripts/quality/check_core_extras_parity.py --check --report reports/quality/core_extras_parity.json
+
 .PHONY: deprecation-closure
 deprecation-closure:
 	python scripts/local_checks.py --deprecation-closure

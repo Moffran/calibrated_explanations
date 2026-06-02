@@ -67,3 +67,9 @@ Pending:
 
 - Where to store mappings (in-memory only vs. optional serialization helpers)?
   Start in-memory with API hooks for export/import.
+
+## Implementation status (2026-06-02, v0.11.3 Task 9 Workstream B)
+
+**Gap 2 — JSON-safe mapping export (closed):** `WrapCalibratedExplainer.export_preprocessor_mapping()` (in `src/calibrated_explanations/core/wrap_explainer.py`) already enforces JSON-safe output via `_validate_json_safe_mapping()` on both the `get_mapping_snapshot` and `mapping_` fallback paths. `import_preprocessor_mapping()` also validates JSON safety on import. Tests in `tests/unit/core/test_wrap_explainer_helpers.py` verify enforcement. The public helper names are `export_preprocessor_mapping` / `import_preprocessor_mapping` (not `export_mapping` / `import_mapping` as originally proposed — placement on wrapper is deliberate per ADR-001 boundary rules).
+
+**Gap 3 — Helper-placement doc drift (closed):** The ADR-009 §Decision describes `Explainer.export_mapping()` and `Explainer.import_mapping()`. The actual implementation exposes these as `WrapCalibratedExplainer.export_preprocessor_mapping()` and `WrapCalibratedExplainer.import_preprocessor_mapping()`. This naming differs from the ADR proposal text but is intentional: the wrapper is the public preprocessing API surface (ADR-001 boundary), and the more descriptive names distinguish mapping persistence from other wrapper export operations. No code change is required; this note records the deliberate divergence so future contributors do not chase a naming drift as a bug.

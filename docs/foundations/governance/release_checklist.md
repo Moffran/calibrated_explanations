@@ -17,10 +17,10 @@ Before publishing a release, review `ROADMAP.md` and the more detailed implement
    zero failures. If any legacy surface changed, confirm it was explicitly
    scheduled by the release plan and that the contract doc and parity tests
    were updated in the same PR (ADR-020).
-5. **Ownership sign-off** – collect approvals from the section owners listed in
+4. **Ownership sign-off** – collect approvals from the section owners listed in
    `docs/foundations/governance/section_owners.md`, including the runtime tech
    verification steps.
-6. **Release notes** – draft highlights, call out telemetry/plugin optionality,
+5. **Release notes** – draft highlights, call out telemetry/plugin optionality,
    and link to the detailed implementation plan in `vx.y.z_plan.md`.
 
 Document completion in the release issue template so future audits can trace
