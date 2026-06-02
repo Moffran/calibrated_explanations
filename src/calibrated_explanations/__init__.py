@@ -47,6 +47,8 @@ __version__ = "v0.11.3-dev"
 # works without triggering an eager import of `calibrated_explanations.core`.
 __all__ = [
     "CalibratedExplainer",
+    "ExplainerBuilder",
+    "ExplainerConfig",
     "NormalizationStrategy",
     "RejectPolicySpec",
     "RejectResultV2",
@@ -101,6 +103,13 @@ def __getattr__(name: str) -> Any:
 
         globals()[name] = RejectResultV2
         return RejectResultV2
+
+    if name in ("ExplainerBuilder", "ExplainerConfig"):
+        from .api.config import ExplainerBuilder, ExplainerConfig  # noqa: F401
+
+        globals()["ExplainerBuilder"] = ExplainerBuilder
+        globals()["ExplainerConfig"] = ExplainerConfig
+        return globals()[name]
 
     if name == "NormalizationStrategy":
         from .calibration.normalization_strategy import NormalizationStrategy

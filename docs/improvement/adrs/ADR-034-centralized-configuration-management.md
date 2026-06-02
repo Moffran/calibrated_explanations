@@ -1,4 +1,4 @@
-> **Status note (2026-04-20):** Last edited 2026-04-20 to record v0.11.2 runtime conformance closure evidence and implementation summary.
+> **Status note (2026-06-02):** Last edited 2026-06-02 to add §7 configuration scope boundaries addendum (v0.11.3): env-only-by-design keys, CE_DEBUG_TRUST_INVARIANTS sanctioned-read exception, ExplainerBuilder/env-var precedence rule, intentional two-system plot config design, and root namespace export record.
 > Archive after: Retain indefinitely as architectural record
 > Implementation window: v0.11.1–v1.0.0
 
@@ -169,6 +169,65 @@ Use ADR-011 deprecation process for any public API changes during implementation
    - `python scripts/quality/check_config_manager_usage.py --scope targeted --report reports/config_manager_usage_report.json`
    - `python -m pytest -q tests/scripts/test_check_config_manager_usage.py -o addopts= --no-cov`
    - `make local-checks-pr`
+
+## §7 Configuration scope boundaries (v0.11.3 addendum)
+
+### Capabilities governed by ConfigManager
+
+`ConfigManager` governs behavioral and deployment configuration: plugin
+selection (explanation, interval, plot, trust/deny), telemetry diagnostic
+mode, cache settings, parallel settings, feature-filter settings, strict
+observability mode, and CI-environment markers.
+
+### Env-only-by-design keys (v0.11.x)
+
+The following keys resolve `(None, None, None)` in `_RESOLUTION_SPEC` —
+they are intentionally env-or-programmatic-only with no pyproject.toml
+mapping in v0.11.x. This is a deliberate design choice, not an oversight:
+
+| Key | Reason env-only in v0.11.x |
+| --- | --- |
+| `CE_CACHE` | Deployment toggle; pyproject.toml wiring deferred |
+| `CE_PARALLEL` | Deployment toggle; pyproject.toml wiring deferred |
+| `CE_PARALLEL_MIN_BATCH_SIZE` | Tuning knob; env-sufficient for v0.11.x |
+| `CE_FEATURE_FILTER` | Experimental; pyproject.toml wiring deferred |
+| `CE_STRICT_OBSERVABILITY` | Ops flag; env-sufficient for v0.11.x |
+| `CI` / `GITHUB_ACTIONS` | Read-only environment markers; no user configuration |
+
+### Sanctioned direct env read: CE_DEBUG_TRUST_INVARIANTS
+
+`plugins/_trust.py` reads `CE_DEBUG_TRUST_INVARIANTS` directly via
+`os.getenv()` rather than through `ConfigManager`. This is a sanctioned
+exception: routing it through `ConfigManager` would require `_trust.py` to
+import `config_manager`, creating a circular import via `plugins/registry.py`
+(which already imports both modules). The key is present in `_KNOWN_ENV_KEYS`
+for governance visibility and appears in `export_effective()` output; its
+runtime behavior is unaffected by the ConfigManager registration.
+
+### ExplainerBuilder / env-var precedence rule
+
+For cache and parallel settings, env vars take precedence over
+`ExplainerBuilder` settings set via `perf_cache()` / `perf_parallel()`.
+This is because `CacheConfig.from_env()` and `ParallelConfig.from_env()` are
+applied inside `_build_perf_factory()` after builder construction, overriding
+any builder-supplied values. The rule is documented at the call site in each
+method's docstring.
+
+### Intentional two-system plot configuration design
+
+`ConfigManager` governs plugin/style selection (which renderer and style
+plugin to use). Aesthetic settings — fonts, DPI, colors — are governed by a
+separate `plot_config.ini` read by `plotting.py:load_plot_config()` via
+`configparser`. These serve different concerns and different update frequencies.
+Bridging them into a single system would add complexity without benefit.
+This separation is intentional and is not planned to change in v1.0.0.
+
+### Root namespace exports (v0.11.3)
+
+`ExplainerBuilder` and `ExplainerConfig` are promoted to the root
+`calibrated_explanations` namespace as of v0.11.3. `ConfigManager` is
+intentionally not promoted — it is an infrastructure primitive; its stable
+import path is `calibrated_explanations.core.config_manager`.
 
 ## Open Items
 

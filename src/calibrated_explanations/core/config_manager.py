@@ -39,6 +39,7 @@ _KNOWN_ENV_KEYS = (
     "CE_PARALLEL_MIN_BATCH_SIZE",
     "CE_FEATURE_FILTER",
     "CE_STRICT_OBSERVABILITY",
+    "CE_DEBUG_TRUST_INVARIANTS",
     "CI",
     "GITHUB_ACTIONS",
 )
@@ -85,6 +86,10 @@ _RESOLUTION_SPEC: dict[str, tuple[str | None, str | None, Any]] = {
     "CE_PARALLEL_MIN_BATCH_SIZE": (None, None, None),
     "CE_FEATURE_FILTER": (None, None, None),
     "CE_STRICT_OBSERVABILITY": (None, None, False),
+    # Sanctioned direct os.getenv read in plugins/_trust.py (routing through ConfigManager
+    # risks a circular import via plugins/registry.py). Listed here for governance visibility
+    # and export_effective() inclusion only — see ADR-034 §7.
+    "CE_DEBUG_TRUST_INVARIANTS": (None, None, None),
     "CI": (None, None, None),
     "GITHUB_ACTIONS": (None, None, None),
 }

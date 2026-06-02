@@ -480,6 +480,23 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "Calibra
 
 
 @pytest.fixture(autouse=True)
+def reset_perturbation_config_manager():
+    """Reset the perturbation module-level ConfigManager singleton before each test.
+
+    Ensures tests that mutate env via monkeypatch see a fresh ConfigManager
+    rather than one cached from a prior test with a different env state.
+    See ADR-034 §3 and reset_perturbation_config_manager_for_testing().
+    """
+    from calibrated_explanations.utils.perturbation import (
+        reset_perturbation_config_manager_for_testing,
+    )
+
+    reset_perturbation_config_manager_for_testing()
+    yield
+    reset_perturbation_config_manager_for_testing()
+
+
+@pytest.fixture(autouse=True)
 def disable_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     """Disable all plugin fallback chains by default.
 

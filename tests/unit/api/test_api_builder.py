@@ -20,7 +20,8 @@ def test_explainer_config_dataclass_and_defaults():
     model = RandomForestClassifier()
     cfg = ExplainerConfig(model=model)
     assert is_dataclass(cfg)
-    assert cfg.task == "auto"
+    assert not hasattr(cfg, "task"), "task field was removed in v0.11.3"
+    assert not hasattr(cfg, "parallel_workers"), "parallel_workers field was removed in v0.11.3"
     assert cfg.low_high_percentiles == (5, 95)
     assert cfg.threshold is None
     assert cfg.preprocessor is None
@@ -32,21 +33,25 @@ def test_explainer_builder_fluent_roundtrip():
     model = RandomForestClassifier()
     b = (
         ExplainerBuilder(model)
-        .task("classification")
         .low_high_percentiles((10, 90))
         .threshold(0.7)
         .preprocessor(None)
         .auto_encode("auto")
         .unseen_category_policy("ignore")
-        .parallel_workers(2)
     )
     cfg = b.build_config()
     assert isinstance(cfg, ExplainerConfig)
     assert cfg.model is model
-    assert cfg.task == "classification"
     assert cfg.low_high_percentiles == (10, 90)
     assert cfg.threshold == 0.7
     assert cfg.unseen_category_policy == "ignore"
+
+
+def test_explainer_builder_has_no_task_or_parallel_workers_methods():
+    model = RandomForestClassifier()
+    b = ExplainerBuilder(model)
+    assert not hasattr(b, "task"), "task() method was removed in v0.11.3"
+    assert not hasattr(b, "parallel_workers"), "parallel_workers() method was removed in v0.11.3"
 
 
 def test_wrap_from_config_applies_defaults(monkeypatch):

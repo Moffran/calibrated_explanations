@@ -95,3 +95,9 @@ Negative / Risks:
 - 2026-03-03 – ADR promoted to Accepted. `legacy_user_api_contract.md` updated
   to reflect v0.11.0 removals (`explain_counterfactual`, `get_explanation`,
   deprecated parameter aliases). Release checklist ADR-020 gate confirmed active.
+- 2026-06-02 – v0.11.3 root-namespace promotion: `ExplainerBuilder` and
+  `ExplainerConfig` added to `calibrated_explanations.__all__` and the lazy
+  `__getattr__` dispatch. Both are now importable directly from the root package
+  (e.g. `from calibrated_explanations import ExplainerBuilder`). `ConfigManager`
+  is intentionally not promoted — it remains an infrastructure primitive at
+  `calibrated_explanations.core.config_manager`. See ADR-034 §7.

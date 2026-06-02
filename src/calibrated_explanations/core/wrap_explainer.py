@@ -156,9 +156,15 @@ class WrapCalibratedExplainer:
 
         Notes
         -----
-        - Intentionally minimal and only uses the provided model.
-        - Further wiring of preprocessing and knobs will be added later.
-        - Private API to avoid public snapshot changes.
+        Fields wired during construction
+            ``preprocessor``, ``auto_encode``, ``unseen_category_policy``;
+            performance primitives (cache, parallel executor) via the perf
+            factory; internal feature-filter config.
+
+        Fields applied at explain-time
+            ``threshold`` and ``low_high_percentiles`` are stored on the config
+            and forwarded to ``explain_factual`` / ``explore_alternatives`` via
+            ``kwargs.setdefault()``.
         """
         w = cls(cfg.model)
         # Stash config on the instance for later optional use (private attr)

@@ -23,7 +23,6 @@ perturb_dataset(x_cal, y_cal, categorical_features=None, noise_type='uniform', s
 
 # Import Libraries
 # import configparser
-import os
 from typing import Optional
 
 import numpy as np
@@ -45,16 +44,19 @@ _perturbation_config_manager: object | None = None
 
 
 def _get_perturbation_config_manager():
-    """Return a process-level ConfigManager for perturbation config reads."""
+    """Return the module-level ConfigManager singleton for perturbation config reads."""
     from ..core.config_manager import ConfigManager
 
     global _perturbation_config_manager
-    # Tests mutate env repeatedly; keep test behavior deterministic per invocation.
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return ConfigManager.from_sources()
     if _perturbation_config_manager is None:
         _perturbation_config_manager = ConfigManager.from_sources()
     return _perturbation_config_manager
+
+
+def reset_perturbation_config_manager_for_testing() -> None:
+    """Reset the module-level singleton so tests that mutate env get a fresh manager."""
+    global _perturbation_config_manager
+    _perturbation_config_manager = None
 
 
 # BASIC PERTURBATIONS FOR THE VERSION I: Provides Gaussian Noise by protecting
