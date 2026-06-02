@@ -242,6 +242,12 @@ make test
 make test-core
 ```
 
+### Performance profiling
+
+See `docs/contributor/performance_harness.md` for a guide to the available
+profiling scripts (`scripts/perf/`) and how to run baseline snapshots and
+regression checks.
+
 ### Governance status artifact
 
 `reports/governance/governance_status.json` is a CI-derived artifact.
