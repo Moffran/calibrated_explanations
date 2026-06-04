@@ -10,6 +10,12 @@
 - Centralized migrated runtime configuration consumers behind a process-level
   `ConfigManager` singleton and added `ConfigSpec` for class-owned configuration
   schema extension while preserving legacy module-level config aliases.
+- Introduced config management hardening for CE and official plugins:
+  deterministic plugin config snapshotting, source attribution, validation hooks,
+  runtime delivery, redaction, and provisional export diagnostics. The plugin
+  config pyproject namespace, environment override, metadata schema, context field,
+  and export shape are intended for cross-repository hardening and are not yet
+  declared stable public API.
 
 ### Bug fixes
 

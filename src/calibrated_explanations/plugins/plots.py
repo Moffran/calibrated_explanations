@@ -15,6 +15,7 @@ from typing import (
 )
 
 from ..viz.plotspec import PlotSpec
+from .base import freeze_plugin_config
 
 
 def _resolve_type_alias() -> Any:
@@ -45,6 +46,11 @@ class PlotRenderContext:
     path: str | None
     save_ext: str | Sequence[str] | None
     options: Mapping[str, Any]
+    plugin_config: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Freeze provisional plugin config before handing context to plugins."""
+        object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
 
     def __getstate__(self):
         """Get state for pickling.

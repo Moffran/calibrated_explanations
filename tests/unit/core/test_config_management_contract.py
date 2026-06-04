@@ -14,6 +14,8 @@ Covers all 9 in-scope Task-10 findings:
 from __future__ import annotations
 
 import inspect
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -75,6 +77,36 @@ def test_should_return_same_process_config_manager_until_reset() -> None:
     first = get_process_config_manager()
     second = get_process_config_manager()
     assert second is first
+
+
+def test_should_construct_process_config_manager_once_for_concurrent_callers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reset_process_config_manager_for_testing()
+    calls: list[int] = []
+    calls_lock = threading.Lock()
+
+    def fake_from_sources(_cls, *, strict: bool = True):
+        _ = strict
+        with calls_lock:
+            calls.append(threading.get_ident())
+        time.sleep(0.01)
+        return ConfigManager(env_snapshot={}, pyproject_snapshot={})
+
+    monkeypatch.setattr(ConfigManager, "from_sources", classmethod(fake_from_sources))
+    results: list[ConfigManager] = []
+    threads = [
+        threading.Thread(target=lambda: results.append(get_process_config_manager()))
+        for _ in range(8)
+    ]
+
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(calls) == 1
+    assert len({id(manager) for manager in results}) == 1
 
 
 def test_should_raise_when_process_config_manager_initialized_twice() -> None:

@@ -257,6 +257,29 @@ class TestImmutablePluginHandles:
         with pytest.raises((AttributeError, TypeError)):
             context.task = "regression"
 
+    def test_explanation_context_plugin_config_is_deeply_immutable(self):
+        """Plugin config should freeze nested mappings and list-like values."""
+        bridge = MagicMock()
+        context = ExplanationContext(
+            task="classification",
+            mode="factual",
+            feature_names=["f1"],
+            categorical_features=[],
+            categorical_labels={},
+            discretizer=None,
+            helper_handles={},
+            predict_bridge=bridge,
+            interval_settings={},
+            plot_settings={},
+            plugin_config={"nested": {"labels": ["a", "b"]}},
+        )
+
+        assert context.plugin_config["nested"]["labels"] == ("a", "b")
+        with pytest.raises(TypeError):
+            context.plugin_config["new"] = True
+        with pytest.raises(TypeError):
+            context.plugin_config["nested"]["new"] = True
+
 
 # ==============================================================================
 # Integration Tests

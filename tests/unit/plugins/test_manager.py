@@ -4,13 +4,15 @@ Tests for the PluginManager class which centralizes plugin state,
 override configuration, and instance caching.
 """
 
-import pytest
 import copy
 import types
 from unittest.mock import Mock
 
-from calibrated_explanations.utils.exceptions import ConfigurationError
+import pytest
+
+from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.plugins.manager import PluginManager
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 class TestPluginManagerInitialization:
@@ -159,6 +161,109 @@ class TestExplanationPluginIdentifierManagement:
 
         manager.clear_explanation_plugin_identifiers()
         assert len(manager.explanation_plugin_identifiers) == 0
+
+
+class TestPluginConfigBinding:
+    """Tests for provisional plugin config binding."""
+
+    def test_bind_plugin_config_validates_after_trusted_metadata_resolution(self):
+        """should_validate_selected_trusted_plugin_config_with_plugin_schema."""
+        config_manager = ConfigManager(
+            env_snapshot={},
+            pyproject_snapshot={
+                "plugins": {},
+                "explanations": {},
+                "intervals": {},
+                "plots": {},
+                "telemetry": {},
+                "plugin_configs": {"test.plugin": {"labels": ["x", "y"]}},
+            },
+        )
+        manager = PluginManager(Mock(), config_manager=config_manager)
+        plugin = Mock()
+        plugin.plugin_meta = {
+            "name": "test.plugin",
+            "trusted": True,
+            "config_schema": {
+                "version": 1,
+                "keys": {
+                    "mode": {"type": "str", "default": "balanced"},
+                    "labels": {"type": "list[str]", "default": []},
+                },
+            },
+        }
+
+        resolved = manager.bind_plugin_config("test.plugin", plugin)
+
+        assert resolved["mode"] == "balanced"
+        assert resolved["labels"] == ("x", "y")
+        with pytest.raises(TypeError):
+            resolved["labels"] = ("bad",)  # type: ignore[index]
+
+    def test_bind_plugin_config_does_not_deliver_config_to_untrusted_plugin(self):
+        """should_return_empty_config_when_selected_plugin_metadata_is_untrusted."""
+        config_manager = ConfigManager(
+            env_snapshot={},
+            pyproject_snapshot={
+                "plugins": {},
+                "explanations": {},
+                "intervals": {},
+                "plots": {},
+                "telemetry": {},
+                "plugin_configs": {"test.plugin": {"enabled": True}},
+            },
+        )
+        manager = PluginManager(Mock(), config_manager=config_manager)
+        plugin = Mock()
+        plugin.plugin_meta = {"name": "test.plugin", "trusted": False}
+
+        assert manager.bind_plugin_config("test.plugin", plugin) == {}
+
+    def test_bind_plugin_config_respects_legacy_nested_untrusted_metadata(self):
+        """should_not_treat_legacy_nested_false_trust_mapping_as_truthy."""
+        config_manager = ConfigManager(
+            env_snapshot={},
+            pyproject_snapshot={
+                "plugins": {},
+                "explanations": {},
+                "intervals": {},
+                "plots": {},
+                "telemetry": {},
+                "plugin_configs": {"test.plugin": {"enabled": True}},
+            },
+        )
+        manager = PluginManager(Mock(), config_manager=config_manager)
+        plugin = Mock()
+        plugin.plugin_meta = {"name": "test.plugin", "trust": {"trusted": False}}
+
+        assert manager.bind_plugin_config("test.plugin", plugin) == {}
+
+    def test_bind_plugin_config_raises_clear_error_for_invalid_selected_config(self):
+        """should_raise_configuration_error_when_selected_trusted_config_is_invalid."""
+        config_manager = ConfigManager(
+            env_snapshot={},
+            pyproject_snapshot={
+                "plugins": {},
+                "explanations": {},
+                "intervals": {},
+                "plots": {},
+                "telemetry": {},
+                "plugin_configs": {"test.plugin": {"enabled": "yes"}},
+            },
+        )
+        manager = PluginManager(Mock(), config_manager=config_manager)
+        plugin = Mock()
+        plugin.plugin_meta = {
+            "name": "test.plugin",
+            "trusted": True,
+            "config_schema": {
+                "version": 1,
+                "keys": {"enabled": {"type": "bool", "required": True}},
+            },
+        }
+
+        with pytest.raises(ConfigurationError, match="Invalid config"):
+            manager.bind_plugin_config("test.plugin", plugin)
 
 
 class TestIntervalPluginState:

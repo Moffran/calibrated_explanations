@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping, MutableMapping, Protocol, Sequence, runtime_checkable
 
+from .base import freeze_plugin_config
+
 
 @dataclass(frozen=True)
 class IntervalCalibratorContext:
@@ -21,6 +23,7 @@ class IntervalCalibratorContext:
     difficulty: Mapping[str, Any]
     metadata: Mapping[str, Any]
     fast_flags: Mapping[str, Any]
+    plugin_config: Mapping[str, Any] = field(default_factory=dict)
     plugin_state: MutableMapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -34,6 +37,7 @@ class IntervalCalibratorContext:
                 {} if raw_metadata is None else dict(getattr(raw_metadata, "items", lambda: ())())
             )
         object.__setattr__(self, "metadata", MappingProxyType(normalized))
+        object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
         # Ensure plugin_state is mutable so plugins can store transient data.
         if not isinstance(self.plugin_state, MutableMapping):  # pragma: no cover - defensive
             object.__setattr__(self, "plugin_state", dict(self.plugin_state))  # type: ignore[arg-type]
@@ -61,6 +65,10 @@ class IntervalCalibratorContext:
         if metadata is not None:
             state = dict(state)
             state["metadata"] = MappingProxyType(dict(metadata))
+        plugin_config = state.get("plugin_config")
+        if plugin_config is not None:
+            state = dict(state)
+            state["plugin_config"] = freeze_plugin_config(plugin_config)
         plugin_state = state.get("plugin_state")
         if plugin_state is not None and not isinstance(plugin_state, MutableMapping):
             state["plugin_state"] = dict(plugin_state)
