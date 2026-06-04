@@ -7,6 +7,7 @@ Practical recipes for integrating calibrated explanations into production.
 
 integrate_with_pipelines
 configure_telemetry
+configure_runtime
 export_explanations
 to_narrative
 plot_with_plotspec
