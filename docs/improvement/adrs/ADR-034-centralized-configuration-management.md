@@ -1,4 +1,4 @@
-> **Status note (2026-06-02):** Last edited 2026-06-02 to add §7 configuration scope boundaries addendum (v0.11.3): env-only-by-design keys, CE_DEBUG_TRUST_INVARIANTS sanctioned-read exception, ExplainerBuilder/env-var precedence rule, intentional two-system plot config design, and root namespace export record.
+> **Status note (2026-06-03):** Last edited 2026-06-03 to add §7 configuration scope boundaries addendum (v0.11.3): env-only-by-design keys, CE_DEBUG_TRUST_INVARIANTS sanctioned-read exception, ExplainerBuilder/env-var precedence rule, intentional two-system plot config design, root namespace export record, process-level ConfigManager lifecycle API, and ConfigSpec extension surface.
 > Archive after: Retain indefinitely as architectural record
 > Implementation window: v0.11.1–v1.0.0
 
@@ -228,6 +228,28 @@ This separation is intentional and is not planned to change in v1.0.0.
 `calibrated_explanations` namespace as of v0.11.3. `ConfigManager` is
 intentionally not promoted — it is an infrastructure primitive; its stable
 import path is `calibrated_explanations.core.config_manager`.
+
+### Process-level lifecycle API (v0.11.3)
+
+`get_process_config_manager()` is the default process-level singleton for
+migrated runtime consumers that do not receive an explicit `ConfigManager`
+through injection. `init_process_config_manager()` may be called once by a
+top-level process boundary before runtime consumers initialize. A second
+initialization raises `CalibratedError` because double initialization is a
+programming error that would make snapshot ownership ambiguous.
+
+`reset_process_config_manager_for_testing()` is test-only and exists so tests
+that mutate environment variables can reset the singleton between test cases.
+Production code should not reset the process manager after initialization.
+
+### ConfigSpec extension surface (v0.11.3)
+
+`ConfigManager` owns a class-level `ConfigSpec` describing known environment
+keys, pyproject sections, resolution metadata, validators, and the pyproject
+tool namespace. The legacy module-level aliases (`_KNOWN_ENV_KEYS`,
+`_SECTION_SCHEMA`, `_RESOLUTION_SPEC`, `_VALUE_VALIDATORS`) remain for import
+compatibility, but internal resolution uses the class-level spec so subclasses
+can override or merge configuration schemas without rewriting resolution logic.
 
 ## Open Items
 

@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.config_manager import reset_process_config_manager_for_testing
 from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.manager import DEFAULT_EXPLANATION_IDENTIFIERS
@@ -145,6 +146,7 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
     register_explanation_plugin("tests.dependency_reporting.factual", plugin)
     mark_explanation_trusted("tests.dependency_reporting.factual")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.dependency_reporting.factual")
+    reset_process_config_manager_for_testing()
 
     try:
         (
@@ -230,6 +232,7 @@ def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
     """Test that unknown plugin identifiers raise ConfigurationError."""
     ensure_builtin_plugins()
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.missing.plugin")
+    reset_process_config_manager_for_testing()
     # Patch the PluginManager's default identifiers instead of the old module-level constant
     monkeypatch.setitem(DEFAULT_EXPLANATION_IDENTIFIERS, "factual", None)
 

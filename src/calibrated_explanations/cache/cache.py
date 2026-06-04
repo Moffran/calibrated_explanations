@@ -33,7 +33,7 @@ from typing import (
     TypeVar,
 )
 
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import ConfigManager, get_process_config_manager
 
 try:  # pragma: no cover - behaviour varies by environment
     import cachetools
@@ -190,23 +190,6 @@ except:  # noqa: E722
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-_cache_config_manager: ConfigManager | None = None
-
-
-def _get_cache_config_manager() -> ConfigManager:
-    """Return the process-level ConfigManager singleton for cache config reads."""
-    global _cache_config_manager
-    if _cache_config_manager is None:
-        _cache_config_manager = ConfigManager.from_sources()
-    return _cache_config_manager
-
-
-def _reset_cache_config_manager_for_testing() -> None:
-    """Reset cached config manager singleton (tests only)."""
-    global _cache_config_manager
-    _cache_config_manager = None
-
 
 # Export monotonic to support legacy shims/tests that reference
 # `calibrated_explanations.cache.cache.monotonic`.
@@ -387,7 +370,7 @@ class CacheConfig:
         config_manager: ConfigManager | None = None,
     ) -> "CacheConfig":
         """Merge ``CE_CACHE`` overrides with ``base`` defaults."""
-        mgr = config_manager if config_manager is not None else _get_cache_config_manager()
+        mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = CacheConfig(**(base.__dict__ if base is not None else {}))
         raw = mgr.env("CE_CACHE")
         if not raw:

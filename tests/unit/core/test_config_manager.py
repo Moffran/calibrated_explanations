@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from calibrated_explanations.core.config_manager import ConfigManager
+from calibrated_explanations.core.config_manager import ConfigManager, ConfigSpec
 from calibrated_explanations.core.config_manager import _KNOWN_ENV_KEYS
 from calibrated_explanations.utils.exceptions import ConfigurationError
 
@@ -138,6 +138,32 @@ def test_should_warn_for_unknown_ce_environment_variables(monkeypatch) -> None:
 
 def test_should_not_include_duplicate_known_env_keys() -> None:
     assert len(set(_KNOWN_ENV_KEYS)) == len(_KNOWN_ENV_KEYS)
+
+
+def test_should_merge_config_specs_while_preserving_base_namespace() -> None:
+    base = ConfigSpec(
+        known_env_keys=("CE_BASE",),
+        section_schema={"base": ("enabled",)},
+        resolution_spec={"CE_BASE": ("base", "enabled", False)},
+        value_validators={},
+        pyproject_tool_namespace=("tool", "base"),
+    )
+    extension = ConfigSpec(
+        known_env_keys=("CE_BASE", "CE_EXTENSION"),
+        section_schema={"base": ("mode",), "extension": ("enabled",)},
+        resolution_spec={"CE_EXTENSION": ("extension", "enabled", True)},
+        value_validators={
+            ("extension", "enabled"): (lambda value: isinstance(value, bool), "bool")
+        },
+        pyproject_tool_namespace=("tool", "extension"),
+    )
+
+    merged = base.merged_with(extension)
+
+    assert merged.known_env_keys == ("CE_BASE", "CE_EXTENSION")
+    assert merged.section_schema["base"] == ("enabled", "mode")
+    assert merged.resolution_spec["CE_EXTENSION"] == ("extension", "enabled", True)
+    assert merged.pyproject_tool_namespace == ("tool", "base")
 
 
 _EMPTY_PYPROJECT: dict = {

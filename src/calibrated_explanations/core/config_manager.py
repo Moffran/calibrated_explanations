@@ -8,15 +8,16 @@ import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, ClassVar, Mapping
 
-from ..utils.exceptions import ConfigurationError
+from ..utils.exceptions import CalibratedError, ConfigurationError
 from .config_helpers import read_pyproject_section
 
 _PROFILE_ID = "default"
 _SCHEMA_VERSION = "1"
 _LOGGER = logging.getLogger(__name__)
-_KNOWN_ENV_KEYS = (
+_PYPROJECT_TOOL_NAMESPACE = ("tool", "calibrated_explanations")
+_DEFAULT_KNOWN_ENV_KEYS = (
     "CE_EXPLANATION_PLUGIN",
     "CE_EXPLANATION_PLUGIN_FACTUAL",
     "CE_EXPLANATION_PLUGIN_ALTERNATIVE",
@@ -44,7 +45,7 @@ _KNOWN_ENV_KEYS = (
     "GITHUB_ACTIONS",
 )
 
-_SECTION_SCHEMA: dict[str, tuple[str, ...]] = {
+_DEFAULT_SECTION_SCHEMA: dict[str, tuple[str, ...]] = {
     "plugins": ("trusted",),
     "explanations": (
         "factual",
@@ -59,7 +60,7 @@ _SECTION_SCHEMA: dict[str, tuple[str, ...]] = {
     "telemetry": ("diagnostic_mode",),
 }
 
-_RESOLUTION_SPEC: dict[str, tuple[str | None, str | None, Any]] = {
+_DEFAULT_RESOLUTION_SPEC: dict[str, tuple[str | None, str | None, Any]] = {
     "CE_EXPLANATION_PLUGIN": ("explanations", "factual", None),
     "CE_EXPLANATION_PLUGIN_FACTUAL": ("explanations", "factual", None),
     "CE_EXPLANATION_PLUGIN_ALTERNATIVE": ("explanations", "alternative", None),
@@ -168,7 +169,7 @@ def _is_identifier_list_or_scalar(value: Any) -> bool:
     return False
 
 
-_VALUE_VALIDATORS: dict[tuple[str, str], tuple[Callable[[Any], bool], str]] = {
+_DEFAULT_VALUE_VALIDATORS: dict[tuple[str, str], tuple[Callable[[Any], bool], str]] = {
     ("plugins", "trusted"): (
         _is_identifier_list_or_scalar,
         "must be a non-empty string or a non-empty sequence of non-empty strings",
@@ -212,8 +213,91 @@ _VALUE_VALIDATORS: dict[tuple[str, str], tuple[Callable[[Any], bool], str]] = {
 }
 
 
+@dataclass(frozen=True)
+class ConfigSpec:
+    """Declarative runtime configuration schema used by ``ConfigManager``.
+
+    Parameters
+    ----------
+    known_env_keys : tuple of str
+        Environment variable names recognized by the manager.
+    section_schema : Mapping[str, tuple[str, ...]]
+        Supported pyproject.toml sections and allowed keys.
+    resolution_spec : Mapping[str, tuple[str | None, str | None, Any]]
+        Mapping from environment key to ``(section, key, default)`` resolution metadata.
+    value_validators : Mapping[tuple[str, str], tuple[Callable, str]]
+        Per-section validation callbacks and expectation text.
+    pyproject_tool_namespace : tuple of str
+        Root TOML path used when reading pyproject sections.
+    """
+
+    known_env_keys: tuple[str, ...]
+    section_schema: Mapping[str, tuple[str, ...]]
+    resolution_spec: Mapping[str, tuple[str | None, str | None, Any]]
+    value_validators: Mapping[tuple[str, str], tuple[Callable[[Any], bool], str]]
+    pyproject_tool_namespace: tuple[str, ...] = _PYPROJECT_TOOL_NAMESPACE
+
+    def merged_with(self, other: "ConfigSpec") -> "ConfigSpec":
+        """Return a spec extended with entries from ``other``.
+
+        The base spec's ``pyproject_tool_namespace`` is retained intentionally so a
+        subclass can choose the namespace it owns and merge in shared keys without
+        inheriting another manager's TOML root.
+        """
+        known_env_keys = tuple(dict.fromkeys((*self.known_env_keys, *other.known_env_keys)))
+        section_schema = dict(self.section_schema)
+        for section, keys in other.section_schema.items():
+            existing = section_schema.get(section, ())
+            section_schema[section] = tuple(dict.fromkeys((*existing, *keys)))
+
+        resolution_spec = dict(self.resolution_spec)
+        resolution_spec.update(other.resolution_spec)
+
+        value_validators = dict(self.value_validators)
+        value_validators.update(other.value_validators)
+
+        return ConfigSpec(
+            known_env_keys=known_env_keys,
+            section_schema=section_schema,
+            resolution_spec=resolution_spec,
+            value_validators=value_validators,
+            pyproject_tool_namespace=self.pyproject_tool_namespace,
+        )
+
+
+def _build_default_spec() -> ConfigSpec:
+    """Build the default CE runtime configuration spec."""
+    return ConfigSpec(
+        known_env_keys=_DEFAULT_KNOWN_ENV_KEYS,
+        section_schema=dict(_DEFAULT_SECTION_SCHEMA),
+        resolution_spec=dict(_DEFAULT_RESOLUTION_SPEC),
+        value_validators=dict(_DEFAULT_VALUE_VALIDATORS),
+        pyproject_tool_namespace=_PYPROJECT_TOOL_NAMESPACE,
+    )
+
+
 class ConfigManager:
     """Authoritative runtime configuration resolver with snapshot semantics."""
+
+    _spec: ClassVar[ConfigSpec] = _build_default_spec()
+    _KNOWN_ENV_KEYS: ClassVar[tuple[str, ...]] = _spec.known_env_keys
+    _SECTION_SCHEMA: ClassVar[Mapping[str, tuple[str, ...]]] = _spec.section_schema
+    _RESOLUTION_SPEC: ClassVar[Mapping[str, tuple[str | None, str | None, Any]]] = (
+        _spec.resolution_spec
+    )
+    _VALUE_VALIDATORS: ClassVar[Mapping[tuple[str, str], tuple[Callable[[Any], bool], str]]] = (
+        _spec.value_validators
+    )
+    _pyproject_tool_namespace: ClassVar[tuple[str, ...]] = _spec.pyproject_tool_namespace
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Keep compatibility class attributes synchronized for subclasses."""
+        super().__init_subclass__(**kwargs)
+        cls._KNOWN_ENV_KEYS = cls._spec.known_env_keys
+        cls._SECTION_SCHEMA = cls._spec.section_schema
+        cls._RESOLUTION_SPEC = cls._spec.resolution_spec
+        cls._VALUE_VALIDATORS = cls._spec.value_validators
+        cls._pyproject_tool_namespace = cls._spec.pyproject_tool_namespace
 
     def __init__(
         self,
@@ -241,8 +325,9 @@ class ConfigManager:
     @classmethod
     def from_sources(cls, *, strict: bool = True) -> ConfigManager:
         """Capture environment and pyproject snapshots once."""
+        spec = cls._spec
         unknown_env_keys = sorted(
-            key for key in os.environ if key.startswith("CE_") and key not in _KNOWN_ENV_KEYS
+            key for key in os.environ if key.startswith("CE_") and key not in spec.known_env_keys
         )
         if unknown_env_keys:
             message = (
@@ -256,16 +341,11 @@ class ConfigManager:
         env_snapshot = {
             key: value
             for key, value in os.environ.items()
-            if key in _KNOWN_ENV_KEYS and isinstance(value, str)
+            if key in spec.known_env_keys and isinstance(value, str)
         }
         pyproject_snapshot = {
-            "plugins": read_pyproject_section(("tool", "calibrated_explanations", "plugins")),
-            "explanations": read_pyproject_section(
-                ("tool", "calibrated_explanations", "explanations")
-            ),
-            "intervals": read_pyproject_section(("tool", "calibrated_explanations", "intervals")),
-            "plots": read_pyproject_section(("tool", "calibrated_explanations", "plots")),
-            "telemetry": read_pyproject_section(("tool", "calibrated_explanations", "telemetry")),
+            section: read_pyproject_section((*spec.pyproject_tool_namespace, section))
+            for section in spec.section_schema
         }
         manager = cls(
             env_snapshot=env_snapshot, pyproject_snapshot=pyproject_snapshot, strict=strict
@@ -306,8 +386,9 @@ class ConfigManager:
 
     def _validate_sections(self) -> None:
         issues: list[ConfigValidationIssue] = []
+        spec = type(self)._spec
         for section in self._pyproject_snapshot:
-            if section not in _SECTION_SCHEMA:
+            if section not in spec.section_schema:
                 issues.append(
                     ConfigValidationIssue(
                         location=f"pyproject.{section}",
@@ -316,7 +397,7 @@ class ConfigManager:
                 )
                 continue
 
-            allowed = set(_SECTION_SCHEMA[section])
+            allowed = set(spec.section_schema[section])
             unknown_keys = set(self._pyproject_snapshot.get(section, {}).keys()) - allowed
             if unknown_keys:
                 issues.append(
@@ -329,7 +410,7 @@ class ConfigManager:
 
             section_values = self._pyproject_snapshot.get(section, {})
             for key, value in section_values.items():
-                validator_entry = _VALUE_VALIDATORS.get((section, key))
+                validator_entry = spec.value_validators.get((section, key))
                 if validator_entry is None:
                     continue
                 validator, expectation = validator_entry
@@ -399,12 +480,12 @@ class ConfigManager:
         for key, value in self._env_snapshot.items():
             values[f"env.{key}"] = value
             sources[f"env.{key}"] = "env"
-        for section in ("plugins", "explanations", "intervals", "plots", "telemetry"):
+        for section in self._pyproject_snapshot:
             values[f"pyproject.{section}"] = dict(self._pyproject_snapshot.get(section, {}))
             sources[f"pyproject.{section}"] = "pyproject"
 
         # Export fully resolved effective values with per-key source attribution.
-        for key in _KNOWN_ENV_KEYS:
+        for key in type(self)._spec.known_env_keys:
             resolved_value, resolved_source = self._resolve_effective_key(key)
             values[f"effective.{key}"] = resolved_value
             sources[f"effective.{key}"] = resolved_source
@@ -436,9 +517,80 @@ class ConfigManager:
         if env_value is not None:
             return env_value, "env"
 
-        section, py_key, default = _RESOLUTION_SPEC.get(key, (None, None, None))
+        section, py_key, default = type(self)._spec.resolution_spec.get(key, (None, None, None))
         if section and py_key:
             py_section = self._pyproject_snapshot.get(section, {})
             if py_key in py_section:
                 return py_section[py_key], "pyproject"
         return default, "default_profile"
+
+
+# Backward-compatible module aliases for tests and advanced users that imported
+# the legacy module-level constants directly.
+_KNOWN_ENV_KEYS = ConfigManager._spec.known_env_keys
+_SECTION_SCHEMA = ConfigManager._spec.section_schema
+_RESOLUTION_SPEC = ConfigManager._spec.resolution_spec
+_VALUE_VALIDATORS = ConfigManager._spec.value_validators
+
+_PROCESS_CONFIG_MANAGER: ConfigManager | None = None
+
+
+def get_process_config_manager() -> ConfigManager:
+    """Return the process-level ``ConfigManager`` singleton.
+
+    Returns
+    -------
+    ConfigManager
+        The manager initialized for this process, constructing the default
+        snapshot on first use.
+    """
+    global _PROCESS_CONFIG_MANAGER
+    if _PROCESS_CONFIG_MANAGER is None:
+        _PROCESS_CONFIG_MANAGER = ConfigManager.from_sources()
+    return _PROCESS_CONFIG_MANAGER
+
+
+def init_process_config_manager(
+    config_manager: ConfigManager | None = None,
+    *,
+    strict: bool = True,
+) -> ConfigManager:
+    """Initialize the process-level ``ConfigManager`` exactly once.
+
+    Parameters
+    ----------
+    config_manager : ConfigManager, optional
+        Explicit manager to install. When omitted, a new manager is constructed
+        from the current environment and pyproject.toml snapshot.
+    strict : bool, default=True
+        Strict validation setting used only when ``config_manager`` is omitted.
+
+    Returns
+    -------
+    ConfigManager
+        The initialized process-level manager.
+
+    Raises
+    ------
+    CalibratedError
+        If the process manager has already been initialized.
+    """
+    global _PROCESS_CONFIG_MANAGER
+    if _PROCESS_CONFIG_MANAGER is not None:
+        raise CalibratedError("Process ConfigManager has already been initialized.")
+    _PROCESS_CONFIG_MANAGER = (
+        config_manager if config_manager is not None else ConfigManager.from_sources(strict=strict)
+    )
+    return _PROCESS_CONFIG_MANAGER
+
+
+def reset_process_config_manager_for_testing() -> None:
+    """Reset the process-level ``ConfigManager`` singleton for tests.
+
+    Notes
+    -----
+    This helper is intentionally test-scoped. Production code should initialize
+    once at the process boundary or use ``get_process_config_manager()``.
+    """
+    global _PROCESS_CONFIG_MANAGER
+    _PROCESS_CONFIG_MANAGER = None

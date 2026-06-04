@@ -5,6 +5,12 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...main)
 
+### Improvements
+
+- Centralized migrated runtime configuration consumers behind a process-level
+  `ConfigManager` singleton and added `ConfigSpec` for class-owned configuration
+  schema extension while preserving legacy module-level config aliases.
+
 ### Bug fixes
 
 - **RT-16: Treat thresholded regression reject as pure binary event classification.**

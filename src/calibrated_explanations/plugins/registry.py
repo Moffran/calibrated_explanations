@@ -27,7 +27,7 @@ from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Literal, Mapping, Tuple
 
 from .. import __version__ as package_version
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import get_process_config_manager
 from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
 from ..utils.exceptions import ConfigurationError, ValidationError
@@ -58,22 +58,6 @@ ensure_logging_context_filter()
 _TRUST_POLICY: PluginTrustPolicy = DefaultPluginTrustPolicy()
 
 
-_registry_config_manager: ConfigManager | None = None
-
-
-def _config_manager() -> ConfigManager:
-    global _registry_config_manager
-    if _registry_config_manager is None:
-        _registry_config_manager = ConfigManager.from_sources()
-    return _registry_config_manager
-
-
-def _reset_config_manager_for_testing() -> None:
-    """Reset module-level config manager singleton (tests only)."""
-    global _registry_config_manager
-    _registry_config_manager = None
-
-
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Return an immutable copy of plugin metadata."""
     return MappingProxyType(dict(meta))
@@ -100,7 +84,7 @@ def _env_trusted_names() -> set[str]:
     if _ENV_TRUST_CACHE is not None:
         return set(_ENV_TRUST_CACHE)
 
-    raw = _config_manager().env("CE_TRUST_PLUGIN") or ""
+    raw = get_process_config_manager().env("CE_TRUST_PLUGIN") or ""
     names: set[str] = set()
     for chunk in raw.replace(";", ",").split(","):
         name = chunk.strip()
@@ -116,7 +100,7 @@ def _pyproject_trusted_identifiers() -> set[str]:
     if _PYPROJECT_TRUST_CACHE is not None:
         return set(_PYPROJECT_TRUST_CACHE)
 
-    config = _config_manager().pyproject_section("plugins")
+    config = get_process_config_manager().pyproject_section("plugins")
     value = config.get("trusted")
     if isinstance(value, str):
         trusted = (value,) if value else ()
@@ -135,7 +119,7 @@ def _trusted_identifiers() -> set[str]:
 
 def _env_denylist() -> set[str]:
     """Return plugin identifiers blocked via ``CE_DENY_PLUGIN``."""
-    raw = _config_manager().env("CE_DENY_PLUGIN") or ""
+    raw = get_process_config_manager().env("CE_DENY_PLUGIN") or ""
     names: set[str] = set()
     for chunk in raw.replace(";", ",").split(","):
         name = chunk.strip()

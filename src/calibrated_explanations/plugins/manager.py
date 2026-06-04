@@ -25,7 +25,7 @@ from collections import OrderedDict
 from types import MappingProxyType
 from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import ConfigManager, get_process_config_manager
 from .predict_monitor import PredictBridgeMonitor
 from .registry import (
     ensure_builtin_plugins,
@@ -123,7 +123,7 @@ class PluginManager:
         """
         self.explainer = explainer
         self._logger = logging.getLogger(__name__)
-        self._config_manager = config_manager or ConfigManager.from_sources()
+        self._config_manager = config_manager or get_process_config_manager()
         if policy is not None:
             set_trust_policy(policy)
 
