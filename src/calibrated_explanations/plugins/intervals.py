@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping, MutableMapping, Protocol, Sequence, runtime_checkable
 
-from .base import freeze_plugin_config
+from .base import freeze_plugin_config, thaw_plugin_config
 
 
 @dataclass(frozen=True)
@@ -42,37 +42,20 @@ class IntervalCalibratorContext:
         if not isinstance(self.plugin_state, MutableMapping):  # pragma: no cover - defensive
             object.__setattr__(self, "plugin_state", dict(self.plugin_state))  # type: ignore[arg-type]
 
-    def __getstate__(self):
-        """Get state for pickling.
+    def __getstate__(self) -> dict:
+        """Return pickle-safe state with all MappingProxyType values thawed to plain dicts."""
+        return {k: thaw_plugin_config(v) for k, v in self.__dict__.items()}
 
-        Returns
-        -------
-        dict
-            The state dictionary.
-        """
-        # Convert mappingproxy to dict for pickling
-        return dict(self.__dict__)
-
-    def __setstate__(self, state):
-        """Set state for unpickling.
-
-        Parameters
-        ----------
-        state : dict
-            The state dictionary.
-        """
-        metadata = state.get("metadata")
-        if metadata is not None:
-            state = dict(state)
-            state["metadata"] = MappingProxyType(dict(metadata))
-        plugin_config = state.get("plugin_config")
-        if plugin_config is not None:
-            state = dict(state)
-            state["plugin_config"] = freeze_plugin_config(plugin_config)
-        plugin_state = state.get("plugin_state")
-        if plugin_state is not None and not isinstance(plugin_state, MutableMapping):
-            state["plugin_state"] = dict(plugin_state)
-        self.__dict__.update(state)
+    def __setstate__(self, state: dict) -> None:
+        """Restore state, re-freezing metadata and plugin_config, ensuring plugin_state is mutable."""
+        for key, value in state.items():
+            if key == "metadata":
+                value = MappingProxyType(dict(value) if value is not None else {})
+            elif key == "plugin_config":
+                value = freeze_plugin_config(value if value is not None else {})
+            elif key == "plugin_state" and not isinstance(value, MutableMapping):
+                value = dict(value) if value is not None else {}
+            object.__setattr__(self, key, value)
 
 
 @runtime_checkable

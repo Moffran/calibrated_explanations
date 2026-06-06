@@ -15,7 +15,7 @@ from typing import (
 )
 
 from ..viz.plotspec import PlotSpec
-from .base import freeze_plugin_config
+from .base import freeze_plugin_config, thaw_plugin_config
 
 
 def _resolve_type_alias() -> Any:
@@ -52,16 +52,16 @@ class PlotRenderContext:
         """Freeze provisional plugin config before handing context to plugins."""
         object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
 
-    def __getstate__(self):
-        """Get state for pickling.
+    def __getstate__(self) -> dict:
+        """Return pickle-safe state with all MappingProxyType values thawed to plain dicts."""
+        return {k: thaw_plugin_config(v) for k, v in self.__dict__.items()}
 
-        Returns
-        -------
-        dict
-            The state dictionary.
-        """
-        # Convert mappingproxy to dict for pickling
-        return dict(self.__dict__)
+    def __setstate__(self, state: dict) -> None:
+        """Restore state, re-freezing plugin_config via freeze_plugin_config."""
+        for key, value in state.items():
+            if key == "plugin_config":
+                value = freeze_plugin_config(value)
+            object.__setattr__(self, key, value)
 
 
 @dataclass

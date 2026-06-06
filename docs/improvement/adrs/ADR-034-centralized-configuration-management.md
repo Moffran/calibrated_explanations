@@ -262,7 +262,7 @@ plugin-facing contract. `ConfigManager.plugin_config(...)`,
 `[tool.calibrated_explanations.plugin_configs."<plugin_id>"]`,
 `plugin_meta["config_schema"]`, `context.plugin_config`, and the plugin config
 portion of `export_effective()` are provisional hardening surfaces. They are
-available for integration across OSS CE, CEE, and official plugins, but their
+available for integration across OSS CE and official plugins, but their
 API shape, schema shape, export shape, and environment-variable interface remain
 subject to stabilization after cross-repository validation.
 
@@ -309,12 +309,11 @@ schema and release notes identify the supported contract.
 
 ### Future stabilization gate
 
-The plugin config surface may be stabilized only after OSS CE, CEE, and the
+The plugin config surface may be stabilized only after OSS CE and the
 official plugin repository have passing integration evidence for snapshotting,
 precedence, validation routing, redaction, strict/permissive behavior, runtime
-immutability, no untrusted plugin loading, CEE composition around the OSS
-snapshot, plugin template/schema validation, and a documented selected/trusted/
-installed/configured plugin state matrix.
+immutability, no untrusted plugin loading, plugin template/schema validation,
+and a documented selected/trusted/installed/configured plugin state matrix.
 
 ## Open Items
 

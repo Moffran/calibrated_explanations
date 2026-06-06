@@ -160,6 +160,20 @@ def freeze_plugin_config(value: Any) -> Any:
     return value
 
 
+def thaw_plugin_config(value: Any) -> Any:
+    """Recursively convert MappingProxyType to plain dict so the result is picklable.
+
+    This is the inverse of :func:`freeze_plugin_config` for the purpose of
+    ``__getstate__`` implementations.  Tuples produced by freeze are walked
+    recursively; all other values are returned unchanged.
+    """
+    if isinstance(value, MappingProxyType):
+        return {k: thaw_plugin_config(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return tuple(thaw_plugin_config(item) for item in value)
+    return value
+
+
 def _schema_keys(schema: Mapping[str, Any]) -> Mapping[str, Any]:
     keys = schema.get("keys", schema.get("properties", {}))
     if not isinstance(keys, Mapping):
@@ -212,12 +226,9 @@ def validate_plugin_config_schema(schema: Mapping[str, Any]) -> None:
                 )
             if not tuple(choices):
                 raise ValidationError(
-                    f"plugin_meta['config_schema']['keys'][{key!r}]['choices'] "
-                    "must not be empty"
+                    f"plugin_meta['config_schema']['keys'][{key!r}]['choices'] " "must not be empty"
                 )
-        if "default" in entry and not _config_value_matches_type(
-            entry["default"], str(raw_type)
-        ):
+        if "default" in entry and not _config_value_matches_type(entry["default"], str(raw_type)):
             raise ValidationError(
                 f"plugin_meta['config_schema']['keys'][{key!r}]['default'] "
                 f"does not match type {raw_type!r}"
@@ -236,8 +247,10 @@ def _config_value_matches_type(value: Any, raw_type: str) -> bool:
     if raw_type == "list":
         return isinstance(value, Sequence) and not isinstance(value, (str, bytes))
     if raw_type == "list[str]":
-        return isinstance(value, Sequence) and not isinstance(value, (str, bytes)) and all(
-            isinstance(item, str) for item in value
+        return (
+            isinstance(value, Sequence)
+            and not isinstance(value, (str, bytes))
+            and all(isinstance(item, str) for item in value)
         )
     if raw_type == "mapping":
         return isinstance(value, Mapping)
@@ -281,9 +294,7 @@ def validate_plugin_config(
         raw_type = str(entry["type"])
         value = resolved[key]
         if not _config_value_matches_type(value, raw_type):
-            raise ValidationError(
-                f"Plugin config for {plugin_id!r} key {key!r} must be {raw_type}"
-            )
+            raise ValidationError(f"Plugin config for {plugin_id!r} key {key!r} must be {raw_type}")
         choices = entry.get("choices")
         if choices is not None and value not in tuple(choices):
             raise ValidationError(
@@ -346,6 +357,7 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
 __all__ = [
     "ExplainerPlugin",
     "freeze_plugin_config",
+    "thaw_plugin_config",
     "validate_plugin_config",
     "validate_plugin_config_schema",
     "validate_plugin_meta",
