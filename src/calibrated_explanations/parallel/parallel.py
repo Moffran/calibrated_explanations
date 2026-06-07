@@ -33,27 +33,10 @@ except BaseException:  # pragma: no cover - joblib remains optional
     _joblib_delayed = None  # type: ignore[assignment]
 
 from ..cache import CalibratorCache, TelemetryCallback
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import ConfigManager, get_process_config_manager
 from ..utils.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
-
-_parallel_config_manager: ConfigManager | None = None
-
-
-def _get_parallel_config_manager() -> ConfigManager:
-    """Return the process-level ConfigManager singleton for parallel config reads."""
-    global _parallel_config_manager
-    if _parallel_config_manager is None:
-        _parallel_config_manager = ConfigManager.from_sources()
-    return _parallel_config_manager
-
-
-def _reset_parallel_config_manager_for_testing() -> None:
-    """Reset cached config manager singleton (tests only)."""
-    global _parallel_config_manager
-    _parallel_config_manager = None
-
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -125,7 +108,7 @@ class ParallelConfig:
         config_manager: ConfigManager | None = None,
     ) -> "ParallelConfig":
         """Merge ``CE_PARALLEL`` overrides with an optional ``base`` configuration."""
-        mgr = config_manager if config_manager is not None else _get_parallel_config_manager()
+        mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
         raw = mgr.env("CE_PARALLEL")
         if not raw:
@@ -206,7 +189,7 @@ class ParallelExecutor:
         self._warned_min_batch: bool = False
         self._warned_tiny_workload: bool = False
         self._config_manager = (
-            config_manager if config_manager is not None else ConfigManager.from_sources()
+            config_manager if config_manager is not None else get_process_config_manager()
         )
 
     def __getstate__(self) -> dict[str, Any]:

@@ -19,23 +19,32 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
-from .core.config_manager import ConfigManager
+from .core.config_manager import (
+    ConfigManager,
+    get_process_config_manager,
+    reset_process_config_manager_for_testing,
+)
 from .viz import _matplotlib_compat as legacy  # noqa: F401 - re-exported as plotting.legacy
-
-_plotting_config_manager: ConfigManager | None = None
 
 
 def _get_plotting_config_manager() -> ConfigManager:
-    global _plotting_config_manager
-    if _plotting_config_manager is None:
-        _plotting_config_manager = ConfigManager.from_sources()
-    return _plotting_config_manager
+    return get_process_config_manager()
 
 
 def reset_plotting_config_manager() -> None:
-    """Reset plotting module config singleton (tests only)."""
-    global _plotting_config_manager
-    _plotting_config_manager = None
+    """Reset the shared process config snapshot for plotting tests."""
+    reset_process_config_manager_for_testing()
+
+
+def _bind_plot_plugin_config(
+    manager: Any,
+    identifier: str | None,
+    plugin: Any,
+) -> Mapping[str, Any]:
+    binder = getattr(manager, "bind_plugin_config", None)
+    if not callable(binder):
+        return {}
+    return binder(identifier, plugin, getattr(plugin, "plugin_meta", None))
 
 
 def __getattr__(name: str) -> Any:
@@ -346,6 +355,7 @@ def _render_instance_plot_plugin(
         path=path,
         save_ext=tuple(save_ext) if save_ext else None,
         options=MappingProxyType(dict(options)),
+        plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
     return plugin.render(artifact, context=context)
@@ -396,6 +406,7 @@ def _render_collection_plot_plugin(
         path=path,
         save_ext=tuple(save_ext) if save_ext else None,
         options=MappingProxyType(dict(options)),
+        plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
     return plugin.render(artifact, context=context)
@@ -1828,6 +1839,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             path=path,
             save_ext=save_ext_value,
             options=MappingProxyType({"payload": payload}),
+            plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
         )
         try:
             artifact = plugin.build(context)

@@ -46,6 +46,7 @@ retained for backward compatibility and as a legacy example only.
 | Package | Purpose | Rules |
 |---|---|---|
 | `core/` | `CalibratedExplainer`, `WrapCalibratedExplainer`, `core.exceptions` | Never import `plugins/` here (ADR-001) |
+| `core/config_manager.py` | Runtime configuration authority (`ConfigManager`) | Only boundary module for env/pyproject reads (ADR-034) |
 | `plugins/` | Calibrators, plotters, explanation plugins | Register via plugin registry; never hard-code in `core/` |
 | `calibration/` | Venn-Abers & Conformal Prediction primitives | Stateless helpers only |
 | `utils/` | `deprecate`, logging, serialization | Shared across packages |
@@ -56,6 +57,10 @@ Design patterns:
 - **Plugin-First**: New functionality goes into `plugins/`, not `core/`.
 - **Exception hierarchy**: Use `core.exceptions` (ADR-002). No bare `Exception` or
   `ValueError` unless documented.
+- **Config authority**: All runtime configuration reads go through
+  `ConfigManager` (ADR-034). Do not call `os.getenv` or parse `pyproject.toml`
+  directly outside `core/config_manager.py` and `core/config_helpers.py`. Use
+  `get_process_config_manager()` to access the process-level singleton.
 
 ---
 
@@ -104,9 +109,11 @@ Every fallback must be visible to users. No silent fallbacks.
 | Path | Purpose |
 |---|---|
 | `src/calibrated_explanations/core/__init__.py` | Public API surface |
+| `src/calibrated_explanations/core/config_manager.py` | Runtime configuration authority: `ConfigManager`, `get_process_config_manager`, `init_process_config_manager` |
 | `src/calibrated_explanations/plugins/` | Plugin implementations |
 | `src/calibrated_explanations/ce_agent_utils.py` | Legacy compatibility module — backward-compat and example only, not the recommended agent interface |
 | `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
+| `docs/foundations/how-to/configure_runtime.md` | How-to guide: ConfigManager, env vars, pyproject.toml sections, export diagnostics |
 | `docs/improvement/RELEASE_PLAN_v1.md` | Active release plan and milestone gates |
 | `docs/improvement/adrs/` | Architectural Decision Records |
 | `docs/standards/` | Engineering Standards (STD-001 through STD-005) |

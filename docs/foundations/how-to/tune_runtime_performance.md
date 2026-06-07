@@ -165,3 +165,10 @@ Document the change in your release notes or change log so operators know the
 performance toggles returned to their v0.8.x defaults. Capture cache metrics via
 ``explainer._perf_cache.metrics.snapshot()`` or the telemetry callback if you
 need before/after validation.
+
+## See also
+
+- [Configure runtime behaviour (ConfigManager)](configure_runtime.md) — full env-var
+  reference table, pyproject.toml sections, and export diagnostics
+- [Configure telemetry](configure_telemetry.md) — telemetry diagnostic mode and
+  governance logging

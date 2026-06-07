@@ -2,7 +2,7 @@
 
 Covers all 9 in-scope Task-10 findings:
   1/6. task / parallel_workers removed from ExplainerConfig and ExplainerBuilder
-  2.   perturbation.py singleton lifecycle fixed
+  2.   process-level ConfigManager singleton lifecycle fixed
   3.   CE_DEBUG_TRUST_INVARIANTS in _KNOWN_ENV_KEYS
   4.   zombie config.ini absent
   5.   env-var precedence Notes present in perf_cache / perf_parallel docstrings
@@ -14,6 +14,9 @@ Covers all 9 in-scope Task-10 findings:
 from __future__ import annotations
 
 import inspect
+import queue
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -21,10 +24,14 @@ from sklearn.ensemble import RandomForestClassifier
 
 import calibrated_explanations
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
-from calibrated_explanations.core.config_manager import ConfigManager, _KNOWN_ENV_KEYS
-from calibrated_explanations.utils.perturbation import (
-    reset_perturbation_config_manager_for_testing,
+from calibrated_explanations.core.config_manager import (
+    ConfigManager,
+    get_process_config_manager,
+    init_process_config_manager,
+    reset_process_config_manager_for_testing,
+    _KNOWN_ENV_KEYS,
 )
+from calibrated_explanations.utils.exceptions import CalibratedError
 
 
 # ---------------------------------------------------------------------------
@@ -52,18 +59,65 @@ def test_should_not_warn_for_ce_debug_trust_invariants_env_var(
 
 
 # ---------------------------------------------------------------------------
-# Finding 2 — perturbation.py singleton lifecycle
+# Finding 2 — process-level singleton lifecycle
 # ---------------------------------------------------------------------------
 
 
-def test_should_expose_reset_perturbation_config_manager_for_testing() -> None:
-    assert callable(reset_perturbation_config_manager_for_testing)
+def test_should_expose_reset_process_config_manager_for_testing() -> None:
+    assert callable(reset_process_config_manager_for_testing)
 
 
-def test_reset_perturbation_config_manager_is_callable_and_does_not_raise() -> None:
+def test_reset_process_config_manager_is_callable_and_does_not_raise() -> None:
     # Behavioral: reset must succeed without raising regardless of prior state.
-    assert reset_perturbation_config_manager_for_testing() is None
-    assert reset_perturbation_config_manager_for_testing() is None  # idempotent
+    assert reset_process_config_manager_for_testing() is None
+    assert reset_process_config_manager_for_testing() is None  # idempotent
+
+
+def test_should_return_same_process_config_manager_until_reset() -> None:
+    reset_process_config_manager_for_testing()
+    first = get_process_config_manager()
+    second = get_process_config_manager()
+    assert second is first
+
+
+def test_should_construct_process_config_manager_once_for_concurrent_callers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reset_process_config_manager_for_testing()
+    calls: list[int] = []
+    calls_lock = threading.Lock()
+
+    def fake_from_sources(_cls, *, strict: bool = True):
+        _ = strict
+        with calls_lock:
+            calls.append(threading.get_ident())
+        time.sleep(0.01)
+        return ConfigManager(env_snapshot={}, pyproject_snapshot={})
+
+    monkeypatch.setattr(ConfigManager, "from_sources", classmethod(fake_from_sources))
+    n = 8
+    results_q: queue.Queue[ConfigManager] = queue.Queue()
+    threads = [
+        threading.Thread(target=lambda: results_q.put(get_process_config_manager()))
+        for _ in range(n)
+    ]
+
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    results = [results_q.get_nowait() for _ in range(n)]
+    assert len(calls) == 1
+    assert len({id(manager) for manager in results}) == 1
+
+
+def test_should_raise_when_process_config_manager_initialized_twice() -> None:
+    reset_process_config_manager_for_testing()
+    manager = ConfigManager(env_snapshot={}, pyproject_snapshot={})
+    assert init_process_config_manager(manager) is manager
+    with pytest.raises(CalibratedError, match="already been initialized"):
+        init_process_config_manager(manager)
 
 
 # ---------------------------------------------------------------------------

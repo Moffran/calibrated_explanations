@@ -228,3 +228,4 @@ evaluation/reject/artifacts/scenario_10_ambiguity_novelty_reject.csv
 evaluation/reject/artifacts/scenario_11_operating_point_selection*
 .mcp.json
 .github/agents/architecture-gatekeeper.agent.md
+.github/skills/cee*

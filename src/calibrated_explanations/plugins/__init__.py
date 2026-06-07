@@ -9,7 +9,14 @@ need to `import calibrated_explanations.plugins` before resolving identifiers.
 import contextlib
 
 from . import registry  # re-export module for convenience
-from .base import ExplainerPlugin, PluginMeta, validate_plugin_meta  # noqa: F401
+from .base import (  # noqa: F401
+    ExplainerPlugin,
+    PluginMeta,
+    freeze_plugin_config,
+    validate_plugin_config,
+    validate_plugin_config_schema,
+    validate_plugin_meta,
+)
 from .explanations import (  # noqa: F401
     ExplainerHandle,
     ExplanationBatch,
@@ -83,6 +90,7 @@ __all__ = [
     "PluginManager",
     "PluginTrustPolicy",
     "PredictBridge",
+    "freeze_plugin_config",
     "ensure_builtin_plugins",
     "find_explanation_descriptor",
     "find_explanation_plugin",
@@ -110,6 +118,8 @@ __all__ = [
     "unregister",
     "validate_explanation_batch",
     "validate_explanation_metadata",
+    "validate_plugin_config",
+    "validate_plugin_config_schema",
     "validate_plugin_meta",
 ]
 

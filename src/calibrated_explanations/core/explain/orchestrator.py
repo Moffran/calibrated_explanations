@@ -1949,6 +1949,11 @@ class ExplanationOrchestrator:
         # Use the bridge monitor for this plugin to track usage.
         # We use the identifier if available, otherwise fall back to mode.
         monitor = self.explainer.plugin_manager.get_bridge_monitor(identifier or mode)
+        plugin_config = self.explainer.plugin_manager.bind_plugin_config(
+            identifier,
+            plugin,
+            getattr(plugin, "plugin_meta", None),
+        )
 
         context = ExplanationContext(
             task=self.explainer.mode,
@@ -1965,6 +1970,7 @@ class ExplanationOrchestrator:
             predict_bridge=monitor,
             interval_settings=interval_settings,
             plot_settings=plot_settings,
+            plugin_config=plugin_config,
         )
         return context
 

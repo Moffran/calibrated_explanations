@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 else:
     CalibratedExplanationsType = object
 from ..utils.exceptions import ValidationError
-from .base import ExplainerPlugin, PluginMeta
+from .base import ExplainerPlugin, PluginMeta, freeze_plugin_config
 from .predict import PredictBridge
 
 
@@ -46,6 +46,7 @@ class ExplanationContext:
     predict_bridge: PredictBridge
     interval_settings: Mapping[str, object]
     plot_settings: Mapping[str, object]
+    plugin_config: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Freeze nested mapping/list fields to prevent plugin-side mutation."""
@@ -65,6 +66,7 @@ class ExplanationContext:
         object.__setattr__(self, "categorical_labels", frozen_labels)
         object.__setattr__(self, "interval_settings", _freeze_value(self.interval_settings))
         object.__setattr__(self, "plot_settings", _freeze_value(self.plot_settings))
+        object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
 
     def __getstate__(self):
         """Get state for pickling.

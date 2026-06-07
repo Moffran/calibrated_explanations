@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
+from calibrated_explanations.core.config_manager import reset_process_config_manager_for_testing
 from calibrated_explanations.plugins import (
     ensure_builtin_plugins,
     register_interval_plugin,
@@ -89,6 +90,7 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
         + "\n"
     )
 
+    reset_process_config_manager_for_testing()
     monkeypatch.chdir(tmp_path)
 
     try:
@@ -123,3 +125,4 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
     finally:
         clear_interval_plugins()
         ensure_builtin_plugins()
+        reset_process_config_manager_for_testing()

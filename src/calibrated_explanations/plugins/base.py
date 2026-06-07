@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import warnings
+from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence
 
 from ..utils.exceptions import ValidationError
@@ -33,6 +34,16 @@ _MODALITY_ALIASES = {
     "img": "vision",
     "multi-modal": "multimodal",
     "multi_modal": "multimodal",
+}
+_PROVISIONAL_CONFIG_SCHEMA_VERSION = 1
+_CONFIG_SCHEMA_TYPES = {
+    "str",
+    "int",
+    "float",
+    "bool",
+    "list",
+    "list[str]",
+    "mapping",
 }
 
 
@@ -138,6 +149,160 @@ def _normalise_data_modalities(value: Any) -> Sequence[str]:
     return tuple(normalized)
 
 
+def freeze_plugin_config(value: Any) -> Any:
+    """Return a deeply immutable plugin config value."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(k): freeze_plugin_config(v) for k, v in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(freeze_plugin_config(item) for item in value)
+    if isinstance(value, set):
+        return tuple(sorted((freeze_plugin_config(item) for item in value), key=repr))
+    return value
+
+
+def thaw_plugin_config(value: Any) -> Any:
+    """Recursively convert MappingProxyType to plain dict so the result is picklable.
+
+    This is the inverse of :func:`freeze_plugin_config` for the purpose of
+    ``__getstate__`` implementations.  Tuples produced by freeze are walked
+    recursively; all other values are returned unchanged.
+    """
+    if isinstance(value, MappingProxyType):
+        return {k: thaw_plugin_config(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return tuple(thaw_plugin_config(item) for item in value)
+    return value
+
+
+def _schema_keys(schema: Mapping[str, Any]) -> Mapping[str, Any]:
+    keys = schema.get("keys", schema.get("properties", {}))
+    if not isinstance(keys, Mapping):
+        raise ValidationError("plugin_meta['config_schema']['keys'] must be a mapping")
+    return keys
+
+
+def validate_plugin_config_schema(schema: Mapping[str, Any]) -> None:
+    """Validate the provisional plugin config schema shape.
+
+    The schema is a hardened integration surface, not a compatibility-frozen API.
+    """
+    if not isinstance(schema, Mapping):
+        raise ValidationError("plugin_meta['config_schema'] must be a mapping")
+    version = schema.get("version", _PROVISIONAL_CONFIG_SCHEMA_VERSION)
+    if version != _PROVISIONAL_CONFIG_SCHEMA_VERSION:
+        raise ValidationError("plugin_meta['config_schema']['version'] must be 1")
+    additional = schema.get("additional_properties", False)
+    if not isinstance(additional, bool):
+        raise ValidationError(
+            "plugin_meta['config_schema']['additional_properties'] must be a boolean"
+        )
+    for key, entry in _schema_keys(schema).items():
+        if not isinstance(key, str) or not key:
+            raise ValidationError("plugin_meta['config_schema']['keys'] names must be non-empty")
+        if not isinstance(entry, Mapping):
+            raise ValidationError(
+                f"plugin_meta['config_schema']['keys'][{key!r}] must be a mapping"
+            )
+        raw_type = entry.get("type")
+        if raw_type not in _CONFIG_SCHEMA_TYPES:
+            raise ValidationError(
+                f"plugin_meta['config_schema']['keys'][{key!r}]['type'] must be one of "
+                f"{sorted(_CONFIG_SCHEMA_TYPES)}"
+            )
+        if "required" in entry and not isinstance(entry["required"], bool):
+            raise ValidationError(
+                f"plugin_meta['config_schema']['keys'][{key!r}]['required'] must be a boolean"
+            )
+        if "sensitive" in entry and not isinstance(entry["sensitive"], bool):
+            raise ValidationError(
+                f"plugin_meta['config_schema']['keys'][{key!r}]['sensitive'] must be a boolean"
+            )
+        choices = entry.get("choices")
+        if choices is not None:
+            if isinstance(choices, str) or not isinstance(choices, Iterable):
+                raise ValidationError(
+                    f"plugin_meta['config_schema']['keys'][{key!r}]['choices'] "
+                    "must be a sequence"
+                )
+            if not tuple(choices):
+                raise ValidationError(
+                    f"plugin_meta['config_schema']['keys'][{key!r}]['choices'] " "must not be empty"
+                )
+        if "default" in entry and not _config_value_matches_type(entry["default"], str(raw_type)):
+            raise ValidationError(
+                f"plugin_meta['config_schema']['keys'][{key!r}]['default'] "
+                f"does not match type {raw_type!r}"
+            )
+
+
+def _config_value_matches_type(value: Any, raw_type: str) -> bool:
+    if raw_type == "str":
+        return isinstance(value, str)
+    if raw_type == "int":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if raw_type == "float":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if raw_type == "bool":
+        return isinstance(value, bool)
+    if raw_type == "list":
+        return isinstance(value, Sequence) and not isinstance(value, (str, bytes))
+    if raw_type == "list[str]":
+        return (
+            isinstance(value, Sequence)
+            and not isinstance(value, (str, bytes))
+            and all(isinstance(item, str) for item in value)
+        )
+    if raw_type == "mapping":
+        return isinstance(value, Mapping)
+    return False
+
+
+def validate_plugin_config(
+    *,
+    plugin_id: str,
+    config: Mapping[str, Any],
+    schema: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Validate raw config for a selected trusted plugin using its provisional schema."""
+    validate_plugin_config_schema(schema)
+    if not isinstance(config, Mapping):
+        raise ValidationError(f"Plugin config for {plugin_id!r} must be a mapping")
+
+    schema_entries = _schema_keys(schema)
+    additional_allowed = bool(schema.get("additional_properties", False))
+    unknown_keys = sorted(set(config) - set(schema_entries))
+    if unknown_keys and not additional_allowed:
+        raise ValidationError(
+            f"Plugin config for {plugin_id!r} contains unknown key(s): {unknown_keys}"
+        )
+
+    resolved = {
+        key: entry["default"]
+        for key, entry in schema_entries.items()
+        if isinstance(entry, Mapping) and "default" in entry
+    }
+    resolved.update(dict(config))
+
+    for key, entry in schema_entries.items():
+        if not isinstance(entry, Mapping):  # pragma: no cover - guarded by schema validation
+            continue
+        required = bool(entry.get("required", False))
+        if required and key not in resolved:
+            raise ValidationError(f"Plugin config for {plugin_id!r} missing required key: {key}")
+        if key not in resolved:
+            continue
+        raw_type = str(entry["type"])
+        value = resolved[key]
+        if not _config_value_matches_type(value, raw_type):
+            raise ValidationError(f"Plugin config for {plugin_id!r} key {key!r} must be {raw_type}")
+        choices = entry.get("choices")
+        if choices is not None and value not in tuple(choices):
+            raise ValidationError(
+                f"Plugin config for {plugin_id!r} key {key!r} must be one of {tuple(choices)!r}"
+            )
+    return freeze_plugin_config(resolved)
+
+
 def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     """Validate minimal plugin metadata required by ADR-006."""
     if not isinstance(meta, dict):
@@ -185,6 +350,15 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
         meta.get("plugin_api_version", "1.0"), plugin_name=meta.get("name")
     )
     meta["data_modalities"] = _normalise_data_modalities(meta.get("data_modalities", ("tabular",)))
+    if "config_schema" in meta:
+        validate_plugin_config_schema(meta["config_schema"])
 
 
-__all__ = ["ExplainerPlugin", "validate_plugin_meta"]
+__all__ = [
+    "ExplainerPlugin",
+    "freeze_plugin_config",
+    "thaw_plugin_config",
+    "validate_plugin_config",
+    "validate_plugin_config_schema",
+    "validate_plugin_meta",
+]

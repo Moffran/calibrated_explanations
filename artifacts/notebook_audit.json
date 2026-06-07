@@ -1,7 +1,7 @@
 {
   "summary": {
-    "total": 17,
-    "compliant": 17,
+    "total": 18,
+    "compliant": 18,
     "failed": 0
   },
   "notebooks": [
@@ -64,6 +64,12 @@
         "predict",
         "remove_conjunctions"
       ]
+    },
+    {
+      "path": "notebooks/advanced/demo_config_management.ipynb",
+      "compliant": true,
+      "violations": [],
+      "usage": []
     },
     {
       "path": "notebooks/advanced/demo_narrative_explanations.ipynb",

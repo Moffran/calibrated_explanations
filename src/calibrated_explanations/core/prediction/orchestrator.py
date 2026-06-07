@@ -741,8 +741,10 @@ class PredictionOrchestrator:
         *,
         fast: bool,
         metadata: Mapping[str, Any],
+        plugin: Any | None = None,
+        identifier: str | None = None,
     ) -> IntervalCalibratorContext:
-        """Construct the interval calibrator context with immutable metadata (plugins get scratch state via ``plugin_state``)."""
+        """Construct an immutable interval context with mutable plugin scratch state."""
         calibration_splits: Tuple[Any, ...] = ((self.explainer.x_cal, self.explainer.y_cal),)
         bins = {"calibration": self.explainer.bins}
         difficulty = {"estimator": self.explainer.difficulty_estimator}
@@ -793,6 +795,15 @@ class PredictionOrchestrator:
         metadata_for_plugins = {
             key: _freeze_context_value(value) for key, value in enriched_metadata.items()
         }
+        plugin_config = (
+            self.explainer.plugin_manager.bind_plugin_config(
+                identifier,
+                plugin,
+                getattr(plugin, "plugin_meta", None),
+            )
+            if plugin is not None and identifier is not None
+            else {}
+        )
         return IntervalCalibratorContext(
             learner=self.explainer.learner,
             calibration_splits=calibration_splits,
@@ -801,6 +812,7 @@ class PredictionOrchestrator:
             difficulty=_freeze_context_mapping(difficulty),
             metadata=metadata_for_plugins,
             fast_flags=_freeze_context_mapping(fast_flags),
+            plugin_config=plugin_config,
         )
 
     def obtain_interval_calibrator(
@@ -817,7 +829,12 @@ class PredictionOrchestrator:
         ):
             plugin, identifier = self.resolve_interval_plugin(fast=fast, hints=hints)
             with logging_context(plugin_identifier=identifier):
-                context = self.build_interval_context(fast=fast, metadata=metadata)
+                context = self.build_interval_context(
+                    fast=fast,
+                    metadata=metadata,
+                    plugin=plugin,
+                    identifier=identifier,
+                )
                 try:
                     calibrator = plugin.create(context, fast=fast)
                 except:  # noqa: E722

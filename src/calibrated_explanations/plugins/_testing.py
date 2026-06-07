@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 from typing import Any, Iterable, Mapping
 
+from ..core.config_manager import reset_process_config_manager_for_testing
 from . import registry
 from ._trust import clear_trusted_identifiers, mutate_trust_atomic, update_trusted_identifier
 from .base import ExplainerPlugin
@@ -19,7 +20,7 @@ def clear_env_trust_cache() -> None:
     """Clear cached trust identifiers loaded from environment and pyproject."""
     registry._ENV_TRUST_CACHE = None
     registry._PYPROJECT_TRUST_CACHE = None
-    registry._reset_config_manager_for_testing()
+    reset_process_config_manager_for_testing()
 
 
 def set_pyproject_trust_cache_for_testing(trusted: Iterable[str] | None) -> None:

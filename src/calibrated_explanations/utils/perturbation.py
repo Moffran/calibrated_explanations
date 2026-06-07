@@ -40,24 +40,6 @@ import numpy as np
 # STEP = config.getfloat('perturbation_variables', 'STEP')
 # Now Let's write functions to provide perturbations to each column specific to each data type
 
-_perturbation_config_manager: object | None = None
-
-
-def _get_perturbation_config_manager():
-    """Return the module-level ConfigManager singleton for perturbation config reads."""
-    from ..core.config_manager import ConfigManager
-
-    global _perturbation_config_manager
-    if _perturbation_config_manager is None:
-        _perturbation_config_manager = ConfigManager.from_sources()
-    return _perturbation_config_manager
-
-
-def reset_perturbation_config_manager_for_testing() -> None:
-    """Reset the module-level singleton so tests that mutate env get a fresh manager."""
-    global _perturbation_config_manager
-    _perturbation_config_manager = None
-
 
 # BASIC PERTURBATIONS FOR THE VERSION I: Provides Gaussian Noise by protecting
 # the standard deviation and mean properties of the current column.
@@ -94,10 +76,9 @@ def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random
         # Emit a UserWarning only when fallback chains are enabled (tests opt-in
         # via the `enable_fallbacks` fixture which removes the disabling env
         # vars). Otherwise log info to avoid triggering test-suite enforcement.
-        if (
-            _get_perturbation_config_manager().env("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS")
-            is None
-        ):
+        from ..core.config_manager import get_process_config_manager
+
+        if get_process_config_manager().env("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS") is None:
             import warnings as _warnings
 
             _warnings.warn(
