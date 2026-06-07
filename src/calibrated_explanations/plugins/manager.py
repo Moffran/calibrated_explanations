@@ -1057,14 +1057,13 @@ class PluginManager:
         if override is not None and not isinstance(override, str):
             identifier = getattr(override, "plugin_meta", {}).get("name")
             metadata = getattr(override, "plugin_meta", None)
-            if isinstance(metadata, Mapping):
-                if not _plugin_meta_trusted(metadata, default=True):
-                    warnings.warn(
-                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
-                        "Ensure you trust the source of this plugin.",
-                        UserWarning,
-                        stacklevel=3,
-                    )
+            if isinstance(metadata, Mapping) and not _plugin_meta_trusted(metadata, default=True):
+                warnings.warn(
+                    f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                    "Ensure you trust the source of this plugin.",
+                    UserWarning,
+                    stacklevel=3,
+                )
             plugin = instantiate_plugin(override) if instantiate_plugin else override
             if metadata_validator is not None:
                 error = metadata_validator(metadata, identifier=identifier, mode=mode)

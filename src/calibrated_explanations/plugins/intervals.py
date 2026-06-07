@@ -50,7 +50,7 @@ class IntervalCalibratorContext:
         """Restore state, re-freezing metadata and plugin_config, ensuring plugin_state is mutable."""
         for key, value in state.items():
             if key == "metadata":
-                value = MappingProxyType(dict(value) if value is not None else {})
+                value = MappingProxyType(dict(value)) if value is not None else None
             elif key == "plugin_config":
                 value = freeze_plugin_config(value if value is not None else {})
             elif key == "plugin_state" and not isinstance(value, MutableMapping):

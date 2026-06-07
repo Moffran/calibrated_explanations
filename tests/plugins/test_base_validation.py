@@ -79,6 +79,7 @@ def test_validate_plugin_meta_accepts_provisional_config_schema():
     }
 
     validate_plugin_meta(meta)
+    assert meta["config_schema"]["version"] == 1
 
 
 def test_validate_plugin_config_schema_rejects_malformed_shape():
