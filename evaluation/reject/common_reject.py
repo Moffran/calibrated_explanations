@@ -17,7 +17,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import binomtest
@@ -153,8 +152,10 @@ def _markdown_table_from_df(table: pd.DataFrame, max_rows: int | None = None) ->
     return "\n".join(lines)
 
 
-def save_plot(prefix: str, fig: plt.Figure, suffix: str) -> str:
+def save_plot(prefix: str, fig: Any, suffix: str) -> str:
     """Persist a matplotlib figure under the artifacts directory."""
+    import matplotlib.pyplot as plt  # noqa: PLC0415
+
     path = ARTIFACTS_DIR / f"{prefix}_{suffix}.png"
     fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)

@@ -186,7 +186,7 @@ The CLI equivalents are:
 python -m calibrated_explanations.cli config show
 
 # Write effective config to a file
-python -m calibrated_explanations.cli config export --output config_snapshot.json
+python -m calibrated_explanations.cli config export > config_snapshot.json
 ```
 
 ## Strict vs. permissive validation

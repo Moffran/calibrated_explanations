@@ -809,12 +809,8 @@ class ConfigManager:
         return default, "default_profile"
 
 
-# Backward-compatible module aliases for tests and advanced users that imported
-# the legacy module-level constants directly.
+# Module-level alias kept for test imports that reference _KNOWN_ENV_KEYS directly.
 _KNOWN_ENV_KEYS = ConfigManager._spec.known_env_keys
-_SECTION_SCHEMA = ConfigManager._spec.section_schema
-_RESOLUTION_SPEC = ConfigManager._spec.resolution_spec
-_VALUE_VALIDATORS = ConfigManager._spec.value_validators
 
 _PROCESS_CONFIG_MANAGER: ConfigManager | None = None
 _PROCESS_CONFIG_MANAGER_LOCK = threading.RLock()
