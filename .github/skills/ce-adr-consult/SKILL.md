@@ -115,7 +115,7 @@ Get-ChildItem docs/improvement/adrs/*.md | Where-Object Name -NotMatch '^superse
 - `schema_version` mandatory; fail-fast on incompatible version.
 
 ### ADR-032 — Guarded explanations
-- Use `explain_guarded_factual` / `explore_guarded_alternatives` when you need
+- Use `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` when you need
    interval plausibility filtering for hypothetical perturbation rules.
 - Do not treat ADR-032 guarded APIs as instance-level OOD detectors.
 

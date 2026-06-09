@@ -65,7 +65,7 @@ multi_alts = explainer.explore_alternatives(X_query, multi_labels_enabled=True)
 
 ### Guarded path (interval plausibility filter — ADR-032)
 ```python
-alternatives = explainer.explore_guarded_alternatives(X_query)
+alternatives = explainer.explore_alternatives(X_query, guarded=True)
 ```
 
 Guarded variant: candidate alternative rules whose probe points are
@@ -115,7 +115,7 @@ explanations (`pred['low'] <= pred['predict'] <= pred['high']`), but the
 - [ ] `WrapCalibratedExplainer` instance confirmed (not raw `CalibratedExplainer` or subclass).
 - [ ] `explainer.fitted is True` asserted before explore call — fail fast if not.
 - [ ] `explainer.calibrated is True` asserted before explore call — fail fast if not.
-- [ ] Correct variant (`explore_alternatives` vs `explore_guarded_alternatives`).
+- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(guarded=True)`).
 - [ ] Threshold provided if the user wants boundary-crossing alternatives for regression.
 - [ ] Ensured-framework filter selected appropriately for the use case.
 - [ ] `only_ensured=True` used when narrower-uncertainty alternatives are required.
@@ -131,7 +131,7 @@ explanations (`pred['low'] <= pred['predict'] <= pred['high']`), but the
 - [ ] `WrapCalibratedExplainer` instance confirmed (not raw `CalibratedExplainer` or subclass).
 - [ ] `explainer.fitted is True` asserted before explore call — fail fast if not.
 - [ ] `explainer.calibrated is True` asserted before explore call — fail fast if not.
-- [ ] Correct variant (`explore_alternatives` vs `explore_guarded_alternatives`).
+- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(guarded=True)`).
 - [ ] Threshold provided if the user wants boundary-crossing alternatives for regression.
 - [ ] Ensured-framework filter selected appropriately for the use case.
 - [ ] `only_ensured=True` used when narrower-uncertainty alternatives are required.

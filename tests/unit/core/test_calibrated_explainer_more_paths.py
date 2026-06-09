@@ -231,9 +231,11 @@ def test_reject_confidence_forwarded_across_explain_and_guarded_paths(monkeypatc
 
     cal_exp.explain_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.81)
     cal_exp.explore_alternatives(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.82)
-    cal_exp.explain_guarded_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.83)
-    cal_exp.explore_guarded_alternatives(
-        x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.84
+    cal_exp.explain_factual(
+        x_test[:2], guarded=True, reject_policy=RejectPolicy.FLAG, confidence=0.83
+    )
+    cal_exp.explore_alternatives(
+        x_test[:2], guarded=True, reject_policy=RejectPolicy.FLAG, confidence=0.84
     )
 
     assert seen_confidences == [0.81, 0.82, 0.83, 0.84]

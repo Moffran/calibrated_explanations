@@ -69,6 +69,10 @@
 - **RT-6: Add zero-value guard to `_difficulty_values()`.** Zero difficulty values now
   raise `ValidationError` (division by zero is mathematically invalid).
 
+### Deprecated
+
+- **Guarded method pair deprecated (ADR-032, Task 13):** `CalibratedExplainer.explain_guarded_factual(...)` and `CalibratedExplainer.explore_guarded_alternatives(...)` (and their `WrapCalibratedExplainer` counterparts) are now deprecated in favour of the parameterized API: `explain_factual(..., guarded=True)` and `explore_alternatives(..., guarded=True)`. The old methods emit `DeprecationWarning` and delegate to the new API. Removal target: v1.0.0.
+
 ### Packaging / CI
 
 - **RT-1 through RT-13 red-team remediation (difficulty_reject branch):** Completed

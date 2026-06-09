@@ -39,11 +39,10 @@ for quick reference.
    `explainer.explore_alternatives(X)`.
 6. **Explain (guarded / interval plausibility filtering)** — when you need
    ADR-032 guarded semantics (filtering implausible hypothetical perturbation
-   rules), use `explainer.explain_guarded_factual(X)` or
-   `explainer.explore_guarded_alternatives(X)` instead of the standard paths.
-   Also use when rule conditions of the form `x < feature <= y` are needed, since
-   the guarded APIs support this natively. Guarded APIs are not instance-level
-   OOD detectors.
+   rules), pass `guarded=True` to the standard entry points:
+   `explainer.explain_factual(X, guarded=True)` or
+   `explainer.explore_alternatives(X, guarded=True)`.
+   Guarded APIs are not instance-level OOD detectors.
 7. **Conjunctions** — `explanations.add_conjunctions(...)` or
    `explanations[idx].add_conjunctions(...)`.
 8. **Narratives & plots** — `.to_narrative(output_format=...)` and `.plot(...)`.
@@ -139,13 +138,13 @@ explanations = wrap_and_explain(
 If `wrap_and_explain` silently drops kwargs or adapts semantics, fall back to the
 explicit skeleton. Never patch the helper to paper over a contract mismatch.
 
-## Decision: `explain_factual` vs `explain_guarded_factual`
+## Decision: standard vs guarded explanation
 
 | Use case | API to use |
 |---|---|
 | Standard inference | `explain_factual` / `explore_alternatives` |
-| Interval plausibility filtering for candidate rules | `explain_guarded_factual` / `explore_guarded_alternatives` |
-| Need guarded audit of removed perturbation rules | `explain_guarded_factual` |
+| Interval plausibility filtering for candidate rules | `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` |
+| Need guarded audit of removed perturbation rules | `explain_factual(..., guarded=True)` |
 | Instance-level OOD screening | Use dedicated OOD tooling (not guarded explanation APIs) |
 
 Guarded variants apply ADR-032 semantics — see `references/adr-032-guarded-semantics.md`.

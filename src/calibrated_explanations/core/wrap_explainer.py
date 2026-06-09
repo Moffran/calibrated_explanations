@@ -479,12 +479,24 @@ class WrapCalibratedExplainer:
         return self.explainer.explore_alternatives(x_local, **kwargs)
 
     def explain_guarded_factual(self, x: Any, **kwargs: Any) -> Any:
-        """Generate guarded factual explanations that only use in-distribution perturbations.
+        """Delegate to :meth:`explain_factual` with ``guarded=True`` (deprecated compatibility wrapper).
+
+        .. deprecated::
+            ``explain_guarded_factual(...)`` is deprecated and will be removed in v1.0.0.
+            Use ``explain_factual(..., guarded=True)`` instead.
 
         See Also
         --------
-        :meth:`.CalibratedExplainer.explain_guarded_factual` : Refer to the docstring for full parameter documentation.
+        :meth:`explain_factual` : Pass ``guarded=True`` for guarded execution.
         """
+        from ..utils.deprecations import deprecate  # pylint: disable=import-outside-toplevel
+
+        deprecate(
+            "explain_guarded_factual(...) is deprecated and will be removed in v1.0.0. "
+            "Use explain_factual(..., guarded=True) instead.",
+            key="explain_guarded_factual",
+            stacklevel=3,
+        )
         self._assert_fitted(
             "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
         )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
@@ -497,15 +509,28 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explain_guarded_factual(x_local, **kwargs)
+        kwargs["guarded"] = True
+        return self.explainer.explain_factual(x_local, **kwargs)
 
     def explore_guarded_alternatives(self, x: Any, **kwargs: Any) -> Any:
-        """Generate guarded alternative explanations that only use in-distribution perturbations.
+        """Delegate to :meth:`explore_alternatives` with ``guarded=True`` (deprecated compatibility wrapper).
+
+        .. deprecated::
+            ``explore_guarded_alternatives(...)`` is deprecated and will be removed in v1.0.0.
+            Use ``explore_alternatives(..., guarded=True)`` instead.
 
         See Also
         --------
-        :meth:`.CalibratedExplainer.explore_guarded_alternatives` : Refer to the docstring for full parameter documentation.
+        :meth:`explore_alternatives` : Pass ``guarded=True`` for guarded execution.
         """
+        from ..utils.deprecations import deprecate  # pylint: disable=import-outside-toplevel
+
+        deprecate(
+            "explore_guarded_alternatives(...) is deprecated and will be removed in v1.0.0. "
+            "Use explore_alternatives(..., guarded=True) instead.",
+            key="explore_guarded_alternatives",
+            stacklevel=3,
+        )
         self._assert_fitted(
             "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
         )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
@@ -518,7 +543,8 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explore_guarded_alternatives(x_local, **kwargs)
+        kwargs["guarded"] = True
+        return self.explainer.explore_alternatives(x_local, **kwargs)
 
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.

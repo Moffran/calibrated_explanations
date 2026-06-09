@@ -25,8 +25,11 @@ or explanation output.
 3. **Fit** – `explainer.fit(x_proper, y_proper)` → assert `explainer.fitted is True`.
 4. **Calibrate** – `explainer.calibrate(x_cal, y_cal)` → assert `explainer.calibrated is True`.
 5. **Explain** – Use `explainer.explain_factual(X)` or `explainer.explore_alternatives(X)`.
-    For higher security / in-distribution filtering, use `explainer.explain_guarded_factual(X)`
-    or `explainer.explore_guarded_alternatives(X)` instead.
+    For in-distribution filtering (guarded explanations), pass `guarded=True`:
+    `explainer.explain_factual(X, guarded=True)` or
+    `explainer.explore_alternatives(X, guarded=True)`.
+    The methods `explain_guarded_factual(X)` and `explore_guarded_alternatives(X)` are
+    deprecated compatibility aliases; do not use them in new code.
 6. **Calibrated by default** – Do not return uncalibrated outputs unless explicitly
    requested.
 7. **Conjunctions** – `explanations.add_conjunctions(...)` or

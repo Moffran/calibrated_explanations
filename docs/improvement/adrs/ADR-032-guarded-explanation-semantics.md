@@ -1,11 +1,11 @@
-> **Status note (2026-03-24):** Last edited 2026-03-24 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
+> **Status note (2026-06-09):** Last edited 2026-06-09 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
 
 # ADR-032: Guarded Explanation Semantics and Single-Median-Probe Guarding
 
 ## Status
 Status: Accepted (scoped)
 Date: 2026-03-20
-Updated: 2026-03-24
+Updated: 2026-06-09
 Deciders: Core maintainers
 Reviewers: Core maintainers
 Supersedes: None
@@ -26,7 +26,14 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
 
 ## Decision
 1. **Schema compatibility and helper interoperability are the guarded contract.**
-   - `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` keep their public signatures.
+   - The canonical guarded API is parameterized:
+     - `explain_factual(..., guarded=True)` for guarded factual explanations.
+     - `explore_alternatives(..., guarded=True)` for guarded alternative explanations.
+   - `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` are deprecated
+     compatibility wrappers that delegate to the canonical parameterized API.  They will
+     be removed in v1.0.0.  Callers must migrate to the parameterized form.
+   - Guarded is not an explanation mode.  The explanation mode taxonomy remains
+     factual / alternative / fast.  `guarded` is a boolean policy flag on the request.
    - Guarded entrypoints return standard CE collection classes with guarded subclasses:
      - `GuardedFactualExplanation` subclasses `FactualExplanation`.
      - `GuardedAlternativeExplanation` subclasses `AlternativeExplanation`.
@@ -84,7 +91,18 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
      `conjunctions_emitted` are added to `get_guarded_audit()["summary"]` when conjunctions
      were tested.
 
-8. **Guarded explanations are not supported for fast explainers.**
+8. **The plugin contract exposes exactly one guarded-support metadata field.**
+   - Plugin metadata may include `"supports_guarded": True` to declare that the plugin
+     is compatible with guarded execution.
+   - The default for missing metadata is `"supports_guarded": False`.
+   - The runtime request carries `guarded: bool` on `ExplanationRequest`.
+   - No additional guarded-specific capability tags (e.g. `"explanation:guarded"`) are
+     permitted.  The single boolean `supports_guarded` is the complete contract.
+   - The plugin resolver must not silently select an unguarded-only plugin for guarded
+     execution.  If no `supports_guarded=True` plugin is available for a given
+     modality/mode/task combination, `ValidationError` is raised.
+
+9. **Guarded explanations are not supported for fast explainers.**
    - Fast interval calibrators are trained on per-feature blends of `scaled_x_cal` / `fast_x_cal`, not on `explainer.x_cal` directly.
    - The `InDistributionGuard` always uses `explainer.x_cal` as its reference distribution.
    - These two distributions cannot be aligned, so the ADR-032 precondition (decision 6) cannot be reliably enforced for fast explainers.
@@ -99,6 +117,10 @@ Positive:
 - Public CE helper surfaces remain usable on guarded outputs.
 - Audit payloads can be interpreted without overstating what guarded conformity means.
 - Single-probe logic is simpler, more predictable, and easier to audit.
+- A single public API entry point (`explain_factual` / `explore_alternatives`) handles both
+  guarded and unguarded execution, eliminating the parallel method surface.
+- The plugin contract has exactly one guarded-support field (`supports_guarded`), preventing
+  redundant or contradictory guarded declarations.
 
 Negative / Risks:
 
@@ -106,6 +128,8 @@ Negative / Risks:
 - Users must understand that emitted guarded intervals reflect this candidate-level guard rule, not whole-interval certification.
 - Calibration-feature divergence now fails fast instead of degrading with a warning.
 - Fast explainers cannot use guarded entrypoints at all; users who need guarded filtering must use a standard (non-fast) explainer.
+- The deprecated `explain_guarded_factual` / `explore_guarded_alternatives` wrappers must not
+  be used in new code.  Remove usage before v1.0.0.
 
 ## Addendum: Guarded Auditability
 To support transparent guarded diagnostics without breaking CE payload contracts:

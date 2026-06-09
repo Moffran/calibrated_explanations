@@ -20,7 +20,7 @@ from sklearn.model_selection import train_test_split
 
 @dataclass(frozen=True)
 class GuardConfig:
-    """Immutable guard hyperparameter bundle passed to explain_guarded_* calls."""
+    """Immutable guard hyperparameter bundle passed to explain_factual/explore_alternatives with guarded=True."""
     significance: float = 0.1
     n_neighbors: int = 5
     merge_adjacent: bool = False

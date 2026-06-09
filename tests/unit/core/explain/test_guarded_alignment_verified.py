@@ -19,7 +19,7 @@ def test_should_keep_factual_weights_internally_consistent_with_feature_backgrou
 
     # Act
     x_test = np.array([[0.5, 0.5]])
-    result = explainer.explain_guarded_factual(x_test, significance=0.01)
+    result = explainer.explain_factual(x_test, guarded=True, significance=0.01)
 
     expl = result.explanations[0]
     rules = expl.get_rules()
@@ -49,7 +49,9 @@ def test_should_preserve_ce_compatible_baseline_payload_shape():
 
     factual = explainer.explain_factual(x_test).explanations[0].get_rules()
     guarded = (
-        explainer.explain_guarded_factual(x_test, significance=1.0).explanations[0].get_rules()
+        explainer.explain_factual(x_test, guarded=True, significance=1.0)
+        .explanations[0]
+        .get_rules()
     )
 
     assert len(factual["base_predict"]) == 1
@@ -77,7 +79,7 @@ def test_should_format_categorical_conditions_with_single_equals_for_helper_comp
 
     # Act
     x_test = np.array([[0, 0]])
-    result = explainer.explain_guarded_factual(x_test, significance=0.01)
+    result = explainer.explain_factual(x_test, guarded=True, significance=0.01)
 
     expl = result.explanations[0]
     rules = expl.get_rules()
@@ -103,7 +105,7 @@ def test_should_populate_internal_feature_caches_for_conjunction_compatibility()
 
     # Act
     x_test = np.array([[0.5, 0.5]])
-    result = explainer.explain_guarded_factual(x_test, significance=0.01)
+    result = explainer.explain_factual(x_test, guarded=True, significance=0.01)
     expl = result.explanations[0]
 
     # These attributes are dicts in singular explanations holding (predict, low, high)
@@ -134,7 +136,7 @@ def test_should_include_prob_key_in_classification_prediction_metadata():
 
     # Act
     x_test = np.array([[0, 0]])
-    result = explainer.explain_guarded_factual(x_test, significance=1.0)
+    result = explainer.explain_factual(x_test, guarded=True, significance=1.0)
     expl = result.explanations[0]
 
     # CE-compatible helper surfaces expect a `prob` key for classification.

@@ -353,6 +353,23 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     if "config_schema" in meta:
         validate_plugin_config_schema(meta["config_schema"])
 
+    # supports_guarded: boolean, defaults to False; only valid for explanation plugins.
+    if "supports_guarded" in meta:
+        sg = meta["supports_guarded"]
+        if not isinstance(sg, bool):
+            raise ValidationError("plugin_meta['supports_guarded'] must be a boolean")
+        capabilities = meta.get("capabilities", ())
+        has_explanation_cap = any(
+            isinstance(c, str) and c.startswith("explanation:") for c in capabilities
+        )
+        if sg and not has_explanation_cap:
+            raise ValidationError(
+                "plugin_meta['supports_guarded']=True is only valid for explanation plugins "
+                "(capabilities must include at least one 'explanation:*' entry)"
+            )
+    else:
+        meta["supports_guarded"] = False
+
 
 __all__ = [
     "ExplainerPlugin",

@@ -254,6 +254,7 @@ class ExplanationRequest:
     interval_summary: Optional[object] = None
     extras: Mapping[str, object] = field(default_factory=dict)
     feature_filter_per_instance_ignore: Sequence[Sequence[int]] | None = None
+    guarded: bool = False
 
     def __post_init__(self) -> None:
         """Freeze mutable fields such as `bins` and `extras` for safety.

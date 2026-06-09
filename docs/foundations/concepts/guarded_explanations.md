@@ -20,8 +20,8 @@ Semantics and non-guarantees are defined in
 ## Core calls
 
 ```python
-guarded_factual = explainer.explain_guarded_factual(X, significance=0.1)
-guarded_alts = explainer.explore_guarded_alternatives(X, significance=0.1)
+guarded_factual = explainer.explain_factual(X, guarded=True, significance=0.1)
+guarded_alts = explainer.explore_alternatives(X, guarded=True, significance=0.1)
 ```
 
 ## What guarded mode does not guarantee

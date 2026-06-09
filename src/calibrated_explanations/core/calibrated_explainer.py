@@ -1447,6 +1447,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        guarded: bool = False,
         _use_plugin: bool = True,
         **kwargs,
     ) -> CalibratedExplanations:
@@ -1464,6 +1465,12 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        guarded : bool, default=False
+            When True, apply interval-plausibility filtering via an in-distribution guard.
+            Only perturbation candidates whose representative calibration-sample median
+            passes a KNN-based conformity test are included in the output.
+            Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
+            and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
         **kwargs : dict
             Additional arguments passed to the explanation orchestrator.
 
@@ -1471,7 +1478,32 @@ class CalibratedExplainer:
         -------
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance.
+            When ``guarded=True``, per-instance explanations are
+            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`.
         """
+        if guarded:
+            if not _use_plugin and kwargs.get("verbose", False):
+                warnings.warn(
+                    "_use_plugin has no effect on guarded explanation methods",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            if bins is None and self.is_mondrian():
+                bins = self.bins
+            ctx = (
+                self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+            )
+            with ctx:
+                reject_policy = kwargs.pop("reject_policy", None)
+                return self.explanation_orchestrator.invoke_guarded_factual(
+                    x=x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    bins=bins,
+                    features_to_ignore=features_to_ignore,
+                    reject_policy=reject_policy,
+                    **kwargs,
+                )
         if bins is None and self.is_mondrian():
             bins = self.bins
         # Thin delegator that sets discretizer and delegates to orchestrator
@@ -1501,6 +1533,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        guarded: bool = False,
         _use_plugin: bool = True,
         **kwargs,
     ) -> AlternativeExplanations:
@@ -1518,16 +1551,48 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        guarded : bool, default=False
+            When True, apply interval-plausibility filtering via an in-distribution guard.
+            Only perturbation candidates whose representative calibration-sample median
+            passes a KNN-based conformity test are included as alternatives.
+            Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
+            and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
         **kwargs : dict
             Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
+
         Notes
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
+        When ``guarded=True``, per-instance explanations are
+        :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedAlternativeExplanation`.
         """
+        if guarded:
+            if not _use_plugin and kwargs.get("verbose", False):
+                warnings.warn(
+                    "_use_plugin has no effect on guarded explanation methods",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            if bins is None and self.is_mondrian():
+                bins = self.bins
+            ctx = (
+                self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+            )
+            with ctx:
+                reject_policy = kwargs.pop("reject_policy", None)
+                return self.explanation_orchestrator.invoke_guarded_alternative(
+                    x=x,
+                    threshold=threshold,
+                    low_high_percentiles=low_high_percentiles,
+                    bins=bins,
+                    features_to_ignore=features_to_ignore,
+                    reject_policy=reject_policy,
+                    **kwargs,
+                )  # type: ignore[return-value]
         if bins is None and self.is_mondrian():
             bins = self.bins
         # Thin delegator that sets discretizer and delegates to orchestrator
@@ -1565,83 +1630,35 @@ class CalibratedExplainer:
         verbose: bool = False,
         **kwargs,
     ):
-        """Create guarded factual explanations that only use in-distribution perturbations.
+        """Delegate to :meth:`explain_factual` with ``guarded=True`` (deprecated compatibility wrapper).
 
-        Unlike :meth:`explain_factual`, which uses a binary (``max_depth=1``)
-        discretiser, this method uses the same multi-bin (``max_depth=3``)
-        discretiser as :meth:`explore_alternatives`.  For each leaf an
-        in-distribution guard tests whether the representative perturbation
-        is conforming to the calibration distribution; leaves that fail the
-        test are filtered out.
-
-        Rule conditions are **intervals** such as ``"30 < age <= 50"`` rather
-        than simple threshold splits.  Adjacent conforming bins can optionally
-        be merged into wider intervals (``merge_adjacent=True``).
-
-        Parameters
-        ----------
-        x : array-like
-            A set with n_samples of test objects to explain.
-        threshold : float, int or array-like, optional
-            Values for which p-values should be returned.  Only used for
-            probabilistic regression.
-        low_high_percentiles : tuple of float, default=(5, 95)
-            The low and high percentile used to calculate the interval.
-        bins : array-like of shape (n_samples,), optional
-            Mondrian categories.
-        features_to_ignore : sequence of int or str, optional
-            Features to exclude from explanations.
-        significance : float, default=0.1
-            Acceptable false-OOD rate. Bins are considered conforming when
-            ``p_value >= significance``; bins below that threshold are
-            treated as out-of-distribution and not included.
-        merge_adjacent : bool, default=False
-            When ``True``, merge adjacent conforming bins into a single wider
-            interval condition.
-        n_neighbors : int, default=5
-            Number of nearest calibration neighbours used by the in-distribution
-            guard for computing non-conformity scores.
-        normalize_guard : bool, default=True
-            Apply per-feature min-max normalisation before computing KNN
-            distances inside the guard.
-        verbose : bool, default=False
-            When True, emit UserWarnings for guarded-explanation diagnostics.
-        **kwargs : dict
-            Additional arguments (reserved for future use).
-
-        Returns
-        -------
-        CalibratedExplanations
-            A :class:`~calibrated_explanations.CalibratedExplanations` container
-            whose individual explanations are
-            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`
-            instances.
+        .. deprecated::
+            ``explain_guarded_factual(...)`` is deprecated and will be removed in v1.0.0.
+            Use ``explain_factual(..., guarded=True)`` instead.
         """
-        if not _use_plugin and verbose:
-            warnings.warn(
-                "_use_plugin has no effect on guarded explanation methods",
-                UserWarning,
-                stacklevel=2,
-            )
-        if bins is None and self.is_mondrian():
-            bins = self.bins
-        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
-        with ctx:
-            reject_policy = kwargs.pop("reject_policy", None)
-            return self.explanation_orchestrator.invoke_guarded_factual(
-                x=x,
-                threshold=threshold,
-                low_high_percentiles=low_high_percentiles,
-                bins=bins,
-                features_to_ignore=features_to_ignore,
-                reject_policy=reject_policy,
-                significance=significance,
-                merge_adjacent=merge_adjacent,
-                n_neighbors=n_neighbors,
-                normalize_guard=normalize_guard,
-                verbose=verbose,
-                **kwargs,
-            )
+        from ..utils.deprecations import deprecate  # pylint: disable=import-outside-toplevel
+
+        deprecate(
+            "explain_guarded_factual(...) is deprecated and will be removed in v1.0.0. "
+            "Use explain_factual(..., guarded=True) instead.",
+            key="explain_guarded_factual",
+            stacklevel=3,
+        )
+        return self.explain_factual(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            features_to_ignore=features_to_ignore,
+            guarded=True,
+            _use_plugin=_use_plugin,
+            significance=significance,
+            merge_adjacent=merge_adjacent,
+            n_neighbors=n_neighbors,
+            normalize_guard=normalize_guard,
+            verbose=verbose,
+            **kwargs,
+        )
 
     def explore_guarded_alternatives(
         self,
@@ -1659,83 +1676,35 @@ class CalibratedExplainer:
         verbose: bool = False,
         **kwargs,
     ):
-        """Create guarded alternative explanations that only use in-distribution perturbations.
+        """Delegate to :meth:`explore_alternatives` with ``guarded=True`` (deprecated compatibility wrapper).
 
-        This method extends :meth:`explore_alternatives` with an in-distribution
-        guard: for each leaf of the multi-bin discretiser, it tests whether
-        perturbing the feature to the leaf's representative value (while keeping
-        all other features at their original level) produces an instance that is
-        conforming to the calibration distribution.  Non-conforming leaves are
-        excluded from the alternatives.
-
-        Rule conditions are **intervals** such as ``"30 < age <= 50"``; for the
-        current (factual) bin a factual rule is also stored (``is_factual=True``).
-        Adjacent conforming bins can optionally be merged (``merge_adjacent=True``).
-
-        Parameters
-        ----------
-        x : array-like
-            A set with n_samples of test objects to explain.
-        threshold : float, int or array-like, optional
-            Values for which p-values should be returned.  Only used for
-            probabilistic regression.
-        low_high_percentiles : tuple of float, default=(5, 95)
-            The low and high percentile used to calculate the interval.
-        bins : array-like of shape (n_samples,), optional
-            Mondrian categories.
-        features_to_ignore : sequence of int or str, optional
-            Features to exclude from explanations.
-        significance : float, default=0.1
-            Acceptable false-OOD rate. Bins are considered conforming when
-            ``p_value >= significance``; bins below that threshold are
-            treated as out-of-distribution and not included as alternatives.
-        merge_adjacent : bool, default=False
-            When ``True``, merge adjacent conforming bins into a single wider
-            interval condition.
-        n_neighbors : int, default=5
-            Number of nearest calibration neighbours used by the in-distribution
-            guard for computing non-conformity scores.
-        normalize_guard : bool, default=True
-            Apply per-feature min-max normalisation before computing KNN
-            distances inside the guard.
-        verbose : bool, default=False
-            When True, emit UserWarnings for guarded-explanation diagnostics.
-        **kwargs : dict
-            Additional arguments (reserved for future use).
-
-        Returns
-        -------
-        AlternativeExplanations
-            An :class:`~calibrated_explanations.AlternativeExplanations` container
-            whose individual explanations are
-            :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedAlternativeExplanation`
-            instances.
+        .. deprecated::
+            ``explore_guarded_alternatives(...)`` is deprecated and will be removed in v1.0.0.
+            Use ``explore_alternatives(..., guarded=True)`` instead.
         """
-        if not _use_plugin and verbose:
-            warnings.warn(
-                "_use_plugin has no effect on guarded explanation methods",
-                UserWarning,
-                stacklevel=2,
-            )
-        if bins is None and self.is_mondrian():
-            bins = self.bins
-        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
-        with ctx:
-            reject_policy = kwargs.pop("reject_policy", None)
-            return self.explanation_orchestrator.invoke_guarded_alternative(
-                x=x,
-                threshold=threshold,
-                low_high_percentiles=low_high_percentiles,
-                bins=bins,
-                features_to_ignore=features_to_ignore,
-                reject_policy=reject_policy,
-                significance=significance,
-                merge_adjacent=merge_adjacent,
-                n_neighbors=n_neighbors,
-                normalize_guard=normalize_guard,
-                verbose=verbose,
-                **kwargs,
-            )
+        from ..utils.deprecations import deprecate  # pylint: disable=import-outside-toplevel
+
+        deprecate(
+            "explore_guarded_alternatives(...) is deprecated and will be removed in v1.0.0. "
+            "Use explore_alternatives(..., guarded=True) instead.",
+            key="explore_guarded_alternatives",
+            stacklevel=3,
+        )
+        return self.explore_alternatives(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            features_to_ignore=features_to_ignore,
+            guarded=True,
+            _use_plugin=_use_plugin,
+            significance=significance,
+            merge_adjacent=merge_adjacent,
+            n_neighbors=n_neighbors,
+            normalize_guard=normalize_guard,
+            verbose=verbose,
+            **kwargs,
+        )
 
     def __call__(
         self,

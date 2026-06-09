@@ -411,6 +411,7 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": "plot_spec.default",
+        "supports_guarded": True,
         "trusted": True,
         "trust": {"trusted": True},
     }
@@ -444,6 +445,7 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": "plot_spec.default",
+        "supports_guarded": True,
         "trusted": True,
         "trust": {"trusted": True},
     }

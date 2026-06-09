@@ -244,12 +244,16 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `plugins.registry.find_for(model)` | `find_explanation_plugin_for(..., trusted_only=False)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
 | `plugins.registry.find_for_trusted(model)` | `find_explanation_plugin_for(..., trusted_only=True)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
 | `RejectResult` active deprecation warning path in `reject_result_v2_to_legacy()` | `RejectResult` remains stable in v1.0.0; use `RejectResultV2` as opt-in strict schema | v0.11.x | v0.11.3 | Group L resolved via deprecation reset path: removed active warning targeting v1.0.0-rc to comply with ADR-011 finalization exception. |
+| `CalibratedExplainer.explain_guarded_factual(...)` | `explainer.explain_factual(..., guarded=True)` | v0.11.3 | v1.0.0 | Guarded normalized as a boolean policy flag on `explain_factual`; separate method removed (ADR-032). |
+| `CalibratedExplainer.explore_guarded_alternatives(...)` | `explainer.explore_alternatives(..., guarded=True)` | v0.11.3 | v1.0.0 | Guarded normalized as a boolean policy flag on `explore_alternatives`; separate method removed (ADR-032). |
+| `WrapCalibratedExplainer.explain_guarded_factual(...)` | `wrapper.explain_factual(..., guarded=True)` | v0.11.3 | v1.0.0 | Same as above — wrapper delegates to `explain_factual(guarded=True)`. |
+| `WrapCalibratedExplainer.explore_guarded_alternatives(...)` | `wrapper.explore_alternatives(..., guarded=True)` | v0.11.3 | v1.0.0 | Same as above — wrapper delegates to `explore_alternatives(guarded=True)`. |
 
 ## Breaking changes
 
 ### Guarded entrypoints now fail on calibration-feature divergence (v0.11.1+)
 
-`explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` now raise
+`explain_factual(guarded=True)` and `explore_alternatives(guarded=True)` now raise
 `ValidationError` when the active prediction backend is not using the same
 calibration feature matrix as `explainer.x_cal`.
 
@@ -260,6 +264,7 @@ calibration-feature values to preserve the guarded exchangeability assumption.
 
 - Recalibrate the explainer before calling guarded entrypoints if you have rebuilt or swapped interval learners.
 - Do not mutate or replace the backend calibration features independently of `explainer.x_cal`.
+- Use `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` — the old `explain_guarded_factual` / `explore_guarded_alternatives` methods are deprecated as of v0.11.3.
 
 ### Reject NCF public contract simplified (v0.11.1+)
 

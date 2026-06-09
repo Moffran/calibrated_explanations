@@ -1142,6 +1142,7 @@ def find_explanation_plugin_for(
     model: Any,
     trusted_only: bool = True,
     identifier: str | None = None,
+    guarded: bool = False,
 ) -> tuple[str, ExplainerPlugin]:
     """Resolve an explanation plugin for a modality/mode/task combination.
 
@@ -1151,6 +1152,10 @@ def find_explanation_plugin_for(
 
     Resolution order is trust -> kind -> modality -> mode/task -> supports(model)
     -> priority. Ambiguous top-priority matches raise ``ValidationError``.
+
+    When ``guarded=True``, only plugins that declare ``supports_guarded=True`` in
+    their metadata are eligible.  If no such plugin is found, ``ValidationError``
+    is raised rather than silently falling back to an unguarded plugin.
     """
     modality = _normalise_modality(modality)
     if identifier:
@@ -1161,6 +1166,13 @@ def find_explanation_plugin_for(
         )
         if plugin is None:
             raise ValidationError(f"Requested plugin identifier '{identifier}' is unavailable")
+        if guarded:
+            desc = find_explanation_descriptor(identifier)
+            if desc is None or not desc.metadata.get("supports_guarded", False):
+                raise ValidationError(
+                    f"Requested plugin '{identifier}' does not support guarded execution "
+                    "(supports_guarded=False). Use a plugin that declares supports_guarded=True."
+                )
         return identifier, plugin
 
     candidates: list[ExplanationPluginDescriptor] = []
@@ -1176,9 +1188,16 @@ def find_explanation_plugin_for(
             continue
         if not _safe_supports(desc.plugin, model):
             continue
+        if guarded and not desc.metadata.get("supports_guarded", False):
+            continue
         candidates.append(desc)
 
     if not candidates:
+        if guarded:
+            raise ValidationError(
+                f"No guarded-capable explanation plugin matches modality={modality!r}, "
+                f"mode={mode!r}, task={task!r}. Register a plugin with supports_guarded=True."
+            )
         raise ValidationError(
             f"No explanation plugin matches modality={modality!r}, mode={mode!r}, task={task!r}"
         )
