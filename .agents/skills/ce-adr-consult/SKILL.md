@@ -103,7 +103,7 @@ Get-ChildItem docs/improvement/adrs/*.md | Where-Object Name -NotMatch '^superse
 - `schema_version` mandatory; fail-fast on incompatible version.
 
 ### ADR-032 — Guarded explanations
-- Use `explain_guarded_factual` / `explore_guarded_alternatives` for unknown distributions.
+- Use `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` for unknown distributions.
 
 ### ADR-033 — Modality extension
 - Non-tabular modality code must NOT enter `core/`.

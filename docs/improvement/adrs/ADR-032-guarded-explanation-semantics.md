@@ -106,7 +106,7 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
    - Fast interval calibrators are trained on per-feature blends of `scaled_x_cal` / `fast_x_cal`, not on `explainer.x_cal` directly.
    - The `InDistributionGuard` always uses `explainer.x_cal` as its reference distribution.
    - These two distributions cannot be aligned, so the ADR-032 precondition (decision 6) cannot be reliably enforced for fast explainers.
-   - Calling any guarded entrypoint (`explain_guarded_factual`, `explore_guarded_alternatives`) on a fast explainer must hard-fail with `ConfigurationError` before any calibration-alignment check proceeds.
+   - Calling any guarded entrypoint (`explain_factual(..., guarded=True)`, `explore_alternatives(..., guarded=True)`) on a fast explainer must hard-fail with `ConfigurationError` before any calibration-alignment check proceeds.
    - This prohibition is enforced in `_require_guarded_calibration_alignment` and is not subject to configuration or opt-out.
 
 ## Consequences
@@ -128,7 +128,7 @@ Negative / Risks:
 - Users must understand that emitted guarded intervals reflect this candidate-level guard rule, not whole-interval certification.
 - Calibration-feature divergence now fails fast instead of degrading with a warning.
 - Fast explainers cannot use guarded entrypoints at all; users who need guarded filtering must use a standard (non-fast) explainer.
-- The deprecated `explain_guarded_factual` / `explore_guarded_alternatives` wrappers must not
+- The deprecated `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` wrappers must not
   be used in new code.  Remove usage before v1.0.0.
 
 ## Addendum: Guarded Auditability

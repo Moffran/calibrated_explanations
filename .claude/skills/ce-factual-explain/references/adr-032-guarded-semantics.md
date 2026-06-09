@@ -38,7 +38,7 @@ immediate validation error (not silent clamping).
 | Scenario | Use |
 |---|---|
 | Training/development/research | `explain_factual` / `explore_alternatives` |
-| Production endpoint (arbitrary user input) | `explain_guarded_factual` / `explore_guarded_alternatives` |
+| Production endpoint (arbitrary user input) | `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` |
 | Unknown input distribution | Guarded variants |
 | Limited calibration set coverage | Guarded variants |
 

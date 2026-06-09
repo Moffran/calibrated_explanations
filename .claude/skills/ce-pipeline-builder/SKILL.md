@@ -117,13 +117,13 @@ explanations = wrap_and_explain(
 )
 ```
 
-## Decision: `explain_factual` vs `explain_guarded_factual`
+## Decision: `explain_factual` vs `explain_factual(..., guarded=True)`
 
 | Use case | API to use |
 |---|---|
 | Standard inference | `explain_factual` / `explore_alternatives` |
-| Production / unknown input distribution | `explain_guarded_factual` / `explore_guarded_alternatives` |
-| Explicit in-distribution filtering required | `explain_guarded_factual` |
+| Production / unknown input distribution | `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` |
+| Explicit in-distribution filtering required | `explain_factual(..., guarded=True)` |
 
 Guarded variants apply ADR-032 semantics — see `references/adr-032-guarded-semantics.md`.
 

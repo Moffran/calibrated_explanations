@@ -35,7 +35,7 @@ multi_alts = explainer.explore_alternatives(X_query, multi_labels_enabled=True)
 
 ### Guarded path (production / unknown distributions — ADR-032)
 ```python
-alternatives = explainer.explore_guarded_alternatives(X_query)
+alternatives = explainer.explore_alternatives(X_query, guarded=True)
 ```
 
 Guarded variant: out-of-distribution instances are flagged rather than silently
@@ -80,7 +80,7 @@ explanations (`pred['low'] <= pred['predict'] <= pred['high']`), but the
 
 ## Evaluation Checklist
 
-- [ ] Correct variant (`explore_alternatives` vs `explore_guarded_alternatives`).
+- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(..., guarded=True)`).
 - [ ] Threshold provided if the user wants boundary-crossing alternatives for regression.
 - [ ] Ensured-framework filter selected appropriately for the use case.
 - [ ] `only_ensured=True` used when narrower-uncertainty alternatives are required.

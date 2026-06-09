@@ -139,13 +139,13 @@ explanations = wrap_and_explain(
 If `wrap_and_explain` silently drops kwargs or adapts semantics, fall back to the
 explicit skeleton. Never patch the helper to paper over a contract mismatch.
 
-## Decision: `explain_factual` vs `explain_guarded_factual`
+## Decision: `explain_factual` vs `explain_factual(..., guarded=True)`
 
 | Use case | API to use |
 |---|---|
 | Standard inference | `explain_factual` / `explore_alternatives` |
-| Interval plausibility filtering for candidate rules | `explain_guarded_factual` / `explore_guarded_alternatives` |
-| Need guarded audit of removed perturbation rules | `explain_guarded_factual` |
+| Interval plausibility filtering for candidate rules | `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` |
+| Need guarded audit of removed perturbation rules | `explain_factual(..., guarded=True)` |
 | Instance-level OOD screening | Use dedicated OOD tooling (not guarded explanation APIs) |
 
 Guarded variants apply ADR-032 semantics — see `references/adr-032-guarded-semantics.md`.

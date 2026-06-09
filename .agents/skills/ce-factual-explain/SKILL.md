@@ -33,7 +33,7 @@ multi_exps = explainer.explain_factual(X_query, multi_labels_enabled=True)
 
 ### Guarded path (production / unknown input distribution)
 ```python
-explanations = explainer.explain_guarded_factual(X_query)
+explanations = explainer.explain_factual(X_query, guarded=True)
 ```
 
 See `references/adr-032-guarded-semantics.md` for the full guarded semantics.
@@ -49,9 +49,9 @@ Use the guarded variant when:
 | Scenario | API |
 |---|---|
 | Training / development / research | `explain_factual` |
-| Production endpoint | `explain_guarded_factual` |
-| Unknown input distribution | `explain_guarded_factual` |
-| Limited calibration set | `explain_guarded_factual` |
+| Production endpoint | `explain_factual(..., guarded=True)` |
+| Unknown input distribution | `explain_factual(..., guarded=True)` |
+| Limited calibration set | `explain_factual(..., guarded=True)` |
 
 ---
 
@@ -151,7 +151,7 @@ For the full narrative API including `template_path`, `output_format`, and
 
 ## Guarded Audit API
 
-When using `explain_guarded_factual`, a dedicated audit is available:
+When using `explain_factual(..., guarded=True)`, a dedicated audit is available:
 
 ```python
 audit = explanations.get_guarded_audit()
@@ -172,8 +172,8 @@ audit = explanations.get_guarded_audit()
 
 ## Evaluation Checklist
 
-- [ ] Correct entry point chosen (`explain_factual` vs `explain_guarded_factual`).
+- [ ] Correct entry point chosen (`explain_factual` vs `explain_factual(..., guarded=True)`).
 - [ ] Interval invariant `low  predict  high` verified for at least one output.
 - [ ] `list_rules()` / `get_rules_by_feature()` used for rule introspection (not raw dict keys).
-- [ ] Guarded audit called if `explain_guarded_factual` was used.
+- [ ] Guarded audit called if `explain_factual(..., guarded=True)` was used.
 - [ ] No uncalibrated output returned.

@@ -80,7 +80,7 @@ explanations (`pred['low'] <= pred['predict'] <= pred['high']`), but the
 
 ## Evaluation Checklist
 
-- [ ] Correct variant (`explore_alternatives` vs `explore_guarded_alternatives`).
+- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(..., guarded=True)`).
 - [ ] Threshold provided if the user wants boundary-crossing alternatives for regression.
 - [ ] Ensured-framework filter selected appropriately for the use case.
 - [ ] `only_ensured=True` used when narrower-uncertainty alternatives are required.

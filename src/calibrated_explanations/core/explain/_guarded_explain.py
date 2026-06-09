@@ -2,8 +2,8 @@
 """Core computation for guarded explanations.
 
 This module implements :func:`guarded_explain`, the single entry-point called
-by :meth:`~calibrated_explanations.CalibratedExplainer.explain_guarded_factual`
-and :meth:`~calibrated_explanations.CalibratedExplainer.explore_guarded_alternatives`.
+by :meth:`~calibrated_explanations.CalibratedExplainer.explain_factual(..., guarded=True)`
+and :meth:`~calibrated_explanations.CalibratedExplainer.explore_alternatives(..., guarded=True)`.
 
 Algorithm outline
 -----------------
