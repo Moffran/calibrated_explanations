@@ -147,8 +147,10 @@ def test_filter_by_target_confidence_non_probabilistic_raises():
 def test_alternative_explanations_probabilities_property_cached():
     # Calling .probabilities twice covers the cached-result branch (907->929 in explanations.py).
     result = _wrapper.explore_alternatives(X_test[:2])
-    _ = result.probabilities
-    _ = result.probabilities  # second call hits the "cache already populated" branch
+    p1 = result.probabilities
+    p2 = result.probabilities  # second call hits the "cache already populated" branch
+    assert p1 is p2  # same object proves the cache path was taken
+    assert p1.shape[0] == 2
 
 
 def test_alternative_explanations_regression_interval_properties_cached():
@@ -158,20 +160,22 @@ def test_alternative_explanations_regression_interval_properties_cached():
     reg_wrapper.fit(X_reg[:40], y_reg[:40])
     reg_wrapper.calibrate(X_reg[40:60], y_reg[40:60])
     result = reg_wrapper.explore_alternatives(X_reg[60:62])
-    _ = result.lower
-    _ = result.lower  # hits 934->945 cached branch
-    _ = result.upper
-    _ = result.upper  # hits 950->961 cached branch
+    lo1 = result.lower
+    lo2 = result.lower  # hits 934->945 cached branch
+    assert lo1 is lo2
+    up1 = result.upper
+    up2 = result.upper  # hits 950->961 cached branch
+    assert up1 is up2
 
 
 def test_alternative_explanations_shorthand_delegators():
     # semi(), counter(), ensured(), super(), pareto() are delegators.
     result = _wrapper.explore_alternatives(X_test[:2])
-    _ = result.semi()
-    _ = result.counter()
-    _ = result.ensured()
-    _ = result.super()  # line 1579 in explanations.py (CalibratedExplanations.super shorthand)
-    _ = result.pareto()  # line 1910 in explanations.py (AlternativeExplanations.pareto shorthand)
+    assert result.semi() is not None
+    assert result.counter() is not None
+    assert result.ensured() is not None
+    assert result.super() is not None  # line 1579 in explanations.py
+    assert result.pareto() is not None  # line 1910 in explanations.py
 
 
 def test_alternative_to_json_stream_covers_alternative_type():

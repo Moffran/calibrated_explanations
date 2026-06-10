@@ -102,14 +102,14 @@ class ExportedMultiClassExplanationCollection:
         return dict(self.__dict__)
 
 
-def _jsonify(value: Any) -> Any:
+def jsonify_value(value: Any) -> Any:
     """Convert numpy objects and arrays into JSON-serialisable primitives."""
     if isinstance(value, np.ndarray):
-        return [_jsonify(item) for item in value.tolist()]
+        return [jsonify_value(item) for item in value.tolist()]
     if isinstance(value, (list, tuple, set)):
-        return [_jsonify(item) for item in value]
+        return [jsonify_value(item) for item in value]
     if isinstance(value, Mapping):
-        return {str(key): _jsonify(val) for key, val in value.items()}
+        return {str(key): jsonify_value(val) for key, val in value.items()}
     if isinstance(value, np.generic):  # numpy scalars
         return value.item()
     if callable(value):
@@ -568,9 +568,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             provenance = getattr(exp, "provenance", None)
             metadata = getattr(exp, "metadata", None)
             if provenance is not None:
-                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
             if metadata is not None:
-                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata))
+                domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
             instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
@@ -617,7 +617,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         # Yield metadata first as a standalone JSON object line
         # Telemetry placeholders updated after the stream completes.
         meta_fragment = {"collection": metadata, "schema_version": "1.0.0"}
-        yield json.dumps(meta_fragment, default=_jsonify)
+        yield json.dumps(meta_fragment, default=jsonify_value)
 
         # Stream explanations
         chunk: List[str] = []
@@ -627,11 +627,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             provenance = getattr(exp, "provenance", None)
             metadata_exp = getattr(exp, "metadata", None)
             if provenance is not None:
-                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
             if metadata_exp is not None:
-                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata_exp))
+                domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata_exp))
             item = _explanation_to_json(domain, include_version=True)
-            line = json.dumps(item, default=_jsonify)
+            line = json.dumps(item, default=jsonify_value)
             n += 1
             if format == "jsonl":
                 yield line
@@ -687,7 +687,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             _LOGGER.info("failed to attach export telemetry to collection", exc_info=True)
 
         # final telemetry fragment
-        yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
+        yield json.dumps({"export_telemetry": telemetry}, default=jsonify_value)
 
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
@@ -728,7 +728,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         metadata = payload.get("collection", {}) or {}
         return ExportedExplanationCollection(
-            metadata=cast(Mapping[str, Any], _jsonify(metadata)), explanations=tuple(domain)
+            metadata=cast(Mapping[str, Any], jsonify_value(metadata)), explanations=tuple(domain)
         )
 
     # ------------------------------------------------------------------
@@ -763,10 +763,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             "task": getattr(
                 exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
             )(),
-            "rules": _jsonify(rules_blob or {}),
-            "feature_weights": _jsonify(getattr(exp, "feature_weights", {})),
-            "feature_predict": _jsonify(getattr(exp, "feature_predict", {})),
-            "prediction": _jsonify(getattr(exp, "prediction", {})),
+            "rules": jsonify_value(rules_blob or {}),
+            "feature_weights": jsonify_value(getattr(exp, "feature_weights", {})),
+            "feature_predict": jsonify_value(getattr(exp, "feature_predict", {})),
+            "prediction": jsonify_value(getattr(exp, "prediction", {})),
             "explanation_type": explanation_type,
         }
         return payload
@@ -789,7 +789,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         class_labels = None
         if hasattr(base, "class_labels"):
             try:
-                class_labels = _jsonify(base.class_labels)  # type: ignore[attr-defined]
+                class_labels = jsonify_value(base.class_labels)  # type: ignore[attr-defined]
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
@@ -798,7 +798,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         sample_percentiles = None
         if hasattr(base, "sample_percentiles"):
             try:
-                sample_percentiles = _jsonify(base.sample_percentiles)  # type: ignore[attr-defined]
+                sample_percentiles = jsonify_value(base.sample_percentiles)  # type: ignore[attr-defined]
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
@@ -818,12 +818,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         metadata = {
             "size": len(self),
             "mode": getattr(base, "mode", None),
-            "y_threshold": _jsonify(self.y_threshold),
-            "low_high_percentiles": _jsonify(self.low_high_percentiles),
-            "feature_names": _jsonify(feature_names),
+            "y_threshold": jsonify_value(self.y_threshold),
+            "low_high_percentiles": jsonify_value(self.low_high_percentiles),
+            "feature_names": jsonify_value(feature_names),
             "class_labels": class_labels,
             "sample_percentiles": sample_percentiles,
-            "runtime_telemetry": _jsonify(runtime_telemetry),
+            "runtime_telemetry": jsonify_value(runtime_telemetry),
         }
         return {k: v for k, v in metadata.items() if v is not None}
 
@@ -2400,7 +2400,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         ordered = tuple(grouped[idx] for idx in sorted(grouped))
         metadata = payload.get("collection", {}) or {}
         return ExportedMultiClassExplanationCollection(
-            metadata=cast(Mapping[str, Any], _jsonify(metadata)),
+            metadata=cast(Mapping[str, Any], jsonify_value(metadata)),
             explanations_by_instance=ordered,
         )
 
@@ -2632,9 +2632,9 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                 provenance = getattr(exp, "provenance", None)
                 metadata = getattr(exp, "metadata", None)
                 if provenance is not None:
-                    domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                    domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
                 if metadata is not None:
-                    domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata))
+                    domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
                 instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
@@ -2662,7 +2662,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         metadata = dict(self._collection_metadata())
         meta_fragment = {"collection": metadata, "schema_version": "1.0.0"}
-        yield json.dumps(meta_fragment, default=_jsonify)
+        yield json.dumps(meta_fragment, default=jsonify_value)
 
         chunk: List[str] = []
         n = 0
@@ -2685,11 +2685,11 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                 provenance = getattr(exp, "provenance", None)
                 metadata_exp = getattr(exp, "metadata", None)
                 if provenance is not None:
-                    domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                    domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
                 if metadata_exp is not None:
-                    domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata_exp))
+                    domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata_exp))
                 item = _explanation_to_json(domain, include_version=True)
-                line = json.dumps(item, default=_jsonify)
+                line = json.dumps(item, default=jsonify_value)
                 n += 1
                 if format == "jsonl":
                     yield line
@@ -2734,7 +2734,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         except Exception:  # adr002_allow
             _LOGGER.info("failed to attach export telemetry to collection", exc_info=True)
 
-        yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
+        yield json.dumps({"export_telemetry": telemetry}, default=jsonify_value)
 
     # Properties that aggregate per-class values into per-instance dicts
     @property

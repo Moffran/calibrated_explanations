@@ -12,9 +12,9 @@ import pickle
 
 
 def test_jsonify_callable_returns_string():
-    from calibrated_explanations.explanations.explanations import _jsonify
+    from calibrated_explanations.explanations.explanations import jsonify_value
 
-    result = _jsonify(lambda x: x)
+    result = jsonify_value(lambda x: x)
     assert isinstance(result, str)
 
 
