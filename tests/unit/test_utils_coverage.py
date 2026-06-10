@@ -119,3 +119,52 @@ def test_conjunction_state_adds_is_conjunctive_when_missing():
     }
     cs = ConjunctionState(initial_rules=rules)
     assert cs.state["is_conjunctive"] == [False]
+
+
+# ---------------------------------------------------------------------------
+# core/difficulty_estimator_helpers.py — _optional_bool numeric/string branches
+# (lines 59-67): int, float, and string coercion paths.
+# ---------------------------------------------------------------------------
+
+
+def test_optional_bool_numeric_and_string_branches():
+    from calibrated_explanations.core.difficulty_estimator_helpers import _optional_bool
+
+    assert _optional_bool(1) is True  # int truthy  (line 59-60)
+    assert _optional_bool(0) is False  # int falsy
+    assert _optional_bool(1.0) is True  # float (line 59-60)
+    assert _optional_bool("yes") is True  # string true  (lines 61-64)
+    assert _optional_bool("no") is False  # string false (lines 65-66)
+    assert _optional_bool("maybe") is None  # unrecognised string (line 67)
+
+
+# ---------------------------------------------------------------------------
+# core/difficulty_estimator_helpers.py — validate_difficulty_estimator_provenance
+# with None estimator (line 118) and safe-provenance path (line 228).
+# ---------------------------------------------------------------------------
+
+
+def test_validate_provenance_none_estimator():
+    # Line 118: early-return when difficulty_estimator is None.
+    from calibrated_explanations.core.difficulty_estimator_helpers import (
+        validate_difficulty_estimator_provenance,
+    )
+
+    report = validate_difficulty_estimator_provenance(None)
+    assert report.provenance_available is False
+    assert report.warning_emitted is False
+
+
+def test_validate_provenance_safe_fit_source():
+    # Line 228: pass branch when fit_source mentions proper training data.
+    from calibrated_explanations.core.difficulty_estimator_helpers import (
+        validate_difficulty_estimator_provenance,
+    )
+
+    class _FakeEstimator:
+        fitted = True
+        fit_source = "proper_train_only"
+
+    report = validate_difficulty_estimator_provenance(_FakeEstimator())
+    assert report.warning_emitted is False
+    assert report.provenance_available is True
