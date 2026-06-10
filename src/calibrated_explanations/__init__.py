@@ -51,7 +51,6 @@ __all__ = [
     "ExplainerConfig",
     "NormalizationStrategy",
     "RejectPolicySpec",
-    "RejectResultV2",
     "WrapCalibratedExplainer",
     "transform_to_numeric",
 ]
@@ -97,12 +96,6 @@ def __getattr__(name: str) -> Any:
 
         globals()[name] = RejectPolicySpec
         return RejectPolicySpec
-
-    if name == "RejectResultV2":
-        from .explanations.reject import RejectResultV2
-
-        globals()[name] = RejectResultV2
-        return RejectResultV2
 
     if name in ("ExplainerBuilder", "ExplainerConfig"):
         from .api.config import ExplainerBuilder, ExplainerConfig  # noqa: F401
