@@ -123,24 +123,9 @@ def test_conjunction_state_adds_is_conjunctive_when_missing():
 
 # ---------------------------------------------------------------------------
 # core/difficulty_estimator_helpers.py — _optional_bool numeric/string branches
-# (lines 59-67): int, float, and string coercion paths.
-# ---------------------------------------------------------------------------
-
-
-def test_optional_bool_numeric_and_string_branches():
-    from calibrated_explanations.core.difficulty_estimator_helpers import _optional_bool
-
-    assert _optional_bool(1) is True  # int truthy  (line 59-60)
-    assert _optional_bool(0) is False  # int falsy
-    assert _optional_bool(1.0) is True  # float (line 59-60)
-    assert _optional_bool("yes") is True  # string true  (lines 61-64)
-    assert _optional_bool("no") is False  # string false (lines 65-66)
-    assert _optional_bool("maybe") is None  # unrecognised string (line 67)
-
-
-# ---------------------------------------------------------------------------
-# core/difficulty_estimator_helpers.py — validate_difficulty_estimator_provenance
-# with None estimator (line 118) and safe-provenance path (line 228).
+# (lines 59-67) exercised indirectly via validate_difficulty_estimator_provenance.
+# Passing different types for uses_calibration_labels drives every branch of
+# _optional_bool without calling the private function directly.
 # ---------------------------------------------------------------------------
 
 
@@ -155,16 +140,49 @@ def test_validate_provenance_none_estimator():
     assert report.warning_emitted is False
 
 
+def test_validate_provenance_optional_bool_branches():
+    # Exercises _optional_bool int/float/string branches through the public API.
+    from calibrated_explanations.core.difficulty_estimator_helpers import (
+        validate_difficulty_estimator_provenance,
+    )
+
+    class EstimatorWithLabels:
+        def __init__(self, val):
+            self.uses_calibration_labels = val
+
+    # int truthy / falsy (lines 59-60)
+    r = validate_difficulty_estimator_provenance(EstimatorWithLabels(1))
+    assert r.uses_calibration_labels is True
+
+    r = validate_difficulty_estimator_provenance(EstimatorWithLabels(0))
+    assert r.uses_calibration_labels is False
+
+    # float (lines 59-60)
+    r = validate_difficulty_estimator_provenance(EstimatorWithLabels(1.0))
+    assert r.uses_calibration_labels is True
+
+    # string true / false (lines 61-66)
+    r = validate_difficulty_estimator_provenance(EstimatorWithLabels("yes"))
+    assert r.uses_calibration_labels is True
+
+    r = validate_difficulty_estimator_provenance(EstimatorWithLabels("no"))
+    assert r.uses_calibration_labels is False
+
+    # unrecognised string → None (line 67)
+    r = validate_difficulty_estimator_provenance(EstimatorWithLabels("maybe"))
+    assert r.uses_calibration_labels is None
+
+
 def test_validate_provenance_safe_fit_source():
     # Line 228: pass branch when fit_source mentions proper training data.
     from calibrated_explanations.core.difficulty_estimator_helpers import (
         validate_difficulty_estimator_provenance,
     )
 
-    class _FakeEstimator:
+    class SafeEstimator:
         fitted = True
         fit_source = "proper_train_only"
 
-    report = validate_difficulty_estimator_provenance(_FakeEstimator())
+    report = validate_difficulty_estimator_provenance(SafeEstimator())
     assert report.warning_emitted is False
     assert report.provenance_available is True
