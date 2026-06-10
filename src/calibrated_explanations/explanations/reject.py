@@ -1234,7 +1234,32 @@ def _prune_unpickleable_state(state: dict[str, Any]) -> dict[str, Any]:
 
 
 class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
-    """A CalibratedExplanations collection that carries rejection metadata."""
+    """A :class:`.CalibratedExplanations` collection with per-instance rejection metadata.
+
+    Returned by :meth:`.CalibratedExplainer.explain_factual` (and the guarded
+    factual path) when a non-``NONE`` ``reject_policy`` is supplied.  Each
+    instance in the collection is annotated with a boolean rejection flag
+    derived from the active :class:`.RejectPolicy`, and the collection exposes
+    the aggregated ``rejected`` array and the policy that produced it via the
+    :class:`.RejectMixin` interface.
+
+    Notes
+    -----
+    Obtain instances of this class by calling
+    ``explain_factual(X, reject_policy=RejectPolicySpec.flag())`` (or
+    ``only_accepted`` / ``only_rejected`` variants).  Do **not** construct
+    directly; use :meth:`.from_collection`.
+
+    The ``rejected`` attribute is a boolean array aligned to the payload
+    explanations (after any subsetting by the active policy).  A ``True``
+    value indicates that the model's confidence for that instance fell below
+    the policy threshold.
+
+    See Also
+    --------
+    RejectAlternativeExplanations : Analogous collection for alternative explanations.
+    RejectPolicySpec : Factory for reject-policy configurations.
+    """
 
     @classmethod
     def from_collection(
@@ -1392,7 +1417,39 @@ class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
 
 
 class RejectAlternativeExplanations(AlternativeExplanations, RejectMixin):
-    """An AlternativeExplanations collection that carries rejection metadata."""
+    """An :class:`.AlternativeExplanations` collection with per-instance rejection metadata.
+
+    Returned by :meth:`.CalibratedExplainer.explore_alternatives` (and the
+    guarded alternative path) when a non-``NONE`` ``reject_policy`` is
+    supplied.  Each instance in the collection is annotated with a boolean
+    rejection flag derived from the active :class:`.RejectPolicy`, and the
+    collection exposes the aggregated ``rejected`` array and the policy that
+    produced it via the :class:`.RejectMixin` interface.
+
+    Notes
+    -----
+    Obtain instances of this class by calling
+    ``explore_alternatives(X, reject_policy=RejectPolicySpec.flag())`` (or
+    ``only_accepted`` / ``only_rejected`` variants).  For the guarded path use
+    ``explore_alternatives(X, guarded=True, reject_policy=...)``.  Do **not**
+    construct directly; use :meth:`.from_collection`.
+
+    The ``rejected`` attribute is a boolean array aligned to the payload
+    explanations (after any subsetting by the active policy).  A ``True``
+    value indicates that the model's confidence for that source instance fell
+    below the policy threshold.
+
+    To further filter alternative intervals by the model's confidence at the
+    target perturbation point, call
+    :meth:`.AlternativeExplanations.filter_by_target_confidence` on this
+    object after generation.
+
+    See Also
+    --------
+    RejectCalibratedExplanations : Analogous collection for factual explanations.
+    RejectPolicySpec : Factory for reject-policy configurations.
+    AlternativeExplanations.filter_by_target_confidence : Post-generation interval filter.
+    """
 
     @classmethod
     def from_collection(

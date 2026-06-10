@@ -1616,6 +1616,119 @@ class AlternativeExplanations(CalibratedExplanations):
         inst._class_labels_cache = getattr(collection, "_class_labels_cache", None)
         return inst
 
+    def filter_by_target_confidence(self, confidence: float = 0.8) -> "AlternativeExplanations":
+        """Return a new collection keeping only intervals with a singleton conformal prediction set.
+
+        Applies conformal classification to each alternative interval using
+        the hinge non-conformity function (NCF) and the calibration set to
+        compute proper conformal p-values for each class:
+
+        - **α₁ = 1 − predict** (NCF for class 1: 1 − P(class 1 | x))
+        - **α₀ = predict** (NCF for class 0: 1 − P(class 0 | x) = predict)
+        - **p_val_k = (|{i : α_cal_i ≥ α_k}| + 1) / (n_cal + 1)** (conformal p-value)
+        - **epsilon = 1 - confidence** (conformal significance level)
+
+        The calibration NCF scores are computed as
+        ``α_cal[i] = 1 − P(true_class_i | x_cal_i)``, i.e.
+        ``1 − proba_cal`` for positive-class samples and ``proba_cal`` for
+        negative-class samples.
+
+        An interval is retained only when exactly one class has
+        ``p_val_k >= epsilon`` — i.e. the conformal prediction set is a
+        singleton.  When both p-values exceed the threshold (ambiguity
+        rejection) or neither does (novelty rejection), the interval is
+        discarded.
+
+        Parameters
+        ----------
+        confidence : float, default=0.8
+            Conformal confidence level in ``[0.0, 1.0]``.  Maps to
+            significance ``epsilon = 1 - confidence``.  Higher values
+            tighten the filter by widening the ambiguity zone.
+
+        Returns
+        -------
+        AlternativeExplanations
+            A new collection of the same concrete type as *self* containing
+            only the intervals whose conformal prediction set is a singleton
+            at the given *confidence* level.  The original is not mutated.
+
+        Raises
+        ------
+        ValidationError
+            If *confidence* is outside ``[0.0, 1.0]``.
+        ValidationError
+            If the underlying model does not produce probability outputs
+            (``is_probabilistic()`` is ``False``).
+
+        Notes
+        -----
+        This filter operates at the **interval level** and complements
+        ``reject_policy`` (source-instance-level conformal rejection) and
+        ``guarded`` (in-distribution plausibility filter).  It answers:
+        *"Would acting on this suggested change land in an outcome the model
+        would confidently accept?"*
+
+        At ``confidence=1.0`` (epsilon=0.0), every class is always in the
+        prediction set, so all intervals are discarded.  At
+        ``confidence=0.0`` (epsilon=1.0), only intervals with the most
+        extreme calibration-consistent predictions survive.
+
+        See Also
+        --------
+        CalibratedExplainer.explore_alternatives : Entrypoint that generates this collection.
+        RejectAlternativeExplanations : Instance-level reject collection.
+        RejectPolicySpec : Conformal reject-policy configurations.
+        """
+        if not (0.0 <= confidence <= 1.0):
+            raise ValidationError(f"confidence must be in [0.0, 1.0], got {confidence!r}")
+        if self.explanations and not self.explanations[0].is_probabilistic():
+            raise ValidationError(
+                "filter_by_target_confidence requires a probabilistic model "
+                "(classification or thresholded regression); the current model "
+                "does not produce probability outputs."
+            )
+        epsilon = 1.0 - confidence
+
+        # Compute calibration NCF distribution from the stored calibration set.
+        # alpha_cal[i] = 1 - P(true_class_i | x_cal_i):
+        #   y=1 → 1 - proba_cal  (NCF for class 1)
+        #   y=0 → proba_cal      (NCF for class 0: 1 - (1-proba_cal))
+        frozen = self.get_explainer()
+        x_cal = frozen.x_cal
+        y_cal = np.asarray(frozen.y_cal)
+        # Unwrap frozen layers to reach the explainer that exposes predict_proba.
+        inner = frozen
+        while not hasattr(type(inner), "predict_proba") and hasattr(inner, "explainer"):
+            inner = inner.explainer
+        raw = np.asarray(inner.predict_proba(x_cal))
+        # predict_proba may return 1-D (positive-class only) or 2-D (n × K).
+        proba_cal = raw[:, 1] if raw.ndim == 2 else raw
+        alpha_cal = np.where(y_cal == 1, 1.0 - proba_cal, proba_cal)
+        n_cal = len(alpha_cal)
+
+        new_collection = copy(self)
+        new_collection.explanations = []
+        for explanation in self.explanations:
+            filtered = explanation.copy()
+            rules = explanation.get_rules()
+            new_rules = explanation._set_up_result()  # pylint: disable=protected-access
+            for i in range(len(rules["rule"])):
+                p = float(rules["predict"][i])
+                alpha_1 = 1.0 - p  # NCF for class 1
+                alpha_0 = p  # NCF for class 0
+                p_val_1 = float(np.sum(alpha_cal >= alpha_1) + 1) / (n_cal + 1)
+                p_val_0 = float(np.sum(alpha_cal >= alpha_0) + 1) / (n_cal + 1)
+                in_set_1 = p_val_1 >= epsilon
+                in_set_0 = p_val_0 >= epsilon
+                # Retain only when prediction set is a singleton (XOR).
+                if in_set_1 != in_set_0:
+                    explanation._append_rule(new_rules, rules, i)  # pylint: disable=protected-access
+            filtered.rules = new_rules
+            filtered.has_rules = True
+            new_collection.explanations.append(filtered)
+        return new_collection
+
     def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
         Return a copy with only semi-explanations.

@@ -143,3 +143,94 @@ To support transparent guarded diagnostics without breaking CE payload contracts
 3. `CalibratedExplanations.get_guarded_audit()` aggregates per-instance guarded audits and raises an actionable error on non-guarded collections.
 4. The audit `p_value` is always the p-value from the single median-probe guard check.
 5. Existing rule payload schemas remain unchanged to preserve backward compatibility and CE helper interoperability. This addendum does **not** imply semantic identity with standard CE internals.
+
+## Addendum: Target-Confidence Filter for Alternative Explanations (v0.11.3)
+
+**Decision date:** 2026-06-10
+**Option chosen:** post-processing filter method on the returned collection.
+
+### Rationale
+
+The existing `reject_policy` mechanism operates at the source-instance level (which inputs to
+explain); the `guarded` filter operates at the interval level (which perturbation intervals are
+in-distribution).  Neither answers: *"Would acting on this suggested change actually land in a
+confidently accepted outcome?"*  A target-confidence filter fills that gap as a complementary,
+opt-in post-processing step using conformal decision-making.
+
+Option C was selected over Option A (new keyword parameter) and Option B (new `RejectPolicySpec`
+factory) because it keeps the core generation API unchanged.  The downside (generating intervals
+that may later be discarded) is acceptable at v0.11.3 scope.
+
+### Conformal classification semantics
+
+The filter applies conformal classification using the hinge non-conformity function (NCF)
+and the stored calibration set.  The Venn-Abers calibrated probability `predict` for the
+positive class is used to derive per-class NCF scores; proper conformal p-values are then
+obtained by comparing these scores against the calibration NCF distribution.
+
+**Calibration NCF scores** (computed once per `filter_by_target_confidence` call):
+
+```
+alpha_cal[i] = 1 − P(true_class_i | x_cal_i)
+             = 1 − proba_cal[i]   if y_cal[i] == 1   (NCF for class 1)
+             = proba_cal[i]        if y_cal[i] == 0   (NCF for class 0)
+```
+
+**Per-interval NCF scores** for a perturbation representative with `predict = p`:
+
+```
+alpha_1 = 1 − p   (NCF for class 1: 1 − P(class 1 | x))
+alpha_0 = p        (NCF for class 0: 1 − P(class 0 | x) = p)
+```
+
+**Conformal p-values** (fraction of calibration NCF scores at least as non-conforming):
+
+```
+p_val_k = (|{i : alpha_cal[i] >= alpha_k}| + 1) / (n_cal + 1)
+```
+
+**Singleton test** (epsilon = 1 − confidence):
+
+| Condition | in_set_1 | in_set_0 | Decision |
+|---|---|---|---|
+| Accepted class 1 | `p_val_1 >= epsilon` | `p_val_0 < epsilon` | retain |
+| Accepted class 0 | `p_val_1 < epsilon` | `p_val_0 >= epsilon` | retain |
+| Ambiguity-rejected | `p_val_1 >= epsilon` | `p_val_0 >= epsilon` | discard |
+| Novelty-rejected | `p_val_1 < epsilon` | `p_val_0 < epsilon` | discard |
+
+At `confidence=1.0` (epsilon=0.0), both p-values always exceed the threshold, so all
+intervals are ambiguity-rejected.  At `confidence=0.0` (epsilon=1.0), only intervals
+with the most calibration-extreme predictions survive.
+
+### API contract
+
+```python
+AlternativeExplanations.filter_by_target_confidence(
+    self,
+    confidence: float = 0.8,
+) -> "AlternativeExplanations"
+```
+
+**Parameters**
+
+- `confidence` (`float`, default `0.8`, range `[0.0, 1.0]`): Conformal confidence level.
+  Maps to significance `epsilon = 1 - confidence`.  An interval is retained only when its
+  conformal prediction set is a singleton at `epsilon` — i.e. exactly one class has a
+  conformal p-value `>= epsilon`.  Higher values apply a stricter filter.
+
+**Returns**
+
+- A new `AlternativeExplanations` instance (same concrete type as `self`) containing only
+  the intervals that pass the singleton-prediction-set criterion at `confidence`.
+  The original collection is **not mutated**.
+
+**Raises**
+
+- `ValidationError` if `confidence` is outside `[0.0, 1.0]`.
+- `ValidationError` if the underlying model does not produce probability outputs (i.e.
+  `is_probabilistic()` is `False` for any explanation in the collection).
+
+**Stability obligation (ADR-011)**
+
+This method name and signature are stable as of v0.11.3 and must not be changed or removed
+before v1.0.0.  Any semantic change requires a deprecation notice per ADR-011.

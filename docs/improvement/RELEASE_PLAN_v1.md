@@ -558,14 +558,40 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
       env-var precedence rule in `perf_cache()`/`perf_parallel()` docstrings and
       ADR-034 §7. No RC deferrals permitted. Full scope in Task 10 of
       `docs/improvement/v0.11.3_plan.md`.
-  11. RC readiness documentation: produce `docs/upgrade/v1.0.0-upgrade-checklist.md`
+  11. Reject hardening — docstrings, kwarg documentation, and alternatives integration
+      test: expand both reject collection class docstrings from single-line stubs to
+      full numpydoc blocks; document `reject_policy` in the `explore_alternatives` and
+      `explain_reject` calling-method docstrings; add an integration-level test through
+      `explore_alternatives` with a reject policy. `RejectAlternativeExplanations`
+      exported from the root namespace. Full scope in Task 11 of
+      `docs/improvement/v0.11.3_plan.md`.
+  12. RC readiness documentation: produce `docs/upgrade/v1.0.0-upgrade-checklist.md`
       (covering all API changes from Groups A–L, env vars, pyproject settings,
       `ExplainerBuilder` wiring, caching controls, parallel controls, plugin testing,
       and reject framework) and `docs/guides/safe-defaults.md` (safe-by-default
       settings for RC pilot testers). These artifacts must exist before RC pilot
-      testing begins; RC only verifies they are accurate. Full scope in Task 11 of
+      testing begins; RC only verifies they are accurate. Full scope in Task 12 of
       `docs/improvement/v0.11.3_plan.md`.
-  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; ADR-028/STD-005 fallback visibility is log-first with any remaining `UserWarning` paths justified; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history (including Task 5 Group L — no `deprecate()` call may target v1.0.0-rc or later); all v0.11.3-targeted status-appendix gaps are either closed, superseded, or explicitly deferred with rationale; no status-appendix row still says `Target milestone: v0.11.3` unless it corresponds to an incomplete v0.11.3 task that blocks milestone closure; Task 10 config management contract closure complete (`task` and `parallel_workers` removed from `ExplainerConfig`, root namespace exports present, `CE_DEBUG_TRUST_INVARIANTS` in `_KNOWN_ENV_KEYS`, zombie `config.ini` deleted, ADR-034 §7 written); Task 11 RC readiness documentation present and content-complete (`docs/upgrade/v1.0.0-upgrade-checklist.md` and `docs/guides/safe-defaults.md`); `make local-checks-pr` passes.
+  13. Normalize guarded explanations as a parameterized explanation policy: replace the
+      parallel `explain_guarded_factual` / `explore_guarded_alternatives` public methods
+      with `explain_factual(..., guarded=True)` and `explore_alternatives(..., guarded=True)`
+      as the canonical entry points; deprecate the old method names as compatibility
+      wrappers (removal target v1.0.0); add `guarded: bool` to `ExplanationRequest` and
+      `supports_guarded: bool` to plugin metadata; update ADR-032 and
+      `CONTRIBUTOR_INSTRUCTIONS.md`. Full scope in Task 13 of
+      `docs/improvement/v0.11.3_plan.md`.
+  14. Parameter naming consistency hardening and CI drift protection: deliver a
+      CI-blocking script (`scripts/quality/check_parameter_naming.py`) that enforces
+      a parameter naming policy across public API signatures (banning removed aliases
+      `alpha`/`alphas` and names with no governed definition; blocking internal-only
+      names `y_threshold`/`sigma`/`interval_width` from appearing in public
+      signatures); document the `threshold` → `y_threshold` internal alias at the
+      `IntervalRegressor` call site; add consistent numpydoc `Parameters` entries for
+      `threshold`, `confidence`, and `significance`; produce a canonical parameter
+      reference page (`docs/foundations/concepts/parameter-reference.md`) with a
+      disambiguation table for the three confusable floats-in-(0,1). Full scope in
+      Task 14 of `docs/improvement/v0.11.3_plan.md`.
+  Release gate: Standard-001 naming lint green with all transitional shims removed; Standard-002 WrapCalibratedExplainer numpydoc gap closed and docstring coverage ≥90%; ADR-030 zero-tolerance enforcement CI-blocking with ratification note in ADR; PlotSpec default promotion is re-evaluated against the v0.11.2 mending evidence and either promoted with synchronized docs/tests or explicitly deferred again; ADR-028/STD-005 fallback visibility is log-first with any remaining `UserWarning` paths justified; all remaining deprecations from v0.10.x/v0.11.x are removed and migration docs moved to Removed history (including Task 5 Group L — no `deprecate()` call may target v1.0.0-rc or later); all v0.11.3-targeted status-appendix gaps are either closed, superseded, or explicitly deferred with rationale; no status-appendix row still says `Target milestone: v0.11.3` unless it corresponds to an incomplete v0.11.3 task that blocks milestone closure; Task 10 config management contract closure complete (`task` and `parallel_workers` removed from `ExplainerConfig`, root namespace exports present, `CE_DEBUG_TRUST_INVARIANTS` in `_KNOWN_ENV_KEYS`, zombie `config.ini` deleted, ADR-034 §7 written); Task 11 reject collection docstrings complete, `reject_policy` documented in calling-method docstrings, `RejectAlternativeExplanations` in root namespace, integration test through `explore_alternatives` green; Task 12 RC readiness documentation present and content-complete (`docs/upgrade/v1.0.0-upgrade-checklist.md` and `docs/guides/safe-defaults.md`); Task 13 `explain_factual(guarded=True)` / `explore_alternatives(guarded=True)` canonical, old methods deprecated, ADR-032 updated; Task 14 parameter naming CI script green and wired into `local-checks-pr`, parameter reference doc present; `make local-checks-pr` passes.
   Packaging workflow gate: optional `uv` support is documented and validated with
   lockfile handling, timing evidence, and CI follow-up completed before v0.11.3 closes.
   Status 2026-05-12: completed with optional constraint-based `uv pip` support,

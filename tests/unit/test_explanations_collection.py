@@ -781,6 +781,53 @@ def test_filter_features_inplace_mutates_collection(calibrated_collection):
         assert any(call[0] == "filter_features" and call[1]["copy"] is False for call in exp.calls)
 
 
+def test_filter_features_copy_returns_new_object(calibrated_collection):
+    # copy=True path in CalibratedExplanations.filter_features (lines 1244-1252).
+    out = calibrated_collection.filter_features(exclude_features=0, copy=True)
+    assert out is not calibrated_collection
+    assert len(out.explanations) == len(calibrated_collection.explanations)
+
+
+def test_narrate_and_to_dataframe_delegators(calibrated_collection, monkeypatch):
+    # narrate() and to_dataframe() are delegators for to_narrative().
+    # Cover lines 1523-1524 (to_dataframe) and 1528 (narrate).
+    calls = []
+    monkeypatch.setattr(calibrated_collection, "to_narrative", lambda *a, **kw: calls.append(kw))
+    calibrated_collection.narrate()
+    calibrated_collection.to_dataframe()
+    assert len(calls) == 2
+    assert calls[1].get("output_format") == "dataframe"
+
+
+def test_plot_style_ensured_normalizes_to_triangular(calibrated_collection):
+    # Calling plot(style="ensured") covers line 1326 (style = "triangular").
+    # DummyExplanation.plot() just records calls; no figures are rendered.
+    calibrated_collection.plot(style="ensured", show=False)
+    for exp in calibrated_collection.explanations:
+        assert any(call[0] == "plot" for call in exp.calls)
+
+
+def test_to_json_stream_without_underlying_explainer(calibrated_collection, monkeypatch):
+    # Replace calibrated_explainer with a stub that lacks _explainer,
+    # covering arcs 675->690 and 808->818 (underlying is None paths).
+    import types as _types
+
+    stub = _types.SimpleNamespace(
+        feature_names=["f0", "f1", "f2"],
+        class_labels=None,
+        sample_percentiles=None,
+        mode="classification",
+        runtime_telemetry=None,
+        x_cal=np.zeros((2, 3)),
+        y_cal=np.array([0, 1]),
+        interval_summary="test",
+        num_features=3,
+    )
+    monkeypatch.setattr(calibrated_collection, "calibrated_explainer", stub)
+    fragments = list(calibrated_collection.to_json_stream())
+    assert len(fragments) > 0
+
+
 def test_from_batch_full_probabilities_and_instance_validation(calibrated_collection):
     from calibrated_explanations.core import SerializationError, ValidationError
 

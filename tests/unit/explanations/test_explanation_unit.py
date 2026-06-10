@@ -202,6 +202,15 @@ class TestExplanationUnit:
             expl.filter_features(exclude_features=10)
         with pytest.raises(ValidationError, match="Feature name 'nonexistent' not found"):
             expl.filter_features(exclude_features="nonexistent")
+        # Cover line 270: non-str/int/list type (e.g. float) → ValidationError
+        with pytest.raises(ValidationError, match="Features must be a string, int, or list"):
+            expl.filter_features(exclude_features=3.14)
+
+    def test_filter_features_copy_false(self):
+        # copy=False arc (260->264) in explanation.filter_features.
+        expl = self.create_expl()
+        result = expl.filter_features(exclude_features=0, copy=False)
+        assert result is expl  # in-place: same object returned
 
     # --- Tests for add_new_rule_condition ---
 

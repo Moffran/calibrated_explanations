@@ -32,6 +32,7 @@
         "calibrate",
         "explain_factual",
         "explainer",
+        "explore_alternatives",
         "fit",
         "learner",
         "plot",

@@ -1471,6 +1471,13 @@ class CalibratedExplainer:
             passes a KNN-based conformity test are included in the output.
             Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
             and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
+        reject_policy : RejectPolicySpec | None, default=None
+            When non-``None``, activates reject orchestration.  Pass a
+            :class:`.RejectPolicySpec` constructed via
+            ``RejectPolicySpec.flag()``, ``RejectPolicySpec.only_accepted()``,
+            or ``RejectPolicySpec.only_rejected()``.  When active, the return
+            type is :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`
+            rather than :class:`.CalibratedExplanations`.
         **kwargs : dict
             Additional arguments passed to the explanation orchestrator.
 
@@ -1480,6 +1487,8 @@ class CalibratedExplainer:
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance.
             When ``guarded=True``, per-instance explanations are
             :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`.
+            When ``reject_policy`` is non-``None``, returns
+            :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`.
         """
         if guarded:
             if not _use_plugin and kwargs.get("verbose", False):
@@ -1557,12 +1566,21 @@ class CalibratedExplainer:
             passes a KNN-based conformity test are included as alternatives.
             Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
             and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
+        reject_policy : RejectPolicySpec | None, default=None
+            When non-``None``, activates reject orchestration.  Pass a
+            :class:`.RejectPolicySpec` constructed via
+            ``RejectPolicySpec.flag()``, ``RejectPolicySpec.only_accepted()``,
+            or ``RejectPolicySpec.only_rejected()``.  When active, the return
+            type is :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`
+            rather than :class:`.AlternativeExplanations`.
         **kwargs : dict
             Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
+            When ``reject_policy`` is non-``None``, returns
+            :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`.
 
         Notes
         -----

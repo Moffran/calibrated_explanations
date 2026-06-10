@@ -1,6 +1,14 @@
 {
-  "generated_at": "2026-06-09T08:40:21+00:00",
-  "total_violations": 0,
+  "generated_at": "2026-06-10T07:53:09+00:00",
+  "total_violations": 1,
   "version": 1,
-  "violations": []
+  "violations": [
+    {
+      "artifact": "reports/docs/notebook_execution_report.json",
+      "category": "unix_absolute",
+      "json_path": "$.notebooks[2].errors[0].evalue",
+      "match": "/Users/poorna/Downloads/CE-updated/calibrated_explanations/src",
+      "reason": "local Unix absolute paths are not allowed"
+    }
+  ]
 }

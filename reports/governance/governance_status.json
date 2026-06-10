@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T08:39:15+00:00",
+  "generated_at": "2026-06-10T07:51:20+00:00",
   "lint": {
     "local_checks_pr": "unavailable",
     "mypy": "passed",
@@ -14,7 +14,7 @@
     "config_manager_usage": "passed",
     "governance_event_schema": "passed",
     "logging_domains": "passed",
-    "no_local_paths": "passed"
+    "no_local_paths": "failed"
   },
   "schema_version": "1.0"
 }
