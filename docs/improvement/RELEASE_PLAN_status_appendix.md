@@ -1,5 +1,7 @@
 # RELEASE_PLAN Status Appendix
 
+> Status note (2026-06-11): full ADR gap-analysis sweep at post-Task-13 state, with per-ADR code-evidence verification for the ADRs whose status previously rested on prior closure claims (ADR-003, 005, 012, 021, 023, 026, 031, 035). New gaps found in ADR-011 (deprecation ledger/helper drift introduced by Task 13 guarded deprecations and pre-existing raw warn sites), ADR-028/STD-005 (one unclassified warning site added by Task 12), ADR-032 (stale guidance string), ADR-036 (plugin-path validation boundary), ADR-037 (extension metadata thinness), ADR-034 (status-source conflict on Open Items), and ADR-023 (trivial stale-omit cleanup). Evidence-driven status corrections: ADR-005 gap closed (provenance propagates through both adapters; `schema.validate_payload` intact); ADR-012 gaps rewritten (docs HTML/linkcheck CI job is unwired — `reusable-build-docs.yml` has no caller; notebook execution exists nightly-advisory with timeouts); ADR-026 gap re-scoped (contexts are now frozen dataclasses; only specific nested fields remain unfrozen). All other previously closed rows re-verified via quality gates (`check_adr002_compliance`, `check_marker_hygiene`, `check_std001_nomenclature`, `check_logging_domains`, `check_import_graph`, `check_governance_event_schema`, `check_trust_mutation_primitive`, `check_docstring_coverage` 96.34%, `check_core_extras_parity`, ADR-020 contract tests 11/11) and cited code evidence (ADR-003/021/031/035). New gaps are scheduled in `docs/improvement/v0.11.3_plan.md` Task 15.
+
 > Status note (2026-06-02): updated at v0.11.3 complete closure. All Task 9 workstreams (D: appendix synchronization; B: API parity/serializer/interval/invariant; C: warning-to-logging migration; A: accepted-registration governance) closed 2026-06-02. Task 1 (Standard-001 expired bridges) also closed 2026-06-02. Summary rows are synchronized to full v0.11.3 closure evidence.
 
 > Appendix scope: status-heavy tracking only (ADR/Standard status tables, gap inventory, historical compliance notes).
@@ -23,30 +25,31 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | Item | Current status | Target milestone or note |
 | --- | --- | --- |
 | ADR-004 | Partially complete | Only explicit `strategy="auto"` policy closure remains (v1.0.0-rc) |
-| ADR-005 | Partially complete | Remaining legacy-adapter provenance follows ADR-008 domain-authoritative migration (v1.0.0-rc) |
+| ADR-005 | Completed (2026-06-11) | Last gap closed on code evidence: provenance propagates through both adapters (`explanations/adapters.py:36-41`, `:68`); `schema.validate_payload` and serialization invariants intact post-Task-1 |
 | ADR-006 | Completed | All v0.11.3 gaps closed: gap 3 superseded (Task 5 Group K); gap 2 closed 2026-06-02 (accepted-registration audit events added to all 4 typed registration functions); gap 1 carry-forward (monitor, no code gap) |
 | ADR-008 | Partially complete | v0.11.3 golden fixture tests and `_safe_pick` observability closed (gaps 4/5, 2026-06-02); domain-authoritative migration (gaps 1/2/3) remains v1.0.0-rc |
 | ADR-009 | Partially complete | JSON-safe export closed (gap 2, 2026-06-02); helper-placement gap 3 closed (Workstream B, 2026-06-02); wrapper/core surface decision in v1.0.0-rc |
 | ADR-010 | Completed | Core-only vs extras parity automation closed v0.11.3 (gap 1 closed 2026-06-02; `scripts/quality/check_core_extras_parity.py` added) |
-| ADR-011 | Completed | All gaps closed v0.11.3 (gaps 1/2/3 closed 2026-06-02; validate_payload removed, narrative_format migrated to deprecate(), registry half by Group K, serializer half clean) |
-| ADR-012 | Accepted with open hardening | Notebook execution/runtime ceilings remain v1.0.0-rc; gallery-tooling decision closed in v0.11.3 (gap 3 closed 2026-06-02) |
+| ADR-011 | Reopened (2026-06-11) | New gaps: active-deprecations ledger empty/mis-filed while ≥7 active deprecation surfaces exist; raw `warnings.warn(DeprecationWarning)` sites bypass central `deprecate()`; Task-13 guarded-wrapper removal targeted "v1.0.0" conflicts with ADR-011 §2 binding rule. Scheduled in v0.11.3 plan Task 15 |
+| ADR-012 | Accepted with open hardening (re-evidenced 2026-06-11) | Notebook execution exists (nightly advisory driver + `nbsphinx_execute="always"` on non-RTD builds); real gap is that the docs HTML/linkcheck CI job is unwired (`reusable-build-docs.yml` has no caller). Runtime ceilings advisory-only. Remains v1.0.0-rc |
 | ADR-013 | Completed | All v0.11.3 gaps closed (gaps 1/2/3/4 closed 2026-06-02; protocol tests, FAST chain separation guard, third-party conformance test, doc path corrected) |
 | ADR-015 | Partially complete | v0.11.3 gaps 1/3 closed (2026-06-02; invariant consistency + task-type parity tests); gap 2 (direct learner bypass) deferred to v1.0.0-rc |
 | ADR-020 | Completed | All v0.11.3 gaps closed (gap 1: release checklist 2026-06-02; gap 2: wrapper parity tests 2026-06-02; gap 3: CONTRIBUTING.md 2026-06-02) |
-| ADR-026 | Partially complete | Context immutability remains (v1.0.0-rc); telemetry quick wins closed in v0.11.2 |
+| ADR-026 | Partially complete (re-scoped 2026-06-11) | Context immutability substantially landed (frozen dataclasses + nested freezing in `plugins/explanations.py:35-69`, `plugins/intervals.py:12-43`); residual unfrozen nested fields remain (v1.0.0-rc); telemetry quick wins closed in v0.11.2 |
 | ADR-027 | Completed | All gaps closed v0.11.3 (gaps 1/2 closed 2026-06-02; `docs/practitioner/performance-tuning.md` covers observability policy and telemetry examples) |
-| ADR-028 | Completed | All v0.11.3 gaps closed (gap 1 closed 2026-06-02; 15 dual-emission sites removed, fallback events route to WARNING logs, warning-policy inventory script added) |
+| ADR-028 | Reopened (2026-06-11) | Warning-policy inventory regressed: `check_warning_policy.py` reports 1 unclassified site (`api/config.py:265`, added by Task 12). Scheduled in v0.11.3 plan Task 15 |
 | ADR-030 | Completed | Zero-tolerance ratification closed v0.11.3 Task 3 (2026-05-12); marker hygiene taxonomy and mutation policy sections added to ADR-030; gaps 1/2 closed in appendix (2026-06-02) |
-| ADR-033 | Accepted with open removal follow-through | `data_modalities` enforcement closes in v0.11.3; shim removal remains v1.0.0-rc |
-| ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning |
+| ADR-032 | Reopened minor (2026-06-11) | Core decisions verified in code (parameterized guarded API, `supports_guarded` contract, fast-explainer hard-fail, conjunction guarding, `filter_by_target_confidence`). Open: `get_guarded_audit` error message recommends the deprecated wrapper methods. Scheduled in v0.11.3 plan Task 15 |
+| ADR-033 | Accepted with scheduled follow-through | v0.11.1 obligations verified 2026-06-11 (entry-point `DeprecationWarning` at `plugins/registry.py:1830-1845`, shims, `MissingExtensionError`). Per ADR-033 §6.2 the shims are permanent; the only open item is removing the `data_modalities` default-fallback at v0.12.0/v1.0.0-rc |
+| ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning. New (2026-06-11): status-source conflict — v0.11.3 plan RC-scope note (2026-05-28) claims both Open Items resolved, but ADR-034 §Open Items (last edited 2026-06-04) still lists both open; reconcile in Task 15 |
 | ADR-035 | Accepted with accepted operational constraint | v0.11.3 re-evaluation complete (2026-06-02): advisory-to-required branch-protection flip is platform-governed; recorded as accepted operational constraint in ADR-035 §v0.11.3 Re-evaluation Record; no in-repo work remains |
-| ADR-036 | Accepted | v0.11.3 Task 6 promoted PlotSpec as the default user-facing plotting path after v0.11.2 mending evidence; monitor canonical dataclass validation and legacy fallback behavior |
-| ADR-037 | Accepted | v0.11.3 Task 6 promoted the governed built-in PlotSpec default while preserving the runtime plot-kind extension prohibition and explicit legacy opt-out |
+| ADR-036 | Accepted with open gap (2026-06-11) | Default promotion verified in code (`plotting.py:264-299`); built-in builders self-validate. Open: no pipeline-enforced canonical validation between third-party builder output and renderer invocation (§5). Scheduled in v0.11.3 plan Task 15 |
+| ADR-037 | Accepted with open gap (2026-06-11) | Default promotion and plot-kind prohibition verified. Open: builder/renderer extension metadata lacks mandated supported-plot-kinds/modes declarations (§4); registration does not validate them. Scheduled in v0.11.3 plan Task 15 |
 | STD-001 | Completed | All v0.11.3 bridges closed (Task 1, 2026-06-02); 0 expired remove_by_v0.11.3 records; checker passes; internal bridge dunders renamed; APPROVED_COMPATIBILITY_BRIDGES = {} |
 | STD-002 | Completed | WrapCalibratedExplainer numpydoc gap closed in v0.11.3 Task 2; coverage 96.73%, zero pydocstyle violations (2026-06-02) |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
-| STD-005 | Completed | All v0.11.3 gaps closed (gap 1 closed 2026-06-02; fallback events aligned with WARNING log-first; 105 remaining UserWarning call sites inventoried and allowlisted) |
+| STD-005 | Reopened (2026-06-11) | Shares the ADR-028 regression: 1 unclassified `warnings.warn` site (`api/config.py:265`). Scheduled in v0.11.3 plan Task 15 |
 
 ## Detailed gap inventory and historical notes
 
@@ -78,42 +81,31 @@ Unified severity scales (brief)
 
 ### ADR-001 - Package and Boundary Layout
 
-**Compliance verification (2026-02-27):** Reviewed code and RTD - no ADR-001 gaps found; ADR-001 is fully compliant. No further action required.
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-001 gaps found; `check_import_graph.py` reports no violations (re-run 2026-06-11). ADR-001 is fully compliant. No further action required.
 
 ### ADR-002 - Exception Taxonomy and Validation Contract
 
-**Compliance verification (2026-02-27):** Reviewed code and RTD - no ADR-002 gaps found; ADR-002 is fully compliant. No further action required.
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-002 gaps found; `check_adr002_compliance.py` scanned 120 files with no violations (re-run 2026-06-11). ADR-002 is fully compliant. No further action required.
 
 ### ADR-003 - Caching Strategy
 
-**Compliance verification (2026-02-27):** Reviewed code and RTD - no ADR-003 gaps found; ADR-003 is fully compliant. No further action required.
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-003 gaps found. Code evidence: namespaced/versioned blake2b cache keys (`cache/cache.py:253-285` `make_key(namespace, version, parts)`), `cachetools` LRU backend with in-package fallback (`cache/cache.py:39-189`), telemetry counters (`cache/cache.py:290`), and opt-in default-off posture (`CacheConfig.enabled: bool = False`, `cache/cache.py:356`). ADR-003 is fully compliant. No further action required.
 
 ### ADR-004 - Parallel Execution Framework
 
-_Last gap analysis: 2026-04-22_
+_Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Documentation naming drift (legacy facade term vs `ParallelExecutor`)~~ | 2 | 2 | 4 | **Closed v0.11.2:** Legacy "facade" term removed from ADR-001 and RELEASE_PLAN_v1 changelog entry; `ParallelExecutor` naming is now consistent in active docs. |
-| 2 | Implicit `auto` strategy enables auto-selection contrary to ADR decision | 3 | 3 | 9 | Default `strategy="auto"` allows implicit selection. Target milestone: v1.0.0-rc. Blocker: coordinated strategy API change + user-facing migration guide; architecture-heavy and above quick-win threshold. |
+| 1 | Implicit `auto` strategy enables auto-selection contrary to ADR decision | 3 | 3 | 9 | Default `strategy="auto"` allows implicit selection (re-verified 2026-06-11 at `parallel/parallel.py:75`). Target milestone: v1.0.0-rc. Blocker: coordinated strategy API change + user-facing migration guide; architecture-heavy and above quick-win threshold. |
 
 ### ADR-005 - Explanation Payload Schema
 
-_Last gap analysis: 2026-04-22_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Provenance propagation in legacy adapters | 1 | 1 | 1 | Schema and validation complete; propagation of provenance fields in legacy adapters is tracked under ADR-008. Target milestone: v1.0.0-rc (follows ADR-008 domain-model adoption). |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-005 gaps remain. The former gap 1 (provenance propagation in legacy adapters) is closed on code evidence: `legacy_to_domain` reads and preserves `provenance` (`explanations/adapters.py:36-41`) and `domain_to_legacy` emits it (`explanations/adapters.py:68`). The canonical validator survives the Task-1 alias removal (`schema/validation.py:42` `validate_payload`; the removed symbol was only the deprecated `serialization.validate_payload` alias), `explanation_schema_v1.json` is present, and interval invariants are enforced at serialization (`serialization.py:83` `_validate_invariants`). ADR-005 is fully compliant. No further action required. (Deeper domain-model authority work remains tracked under ADR-008.)
 
 ### ADR-006 - Plugin Trust Model
 
-_Last gap analysis: 2026-02-27_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Dual trust state (descriptor `trusted` flag + `_TRUSTED_*` sets) can diverge | 3 | 3 | 9 | **Carry-forward (2026-06-02):** v0.11.3 re-evaluation complete. Four `_TRUSTED_*` module-level sets (`_TRUSTED_EXPLANATIONS`, `_TRUSTED_INTERVALS`, `_TRUSTED_PLOT_BUILDERS`, `_TRUSTED_PLOT_RENDERERS`) remain in `plugins/registry.py`. These are NOT a dual-state remnant — they are the sole authoritative trust-tracking infrastructure for the current plugin architecture. The dual-state issue identified in v0.11.1 was caused by the old list-path API (`register`, `trust_plugin`, `find_for`, `find_for_trusted`) maintaining separate trust state; those four functions were removed by Task 5 Group K. The remaining sets are the single source of truth. No action required; monitor for regressions at next milestone. |
-| 2 | ~~Accepted registrations emit no governance audit event~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream A (2026-06-02).** `register_interval_plugin`, `register_plot_builder`, and `register_plot_renderer` now call `_log_plugin_registration_event` after `mutate_trust_atomic` completes, emitting `accepted_registration` governance events. (explanation plugins already emitted via `_register_legacy_plugin`.) 4 new tests in `tests/observability/test_governance_events.py` verify all four typed registration functions emit schema-valid `accepted_registration` events. |
-| 3 | ~~Legacy `_REGISTRY`/`_TRUSTED` lists lack deprecation path~~ | 0 | 0 | 0 | **Superseded (2026-06-02) by Task 5 Group K.** The four list-path API functions (`register(plugin)`, `trust_plugin(plugin)`, `find_for(model)`, `find_for_trusted(model)`) have been removed from `plugins/registry.py`. Fail-closed absence tests confirm removal. Legacy list-path deprecation path is fully eliminated. |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no open ADR-006 gaps. The four `_TRUSTED_*` module-level sets in `plugins/registry.py` are the sole authoritative trust-tracking infrastructure (the v0.11.1 dual-state issue was eliminated when Task 5 Group K removed the list-path API); `check_trust_mutation_primitive.py` passes (2026-06-11). Accepted-registration governance events and list-path removal closed 2026-06-02. Monitor for regressions; no further action required.
 
 ### ADR-007 - PlotSpec Abstraction (superseded; see ADR-036/ADR-037)
 
@@ -121,64 +113,50 @@ _Last gap analysis: 2026-02-27_
 
 ### ADR-008 - Explanation Domain Model
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Domain model not authoritative source | 5 | 4 | 20 | Core workflows still operate on legacy dicts; domain objects primarily produced at serialization boundaries. Target milestone: v1.0.0-rc (major refactor; architecture-heavy). |
-| 2 | Legacy->domain round-trip fails for conjunctive rules | 4 | 3 | 12 | `domain_to_legacy` casts features to scalars, breaking conjunction support. Target milestone: v1.0.0-rc (follows domain-model authority work). |
-| 3 | Structured model/calibration metadata missing | 4 | 3 | 12 | Explanation dataclass lacks dedicated calibration/model descriptor fields. Target milestone: v1.0.0-rc. |
-| 4 | ~~Golden fixture parity tests missing~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/explanations/test_adapter_golden_fixtures.py` added: 4 tests covering legacy→domain, domain→legacy, and full bidirectional round-trips for the classification factual fixture. |
-| 5 | ~~`_safe_pick` silently duplicates endpoints~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `_safe_pick` in `explanations/models.py` now emits a `DEBUG` log when endpoint duplication occurs (`"endpoint duplication detected — ragged feature/weight arrays in legacy payload"`). `tests/unit/explanations/test_models_safe_pick.py` added: 3 tests verifying the debug log, no-log on aligned arrays, and None return on empty arrays. |
+| 1 | Domain model not authoritative source | 5 | 4 | 20 | Re-verified 2026-06-11: `legacy_to_domain`/`domain_to_legacy` are referenced only inside the `explanations` package (adapters + serialization boundary); core explain/predict workflows still operate on legacy dicts. Target milestone: v1.0.0-rc (major refactor; architecture-heavy). |
+| 2 | Legacy->domain round-trip fails for conjunctive rules | 4 | 3 | 12 | Re-verified 2026-06-11: `domain_to_legacy` accumulates `rule_features: List[int]` and appends scalar `fr.feature` (`explanations/adapters.py:74`, `:82`), so multi-feature conjunctions cannot round-trip. Target milestone: v1.0.0-rc (follows domain-model authority work). |
+| 3 | Structured model/calibration metadata missing | 4 | 3 | 12 | Explanation dataclass lacks dedicated calibration/model descriptor fields (generic `provenance`/`metadata` mappings only). Target milestone: v1.0.0-rc. |
 
 ### ADR-009 - Input Preprocessing and Mapping Policy
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Mapping export helpers placed on wrapper not explainer | 2 | 3 | 6 | `WrapCalibratedExplainer` exposes mapping persistence; consider thin `CalibratedExplainer` adapters for discoverability. Target milestone: v1.0.0-rc (public API change). |
-| 2 | ~~Export helper does not enforce JSON-safe conversion~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `WrapCalibratedExplainer.export_preprocessor_mapping()` already calls `_validate_json_safe_mapping()` on both the `get_mapping_snapshot` and `mapping_` paths; `import_preprocessor_mapping()` also validates JSON safety on import. Tests in `tests/unit/core/test_wrap_explainer_helpers.py` (`test_export_preprocessor_mapping_rejects_non_json_serialisable_snapshots`, `test_import_preprocessor_mapping_rejects_non_json_serialisable_payload`) verify the enforcement. No code change required. |
-| 3 | ~~Validation helper location differs from ADR text~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** Non-numeric detection is implemented on the wrapper (`WrapCalibratedExplainer`); deliberate placement — the wrapper is the public API surface for preprocessing and ADR-009 §gap 3 alignment is handled by the Phase 2 note in ADR-011 gap 3. No code change required. |
+| 1 | Mapping export helpers placed on wrapper not explainer | 2 | 3 | 6 | Re-verified 2026-06-11: `export_preprocessor_mapping`/`import_preprocessor_mapping` are defined only on `core/wrap_explainer.py`; no thin `CalibratedExplainer` adapters exist. Target milestone: v1.0.0-rc (public API change). |
 
 ### ADR-010 - Optional Dependency Split
 
-_Last gap analysis: 2026-02-27_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~No automated parity check between core-only and extras-installed runs~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `scripts/quality/check_core_extras_parity.py` added: probes extras availability, runs CE-first API with synthetic data, asserts structural invariants (n_instances, explanations_type, predictions, rules). Run with `--check` for CI-fail-on-violation, `--report` for JSON output. `python scripts/quality/check_core_extras_parity.py` exits 0. |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-010 gaps found; `scripts/quality/check_core_extras_parity.py` passes (re-run 2026-06-11). ADR-010 is fully compliant. No further action required.
 
 ### ADR-011 - Deprecation and Migration Policy
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Compatibility shims not consistently emitting `deprecate()` warnings~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `validate_payload` removed by Task 1. `ce_agent_utils.py` `narrative_format` deprecation migrated from raw `warnings.warn(DeprecationWarning)` to central `deprecate(key="ce_agent_utils.narrative_format")` helper. All other deprecation shims removed by Task 5. |
-| 2 | ~~Legacy-shaped serializer outputs silent on deprecation~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** Internal `_legacy_payload` / `legacy_payload` helpers in `explanations.py` are private implementation paths, not user-facing compatibility shims; they do not require deprecation warnings. The public serialization surface (`serialization.py`) has no backward-compat shims. No code change required. |
-| 3 | ~~Legacy registry lists lack deprecation hooks~~ | 0 | 0 | 0 | **Both phases closed (2026-06-02).** Registry half closed by Task 5 Group K (four functions removed); serializer half confirmed clean — no legacy-shaped serialization shims remain. Final row removed. |
+| 1 | Task-13 guarded-wrapper deprecations scheduled to survive into v1.0.0, conflicting with ADR-011 §2 binding rule | 3 | 2 | 6 | `explain_guarded_factual` / `explore_guarded_alternatives` (`CalibratedExplainer` + `WrapCalibratedExplainer`, 4 surfaces) were deprecated in v0.11.3 (Task 13, 2026-06-09) with removal targeted "v1.0.0" (ADR-032 decision 1; `docs/migration/deprecations.md:247-250`). ADR-011 §2: "v1.0.0 must ship with zero surviving deprecations" and "No deprecation-removal work may be deferred to v1.0.0". Resolution options: schedule removal inside v0.11.x, or apply the Group L deprecation-reset precedent. Target: v0.11.3 plan Task 15. |
+| 2 | Active-deprecations ledger empty / rows mis-filed while active deprecations exist in code | 3 | 2 | 6 | `docs/migration/deprecations.md` "Active deprecations" table has zero rows, yet code actively emits deprecations for: guarded wrappers ×4 (mis-filed in "Removed deprecations (history)" although still present and functional), `ce_agent_utils.narrative_format`, `normalize=True/False` (`calibration/normalization_strategy.py:87-100`), `calibrated_explanations.core.reject` module path (`core/reject.py:32-38`), `core.explain.explain` (`core/explain/__init__.py:25-34`), and entry-point `data_modalities` (`plugins/registry.py:1830-1845`, ADR-033-governed). The history-table header claims listed symbols "have been deleted", which is false for the guarded wrappers. Target: v0.11.3 plan Task 15. |
+| 3 | Raw `warnings.warn(DeprecationWarning)` sites bypass the central `deprecate()` helper | 3 | 2 | 6 | ADR-011 §1 mandates emission "via the central `deprecate(msg, *, once_key)` helper". Non-compliant sites: `calibration/normalization_strategy.py:87-100` (no dedup, vague "future release" timeline), `core/reject.py:32-38`, `core/explain/__init__.py:25-34`. (`plugins/registry.py:1835` has manual dedup and an explicit deadline; lowest priority.) Also: two near-duplicate helper modules `utils/deprecations.py` and `utils/deprecation.py` invite future drift. Target: v0.11.3 plan Task 15. |
 
 ### ADR-012 - Documentation & Gallery Build Policy
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-06-11_
+
+Evidence update (2026-06-11): the former gap framing ("docs build disables notebook execution") is outdated. Notebook execution now exists in two forms: the nightly advisory driver (`ci-nightly.yml` `notebook-exec-report` job runs `scripts/docs/run_notebooks.py --mode advisory --cell-timeout 30 --notebook-timeout 300`) and `nbsphinx_execute = "always"` for non-RTD, non-linkcheck Sphinx builds (`docs/conf.py:218`; RTD renders without execution). The advisory posture on this dev fork is recorded in `ci-nightly.yml:82-84` as deliberate, with blocking-mode enforcement assigned to the upstream Moffran repo at release time — consistent with ADR-012's advisory-mainline/blocking-release split. The rewritten gaps below reflect what actually remains.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Notebooks not executed in docs HTML CI | 5 | 4 | 20 | Docs build currently disables notebook execution; ADR requires executed notebooks. Target milestone: v1.0.0-rc (requires CI infrastructure investment). |
-| 2 | Runtime ceiling enforcement missing (per-example timing) | 3 | 3 | 9 | No CI-level per-example timing enforcement. Target milestone: v1.0.0-rc (follows notebook execution gate). |
-| 3 | ~~Gallery tooling decision undocumented for contributors~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** ADR-012 Open Questions section closed with formal decision: nbconvert for v1.0.0; sphinx-gallery deferred to post-v1.0. Decision text added to ADR-012 "Resolved Questions" section. Doc-only. |
+| 1 | Docs HTML/linkcheck CI job is unwired on PR/main | 3 | 2 | 6 | ADR-012 requires `sphinx-build -W` and linkcheck to run in CI (advisory on mainline). `reusable-build-docs.yml` exists but **no workflow calls it** — the only Sphinx build in CI is the manual-dispatch `maintenance.yml` regen-docs task. Doc rot is currently undetected on PR/main. Wire the reusable builder into `ci-pr.yml` or `ci-nightly.yml` (advisory). Target milestone: v1.0.0-rc. |
+| 2 | Per-example runtime ceiling (<30s) not enforced | 2 | 2 | 4 | The nightly driver enforces cell (30s) and notebook (300s) timeouts in advisory mode only; the ADR's <30s-per-example contribution rule has no blocking gate anywhere. Acceptable for the dev fork per the recorded advisory posture; blocking enforcement is a release-branch obligation. Target milestone: v1.0.0-rc. |
 
 ### ADR-013 - Interval Calibrator Plugin Strategy
 
-_Last gap analysis: 2026-02-27_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Protocol signature mismatch between protocol and reference impl~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/plugins/test_adr013_interval_gaps.py` confirms `IntervalRegressor` implements all `RegressionIntervalCalibrator` protocol methods (`predict_probability`, `predict_uncertainty`, `pre_fit_for_probabilistic`, `compute_proba_cal`, `insert_calibration`, `predict_proba`, `is_multiclass`, `is_mondrian`) and `VennAbers` implements `ClassificationIntervalCalibrator` protocol. No code change required. |
-| 2 | ~~FAST wrapper location mismatch vs ADR text (doc drift)~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** ADR-013 §4 Lifecycle corrected to cite `src/calibrated_explanations/calibration/interval_wrappers.py` (was incorrectly `plugins/interval_wrappers.py`). Implementation-status note added to ADR-013. Doc-only fix; no code change. |
-| 3 | ~~FAST calibrator may be implicitly included in fallback chains~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `build_interval_chain(fast=False)` confirmed to exclude `core.interval.fast` from the default chain; `build_interval_chain(fast=True)` keeps them in separate chains. Guarded by `tests/unit/plugins/test_adr013_interval_gaps.py` (`test_should_exclude_fast_identifier_from_default_interval_chain`, `test_should_keep_default_and_fast_chains_separate`). |
-| 4 | ~~Protocol enforcement relies on `isinstance` only~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `test_should_structurally_conform_when_third_party_implements_protocol` in `test_adr013_interval_gaps.py` verifies structural conformance (required method names, `predict_proba` kwarg surface, zero-arg `is_multiclass`/`is_mondrian`) for a third-party object that does not inherit from any CE class. |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-013 gaps found; protocol conformance, FAST chain separation, third-party structural conformance, and doc-path corrections all closed 2026-06-02 and guarded by `tests/unit/plugins/test_adr013_interval_gaps.py`. ADR-013 is fully compliant. No further action required.
 
 ### ADR-014 - Visualization Plugin Architecture (superseded; see ADR-037)
 
@@ -186,13 +164,11 @@ _Last gap analysis: 2026-02-27_
 
 ### ADR-015 - Explanation Plugin Integration
 
-_Last gap analysis: 2026-02-27_
+_Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Inconsistent invariant enforcement across bridges/validators~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/plugins/test_invariant_consistency.py` confirms that equivalent invalid payloads fail consistently in both `validate_explanation_batch` and `LegacyPredictBridge.predict` for both "interval invariant violated" and "prediction invariant violated" cases. |
-| 2 | Explainer handle exposes direct `learner` (bypass bridge) | 4 | 2 | 8 | Restrict direct learner access or document as escape hatch with warnings. Target milestone: v1.0.0-rc (public API semantic). |
-| 3 | ~~Task-scoped enforcement divergence~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/plugins/test_invariant_consistency.py` extended with `test_should_enforce_interval_invariant_consistently_across_task_types` and `test_should_enforce_prediction_invariant_consistently_across_task_types` parametrized over `regression` and `classification`; both pass. |
+| 1 | Explainer handle exposes direct `learner` (bypass bridge) | 4 | 2 | 8 | Re-verified 2026-06-11: `ExplainerHandle.learner` property returns the raw underlying learner (`plugins/explanations.py:124-126`), letting plugins bypass the `PredictBridge` invariant enforcement. Restrict direct learner access or document as escape hatch with warnings. Target milestone: v1.0.0-rc (public API semantic). |
 
 ### ADR-016 - PlotSpec Separation and Schema (superseded; see ADR-036/ADR-037)
 
@@ -200,17 +176,11 @@ _Last gap analysis: 2026-02-27_
 
 ### ADR-020 - Legacy User API Stability
 
-_Last gap analysis: 2026-02-27_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Release checklist omits legacy API gate~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** Step 3 "Legacy API gate" added to `docs/foundations/governance/release_checklist.md`: run `pytest tests/unit/api/test_legacy_user_api_contract.py -v`, confirm zero failures, require contract doc + parity test updates in the same PR for any scheduled legacy surface change. |
-| 2 | ~~Wrapper regression tests missing parity assertions~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream B (2026-06-02).** `tests/unit/api/test_legacy_user_api_contract.py` extended with 5 parity tests: explicit threshold forwarding, config-default injection, `explore_alternatives` delegation, and `**kwargs` acceptance assertion for both explain methods. `make local-checks-pr` passes. |
-| 3 | ~~Contributor workflow ignores contract doc updates~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** Sentence added to the "Roadmap and ADR-driven development" section of `.github/CONTRIBUTING.md` directing contributors to update `docs/improvement/legacy_user_api_contract.md` when changes affect the legacy API. |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-020 gaps found; `tests/unit/api/test_legacy_user_api_contract.py` passes 11/11 after the Task-13 guarded-parameter additions (re-run 2026-06-11). Release-checklist gate, parity tests, and CONTRIBUTING guidance closed 2026-06-02. ADR-020 is fully compliant. No further action required.
 
 ### ADR-021 - Calibrated Interval Semantics
 
-**Compliance verification (2026-02-27):** Reviewed code and RTD - no ADR-021 gaps found; ADR-021 is fully compliant. No further action required.
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-021 gaps found. Code evidence: the inclusive `low <= predict <= high` invariant is enforced with epsilon tolerance in the predict monitor (`plugins/predict_monitor.py:131-182`, epsilon `1e-9`, hard failure on stark breaches — matching the ADR's soft-coercion non-guarantee), at serialization (`serialization.py:83`), and consistently across validators/bridges/task types (`tests/unit/plugins/test_invariant_consistency.py`). ADR-021 is fully compliant. No further action required.
 
 ### ADR-022 - Documentation Information Architecture
 
@@ -218,7 +188,13 @@ _Last gap analysis: 2026-02-27_
 
 ### ADR-023 - Matplotlib Coverage Exemption
 
-**Compliance verification (2026-02-27):** Reviewed code and RTD - no ADR-023 gaps found; ADR-023 is fully compliant. No further action required.
+_Last gap analysis: 2026-06-11_
+
+The exemption itself is correctly in place: `src/calibrated_explanations/viz/matplotlib_adapter.py` is omitted from coverage (`pyproject.toml:152`).
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Stale coverage omit entries reference deleted files | 1 | 1 | 1 | `pyproject.toml:153-156` still omits `_interval_regressor.py`, `_plots.py`, `_plots_legacy.py`, `_venn_abers.py` — none of these files exist anymore. No coverage effect today, but the dead entries misdocument the exemption surface and would silently mask any future file recreated under those names. Delete the four entries. Doc/config-only; suitable for v0.11.3 plan Task 15. |
 
 ### ADR-024 - Legacy Plot Input Contracts
 
@@ -230,110 +206,117 @@ _Last gap analysis: 2026-02-27_
 
 ### ADR-026 - Explanation Plugin Semantics
 
-_Last gap analysis: 2026-04-22_
+_Last gap analysis: 2026-06-11_
+
+Evidence update (2026-06-11): context immutability has substantially landed since this gap was scored 12. `ExplanationContext` is a frozen dataclass whose `__post_init__` deep-freezes `categorical_labels`, `interval_settings`, `plot_settings`, and `plugin_config` (`plugins/explanations.py:35-69`); `IntervalCalibratorContext` is frozen with proxied `metadata`/`plugin_config` and a deliberately mutable `plugin_state` scratch area (`plugins/intervals.py:12-43`). The residual gap below is what remains.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Explanation context exposes mutable dicts | 4 | 3 | 12 | Contexts should be frozen/immutable. Target milestone: v1.0.0-rc (architecture-level change; exceeds quick-win threshold). |
-| 2 | ~~Telemetry omits interval dependency hints~~ | 3 | 2 | 6 | **Closed v0.11.2:** `interval_dependencies` is already emitted in `ExplanationOrchestrator.invoke`; test `test_should_include_interval_dependencies_in_batch_telemetry_when_plugin_provides_hints` in `tests/unit/core/explain/test_orchestrator_core.py` verifies the invariant. |
-| 3 | ~~Mondrian bin objects left mutable in requests~~ | 2 | 2 | 4 | **Closed v0.11.2:** `ExplanationRequest.__post_init__` freezes `bins` to an immutable tuple; test `test_should_freeze_mondrian_bins_at_request_construction_when_caller_mutates` in `tests/unit/core/prediction/test_orchestrator_extras.py` verifies the contract. |
+| 1 | Specific nested context fields remain unfrozen | 3 | 2 | 6 | `ExplanationContext.__post_init__` does not freeze `helper_handles`, `feature_names`, or `categorical_features`; `IntervalCalibratorContext.__post_init__` does not freeze `calibration_splits`, `bins`, `residuals`, `difficulty`, or `fast_flags` — plain dicts/lists passed for these fields stay plugin-mutable. (Array payloads may be deliberate; mappings like `helper_handles`/`bins`/`fast_flags` are not.) Target milestone: v1.0.0-rc. |
 
 ### ADR-027 - FAST-Based Feature Filtering
 
-_Last gap analysis: 2026-04-22_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Observability policy alignment undocumented~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** `docs/practitioner/performance-tuning.md` already contains a "Logging and Observability" section documenting the debug-by-default posture, strict-mode escalation to `WARNING`, and governance logger routing examples aligned with Standard-005. No code change required. |
-| 2 | ~~Feature-filter telemetry examples sparse~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream D (2026-06-02).** `docs/practitioner/performance-tuning.md` already contains the "Telemetry Events" section listing `filter_enabled`/`filter_skipped`/`filter_error` and the "Debugging Filtered Explanations" section with per-instance ignore-mask metadata example. No code change required. |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-027 gaps found; observability-policy and telemetry documentation closed 2026-06-02 in `docs/practitioner/performance-tuning.md`. ADR-027 is fully compliant. No further action required.
 
 ### ADR-028 - Logging and Governance Observability
 
-_Last gap analysis: 2026-05-16_
+_Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Fallback/degraded-state visibility is warning-first in multiple runtime paths~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream C (2026-06-02).** 15 dual-emission sites (logger.warning + warnings.warn for same event) removed across `parallel/parallel.py` (5 sites), `plugins/builtins.py` (3), `cache/cache.py` (2), `core/explain/orchestrator.py` (1), `core/calibrated_explainer.py` (4). Each fallback is now visible only via domain-routed `WARNING` log. `scripts/quality/check_warning_policy.py` added: 110 call sites inventoried, 0 unclassified. `tests/unit/perf/test_parallel.py` updated to `caplog` assertion. `make local-checks-pr` passes. |
-| 2 | Enforcement tooling for logger domains missing | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (logger-domain quality script added). Target milestone: monitor. |
-| 3 | Observability examples need alignment with Standard-005 | 2 | 2 | 4 | Delivered in v0.11.1 Task 7 (docs examples updated). Target milestone: monitor. |
+| 1 | Warning-policy inventory regressed: 1 unclassified `warnings.warn` site | 2 | 1 | 2 | `python scripts/quality/check_warning_policy.py` (run 2026-06-11) reports 112 call sites with 1 UNCLASSIFIED: `api/config.py:265` — removed-field `UserWarning` added by Task 12 (`ExplainerConfig.task`/`parallel_workers` removal notice). Classify in the allowlist (or migrate to `deprecate()` if treated as a deprecation surface) to restore the zero-unclassified closure state. Target: v0.11.3 plan Task 15. |
 
 ### ADR-029 - Reject Integration Strategy
 
-_Last gap analysis: 2026-03-03_
+_Last gap analysis: 2026-06-11_
+
+Re-verified 2026-06-11 against code: `RejectPolicy` canonical members in `core/reject/policy.py`, `RejectResult` envelope with `error_rate_defined` sentinel and per-instance metadata keys, `RejectOrchestrator` registry with `builtin.default` (`core/reject/orchestrator.py:902-925`, `resolve_strategy` at 2079), and the `WrapCalibratedExplainer.__init__` constructor constraint (accepts only `learner`) all satisfied.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Reject strategy expansion beyond binary conformal rejectors not yet implemented | 3 | 3 | 9 | Delivered in v0.11.1 Task 14 (uncertainty-based and cost-sensitive strategies added). Target milestone: closed; monitor for regressions. |
-| 2 | Strategy lifecycle hooks and configuration surface not finalized | 2 | 2 | 4 | **Deferred to post-v1.0 (2026-06-02).** Task 5 Group L (ADR-029 gap 1 / RejectResult active deprecation) is now closed. With that blocker resolved, the strategy lifecycle / config surface deferral is now formally recorded: implementing a full strategy lifecycle and config surface is a design/architecture work item that expands beyond bounded v0.11.3 RC hardening. `RejectResult` remains the stable v1.0.0 return type; full strategy config API is deferred to a new post-v1.0 ADR-011 deprecation cycle (v1.1+ planning). |
- | 3 | `RejectResult` public return type not yet migrated to strict `RejectResultV2` | 2 | 2 | 4 | Group L reset-path closure landed in v0.11.3: removed active deprecation warning from `reject_result_v2_to_legacy()` and kept `RejectResult` as stable v1.0.0 return type. Optional `RejectResultV2` remains available; full public return-type migration is deferred to a new post-v1.0 ADR-011 deprecation cycle (v1.1+ planning). |
+| 1 | Strategy lifecycle hooks and configuration surface not finalized | 2 | 2 | 4 | **Deferred to post-v1.0 (2026-06-02).** Implementing a full strategy lifecycle and config surface is a design/architecture work item beyond bounded v0.11.3 RC hardening. `RejectResult` remains the stable v1.0.0 return type; full strategy config API is deferred to a new post-v1.0 ADR-011 deprecation cycle (v1.1+ planning). |
+| 2 | `RejectResult` public return type not yet migrated to strict `RejectResultV2` | 2 | 2 | 4 | Group L reset-path closure landed in v0.11.3: removed active deprecation warning from `reject_result_v2_to_legacy()` and kept `RejectResult` as stable v1.0.0 return type. Optional `RejectResultV2` remains available; full public return-type migration is deferred to a new post-v1.0 ADR-011 deprecation cycle (v1.1+ planning). |
 
 ### ADR-030 - Test Quality Priorities and Enforcement
 
-_Last gap analysis: 2026-03-03_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Marker hygiene zero-tolerance ratification not yet formalized~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 3 (2026-05-12).** ADR-030 now contains a formal "Marker hygiene" decision section defining the enforced pytest marker taxonomy (`unit`/`integration` inferred from directory; `slow`/`viz`/`viz_render` explicit) and naming `check_marker_hygiene.py` as the enforcement tool. Ratification record added to ADR-030 status note confirming zero-tolerance CI enforcement. |
-| 2 | ~~Mutation testing policy documentation not published~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 3 (2026-05-12).** ADR-030 now contains a formal "Mutation testing policy" section declaring mutation testing optional for core modules (recommended for critical-path logic; not a release gate). Tool: `mutmut run --paths-to-mutate src/calibrated_explanations/`. Ratification record added. |
+**Compliance verification (2026-06-11):** Reviewed code and RTD - no ADR-030 gaps found; marker-hygiene and mutation-policy ratifications closed v0.11.3 Task 3 (2026-05-12); `check_marker_hygiene.py` reports 0 findings (re-run 2026-06-11). ADR-030 is fully compliant. No further action required.
 
 ### ADR-031 - Calibrator Serialization and State Persistence
 
-**Compliance verification (2026-03-03):** Delivered in v0.11.0 — versioned `to_primitive`/`from_primitive` contracts plus `WrapCalibratedExplainer` `save_state`/`load_state` present and tested. No open gaps.
+**Compliance verification (2026-06-11):** Reviewed code - no ADR-031 gaps found. Code evidence: `to_primitive`/`from_primitive` implemented on both calibrator families (`calibration/interval_regressor.py`, `calibration/venn_abers.py`) and `save_state`/`load_state` plus related persistence surfaces on `core/wrap_explainer.py` (15 references). Delivered in v0.11.0 and unchanged by Tasks 11-13. ADR-031 is fully compliant. No further action required.
 
 ### ADR-032 - Guarded Explanation Semantics
 
-**Compliance verification (2026-03-20):** ADR-032 now scopes guarded mode to schema-compatible representative-point guarded interval candidates, hard-fail calibration-feature alignment, and audit-field semantics that no longer overclaim semantic identity. No open appendix gaps.
+_Last gap analysis: 2026-06-11_
+
+Re-verified 2026-06-11 against code: parameterized guarded API with deprecated wrappers delegating via `deprecate()`, `GuardedFactualExplanation`/`GuardedAlternativeExplanation` subclasses, single `supports_guarded` plugin metadata field with resolver hard-fail (`plugins/registry.py:1156-1199`), fast-explainer prohibition in `_require_guarded_calibration_alignment`, conjunction joint-probe guarding, and `AlternativeExplanations.filter_by_target_confidence` (Addendum, 2026-06-10) all implemented.
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | `get_guarded_audit` error message recommends the deprecated wrapper methods | 2 | 1 | 2 | `explanations/explanations.py:236-238` raises `ValidationError` advising "Use explain_guarded_factual(...) or explore_guarded_alternatives(...)" — both deprecated by ADR-032 decision 1, which names `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` as the canonical API. Update the message text. Target: v0.11.3 plan Task 15. |
 
 ### ADR-033 - Modality Extension Plugin Contract and Packaging Strategy
 
-_Last gap analysis: 2026-03-03_
+_Last gap analysis: 2026-06-11_
+
+Re-verified 2026-06-11: CLI `--modality` filtering, `vision.py`/`audio.py` shims with `MissingExtensionError`, packaging smoke test, contributor docs, and the v0.11.1 entry-point `DeprecationWarning` for missing `data_modalities` (`plugins/registry.py:1830-1845`) are all delivered. Per ADR-033 §6.2 the shim modules are permanent integration paths (the earlier appendix phrase "shim removal" was incorrect).
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | CLI `--modality` filtering not yet implemented | 3 | 3 | 9 | Delivered in v0.11.1 Task 11. Target milestone: closed. |
-| 2 | `vision.py`/`audio.py` shims not yet present (must raise `MissingExtensionError`) | 3 | 3 | 9 | Delivered in v0.11.1 Task 11; shim removal target milestone: v1.0.0-rc. |
-| 3 | Packaging smoke test (extension install + entry-point discovery) missing | 3 | 3 | 9 | Delivered in v0.11.1 Task 13. Target milestone: closed. |
-| 4 | Plugin contributor contract docs not updated for `plugin_api_version`/`data_modalities` requirements | 2 | 2 | 4 | Delivered in v0.11.1 Task 12. Target milestone: closed. |
+| 1 | `data_modalities` default-fallback removal scheduled for v0.12.0/v1.0.0-rc not yet executed | 2 | 2 | 4 | ADR-033 §6.2: at v0.12.0/v1.0.0-rc, plugins without an explicit `data_modalities` declaration must fail `validate_plugin_meta` (`plugins/base.py:352` currently applies the `("tabular",)` default). On schedule — not yet due. Target milestone: v1.0.0-rc. |
 
 ### ADR-034 - Centralized Configuration Management
 
-_Last gap analysis: 2026-04-20_
+_Last gap analysis: 2026-06-11_
 
-Runtime conformance closure for v0.11.2 is complete: Phase A and Phase B migration outputs are synchronized in ADR/release-plan surfaces, checker enforcement is zero-violation, and governance lifecycle schema alignment is closed for v0.11.x scope.
+Runtime conformance re-verified 2026-06-11: `check_config_manager_usage.py` reports zero violations (`reports/config_manager_usage_report.json`, generated 2026-06-11); v0.11.3 root-namespace exports (`ExplainerBuilder`/`ExplainerConfig`) and process lifecycle API present.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Interim posture remains documented as non-redacted. Target milestone: v1.0.0-rc. |
+| 1 | Sensitive-value redaction for governance logs/exports (Open Item 1) | 3 | 2 | 6 | Interim posture remains documented as non-redacted (config diagnostics redact secret-like keys per §8; wider governance logs do not). Target milestone: v1.0.0-rc. |
 | 2 | `export_effective()` payload schema not versioned for external consumers (Open Item 2) | 3 | 2 | 6 | Target milestone: v1.0.0-rc; must be versioned before external tooling can rely on export. |
+| 3 | Status-source conflict between v0.11.3 plan and ADR-034 Open Items | 1 | 1 | 1 | The v0.11.3 plan RC-scope note (2026-05-28) states "sensitive-value redaction declared out of scope; schema versioning already complete", but ADR-034 §Open Items (last edited 2026-06-04, post-dating the note) still lists both as open. Reconcile: either close the ADR Open Items with the declared decisions or correct the plan note. Target: v0.11.3 plan Task 15 (doc-only). |
 
 ### ADR-035 - CI Workflow Governance
 
-_Last gap analysis: 2026-04-22_
+_Last gap analysis: 2026-06-11_
+
+Evidence (2026-06-11): `python scripts/quality/validate_ci_policy.py --base-sha HEAD~1 --head-sha HEAD --advisory` passes (includes full-SHA action-pin enforcement and reusable-workflow checks; wired as `make check-ci-policy`).
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | Advisory-to-required branch-protection flip is not enforceable from repository code alone | 2 | 2 | 4 | **v0.11.3 re-evaluation complete (2026-06-02).** Promotion of `ci-policy/validate-workflows` to a required branch-protection check is platform-governed (requires GitHub administrator action). Validator logic and CODEOWNERS coverage are complete. Recorded as an accepted operational constraint in ADR-035 §v0.11.3 Re-evaluation Record. Pending administrator action; no in-repo work remains. Retarget: monitor / platform action by administrators. |
 | 2 | Two governance caveats remain structurally non-automatable (template auto-application and two-maintainer per-path enforcement) | 1 | 2 | 2 | These are documented governance caveats rather than code defects. Track as accepted operational constraints unless platform capabilities change. |
 
+### ADR-036 - PlotSpec Canonical Contract and Validation Boundary
+
+_Last gap analysis: 2026-06-11_
+
+Re-verified 2026-06-11: v0.11.3 default-path promotion implemented (`plotting.py:264-299` is PlotSpec-first with explicit `legacy` opt-out); built-in builders return canonical dataclasses (`viz/builders.py` `build_*_spec -> PlotSpec`/`TriangularPlotSpec`/`GlobalPlotSpec`) and self-validate via `validate_plotspec` at builder exit (`viz/builders.py:376/648/845/1037`).
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | No pipeline-enforced canonical validation between builder output and renderer invocation for third-party plot plugins (§5) | 3 | 2 | 6 | `_render_instance_plot_plugin` / `_render_collection_plot_plugin` pass `plugin.build(context)` output directly to `plugin.render(...)` with no validation step (`plotting.py:360-361`, `411-412`). Base classes only "encourage" validation and do best-effort checks when subclasses call `super()` (`viz/plugins.py:28-35`, `51-65`), and §5 forbids making the renderer responsible for establishing canonical validity. Insert a validation boundary in the orchestration path. Target: v0.11.3 plan Task 15. |
+
+### ADR-037 - Visualization Extension and Rendering Governance
+
+_Last gap analysis: 2026-06-11_
+
+Re-verified 2026-06-11: v0.11.3 default-path promotion and the runtime plot-kind extension prohibition hold (no runtime kind registry exists; plot kinds are core-defined in `viz` builders only).
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | Builder/renderer extension metadata lacks mandated supported-plot-kinds/modes declarations (§4) | 3 | 2 | 6 | §4 requires extension metadata to declare supported semantic plot kinds and supported modes; built-in descriptors carry only `capabilities: ["plot:builder"]` + `style` (`plugins/builtins.py:1131-1143`, `1216-1228`) and `validate_plugin_meta` (`plugins/base.py:306-371`) enforces no plot-kind/mode fields, so resolver outcomes depend on implicit `build()`-time intent-type branching — exactly what §4 prohibits. Define and validate the metadata fields, then declare them on built-ins. Target: v0.11.3 plan Task 15. |
+
 ## Standards status appendix (unified severity tables)
 
 ### Standard-001 - Nomenclature Standardization
 
-_Last gap analysis: 2026-04-22_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Remaining compatibility/transitional bridges are still present~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 1 (2026-06-02).** All internal compatibility-bridge dunders renamed to single-underscore helpers across , , , , ; transitional plotting helpers in  renamed.  and  — both empty.  contains 0 expired  records.  exits 0. |
+**Compliance verification (2026-06-11):** `check_std001_nomenclature.py` passes (re-run 2026-06-11); compatibility-bridge closure from v0.11.3 Task 1 (2026-06-02) holds. STD-001 is fully compliant. No further action required. (Parameter-naming hardening is tracked separately as v0.11.3 plan Task 14.)
 
 ### Standard-002 - Documentation Standardisation
 
-**Compliance verification (2026-06-02):** Task 2 closed in v0.11.3. `python scripts/quality/check_docstring_coverage.py` reports 96.73% overall (Modules 99.17%, Classes 100%, Functions 95.75%, Methods 96.52%); `pydocstyle src/calibrated_explanations/core/wrap_explainer.py` reports zero violations. No open gaps.
-
-_Last gap analysis: 2026-06-02 (post-Task-5 stable surface)_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Wrapper public APIs lack full numpydoc blocks | 0 | 0 | 0 | **Resolved 2026-06-02.** Coverage 96.73% ≥ 90% threshold; zero pydocstyle violations on `wrap_explainer.py`. No code changes required — gap was already satisfied on the post-Task-5 stable surface. |
+**Compliance verification (2026-06-11):** `check_docstring_coverage.py` reports 96.34% overall (Modules 99.17%, Classes 100%, Functions 94.82%, Methods 96.36%) — above the 90% threshold after Tasks 11-13 additions. Task 2 closure (2026-06-02) holds. STD-002 is fully compliant. No further action required.
 
 ### Standard-003 - Test Coverage Standard
 
@@ -345,10 +328,10 @@ _Last gap analysis: 2026-06-02 (post-Task-5 stable surface)_
 
 ### Standard-005 - Logging and Observability Standard
 
-_Last gap analysis: 2026-05-16_
+_Last gap analysis: 2026-06-11_
+
+`check_logging_domains.py` passes (re-run 2026-06-11); domain-logger enforcement and observability examples remain closed.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | ~~Fallback/degraded-state events rely on `UserWarning` instead of `WARNING` logs~~ | 0 | 0 | 0 | **Closed v0.11.3 Task 9 Workstream C (2026-06-02).** Dual-emission pattern eliminated across 5 files (15 total sites); fallback events now route to `WARNING` logs per STD-005 §4.1. Warning-policy inventory script (`scripts/quality/check_warning_policy.py`) classifies all 110 call sites with 0 unclassified. |
-| 2 | Enforcement tooling for domain-logger naming missing from CI | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
-| 3 | Observability examples not yet aligned with Standard-005 naming and structured-context format | 2 | 2 | 4 | Delivered in v0.11.1 Task 7. Target milestone: closed; monitor for regressions. |
+| 1 | Warning-policy inventory regressed: 1 unclassified `warnings.warn` site | 2 | 1 | 2 | Same finding as ADR-028 gap 1: `api/config.py:265` (Task 12 removed-field `UserWarning`) is unclassified in `check_warning_policy.py` (run 2026-06-11: 112 sites, 1 unclassified). Target: v0.11.3 plan Task 15. |
