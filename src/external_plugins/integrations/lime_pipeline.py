@@ -46,8 +46,31 @@ class LimePipeline:
         explainer : CalibratedExplainer
             The parent explainer instance.
         """
-        self.explainer = explainer
+        self.explainer = getattr(explainer, "explainer", explainer)
         self._lime_helper: LimeHelper | None = None
+
+    def is_enabled(self) -> bool:
+        """Return whether the LIME integration is active and cached."""
+        if self._lime_helper is None:
+            self._lime_helper = LimeHelper(self.explainer)
+        return self._lime_helper.is_enabled()
+
+    def preload(self, x_cal: Any = None) -> tuple[Any, Any]:
+        """Eagerly materialise and cache the LIME explainer.
+
+        Parameters
+        ----------
+        x_cal : array-like, optional
+            Calibration data used for LIME initialisation. Defaults to the
+            explainer's own calibration data.
+
+        Returns
+        -------
+        tuple
+            ``(lime_explainer, reference_explanation)`` or ``(None, None)``
+            when the optional ``lime`` dependency is not installed.
+        """
+        return self._preload_lime(x_cal=x_cal)
 
     def _preload_lime(self, x_cal: Any = None) -> tuple[Any, Any]:
         """Materialize LIME explainer artifacts when the dependency is available.

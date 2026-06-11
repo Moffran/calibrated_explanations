@@ -68,17 +68,19 @@ def get_category_and_pattern(name, usage_file, analysis_data):
 
 def scan_workspace(root_path, analysis_data):
     root = Path(root_path)
-    # Skip common virtualenv/build/cache directories to avoid scanning third-party
-    # repositories (e.g. pre-commit cached hooks) which would produce noisy
-    # violations. This mirrors the behavior expected when scanning only the
-    # project's `tests/` directory on CI.
+    # Only scan files under a `tests/` directory. This matches the conftest
+    # scanner behaviour and avoids false positives from src/ modules that have
+    # "test" in their filename (e.g. plugins/_testing.py) — those are
+    # legitimate private-member facades, not policy violations.
     skip_dirs = {".ci-env", "venv", ".venv", ".git", "site-packages", "__pycache__", "build", "dist", "scripts", ".cache"}
 
     test_files = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+        if "tests" not in Path(dirpath).parts:
+            continue
         for filename in filenames:
-            if filename.endswith(".py") and ("tests" in Path(dirpath).parts or "test" in filename):
+            if filename.endswith(".py"):
                 test_files.append(Path(dirpath) / filename)
 
     occurrences = []
