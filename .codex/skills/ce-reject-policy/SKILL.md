@@ -86,8 +86,8 @@ result.metadata     # dict with telemetry: error_rate, reject_rate, etc.
 
 - Mondrian group calibration (see `ce-mondrian-conditional`).
 - Calibrated predictions without reject logic (see `ce-calibrated-predict`).
-- Guarded factual explanations (`explain_factual(..., guarded=True)` — legacy interface,
-  use `explain_factual` + reject policy instead).
+- Guarded factual explanations (`explain_factual(..., guarded_options=GuardedOptions())` —
+  use `explain_factual` + reject policy for reject-based filtering instead).
 
 ## Evaluation Checklist
 

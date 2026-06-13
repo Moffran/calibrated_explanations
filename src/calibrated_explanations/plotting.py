@@ -305,6 +305,32 @@ def _warn_and_log_plotspec_fallback(message: str) -> None:
     warnings.warn(message, UserWarning, stacklevel=2)
 
 
+def _validate_plot_artifact(artifact: Any, *, identifier: str) -> None:
+    """ADR-036 §5: validate canonical PlotSpec artifacts before renderer invocation.
+
+    Accepts canonical PlotSpec dataclasses and dicts that pass validate_plotspec.
+    Raises ValidationError for raw dicts that fail validation so the error is
+    surfaced at the build/render boundary rather than inside the renderer.
+    """
+    if not isinstance(artifact, Mapping):
+        return
+    if not ("kind" in artifact or "plotspec_version" in artifact or "plot_spec" in artifact):
+        return
+    from .utils.exceptions import ValidationError  # pylint: disable=import-outside-toplevel
+    from .viz.serializers import validate_plotspec  # pylint: disable=import-outside-toplevel
+
+    try:
+        validate_plotspec(dict(artifact))
+    except ValidationError:
+        raise
+    except Exception as exc:  # adr002_allow - catch-all for unknown third-party validator errors
+        raise ValidationError(
+            f"Plot plugin '{identifier}' returned an invalid PlotSpec artifact; "
+            "check the build() return value.",
+            details={"identifier": identifier},
+        ) from exc
+
+
 def _render_instance_plot_plugin(
     explanation: Any,
     *,
@@ -358,6 +384,7 @@ def _render_instance_plot_plugin(
         plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
+    _validate_plot_artifact(artifact, identifier=identifier)
     return plugin.render(artifact, context=context)
 
 
@@ -409,6 +436,7 @@ def _render_collection_plot_plugin(
         plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
+    _validate_plot_artifact(artifact, identifier=identifier)
     return plugin.render(artifact, context=context)
 
 

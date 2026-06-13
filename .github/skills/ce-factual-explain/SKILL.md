@@ -63,7 +63,8 @@ multi_exps = explainer.explain_factual(X_query, multi_labels_enabled=True)
 
 ### Guarded path (interval plausibility filter — ADR-032)
 ```python
-explanations = explainer.explain_factual(X_query, guarded=True)
+from calibrated_explanations.explanations.guarded_options import GuardedOptions
+explanations = explainer.explain_factual(X_query, guarded_options=GuardedOptions())
 ```
 
 See `references/adr-032-guarded-semantics.md` for the full guarded semantics.
@@ -75,6 +76,8 @@ Use the guarded variant when:
 
 Do **not** use guarded factual explanations as an instance-level OOD detector.
 
+> **API note**: `guarded=True` kwarg is deprecated (removed v1.0.0). Always use `guarded_options=GuardedOptions()`.
+
 ---
 
 ## When to Use Standard vs Guarded
@@ -82,8 +85,8 @@ Do **not** use guarded factual explanations as an instance-level OOD detector.
 | Scenario | API |
 |---|---|
 | Training / development / research | `explain_factual` |
-| Filter implausible perturbation rules in explanations | `explain_factual(..., guarded=True)` |
-| Need guarded audit of removed rules | `explain_factual(..., guarded=True)` |
+| Filter implausible perturbation rules in explanations | `explain_factual(..., guarded_options=GuardedOptions())` |
+| Need guarded audit of removed rules | `explain_factual(..., guarded_options=GuardedOptions())` |
 | Instance-level OOD screening | Use a dedicated OOD detector (not guarded explanations) |
 
 ---
@@ -184,7 +187,7 @@ For the full narrative API including `template_path`, `output_format`, and
 
 ## Guarded Audit API
 
-When using `explain_factual(guarded=True)`, a dedicated audit is available:
+When using `explain_factual(..., guarded_options=GuardedOptions())`, a dedicated audit is available:
 
 ```python
 audit = explanations.get_guarded_audit()
@@ -208,10 +211,10 @@ audit = explanations.get_guarded_audit()
 - [ ] `WrapCalibratedExplainer` instance confirmed (not raw `CalibratedExplainer` or subclass).
 - [ ] `explainer.fitted is True` asserted before explain call — fail fast if not.
 - [ ] `explainer.calibrated is True` asserted before explain call — fail fast if not.
-- [ ] Correct entry point chosen (`explain_factual` vs `explain_factual(guarded=True)`).
+- [ ] Correct entry point chosen (`explain_factual` vs `explain_factual(..., guarded_options=GuardedOptions())`).
 - [ ] Interval invariant `low <= predict <= high` verified for at least one output.
 - [ ] `list_rules()` / `get_rules_by_feature()` used for rule introspection (not raw dict keys).
-- [ ] Guarded audit called if `explain_factual(guarded=True)` was used.
+- [ ] Guarded audit called if `guarded_options=GuardedOptions()` was used.
 - [ ] No uncalibrated output returned.
 
 
@@ -220,8 +223,8 @@ audit = explanations.get_guarded_audit()
 - [ ] `WrapCalibratedExplainer` instance confirmed (not raw `CalibratedExplainer` or subclass).
 - [ ] `explainer.fitted is True` asserted before explain call — fail fast if not.
 - [ ] `explainer.calibrated is True` asserted before explain call — fail fast if not.
-- [ ] Correct entry point chosen (`explain_factual` vs `explain_factual(guarded=True)`).
+- [ ] Correct entry point chosen (`explain_factual` vs `explain_factual(..., guarded_options=GuardedOptions())`).
 - [ ] Interval invariant `low <= predict <= high` verified for at least one output.
 - [ ] `list_rules()` / `get_rules_by_feature()` used for rule introspection (not raw dict keys).
-- [ ] Guarded audit called if `explain_factual(guarded=True)` was used.
+- [ ] Guarded audit called if `guarded_options=GuardedOptions()` was used.
 - [ ] No uncalibrated output returned.

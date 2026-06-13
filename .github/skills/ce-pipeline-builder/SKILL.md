@@ -39,10 +39,14 @@ for quick reference.
    `explainer.explore_alternatives(X)`.
 6. **Explain (guarded / interval plausibility filtering)** — when you need
    ADR-032 guarded semantics (filtering implausible hypothetical perturbation
-   rules), pass `guarded=True` to the standard entry points:
-   `explainer.explain_factual(X, guarded=True)` or
-   `explainer.explore_alternatives(X, guarded=True)`.
+   rules), use `guarded_options=GuardedOptions()`:
+   ```python
+   from calibrated_explanations.explanations.guarded_options import GuardedOptions
+   explainer.explain_factual(X, guarded_options=GuardedOptions())
+   explainer.explore_alternatives(X, guarded_options=GuardedOptions())
+   ```
    Guarded APIs are not instance-level OOD detectors.
+   `guarded=True` kwarg is deprecated (removed v1.0.0) — do not use.
 7. **Conjunctions** — `explanations.add_conjunctions(...)` or
    `explanations[idx].add_conjunctions(...)`.
 8. **Narratives & plots** — `.to_narrative(output_format=...)` and `.plot(...)`.
@@ -143,8 +147,8 @@ explicit skeleton. Never patch the helper to paper over a contract mismatch.
 | Use case | API to use |
 |---|---|
 | Standard inference | `explain_factual` / `explore_alternatives` |
-| Interval plausibility filtering for candidate rules | `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` |
-| Need guarded audit of removed perturbation rules | `explain_factual(..., guarded=True)` |
+| Interval plausibility filtering for candidate rules | `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(..., guarded_options=GuardedOptions())` |
+| Need guarded audit of removed perturbation rules | `explain_factual(..., guarded_options=GuardedOptions())` |
 | Instance-level OOD screening | Use dedicated OOD tooling (not guarded explanation APIs) |
 
 Guarded variants apply ADR-032 semantics — see `references/adr-032-guarded-semantics.md`.

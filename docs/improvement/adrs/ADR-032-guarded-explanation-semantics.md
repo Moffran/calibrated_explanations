@@ -26,12 +26,18 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
 
 ## Decision
 1. **Schema compatibility and helper interoperability are the guarded contract.**
-   - The canonical guarded API is parameterized:
-     - `explain_factual(..., guarded=True)` for guarded factual explanations.
-     - `explore_alternatives(..., guarded=True)` for guarded alternative explanations.
-   - `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` are deprecated
-     compatibility wrappers that delegate to the canonical parameterized API.  They will
-     be removed in v1.0.0.  Callers must migrate to the parameterized form.
+   - The canonical guarded API (as of v0.11.3) uses `GuardedOptions`:
+     - `explain_factual(..., guarded_options=GuardedOptions())` for guarded factual explanations.
+     - `explore_alternatives(..., guarded_options=GuardedOptions())` for guarded alternatives.
+     - Import: `from calibrated_explanations.explanations.guarded_options import GuardedOptions`
+     - The deprecated `guarded=True` boolean kwarg still works but emits `DeprecationWarning`
+       and will be **removed in v1.0.0**.  Do NOT use it in new code.
+   - `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` were deprecated
+     compatibility wrappers.  **Removed in v0.11.3** (Task 15 Workstream A, 2026-06-13):
+     wrappers were introduced already-deprecated in v0.11.3 Task 13, so removal within the
+     same milestone costs users nothing they were promised.  Callers must use the
+     parameterized form: `explain_factual(..., guarded_options=GuardedOptions())` and
+     `explore_alternatives(..., guarded_options=GuardedOptions())`.
    - Guarded is not an explanation mode.  The explanation mode taxonomy remains
      factual / alternative / fast.  `guarded` is a boolean policy flag on the request.
    - Guarded entrypoints return standard CE collection classes with guarded subclasses:
@@ -106,7 +112,7 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
    - Fast interval calibrators are trained on per-feature blends of `scaled_x_cal` / `fast_x_cal`, not on `explainer.x_cal` directly.
    - The `InDistributionGuard` always uses `explainer.x_cal` as its reference distribution.
    - These two distributions cannot be aligned, so the ADR-032 precondition (decision 6) cannot be reliably enforced for fast explainers.
-   - Calling any guarded entrypoint (`explain_factual(..., guarded=True)`, `explore_alternatives(..., guarded=True)`) on a fast explainer must hard-fail with `ConfigurationError` before any calibration-alignment check proceeds.
+   - Calling any guarded entrypoint (`explain_factual(..., guarded_options=GuardedOptions())`, `explore_alternatives(..., guarded_options=GuardedOptions())`) on a fast explainer must hard-fail with `ConfigurationError` before any calibration-alignment check proceeds.
    - This prohibition is enforced in `_require_guarded_calibration_alignment` and is not subject to configuration or opt-out.
 
 ## Consequences
@@ -128,8 +134,8 @@ Negative / Risks:
 - Users must understand that emitted guarded intervals reflect this candidate-level guard rule, not whole-interval certification.
 - Calibration-feature divergence now fails fast instead of degrading with a warning.
 - Fast explainers cannot use guarded entrypoints at all; users who need guarded filtering must use a standard (non-fast) explainer.
-- The deprecated `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` wrappers must not
-  be used in new code.  Remove usage before v1.0.0.
+- The deprecated `guarded=True` boolean kwarg must not be used in new code.
+  Use `guarded_options=GuardedOptions()` instead.  Remove all `guarded=True` usage before v1.0.0.
 
 ## Addendum: Guarded Auditability
 To support transparent guarded diagnostics without breaking CE payload contracts:

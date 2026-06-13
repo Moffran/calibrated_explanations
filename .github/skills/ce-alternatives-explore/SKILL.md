@@ -65,13 +65,16 @@ multi_alts = explainer.explore_alternatives(X_query, multi_labels_enabled=True)
 
 ### Guarded path (interval plausibility filter — ADR-032)
 ```python
-alternatives = explainer.explore_alternatives(X_query, guarded=True)
+from calibrated_explanations.explanations.guarded_options import GuardedOptions
+alternatives = explainer.explore_alternatives(X_query, guarded_options=GuardedOptions())
 ```
 
 Guarded variant: candidate alternative rules whose probe points are
 non-conforming to calibration data are filtered out of emitted explanations.
 Use when you need plausibility filtering for hypothetical perturbations.
 This is not an instance-level OOD detection API.
+
+> **API note**: `guarded=True` kwarg is deprecated (removed v1.0.0). Always use `guarded_options=GuardedOptions()`.
 
 ---
 
@@ -115,7 +118,7 @@ explanations (`pred['low'] <= pred['predict'] <= pred['high']`), but the
 - [ ] `WrapCalibratedExplainer` instance confirmed (not raw `CalibratedExplainer` or subclass).
 - [ ] `explainer.fitted is True` asserted before explore call — fail fast if not.
 - [ ] `explainer.calibrated is True` asserted before explore call — fail fast if not.
-- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(guarded=True)`).
+- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(..., guarded_options=GuardedOptions())`).
 - [ ] Threshold provided if the user wants boundary-crossing alternatives for regression.
 - [ ] Ensured-framework filter selected appropriately for the use case.
 - [ ] `only_ensured=True` used when narrower-uncertainty alternatives are required.
@@ -131,7 +134,7 @@ explanations (`pred['low'] <= pred['predict'] <= pred['high']`), but the
 - [ ] `WrapCalibratedExplainer` instance confirmed (not raw `CalibratedExplainer` or subclass).
 - [ ] `explainer.fitted is True` asserted before explore call — fail fast if not.
 - [ ] `explainer.calibrated is True` asserted before explore call — fail fast if not.
-- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(guarded=True)`).
+- [ ] Correct variant (`explore_alternatives` vs `explore_alternatives(..., guarded_options=GuardedOptions())`).
 - [ ] Threshold provided if the user wants boundary-crossing alternatives for regression.
 - [ ] Ensured-framework filter selected appropriately for the use case.
 - [ ] `only_ensured=True` used when narrower-uncertainty alternatives are required.

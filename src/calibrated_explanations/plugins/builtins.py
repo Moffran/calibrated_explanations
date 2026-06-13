@@ -1140,6 +1140,8 @@ class LegacyPlotBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "legacy_compatible": True,
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
@@ -1185,6 +1187,8 @@ class LegacyPlotRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "supports_interactive": False,
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def render(
@@ -1225,6 +1229,8 @@ class PlotSpecDefaultBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "legacy_compatible": True,
         "output_formats": ["png", "svg", "pdf"],
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
@@ -1536,6 +1542,8 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png", "svg", "pdf"],
         "supports_interactive": False,
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def render(self, artifact: Any, *, context: PlotRenderContext) -> PlotRenderResult:

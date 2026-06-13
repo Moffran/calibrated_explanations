@@ -188,8 +188,10 @@ The validator must check:
   expect to use.
 * `"supports_guarded": bool` must be declared by every explanation plugin (default: `False`).
   The resolver uses this field to filter eligible plugins for guarded requests; see §6a.
-  Authors that wish to support `explain_factual(..., guarded=True)` and
-  `explore_alternatives(..., guarded=True)` must set this to `True` and route accordingly.
+  Authors that wish to support `explain_factual(..., guarded_options=GuardedOptions())` and
+  `explore_alternatives(..., guarded_options=GuardedOptions())` must set this to `True` and
+  route accordingly. (`guarded=True` kwarg is deprecated but still triggers guarded routing;
+  removed v1.0.0.)
 
 ### 6. Legacy compatibility guarantees
 
@@ -206,15 +208,16 @@ The validator must check:
 
 ### 6a. Guarded entrypoints and plugin opt-in (v0.11.3+)
 
-* `explain_factual(..., guarded=True)` and `explore_alternatives(..., guarded=True)` are
-  the canonical guarded execution paths as of v0.11.3.  The deprecated method pair
-  `explain_guarded_factual(...)` / `explore_guarded_alternatives(...)` are compatibility
-  wrappers that delegate to the parameterized API and will be removed in v1.0.0.
+* `explain_factual(..., guarded_options=GuardedOptions())` and `explore_alternatives(..., guarded_options=GuardedOptions())` are
+  the canonical guarded execution paths as of v0.11.3. The deprecated `guarded=True`
+  boolean kwarg still works but emits `DeprecationWarning` and will be removed in v1.0.0.
+  The method pair `explain_guarded_factual(...)` / `explore_guarded_alternatives(...)` were
+  **REMOVED in v0.11.3** (not deprecated for future removal — already gone).
 * As of v0.11.3, guarded execution **is** an explanation-plugin concern. The `guarded`
   flag is carried on `ExplanationRequest` and the resolver enforces it: a plugin is only
   eligible for a guarded request when its metadata declares `"supports_guarded": True`.
   Plugins that omit the field or set it to `False` are rejected by the resolver when
-  `guarded=True`; a `ValidationError` is raised if no capable plugin is found.
+  guarded execution is requested; a `ValidationError` is raised if no capable plugin is found.
 * Plugins that set `"supports_guarded": True` are responsible for routing the request
   through the guarded execution path (e.g. delegating to `guarded_explain()`). They still
   reuse CE containers, explanation subclasses (`GuardedFactualExplanation`,

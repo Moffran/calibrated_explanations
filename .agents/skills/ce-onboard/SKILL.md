@@ -102,6 +102,7 @@ intervals from any model.
 | Author or revise RTD pages | `ce-rtd-writer` |
 | Implement serialization | `ce-serializer-impl` |
 | Audit serialization coverage | `ce-serialization-audit` |
+| Analyze standards compliance gaps | `ce-standards-gap-analyzer` |
 | Audit skills against Codex authoring guidance | `ce-skill-audit` |
 | Create/refactor skills and templates | `ce-skill-creator` |
 | Sync skill registries after skill changes | `ce-skill-registry-sync` |

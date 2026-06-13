@@ -1431,7 +1431,7 @@ class RejectAlternativeExplanations(AlternativeExplanations, RejectMixin):
     Obtain instances of this class by calling
     ``explore_alternatives(X, reject_policy=RejectPolicySpec.flag())`` (or
     ``only_accepted`` / ``only_rejected`` variants).  For the guarded path use
-    ``explore_alternatives(X, guarded=True, reject_policy=...)``.  Do **not**
+    ``explore_alternatives(X, guarded_options=GuardedOptions(), reject_policy=...)``.  Do **not**
     construct directly; use :meth:`.from_collection`.
 
     The ``rejected`` attribute is a boolean array aligned to the payload

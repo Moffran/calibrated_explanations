@@ -20,9 +20,17 @@ Semantics and non-guarantees are defined in
 ## Core calls
 
 ```python
-guarded_factual = explainer.explain_factual(X, guarded=True, significance=0.1)
-guarded_alts = explainer.explore_alternatives(X, guarded=True, significance=0.1)
+from calibrated_explanations.explanations.guarded_options import GuardedOptions
+guarded_factual = explainer.explain_factual(X, guarded_options=GuardedOptions(confidence=0.9))
+guarded_alts = explainer.explore_alternatives(X, guarded_options=GuardedOptions(confidence=0.9))
 ```
+
+`GuardedOptions` fields (all optional): `confidence=0.9`, `n_neighbors=None`,
+`normalize=False`, `merge_adjacent=False`.
+
+> **Migration note**: `guarded=True` is deprecated (removed in v1.0.0). Replace
+> `guarded=True, significance=0.1` with `guarded_options=GuardedOptions(confidence=0.9)`
+> (`confidence = 1 − significance`).
 
 ## What guarded mode does not guarantee
 

@@ -234,7 +234,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if not all(hasattr(exp, "get_guarded_audit") for exp in self.explanations):
             raise ValidationError(
                 "get_guarded_audit is only available for guarded explanation collections. "
-                "Use explain_guarded_factual(...) or explore_guarded_alternatives(...).",
+                "Use explain_factual(..., guarded_options=GuardedOptions()) or "
+                "explore_alternatives(..., guarded_options=GuardedOptions()) instead.",
                 details={"collection_type": type(self).__name__},
             )
 

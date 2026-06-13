@@ -98,6 +98,9 @@ ALLOWLISTED_PATHS: frozenset[str] = frozenset(
         "core/explain/parallel_instance.py",
         # core/explain/parallel_runtime.py: parallel runtime fallback
         "core/explain/parallel_runtime.py",
+        # api/config.py: UserWarning for removed ExplainerConfig fields (task/parallel_workers)
+        # emitted at build_config() call sites — user-contract guard, not a deprecation channel
+        "api/config.py",
         # core/config_manager.py: config validation contract warnings
         "core/config_manager.py",
         # core/difficulty_estimator_helpers.py: difficulty estimator contract warnings

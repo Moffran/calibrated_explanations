@@ -25,11 +25,16 @@ or explanation output.
 3. **Fit** – `explainer.fit(x_proper, y_proper)` → assert `explainer.fitted is True`.
 4. **Calibrate** – `explainer.calibrate(x_cal, y_cal)` → assert `explainer.calibrated is True`.
 5. **Explain** – Use `explainer.explain_factual(X)` or `explainer.explore_alternatives(X)`.
-    For in-distribution filtering (guarded explanations), pass `guarded=True`:
-    `explainer.explain_factual(X, guarded=True)` or
-    `explainer.explore_alternatives(X, guarded=True)`.
-    The methods `explain_guarded_factual(X)` and `explore_guarded_alternatives(X)` are
-    deprecated compatibility aliases; do not use them in new code.
+    For in-distribution filtering (guarded explanations), use `guarded_options=GuardedOptions()`:
+    ```python
+    from calibrated_explanations.explanations.guarded_options import GuardedOptions
+    explainer.explain_factual(X, guarded_options=GuardedOptions())
+    explainer.explore_alternatives(X, guarded_options=GuardedOptions())
+    ```
+    `GuardedOptions` fields: `confidence` (default 0.9), `n_neighbors`, `normalize`,
+    `merge_adjacent`. Do NOT use the REMOVED methods `explain_guarded_factual(X)` /
+    `explore_guarded_alternatives(X)` (deleted v0.11.3) or the deprecated `guarded=True`
+    boolean kwarg (emits `DeprecationWarning`; removed in v1.0.0).
 6. **Calibrated by default** – Do not return uncalibrated outputs unless explicitly
    requested.
 7. **Conjunctions** – `explanations.add_conjunctions(...)` or

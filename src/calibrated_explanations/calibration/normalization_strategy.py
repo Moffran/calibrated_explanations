@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from enum import Enum
 from typing import Any
 
@@ -83,19 +82,23 @@ def coerce_normalization_strategy(value: Any) -> NormalizationStrategy:
     if isinstance(value, NormalizationStrategy):
         return value
     if isinstance(value, bool):
+        from calibrated_explanations.utils.deprecations import (
+            deprecate,  # pylint: disable=import-outside-toplevel
+        )
+
         if value:
-            warnings.warn(
-                "Passing normalize=True is deprecated and will be removed in a future release. "
+            deprecate(
+                "Passing normalize=True is deprecated and will be removed in v1.0.0. "
                 "Use normalization=NormalizationStrategy.COHERENCE (or 'coherence') instead. "
                 "The new default is NormalizationStrategy.SIMPLEX.",
-                DeprecationWarning,
+                key="normalize_true_bool",
                 stacklevel=3,
             )
             return NormalizationStrategy.COHERENCE
-        warnings.warn(
-            "Passing normalize=False is deprecated and will be removed in a future release. "
+        deprecate(
+            "Passing normalize=False is deprecated and will be removed in v1.0.0. "
             "Use normalization=NormalizationStrategy.NONE (or 'none') instead.",
-            DeprecationWarning,
+            key="normalize_false_bool",
             stacklevel=3,
         )
         return NormalizationStrategy.NONE

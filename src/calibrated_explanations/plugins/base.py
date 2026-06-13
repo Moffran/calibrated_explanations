@@ -36,6 +36,10 @@ _MODALITY_ALIASES = {
     "multi_modal": "multimodal",
 }
 _PROVISIONAL_CONFIG_SCHEMA_VERSION = 1
+_ALLOWED_PLOT_KINDS: frozenset[str] = frozenset({"instance", "collection", "global"})
+_ALLOWED_PLOT_MODES: frozenset[str] = frozenset({"factual", "alternative", "fast", "any"})
+_DEFAULT_PLOT_KINDS: tuple[str, ...] = ("instance", "collection", "global")
+_DEFAULT_PLOT_MODES: tuple[str, ...] = ("factual", "alternative", "fast")
 _CONFIG_SCHEMA_TYPES = {
     "str",
     "int",
@@ -369,6 +373,34 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
             )
     else:
         meta["supports_guarded"] = False
+
+    # ADR-037 §4: plot extensions must declare supported plot kinds and modes.
+    # Defaults to the full allowed sets for backward compatibility.
+    _caps = meta.get("capabilities", ())
+    if any(isinstance(c, str) and c.startswith("plot:") for c in _caps):
+        if "plot_kinds" in meta:
+            kinds = _ensure_sequence_of_strings(meta["plot_kinds"], key="plot_kinds")
+            invalid = [k for k in kinds if k not in _ALLOWED_PLOT_KINDS]
+            if invalid:
+                raise ValidationError(
+                    f"plugin_meta['plot_kinds'] contains invalid values: {sorted(invalid)}; "
+                    f"allowed: {sorted(_ALLOWED_PLOT_KINDS)}"
+                )
+            meta["plot_kinds"] = kinds
+        else:
+            meta["plot_kinds"] = _DEFAULT_PLOT_KINDS
+
+        if "plot_modes" in meta:
+            modes = _ensure_sequence_of_strings(meta["plot_modes"], key="plot_modes")
+            invalid = [m for m in modes if m not in _ALLOWED_PLOT_MODES]
+            if invalid:
+                raise ValidationError(
+                    f"plugin_meta['plot_modes'] contains invalid values: {sorted(invalid)}; "
+                    f"allowed: {sorted(_ALLOWED_PLOT_MODES)}"
+                )
+            meta["plot_modes"] = modes
+        else:
+            meta["plot_modes"] = _DEFAULT_PLOT_MODES
 
 
 __all__ = [

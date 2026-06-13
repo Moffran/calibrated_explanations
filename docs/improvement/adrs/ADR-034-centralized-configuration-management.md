@@ -317,11 +317,20 @@ and a documented selected/trusted/installed/configured plugin state matrix.
 
 ## Open Items
 
+> **Resolution (2026-06-13, v0.11.3 RC-scope review):** Both items below have been
+> formally evaluated. No RC work remains for this ADR.
+
 1. **Governance-log redaction:** Config diagnostics now redact secret-like keys and
    schema-marked sensitive values. Wider governance logs should receive the same
    redaction posture before they are treated as safe for external support bundles.
+   **Status:** Declared out of scope for v1.0.0-rc. Sensitive-value redaction for
+   diagnostic paths is sufficient; the broader governance-log posture is a post-v1.0
+   hardening item and does not block the release.
 
 2. **Export payload schema contract:** `export_effective()` carries diagnostic
    schema markers, including a provisional plugin config export marker. A
    compatibility-frozen schema contract with version-gating is needed before
    external tooling can rely on the full export surface.
+   **Status:** The export payload is already schema-versioned via `config_schema_version`
+   markers. The full compatibility-frozen contract (with formal version-gating and
+   a stability guarantee) is a post-v1.0 item. No RC deferrals remain for this ADR.

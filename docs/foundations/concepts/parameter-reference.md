@@ -19,7 +19,7 @@ of subtle bugs.
 | Current name | Canonical name (post-Task 17) | Role | Context | User-settable? |
 |---|---|---|---|---|
 | `confidence` | `reject_confidence` | Reject coverage target: minimum p-value to *accept* a prediction | `predict_reject` / reject orchestrator | YES |
-| `significance` | `GuardedOptions.confidence` | Guard conformity threshold; `significance = 1 − confidence` | `explain_factual(guarded=True)` / `_guarded_explain` | YES (experimental) |
+| `significance` | `GuardedOptions.confidence` | Guard conformity threshold; `significance = 1 − confidence` | `explain_factual(..., guarded_options=GuardedOptions(confidence=...))` / `_guarded_explain` | YES (experimental) |
 | `confidence_level` | `confidence_level` (unchanged) | Regression coverage level; derived from `low_high_percentiles` but also passable directly as an alternative to `threshold` | Regression methods | YES (alternative to `threshold`) |
 
 **Key relationship:** `significance` and `confidence` (reject) are mathematical

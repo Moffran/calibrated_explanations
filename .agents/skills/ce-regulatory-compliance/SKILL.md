@@ -46,7 +46,7 @@ across all four regulations.
 | JSON audit payload | `to_json()`, `to_json_stream()` | Record-keeping (AI Act Art. 12), Technical docs (Art. 11 + Annex IV) |
 | Narrative output | `to_narrative(expertise_level=...)` | Plain-language explanation (AI Act Art. 50, GDPR Recital 71) |
 | Schema validation | `validate_payload()` | Audit evidence integrity (AI Act Art. 11) |
-| Guarded explanations | `explain_guarded_factual()` | OOD detection for production (AI Act Art. 9) |
+| Guarded explanations | `explain_factual(..., guarded_options=GuardedOptions())` | OOD detection for production (AI Act Art. 9) |
 
 ---
 

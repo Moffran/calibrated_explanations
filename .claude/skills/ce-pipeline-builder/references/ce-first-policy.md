@@ -21,8 +21,11 @@ prediction or explanation output:
 5. **Explain (standard)** — `explainer.explain_factual(X)` or
    `explainer.explore_alternatives(X)`.
 6. **Explain (guarded)** — for production / unknown distributions, use
-   `explainer.explain_guarded_factual(X)` or
-   `explainer.explore_guarded_alternatives(X)` instead.
+   `guarded_options=GuardedOptions()` (import from
+   `calibrated_explanations.explanations.guarded_options`):
+   `explainer.explain_factual(X, guarded_options=GuardedOptions())` or
+   `explainer.explore_alternatives(X, guarded_options=GuardedOptions())`.
+   `explain_guarded_factual` / `explore_guarded_alternatives` were REMOVED in v0.11.3.
 7. **Calibrated by default** — never return uncalibrated outputs unless
    explicitly requested.
 8. **Conjunctions** — `explanations.add_conjunctions(...)` or

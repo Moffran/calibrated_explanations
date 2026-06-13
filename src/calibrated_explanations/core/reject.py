@@ -9,8 +9,6 @@ new module and emit a DeprecationWarning.
 
 from __future__ import annotations
 
-import warnings
-
 _emitted_warning = False
 try:
     # Preferred: package-relative import when used as installed package
@@ -30,10 +28,14 @@ except Exception:  # adr002_allow - import fallback for different package contex
         raise
 
 if _emitted_warning:
-    warnings.warn(
-        "calibrated_explanations.core.reject module is deprecated; import from "
-        "calibrated_explanations.core.reject.policy instead.",
-        DeprecationWarning,
+    from calibrated_explanations.utils.deprecations import (
+        deprecate,  # pylint: disable=import-outside-toplevel
+    )
+
+    deprecate(
+        "calibrated_explanations.core.reject module is deprecated and will be removed in v1.0.0; "
+        "import from calibrated_explanations.core.reject.policy instead.",
+        key="core.reject.module_shim",
         stacklevel=2,
     )
 

@@ -26,10 +26,17 @@ for quick reference.
 5. **Explain (standard)** — `explainer.explain_factual(X)` or
    `explainer.explore_alternatives(X)`.
 6. **Explain (guarded / in-distribution)** — when higher security or
-   in-distribution filtering is needed, use `explainer.explain_guarded_factual(X)`
-   or `explainer.explore_guarded_alternatives(X)` instead of the standard paths.
+   in-distribution filtering is needed, use `guarded_options=GuardedOptions()`:
+   ```python
+   from calibrated_explanations.explanations.guarded_options import GuardedOptions
+   explainer.explain_factual(X, guarded_options=GuardedOptions())
+   explainer.explore_alternatives(X, guarded_options=GuardedOptions())
+   ```
    Also use when rule conditions of the form `x < feature <= y` are needed, since
-   the guarded APIs support this natively.
+   guarded mode supports interval rules natively.
+   The REMOVED `explain_guarded_factual(X)` / `explore_guarded_alternatives(X)` methods
+   (deleted v0.11.3) and the deprecated `guarded=True` kwarg (removed v1.0.0) must
+   NOT be used.
 7. **Conjunctions** — `explanations.add_conjunctions(...)` or
    `explanations[idx].add_conjunctions(...)`.
 8. **Narratives & plots** — `.to_narrative(output_format=...)` and `.plot(...)`.
@@ -117,13 +124,13 @@ explanations = wrap_and_explain(
 )
 ```
 
-## Decision: `explain_factual` vs `explain_factual(..., guarded=True)`
+## Decision: `explain_factual` vs `explain_factual(..., guarded_options=GuardedOptions())`
 
 | Use case | API to use |
 |---|---|
 | Standard inference | `explain_factual` / `explore_alternatives` |
-| Production / unknown input distribution | `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` |
-| Explicit in-distribution filtering required | `explain_factual(..., guarded=True)` |
+| Production / unknown input distribution | `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(..., guarded_options=GuardedOptions())` |
+| Explicit in-distribution filtering required | `explain_factual(..., guarded_options=GuardedOptions())` |
 
 Guarded variants apply ADR-032 semantics — see `references/adr-032-guarded-semantics.md`.
 

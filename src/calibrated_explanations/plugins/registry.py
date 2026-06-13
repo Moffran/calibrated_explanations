@@ -1153,9 +1153,10 @@ def find_explanation_plugin_for(
     Resolution order is trust -> kind -> modality -> mode/task -> supports(model)
     -> priority. Ambiguous top-priority matches raise ``ValidationError``.
 
-    When ``guarded=True``, only plugins that declare ``supports_guarded=True`` in
-    their metadata are eligible.  If no such plugin is found, ``ValidationError``
-    is raised rather than silently falling back to an unguarded plugin.
+    When ``guarded_options`` is set (or the deprecated ``guarded=True``), only plugins
+    that declare ``supports_guarded=True`` in their metadata are eligible.  If no such
+    plugin is found, ``ValidationError`` is raised rather than silently falling back to
+    an unguarded plugin.
     """
     modality = _normalise_modality(modality)
     if identifier:

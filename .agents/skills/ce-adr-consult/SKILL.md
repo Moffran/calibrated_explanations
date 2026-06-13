@@ -103,7 +103,9 @@ Get-ChildItem docs/improvement/adrs/*.md | Where-Object Name -NotMatch '^superse
 - `schema_version` mandatory; fail-fast on incompatible version.
 
 ### ADR-032 — Guarded explanations
-- Use `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` for unknown distributions.
+- Use `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(..., guarded_options=GuardedOptions())` for unknown distributions.
+- Import: `from calibrated_explanations.explanations.guarded_options import GuardedOptions`
+- `guarded=True` is deprecated (removed v1.0.0); `explain_guarded_factual` / `explore_guarded_alternatives` were REMOVED in v0.11.3.
 
 ### ADR-033 — Modality extension
 - Non-tabular modality code must NOT enter `core/`.

@@ -625,54 +625,6 @@ def test_should_reject_significance_above_one():
 # ---------------------------------------------------------------------------
 
 
-def test_should_raise_not_fitted_when_wrap_guarded_factual_called_unfitted():
-    """WrapCalibratedExplainer.explain_guarded_factual must fail when not fitted.
-
-    In normal mode the deprecated wrapper emits a DeprecationWarning then raises
-    NotFittedError. In strict CI mode (CE_DEPRECATIONS=error) deprecate() raises
-    DeprecationWarning immediately, so NotFittedError is never reached.
-    """
-    from calibrated_explanations import WrapCalibratedExplainer
-    from calibrated_explanations.utils.exceptions import NotFittedError as CENotFitted
-    from sklearn.ensemble import RandomForestClassifier
-    from tests.helpers.deprecation import deprecations_error_enabled
-
-    wrapper = WrapCalibratedExplainer(RandomForestClassifier())
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning, match="explain_guarded_factual"):
-            wrapper.explain_guarded_factual(np.array([[1.0, 2.0]]), significance=0.2)
-    else:
-        with (
-            pytest.warns(DeprecationWarning, match="explain_guarded_factual"),
-            pytest.raises(CENotFitted),
-        ):
-            wrapper.explain_guarded_factual(np.array([[1.0, 2.0]]), significance=0.2)
-
-
-def test_should_raise_not_fitted_when_wrap_guarded_alternatives_called_unfitted():
-    """WrapCalibratedExplainer.explore_guarded_alternatives must fail when not fitted.
-
-    In normal mode the deprecated wrapper emits a DeprecationWarning then raises
-    NotFittedError. In strict CI mode (CE_DEPRECATIONS=error) deprecate() raises
-    DeprecationWarning immediately, so NotFittedError is never reached.
-    """
-    from calibrated_explanations import WrapCalibratedExplainer
-    from calibrated_explanations.utils.exceptions import NotFittedError as CENotFitted
-    from sklearn.ensemble import RandomForestClassifier
-    from tests.helpers.deprecation import deprecations_error_enabled
-
-    wrapper = WrapCalibratedExplainer(RandomForestClassifier())
-    if deprecations_error_enabled():
-        with pytest.raises(DeprecationWarning, match="explore_guarded_alternatives"):
-            wrapper.explore_guarded_alternatives(np.array([[1.0, 2.0]]), significance=0.2)
-    else:
-        with (
-            pytest.warns(DeprecationWarning, match="explore_guarded_alternatives"),
-            pytest.raises(CENotFitted),
-        ):
-            wrapper.explore_guarded_alternatives(np.array([[1.0, 2.0]]), significance=0.2)
-
-
 # ---------------------------------------------------------------------------
 # Red-team hardening tests — verbose factual_bin=None path
 # ---------------------------------------------------------------------------
@@ -835,34 +787,6 @@ def test_explore_alternatives_guarded_true__returns_guarded_alternative_containe
     assert len(result) == 1
     for expl in result.explanations:
         assert isinstance(expl, GuardedAlternativeExplanation)
-
-
-def test_explain_guarded_factual_deprecated__emits_deprecation_warning():
-    """explain_guarded_factual(...) must emit DeprecationWarning and delegate."""
-    from tests.helpers.deprecation import warns_or_raises
-
-    explainer, x_cal = make_classification_explainer(seed=104)
-    result = None
-    with warns_or_raises(match="explain_guarded_factual"):
-        result = explainer.explain_guarded_factual(x_cal[:1], significance=0.2, n_neighbors=3)
-    if result is not None:
-        assert isinstance(result, CalibratedExplanations)
-        for expl in result.explanations:
-            assert isinstance(expl, GuardedFactualExplanation)
-
-
-def test_explore_guarded_alternatives_deprecated__emits_deprecation_warning():
-    """explore_guarded_alternatives(...) must emit DeprecationWarning and delegate."""
-    from tests.helpers.deprecation import warns_or_raises
-
-    explainer, x_cal = make_classification_explainer(seed=105)
-    result = None
-    with warns_or_raises(match="explore_guarded_alternatives"):
-        result = explainer.explore_guarded_alternatives(x_cal[:1], significance=0.2, n_neighbors=3)
-    if result is not None:
-        assert isinstance(result, AlternativeExplanations)
-        for expl in result.explanations:
-            assert isinstance(expl, GuardedAlternativeExplanation)
 
 
 def test_metadata_validation__accepts_supports_guarded_true():

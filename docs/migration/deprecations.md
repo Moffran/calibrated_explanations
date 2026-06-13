@@ -192,6 +192,16 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 
 | Deprecated symbol | Replacement | Deprecated since | Removal ETA | Notes |
 |---|---|---:|---:|---|
+| `guarded=True` boolean kwarg on `explain_factual` / `explore_alternatives` | `guarded_options=GuardedOptions()` | v0.11.3 | v1.0.0 | Replaced by typed `GuardedOptions` dataclass (ADR-038). |
+| `significance=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(confidence=1−significance)` | v0.11.3 | v1.0.0 | Numeric value is inverted: `significance=0.1` → `GuardedOptions(confidence=0.9)`. |
+| `n_neighbors=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(n_neighbors=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). |
+| `normalize_guard=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(normalize=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). Field renamed `normalize` in the dataclass. |
+| `merge_adjacent=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(merge_adjacent=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). |
+| `confidence=` kwarg on `predict_reject` / `apply_policy` | `reject_confidence=` | v0.11.3 | v1.0.0 | Renamed to carry the tier qualifier required by ADR-038 §2d and avoid confusion with `GuardedOptions.confidence`. |
+| `normalize=True` / `normalize=False` bool kwarg to `NormalizationStrategy.coerce()` | `normalization=NormalizationStrategy.COHERENCE` / `normalization=NormalizationStrategy.NONE` | v0.11.x | v1.0.0 | Bool passthrough removed; use enum or string value. |
+| `calibrated_explanations.core.reject` module import path | `from calibrated_explanations.core.reject.policy import RejectPolicy, is_policy_enabled` | v0.11.x | v1.0.0 | Module shim; functionality moved to `core.reject.policy`. |
+| `calibrated_explanations.core.explain.explain(...)` function | `CalibratedExplainer.explain_factual(...)` | v0.11.x | v1.0.0 | Legacy explain function shim. |
+| Entry-point plugin missing `data_modalities` key (defaults to `('tabular',)`) | Declare `data_modalities` explicitly in plugin metadata | v0.11.x | v0.12.0/v1.0.0-rc | ADR-033-governed; emits `DeprecationWarning` via `plugins/registry.py`; deduped per plugin identifier. |
 
 ### Removed deprecations (history)
 
@@ -244,16 +254,10 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `plugins.registry.find_for(model)` | `find_explanation_plugin_for(..., trusted_only=False)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
 | `plugins.registry.find_for_trusted(model)` | `find_explanation_plugin_for(..., trusted_only=True)` | v0.11.1 | v0.11.3 | List-path API removed; use descriptor-based resolution. |
 | `RejectResult` active deprecation warning path in `reject_result_v2_to_legacy()` | `RejectResult` remains stable in v1.0.0; use `RejectResultV2` as opt-in strict schema | v0.11.x | v0.11.3 | Group L resolved via deprecation reset path: removed active warning targeting v1.0.0-rc to comply with ADR-011 finalization exception. |
-| `CalibratedExplainer.explain_guarded_factual(...)` | `explainer.explain_factual(..., guarded=True)` | v0.11.3 | v1.0.0 | Guarded normalized as a boolean policy flag on `explain_factual`; separate method removed (ADR-032). |
-| `CalibratedExplainer.explore_guarded_alternatives(...)` | `explainer.explore_alternatives(..., guarded=True)` | v0.11.3 | v1.0.0 | Guarded normalized as a boolean policy flag on `explore_alternatives`; separate method removed (ADR-032). |
-| `WrapCalibratedExplainer.explain_guarded_factual(...)` | `wrapper.explain_factual(..., guarded=True)` | v0.11.3 | v1.0.0 | Same as above — wrapper delegates to `explain_factual(guarded=True)`. |
-| `WrapCalibratedExplainer.explore_guarded_alternatives(...)` | `wrapper.explore_alternatives(..., guarded=True)` | v0.11.3 | v1.0.0 | Same as above — wrapper delegates to `explore_alternatives(guarded=True)`. |
-| `guarded=True` boolean kwarg on `explain_factual` / `explore_alternatives` | `guarded_options=GuardedOptions()` | v0.11.3 | v1.0.0 | Replaced by typed `GuardedOptions` dataclass (ADR-038). |
-| `significance=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(confidence=1−significance)` | v0.11.3 | v1.0.0 | Numeric value is inverted: `significance=0.1` → `GuardedOptions(confidence=0.9)`. |
-| `n_neighbors=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(n_neighbors=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). |
-| `normalize_guard=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(normalize=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). Field renamed `normalize` in the dataclass. |
-| `merge_adjacent=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(merge_adjacent=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). |
-| `confidence=` kwarg on `predict_reject` / `apply_policy` | `reject_confidence=` | v0.11.3 | v1.0.0 | Renamed to carry the tier qualifier required by ADR-038 §2d and avoid confusion with `GuardedOptions.confidence`. |
+| `CalibratedExplainer.explain_guarded_factual(...)` | `explainer.explain_factual(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Introduced already-deprecated in Task 13; removed same milestone (ADR-032, ADR-011 finalization exception). |
+| `CalibratedExplainer.explore_guarded_alternatives(...)` | `explainer.explore_alternatives(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same. |
+| `WrapCalibratedExplainer.explain_guarded_factual(...)` | `wrapper.explain_factual(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same — wrapper delegates to `explain_factual(guarded_options=...)`. |
+| `WrapCalibratedExplainer.explore_guarded_alternatives(...)` | `wrapper.explore_alternatives(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same. |
 
 ## Breaking changes
 
@@ -270,7 +274,7 @@ calibration-feature values to preserve the guarded exchangeability assumption.
 
 - Recalibrate the explainer before calling guarded entrypoints if you have rebuilt or swapped interval learners.
 - Do not mutate or replace the backend calibration features independently of `explainer.x_cal`.
-- Use `explain_factual(..., guarded=True)` / `explore_alternatives(..., guarded=True)` — the old `explain_guarded_factual` / `explore_guarded_alternatives` methods are deprecated as of v0.11.3.
+- Use `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(..., guarded_options=GuardedOptions())` — the old `explain_guarded_factual` / `explore_guarded_alternatives` methods were removed in v0.11.3.
 
 ### Reject NCF public contract simplified (v0.11.1+)
 
