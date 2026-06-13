@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
 
+from ...api.decorators import experimental
 from ...core.config_helpers import coerce_string_tuple
 from ...logging import (
     ensure_logging_context_filter,
@@ -1354,6 +1355,7 @@ class ExplanationOrchestrator:
             **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
+    @experimental
     def invoke_guarded_factual(  # pylint: disable=invalid-name
         self,
         x: Any,  # pylint: disable=invalid-name
@@ -1370,7 +1372,7 @@ class ExplanationOrchestrator:
         verbose: bool = False,
         **kwargs: Any,
     ) -> Any:
-        """Execute guarded factual explanation.
+        """[EXPERIMENTAL] Execute guarded factual explanation.
 
         Uses a multi-bin discretiser (``max_depth=3``) and prunes
         out-of-distribution leaves via KNN-based conformity testing.
@@ -1520,6 +1522,7 @@ class ExplanationOrchestrator:
             verbose=verbose,
         )
 
+    @experimental
     def invoke_guarded_alternative(  # pylint: disable=invalid-name
         self,
         x: Any,  # pylint: disable=invalid-name
@@ -1536,7 +1539,7 @@ class ExplanationOrchestrator:
         verbose: bool = False,
         **kwargs: Any,
     ) -> Any:
-        """Execute guarded alternative explanation.
+        """[EXPERIMENTAL] Execute guarded alternative explanation.
 
         Uses a multi-bin discretiser (``max_depth=3``) and prunes
         out-of-distribution leaves via KNN-based conformity testing.

@@ -82,6 +82,10 @@ check-extras-parity:
 deprecation-closure:
 	python scripts/local_checks.py --deprecation-closure
 
+.PHONY: pydocstyle
+pydocstyle:
+	python -m pydocstyle src tests
+
 # CI mode: lint flags must be supplied by the caller (e.g. from workflow step exit codes).
 .PHONY: governance-status
 governance-status:

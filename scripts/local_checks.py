@@ -637,6 +637,15 @@ def main() -> int:
             ),
         ),
         Step(
+            "Parameter naming CI guard (removed aliases)",
+            _python_cmd(
+                "scripts/quality/check_parameter_naming.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--check",
+            ),
+        ),
+        Step(
             "Agent instruction consistency",
             _python_cmd("scripts/quality/check_agent_instruction_consistency.py"),
         ),
@@ -731,7 +740,7 @@ def main() -> int:
         pr_steps.insert(2 if pre_commit_available else 1, Step("Notebook naming lint", _python_cmd("-m", "nbqa", "ruff", "notebooks", "--select", "N")))
     if pydocstyle_available:
         insert_at = 3 if pre_commit_available and nbqa_available else 2 if (pre_commit_available or nbqa_available) else 1
-        pr_steps.insert(insert_at, Step("Pydocstyle", ["pydocstyle", "src", "tests"]))
+        pr_steps.insert(insert_at, Step("Pydocstyle", _python_cmd("-m", "pydocstyle", "src", "tests")))
 
     if mypy_targets:
         pr_steps.insert(

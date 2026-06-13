@@ -176,6 +176,9 @@ class IntervalRegressor:
             probability.
         y_threshold
             The threshold value to evaluate. Returns the probability P(y <= y_threshold).
+            ``y_threshold`` is the internal alias for the user-facing ``threshold`` parameter
+            (matches the crepes API convention). Callers at the CE public boundary pass
+            ``threshold``; it is forwarded here as ``y_threshold``.
         bins
             array-like of shape (n_samples,), default=None
             Mondrian categories

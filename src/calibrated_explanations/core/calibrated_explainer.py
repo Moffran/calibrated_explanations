@@ -1460,15 +1460,22 @@ class CalibratedExplainer:
         x : array-like
             A set with n_samples of test objects to predict.
         threshold : float, int or array-like, default=None
-            Values for which p-values should be returned. Only used for probabilistic explanations for regression.
+            Target value for probabilistic regression; the explainer returns the calibrated
+            probability P(y ≤ threshold) for each instance. Ignored for classification.
+            Mutually exclusive with ``confidence_level`` (per ``EXCLUSIVE_PARAM_GROUPS``).
+            See ``docs/foundations/concepts/parameter-reference.md`` for the full
+            disambiguation of ``threshold``, ``confidence_level``, ``confidence``, and
+            ``significance``.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
         guarded : bool, default=False
-            When True, apply interval-plausibility filtering via an in-distribution guard.
-            Only perturbation candidates whose representative calibration-sample median
-            passes a KNN-based conformity test are included in the output.
+            **[EXPERIMENTAL]** When True, apply interval-plausibility filtering via an
+            in-distribution guard. Only perturbation candidates whose representative
+            calibration-sample median passes a KNN-based conformity test are included
+            in the output. The guard API (including the ``**kwargs`` tuning parameters
+            below) is experimental and subject to change before stabilisation.
             Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
             and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
         reject_policy : RejectPolicySpec | None, default=None
@@ -1479,7 +1486,11 @@ class CalibratedExplainer:
             type is :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`
             rather than :class:`.CalibratedExplanations`.
         **kwargs : dict
-            Additional arguments passed to the explanation orchestrator.
+            **[EXPERIMENTAL]** When ``guarded=True``, accepts guard tuning parameters
+            (``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
+            ``verbose``). This ``**kwargs`` interface will be replaced by a typed
+            ``GuardedOptions`` dataclass before the guarded feature leaves experimental
+            status (ADR-038 §3).
 
         Returns
         -------
@@ -1555,15 +1566,22 @@ class CalibratedExplainer:
         x : array-like
             A set with n_samples of test objects to predict.
         threshold : float, int or array-like, default=None
-            Values for which p-values should be returned. Only used for probabilistic explanations for regression.
+            Target value for probabilistic regression; the explainer returns the calibrated
+            probability P(y ≤ threshold) for each instance. Ignored for classification.
+            Mutually exclusive with ``confidence_level`` (per ``EXCLUSIVE_PARAM_GROUPS``).
+            See ``docs/foundations/concepts/parameter-reference.md`` for the full
+            disambiguation of ``threshold``, ``confidence_level``, ``confidence``, and
+            ``significance``.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
         guarded : bool, default=False
-            When True, apply interval-plausibility filtering via an in-distribution guard.
-            Only perturbation candidates whose representative calibration-sample median
-            passes a KNN-based conformity test are included as alternatives.
+            **[EXPERIMENTAL]** When True, apply interval-plausibility filtering via an
+            in-distribution guard. Only perturbation candidates whose representative
+            calibration-sample median passes a KNN-based conformity test are included
+            as alternatives. The guard API (including the ``**kwargs`` tuning parameters
+            below) is experimental and subject to change before stabilisation.
             Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
             and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
         reject_policy : RejectPolicySpec | None, default=None
@@ -1574,7 +1592,11 @@ class CalibratedExplainer:
             type is :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`
             rather than :class:`.AlternativeExplanations`.
         **kwargs : dict
-            Additional arguments passed to the explanation orchestrator.
+            **[EXPERIMENTAL]** When ``guarded=True``, accepts guard tuning parameters
+            (``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
+            ``verbose``). This ``**kwargs`` interface will be replaced by a typed
+            ``GuardedOptions`` dataclass before the guarded feature leaves experimental
+            status (ADR-038 §3).
 
         Returns
         -------
@@ -2417,6 +2439,7 @@ class CalibratedExplainer:
         else:
             # Calibrated predictions
             if self.mode == "regression":
+                # y_threshold is the internal alias for the user-facing `threshold` parameter (matches crepes API convention)
                 if is_fast_interval_collection(self.interval_learner):
                     proba_1, low, high, _ = self.interval_learner[-1].predict_probability(
                         x, y_threshold=threshold, **kwargs
