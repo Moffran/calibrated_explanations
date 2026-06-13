@@ -33,6 +33,7 @@ Functions:
 
 import numpy as np
 import pytest
+from calibrated_explanations import GuardedOptions
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import DifficultyEstimator
@@ -250,7 +251,7 @@ def test_should_vary_factual_weight_width_by_feature_when_difficulty_depends_on_
     monkeypatch.setattr(interval_learner.cps, "predict", cps_predict_stub, raising=True)
 
     # Act
-    explanations = cal_exp.explain_factual(x_test, guarded=True)
+    explanations = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     rules = explanations[0].get_rules()
 
     # Assert: weight interval widths differ between features (x0 perturbations change sigma).
@@ -279,14 +280,14 @@ def test_regression_ce(regression_dataset):
         model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.plot(show=False, filename="test.png")
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(0.1, np.inf), guarded=True
+        x_test, low_high_percentiles=(0.1, np.inf), guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
@@ -294,25 +295,25 @@ def test_regression_ce(regression_dataset):
         factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(-np.inf, 0.9), guarded=True
+        x_test, low_high_percentiles=(-np.inf, 0.9), guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
-        x_test, low_high_percentiles=(0.1, np.inf), guarded=True
+        x_test, low_high_percentiles=(0.1, np.inf), guarded_options=GuardedOptions()
     )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
-        x_test, low_high_percentiles=(-np.inf, 0.9), guarded=True
+        x_test, low_high_percentiles=(-np.inf, 0.9), guarded_options=GuardedOptions()
     )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
@@ -378,7 +379,7 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
     assert cal_exp.reject_threshold == 0.6
 
     rejected, error_rate, reject_rate = cal_exp.reject_orchestrator.predict_reject(
-        x_test, confidence=0.9, threshold=0.6
+        x_test, reject_confidence=0.9, threshold=0.6
     )
 
     assert rejected.shape == (len(x_test),)
@@ -416,24 +417,32 @@ def test_probabilistic_regression_ce(regression_dataset):
     cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
     cal_exp.reject_orchestrator.predict_reject(x_test, threshold=0.5)
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, y_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation.plot(show=False, uncertainty=True)
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test[0], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, y_test[0], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
-    factual_explanation = cal_exp.explain_factual(x_test, (0.4, 0.6), guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, (0.4, 0.6), guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, y_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(
+        x_test, y_test, guarded_options=GuardedOptions()
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     # Basic sanity assertions to ensure the explainer produced results
     assert factual_explanation is not None
     assert alternative_explanation is not None
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, y_test[0], guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(
+        x_test, y_test[0], guarded_options=GuardedOptions()
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     alternative_explanation.super_explanations()
@@ -469,17 +478,19 @@ def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     )
 
     # Single integer threshold (y is normalized to [0,1])
-    factual_explanation = cal_exp.explain_factual(x_test, 0, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, 0, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
 
     # Tuple of integer thresholds
-    factual_explanation = cal_exp.explain_factual(x_test, (0, 1), guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, (0, 1), guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
 
     # Alternatives should also accept int thresholds
-    alternative_explanation = cal_exp.explore_alternatives(x_test, 0, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(
+        x_test, 0, guarded_options=GuardedOptions()
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     # Basic sanity assertions to ensure the explainer produced results
@@ -513,12 +524,12 @@ def test_regression_as_classification_ce(regression_dataset):
         predict_function=predict_function,
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation.plot(show=False, uncertainty=True)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     # Basic sanity assertions to ensure the explainer produced results
@@ -548,14 +559,19 @@ def test_regression_conditional_ce(regression_dataset):
         bins=x_cal[:, bin_feature],
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, bins=x_test[:, bin_feature], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, bins=x_test[:, bin_feature], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation.plot(show=False, uncertainty=True)
     repr(factual_explanation)
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, bin_feature], guarded=True
+        x_test,
+        low_high_percentiles=(0.1, np.inf),
+        bins=x_test[:, bin_feature],
+        guarded_options=GuardedOptions(),
     )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
@@ -563,7 +579,10 @@ def test_regression_conditional_ce(regression_dataset):
         factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, bin_feature], guarded=True
+        x_test,
+        low_high_percentiles=(-np.inf, 0.9),
+        bins=x_test[:, bin_feature],
+        guarded_options=GuardedOptions(),
     )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
@@ -571,19 +590,25 @@ def test_regression_conditional_ce(regression_dataset):
         factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(
-        x_test, bins=x_test[:, bin_feature], guarded=True
+        x_test, bins=x_test[:, bin_feature], guarded_options=GuardedOptions()
     )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
-        x_test, low_high_percentiles=(0.1, np.inf), bins=x_test[:, bin_feature], guarded=True
+        x_test,
+        low_high_percentiles=(0.1, np.inf),
+        bins=x_test[:, bin_feature],
+        guarded_options=GuardedOptions(),
     )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(
-        x_test, low_high_percentiles=(-np.inf, 0.9), bins=x_test[:, bin_feature], guarded=True
+        x_test,
+        low_high_percentiles=(-np.inf, 0.9),
+        bins=x_test[:, bin_feature],
+        guarded_options=GuardedOptions(),
     )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
@@ -625,22 +650,26 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
     cal_exp.reject_orchestrator.initialize_reject_learner(threshold=0.5)
     cal_exp.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0], threshold=0.5)
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test, bins=x_test[:, 0], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, y_test, bins=x_test[:, 0], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, y_test[0], bins=x_test[:, 0], guarded=True
+        x_test, y_test[0], bins=x_test[:, 0], guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
 
     alternative_explanation = cal_exp.explore_alternatives(
-        x_test, y_test, bins=x_test[:, 0], guarded=True
+        x_test, y_test, bins=x_test[:, 0], guarded_options=GuardedOptions()
     )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 
-    alt = cal_exp.explore_alternatives(x_test, y_test[0], bins=x_test[:, 0], guarded=True)
+    alt = cal_exp.explore_alternatives(
+        x_test, y_test[0], bins=x_test[:, 0], guarded_options=GuardedOptions()
+    )
     alt.add_conjunctions()
     # Basic sanity assertions to ensure the explainer produced results
     assert factual_explanation is not None
@@ -667,28 +696,32 @@ def test_knn_normalized_regression_ce(regression_dataset):
         difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(0.1, np.inf), guarded=True
+        x_test, low_high_percentiles=(0.1, np.inf), guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(-np.inf, 0.9), guarded=True
+        x_test, low_high_percentiles=(-np.inf, 0.9), guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
 
-    alt = cal_exp.explore_alternatives(x_test, guarded=True)
+    alt = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alt.add_conjunctions()
     assert alt is not None
 
-    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf), guarded=True)
+    alt = cal_exp.explore_alternatives(
+        x_test, low_high_percentiles=(0.1, np.inf), guarded_options=GuardedOptions()
+    )
     alt.add_conjunctions()
     assert alt is not None
 
-    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9), guarded=True)
+    alt = cal_exp.explore_alternatives(
+        x_test, low_high_percentiles=(-np.inf, 0.9), guarded_options=GuardedOptions()
+    )
     alt.add_conjunctions()
     assert alt is not None
     assert alt is not None
@@ -722,17 +755,19 @@ def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
         difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, y_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test[0], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, y_test[0], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
 
-    alt = cal_exp.explore_alternatives(x_test, y_test, guarded=True)
+    alt = cal_exp.explore_alternatives(x_test, y_test, guarded_options=GuardedOptions())
     alt.add_conjunctions()
     assert alt is not None
 
-    alt = cal_exp.explore_alternatives(x_test, y_test[0], guarded=True)
+    alt = cal_exp.explore_alternatives(x_test, y_test[0], guarded_options=GuardedOptions())
     alt.add_conjunctions()
 
 
@@ -756,26 +791,30 @@ def test_var_normalized_regression_ce(regression_dataset):
         difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(0.1, np.inf), guarded=True
+        x_test, low_high_percentiles=(0.1, np.inf), guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
 
     factual_explanation = cal_exp.explain_factual(
-        x_test, low_high_percentiles=(-np.inf, 0.9), guarded=True
+        x_test, low_high_percentiles=(-np.inf, 0.9), guarded_options=GuardedOptions()
     )
     factual_explanation.add_conjunctions()
 
-    alt = cal_exp.explore_alternatives(x_test, guarded=True)
+    alt = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alt.add_conjunctions()
 
-    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(0.1, np.inf), guarded=True)
+    alt = cal_exp.explore_alternatives(
+        x_test, low_high_percentiles=(0.1, np.inf), guarded_options=GuardedOptions()
+    )
     alt.add_conjunctions()
 
-    alt = cal_exp.explore_alternatives(x_test, low_high_percentiles=(-np.inf, 0.9), guarded=True)
+    alt = cal_exp.explore_alternatives(
+        x_test, low_high_percentiles=(-np.inf, 0.9), guarded_options=GuardedOptions()
+    )
     alt.add_conjunctions()
     assert alt is not None
 
@@ -808,17 +847,19 @@ def test_var_normalized_probabilistic_regression_ce(regression_dataset):
         difficulty_estimator=safe_fit_difficulty(x_prop_train, y_prop_train, scaler=True),
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, y_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
 
-    factual_explanation = cal_exp.explain_factual(x_test, y_test[0], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, y_test[0], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
 
-    alt = cal_exp.explore_alternatives(x_test, y_test, guarded=True)
+    alt = cal_exp.explore_alternatives(x_test, y_test, guarded_options=GuardedOptions())
     alt.add_conjunctions()
     assert alt is not None
 
-    alt = cal_exp.explore_alternatives(x_test, y_test[0], guarded=True)
+    alt = cal_exp.explore_alternatives(x_test, y_test[0], guarded_options=GuardedOptions())
     alt.add_conjunctions()
 
 

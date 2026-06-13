@@ -78,3 +78,39 @@ class DummyRejectLearnerAlwaysEmpty:
         n_rows = len(alphas)
         n_cols = alphas.shape[1] if getattr(alphas, "ndim", 1) == 2 else 2
         return np.zeros((n_rows, n_cols), dtype=float)
+
+
+# ---------------------------------------------------------------------------
+# reject_confidence / confidence deprecation — predict_reject
+# ---------------------------------------------------------------------------
+
+
+class PatchedRejectOrchestrator(RejectOrchestrator):
+    """RejectOrchestrator subclass that short-circuits predict_reject_breakdown."""
+
+    def predict_reject_breakdown(self, x, bins=None, confidence=0.95, threshold=None):
+        n = len(x)
+        return {
+            "rejected": np.zeros(n, dtype=bool),
+            "error_rate": 0.0,
+            "reject_rate": 0.0,
+        }
+
+
+def make_patched_orchestrator():
+    explainer = DummyExplainer()
+    return PatchedRejectOrchestrator(explainer)
+
+
+def test_should_accept_reject_confidence_kwarg_when_passed_to_predict_reject():
+    orch = make_patched_orchestrator()
+    x = np.array([[1.0, 2.0], [3.0, 4.0]])
+    rejected, _err, _rate = orch.predict_reject(x, reject_confidence=0.80)
+    assert rejected.shape == (2,)
+
+
+def test_should_emit_deprecation_warning_when_confidence_kwarg_used_in_predict_reject():
+    orch = make_patched_orchestrator()
+    x = np.array([[1.0, 2.0]])
+    with pytest.warns(DeprecationWarning, match="confidence="):
+        orch.predict_reject(x, confidence=0.80)

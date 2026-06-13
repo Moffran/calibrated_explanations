@@ -64,6 +64,14 @@ def _load_banned_names() -> frozenset[str]:
 
 BANNED_PUBLIC_PARAM_NAMES: frozenset[str] = _load_banned_names()
 
+# Local variable names banned in the guarded/significance code paths (core/explain/).
+# These represent the statistical significance threshold; the canonical names are
+# `significance` (internal) and `GuardedOptions.confidence` (public API).
+# `alpha`/`_alpha` must never be used as a local variable name for this concept.
+# Visualisation-related `alpha` (opacity) is confined to `viz/` and is exempt.
+_BANNED_LOCAL_VAR_NAMES: frozenset[str] = frozenset({"alpha", "_alpha", "alphas", "_alphas"})
+_BANNED_LOCAL_VAR_PATHS: tuple[str, ...] = ("core/explain",)
+
 
 def _check_file(path: Path) -> list[str]:
     """Return violation strings for one file."""
@@ -74,6 +82,30 @@ def _check_file(path: Path) -> list[str]:
         return []
 
     violations: list[str] = []
+
+    # Check local variable names in guarded/significance paths.
+    path_str = path.as_posix()
+    if any(segment in path_str for segment in _BANNED_LOCAL_VAR_PATHS):
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id in _BANNED_LOCAL_VAR_NAMES:
+                        violations.append(
+                            f"{path}:{target.lineno}: "
+                            f"banned local variable name '{target.id}' "
+                            "(use 'significance' or '_significance' instead)"
+                        )
+            elif (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id in _BANNED_LOCAL_VAR_NAMES
+            ):
+                violations.append(
+                    f"{path}:{node.target.lineno}: "
+                    f"banned local variable name '{node.target.id}' "
+                    "(use 'significance' or '_significance' instead)"
+                )
+
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue

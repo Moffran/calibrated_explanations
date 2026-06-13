@@ -532,12 +532,12 @@ def test_multiclass_top1_correctness_strategy_rejects_proxy_negative_singletons(
     default_result = orchestrator.apply_policy(
         RejectPolicy.FLAG,
         [[0], [1]],
-        confidence=0.95,
+        reject_confidence=0.95,
     )
     strict_result = orchestrator.apply_policy(
         RejectPolicy.FLAG,
         [[0], [1]],
-        confidence=0.95,
+        reject_confidence=0.95,
         strategy="experimental.multiclass_top1_correctness",
     )
 
@@ -558,7 +558,7 @@ def test_multiclass_top1_correctness_strategy_rejects_non_multiclass(monkeypatch
         orchestrator.apply_policy(
             RejectPolicy.FLAG,
             [[0], [1]],
-            confidence=0.95,
+            reject_confidence=0.95,
             strategy="experimental.multiclass_top1_correctness",
         )
 
@@ -710,7 +710,7 @@ def test_only_rejected_empty_subset_returns_none_and_matched_count_zero(monkeypa
         RejectPolicy.ONLY_REJECTED,
         np.array([[0], [1], [2]]),
         explain_fn=fake_explain_fn,
-        confidence=0.95,
+        reject_confidence=0.95,
     )
     assert result.explanation is None
     assert result.metadata["matched_count"] == 0
@@ -726,7 +726,7 @@ def test_apply_policy_metadata_includes_effective_confidence_and_w(monkeypatch):
         RejectPolicy.FLAG,
         np.array([[0], [1], [2]]),
         explain_fn=None,
-        confidence=0.77,
+        reject_confidence=0.77,
     )
 
     assert result.metadata is not None
@@ -748,7 +748,7 @@ def test_apply_policy_metadata_contains_required_contract_keys(monkeypatch):
         RejectPolicy.FLAG,
         np.array([[0], [1], [2]]),
         explain_fn=None,
-        confidence=0.77,
+        reject_confidence=0.77,
     )
     required = {
         "policy",

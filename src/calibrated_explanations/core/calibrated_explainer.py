@@ -1447,6 +1447,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        guarded_options=None,
         guarded: bool = False,
         _use_plugin: bool = True,
         **kwargs,
@@ -1464,20 +1465,21 @@ class CalibratedExplainer:
             probability P(y ≤ threshold) for each instance. Ignored for classification.
             Mutually exclusive with ``confidence_level`` (per ``EXCLUSIVE_PARAM_GROUPS``).
             See ``docs/foundations/concepts/parameter-reference.md`` for the full
-            disambiguation of ``threshold``, ``confidence_level``, ``confidence``, and
-            ``significance``.
+            disambiguation of ``threshold``, ``confidence_level``, ``reject_confidence``, and
+            ``GuardedOptions.confidence``.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        guarded_options : GuardedOptions or None, default=None
+            **[EXPERIMENTAL]** Per-call tuning for the KNN-based in-distribution guard
+            (ADR-038). When provided, the guarded path is activated automatically.
+            Use :class:`~calibrated_explanations.GuardedOptions` to bundle guard tuning
+            parameters (``confidence``, ``n_neighbors``, ``normalize``, ``merge_adjacent``,
+            ``verbose``). Replaces the deprecated ``guarded=True`` + loose kwargs pattern.
         guarded : bool, default=False
-            **[EXPERIMENTAL]** When True, apply interval-plausibility filtering via an
-            in-distribution guard. Only perturbation candidates whose representative
-            calibration-sample median passes a KNN-based conformity test are included
-            in the output. The guard API (including the ``**kwargs`` tuning parameters
-            below) is experimental and subject to change before stabilisation.
-            Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
-            and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
+            **[EXPERIMENTAL, Deprecated]** When True, activate guarded explanations.
+            Deprecated in v0.11.3; use ``guarded_options=GuardedOptions()`` instead.
         reject_policy : RejectPolicySpec | None, default=None
             When non-``None``, activates reject orchestration.  Pass a
             :class:`.RejectPolicySpec` constructed via
@@ -1486,22 +1488,27 @@ class CalibratedExplainer:
             type is :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`
             rather than :class:`.CalibratedExplanations`.
         **kwargs : dict
-            **[EXPERIMENTAL]** When ``guarded=True``, accepts guard tuning parameters
-            (``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
-            ``verbose``). This ``**kwargs`` interface will be replaced by a typed
-            ``GuardedOptions`` dataclass before the guarded feature leaves experimental
-            status (ADR-038 §3).
+            **[EXPERIMENTAL, Deprecated]** When ``guarded=True``, loose guard tuning
+            parameters (``significance``, ``n_neighbors``, ``normalize_guard``,
+            ``merge_adjacent``, ``verbose``) are accepted for backwards compatibility.
+            Use ``guarded_options=GuardedOptions(...)`` instead (ADR-038 §3).
 
         Returns
         -------
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance.
-            When ``guarded=True``, per-instance explanations are
+            When ``guarded_options`` is non-``None`` or ``guarded=True``, per-instance explanations are
             :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedFactualExplanation`.
             When ``reject_policy`` is non-``None``, returns
             :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`.
         """
-        if guarded:
+        if guarded_options is not None or guarded:
+            if guarded and guarded_options is None:
+                warnings.warn(
+                    "guarded=True is deprecated; use guarded_options=GuardedOptions() instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
             if not _use_plugin and kwargs.get("verbose", False):
                 warnings.warn(
                     "_use_plugin has no effect on guarded explanation methods",
@@ -1522,6 +1529,7 @@ class CalibratedExplainer:
                     bins=bins,
                     features_to_ignore=features_to_ignore,
                     reject_policy=reject_policy,
+                    guarded_options=guarded_options,
                     **kwargs,
                 )
         if bins is None and self.is_mondrian():
@@ -1553,6 +1561,7 @@ class CalibratedExplainer:
         bins=None,
         features_to_ignore=None,
         *,
+        guarded_options=None,
         guarded: bool = False,
         _use_plugin: bool = True,
         **kwargs,
@@ -1570,20 +1579,20 @@ class CalibratedExplainer:
             probability P(y ≤ threshold) for each instance. Ignored for classification.
             Mutually exclusive with ``confidence_level`` (per ``EXCLUSIVE_PARAM_GROUPS``).
             See ``docs/foundations/concepts/parameter-reference.md`` for the full
-            disambiguation of ``threshold``, ``confidence_level``, ``confidence``, and
-            ``significance``.
+            disambiguation of ``threshold``, ``confidence_level``, ``reject_confidence``, and
+            ``GuardedOptions.confidence``.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        guarded_options : GuardedOptions or None, default=None
+            **[EXPERIMENTAL]** Per-call tuning for the KNN-based in-distribution guard
+            (ADR-038). When provided, the guarded path is activated automatically.
+            Use :class:`~calibrated_explanations.GuardedOptions` to bundle guard tuning
+            parameters. Replaces the deprecated ``guarded=True`` + loose kwargs pattern.
         guarded : bool, default=False
-            **[EXPERIMENTAL]** When True, apply interval-plausibility filtering via an
-            in-distribution guard. Only perturbation candidates whose representative
-            calibration-sample median passes a KNN-based conformity test are included
-            as alternatives. The guard API (including the ``**kwargs`` tuning parameters
-            below) is experimental and subject to change before stabilisation.
-            Use ``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
-            and ``verbose`` in ``**kwargs`` to tune the guard behaviour.
+            **[EXPERIMENTAL, Deprecated]** When True, activate guarded alternative explanations.
+            Deprecated in v0.11.3; use ``guarded_options=GuardedOptions()`` instead.
         reject_policy : RejectPolicySpec | None, default=None
             When non-``None``, activates reject orchestration.  Pass a
             :class:`.RejectPolicySpec` constructed via
@@ -1592,11 +1601,9 @@ class CalibratedExplainer:
             type is :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`
             rather than :class:`.AlternativeExplanations`.
         **kwargs : dict
-            **[EXPERIMENTAL]** When ``guarded=True``, accepts guard tuning parameters
-            (``significance``, ``n_neighbors``, ``normalize_guard``, ``merge_adjacent``,
-            ``verbose``). This ``**kwargs`` interface will be replaced by a typed
-            ``GuardedOptions`` dataclass before the guarded feature leaves experimental
-            status (ADR-038 §3).
+            **[EXPERIMENTAL, Deprecated]** Loose guard tuning parameters accepted for
+            backwards compatibility when ``guarded=True``. Use ``guarded_options=GuardedOptions(...)``
+            instead (ADR-038 §3).
 
         Returns
         -------
@@ -1607,10 +1614,16 @@ class CalibratedExplainer:
         Notes
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
-        When ``guarded=True``, per-instance explanations are
+        When ``guarded_options`` is non-``None`` or ``guarded=True``, per-instance explanations are
         :class:`~calibrated_explanations.explanations.guarded_explanation.GuardedAlternativeExplanation`.
         """
-        if guarded:
+        if guarded_options is not None or guarded:
+            if guarded and guarded_options is None:
+                warnings.warn(
+                    "guarded=True is deprecated; use guarded_options=GuardedOptions() instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
             if not _use_plugin and kwargs.get("verbose", False):
                 warnings.warn(
                     "_use_plugin has no effect on guarded explanation methods",
@@ -1631,6 +1644,7 @@ class CalibratedExplainer:
                     bins=bins,
                     features_to_ignore=features_to_ignore,
                     reject_policy=reject_policy,
+                    guarded_options=guarded_options,
                     **kwargs,
                 )  # type: ignore[return-value]
         if bins is None and self.is_mondrian():
@@ -1677,12 +1691,20 @@ class CalibratedExplainer:
             Use ``explain_factual(..., guarded=True)`` instead.
         """
         from ..utils.deprecations import deprecate  # pylint: disable=import-outside-toplevel
+        from ..explanations.guarded_options import GuardedOptions  # pylint: disable=import-outside-toplevel
 
         deprecate(
             "explain_guarded_factual(...) is deprecated and will be removed in v1.0.0. "
-            "Use explain_factual(..., guarded=True) instead.",
+            "Use explain_factual(..., guarded_options=GuardedOptions()) instead.",
             key="explain_guarded_factual",
             stacklevel=3,
+        )
+        guarded_options = GuardedOptions(
+            confidence=1.0 - significance,
+            merge_adjacent=merge_adjacent,
+            n_neighbors=n_neighbors,
+            normalize=normalize_guard,
+            verbose=verbose,
         )
         return self.explain_factual(
             x,
@@ -1690,13 +1712,8 @@ class CalibratedExplainer:
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
-            guarded=True,
+            guarded_options=guarded_options,
             _use_plugin=_use_plugin,
-            significance=significance,
-            merge_adjacent=merge_adjacent,
-            n_neighbors=n_neighbors,
-            normalize_guard=normalize_guard,
-            verbose=verbose,
             **kwargs,
         )
 
@@ -1723,12 +1740,20 @@ class CalibratedExplainer:
             Use ``explore_alternatives(..., guarded=True)`` instead.
         """
         from ..utils.deprecations import deprecate  # pylint: disable=import-outside-toplevel
+        from ..explanations.guarded_options import GuardedOptions  # pylint: disable=import-outside-toplevel
 
         deprecate(
             "explore_guarded_alternatives(...) is deprecated and will be removed in v1.0.0. "
-            "Use explore_alternatives(..., guarded=True) instead.",
+            "Use explore_alternatives(..., guarded_options=GuardedOptions()) instead.",
             key="explore_guarded_alternatives",
             stacklevel=3,
+        )
+        guarded_options = GuardedOptions(
+            confidence=1.0 - significance,
+            merge_adjacent=merge_adjacent,
+            n_neighbors=n_neighbors,
+            normalize=normalize_guard,
+            verbose=verbose,
         )
         return self.explore_alternatives(
             x,
@@ -1736,13 +1761,8 @@ class CalibratedExplainer:
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
-            guarded=True,
+            guarded_options=guarded_options,
             _use_plugin=_use_plugin,
-            significance=significance,
-            merge_adjacent=merge_adjacent,
-            n_neighbors=n_neighbors,
-            normalize_guard=normalize_guard,
-            verbose=verbose,
             **kwargs,
         )
 
@@ -2243,13 +2263,16 @@ class CalibratedExplainer:
 
         # Reject policy active: use orchestrator to apply policy and return RejectResult envelope
         bins_arg = kwargs.pop("bins", None)
-        confidence_arg = kwargs.pop("confidence", 0.95)
+        _old_conf = kwargs.pop("confidence", None)
+        confidence_arg = kwargs.pop(
+            "reject_confidence", _old_conf if _old_conf is not None else 0.95
+        )
         rr = self.reject_orchestrator.apply_policy(
             policy,
             x,
             explain_fn=None,
             bins=bins_arg,
-            confidence=confidence_arg,
+            reject_confidence=confidence_arg,
             result_schema="v2",
             **kwargs,
         )
@@ -2383,7 +2406,10 @@ class CalibratedExplainer:
 
         # Inject default interval_summary if not provided
         kwargs.setdefault("interval_summary", self.interval_summary)
-        confidence_arg = kwargs.pop("confidence", 0.95)
+        _old_conf = kwargs.pop("confidence", None)
+        confidence_arg = kwargs.pop(
+            "reject_confidence", _old_conf if _old_conf is not None else 0.95
+        )
 
         # Resolve reject policy (per-call override else explainer default)
         from .reject.policy import RejectPolicy as _RejectPolicy
@@ -2486,7 +2512,7 @@ class CalibratedExplainer:
             x,
             explain_fn=None,
             bins=bins_arg,
-            confidence=confidence_arg,
+            reject_confidence=confidence_arg,
             threshold=threshold,
             result_schema="v2",
             **kwargs,

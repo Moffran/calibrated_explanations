@@ -55,13 +55,13 @@ def test_experimental_changes_with_difficulty(monkeypatch):
     monkeypatch.setattr(orch, "ConformalClassifier", InverseAlphaConformalClassifier)
     orchestrator = orch.RejectOrchestrator(explainer)
     res_builtin = orchestrator.apply_policy(
-        policy="flag", x=explainer.x_cal, strategy="builtin.default", confidence=0.5
+        policy="flag", x=explainer.x_cal, strategy="builtin.default", reject_confidence=0.5
     )
     res_experimental = orchestrator.apply_policy(
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.difficulty_normalized",
-        confidence=0.5,
+        reject_confidence=0.5,
     )
     assert not np.array_equal(
         res_builtin.rejected, res_experimental.rejected
@@ -126,7 +126,7 @@ def test_metadata_fields_and_monotonicity(monkeypatch):
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.difficulty_normalized",
-            confidence=conf,
+            reject_confidence=conf,
         )
         prediction_set = np.asarray(out.metadata["prediction_set"], dtype=bool)
         if prev_prediction_set is not None:
@@ -463,14 +463,14 @@ def test_novelty_penalized_matches_difficulty_normalized_when_trivial_estimators
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.difficulty_normalized",
-        confidence=0.5,
+        reject_confidence=0.5,
         include_prediction_payload=False,
     )
     res_novelty = orchestrator.apply_policy(
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.ambiguity_normalized_novelty_penalized",
-        confidence=0.5,
+        reject_confidence=0.5,
         include_prediction_payload=False,
     )
     np.testing.assert_array_equal(res_diff.rejected, res_novelty.rejected)
@@ -527,7 +527,7 @@ def test_novelty_estimator_requires_apply_method_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=object(),
             novelty_weight=0.2,
             include_prediction_payload=False,
@@ -549,7 +549,7 @@ def test_novelty_estimator_requires_numeric_outputs_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=NonNumericNoveltyEstimator(),
             novelty_weight=0.2,
             include_prediction_payload=False,
@@ -571,7 +571,7 @@ def test_novelty_estimator_requires_per_instance_values_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=WrongLengthNoveltyEstimator(),
             novelty_weight=0.2,
             include_prediction_payload=False,
@@ -597,7 +597,7 @@ def test_novelty_estimator_rejects_nonfinite_and_negative_values_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=NonFiniteNoveltyEstimator(),
             novelty_weight=0.2,
             include_prediction_payload=False,
@@ -608,7 +608,7 @@ def test_novelty_estimator_rejects_nonfinite_and_negative_values_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=NegativeNoveltyEstimator(),
             novelty_weight=0.2,
             include_prediction_payload=False,
@@ -626,7 +626,7 @@ def test_novelty_weight_requires_non_negative_float_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=NoveltyEstimator([0.1, 0.2]),
             novelty_weight="not-a-number",
             include_prediction_payload=False,
@@ -637,7 +637,7 @@ def test_novelty_weight_requires_non_negative_float_via_policy():
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=0.5,
+            reject_confidence=0.5,
             novelty_estimator=NoveltyEstimator([0.1, 0.2]),
             novelty_weight=-0.1,
             include_prediction_payload=False,
@@ -668,7 +668,7 @@ def test_novelty_strategy_metadata_collection_falls_back_on_estimator_errors(mon
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.ambiguity_normalized_novelty_penalized",
-        confidence=0.5,
+        reject_confidence=0.5,
         ambiguity_estimator=ambiguity,
         novelty_estimator=novelty,
         novelty_weight=0.2,
@@ -728,7 +728,7 @@ def test_novelty_penalty_can_increase_empty_set_rate(monkeypatch):
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.ambiguity_normalized_novelty_penalized",
-        confidence=0.5,
+        reject_confidence=0.5,
         novelty_weight=0.0,
         novelty_estimator=NoveltyEstimator([0.0, 0.0, 0.0]),
         include_prediction_payload=False,
@@ -737,7 +737,7 @@ def test_novelty_penalty_can_increase_empty_set_rate(monkeypatch):
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.ambiguity_normalized_novelty_penalized",
-        confidence=0.5,
+        reject_confidence=0.5,
         novelty_weight=0.8,
         novelty_estimator=NoveltyEstimator([0.0, 0.0, 2.0]),
         include_prediction_payload=False,
@@ -757,7 +757,7 @@ def test_novelty_penalized_confidence_monotonicity_and_metadata(monkeypatch):
         policy="flag",
         x=explainer.x_cal,
         strategy="experimental.ambiguity_normalized_novelty_penalized",
-        confidence=0.7,
+        reject_confidence=0.7,
         novelty_estimator=novelty,
         novelty_weight=0.1,
         include_prediction_payload=False,
@@ -783,7 +783,7 @@ def test_novelty_penalized_confidence_monotonicity_and_metadata(monkeypatch):
             policy="flag",
             x=explainer.x_cal,
             strategy="experimental.ambiguity_normalized_novelty_penalized",
-            confidence=conf,
+            reject_confidence=conf,
             novelty_estimator=novelty,
             novelty_weight=0.1,
             include_prediction_payload=False,

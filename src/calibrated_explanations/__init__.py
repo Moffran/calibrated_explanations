@@ -49,6 +49,7 @@ __all__ = [
     "CalibratedExplainer",
     "ExplainerBuilder",
     "ExplainerConfig",
+    "GuardedOptions",
     "NormalizationStrategy",
     "RejectPolicySpec",
     "WrapCalibratedExplainer",
@@ -90,6 +91,12 @@ def __getattr__(name: str) -> Any:
         value = getattr(module, name)
         globals()[name] = value
         return value
+
+    if name == "GuardedOptions":
+        from .explanations.guarded_options import GuardedOptions
+
+        globals()[name] = GuardedOptions
+        return GuardedOptions
 
     if name == "RejectPolicySpec":
         from .explanations.reject import RejectPolicySpec

@@ -2017,7 +2017,7 @@ class RejectOrchestrator:
             "degraded_mode": degraded_mode,
         }
 
-    def predict_reject(self, x, bins=None, confidence=0.95, threshold=None):
+    def predict_reject(self, x, bins=None, reject_confidence=0.95, threshold=None, **kwargs):
         """Predict whether to reject the explanations for the test data.
 
         Parameters
@@ -2026,13 +2026,13 @@ class RejectOrchestrator:
             Test instances to evaluate.
         bins : array-like or None, default=None
             Mondrian categories; forwarded to the reject scorer.
-        confidence : float, default=0.95
+        reject_confidence : float, default=0.95
             Reject coverage target: the minimum calibrated probability required to
             *accept* a prediction. A prediction is rejected when its conformal
-            p-value falls below ``1 - confidence``.
+            p-value falls below ``1 - reject_confidence``.
             Not to be confused with ``confidence_level`` (regression coverage derived
-            from ``low_high_percentiles``) or with ``significance`` (guarded
-            conformity p-value threshold, where ``significance = 1 - confidence``).
+            from ``low_high_percentiles``) or with ``GuardedOptions.confidence``
+            (guarded conformity p-value threshold).
             See ``docs/foundations/concepts/parameter-reference.md``.
         threshold : float or None, default=None
             Regression threshold; required when the underlying explainer is in
@@ -2046,8 +2046,16 @@ class RejectOrchestrator:
             predictions that are incorrect, and ``reject_rate`` is the fraction of
             instances rejected.
         """
+        # Backwards-compatible: accept deprecated `confidence` kwarg
+        if "confidence" in kwargs and "reject_confidence" not in kwargs:
+            warnings.warn(
+                "confidence= is deprecated in predict_reject; use reject_confidence= instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            reject_confidence = kwargs.pop("confidence")
         breakdown = self.predict_reject_breakdown(
-            x, bins=bins, confidence=confidence, threshold=threshold
+            x, bins=bins, confidence=reject_confidence, threshold=threshold
         )
         return breakdown["rejected"], breakdown["error_rate"], breakdown["reject_rate"]
 
@@ -2057,7 +2065,7 @@ class RejectOrchestrator:
         x,
         explain_fn=None,
         bins=None,
-        confidence=0.95,
+        reject_confidence=0.95,
         threshold=None,
         **kwargs,
     ):
@@ -2073,12 +2081,11 @@ class RejectOrchestrator:
             Callable `explain_fn(x_subset, **kwargs)` returning explanations.
         bins :
             Passed to reject prediction.
-        confidence : float, default=0.95
+        reject_confidence : float, default=0.95
             Reject coverage target: the minimum calibrated probability required to
             *accept* a prediction. Same semantics as in ``predict_reject``.
             Not to be confused with ``confidence_level`` (regression interval width)
-            or ``significance`` (guarded conformity threshold, where
-            ``significance = 1 - confidence``).
+            or ``GuardedOptions.confidence`` (guarded conformity threshold).
             See ``docs/foundations/concepts/parameter-reference.md``.
 
         Returns
@@ -2086,7 +2093,15 @@ class RejectOrchestrator:
         RejectResult
             Envelope with `prediction`, `explanation`, `rejected`, `policy`, and `metadata`.
         """
-        confidence = validate_reject_confidence(confidence)
+        # Backwards-compatible: accept deprecated `confidence` kwarg
+        if "confidence" in kwargs and "reject_confidence" not in kwargs:
+            warnings.warn(
+                "confidence= is deprecated in apply_policy; use reject_confidence= instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            reject_confidence = kwargs.pop("confidence")
+        confidence = validate_reject_confidence(reject_confidence)
         # Allow callers to select a strategy identifier via the `strategy` kwarg.
         # By default, resolve to `builtin.default` which preserves legacy semantics.
         strategy_name = kwargs.pop("strategy", None)

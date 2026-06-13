@@ -22,6 +22,7 @@ Tests:
 """
 
 import pytest
+from calibrated_explanations import GuardedOptions
 from tests.helpers.explainer_utils import initiate_explainer
 from tests.helpers.model_utils import get_classification_model
 
@@ -56,7 +57,7 @@ def test_binary_ce(binary_dataset):
     cal_exp.reject_orchestrator.initialize_reject_learner()
     cal_exp.reject_orchestrator.predict_reject(x_test)
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation[0].add_new_rule_condition(feature_names[0], x_cal[0, 0])
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
@@ -64,7 +65,7 @@ def test_binary_ce(binary_dataset):
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
     alternative_explanation[:1].plot(show=False)
@@ -132,13 +133,13 @@ def test_multiclass_ce_str_target(multiclass_dataset):
     cal_exp.reject_orchestrator.initialize_reject_learner()
     cal_exp.reject_orchestrator.predict_reject(x_test)
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
     factual_explanation[:1].plot(show=False)
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
-    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
     alternative_explanation[:1].plot(show=False)
@@ -183,7 +184,7 @@ def test_binary_ce_str_target(binary_dataset):
 
     cal_exp.reject_orchestrator.initialize_reject_learner()
     assert cal_exp is not None
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation[0].add_new_rule_condition(feature_names[0], x_cal[0, 0])
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
@@ -191,7 +192,7 @@ def test_binary_ce_str_target(binary_dataset):
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
     alternative_explanation[:1].plot(show=False)
@@ -245,14 +246,14 @@ def test_multiclass_ce(multiclass_dataset):
     cal_exp.predict(x_test)
     cal_exp.predict_proba(x_test)
 
-    factual_explanation = cal_exp.explain_factual(x_test, guarded=True)
+    factual_explanation = cal_exp.explain_factual(x_test, guarded_options=GuardedOptions())
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
     factual_explanation[:1].plot(show=False)
     factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(x_test, guarded_options=GuardedOptions())
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
     alternative_explanation[:1].plot(show=False)
@@ -313,9 +314,11 @@ def test_multiclass_ce_multi_labels_enabled_guarded_compat(multiclass_dataset):
     multi_alternative.plot(show=False)
 
     # Guarded entrypoints should remain compatible with the same flag.
-    guarded_factual = cal_exp.explain_factual(x_subset, multi_labels_enabled=True, guarded=True)
+    guarded_factual = cal_exp.explain_factual(
+        x_subset, multi_labels_enabled=True, guarded_options=GuardedOptions()
+    )
     guarded_alternative = cal_exp.explore_alternatives(
-        x_subset, multi_labels_enabled=True, guarded=True
+        x_subset, multi_labels_enabled=True, guarded_options=GuardedOptions()
     )
     assert guarded_factual is not None
     assert guarded_alternative is not None
@@ -357,12 +360,16 @@ def test_binary_conditional_ce(binary_dataset):
     cal_exp.reject_orchestrator.initialize_reject_learner()
     cal_exp.reject_orchestrator.predict_reject(x_test, bins=x_test[:, 0])
 
-    factual_explanation = cal_exp.explain_factual(x_test, bins=x_test[:, 0], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, bins=x_test[:, 0], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation[0].plot(show=False, uncertainty=True)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, bins=x_test[:, 0], guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(
+        x_test, bins=x_test[:, 0], guarded_options=GuardedOptions()
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
     # Basic sanity assertions to ensure the explainer produced results
@@ -406,12 +413,16 @@ def test_multiclass_conditional_ce(multiclass_dataset):
         bins=x_cal[:, 0],
     )
 
-    factual_explanation = cal_exp.explain_factual(x_test, bins=x_test[:, 0], guarded=True)
+    factual_explanation = cal_exp.explain_factual(
+        x_test, bins=x_test[:, 0], guarded_options=GuardedOptions()
+    )
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation[0].plot(show=False, uncertainty=True)
 
-    alternative_explanation = cal_exp.explore_alternatives(x_test, bins=x_test[:, 0], guarded=True)
+    alternative_explanation = cal_exp.explore_alternatives(
+        x_test, bins=x_test[:, 0], guarded_options=GuardedOptions()
+    )
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot(show=False)
 

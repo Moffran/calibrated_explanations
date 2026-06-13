@@ -248,6 +248,12 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `CalibratedExplainer.explore_guarded_alternatives(...)` | `explainer.explore_alternatives(..., guarded=True)` | v0.11.3 | v1.0.0 | Guarded normalized as a boolean policy flag on `explore_alternatives`; separate method removed (ADR-032). |
 | `WrapCalibratedExplainer.explain_guarded_factual(...)` | `wrapper.explain_factual(..., guarded=True)` | v0.11.3 | v1.0.0 | Same as above — wrapper delegates to `explain_factual(guarded=True)`. |
 | `WrapCalibratedExplainer.explore_guarded_alternatives(...)` | `wrapper.explore_alternatives(..., guarded=True)` | v0.11.3 | v1.0.0 | Same as above — wrapper delegates to `explore_alternatives(guarded=True)`. |
+| `guarded=True` boolean kwarg on `explain_factual` / `explore_alternatives` | `guarded_options=GuardedOptions()` | v0.11.3 | v1.0.0 | Replaced by typed `GuardedOptions` dataclass (ADR-038). |
+| `significance=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(confidence=1−significance)` | v0.11.3 | v1.0.0 | Numeric value is inverted: `significance=0.1` → `GuardedOptions(confidence=0.9)`. |
+| `n_neighbors=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(n_neighbors=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). |
+| `normalize_guard=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(normalize=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). Field renamed `normalize` in the dataclass. |
+| `merge_adjacent=` kwarg on `explain_factual` / `explore_alternatives` (guarded path) | `guarded_options=GuardedOptions(merge_adjacent=...)` | v0.11.3 | v1.0.0 | Folded into `GuardedOptions` (ADR-038). |
+| `confidence=` kwarg on `predict_reject` / `apply_policy` | `reject_confidence=` | v0.11.3 | v1.0.0 | Renamed to carry the tier qualifier required by ADR-038 §2d and avoid confusion with `GuardedOptions.confidence`. |
 
 ## Breaking changes
 

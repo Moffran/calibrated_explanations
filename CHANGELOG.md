@@ -5,6 +5,21 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...main)
 
+### Breaking changes (v0.11.3)
+
+- **RT-17: Call-time configuration taxonomy (`GuardedOptions` and `reject_confidence`).**
+  - New `GuardedOptions` frozen dataclass exported from root namespace (ADR-038). Replace
+    `explain_factual(x, guarded=True, significance=0.1)` with
+    `explain_factual(x, guarded_options=GuardedOptions(confidence=0.9))`.
+    Note the numeric inversion: `confidence = 1 − significance`.
+  - `predict_reject` and `apply_policy` rename their primary confidence parameter from
+    `confidence=` to `reject_confidence=` to disambiguate from `GuardedOptions.confidence`
+    and `confidence_level`. The old `confidence=` kwarg still works but emits a
+    `DeprecationWarning`; it will be removed at v1.0.0.
+  - The legacy `guarded=True`, `significance=`, `n_neighbors=`, `normalize_guard=`, and
+    `merge_adjacent=` keyword arguments in the guarded explain path now emit
+    `DeprecationWarning` and will be removed at v1.0.0.
+
 ### Improvements
 
 - Centralized migrated runtime configuration consumers behind a process-level

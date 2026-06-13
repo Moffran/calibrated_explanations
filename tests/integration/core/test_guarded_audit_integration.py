@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from calibrated_explanations import GuardedOptions
 
 from tests.helpers.explainer_utils import initiate_explainer
 from tests.helpers.model_utils import get_classification_model, get_regression_model
@@ -34,7 +35,9 @@ def test_multiclass_guarded_audit_presence(multiclass_dataset):
     cal_exp = initiate_explainer(
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
     )
-    explanations = cal_exp.explain_factual(x_test[:2], significance=0.1, guarded=True)
+    explanations = cal_exp.explain_factual(
+        x_test[:2], significance=0.1, guarded_options=GuardedOptions()
+    )
     audit = explanations.get_guarded_audit()
     assert audit["summary"]["n_instances"] == len(explanations)
     assert len(audit["instances"]) == len(explanations)
@@ -58,7 +61,9 @@ def test_classification_guarded_audit_presence(binary_dataset):
     cal_exp = initiate_explainer(
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
     )
-    explanations = cal_exp.explain_factual(x_test[:2], significance=0.1, guarded=True)
+    explanations = cal_exp.explain_factual(
+        x_test[:2], significance=0.1, guarded_options=GuardedOptions()
+    )
     audit = explanations.get_guarded_audit()
     assert audit["summary"]["n_instances"] == len(explanations)
     assert len(audit["instances"]) == len(explanations)
@@ -81,7 +86,9 @@ def test_regression_guarded_audit_presence(regression_dataset):
     cal_exp = initiate_explainer(
         model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
     )
-    explanations = cal_exp.explain_factual(x_test[:2], significance=0.1, guarded=True)
+    explanations = cal_exp.explain_factual(
+        x_test[:2], significance=0.1, guarded_options=GuardedOptions()
+    )
     audit = explanations.get_guarded_audit()
     assert audit["summary"]["n_instances"] == len(explanations)
     assert len(audit["instances"]) == len(explanations)
@@ -105,7 +112,9 @@ def test_guarded_audit_collection_serialization_smoke(binary_dataset):
     cal_exp = initiate_explainer(
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
     )
-    explanations = cal_exp.explain_factual(x_test[:1], significance=0.1, guarded=True)
+    explanations = cal_exp.explain_factual(
+        x_test[:1], significance=0.1, guarded_options=GuardedOptions()
+    )
     audit = explanations.get_guarded_audit()
     assert isinstance(json.dumps(audit), str)
 
@@ -146,5 +155,7 @@ def test_guarded_regression_remains_callable_after_reinitialize_append_path(regr
     cal_exp.reinitialize(model, xs=extra_x, ys=extra_y)
 
     # Guarded explain must succeed without ValidationError after the update.
-    explanations = cal_exp.explain_factual(x_test[:1], significance=0.5, guarded=True)
+    explanations = cal_exp.explain_factual(
+        x_test[:1], significance=0.5, guarded_options=GuardedOptions()
+    )
     assert len(explanations) == 1
