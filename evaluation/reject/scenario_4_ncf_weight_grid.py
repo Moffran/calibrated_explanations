@@ -25,8 +25,10 @@ from calibrated_explanations import RejectPolicySpec
 
 from .common_reject import (
     RunConfig,
+    _markdown_table_from_df,
     accepted_accuracy,
     build_classification_bundle,
+    classification_singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -53,6 +55,11 @@ def run(config: RunConfig) -> None:
                 accepted = ~rejected
                 acc = accepted_accuracy(bundle.y_test, bundle.baseline_pred, accepted)
                 accept_rate = float(np.mean(accepted))
+                metadata = getattr(result, "metadata", {}) or {}
+                singleton_metrics = classification_singleton_precision_recall(
+                    bundle,
+                    metadata.get("prediction_set"),
+                )
                 rows.append(
                     {
                         "task_type": spec.task_type,
@@ -64,6 +71,7 @@ def run(config: RunConfig) -> None:
                         "accept_rate": accept_rate,
                         "accepted_accuracy": acc,
                         "accepted_accuracy_delta": acc - baseline_accuracy if np.isfinite(acc) else float("nan"),
+                        **singleton_metrics,
                     }
                 )
 
@@ -89,7 +97,69 @@ def run(config: RunConfig) -> None:
             "w_values_tested": list(_W_VALUES),
         },
     }
-    write_csv_json_md("scenario_4_ncf_weight_grid", df, meta)
+    # --- Extra sections ---
+    extra_sections: list[str] = []
+
+    if not df.empty:
+        # Section: NCF x weight grid (binary)
+        binary_df = df[df["task_type"] == "binary"]
+        if not binary_df.empty:
+            grid_binary = (
+                binary_df.groupby(["ncf", "w"])
+                .agg(
+                    mean_accept_rate=("accept_rate", "mean"),
+                    mean_accepted_accuracy=("accepted_accuracy", "mean"),
+                    mean_accuracy_delta=("accepted_accuracy_delta", "mean"),
+                )
+                .reset_index()
+            )
+            extra_sections += [
+                "## NCF x weight grid (binary)",
+                "",
+                _markdown_table_from_df(grid_binary),
+                "",
+            ]
+
+        # Section: NCF x weight grid (multiclass)
+        multi_df = df[df["task_type"] == "multiclass"]
+        if not multi_df.empty:
+            grid_multi = (
+                multi_df.groupby(["ncf", "w"])
+                .agg(
+                    mean_accept_rate=("accept_rate", "mean"),
+                    mean_accepted_accuracy=("accepted_accuracy", "mean"),
+                    mean_accuracy_delta=("accepted_accuracy_delta", "mean"),
+                )
+                .reset_index()
+            )
+            extra_sections += [
+                "## NCF x weight grid (multiclass)",
+                "",
+                _markdown_table_from_df(grid_multi),
+                "",
+            ]
+
+        # Section: Per-dataset accuracy delta (all datasets, mean over NCF x w grid)
+        per_dataset = (
+            df.groupby(["dataset", "task_type", "ncf"])
+            .agg(
+                mean_accuracy_delta=("accepted_accuracy_delta", "mean"),
+                best_accuracy_delta=("accepted_accuracy_delta", "max"),
+                mean_accept_rate=("accept_rate", "mean"),
+            )
+            .reset_index()
+            .sort_values(["task_type", "ncf", "mean_accuracy_delta"], ascending=[True, True, False])
+        )
+        extra_sections += [
+            "## Per-dataset accuracy delta (all datasets)",
+            "",
+            "Mean and best accuracy delta across the w grid for each dataset × ncf combination.",
+            "",
+            _markdown_table_from_df(per_dataset),
+            "",
+        ]
+
+    write_csv_json_md("scenario_4_ncf_weight_grid", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

@@ -190,3 +190,10 @@ logging.config.dictConfig({
 The second configuration keeps audit-relevant `governance.*` records isolated
 without changing the operational logger hierarchy used by the rest of the
 library.
+
+## See also
+
+- [Configure runtime behaviour (ConfigManager)](configure_runtime.md) — full env-var
+  reference, pyproject.toml sections, and `export_effective()` diagnostics
+- [Tune runtime performance](tune_runtime_performance.md) — cache, parallel, and
+  feature-filter settings

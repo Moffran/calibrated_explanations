@@ -21,6 +21,7 @@ guides.
 | [Calibrated interval semantics](calibrated_interval_semantics.md) | Canonical semantics, assumptions, and non-guarantees for all three modes. |
 | [Terminology standardization](terminology.md) | Summarises the shift to probabilistic regression terminology and compatibility guarantees. |
 | [Terminology: thresholded vs probabilistic regression](terminology_thresholded_vs_probabilistic_regression.md) | Clarifies language used across ADR-021 and user-facing regression docs. |
+| [Parameter reference](parameter-reference.md) | Canonical definitions and disambiguation table for `threshold`, `confidence`, `significance`, `confidence_level`, and `low_high_percentiles`. |
 
 ```{toctree}
 :maxdepth: 1
@@ -34,6 +35,7 @@ guarded_explanations
 calibrated_interval_semantics
 terminology
 terminology_thresholded_vs_probabilistic_regression
+parameter-reference
 ```
 
 Entry-point tier: Tier 3.

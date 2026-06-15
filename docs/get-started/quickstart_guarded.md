@@ -24,15 +24,17 @@ pip install calibrated-explanations scikit-learn
 Guarded mode requires a standard (non-fast) `CalibratedExplainer`.
 Passing a fast explainer — one initialised with `CalibratedExplainer(..., fast=True)` or
 retrieved via `WrapCalibratedExplainer` with fast mode enabled — raises a
-`ConfigurationError` at the `explain_guarded_factual` / `explore_guarded_alternatives`
-call site.  See ADR-032, decision 7 for the rationale.
+`ConfigurationError` at the `explain_factual(guarded_options=GuardedOptions())` /
+`explore_alternatives(guarded_options=GuardedOptions())` call site.  See ADR-032, decision 7 for the rationale.
 ```
 
 For guarded regression workflows, start from {doc}`quickstart_regression`.
-The only workflow difference is the explanation call:
+The only workflow difference is passing `guarded_options=GuardedOptions()` to the explanation call:
 
-- Use `explain_guarded_factual(...)` instead of `explain_factual(...)`.
-- Use `explore_guarded_alternatives(...)` instead of `explore_alternatives(...)`.
+- Use `explain_factual(..., guarded_options=GuardedOptions())` instead of `explain_factual(...)`.
+- Use `explore_alternatives(..., guarded_options=GuardedOptions())` instead of `explore_alternatives(...)`.
+
+> **Migration**: `guarded=True` is deprecated (removed v1.0.0). Use `guarded_options=GuardedOptions()` everywhere.
 
 ## 1. Load data and split sets
 
@@ -65,8 +67,9 @@ explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 ## 3. Guarded factual and alternatives
 
 ```python
-guarded_factual = explainer.explain_guarded_factual(x_test[:5], significance=0.1)
-guarded_alts = explainer.explore_guarded_alternatives(x_test[:2], significance=0.1)
+from calibrated_explanations.explanations.guarded_options import GuardedOptions
+guarded_factual = explainer.explain_factual(x_test[:5], guarded_options=GuardedOptions(confidence=0.9))
+guarded_alts = explainer.explore_alternatives(x_test[:2], guarded_options=GuardedOptions(confidence=0.9))
 ```
 
 ## 4. Audit guarded filtering

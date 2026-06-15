@@ -8,13 +8,14 @@ from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
+from calibrated_explanations import GuardedOptions
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.explanations.guarded_explanation import (
     GuardedAlternativeExplanation,
     GuardedBin,
     GuardedFactualExplanation,
 )
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 def make_classification_explainer(*, seed: int = 0) -> tuple[CalibratedExplainer, np.ndarray]:
@@ -81,7 +82,7 @@ def minimal_payload():
 
 def test_guarded_factual_audit_returns_full_interval_table():
     explainer, x_cal = make_classification_explainer(seed=31)
-    res = explainer.explain_guarded_factual(x_cal[:1], significance=0.05)
+    res = explainer.explain_factual(x_cal[:1], guarded_options=GuardedOptions(confidence=0.95))
     audit = res.explanations[0].get_guarded_audit()
     assert audit["mode"] == "factual"
     assert isinstance(audit["intervals"], list)
@@ -109,7 +110,7 @@ def test_guarded_factual_audit_returns_full_interval_table():
 
 def test_guarded_alternative_audit_returns_full_interval_table():
     explainer, x_cal = make_classification_explainer(seed=32)
-    res = explainer.explore_guarded_alternatives(x_cal[:1], significance=0.05)
+    res = explainer.explore_alternatives(x_cal[:1], guarded_options=GuardedOptions(confidence=0.95))
     audit = res.explanations[0].get_guarded_audit()
     assert audit["mode"] == "alternative"
     assert isinstance(audit["intervals"], list)
@@ -119,7 +120,7 @@ def test_guarded_alternative_audit_returns_full_interval_table():
 def test_guarded_audit_removed_count_equals_nonconforming_count():
     """Removed-guard counts should track candidates rejected by the shipped guard rule."""
     explainer, x_cal = make_classification_explainer(seed=33)
-    res = explainer.explain_guarded_factual(x_cal[:1], significance=0.2)
+    res = explainer.explain_factual(x_cal[:1], guarded_options=GuardedOptions(confidence=0.8))
     audit = res.explanations[0].get_guarded_audit()
     nonconforming = sum(1 for rec in audit["intervals"] if not rec["conforming"])
     assert audit["summary"]["intervals_removed_guard"] == nonconforming
@@ -127,7 +128,7 @@ def test_guarded_audit_removed_count_equals_nonconforming_count():
 
 def test_guarded_audit_emitted_count_matches_rules_length_factual():
     explainer, x_cal = make_classification_explainer(seed=34)
-    res = explainer.explain_guarded_factual(x_cal[:1], significance=0.05)
+    res = explainer.explain_factual(x_cal[:1], guarded_options=GuardedOptions(confidence=0.95))
     rules = res.explanations[0].get_rules()
     audit = res.explanations[0].get_guarded_audit()
     assert audit["summary"]["intervals_emitted"] == len(rules["rule"])
@@ -135,7 +136,7 @@ def test_guarded_audit_emitted_count_matches_rules_length_factual():
 
 def test_guarded_audit_emitted_count_matches_rules_length_alternative():
     explainer, x_cal = make_classification_explainer(seed=35)
-    res = explainer.explore_guarded_alternatives(x_cal[:1], significance=0.05)
+    res = explainer.explore_alternatives(x_cal[:1], guarded_options=GuardedOptions(confidence=0.95))
     rules = res.explanations[0].get_rules()
     audit = res.explanations[0].get_guarded_audit()
     assert audit["summary"]["intervals_emitted"] == len(rules["rule"])
@@ -143,7 +144,7 @@ def test_guarded_audit_emitted_count_matches_rules_length_alternative():
 
 def test_guarded_audit_includes_p_values_for_all_tested_intervals():
     explainer, x_cal = make_classification_explainer(seed=36)
-    res = explainer.explain_guarded_factual(x_cal[:1], significance=0.1)
+    res = explainer.explain_factual(x_cal[:1], guarded_options=GuardedOptions(confidence=0.9))
     audit = res.explanations[0].get_guarded_audit()
     assert all("p_value" in rec for rec in audit["intervals"])
     assert all(0.0 <= float(rec["p_value"]) <= 1.0 for rec in audit["intervals"])
@@ -151,7 +152,7 @@ def test_guarded_audit_includes_p_values_for_all_tested_intervals():
 
 def test_guarded_audit_order_is_deterministic():
     explainer, x_cal = make_classification_explainer(seed=37)
-    res = explainer.explain_guarded_factual(x_cal[:1], significance=0.1)
+    res = explainer.explain_factual(x_cal[:1], guarded_options=GuardedOptions(confidence=0.9))
     a1 = res.explanations[0].get_guarded_audit()["intervals"]
     a2 = res.explanations[0].get_guarded_audit()["intervals"]
     assert a1 == a2
@@ -192,7 +193,7 @@ def test_guarded_audit_handles_zero_emitted_rules_with_nonempty_intervals():
 
 def test_collection_guarded_audit_aggregates_instance_summaries():
     explainer, x_cal = make_classification_explainer(seed=38)
-    res = explainer.explain_guarded_factual(x_cal[:2], significance=0.1)
+    res = explainer.explain_factual(x_cal[:2], guarded_options=GuardedOptions(confidence=0.9))
     audit = res.get_guarded_audit()
     assert audit["summary"]["n_instances"] == 2
     assert len(audit["instances"]) == 2
@@ -300,7 +301,7 @@ def test_guarded_audit_uses_emitted_bounds_in_condition_strings():
 
 def test_guarded_audit_serialization_smoke():
     explainer, x_cal = make_classification_explainer(seed=40)
-    res = explainer.explain_guarded_factual(x_cal[:1], significance=0.1)
+    res = explainer.explain_factual(x_cal[:1], guarded_options=GuardedOptions(confidence=0.9))
     audit = res.get_guarded_audit()
     assert isinstance(json.dumps(audit), str)
 
@@ -316,9 +317,9 @@ def test_guarded_audit__merge_fails_rerenders_original_bins():
     explainer, x_cal = make_classification_explainer(seed=0)
     # significance=0.95 is strict enough that merged representatives over wider intervals
     # will typically fail; individual bins at their own representative may still pass.
-    result = explainer.explain_guarded_factual(
+    result = explainer.explain_factual(
         x_cal[:2],
-        significance=0.95,
+        guarded_options=GuardedOptions(confidence=0.05),
         merge_adjacent=True,
         n_neighbors=3,
     )

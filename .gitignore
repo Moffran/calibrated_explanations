@@ -172,6 +172,7 @@ notebooks/additional_notebooks/catboost_info/learn/events.out.tfevents
 *catboost_info/*
 docs/improvement/ignore/*
 reports/ci_local_summary.json
+reports/coverage_task5.json
 reports/docs/
 perf_diff.txt
 micro_current.json
@@ -220,3 +221,11 @@ evaluation/guarded/artifacts/archive/*
 .tmp*
 evaluation/guarded/artifacts/guarded_vs_standard/scenario_a/per_instance_record*
 evaluation/guarded/archive/*
+evaluation/multiclass/real-multiclass/*bib
+evaluation/reject/artifacts/scenario_8_difficulty_reject_ablation.csv
+evaluation/reject/artifacts/scenario_9_difficulty_normalized_ncf.csv
+evaluation/reject/artifacts/scenario_10_ambiguity_novelty_reject.csv
+evaluation/reject/artifacts/scenario_11_operating_point_selection*
+.mcp.json
+.github/agents/architecture-gatekeeper.agent.md
+.github/skills/cee*

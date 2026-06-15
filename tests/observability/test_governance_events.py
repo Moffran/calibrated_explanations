@@ -45,6 +45,10 @@ def base_meta(**extra: object) -> dict[str, object]:
         "provider": "tests",
         "capabilities": ["explain"],
         "data_modalities": ("tabular",),
+        "modes": ("factual",),
+        "tasks": ("classification",),
+        "dependencies": (),
+        "trusted": False,
     }
     meta.update(extra)
     return meta
@@ -63,9 +67,13 @@ def test_register_emits_schema_valid_accepted_registration_event(caplog):
     with (
         logging_context(request_id="req-accepted", tenant_id="tenant-a"),
         caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
-        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
     ):
-        registry.register(Plugin(), source="manual")
+        registry.register_explanation_plugin(
+            "tests.accepted",
+            Plugin(),
+            metadata=Plugin.plugin_meta,
+            source="manual",
+        )
 
     record = decision_records(caplog, "accepted_registration")[-1]
     payload = {key: getattr(record, key) for key in record.__dict__}
@@ -221,10 +229,14 @@ def test_register_emits_schema_valid_denied_registration_event(
 
     with (
         caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
-        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
         pytest.raises(ValidationError),
     ):
-        registry.register(Plugin(), source="register_call")
+        registry.register_explanation_plugin(
+            "tests.manual.denied",
+            Plugin(),
+            metadata=Plugin.plugin_meta,
+            source="register_call",
+        )
 
     record = decision_records(caplog, "denied_registration")[-1]
     payload = {key: getattr(record, key) for key in record.__dict__}
@@ -240,8 +252,12 @@ def test_governance_events_are_side_effect_only_and_payload_safe(
         plugin_meta = base_meta(name="tests.side_effect.safe")
 
     # Baseline behavior without active caplog capture.
-    with pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"):
-        registry.register(Plugin(), source="manual")
+    registry.register_explanation_plugin(
+        "tests.side_effect.safe",
+        Plugin(),
+        metadata=Plugin.plugin_meta,
+        source="manual",
+    )
     baseline_plugins = registry.list_plugins(include_untrusted=True)
     baseline_plugin_names = tuple(
         getattr(plugin, "plugin_meta", {}).get("name") for plugin in baseline_plugins
@@ -259,9 +275,13 @@ def test_governance_events_are_side_effect_only_and_payload_safe(
 
     with (
         caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
-        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
     ):
-        registry.register(Plugin(), source="manual")
+        registry.register_explanation_plugin(
+            "tests.side_effect.safe",
+            Plugin(),
+            metadata=Plugin.plugin_meta,
+            source="manual",
+        )
 
     captured_plugins = registry.list_plugins(include_untrusted=True)
     captured_plugin_names = tuple(
@@ -296,6 +316,160 @@ def test_should_emit_feature_filter_governance_record_with_context_when_event_lo
     assert record.mode == "factual"
     assert record.request_id == "req-feature-filter"
     assert record.tenant_id == "tenant-a"
+
+
+# ---------------------------------------------------------------------------
+# ADR-006 gap 2 — accepted_registration events for interval and plot plugins
+# ---------------------------------------------------------------------------
+
+
+def interval_meta(name: str) -> dict:
+    return {
+        "schema_version": 1,
+        "name": name,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["interval:classification"],
+        "modes": ("classification",),
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fast_compatible": False,
+        "requires_bins": False,
+        "confidence_source": "test",
+    }
+
+
+def plot_builder_meta(name: str) -> dict:
+    return {
+        "schema_version": 1,
+        "name": name,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["plot:factual"],
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "style": "test_style",
+        "legacy_compatible": False,
+        "output_formats": ("matplotlib",),
+    }
+
+
+def plot_renderer_meta(name: str) -> dict:
+    return {
+        "schema_version": 1,
+        "name": name,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["render:matplotlib"],
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "output_formats": ("png",),
+        "supports_interactive": False,
+    }
+
+
+def test_register_interval_plugin_emits_accepted_registration_governance_event(caplog):
+    """register_interval_plugin must emit accepted_registration governance event (ADR-006 gap 2)."""
+    name = "tests.gov.interval.accepted"
+
+    class FakePlugin:
+        plugin_meta = interval_meta(name)
+
+        def create(self, context, *, fast=False):
+            return None
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
+        registry.register_interval_plugin(name, FakePlugin(), metadata=FakePlugin.plugin_meta)
+
+    matches = decision_records(caplog, "accepted_registration")
+    assert matches[-1].identifier == name
+    payload = {key: getattr(matches[-1], key) for key in matches[-1].__dict__}
+    validate_governance_event(payload)
+
+
+def test_register_plot_builder_emits_accepted_registration_governance_event(caplog):
+    """register_plot_builder must emit accepted_registration governance event (ADR-006 gap 2)."""
+    name = "tests.gov.plot_builder.accepted"
+
+    class FakeBuilder:
+        plugin_meta = plot_builder_meta(name)
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
+        registry.register_plot_builder(name, FakeBuilder(), metadata=FakeBuilder.plugin_meta)
+
+    matches = decision_records(caplog, "accepted_registration")
+    assert matches[-1].identifier == name
+    payload = {key: getattr(matches[-1], key) for key in matches[-1].__dict__}
+    validate_governance_event(payload)
+
+
+def test_register_plot_renderer_emits_accepted_registration_governance_event(caplog):
+    """register_plot_renderer must emit accepted_registration governance event (ADR-006 gap 2)."""
+    name = "tests.gov.plot_renderer.accepted"
+
+    class FakeRenderer:
+        plugin_meta = plot_renderer_meta(name)
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
+        registry.register_plot_renderer(name, FakeRenderer(), metadata=FakeRenderer.plugin_meta)
+
+    matches = decision_records(caplog, "accepted_registration")
+    assert matches[-1].identifier == name
+    payload = {key: getattr(matches[-1], key) for key in matches[-1].__dict__}
+    validate_governance_event(payload)
+
+
+def test_all_three_plugin_types_emit_distinct_accepted_registration_events(caplog):
+    """All four typed registration functions must each emit an accepted_registration event."""
+
+    class FakeInterval:
+        plugin_meta = interval_meta("tests.gov.all.interval")
+
+        def create(self, context, *, fast=False):
+            return None
+
+    class FakeBuilder:
+        plugin_meta = plot_builder_meta("tests.gov.all.builder")
+
+    class FakeRenderer:
+        plugin_meta = plot_renderer_meta("tests.gov.all.renderer")
+
+    class FakeExplanation:
+        plugin_meta = base_meta(name="tests.gov.all.explanation")
+
+    with caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"):
+        registry.register_explanation_plugin(
+            "tests.gov.all.explanation",
+            FakeExplanation(),
+            metadata=FakeExplanation.plugin_meta,
+        )
+        registry.register_interval_plugin(
+            "tests.gov.all.interval",
+            FakeInterval(),
+            metadata=FakeInterval.plugin_meta,
+        )
+        registry.register_plot_builder(
+            "tests.gov.all.builder",
+            FakeBuilder(),
+            metadata=FakeBuilder.plugin_meta,
+        )
+        registry.register_plot_renderer(
+            "tests.gov.all.renderer",
+            FakeRenderer(),
+            metadata=FakeRenderer.plugin_meta,
+        )
+
+    accepted = [
+        r for r in caplog.records if getattr(r, "decision", None) == "accepted_registration"
+    ]
+    accepted_ids = {getattr(r, "identifier", None) for r in accepted}
+    assert "tests.gov.all.explanation" in accepted_ids
+    assert "tests.gov.all.interval" in accepted_ids
+    assert "tests.gov.all.builder" in accepted_ids
+    assert "tests.gov.all.renderer" in accepted_ids
 
 
 def test_should_emit_operational_and_governance_feature_filter_records_when_strict_path_triggers(

@@ -38,10 +38,6 @@ def test_api_quick_explain_delegates_to_core(monkeypatch: pytest.MonkeyPatch) ->
     assert captured["model"] == "m"
     assert captured["task"] == "classification"
     assert captured["threshold"] == 0.5
-    # Keep perf-shim warning tests deterministic by clearing cached shim modules.
-    sys.modules.pop("calibrated_explanations.perf", None)
-    sys.modules.pop("calibrated_explanations.perf.cache", None)
-    sys.modules.pop("calibrated_explanations.perf.parallel", None)
 
 
 def test_core_quick_explain_drives_fit_calibrate_and_explain(
@@ -84,6 +80,30 @@ def test_core_quick_explain_drives_fit_calibrate_and_explain(
     assert result == {"x": [3]}
     assert calls["fit"] == ([1], [0])
     assert calls["calibrate"] == ([2], [1], {"mode": "regression"})
+
+
+def test_core_quick_explain_no_task_skips_mode_kwarg(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Covers arc 66->68 in core/quick.py: task=None → calibrate called without mode kwarg.
+    core_quick = importlib.import_module("calibrated_explanations.core.quick")
+    calls: dict = {"calibrate": None}
+
+    class FakeWrapper2:
+        def fit(self, x_train, y_train):
+            pass
+
+        def calibrate(self, x_cal, y_cal, **kwargs):
+            calls["calibrate"] = kwargs
+
+        def explain_factual(self, x):
+            return x
+
+    monkeypatch.setattr(core_quick.ExplainerConfig, "__init__", lambda self, **kw: None)
+    monkeypatch.setattr(
+        core_quick.WrapCalibratedExplainer, "from_config", lambda cfg: FakeWrapper2()
+    )
+
+    core_quick.quick_explain(model="m", x_train=[1], y_train=[0], x_cal=[2], y_cal=[1], x=[3])
+    assert calls["calibrate"] == {}  # no "mode" key when task=None
 
 
 def test_explanations_adapters_roundtrip_shapes() -> None:

@@ -157,6 +157,40 @@ def test_summarize_explanations_handles_none_first_item() -> None:
     assert summary["has_conjunctions"] is False
 
 
+def test_summarize_explanations_uses_public_rules_and_prediction_triplet() -> None:
+    class Explanation:
+        prediction = {"predict": 0.7, "low": 0.4, "high": 0.9}
+        has_conjunctive_rules = True
+        conjunctive_rules = {"rule": ["a and b"]}
+
+        def get_rules(self):
+            return {"rule": ["r1", "r2", "r3"], "weight": [0.5, 0.2, 0.1]}
+
+    class Container(list):
+        low_high_percentiles = (10, 90)
+        y_threshold = 0.5
+
+    summary = summarize_explanations(Container([Explanation()]), top_k=2)
+
+    assert summary["prediction"] == {"predict": 0.7, "low": 0.4, "high": 0.9}
+    assert summary["top_rules"] == ["r1", "r2"]
+    assert summary["has_conjunctions"] is True
+
+
+def test_summarize_explanations_handles_non_mapping_rules_and_partial_prediction() -> None:
+    class Explanation:
+        prediction = {"predict": 0.7}
+        has_conjunctive_rules = False
+
+        def get_rules(self):
+            return ["r1", "r2"]
+
+    summary = summarize_explanations([Explanation()], top_k=2)
+
+    assert summary["prediction"] == {"predict": 0.7}
+    assert summary["top_rules"] == []
+
+
 def test_explain_and_narrate_handles_scalar_probability_and_missing_interval(monkeypatch) -> None:
     ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
 
@@ -217,6 +251,25 @@ def test_get_uncalibrated_predictions_without_predict_proba():
         payload = get_uncalibrated_predictions(wrapper, x_test[:2])
     assert payload["prediction"] is not None
     assert payload["probability"] is None
+
+
+def test_get_uncalibrated_predictions_forwards_var_keyword_arguments(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
+
+    class LearnerWithKwargs:
+        def predict(self, x, **kwargs):
+            return [kwargs["scale"] * len(x)]
+
+        def predict_proba(self, x, **kwargs):
+            return [[kwargs["scale"], len(x)]]
+
+    wrapper = types.SimpleNamespace(learner=LearnerWithKwargs())
+    with pytest.warns(UserWarning, match="non-canonical escape hatch"):
+        payload = get_uncalibrated_predictions(wrapper, [[1], [2]], scale=3)
+
+    assert payload["prediction"] == [6]
+    assert payload["probability"] == [[3, 2]]
 
 
 def test_ensure_ce_first_wrapper_raises_for_missing_library(monkeypatch):
@@ -481,6 +534,26 @@ def test_should_raise_when_unsupported_kwargs_in_get_calibrated_predictions(monk
 
     with pytest.raises(ValidationError, match="unsupported keyword argument"):
         ce_utils.get_calibrated_predictions(FixedArgsWrapper(), [[0.0]], calibrated=False, foo=99)
+
+
+def test_should_reraise_non_signature_type_error_in_calibrated_predictions(monkeypatch):
+    ce_utils = importlib.import_module("calibrated_explanations.ce_agent_utils")
+    monkeypatch.setattr(ce_utils, "ensure_ce_first_wrapper", lambda w: w)
+
+    class RuntimeTypeErrorWrapper:
+        fitted = True
+        calibrated = True
+        learner = types.SimpleNamespace()
+
+        def predict(self, _x):
+            raise TypeError("domain conversion failed")
+
+    with pytest.raises(TypeError, match="domain conversion failed"):
+        ce_utils.get_calibrated_predictions(
+            RuntimeTypeErrorWrapper(),
+            [[0.0]],
+            calibrated=False,
+        )
 
 
 def test_should_emit_userwarning_when_get_uncalibrated_predictions_called(monkeypatch):

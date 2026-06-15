@@ -15,7 +15,7 @@ below. It will NOT generate new files unless asked.
 
 | File | What to update |
 |---|---|
-| `AGENT_INSTRUCTIONS.md` | §1 CE-first policy, §2 architecture, §3 coding standards, §5 key files |
+| `CONTRIBUTOR_INSTRUCTIONS.md` | §1 CE-first policy, §2 architecture, §3 coding standards, §5 key files |
 
 ### Platform-specific files (propagate changes after updating canonical)
 
@@ -32,16 +32,16 @@ below. It will NOT generate new files unless asked.
 
 1. **Read current API** – scan `src/calibrated_explanations/core/__init__.py` and
    `src/calibrated_explanations/__init__.py` for exported names and their signatures.
-2. **Diff against `AGENT_INSTRUCTIONS.md`** – identify stale method names, removed
+2. **Diff against `CONTRIBUTOR_INSTRUCTIONS.md`** – identify stale method names, removed
    parameters, or missing new symbols.
 3. **Read active ADRs** – check `docs/improvement/adrs/` for any ADR whose status
    changed since the last context update.
-4. **Update `AGENT_INSTRUCTIONS.md` first** – minimal diff only; do not rewrite
+4. **Update `CONTRIBUTOR_INSTRUCTIONS.md` first** – minimal diff only; do not rewrite
    unchanged sections.
 5. **Propagate to platform files** – apply the same minimal diff to the relevant
    sections of each platform file.
 6. **Incorporate user feedback** – if the user supplied feedback text (see `feedback=`
-   below), create a new bullet in the relevant section of `AGENT_INSTRUCTIONS.md`
+   below), create a new bullet in the relevant section of `CONTRIBUTOR_INSTRUCTIONS.md`
    and append a dated entry to `.github/copilot-feedback-log.md` using:
    - `**Feedback:**`
    - `**Root cause:**`
@@ -57,8 +57,8 @@ below. It will NOT generate new files unless asked.
 
 ## Checklist on completion
 
-- [ ] All exported symbols in `__init__.py` are reflected in `AGENT_INSTRUCTIONS.md`.
+- [ ] All exported symbols in `__init__.py` are reflected in `CONTRIBUTOR_INSTRUCTIONS.md`.
 - [ ] No stale method names remain in any agent instruction file.
-- [ ] New ADR status changes are noted in `AGENT_INSTRUCTIONS.md`.
+- [ ] New ADR status changes are noted in `CONTRIBUTOR_INSTRUCTIONS.md`.
 - [ ] All platform-specific files reference the updated canonical correctly.
 - [ ] User feedback entry added to `.github/copilot-feedback-log.md` (if `feedback=` was provided).

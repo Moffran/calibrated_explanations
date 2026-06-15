@@ -50,7 +50,7 @@ def test_plot_triangular_legacy_branch(monkeypatch: pytest.MonkeyPatch) -> None:
         calls.append(args)
 
     monkeypatch.setattr(
-        "calibrated_explanations.legacy.plotting.plot_triangular",
+        "calibrated_explanations.viz._matplotlib_compat.plot_triangular",
         legacy_plot_triangular,
     )
 
@@ -146,7 +146,7 @@ def test_plot_alternative_classification_render_failure_falls_back_to_legacy(
         lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("render boom")),
     )
     monkeypatch.setattr(
-        "calibrated_explanations.legacy.plotting.plot_alternative",
+        "calibrated_explanations.viz._matplotlib_compat.plot_alternative",
         lambda *args: legacy_calls.append(args),
     )
 

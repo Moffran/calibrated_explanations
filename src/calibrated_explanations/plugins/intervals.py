@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping, MutableMapping, Protocol, Sequence, runtime_checkable
 
+from .base import freeze_plugin_config, thaw_plugin_config
+
 
 @dataclass(frozen=True)
 class IntervalCalibratorContext:
@@ -21,6 +23,7 @@ class IntervalCalibratorContext:
     difficulty: Mapping[str, Any]
     metadata: Mapping[str, Any]
     fast_flags: Mapping[str, Any]
+    plugin_config: Mapping[str, Any] = field(default_factory=dict)
     plugin_state: MutableMapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -34,37 +37,36 @@ class IntervalCalibratorContext:
                 {} if raw_metadata is None else dict(getattr(raw_metadata, "items", lambda: ())())
             )
         object.__setattr__(self, "metadata", MappingProxyType(normalized))
+        object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
+        # Freeze mutable container fields. calibration_splits elements may be numpy
+        # arrays (accepted array-payload exception); only the outer sequence is frozen.
+        object.__setattr__(self, "calibration_splits", tuple(self.calibration_splits or ()))
+        if self.bins is not None:
+            object.__setattr__(self, "bins", MappingProxyType(dict(self.bins)))
+        if self.residuals is not None:
+            object.__setattr__(self, "residuals", MappingProxyType(dict(self.residuals)))
+        if self.difficulty is not None:
+            object.__setattr__(self, "difficulty", MappingProxyType(dict(self.difficulty)))
+        if self.fast_flags is not None:
+            object.__setattr__(self, "fast_flags", MappingProxyType(dict(self.fast_flags)))
         # Ensure plugin_state is mutable so plugins can store transient data.
         if not isinstance(self.plugin_state, MutableMapping):  # pragma: no cover - defensive
             object.__setattr__(self, "plugin_state", dict(self.plugin_state))  # type: ignore[arg-type]
 
-    def __getstate__(self):
-        """Get state for pickling.
+    def __getstate__(self) -> dict:
+        """Return pickle-safe state with all MappingProxyType values thawed to plain dicts."""
+        return {k: thaw_plugin_config(v) for k, v in self.__dict__.items()}
 
-        Returns
-        -------
-        dict
-            The state dictionary.
-        """
-        # Convert mappingproxy to dict for pickling
-        return dict(self.__dict__)
-
-    def __setstate__(self, state):
-        """Set state for unpickling.
-
-        Parameters
-        ----------
-        state : dict
-            The state dictionary.
-        """
-        metadata = state.get("metadata")
-        if metadata is not None:
-            state = dict(state)
-            state["metadata"] = MappingProxyType(dict(metadata))
-        plugin_state = state.get("plugin_state")
-        if plugin_state is not None and not isinstance(plugin_state, MutableMapping):
-            state["plugin_state"] = dict(plugin_state)
-        self.__dict__.update(state)
+    def __setstate__(self, state: dict) -> None:
+        """Restore state, re-freezing metadata and plugin_config, ensuring plugin_state is mutable."""
+        for key, value in state.items():
+            if key == "metadata":
+                value = MappingProxyType(dict(value)) if value is not None else None
+            elif key == "plugin_config":
+                value = freeze_plugin_config(value if value is not None else {})
+            elif key == "plugin_state" and not isinstance(value, MutableMapping):
+                value = dict(value) if value is not None else {}
+            object.__setattr__(self, key, value)
 
 
 @runtime_checkable

@@ -11,10 +11,16 @@ Before publishing a release, review `ROADMAP.md` and the more detailed implement
 
    Preserve the `pytest --cov` summary for the release notes and update the
    public coverage badge if the percentage changes.
-3. **Ownership sign-off** – collect approvals from the section owners listed in
+3. **Legacy API gate** – verify that the legacy user API contract documented in
+   `docs/improvement/legacy_user_api_contract.md` is intact. Run
+   `pytest tests/unit/api/test_legacy_user_api_contract.py -v` and confirm
+   zero failures. If any legacy surface changed, confirm it was explicitly
+   scheduled by the release plan and that the contract doc and parity tests
+   were updated in the same PR (ADR-020).
+4. **Ownership sign-off** – collect approvals from the section owners listed in
    `docs/foundations/governance/section_owners.md`, including the runtime tech
    verification steps.
-4. **Release notes** – draft highlights, call out telemetry/plugin optionality,
+5. **Release notes** – draft highlights, call out telemetry/plugin optionality,
    and link to the detailed implementation plan in `vx.y.z_plan.md`.
 
 Document completion in the release issue template so future audits can trace

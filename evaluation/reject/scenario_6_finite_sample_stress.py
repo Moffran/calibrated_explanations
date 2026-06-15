@@ -18,9 +18,11 @@ import pandas as pd
 
 from .common_reject import (
     RunConfig,
+    _markdown_table_from_df,
     build_classification_bundle,
     empirical_coverage,
     reject_breakdown,
+    singleton_precision_recall,
     task_specs,
     write_csv_json_md,
 )
@@ -42,7 +44,9 @@ def run(config: RunConfig) -> None:
             for epsilon in epsilons:
                 breakdown = reject_breakdown(bundle.wrapper, bundle.x_test, confidence=1.0 - epsilon)
                 rejected = np.asarray(breakdown["rejected"], dtype=bool)
-                coverage = empirical_coverage(np.asarray(breakdown["prediction_set"], dtype=bool), bundle.y_test)
+                prediction_set = np.asarray(breakdown["prediction_set"], dtype=bool)
+                coverage = empirical_coverage(prediction_set, bundle.y_test)
+                singleton_metrics = singleton_precision_recall(prediction_set, bundle.y_test)
                 rows.append(
                     {
                         "dataset": spec.name,
@@ -55,6 +59,7 @@ def run(config: RunConfig) -> None:
                         # Actual coverage check — not a hard-coded constant
                         "violation": bool(coverage < 1.0 - epsilon),
                         "matched_count": int(np.sum(~rejected)),
+                        **singleton_metrics,
                     }
                 )
 
@@ -64,9 +69,9 @@ def run(config: RunConfig) -> None:
             epsilon = 1.0 - confidence
             breakdown = reject_breakdown(full_bundle.wrapper, full_bundle.x_test, confidence=confidence)
             rejected = np.asarray(breakdown["rejected"], dtype=bool)
-            coverage = empirical_coverage(
-                np.asarray(breakdown["prediction_set"], dtype=bool), full_bundle.y_test
-            )
+            prediction_set = np.asarray(breakdown["prediction_set"], dtype=bool)
+            coverage = empirical_coverage(prediction_set, full_bundle.y_test)
+            singleton_metrics = singleton_precision_recall(prediction_set, full_bundle.y_test)
             rows.append(
                 {
                     "dataset": spec.name,
@@ -79,6 +84,7 @@ def run(config: RunConfig) -> None:
                     # Bug fix: actual coverage check, not unconditional False
                     "violation": bool(coverage < 1.0 - epsilon),
                     "matched_count": int(np.sum(~rejected)),
+                    **singleton_metrics,
                 }
             )
 
@@ -107,7 +113,48 @@ def run(config: RunConfig) -> None:
             ) if not df.empty else 0,
         },
     }
-    write_csv_json_md("scenario_6_finite_sample_stress", df, meta)
+    # --- Extra sections ---
+    extra_sections: list[str] = []
+
+    if not df.empty:
+        # Section: Violation rates by n_cal (small_calibration probe)
+        small_cal = df[df["probe"] == "small_calibration"]
+        if not small_cal.empty:
+            by_ncal = (
+                small_cal.groupby("n_cal")
+                .agg(
+                    total_rows=("violation", "size"),
+                    violations=("violation", "sum"),
+                    violation_rate=("violation", "mean"),
+                    mean_reject_rate=("reject_rate", "mean"),
+                )
+                .reset_index()
+            )
+            extra_sections += [
+                "## Violation rates by n_cal (small_calibration probe)",
+                "",
+                _markdown_table_from_df(by_ncal),
+                "",
+            ]
+
+        # Section: Violation rates by epsilon
+        by_eps = (
+            df.groupby("epsilon")
+            .agg(
+                violations=("violation", "sum"),
+                violation_rate=("violation", "mean"),
+                mean_coverage=("coverage", "mean"),
+            )
+            .reset_index()
+        )
+        extra_sections += [
+            "## Violation rates by epsilon",
+            "",
+            _markdown_table_from_df(by_eps),
+            "",
+        ]
+
+    write_csv_json_md("scenario_6_finite_sample_stress", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

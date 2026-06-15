@@ -59,6 +59,8 @@ class ShapHelper:
     @property
     def explainer_instance(self) -> Any:
         """Expose the cached SHAP explainer, preloading it if necessary."""
+        if not self._enabled:
+            return self._explainer_instance
         instance, _ = self.preload()
         return instance
 
@@ -70,6 +72,8 @@ class ShapHelper:
     @property
     def reference_explanation(self) -> Any:
         """Return the cached explanation, preloading if required."""
+        if not self._enabled:
+            return self._reference_explanation
         _, explanation = self.preload()
         return explanation
 

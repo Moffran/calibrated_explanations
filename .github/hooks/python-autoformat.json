@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "python3 .github/hooks/scripts/python-autoformat.py",
+        "windows": "python .github/hooks/scripts/python-autoformat.py",
+        "timeout": 15
+      }
+    ]
+  }
+}

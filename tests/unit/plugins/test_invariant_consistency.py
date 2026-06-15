@@ -62,3 +62,36 @@ def test_should_raise_validationerror_with_consistent_shape_when_invariants_fail
 
     with pytest.raises(ValidationError, match=expected):
         bridge.predict("X", mode="regression", task="regression")
+
+
+# ---------------------------------------------------------------------------
+# ADR-015 gap 3 — task-scoped enforcement parity
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("task", ["regression", "classification"])
+def test_should_enforce_interval_invariant_consistently_across_task_types(task):
+    """Interval invariant violations must raise ValidationError for both regression and classification."""
+    invalid_payload = {"predict": np.array([0.5]), "low": np.array([0.6]), "high": np.array([0.4])}
+    batch = ExplanationBatch(
+        container_cls=DummyContainer,
+        explanation_cls=DummyExplanation,
+        instances=[{"prediction": invalid_payload}],
+        collection_metadata={"task": task, "mode": "test"},
+    )
+    with pytest.raises(ValidationError, match="Interval invariant violated"):
+        validate_explanation_batch(batch, expected_task=task, expected_mode="test")
+
+
+@pytest.mark.parametrize("task", ["regression", "classification"])
+def test_should_enforce_prediction_invariant_consistently_across_task_types(task):
+    """Prediction invariant violations must raise ValidationError for both regression and classification."""
+    invalid_payload = {"predict": np.array([0.9]), "low": np.array([0.4]), "high": np.array([0.6])}
+    batch = ExplanationBatch(
+        container_cls=DummyContainer,
+        explanation_cls=DummyExplanation,
+        instances=[{"prediction": invalid_payload}],
+        collection_metadata={"task": task, "mode": "test"},
+    )
+    with pytest.raises(ValidationError, match="Prediction invariant violated"):
+        validate_explanation_batch(batch, expected_task=task, expected_mode="test")

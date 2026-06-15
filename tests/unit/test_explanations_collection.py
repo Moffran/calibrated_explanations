@@ -13,7 +13,6 @@ from calibrated_explanations.explanations import (
     FrozenCalibratedExplainer,
 )
 from calibrated_explanations.plugins.manager import PluginManager
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class DummyDomainMapper:
@@ -782,6 +781,53 @@ def test_filter_features_inplace_mutates_collection(calibrated_collection):
         assert any(call[0] == "filter_features" and call[1]["copy"] is False for call in exp.calls)
 
 
+def test_filter_features_copy_returns_new_object(calibrated_collection):
+    # copy=True path in CalibratedExplanations.filter_features (lines 1244-1252).
+    out = calibrated_collection.filter_features(exclude_features=0, copy=True)
+    assert out is not calibrated_collection
+    assert len(out.explanations) == len(calibrated_collection.explanations)
+
+
+def test_narrate_and_to_dataframe_delegators(calibrated_collection, monkeypatch):
+    # narrate() and to_dataframe() are delegators for to_narrative().
+    # Cover lines 1523-1524 (to_dataframe) and 1528 (narrate).
+    calls = []
+    monkeypatch.setattr(calibrated_collection, "to_narrative", lambda *a, **kw: calls.append(kw))
+    calibrated_collection.narrate()
+    calibrated_collection.to_dataframe()
+    assert len(calls) == 2
+    assert calls[1].get("output_format") == "dataframe"
+
+
+def test_plot_style_ensured_normalizes_to_triangular(calibrated_collection):
+    # Calling plot(style="ensured") covers line 1326 (style = "triangular").
+    # DummyExplanation.plot() just records calls; no figures are rendered.
+    calibrated_collection.plot(style="ensured", show=False)
+    for exp in calibrated_collection.explanations:
+        assert any(call[0] == "plot" for call in exp.calls)
+
+
+def test_to_json_stream_without_underlying_explainer(calibrated_collection, monkeypatch):
+    # Replace calibrated_explainer with a stub that lacks _explainer,
+    # covering arcs 675->690 and 808->818 (underlying is None paths).
+    import types as _types
+
+    stub = _types.SimpleNamespace(
+        feature_names=["f0", "f1", "f2"],
+        class_labels=None,
+        sample_percentiles=None,
+        mode="classification",
+        runtime_telemetry=None,
+        x_cal=np.zeros((2, 3)),
+        y_cal=np.array([0, 1]),
+        interval_summary="test",
+        num_features=3,
+    )
+    monkeypatch.setattr(calibrated_collection, "calibrated_explainer", stub)
+    fragments = list(calibrated_collection.to_json_stream())
+    assert len(fragments) > 0
+
+
 def test_from_batch_full_probabilities_and_instance_validation(calibrated_collection):
     from calibrated_explanations.core import SerializationError, ValidationError
 
@@ -933,20 +979,11 @@ def test_collection_to_narrative_and_plot_style_narrative(monkeypatch, calibrate
     assert single.called["output_format"] == "text"
 
 
-def test_as_lime_and_shap_transformations(calibrated_collection):
-    with warns_or_raises(match="CalibratedExplanations.as_lime is deprecated"):
-        lime_explanations = calibrated_collection.as_lime(num_features_to_show=2)
-    if not deprecations_error_enabled():
-        assert len(lime_explanations) == len(calibrated_collection)
-        for lime in lime_explanations:
-            assert lime.local_pred is not None
-            assert len(lime.local_exp[1]) == 2
-
-    with warns_or_raises(match="CalibratedExplanations.as_shap is deprecated"):
-        shap_exp = calibrated_collection.as_shap()
-    if not deprecations_error_enabled():
-        assert shap_exp.values.shape[0] == len(calibrated_collection)
-        assert shap_exp.data is calibrated_collection.x_test
+def test_should_fail_closed_for_removed_lime_and_shap_collection_adapters(
+    calibrated_collection,
+):
+    assert not hasattr(calibrated_collection, "as_lime")
+    assert not hasattr(calibrated_collection, "as_shap")
 
 
 def test_as_lime_regression_branch():
@@ -958,12 +995,7 @@ def test_as_lime_regression_branch():
             0, x[0], predict=0.42, interval=(0.0, 1.0), feature_weights=[1.0, 2.0, 3.0]
         )
     ]
-    with warns_or_raises(match="CalibratedExplanations.as_lime is deprecated"):
-        lime = collection.as_lime()
-    if not deprecations_error_enabled():
-        assert lime[0].predicted_value == collection.explanations[0].prediction["predict"]
-        assert lime[0].min_value == np.min(dummy_explainer.y_cal)
-        assert lime[0].max_value == np.max(dummy_explainer.y_cal)
+    assert not hasattr(collection, "as_lime")
 
 
 def test_class_labels_and_feature_names_cache(calibrated_collection):

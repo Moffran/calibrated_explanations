@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import inspect
+from unittest.mock import MagicMock
 
 import calibrated_explanations as ce
+from calibrated_explanations.api.config import ExplainerConfig
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.explanations import CalibratedExplanations
 
 
@@ -66,16 +69,11 @@ def test_calibrated_explainer_factories_support_expected_keywords():
         assert "threshold" in params
         assert "low_high_percentiles" in params
         assert "bins" in params
-
-        # Handle optional kwargs and _use_plugin
-        if params[-1] == "kwargs":
-            if params[-2] == "_use_plugin":
-                assert params[-3] == "features_to_ignore"
-            else:
-                assert params[-2] == "features_to_ignore"
-        else:
-            assert params[-2] == "features_to_ignore"
-            assert params[-1].startswith("_use_plugin")
+        assert "features_to_ignore" in params
+        # guarded is a keyword-only policy flag added in v0.11.3
+        assert "guarded" in params
+        # features_to_ignore must come before guarded in the signature
+        assert params.index("features_to_ignore") < params.index("guarded")
 
 
 def test_explanation_collection_api_is_stable():
@@ -103,3 +101,75 @@ def test_explanation_collection_api_is_stable():
 
     add_params = param_names(CalibratedExplanations.add_conjunctions)
     assert add_params == ["n_top_features", "max_rule_size", "kwargs"]
+
+
+# ---------------------------------------------------------------------------
+# ADR-020 gap 2 — parity assertions for explain_factual / explore_alternatives
+# ---------------------------------------------------------------------------
+
+
+def make_parity_wrapper(threshold, low_high_percentiles):
+    """Return a (wrapper, captured) pair for delegation parity tests."""
+    captured: dict[str, dict] = {}
+
+    class CapturingExplainer:
+        def explain_factual(self, x, **kwargs):
+            captured["factual"] = dict(kwargs)
+            return MagicMock()
+
+        def explore_alternatives(self, x, **kwargs):
+            captured["alternatives"] = dict(kwargs)
+            return MagicMock()
+
+    model = MagicMock()
+    cfg = ExplainerConfig(
+        model=model, threshold=threshold, low_high_percentiles=low_high_percentiles
+    )
+    w = WrapCalibratedExplainer.from_config(cfg)
+    w.fitted = True
+    w.calibrated = True
+    w.explainer = CapturingExplainer()
+    return w, captured
+
+
+def test_wrap_explain_factual_parity_explicit_threshold_is_forwarded():
+    """Explicit threshold passed to explain_factual must arrive at the underlying explainer."""
+    w, captured = make_parity_wrapper(threshold=0.3, low_high_percentiles=(10, 90))
+    w.explain_factual([[0.0]], threshold=0.8)
+    assert captured["factual"]["threshold"] == 0.8
+
+
+def test_wrap_explain_factual_parity_config_defaults_are_injected_when_absent():
+    """When no explicit threshold/percentiles passed, config defaults must be injected."""
+    w, captured = make_parity_wrapper(threshold=0.3, low_high_percentiles=(10, 90))
+    w.explain_factual([[0.0]])
+    assert captured["factual"]["threshold"] == 0.3
+    assert captured["factual"]["low_high_percentiles"] == (10, 90)
+
+
+def test_wrap_explore_alternatives_parity_explicit_kwargs_forwarded():
+    """Explicit kwargs passed to explore_alternatives must arrive at the underlying explainer."""
+    w, captured = make_parity_wrapper(threshold=0.5, low_high_percentiles=(5, 95))
+    w.explore_alternatives([[0.0]], threshold=0.7)
+    assert captured["alternatives"]["threshold"] == 0.7
+
+
+def test_wrap_explore_alternatives_parity_config_defaults_injected():
+    """Config defaults must be injected into explore_alternatives when not explicitly passed."""
+    w, captured = make_parity_wrapper(threshold=0.5, low_high_percentiles=(5, 95))
+    w.explore_alternatives([[0.0]])
+    assert captured["alternatives"]["threshold"] == 0.5
+    assert captured["alternatives"]["low_high_percentiles"] == (5, 95)
+
+
+def test_wrap_explain_methods_accept_var_keyword_for_ce_parity():
+    """Both wrapper explain methods must accept **kwargs so all CalibratedExplainer kwargs are passable."""
+    for method_name in ("explain_factual", "explore_alternatives"):
+        sig = inspect.signature(getattr(WrapCalibratedExplainer, method_name))
+        var_kw_params = [
+            p for p in sig.parameters.values() if p.kind == inspect.Parameter.VAR_KEYWORD
+        ]
+        assert var_kw_params, (
+            f"WrapCalibratedExplainer.{method_name} must accept **kwargs "
+            "for parity with CalibratedExplainer parameter surface"
+        )

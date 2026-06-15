@@ -29,14 +29,10 @@ def test_should_raise_attribute_error_for_removed_task21_core_wrapper_entrypoint
             callback()
 
 
-def test_should_keep_collection_as_lime_as_shap_deprecated_until_v0113(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Collection adapters remain deprecations in v0.11.2 and are removed in v0.11.3."""
-    monkeypatch.setenv("CE_DEPRECATIONS", "error")
+def test_should_raise_attribute_error_for_removed_collection_as_lime_as_shap() -> None:
+    """Collection LIME/SHAP adapters were removed in v0.11.3."""
     collection = object.__new__(CalibratedExplanations)
 
-    with pytest.raises(DeprecationWarning, match="CalibratedExplanations.as_lime is deprecated"):
-        collection.as_lime()
-    with pytest.raises(DeprecationWarning, match="CalibratedExplanations.as_shap is deprecated"):
-        collection.as_shap()
+    for symbol in ("as_lime", "as_shap"):
+        with pytest.raises(AttributeError, match=symbol):
+            getattr(collection, symbol)()

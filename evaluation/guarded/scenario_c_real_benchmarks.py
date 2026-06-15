@@ -52,6 +52,10 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+# Ensure the terminal can render Unicode characters (e.g. ε) on Windows.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -419,8 +423,9 @@ def _evaluate_dataset(
 
                     # --- factual ---
                     try:
-                        guarded_factual = wrapper.explain_guarded_factual(
+                        guarded_factual = wrapper.explain_factual(
                             x_test,
+                            guarded=True,
                             threshold=threshold_val,
                             significance=safe_cfg.significance,
                             n_neighbors=safe_cfg.n_neighbors,
@@ -455,8 +460,9 @@ def _evaluate_dataset(
 
                     # --- alternative ---
                     try:
-                        guarded_alt = wrapper.explore_guarded_alternatives(
+                        guarded_alt = wrapper.explore_alternatives(
                             x_test,
+                            guarded=True,
                             threshold=threshold_val,
                             significance=safe_cfg.significance,
                             n_neighbors=safe_cfg.n_neighbors,

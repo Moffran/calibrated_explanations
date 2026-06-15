@@ -2,8 +2,10 @@
 """Guarded explanation classes for CE-compatible guarded explanations.
 
 These classes represent explanations produced by
-:meth:`~calibrated_explanations.CalibratedExplainer.explain_guarded_factual` and
-:meth:`~calibrated_explanations.CalibratedExplainer.explore_guarded_alternatives`.
+:meth:`~calibrated_explanations.CalibratedExplainer.explain_factual` (with
+``guarded_options=GuardedOptions()``) and
+:meth:`~calibrated_explanations.CalibratedExplainer.explore_alternatives` (with
+``guarded_options=GuardedOptions()``).
 
 Guarded explanations are a CE-compatible extension rather than a claim of
 semantic identity with standard CE internals. They keep standard collection and

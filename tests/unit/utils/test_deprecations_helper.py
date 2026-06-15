@@ -11,6 +11,7 @@ import pytest
 from calibrated_explanations.utils.deprecations import (
     should_raise,
     deprecate,
+    deprecate_alias,
     emitted_keys,
     emitted_per_test,
     clear_emitted,
@@ -127,3 +128,14 @@ class TestDeprecate:
             deprecate("Alias warning session", key="alias_key_session", raise_on_error=False)
 
         assert "alias_key_session" in emitted_keys()
+
+    def test_deprecate_alias_should_warn_and_record_alias_key(self):
+        """deprecate_alias() should emit warning and use stable alias-prefixed key."""
+        with (
+            patch.dict(os.environ, {"CE_DEPRECATIONS": "error"}, clear=True),
+            patch("calibrated_explanations.utils.deprecations.should_raise", return_value=True),
+            pytest.warns(DeprecationWarning, match="deprecated; use"),
+        ):
+            deprecate_alias("old_name", "new_name")
+
+        assert "alias:old_name" in emitted_keys()

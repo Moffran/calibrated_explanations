@@ -24,6 +24,21 @@ def test_viz_coloring_helpers_cover_primary_and_fallback_paths() -> None:
     assert coloring.get_fill_color({"predict": "not-a-number"}).startswith("#")
 
 
+def test_config_split_csv_and_categorical_perturbation_fallbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config_helpers = importlib.import_module("calibrated_explanations.core.config_helpers")
+    perturbation = importlib.import_module("calibrated_explanations.utils.perturbation")
+
+    assert config_helpers.split_csv(None) == ()
+    assert config_helpers.split_csv(" alpha, , beta ") == ("alpha", "beta")
+
+    monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", raising=False)
+    with pytest.warns(UserWarning, match="deterministic swap"):
+        out = perturbation.categorical_perturbation(np.asarray([1, 1]), num_permutations=1)
+    assert out.tolist() == [1, 1]
+
+
 def test_fast_explanation_plugin_registration_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     fast_mod = importlib.import_module("calibrated_explanations.plugins.explanations_fast")
     calls: dict[str, object] = {}

@@ -20,6 +20,7 @@ from calibrated_explanations.explanations.guarded_explanation import (
 )
 from calibrated_explanations.utils.distribution_guard import InDistributionGuard
 from calibrated_explanations.utils.exceptions import ValidationError
+from calibrated_explanations import GuardedOptions
 
 
 def make_classification_explainer(*, seed: int = 0) -> tuple[CalibratedExplainer, np.ndarray]:
@@ -48,12 +49,11 @@ def test_explain_guarded_factual__returns_calibrated_explanations_container():
     """Guarded factual explain returns container + guarded explanation type."""
     explainer, x_cal = make_classification_explainer(seed=1)
 
-    result = explainer.explain_guarded_factual(
+    result = explainer.explain_factual(
         x_cal[:2],
-        significance=0.2,
-        merge_adjacent=True,
-        n_neighbors=3,
-        normalize_guard=True,
+        guarded_options=GuardedOptions(
+            confidence=0.8, merge_adjacent=True, n_neighbors=3, normalize=True
+        ),
     )
 
     assert isinstance(result, CalibratedExplanations)
@@ -69,10 +69,9 @@ def test_explain_guarded_factual__get_rules_returns_dict():
     """Guarded factual explanation exposes a rules dict."""
     explainer, x_cal = make_classification_explainer(seed=3)
 
-    result = explainer.explain_guarded_factual(
+    result = explainer.explain_factual(
         x_cal[:1],
-        significance=0.3,
-        n_neighbors=3,
+        guarded_options=GuardedOptions(confidence=0.7, n_neighbors=3),
     )
 
     expl = result.explanations[0]
@@ -92,12 +91,9 @@ def test_explore_guarded_alternatives__returns_alternative_explanations_containe
     """Guarded alternatives returns alternative container + guarded type."""
     explainer, x_cal = make_classification_explainer(seed=2)
 
-    result = explainer.explore_guarded_alternatives(
+    result = explainer.explore_alternatives(
         x_cal[:1],
-        significance=0.2,
-        merge_adjacent=False,
-        n_neighbors=3,
-        normalize_guard=True,
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=3, normalize=True),
     )
 
     assert isinstance(result, AlternativeExplanations)
@@ -113,10 +109,9 @@ def test_explore_guarded_alternatives__get_rules_returns_dict():
     """Guarded alternative explanation exposes a rules dict."""
     explainer, x_cal = make_classification_explainer(seed=4)
 
-    result = explainer.explore_guarded_alternatives(
+    result = explainer.explore_alternatives(
         x_cal[:1],
-        significance=0.3,
-        n_neighbors=3,
+        guarded_options=GuardedOptions(confidence=0.7, n_neighbors=3),
     )
 
     expl = result.explanations[0]
@@ -130,12 +125,11 @@ def test_explore_guarded_alternatives__should_run_merge_adjacent_branch_in_alter
     """Alternative guarded explain executes merge-adjacent branching."""
     explainer, x_cal = make_classification_explainer(seed=7)
 
-    result = explainer.explore_guarded_alternatives(
+    result = explainer.explore_alternatives(
         x_cal[:1],
-        significance=0.2,
-        merge_adjacent=True,
-        n_neighbors=3,
-        normalize_guard=True,
+        guarded_options=GuardedOptions(
+            confidence=0.8, merge_adjacent=True, n_neighbors=3, normalize=True
+        ),
     )
 
     assert isinstance(result, AlternativeExplanations)
@@ -229,12 +223,11 @@ def test_use_plugin_false__emits_warning_for_guarded_factual():
     explainer, x_cal = make_classification_explainer(seed=5)
 
     with pytest.warns(UserWarning, match="_use_plugin has no effect"):
-        explainer.explain_guarded_factual(
+        explainer.explain_factual(
             x_cal[:1],
+            guarded_options=GuardedOptions(n_neighbors=3),
             _use_plugin=False,
             verbose=True,
-            significance=0.3,
-            n_neighbors=3,
         )
 
 
@@ -243,12 +236,11 @@ def test_use_plugin_false__emits_warning_for_guarded_alternatives():
     explainer, x_cal = make_classification_explainer(seed=6)
 
     with pytest.warns(UserWarning, match="_use_plugin has no effect"):
-        explainer.explore_guarded_alternatives(
+        explainer.explore_alternatives(
             x_cal[:1],
+            guarded_options=GuardedOptions(n_neighbors=3),
             _use_plugin=False,
             verbose=True,
-            significance=0.3,
-            n_neighbors=3,
         )
 
 
@@ -442,12 +434,11 @@ def test_guarded_alternative_explanation__should_join_conditions_and_skip_baseli
 def test_guarded_pipeline__should_emit_unique_interval_records_when_merge_enabled():
     """Guarded pipeline should produce unique interval records when merging is enabled."""
     explainer, x_cal = make_classification_explainer(seed=17)
-    result = explainer.explore_guarded_alternatives(
+    result = explainer.explore_alternatives(
         x_cal[:1],
-        significance=0.2,
-        merge_adjacent=True,
-        n_neighbors=3,
-        normalize_guard=True,
+        guarded_options=GuardedOptions(
+            confidence=0.8, merge_adjacent=True, n_neighbors=3, normalize=True
+        ),
     )
 
     audit = result.explanations[0].get_guarded_audit()
@@ -532,11 +523,9 @@ def test_guarded_factual__produces_fewer_rules_on_ood_instance():
     explainer, x_cal = make_classification_explainer(seed=50)
     x_ood = (x_cal.max(axis=0) * 5.0).reshape(1, -1)
 
-    result = explainer.explain_guarded_factual(
+    result = explainer.explain_factual(
         x_ood,
-        significance=0.2,
-        n_neighbors=5,
-        normalize_guard=True,
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=5, normalize=True),
     )
 
     audit = result.explanations[0].get_guarded_audit()
@@ -557,17 +546,13 @@ def test_in_distribution_guard__normalize_affects_conformity():
     explainer, x_cal = make_classification_explainer(seed=51)
     x_ood = (x_cal.max(axis=0) * 5.0).reshape(1, -1)
 
-    result_norm = explainer.explain_guarded_factual(
+    result_norm = explainer.explain_factual(
         x_ood,
-        significance=0.2,
-        n_neighbors=5,
-        normalize_guard=True,
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=5, normalize=True),
     )
-    result_raw = explainer.explain_guarded_factual(
+    result_raw = explainer.explain_factual(
         x_ood,
-        significance=0.2,
-        n_neighbors=5,
-        normalize_guard=False,
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=5, normalize=False),
     )
 
     removed_norm = result_norm.explanations[0].get_guarded_audit()["summary"][
@@ -597,8 +582,8 @@ def test_in_distribution_guard__normalize_affects_conformity():
 def test_should_accept_significance_of_one():
     """significance=1.0 is allowed (interval is (0, 1])."""
     explainer, x_cal = make_classification_explainer(seed=50)
-    # Should not raise — 1.0 is a valid significance
-    result = explainer.explain_guarded_factual(x_cal[:1], significance=1.0)
+    with pytest.warns(DeprecationWarning):
+        result = explainer.explain_factual(x_cal[:1], guarded=True, significance=1.0)
     assert result is not None
 
 
@@ -606,51 +591,38 @@ def test_should_reject_significance_of_zero():
     """significance=0.0 must be rejected."""
     explainer, x_cal = make_classification_explainer(seed=51)
 
-    with pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"):
-        explainer.explain_guarded_factual(x_cal[:1], significance=0.0)
+    with (
+        pytest.warns(DeprecationWarning),
+        pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"),
+    ):
+        explainer.explain_factual(x_cal[:1], guarded=True, significance=0.0)
 
 
 def test_should_reject_negative_significance():
     """Negative significance must be rejected."""
     explainer, x_cal = make_classification_explainer(seed=52)
 
-    with pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"):
-        explainer.explain_guarded_factual(x_cal[:1], significance=-0.1)
+    with (
+        pytest.warns(DeprecationWarning),
+        pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"),
+    ):
+        explainer.explain_factual(x_cal[:1], guarded=True, significance=-0.1)
 
 
 def test_should_reject_significance_above_one():
     """significance>1 must be rejected."""
     explainer, x_cal = make_classification_explainer(seed=53)
 
-    with pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"):
-        explainer.explain_guarded_factual(x_cal[:1], significance=1.5)
+    with (
+        pytest.warns(DeprecationWarning),
+        pytest.raises(ValidationError, match=r"significance must be in the interval \(0, 1\]"),
+    ):
+        explainer.explain_factual(x_cal[:1], guarded=True, significance=1.5)
 
 
 # ---------------------------------------------------------------------------
 # Red-team hardening tests — WrapExplainer guarded preconditions
 # ---------------------------------------------------------------------------
-
-
-def test_should_raise_not_fitted_when_wrap_guarded_factual_called_unfitted():
-    """WrapCalibratedExplainer.explain_guarded_factual must fail when not fitted."""
-    from calibrated_explanations import WrapCalibratedExplainer
-    from calibrated_explanations.utils.exceptions import NotFittedError as CENotFitted
-    from sklearn.ensemble import RandomForestClassifier
-
-    wrapper = WrapCalibratedExplainer(RandomForestClassifier())
-    with pytest.raises(CENotFitted):
-        wrapper.explain_guarded_factual(np.array([[1.0, 2.0]]), significance=0.2)
-
-
-def test_should_raise_not_fitted_when_wrap_guarded_alternatives_called_unfitted():
-    """WrapCalibratedExplainer.explore_guarded_alternatives must fail when not fitted."""
-    from calibrated_explanations import WrapCalibratedExplainer
-    from calibrated_explanations.utils.exceptions import NotFittedError as CENotFitted
-    from sklearn.ensemble import RandomForestClassifier
-
-    wrapper = WrapCalibratedExplainer(RandomForestClassifier())
-    with pytest.raises(CENotFitted):
-        wrapper.explore_guarded_alternatives(np.array([[1.0, 2.0]]), significance=0.2)
 
 
 # ---------------------------------------------------------------------------
@@ -754,3 +726,214 @@ def test_guard_should_reject_significance_boundary_values():
 
     with pytest.raises(ValidationError, match="strictly between 0 and 1"):
         guard.is_conforming(x_cal[:1], significance=1.0)
+
+
+# ---------------------------------------------------------------------------
+# Parameterized guarded API — Task 13 (v0.11.3)
+# ---------------------------------------------------------------------------
+
+
+def test_explain_factual_guarded_false__preserves_unguarded_behavior():
+    """explain_factual(guarded=False) must return the standard FactualExplanation container."""
+    from calibrated_explanations.explanations.explanation import FactualExplanation
+
+    explainer, x_cal = make_classification_explainer(seed=100)
+    result = explainer.explain_factual(x_cal[:2], guarded=False)
+
+    assert isinstance(result, CalibratedExplanations)
+    assert len(result) == 2
+    for expl in result.explanations:
+        assert isinstance(expl, FactualExplanation)
+        assert not isinstance(expl, GuardedFactualExplanation)
+
+
+def test_explain_factual_guarded_true__returns_guarded_factual_container():
+    """explain_factual(guarded=True) must return GuardedFactualExplanation instances."""
+    explainer, x_cal = make_classification_explainer(seed=101)
+    result = explainer.explain_factual(
+        x_cal[:2],
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=3),
+    )
+
+    assert isinstance(result, CalibratedExplanations)
+    assert len(result) == 2
+    for expl in result.explanations:
+        assert isinstance(expl, GuardedFactualExplanation)
+
+
+def test_explore_alternatives_guarded_false__preserves_unguarded_behavior():
+    """explore_alternatives(guarded=False) must return standard AlternativeExplanation container."""
+    from calibrated_explanations.explanations.explanation import AlternativeExplanation
+
+    explainer, x_cal = make_classification_explainer(seed=102)
+    result = explainer.explore_alternatives(x_cal[:1], guarded=False)
+
+    assert isinstance(result, AlternativeExplanations)
+    assert len(result) == 1
+    for expl in result.explanations:
+        assert isinstance(expl, AlternativeExplanation)
+        assert not isinstance(expl, GuardedAlternativeExplanation)
+
+
+def test_explore_alternatives_guarded_true__returns_guarded_alternative_container():
+    """explore_alternatives(guarded=True) must return GuardedAlternativeExplanation instances."""
+    explainer, x_cal = make_classification_explainer(seed=103)
+    result = explainer.explore_alternatives(
+        x_cal[:1],
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=3),
+    )
+
+    assert isinstance(result, AlternativeExplanations)
+    assert len(result) == 1
+    for expl in result.explanations:
+        assert isinstance(expl, GuardedAlternativeExplanation)
+
+
+def test_metadata_validation__accepts_supports_guarded_true():
+    """validate_plugin_meta must accept supports_guarded=True for explanation plugins."""
+    from calibrated_explanations.plugins.base import validate_plugin_meta
+
+    meta = {
+        "schema_version": 1,
+        "name": "test.guarded",
+        "version": "0.1.0",
+        "provider": "test",
+        "capabilities": ["explanation:factual", "explanation:alternative"],
+        "data_modalities": ("tabular",),
+        "supports_guarded": True,
+    }
+    validate_plugin_meta(meta)
+    assert meta["supports_guarded"] is True
+
+
+def test_metadata_validation__defaults_supports_guarded_to_false():
+    """validate_plugin_meta must default supports_guarded to False when absent."""
+    from calibrated_explanations.plugins.base import validate_plugin_meta
+
+    meta = {
+        "schema_version": 1,
+        "name": "test.no_guarded",
+        "version": "0.1.0",
+        "provider": "test",
+        "capabilities": ["explanation:factual"],
+        "data_modalities": ("tabular",),
+    }
+    validate_plugin_meta(meta)
+    assert meta["supports_guarded"] is False
+
+
+def test_metadata_validation__rejects_non_boolean_supports_guarded():
+    """validate_plugin_meta must reject non-boolean supports_guarded."""
+    from calibrated_explanations.plugins.base import validate_plugin_meta
+
+    meta = {
+        "schema_version": 1,
+        "name": "test.bad_guarded",
+        "version": "0.1.0",
+        "provider": "test",
+        "capabilities": ["explanation:factual"],
+        "data_modalities": ("tabular",),
+        "supports_guarded": "yes",
+    }
+    with pytest.raises(ValidationError, match="supports_guarded.*boolean"):
+        validate_plugin_meta(meta)
+
+
+def test_resolver_selects_guarded_plugin_when_guarded_true():
+    """find_explanation_plugin_for must select a plugin with supports_guarded=True.
+
+    The legacy builtin plugins only accept CalibratedExplainer as the model;
+    use make_classification_explainer to produce one.
+    """
+    from calibrated_explanations.plugins.registry import find_explanation_plugin_for
+    from calibrated_explanations.plugins import ensure_builtin_plugins
+
+    ensure_builtin_plugins()
+    explainer, _ = make_classification_explainer(seed=77)
+    _, plugin = find_explanation_plugin_for(
+        "tabular",
+        mode="factual",
+        task="classification",
+        model=explainer,
+        guarded=True,
+    )
+    meta = getattr(plugin, "plugin_meta", {})
+    assert meta.get("supports_guarded", False) is True
+
+
+def test_resolver_rejects_unguarded_plugin_for_guarded_request():
+    """find_explanation_plugin_for must raise when no guarded plugin is available."""
+    from calibrated_explanations.plugins.registry import (
+        find_explanation_plugin_for,
+        register_explanation_plugin,
+        clear as registry_clear,
+        ensure_builtin_plugins,
+        reset_plugin_catalog,
+    )
+    from sklearn.ensemble import RandomForestClassifier
+
+    registry_clear()
+    try:
+
+        class UnguardedOnlyPlugin:
+            plugin_meta = {
+                "schema_version": 1,
+                "name": "test.unguarded_only",
+                "version": "0.1.0",
+                "provider": "test",
+                "capabilities": ["explanation:factual"],
+                "modes": ("factual",),
+                "tasks": ("classification",),
+                "data_modalities": ("tabular",),
+                "dependencies": (),
+                "supports_guarded": False,
+                "trusted": True,
+                "trust": {"trusted": True},
+            }
+
+            def supports(self, model):
+                return True
+
+            def explain(self, model, x, **kw):
+                return None
+
+            def supports_mode(self, mode, *, task):
+                return mode == "factual"
+
+            def initialize(self, context):
+                pass
+
+            def explain_batch(self, x, request):
+                return None
+
+        register_explanation_plugin(
+            "test.unguarded_only", UnguardedOnlyPlugin(), metadata=UnguardedOnlyPlugin.plugin_meta
+        )
+
+        model = RandomForestClassifier()
+        with pytest.raises(ValidationError, match="guarded"):
+            find_explanation_plugin_for(
+                "tabular",
+                mode="factual",
+                task="classification",
+                model=model,
+                guarded=True,
+            )
+    finally:
+        reset_plugin_catalog(kind="explanation")
+        ensure_builtin_plugins()
+
+
+def test_guarded_audit_preserved_via_parameterized_api():
+    """get_guarded_audit() must work when called via explain_factual(guarded=True)."""
+    explainer, x_cal = make_classification_explainer(seed=200)
+    result = explainer.explain_factual(
+        x_cal[:1],
+        guarded_options=GuardedOptions(confidence=0.8, n_neighbors=3),
+    )
+
+    expl = result.explanations[0]
+    audit = expl.get_guarded_audit()
+    assert "summary" in audit
+    assert "intervals" in audit
+    assert "intervals_tested" in audit["summary"]

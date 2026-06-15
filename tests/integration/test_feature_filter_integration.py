@@ -24,10 +24,7 @@ def test_explain_factual_respects_per_instance_top_k():
 
     builder = ExplainerBuilder(learner)
     config = (
-        builder.task("classification")
-        .perf_parallel(False)
-        .perf_feature_filter(True, per_instance_top_k=5)
-        .build_config()
+        builder.perf_parallel(False).perf_feature_filter(True, per_instance_top_k=5).build_config()
     )
 
     wrapper = WrapCalibratedExplainer.from_config(config)

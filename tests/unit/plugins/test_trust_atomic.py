@@ -190,7 +190,7 @@ def test_should_hold_invariants_when_two_identifiers_toggled_concurrently() -> N
         assert final.trusted is True
 
 
-def test_should_sync_descriptor_trust_state_when_using_legacy_trust_api(caplog) -> None:
+def test_should_sync_descriptor_trust_state_when_using_keyed_trust_api(caplog) -> None:
     plugin = ExplanationPluginStub()
     registry.register_explanation_plugin("tests.trust.atomic.explanation", plugin)
 
@@ -199,8 +199,7 @@ def test_should_sync_descriptor_trust_state_when_using_legacy_trust_api(caplog) 
     assert descriptor.trusted is False
 
     with caplog.at_level("INFO", logger="calibrated_explanations.governance.registry"):
-        with pytest.warns(DeprecationWarning, match="trust_plugin\\(\\) is deprecated"):
-            registry.trust_plugin(plugin)
+        registry.mark_explanation_trusted("tests.trust.atomic.explanation")
         registry.untrust_plugin(plugin)
 
     descriptor_after = registry.find_explanation_descriptor("tests.trust.atomic.explanation")

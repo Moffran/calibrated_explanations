@@ -144,3 +144,40 @@ def test_explainerhandle_get_preprocessor_state_variants(preprocessor_metadata, 
         assert state is None
     else:
         assert dict(state) == expected
+
+
+def test_should_emit_deprecation_warning_when_learner_accessed():
+    """ExplainerHandle.learner must emit DeprecationWarning on access (ADR-015 gap 2, ADR-011)."""
+
+    class Dummy:
+        learner = object()
+
+    handle = ExplainerHandle(Dummy(), {})
+
+    with pytest.warns(DeprecationWarning, match="ExplainerHandle.learner"):
+        _ = handle.learner
+
+
+def test_should_not_emit_deprecation_warning_when_predict_called():
+    """handle.predict() is the sanctioned prediction path — no deprecation warning (ADR-015)."""
+    import numpy as np
+    from unittest.mock import MagicMock
+
+    mock_bridge = MagicMock()
+    mock_bridge.predict.return_value = np.array([0.7])
+
+    class Dummy:
+        pass
+
+    handle = ExplainerHandle(Dummy(), {})
+    object.__setattr__(handle, "_explainer", MagicMock())
+
+    # No DeprecationWarning should be raised when calling predict (bridge path)
+    with pytest.warns(Warning) as record:
+        import warnings
+
+        warnings.warn("unrelated", UserWarning)
+    deprecation_keys = [
+        str(w.message) for w in record if issubclass(w.category, DeprecationWarning)
+    ]
+    assert not any("learner" in m for m in deprecation_keys)

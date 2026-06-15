@@ -295,7 +295,19 @@ class AntiPatternVisitor(ast.NodeVisitor):
         self.stable_file = stable_file
         self.file_hash = file_hash
         self.findings: list[Finding] = []
-        self.lines = path.read_text(encoding="utf-8").splitlines()
+        src = path.read_text(encoding="utf-8")
+        self.lines = src.splitlines()
+        # Names defined locally in this file: calls to these are not private-member
+        # accesses but test-internal helpers (e.g. `_helper()` defined in same file).
+        try:
+            _tree = ast.parse(src, filename=str(path))
+            self.locally_defined: set[str] = {
+                node.name
+                for node in ast.walk(_tree)
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            }
+        except Exception:
+            self.locally_defined = set()
         self.random_modules: set[str] = {"random"}
         self.random_functions: dict[str, str] = {}
         self.time_aliases: set[str] = {"time"}
@@ -458,6 +470,10 @@ class AntiPatternVisitor(ast.NodeVisitor):
         func = node.func
         match func:
             case ast.Name(id=name):
+                # Skip calls to names defined locally in the same file — those are
+                # test-internal helpers (e.g. `_build_meta()`), not private-member accesses.
+                if name in self.locally_defined:
+                    return False
                 return name.startswith("_") and not name.startswith("__")
             case ast.Attribute(attr=attr):
                 return attr.startswith("_") and not attr.startswith("__")

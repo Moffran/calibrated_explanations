@@ -1,4 +1,4 @@
-> **Status note (2026-01-06):** Last edited 2026-01-06 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2026-06-02):** Last edited 2026-06-02 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
 
 # ADR-029 — Reject Integration Strategy
 
@@ -14,7 +14,7 @@ Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin
 
 ## Context
 
-The reject learner exists as a dedicated orchestration layer and can be invoked manually via `CalibratedExplainer.initialize_reject_learner(...)` and `CalibratedExplainer.predict_reject(...)`. The current default behavior is **no reject by default**, with optional initialization when `reject=True`. This default must remain intact.
+The reject learner exists as a dedicated orchestration layer and can be invoked manually via `CalibratedExplainer.reject_orchestrator.initialize_reject_learner(...)` and `CalibratedExplainer.reject_orchestrator.predict_reject(...)`. The current default behavior is **no reject by default**, with optional initialization when `reject=True`. This default must remain intact.
 
 We need to integrate reject in a way that:
 
@@ -62,13 +62,13 @@ This ADR captures decisions and open questions across four areas:
 Defined `RejectPolicy` members (implemented in `core.reject.policy`):
 
 - `NONE` — Default. No reject integration; legacy behaviour unchanged.
-- `PREDICT_AND_FLAG` — Always run prediction; include a `rejected` flag in the `RejectResult` envelope but do not change whether an explanation is produced.
-- `EXPLAIN_ALL` — Always produce explanations for all instances; include reject status in the envelope when applicable.
-- `EXPLAIN_REJECTS` — Always predict; produce explanations only for instances that are rejected (useful for audit-focused workflows).
-- `EXPLAIN_NON_REJECTS` — Always predict; produce explanations only for non-rejected instances (useful to avoid explaining decisions you won't act on).
-- `SKIP_ON_REJECT` — If an instance is rejected, skip prediction and explanation (short-circuit); otherwise proceed. Useful for strict gating where further computation should be avoided.
+- `FLAG` — Always run prediction; include a `rejected` flag in the `RejectResult` envelope.
+- `ONLY_REJECTED` — Always predict; produce explanations only for instances that are rejected (audit-focused workflows).
+- `ONLY_ACCEPTED` — Always predict; produce explanations only for non-rejected instances.
 
-These members cover common integration patterns; additional policies may be added later (e.g., sampling-based explanation policies, delayed-explain modes, or hybrid policies).
+**Implementation status (2026-05-14):** Deprecated aliases `PREDICT_AND_FLAG`, `EXPLAIN_ALL`, `EXPLAIN_REJECTS`, `EXPLAIN_NON_REJECTS`, and `SKIP_ON_REJECT` were removed in v0.11.3. Use the canonical members above. Old string values passed to `RejectPolicy(...)` now raise `ValueError`; module-level attribute access raises `AttributeError`.
+
+**Implementation status (2026-06-02):** Task 5 Group L resolved via deprecation reset path. `RejectResult` remains the stable public return type for v1.0.0; the active deprecation warning in `reject_result_v2_to_legacy()` was removed to satisfy ADR-011 finalization exception (no active deprecations may survive into v1.0.0). `RejectResultV2` remains available as an opt-in strict schema and migration target for a future v1.1+ deprecation cycle.
 
 ### Strategy extensibility
 - What lifecycle hooks are required for registry-managed strategies (init, fit, update, invalidate)?

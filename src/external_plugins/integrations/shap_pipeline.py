@@ -37,8 +37,12 @@ class ShapPipeline:
         explainer : CalibratedExplainer
             The parent explainer instance.
         """
-        self.explainer = explainer
+        self.explainer = getattr(explainer, "explainer", explainer)
         self._shap_helper: ShapHelper | None = None
+
+    def is_enabled(self, is_enabled: bool | None = None) -> bool:
+        """Return whether the SHAP integration is active."""
+        return self.is_shap_enabled(is_enabled=is_enabled)
 
     def is_shap_enabled(self, is_enabled: bool | None = None) -> bool:
         """Return whether SHAP export is enabled.
@@ -58,6 +62,23 @@ class ShapPipeline:
         if is_enabled is not None:
             self._shap_helper.set_enabled(bool(is_enabled))
         return self._shap_helper.is_enabled()
+
+    def preload(self, num_test: int | None = None) -> tuple[Any, Any]:
+        """Eagerly compute SHAP explanations to amortise repeated requests.
+
+        Parameters
+        ----------
+        num_test : int, optional
+            Number of test instances to explain. Defaults to a single reference
+            instance from the calibration data.
+
+        Returns
+        -------
+        tuple
+            ``(shap_explainer, reference_explanation)`` or ``(None, None)``
+            when the optional ``shap`` dependency is not installed.
+        """
+        return self.preload_shap(num_test=num_test)
 
     def preload_shap(self, num_test: int | None = None) -> tuple[Any, Any]:
         """Eagerly compute SHAP explanations to amortize repeated requests.

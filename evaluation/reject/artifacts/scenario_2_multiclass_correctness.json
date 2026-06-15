@@ -1,18 +1,33 @@
 {
   "scenario": "scenario_2_multiclass_correctness",
-  "display_name": "Scenario 2 \u2014 Multiclass correctness classifier",
+  "display_name": "Scenario 2 - Multiclass correctness proxy",
   "paper_contribution": "C2",
   "paper_rq": "RQ2",
   "guarantee_status": "empirical",
   "quick": false,
   "highlights": [
-    "Accepted top-1 accuracy is reported empirically; the formal guarantee remains a proof obligation.",
-    "This scenario evaluates CE multiclass reject as a correctness classifier, not a K-class prediction-set method."
+    "Primary empirical accuracy is computed in the binary proxy space: singleton {1}/{0} is compared with 1[top-1 prediction is correct].",
+    "Accepted top-1 accuracy remains a precision-style diagnostic on {1} rows only; it is not the proxy classifier accuracy.",
+    "This scenario opts into the multiclass-only experimental.multiclass_top1_correctness strategy.",
+    "It evaluates CE multiclass reject as a binary correctness proxy, not a default rule and not a K-class prediction-set method.",
+    "Accepted instances are restricted to {1} positive correctness-proxy singletons.",
+    "{0} singletons are proxy-negative singletons: the aggregate non-top1 event is conforming, but no specific alternative class is selected.",
+    "reject_rate is retained as a compatibility alias for non_accepted_rate in this proxy scenario.",
+    "Hinge NCF is used for both 'default' and 'ensured' paths. Margin NCF was removed (it produced identical scores for both columns, making singletons impossible)."
   ],
   "outcome": {
     "datasets": 20,
-    "mean_accepted_top1_accuracy": NaN,
-    "mean_reject_rate": 1.0,
-    "hinge_collapse_events": 0
+    "mean_proxy_singleton_accuracy": 0.8841011817994193,
+    "mean_singleton_precision": 0.8841011817994193,
+    "mean_singleton_recall": 0.5030778766834917,
+    "mean_accepted_top1_accuracy": 0.9006290527870698,
+    "mean_proxy_negative_singleton_accuracy": 0.5289038783978056,
+    "mean_non_accepted_rate": 0.471097236886007,
+    "mean_reject_rate": 0.471097236886007,
+    "mean_positive_singleton_rate": 0.5289027631139929,
+    "mean_correct_singleton_rate": 0.5289027631139929,
+    "mean_proxy_negative_singleton_rate": 0.02000778713270527,
+    "mean_error_singleton_rate": 0.02000778713270527,
+    "collapse_events": 8
   }
 }

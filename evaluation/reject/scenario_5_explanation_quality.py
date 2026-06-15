@@ -26,7 +26,9 @@ from calibrated_explanations import RejectPolicySpec
 
 from .common_reject import (
     RunConfig,
+    _markdown_table_from_df,
     build_classification_bundle,
+    classification_singleton_precision_recall,
     expected_calibration_error,
     task_specs,
     write_csv_json_md,
@@ -55,6 +57,11 @@ def run(config: RunConfig) -> None:
         rejected = np.asarray(result.rejected, dtype=bool)
         accepted = ~rejected
         reject_rate = float(np.mean(rejected))
+        metadata = getattr(result, "metadata", {}) or {}
+        singleton_metrics = classification_singleton_precision_recall(
+            bundle,
+            metadata.get("prediction_set"),
+        )
 
         if bundle.baseline_proba.shape[1] == 2:
             proba_all = bundle.baseline_proba[:, 1]
@@ -103,6 +110,7 @@ def run(config: RunConfig) -> None:
                 "ece_delta": (
                     baseline_ece - accepted_ece if np.isfinite(accepted_ece) else float("nan")
                 ),
+                **singleton_metrics,
             }
         )
 
@@ -143,7 +151,53 @@ def run(config: RunConfig) -> None:
             "regime_summary": regime_summary,
         },
     }
-    write_csv_json_md("scenario_5_explanation_quality", df, meta)
+    # --- Extra sections ---
+    extra_sections: list[str] = []
+
+    if not df.empty:
+        # Section: By reject-rate regime
+        by_regime = (
+            df.groupby("regime")
+            .agg(
+                n=("reject_rate", "size"),
+                mean_reject_rate=("reject_rate", "mean"),
+                mean_accuracy_delta=("accuracy_delta", "mean"),
+                mean_ece_delta=("ece_delta", "mean"),
+            )
+            .reset_index()
+        )
+        # Enforce display order
+        regime_order = ["low", "moderate", "high"]
+        by_regime["_order"] = by_regime["regime"].map({r: i for i, r in enumerate(regime_order)})
+        by_regime = by_regime.sort_values("_order").drop(columns=["_order"])
+        extra_sections += [
+            "## By reject-rate regime",
+            "",
+            _markdown_table_from_df(by_regime),
+            "",
+        ]
+
+        # Section: Per-dataset results sorted by accuracy delta desc
+        per_dataset = df[
+            [
+                "dataset",
+                "task_type",
+                "regime",
+                "reject_rate",
+                "accuracy_delta",
+                "ece_delta",
+                "accepted_accuracy",
+                "baseline_accuracy",
+            ]
+        ].sort_values("accuracy_delta", ascending=False)
+        extra_sections += [
+            "## Per-dataset results",
+            "",
+            _markdown_table_from_df(per_dataset),
+            "",
+        ]
+
+    write_csv_json_md("scenario_5_explanation_quality", df, meta, extra_sections=extra_sections)
 
 
 if __name__ == "__main__":

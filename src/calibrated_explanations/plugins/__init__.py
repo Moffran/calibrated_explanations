@@ -9,7 +9,14 @@ need to `import calibrated_explanations.plugins` before resolving identifiers.
 import contextlib
 
 from . import registry  # re-export module for convenience
-from .base import ExplainerPlugin, PluginMeta, validate_plugin_meta  # noqa: F401
+from .base import (  # noqa: F401
+    ExplainerPlugin,
+    PluginMeta,
+    freeze_plugin_config,
+    validate_plugin_config,
+    validate_plugin_config_schema,
+    validate_plugin_meta,
+)
 from .explanations import (  # noqa: F401
     ExplainerHandle,
     ExplanationBatch,
@@ -40,7 +47,6 @@ from .registry import (  # noqa: F401
     find_explanation_plugin,
     find_explanation_plugin_for,
     find_explanation_plugin_trusted,
-    find_for_trusted,
     find_interval_descriptor,
     find_interval_plugin,
     find_interval_plugin_trusted,
@@ -58,7 +64,6 @@ from .registry import (  # noqa: F401
     register_plot_renderer,
     register_plot_style,
     set_trust_policy,
-    trust_plugin,
     unregister,
     untrust_plugin,
     validate_explanation_metadata,
@@ -85,12 +90,12 @@ __all__ = [
     "PluginManager",
     "PluginTrustPolicy",
     "PredictBridge",
+    "freeze_plugin_config",
     "ensure_builtin_plugins",
     "find_explanation_descriptor",
     "find_explanation_plugin",
     "find_explanation_plugin_for",
     "find_explanation_plugin_trusted",
-    "find_for_trusted",
     "find_interval_descriptor",
     "find_interval_plugin",
     "find_interval_plugin_trusted",
@@ -109,11 +114,12 @@ __all__ = [
     "register_plot_style",
     "registry",
     "set_trust_policy",
-    "trust_plugin",
     "untrust_plugin",
     "unregister",
     "validate_explanation_batch",
     "validate_explanation_metadata",
+    "validate_plugin_config",
+    "validate_plugin_config_schema",
     "validate_plugin_meta",
 ]
 

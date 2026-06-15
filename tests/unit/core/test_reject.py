@@ -495,17 +495,13 @@ class TestRejectPolicyEnum:
         assert RejectPolicy("only_rejected") is RejectPolicy.ONLY_REJECTED
         assert RejectPolicy("only_accepted") is RejectPolicy.ONLY_ACCEPTED
 
-    def test_deprecated_policy_strings_map_to_new_policies(self):
-        """Deprecated policy string values should map to new policies with warning."""
-        import warnings
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            assert RejectPolicy("predict_and_flag") is RejectPolicy.FLAG
-            assert RejectPolicy("explain_all") is RejectPolicy.FLAG
-            assert RejectPolicy("explain_rejects") is RejectPolicy.ONLY_REJECTED
-            assert RejectPolicy("explain_non_rejects") is RejectPolicy.ONLY_ACCEPTED
-            assert RejectPolicy("skip_on_reject") is RejectPolicy.ONLY_ACCEPTED
-            # Should have emitted 5 deprecation warnings
-            dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
-            assert len(dep_warnings) == 5
+    def test_should_raise_value_error_when_deprecated_policy_string_used(self):
+        for old_value in (
+            "predict_and_flag",
+            "explain_all",
+            "explain_rejects",
+            "explain_non_rejects",
+            "skip_on_reject",
+        ):
+            with pytest.raises(ValueError):
+                RejectPolicy(old_value)

@@ -1,15 +1,14 @@
 """Plugin registry (ADR-006 minimal, opt-in).
 
-Explicit, in-process registry for explainer plugins. Users must call
-``register`` to add plugins or request discovery through the entry-point loader.
+Explicit, in-process registry for explainer plugins. Users must call the
+identifier-based registration APIs or request discovery through the entry-point loader.
 Discovery uses the ``calibrated_explanations.plugins`` entry-point group but
 only trusted plugins are instantiated automatically, mirroring ADR-006's
 conservative trust model.
 
 This module now also exposes identifier-based registries for explanation,
 interval, and plot plugins as outlined by ADR-013/ADR-014/ADR-015. The legacy
-list-based helpers remain available for the interim so callers can migrate
-incrementally.
+list-based helpers were removed in v0.11.3 after the ADR-011 finalization window.
 """
 
 from __future__ import annotations
@@ -28,10 +27,9 @@ from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Literal, Mapping, Tuple
 
 from .. import __version__ as package_version
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import get_process_config_manager
 from ..governance.events import emit_plugin_governance_event
 from ..logging import ensure_logging_context_filter, logging_context
-from ..utils.deprecations import deprecate
 from ..utils.exceptions import ConfigurationError, ValidationError
 from ._trust import (
     clear_trusted_identifiers,
@@ -52,28 +50,11 @@ _ENTRYPOINT_GROUP = "calibrated_explanations.plugins"
 _ENV_TRUST_CACHE: set[str] | None = None
 _PYPROJECT_TRUST_CACHE: set[str] | None = None
 _WARNED_UNTRUSTED: set[str] = set()
-_WARNED_MISSING_MODALITIES_ENTRYPOINTS: set[str] = set()
 _LAST_DISCOVERY_REPORT: "PluginDiscoveryReport | None" = None
 
 _LOGGER = logging.getLogger("calibrated_explanations.governance.registry")
 ensure_logging_context_filter()
 _TRUST_POLICY: PluginTrustPolicy = DefaultPluginTrustPolicy()
-
-
-_registry_config_manager: ConfigManager | None = None
-
-
-def _config_manager() -> ConfigManager:
-    global _registry_config_manager
-    if _registry_config_manager is None:
-        _registry_config_manager = ConfigManager.from_sources()
-    return _registry_config_manager
-
-
-def _reset_config_manager_for_testing() -> None:
-    """Reset module-level config manager singleton (tests only)."""
-    global _registry_config_manager
-    _registry_config_manager = None
 
 
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -102,7 +83,7 @@ def _env_trusted_names() -> set[str]:
     if _ENV_TRUST_CACHE is not None:
         return set(_ENV_TRUST_CACHE)
 
-    raw = _config_manager().env("CE_TRUST_PLUGIN") or ""
+    raw = get_process_config_manager().env("CE_TRUST_PLUGIN") or ""
     names: set[str] = set()
     for chunk in raw.replace(";", ",").split(","):
         name = chunk.strip()
@@ -118,7 +99,7 @@ def _pyproject_trusted_identifiers() -> set[str]:
     if _PYPROJECT_TRUST_CACHE is not None:
         return set(_PYPROJECT_TRUST_CACHE)
 
-    config = _config_manager().pyproject_section("plugins")
+    config = get_process_config_manager().pyproject_section("plugins")
     value = config.get("trusted")
     if isinstance(value, str):
         trusted = (value,) if value else ()
@@ -137,7 +118,7 @@ def _trusted_identifiers() -> set[str]:
 
 def _env_denylist() -> set[str]:
     """Return plugin identifiers blocked via ``CE_DENY_PLUGIN``."""
-    raw = _config_manager().env("CE_DENY_PLUGIN") or ""
+    raw = get_process_config_manager().env("CE_DENY_PLUGIN") or ""
     names: set[str] = set()
     for chunk in raw.replace(";", ",").split(","):
         name = chunk.strip()
@@ -338,12 +319,6 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
 _EXPLANATION_PROTOCOL_VERSION = 1
 EXPLANATION_PROTOCOL_VERSION = _EXPLANATION_PROTOCOL_VERSION
 
-_EXPLANATION_MODE_ALIASES = {
-    "explanation:factual": "factual",
-    "explanation:alternative": "alternative",
-    "explanation:fast": "fast",
-}
-
 _EXPLANATION_VALID_MODES = {"factual", "alternative", "fast"}
 
 
@@ -514,32 +489,13 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
             },
         )
 
-    allowed_modes = set(_EXPLANATION_VALID_MODES) | set(_EXPLANATION_MODE_ALIASES)
-    raw_modes = _ensure_sequence(meta, "modes", allowed=allowed_modes)
+    raw_modes = _ensure_sequence(meta, "modes", allowed=_EXPLANATION_VALID_MODES)
     normalised_modes: List[str] = []
     seen: set[str] = set()
-    from ..utils import deprecate
-
     for mode in raw_modes:
-        canonical = _EXPLANATION_MODE_ALIASES.get(mode, mode)
-        if mode in _EXPLANATION_MODE_ALIASES:
-            deprecate(
-                "explanation mode alias '" + mode + "' is deprecated; use '" + canonical + "'",
-                key=f"mode_alias:{mode}",
-                stacklevel=3,
-            )
-        if canonical not in _EXPLANATION_VALID_MODES:
-            raise ValidationError(
-                f"plugin_meta['modes'] has unsupported values: {canonical}",
-                details={
-                    "param": "modes",
-                    "allowed_values": sorted(_EXPLANATION_VALID_MODES),
-                    "unsupported_value": canonical,
-                },
-            )
-        if canonical not in seen:
-            seen.add(canonical)
-            normalised_modes.append(canonical)
+        if mode not in seen:
+            seen.add(mode)
+            normalised_modes.append(mode)
     if not normalised_modes:
         raise ValidationError(
             "explanation plugin must declare at least one mode",
@@ -1185,6 +1141,7 @@ def find_explanation_plugin_for(
     model: Any,
     trusted_only: bool = True,
     identifier: str | None = None,
+    guarded: bool = False,
 ) -> tuple[str, ExplainerPlugin]:
     """Resolve an explanation plugin for a modality/mode/task combination.
 
@@ -1194,6 +1151,11 @@ def find_explanation_plugin_for(
 
     Resolution order is trust -> kind -> modality -> mode/task -> supports(model)
     -> priority. Ambiguous top-priority matches raise ``ValidationError``.
+
+    When ``guarded_options`` is set (or the deprecated ``guarded=True``), only plugins
+    that declare ``supports_guarded=True`` in their metadata are eligible.  If no such
+    plugin is found, ``ValidationError`` is raised rather than silently falling back to
+    an unguarded plugin.
     """
     modality = _normalise_modality(modality)
     if identifier:
@@ -1204,6 +1166,13 @@ def find_explanation_plugin_for(
         )
         if plugin is None:
             raise ValidationError(f"Requested plugin identifier '{identifier}' is unavailable")
+        if guarded:
+            desc = find_explanation_descriptor(identifier)
+            if desc is None or not desc.metadata.get("supports_guarded", False):
+                raise ValidationError(
+                    f"Requested plugin '{identifier}' does not support guarded execution "
+                    "(supports_guarded=False). Use a plugin that declares supports_guarded=True."
+                )
         return identifier, plugin
 
     candidates: list[ExplanationPluginDescriptor] = []
@@ -1219,9 +1188,16 @@ def find_explanation_plugin_for(
             continue
         if not _safe_supports(desc.plugin, model):
             continue
+        if guarded and not desc.metadata.get("supports_guarded", False):
+            continue
         candidates.append(desc)
 
     if not candidates:
+        if guarded:
+            raise ValidationError(
+                f"No guarded-capable explanation plugin matches modality={modality!r}, "
+                f"mode={mode!r}, task={task!r}. Register a plugin with supports_guarded=True."
+            )
         raise ValidationError(
             f"No explanation plugin matches modality={modality!r}, mode={mode!r}, task={task!r}"
         )
@@ -1324,7 +1300,7 @@ def register_interval_plugin(
             update_trusted_identifier(_TRUSTED_INTERVALS, identifier, trusted)
             return descriptor
 
-        return mutate_trust_atomic(
+        result = mutate_trust_atomic(
             identifier=identifier,
             trusted=trusted,
             actor="register_interval_plugin",
@@ -1333,6 +1309,13 @@ def register_interval_plugin(
             mutation=_mutation,
             verify=_verify_trust_invariants_if_enabled,
         )
+        _log_plugin_registration_event(
+            identifier=identifier,
+            provider=meta.get("provider"),
+            source=source,
+            trusted=trusted,
+        )
+        return result
 
 
 def find_interval_descriptor(identifier: str) -> IntervalPluginDescriptor | None:
@@ -1429,7 +1412,7 @@ def register_plot_builder(
         update_trusted_identifier(_TRUSTED_PLOT_BUILDERS, identifier, trusted)
         return descriptor
 
-    return mutate_trust_atomic(
+    result = mutate_trust_atomic(
         identifier=identifier,
         trusted=trusted,
         actor="register_plot_builder",
@@ -1438,6 +1421,13 @@ def register_plot_builder(
         mutation=_mutation,
         verify=_verify_trust_invariants_if_enabled,
     )
+    _log_plugin_registration_event(
+        identifier=identifier,
+        provider=meta.get("provider"),
+        source=source,
+        trusted=trusted,
+    )
+    return result
 
 
 def register_plot_renderer(
@@ -1515,7 +1505,7 @@ def register_plot_renderer(
         update_trusted_identifier(_TRUSTED_PLOT_RENDERERS, identifier, trusted)
         return descriptor
 
-    return mutate_trust_atomic(
+    result = mutate_trust_atomic(
         identifier=identifier,
         trusted=trusted,
         actor="register_plot_renderer",
@@ -1524,6 +1514,13 @@ def register_plot_renderer(
         mutation=_mutation,
         verify=_verify_trust_invariants_if_enabled,
     )
+    _log_plugin_registration_event(
+        identifier=identifier,
+        provider=meta.get("provider"),
+        source=source,
+        trusted=trusted,
+    )
+    return result
 
 
 def register_plot_style(
@@ -1830,22 +1827,17 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             )
             continue
 
-        if (
-            isinstance(raw_meta, Mapping)
-            and "data_modalities" not in raw_meta
-            and identifier not in _WARNED_MISSING_MODALITIES_ENTRYPOINTS
-        ):
+        if isinstance(raw_meta, Mapping) and "data_modalities" not in raw_meta:
             warnings.warn(
-                f"Plugin '{identifier}' does not declare 'data_modalities'; defaulting to "
-                "('tabular',). Explicit declaration will be required in v0.12.0/v1.0.0-rc.",
-                DeprecationWarning,
+                f"Plugin '{identifier}' does not declare required 'data_modalities'; skipping.",
+                UserWarning,
                 stacklevel=2,
             )
-            _LOGGER.info(
-                "Entry-point plugin %r missing 'data_modalities'; defaulting to ('tabular',).",
+            _LOGGER.warning(
+                "Entry-point plugin %r missing required 'data_modalities'; skipping.",
                 identifier,
             )
-            _WARNED_MISSING_MODALITIES_ENTRYPOINTS.add(identifier)
+            continue
 
         meta: Dict[str, Any] = dict(raw_meta)
         try:
@@ -2343,27 +2335,6 @@ def _register_legacy_plugin(
     )
 
 
-def register(
-    plugin: ExplainerPlugin,
-    *,
-    source: str = "manual",
-    identifier: str | None = None,
-) -> None:
-    """Register a plugin after minimal metadata validation.
-
-    Notes: Registering a plugin executes third-party code at import-time.
-    Only register trusted plugins.
-    """
-    deprecate(
-        "plugins.registry.register() is deprecated and will be removed in v0.11.3; "
-        "use register_explanation_plugin(identifier, plugin, metadata) instead.",
-        key="legacy.plugin:register",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    _register_legacy_plugin(plugin, source=source, identifier=identifier)
-
-
 def unregister(plugin: ExplainerPlugin) -> None:
     """Remove a plugin if present."""
     with contextlib.suppress(ValueError):
@@ -2452,24 +2423,6 @@ def _trust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
     )
 
 
-def trust_plugin(plugin: ExplainerPlugin | str) -> None:
-    """Mark an already-registered plugin as trusted.
-
-    Trust is an explicit, opt-in operation. The function validates metadata
-    before adding to the trusted list. Only trusted plugins will be returned
-    by :func:`find_for` when `trusted_only=True` is passed.
-    """
-    deprecate(
-        "plugins.registry.trust_plugin() is deprecated and will be removed in v0.11.3; "
-        "set metadata={'trusted': True} when calling "
-        "register_explanation_plugin(identifier, plugin, metadata) instead.",
-        key="legacy.plugin:trust_plugin",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    _trust_legacy_plugin(plugin)
-
-
 def _untrust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
     """Remove a plugin from the trusted set if present."""
     if isinstance(plugin, str):
@@ -2506,30 +2459,6 @@ def _untrust_legacy_plugin(plugin: ExplainerPlugin | str) -> None:
 def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
     """Remove a plugin from the trusted set if present."""
     _untrust_legacy_plugin(plugin)
-
-
-def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
-    """Find plugins that declare support for the given model."""
-    deprecate(
-        "plugins.registry.find_for() is deprecated and will be removed in v0.11.3; "
-        "use find_explanation_plugin_for(..., trusted_only=False) instead.",
-        key="legacy.plugin:find_for",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    return tuple(p for p in _REGISTRY if _safe_supports(p, model))
-
-
-def find_for_trusted(model: Any) -> Tuple[ExplainerPlugin, ...]:
-    """Find trusted plugins that declare support for the given model."""
-    deprecate(
-        "plugins.registry.find_for_trusted() is deprecated and will be removed in v0.11.3; "
-        "use find_explanation_plugin_for(..., trusted_only=True) instead.",
-        key="legacy.plugin:find_for_trusted",
-        stacklevel=3,
-        raise_on_error=False,
-    )
-    return tuple(p for p in _TRUSTED if _safe_supports(p, model))
 
 
 def _safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
@@ -2586,13 +2515,9 @@ __all__ = [
     "mark_explanation_untrusted",
     "mark_interval_trusted",
     "mark_interval_untrusted",
-    "register",
     "unregister",
     "clear",
     "reset_plugin_catalog",
     "list_plugins",
-    "trust_plugin",
     "untrust_plugin",
-    "find_for",
-    "find_for_trusted",
 ]

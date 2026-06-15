@@ -1,11 +1,11 @@
-> **Status note (2026-03-24):** Last edited 2026-03-24 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
+> **Status note (2026-06-09):** Last edited 2026-06-09 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.x.
 
 # ADR-032: Guarded Explanation Semantics and Single-Median-Probe Guarding
 
 ## Status
 Status: Accepted (scoped)
 Date: 2026-03-20
-Updated: 2026-03-24
+Updated: 2026-06-09
 Deciders: Core maintainers
 Reviewers: Core maintainers
 Supersedes: None
@@ -26,7 +26,20 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
 
 ## Decision
 1. **Schema compatibility and helper interoperability are the guarded contract.**
-   - `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` keep their public signatures.
+   - The canonical guarded API (as of v0.11.3) uses `GuardedOptions`:
+     - `explain_factual(..., guarded_options=GuardedOptions())` for guarded factual explanations.
+     - `explore_alternatives(..., guarded_options=GuardedOptions())` for guarded alternatives.
+     - Import: `from calibrated_explanations.explanations.guarded_options import GuardedOptions`
+     - The deprecated `guarded=True` boolean kwarg still works but emits `DeprecationWarning`
+       and will be **removed in v1.0.0**.  Do NOT use it in new code.
+   - `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` were deprecated
+     compatibility wrappers.  **Removed in v0.11.3** (Task 15 Workstream A, 2026-06-13):
+     wrappers were introduced already-deprecated in v0.11.3 Task 13, so removal within the
+     same milestone costs users nothing they were promised.  Callers must use the
+     parameterized form: `explain_factual(..., guarded_options=GuardedOptions())` and
+     `explore_alternatives(..., guarded_options=GuardedOptions())`.
+   - Guarded is not an explanation mode.  The explanation mode taxonomy remains
+     factual / alternative / fast.  `guarded` is a boolean policy flag on the request.
    - Guarded entrypoints return standard CE collection classes with guarded subclasses:
      - `GuardedFactualExplanation` subclasses `FactualExplanation`.
      - `GuardedAlternativeExplanation` subclasses `AlternativeExplanation`.
@@ -84,11 +97,22 @@ This ADR therefore defines guarded mode as a CE-compatible extension with a sing
      `conjunctions_emitted` are added to `get_guarded_audit()["summary"]` when conjunctions
      were tested.
 
-8. **Guarded explanations are not supported for fast explainers.**
+8. **The plugin contract exposes exactly one guarded-support metadata field.**
+   - Plugin metadata may include `"supports_guarded": True` to declare that the plugin
+     is compatible with guarded execution.
+   - The default for missing metadata is `"supports_guarded": False`.
+   - The runtime request carries `guarded: bool` on `ExplanationRequest`.
+   - No additional guarded-specific capability tags (e.g. `"explanation:guarded"`) are
+     permitted.  The single boolean `supports_guarded` is the complete contract.
+   - The plugin resolver must not silently select an unguarded-only plugin for guarded
+     execution.  If no `supports_guarded=True` plugin is available for a given
+     modality/mode/task combination, `ValidationError` is raised.
+
+9. **Guarded explanations are not supported for fast explainers.**
    - Fast interval calibrators are trained on per-feature blends of `scaled_x_cal` / `fast_x_cal`, not on `explainer.x_cal` directly.
    - The `InDistributionGuard` always uses `explainer.x_cal` as its reference distribution.
    - These two distributions cannot be aligned, so the ADR-032 precondition (decision 6) cannot be reliably enforced for fast explainers.
-   - Calling any guarded entrypoint (`explain_guarded_factual`, `explore_guarded_alternatives`) on a fast explainer must hard-fail with `ConfigurationError` before any calibration-alignment check proceeds.
+   - Calling any guarded entrypoint (`explain_factual(..., guarded_options=GuardedOptions())`, `explore_alternatives(..., guarded_options=GuardedOptions())`) on a fast explainer must hard-fail with `ConfigurationError` before any calibration-alignment check proceeds.
    - This prohibition is enforced in `_require_guarded_calibration_alignment` and is not subject to configuration or opt-out.
 
 ## Consequences
@@ -99,6 +123,10 @@ Positive:
 - Public CE helper surfaces remain usable on guarded outputs.
 - Audit payloads can be interpreted without overstating what guarded conformity means.
 - Single-probe logic is simpler, more predictable, and easier to audit.
+- A single public API entry point (`explain_factual` / `explore_alternatives`) handles both
+  guarded and unguarded execution, eliminating the parallel method surface.
+- The plugin contract has exactly one guarded-support field (`supports_guarded`), preventing
+  redundant or contradictory guarded declarations.
 
 Negative / Risks:
 
@@ -106,6 +134,8 @@ Negative / Risks:
 - Users must understand that emitted guarded intervals reflect this candidate-level guard rule, not whole-interval certification.
 - Calibration-feature divergence now fails fast instead of degrading with a warning.
 - Fast explainers cannot use guarded entrypoints at all; users who need guarded filtering must use a standard (non-fast) explainer.
+- The deprecated `guarded=True` boolean kwarg must not be used in new code.
+  Use `guarded_options=GuardedOptions()` instead.  Remove all `guarded=True` usage before v1.0.0.
 
 ## Addendum: Guarded Auditability
 To support transparent guarded diagnostics without breaking CE payload contracts:
@@ -119,3 +149,94 @@ To support transparent guarded diagnostics without breaking CE payload contracts
 3. `CalibratedExplanations.get_guarded_audit()` aggregates per-instance guarded audits and raises an actionable error on non-guarded collections.
 4. The audit `p_value` is always the p-value from the single median-probe guard check.
 5. Existing rule payload schemas remain unchanged to preserve backward compatibility and CE helper interoperability. This addendum does **not** imply semantic identity with standard CE internals.
+
+## Addendum: Target-Confidence Filter for Alternative Explanations (v0.11.3)
+
+**Decision date:** 2026-06-10
+**Option chosen:** post-processing filter method on the returned collection.
+
+### Rationale
+
+The existing `reject_policy` mechanism operates at the source-instance level (which inputs to
+explain); the `guarded` filter operates at the interval level (which perturbation intervals are
+in-distribution).  Neither answers: *"Would acting on this suggested change actually land in a
+confidently accepted outcome?"*  A target-confidence filter fills that gap as a complementary,
+opt-in post-processing step using conformal decision-making.
+
+Option C was selected over Option A (new keyword parameter) and Option B (new `RejectPolicySpec`
+factory) because it keeps the core generation API unchanged.  The downside (generating intervals
+that may later be discarded) is acceptable at v0.11.3 scope.
+
+### Conformal classification semantics
+
+The filter applies conformal classification using the hinge non-conformity function (NCF)
+and the stored calibration set.  The Venn-Abers calibrated probability `predict` for the
+positive class is used to derive per-class NCF scores; proper conformal p-values are then
+obtained by comparing these scores against the calibration NCF distribution.
+
+**Calibration NCF scores** (computed once per `filter_by_target_confidence` call):
+
+```
+alpha_cal[i] = 1 − P(true_class_i | x_cal_i)
+             = 1 − proba_cal[i]   if y_cal[i] == 1   (NCF for class 1)
+             = proba_cal[i]        if y_cal[i] == 0   (NCF for class 0)
+```
+
+**Per-interval NCF scores** for a perturbation representative with `predict = p`:
+
+```
+alpha_1 = 1 − p   (NCF for class 1: 1 − P(class 1 | x))
+alpha_0 = p        (NCF for class 0: 1 − P(class 0 | x) = p)
+```
+
+**Conformal p-values** (fraction of calibration NCF scores at least as non-conforming):
+
+```
+p_val_k = (|{i : alpha_cal[i] >= alpha_k}| + 1) / (n_cal + 1)
+```
+
+**Singleton test** (epsilon = 1 − confidence):
+
+| Condition | in_set_1 | in_set_0 | Decision |
+|---|---|---|---|
+| Accepted class 1 | `p_val_1 >= epsilon` | `p_val_0 < epsilon` | retain |
+| Accepted class 0 | `p_val_1 < epsilon` | `p_val_0 >= epsilon` | retain |
+| Ambiguity-rejected | `p_val_1 >= epsilon` | `p_val_0 >= epsilon` | discard |
+| Novelty-rejected | `p_val_1 < epsilon` | `p_val_0 < epsilon` | discard |
+
+At `confidence=1.0` (epsilon=0.0), both p-values always exceed the threshold, so all
+intervals are ambiguity-rejected.  At `confidence=0.0` (epsilon=1.0), only intervals
+with the most calibration-extreme predictions survive.
+
+### API contract
+
+```python
+AlternativeExplanations.filter_by_target_confidence(
+    self,
+    confidence: float = 0.8,
+) -> "AlternativeExplanations"
+```
+
+**Parameters**
+
+- `confidence` (`float`, default `0.8`, range `[0.0, 1.0]`): Conformal confidence level.
+  Maps to significance `epsilon = 1 - confidence`.  An interval is retained only when its
+  conformal prediction set is a singleton at `epsilon` — i.e. exactly one class has a
+  conformal p-value `>= epsilon`.  Higher values apply a stricter filter.
+
+**Returns**
+
+- A new `AlternativeExplanations` instance (same concrete type as `self`) containing only
+  the intervals that pass the singleton-prediction-set criterion at `confidence`.
+  The original collection is **not mutated**.
+
+**Raises**
+
+- `ValidationError` if `confidence` is outside `[0.0, 1.0]`.
+- `ValidationError` if the underlying model does not produce probability outputs (i.e.
+  `is_probabilistic()` is `False` for any explanation in the collection).
+
+**Stability obligation (ADR-011)**
+
+This method name and signature are stable as of v0.11.3 and must not be changed or removed
+before v1.0.0.  Any semantic change requires a deprecation notice per ADR-011.

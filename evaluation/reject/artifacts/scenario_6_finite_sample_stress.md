@@ -17,21 +17,22 @@ Rows: 51
 - **small_cal_violations**: 27
 - **extreme_conf_violations**: 1
 
-## Result table
+## Violation rates by n_cal (small_calibration probe)
 
-| dataset | probe | n_cal | epsilon | coverage | reject_rate | error_rate | violation | matched_count |
-|---|---|---|---|---|---|---|---|---|
-| breast_cancer | small_calibration | 10 | 0.0500 | 1.0000 | 1.0000 | 0.0000 | no | 0 |
-| breast_cancer | small_calibration | 10 | 0.1000 | 1.0000 | 0.2368 | 0.1310 | no | 87 |
-| breast_cancer | small_calibration | 10 | 0.2500 | 0.7632 | 0.2368 | 0.0172 | no | 87 |
-| breast_cancer | small_calibration | 20 | 0.0500 | 0.9737 | 0.0526 | 0.0528 | no | 108 |
-| breast_cancer | small_calibration | 20 | 0.1000 | 0.9211 | 0.0526 | 0.0500 | no | 108 |
-| breast_cancer | small_calibration | 20 | 0.2500 | 0.8070 | 0.1930 | 0.0707 | no | 92 |
-| breast_cancer | small_calibration | 50 | 0.0500 | 0.9561 | 0.0088 | 0.0504 | no | 113 |
-| breast_cancer | small_calibration | 50 | 0.1000 | 0.8860 | 0.1053 | 0.0000 | yes | 102 |
-| breast_cancer | small_calibration | 50 | 0.2500 | 0.7018 | 0.2982 | 0.0000 | yes | 80 |
-| breast_cancer | small_calibration | 100 | 0.0500 | 0.9386 | 0.0175 | 0.0330 | yes | 112 |
-| breast_cancer | small_calibration | 100 | 0.1000 | 0.9211 | 0.0439 | 0.0587 | no | 109 |
-| breast_cancer | small_calibration | 100 | 0.2500 | 0.7632 | 0.2368 | 0.0172 | no | 87 |
+| n_cal | total_rows | violations | violation_rate | mean_reject_rate |
+|---|---|---|---|---|
+| 10.0000 | 9.0000 | 2.0000 | 0.2222 | 0.5066 |
+| 20.0000 | 9.0000 | 5.0000 | 0.5556 | 0.2254 |
+| 50.0000 | 9.0000 | 7.0000 | 0.7778 | 0.1628 |
+| 100.0000 | 9.0000 | 6.0000 | 0.6667 | 0.1591 |
+| 200.0000 | 9.0000 | 7.0000 | 0.7778 | 0.1716 |
 
-_Showing first 12 of 51 rows._
+## Violation rates by epsilon
+
+| epsilon | violations | violation_rate | mean_coverage |
+|---|---|---|---|
+| 0.0050 | 0.0000 | 0.0000 | 1.0000 |
+| 0.0100 | 1.0000 | 0.3333 | 0.9888 |
+| 0.0500 | 9.0000 | 0.6000 | 0.9481 |
+| 0.1000 | 10.0000 | 0.6667 | 0.8750 |
+| 0.2500 | 8.0000 | 0.5333 | 0.7174 |

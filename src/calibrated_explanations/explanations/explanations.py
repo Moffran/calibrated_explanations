@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 import numpy as np
 
 from ..core.prediction_helpers import validate_and_prepare_input
-from ..utils import EntropyDiscretizer, RegressorDiscretizer, deprecate, prepare_for_saving
+from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from ..utils.helper import calculate_metrics
 from .adapters import legacy_to_domain
@@ -102,14 +102,14 @@ class ExportedMultiClassExplanationCollection:
         return dict(self.__dict__)
 
 
-def _jsonify(value: Any) -> Any:
+def jsonify_value(value: Any) -> Any:
     """Convert numpy objects and arrays into JSON-serialisable primitives."""
     if isinstance(value, np.ndarray):
-        return [_jsonify(item) for item in value.tolist()]
+        return [jsonify_value(item) for item in value.tolist()]
     if isinstance(value, (list, tuple, set)):
-        return [_jsonify(item) for item in value]
+        return [jsonify_value(item) for item in value]
     if isinstance(value, Mapping):
-        return {str(key): _jsonify(val) for key, val in value.items()}
+        return {str(key): jsonify_value(val) for key, val in value.items()}
     if isinstance(value, np.generic):  # numpy scalars
         return value.item()
     if callable(value):
@@ -234,7 +234,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if not all(hasattr(exp, "get_guarded_audit") for exp in self.explanations):
             raise ValidationError(
                 "get_guarded_audit is only available for guarded explanation collections. "
-                "Use explain_guarded_factual(...) or explore_guarded_alternatives(...).",
+                "Use explain_factual(..., guarded_options=GuardedOptions()) or "
+                "explore_alternatives(..., guarded_options=GuardedOptions()) instead.",
                 details={"collection_type": type(self).__name__},
             )
 
@@ -568,9 +569,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             provenance = getattr(exp, "provenance", None)
             metadata = getattr(exp, "metadata", None)
             if provenance is not None:
-                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
             if metadata is not None:
-                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata))
+                domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
             instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
@@ -617,7 +618,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         # Yield metadata first as a standalone JSON object line
         # Telemetry placeholders updated after the stream completes.
         meta_fragment = {"collection": metadata, "schema_version": "1.0.0"}
-        yield json.dumps(meta_fragment, default=_jsonify)
+        yield json.dumps(meta_fragment, default=jsonify_value)
 
         # Stream explanations
         chunk: List[str] = []
@@ -627,11 +628,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             provenance = getattr(exp, "provenance", None)
             metadata_exp = getattr(exp, "metadata", None)
             if provenance is not None:
-                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
             if metadata_exp is not None:
-                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata_exp))
+                domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata_exp))
             item = _explanation_to_json(domain, include_version=True)
-            line = json.dumps(item, default=_jsonify)
+            line = json.dumps(item, default=jsonify_value)
             n += 1
             if format == "jsonl":
                 yield line
@@ -687,7 +688,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             _LOGGER.info("failed to attach export telemetry to collection", exc_info=True)
 
         # final telemetry fragment
-        yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
+        yield json.dumps({"export_telemetry": telemetry}, default=jsonify_value)
 
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
@@ -728,7 +729,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         metadata = payload.get("collection", {}) or {}
         return ExportedExplanationCollection(
-            metadata=cast(Mapping[str, Any], _jsonify(metadata)), explanations=tuple(domain)
+            metadata=cast(Mapping[str, Any], jsonify_value(metadata)), explanations=tuple(domain)
         )
 
     # ------------------------------------------------------------------
@@ -763,10 +764,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             "task": getattr(
                 exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
             )(),
-            "rules": _jsonify(rules_blob or {}),
-            "feature_weights": _jsonify(getattr(exp, "feature_weights", {})),
-            "feature_predict": _jsonify(getattr(exp, "feature_predict", {})),
-            "prediction": _jsonify(getattr(exp, "prediction", {})),
+            "rules": jsonify_value(rules_blob or {}),
+            "feature_weights": jsonify_value(getattr(exp, "feature_weights", {})),
+            "feature_predict": jsonify_value(getattr(exp, "feature_predict", {})),
+            "prediction": jsonify_value(getattr(exp, "prediction", {})),
             "explanation_type": explanation_type,
         }
         return payload
@@ -789,7 +790,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         class_labels = None
         if hasattr(base, "class_labels"):
             try:
-                class_labels = _jsonify(base.class_labels)  # type: ignore[attr-defined]
+                class_labels = jsonify_value(base.class_labels)  # type: ignore[attr-defined]
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
@@ -798,7 +799,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         sample_percentiles = None
         if hasattr(base, "sample_percentiles"):
             try:
-                sample_percentiles = _jsonify(base.sample_percentiles)  # type: ignore[attr-defined]
+                sample_percentiles = jsonify_value(base.sample_percentiles)  # type: ignore[attr-defined]
             except:  # noqa: E722
                 if not isinstance(sys.exc_info()[1], Exception):
                     raise
@@ -818,12 +819,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         metadata = {
             "size": len(self),
             "mode": getattr(base, "mode", None),
-            "y_threshold": _jsonify(self.y_threshold),
-            "low_high_percentiles": _jsonify(self.low_high_percentiles),
-            "feature_names": _jsonify(feature_names),
+            "y_threshold": jsonify_value(self.y_threshold),
+            "low_high_percentiles": jsonify_value(self.low_high_percentiles),
+            "feature_names": jsonify_value(feature_names),
             "class_labels": class_labels,
             "sample_percentiles": sample_percentiles,
-            "runtime_telemetry": _jsonify(runtime_telemetry),
+            "runtime_telemetry": jsonify_value(runtime_telemetry),
         }
         return {k: v for k, v in metadata.items() if v is not None}
 
@@ -1090,10 +1091,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
         if self.is_alternative():
-            return self.__convert_to_alternative_explanations()
+            return self._convert_to_alternative_explanations()
         return self
 
-    def __convert_to_alternative_explanations(self) -> "AlternativeExplanations":
+    def _convert_to_alternative_explanations(self) -> "AlternativeExplanations":
         """Return an ``AlternativeExplanations`` view sharing this collection's backing data."""
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)
@@ -1523,97 +1524,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault("output_format", "dataframe")
         return self.to_narrative(*args, **kwargs)
 
-    @staticmethod
-    def _deprecate_lime_shap_surface(
-        symbol: str,
-        replacement: str,
-        *,
-        removal_version: str,
-    ) -> None:
-        """Emit Task-21 deprecation warning for collection LIME/SHAP export helpers."""
-        deprecate(
-            f"CalibratedExplanations.{symbol} is deprecated since v0.11.1; use "
-            f"{replacement} instead. This API is scheduled for removal by {removal_version} "
-            "under the pre-v1.0 zero-deprecation closure policy.",
-            key=f"CalibratedExplanations.{symbol}_lime_shap_deprecation",
-            stacklevel=4,
-        )
-
-    # pylint: disable=protected-access
-    def as_lime(self, num_features_to_show=None):
-        """Transform the explanations into LIME explanation objects.
-
-        Returns
-        -------
-        list of lime.Explanation
-            List of LIME explanation objects with the same values as the `CalibratedExplanations`.
-        """
-        self._deprecate_lime_shap_surface(
-            "as_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            _, lime_exp = self.calibrated_explainer.preload_lime()
-        exp = []
-        for explanation in self.explanations:  # range(len(self.x[:,0])):
-            tmp = deepcopy(lime_exp)
-            tmp.intercept[1] = 0
-            tmp.local_pred = explanation.prediction["predict"]
-            if "regression" in self.calibrated_explainer.mode:
-                tmp.predicted_value = explanation.prediction["predict"]
-                tmp.min_value = np.min(self.calibrated_explainer.y_cal)
-                tmp.max_value = np.max(self.calibrated_explainer.y_cal)
-            else:
-                tmp.predict_proba[0], tmp.predict_proba[1] = (
-                    1 - explanation.prediction["predict"],
-                    explanation.prediction["predict"],
-                )
-
-            feature_weights = explanation.feature_weights["predict"]
-            num_to_show = (
-                num_features_to_show
-                if num_features_to_show is not None
-                else self.calibrated_explainer.num_features
-            )
-            features_to_plot = explanation.rank_features(feature_weights, num_to_show=num_to_show)
-            define_conditions = getattr(explanation, "define_conditions", None)
-            if define_conditions is None:
-                define_conditions = getattr(explanation, "_define_conditions", None)
-            rules = define_conditions() if define_conditions is not None else []
-            for j, f in enumerate(features_to_plot[::-1]):  # pylint: disable=invalid-name
-                tmp.local_exp[1][j] = (f, feature_weights[f])
-            del tmp.local_exp[1][num_to_show:]
-            tmp.domain_mapper.discretized_feature_names = rules
-            tmp.domain_mapper.feature_values = explanation.x_test
-            exp.append(tmp)
-        return exp
-
-    def as_shap(self):
-        """Transform the explanations into a SHAP explanation object.
-
-        Returns
-        -------
-        shap.Explanation
-            SHAP explanation object with the same values as the explanation.
-        """
-        self._deprecate_lime_shap_surface(
-            "as_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            _, shap_exp = self.calibrated_explainer.preload_shap()
-        shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
-        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
-        shap_exp.data = self.x_test
-        for i, explanation in enumerate(self.explanations):  # range(len(self.x[:,0])):
-            # shap_exp.base_values[i] = explanation.prediction['predict']
-            for f in range(len(self.x_test[0, :])):
-                shap_exp.values[i][f] = -explanation.feature_weights["predict"][f]
-        return shap_exp
+    def narrate(self, *args, **kwargs):
+        """Alias for :meth:`to_narrative`. Forwards all arguments directly."""
+        return self.to_narrative(*args, **kwargs)
 
 
 class AlternativeExplanations(CalibratedExplanations):
@@ -1703,6 +1616,119 @@ class AlternativeExplanations(CalibratedExplanations):
         inst._upper_cache = getattr(collection, "_upper_cache", None)
         inst._class_labels_cache = getattr(collection, "_class_labels_cache", None)
         return inst
+
+    def filter_by_target_confidence(self, confidence: float = 0.8) -> "AlternativeExplanations":
+        """Return a new collection keeping only intervals with a singleton conformal prediction set.
+
+        Applies conformal classification to each alternative interval using
+        the hinge non-conformity function (NCF) and the calibration set to
+        compute proper conformal p-values for each class:
+
+        - **α₁ = 1 − predict** (NCF for class 1: 1 − P(class 1 | x))
+        - **α₀ = predict** (NCF for class 0: 1 − P(class 0 | x) = predict)
+        - **p_val_k = (|{i : α_cal_i ≥ α_k}| + 1) / (n_cal + 1)** (conformal p-value)
+        - **epsilon = 1 - confidence** (conformal significance level)
+
+        The calibration NCF scores are computed as
+        ``α_cal[i] = 1 − P(true_class_i | x_cal_i)``, i.e.
+        ``1 − proba_cal`` for positive-class samples and ``proba_cal`` for
+        negative-class samples.
+
+        An interval is retained only when exactly one class has
+        ``p_val_k >= epsilon`` — i.e. the conformal prediction set is a
+        singleton.  When both p-values exceed the threshold (ambiguity
+        rejection) or neither does (novelty rejection), the interval is
+        discarded.
+
+        Parameters
+        ----------
+        confidence : float, default=0.8
+            Conformal confidence level in ``[0.0, 1.0]``.  Maps to
+            significance ``epsilon = 1 - confidence``.  Higher values
+            tighten the filter by widening the ambiguity zone.
+
+        Returns
+        -------
+        AlternativeExplanations
+            A new collection of the same concrete type as *self* containing
+            only the intervals whose conformal prediction set is a singleton
+            at the given *confidence* level.  The original is not mutated.
+
+        Raises
+        ------
+        ValidationError
+            If *confidence* is outside ``[0.0, 1.0]``.
+        ValidationError
+            If the underlying model does not produce probability outputs
+            (``is_probabilistic()`` is ``False``).
+
+        Notes
+        -----
+        This filter operates at the **interval level** and complements
+        ``reject_policy`` (source-instance-level conformal rejection) and
+        ``guarded`` (in-distribution plausibility filter).  It answers:
+        *"Would acting on this suggested change land in an outcome the model
+        would confidently accept?"*
+
+        At ``confidence=1.0`` (epsilon=0.0), every class is always in the
+        prediction set, so all intervals are discarded.  At
+        ``confidence=0.0`` (epsilon=1.0), only intervals with the most
+        extreme calibration-consistent predictions survive.
+
+        See Also
+        --------
+        CalibratedExplainer.explore_alternatives : Entrypoint that generates this collection.
+        RejectAlternativeExplanations : Instance-level reject collection.
+        RejectPolicySpec : Conformal reject-policy configurations.
+        """
+        if not (0.0 <= confidence <= 1.0):
+            raise ValidationError(f"confidence must be in [0.0, 1.0], got {confidence!r}")
+        if self.explanations and not self.explanations[0].is_probabilistic():
+            raise ValidationError(
+                "filter_by_target_confidence requires a probabilistic model "
+                "(classification or thresholded regression); the current model "
+                "does not produce probability outputs."
+            )
+        epsilon = 1.0 - confidence
+
+        # Compute calibration NCF distribution from the stored calibration set.
+        # alpha_cal[i] = 1 - P(true_class_i | x_cal_i):
+        #   y=1 → 1 - proba_cal  (NCF for class 1)
+        #   y=0 → proba_cal      (NCF for class 0: 1 - (1-proba_cal))
+        frozen = self.get_explainer()
+        x_cal = frozen.x_cal
+        y_cal = np.asarray(frozen.y_cal)
+        # Unwrap frozen layers to reach the explainer that exposes predict_proba.
+        inner = frozen
+        while not hasattr(type(inner), "predict_proba") and hasattr(inner, "explainer"):
+            inner = inner.explainer
+        raw = np.asarray(inner.predict_proba(x_cal))
+        # predict_proba may return 1-D (positive-class only) or 2-D (n × K).
+        proba_cal = raw[:, 1] if raw.ndim == 2 else raw
+        alpha_cal = np.where(y_cal == 1, 1.0 - proba_cal, proba_cal)
+        n_cal = len(alpha_cal)
+
+        new_collection = copy(self)
+        new_collection.explanations = []
+        for explanation in self.explanations:
+            filtered = explanation.copy()
+            rules = explanation.get_rules()
+            new_rules = explanation._set_up_result()  # pylint: disable=protected-access
+            for i in range(len(rules["rule"])):
+                p = float(rules["predict"][i])
+                alpha_1 = 1.0 - p  # NCF for class 1
+                alpha_0 = p  # NCF for class 0
+                p_val_1 = float(np.sum(alpha_cal >= alpha_1) + 1) / (n_cal + 1)
+                p_val_0 = float(np.sum(alpha_cal >= alpha_0) + 1) / (n_cal + 1)
+                in_set_1 = p_val_1 >= epsilon
+                in_set_0 = p_val_0 >= epsilon
+                # Retain only when prediction set is a singleton (XOR).
+                if in_set_1 != in_set_0:
+                    explanation._append_rule(new_rules, rules, i)  # pylint: disable=protected-access
+            filtered.rules = new_rules
+            filtered.has_rules = True
+            new_collection.explanations.append(filtered)
+        return new_collection
 
     def semi_explanations(self, only_ensured=False, include_potential=True, copy=True):
         """
@@ -2375,7 +2401,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         ordered = tuple(grouped[idx] for idx in sorted(grouped))
         metadata = payload.get("collection", {}) or {}
         return ExportedMultiClassExplanationCollection(
-            metadata=cast(Mapping[str, Any], _jsonify(metadata)),
+            metadata=cast(Mapping[str, Any], jsonify_value(metadata)),
             explanations_by_instance=ordered,
         )
 
@@ -2464,34 +2490,6 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
             {cls_key: exp.get_rules() for cls_key, exp in class_dict.items()}
             for class_dict in self.explanations
         ]
-
-    # Safe adapters / explicit not-implemented for adapters that assume flat lists
-    def as_lime(self):
-        """Raise for multiclass collections where a flat LIME export is undefined."""
-        self._deprecate_lime_shap_surface(
-            "as_lime",
-            "external_plugins.integrations.lime_pipeline.LimePipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        raise NotImplementedError(
-            "as_lime() is not supported for multi-label collections. "
-            "Call get_explanation(i, cls).as_lime() for a specific class, or iterate over the collection "
-            "to build a per-class LIME mapping. If you need an aggregated LIME export, convert each per-class "
-            "explanation via get_explanation(i, cls).as_lime() and combine the results in your caller."
-        )
-
-    def as_shap(self):
-        """Raise for multiclass collections where a flat SHAP export is undefined."""
-        self._deprecate_lime_shap_surface(
-            "as_shap",
-            "external_plugins.integrations.shap_pipeline.ShapPipeline(...).explain(...)",
-            removal_version="v0.11.3",
-        )
-        raise NotImplementedError(
-            "as_shap() is not supported for multi-label collections. "
-            "Call get_explanation(i, cls).as_shap() for a specific class, or iterate and aggregate per-class SHAP outputs. "
-            "Aggregating SHAP across classes is application-specific; prefer per-class SHAP objects for downstream use."
-        )
 
     def to_narrative(self, *args, **kwargs):
         """
@@ -2601,6 +2599,10 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         # Fall back to returning the dict structure for unknown formats
         return per_instance
 
+    def narrate(self, *args, **kwargs):
+        """Alias for :meth:`to_narrative`. Forwards all arguments directly."""
+        return self.to_narrative(*args, **kwargs)
+
     def to_json(self, *, include_version: bool = True) -> Mapping[str, Any]:
         """Return a JSON-friendly payload describing this multiclass collection.
 
@@ -2631,9 +2633,9 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                 provenance = getattr(exp, "provenance", None)
                 metadata = getattr(exp, "metadata", None)
                 if provenance is not None:
-                    domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                    domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
                 if metadata is not None:
-                    domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata))
+                    domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
                 instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
@@ -2661,7 +2663,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
 
         metadata = dict(self._collection_metadata())
         meta_fragment = {"collection": metadata, "schema_version": "1.0.0"}
-        yield json.dumps(meta_fragment, default=_jsonify)
+        yield json.dumps(meta_fragment, default=jsonify_value)
 
         chunk: List[str] = []
         n = 0
@@ -2684,11 +2686,11 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
                 provenance = getattr(exp, "provenance", None)
                 metadata_exp = getattr(exp, "metadata", None)
                 if provenance is not None:
-                    domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+                    domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
                 if metadata_exp is not None:
-                    domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata_exp))
+                    domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata_exp))
                 item = _explanation_to_json(domain, include_version=True)
-                line = json.dumps(item, default=_jsonify)
+                line = json.dumps(item, default=jsonify_value)
                 n += 1
                 if format == "jsonl":
                     yield line
@@ -2733,7 +2735,7 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         except Exception:  # adr002_allow
             _LOGGER.info("failed to attach export telemetry to collection", exc_info=True)
 
-        yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
+        yield json.dumps({"export_telemetry": telemetry}, default=jsonify_value)
 
     # Properties that aggregate per-class values into per-instance dicts
     @property

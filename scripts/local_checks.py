@@ -7,11 +7,16 @@ skips environment/bootstrap steps (no virtualenv creation, no pip install).
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -50,6 +55,8 @@ def _run_step(step: Step) -> int:
     print(f"$ {cmd_text}")
     env = dict(os.environ)
     env.setdefault("PRE_COMMIT_HOME", str(Path(".cache/pre-commit").resolve()))
+    if "coverage" in step.name.lower():
+        env.setdefault("COVERAGE_FILE", f".coverage.local_checks.{os.getpid()}")
     if step.name in {"Core tests (no viz/no cov)", "Core tests with coverage"}:
         env.pop("CE_DEPRECATIONS", None)
     try:
@@ -107,6 +114,405 @@ def _run_micro_benchmark() -> int:
     return 0
 
 
+def _venv_python(venv_path: Path) -> Path:
+    """Return the Python executable path for a virtual environment."""
+    if os.name == "nt":
+        return venv_path / "Scripts" / "python.exe"
+    return venv_path / "bin" / "python"
+
+
+def _run_timed_command(command: list[str]) -> tuple[int, int]:
+    """Run a command and return ``(returncode, elapsed_seconds)``."""
+    start = time.monotonic()
+    result = subprocess.run(command, check=False)
+    elapsed = int(round(time.monotonic() - start))
+    return result.returncode, elapsed
+
+
+def _run_uv_install_smoke() -> int:
+    """Reproduce the CI uv install smoke and timing lane locally."""
+    if shutil.which("uv") is None:
+        print("ERROR: uv not found. Install uv before running the optional uv install smoke.")
+        return 127
+
+    run_dir = Path(tempfile.mkdtemp(prefix="ce-uv-install-smoke-")).resolve()
+    pip_venv = run_dir / "venv-pip"
+    uv_venv = run_dir / "venv-uv"
+    timing_report = Path("reports/ci/uv_install_timing.txt")
+    smoke_python = "3.11"
+
+    print("\n[uv install smoke and timing]")
+    print(f"Working directory: {run_dir}")
+    print(f"Provisioning smoke envs with Python {smoke_python} via uv")
+    timing_report.parent.mkdir(parents=True, exist_ok=True)
+
+    for venv_path in (pip_venv, uv_venv):
+        rc = subprocess.run(
+            ["uv", "venv", "--python", smoke_python, "--seed", str(venv_path)],
+            check=False,
+        ).returncode
+        if rc != 0:
+            return rc
+
+    pip_python = _venv_python(pip_venv)
+    uv_python = _venv_python(uv_venv)
+    binary_only = "--only-binary=numpy,scipy,scikit-learn"
+
+    pip_rc, pip_seconds = _run_timed_command(
+        [
+            str(pip_python),
+            "-m",
+            "pip",
+            "install",
+            binary_only,
+            "-e",
+            ".[dev]",
+            "-c",
+            "constraints.txt",
+        ]
+    )
+    if pip_rc != 0:
+        return pip_rc
+
+    uv_rc, uv_seconds = _run_timed_command(
+        [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(uv_python),
+            binary_only,
+            "-e",
+            ".[dev]",
+            "-c",
+            "constraints.txt",
+        ]
+    )
+    if uv_rc != 0:
+        return uv_rc
+
+    smoke = subprocess.run(
+        [
+            str(uv_python),
+            "-c",
+            (
+                "from importlib.metadata import version; "
+                "import calibrated_explanations; "
+                "from calibrated_explanations import WrapCalibratedExplainer; "
+                "print(calibrated_explanations.__name__); "
+                "print(WrapCalibratedExplainer.__name__); "
+                "print(version('calibrated-explanations'))"
+            ),
+        ],
+        check=False,
+    )
+    if smoke.returncode != 0:
+        return smoke.returncode
+
+    timing_report.write_text(
+        f"pip_install_seconds={pip_seconds}\nuv_install_seconds={uv_seconds}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(timing_report.read_text(encoding="utf-8"), end="")
+    return 0
+
+
+def adr030_ratification_steps() -> list[Step]:
+    """Return the focused ADR-030 ratification gate sequence."""
+    return [
+        Step(
+            "Private-member scan",
+            ["python", "scripts/anti-pattern-analysis/scan_private_usage.py", "tests", "--check"],
+        ),
+        Step(
+            "ADR-030 anti-pattern detector",
+            [
+                "python",
+                "scripts/anti-pattern-analysis/detect_test_anti_patterns.py",
+                "--tests-dir",
+                "tests",
+                "--check",
+                "--output",
+                "reports/anti-pattern-analysis/test_anti_pattern_report.csv",
+                "--report",
+                "reports/anti-pattern-analysis/test_quality_report.json",
+                "--baseline",
+                ".github/test-quality-baseline.json",
+            ],
+        ),
+        Step(
+            "ADR-030 test-helper export guard",
+            [
+                "python",
+                "scripts/quality/check_no_test_helper_exports.py",
+                "--root",
+                "src/calibrated_explanations",
+                "--report",
+                "reports/anti-pattern-analysis/test_helper_wrapper_report.json",
+            ],
+        ),
+        Step(
+            "ADR-030 marker hygiene",
+            [
+                "python",
+                "scripts/quality/check_marker_hygiene.py",
+                "--check",
+                "--report",
+                "reports/marker-hygiene/marker_hygiene_report.json",
+                "--baseline",
+                ".github/marker-hygiene-baseline.json",
+            ],
+        ),
+        Step(
+            "Generated report local-path guard",
+            [
+                "python",
+                "scripts/quality/check_no_local_paths_in_reports.py",
+                "--check",
+                "--report",
+                "reports/quality/no_local_paths_report.json",
+            ],
+        ),
+    ]
+
+
+def adr030_expected_reports() -> list[Path]:
+    """Return reports that the ADR-030 ratification lane must produce."""
+    return [
+        Path("reports/anti-pattern-analysis/private_usage_scan.csv"),
+        Path("reports/anti-pattern-analysis/test_anti_pattern_report.csv"),
+        Path("reports/anti-pattern-analysis/test_quality_report.json"),
+        Path("reports/anti-pattern-analysis/test_helper_wrapper_report.json"),
+        Path("reports/marker-hygiene/marker_hygiene_report.json"),
+        Path("reports/quality/no_local_paths_report.json"),
+    ]
+
+
+def _utc_now_iso() -> str:
+    """Return the current UTC timestamp for generated local-check reports."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _command_text(command: list[str]) -> str:
+    """Return a repo-relative command string for timing reports."""
+    display_command = list(command)
+    if display_command and Path(display_command[0]) == Path(sys.executable):
+        display_command[0] = "python"
+    return " ".join(display_command)
+
+
+def _write_adr030_timing_report(records: list[dict[str, object]], started_at: float, output_path: Path) -> None:
+    """Write the focused ADR-030 ratification timing report."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "generated_at": _utc_now_iso(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "steps": records,
+        "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
+    }
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+
+
+def _active_deprecation_rows(ledger_path: Path) -> list[dict[str, str]]:
+    """Return data rows from the Active deprecations table."""
+    text = ledger_path.read_text(encoding="utf-8")
+    try:
+        active_section = text.split("### Active deprecations", 1)[1].split(
+            "### Removed deprecations (history)",
+            1,
+        )[0]
+    except IndexError:
+        raise RuntimeError("Could not locate Active deprecations ledger section") from None
+
+    rows: list[dict[str, str]] = []
+    for line in active_section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if stripped.startswith("|---") or "Deprecated symbol" in stripped:
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) < 5:
+            continue
+        rows.append(
+            {
+                "deprecated_symbol": cells[0],
+                "replacement": cells[1],
+                "deprecated_since": cells[2],
+                "removal_eta": cells[3],
+                "notes": cells[4],
+            }
+        )
+    return rows
+
+
+def _is_permitted_active_deprecation(row: dict[str, str]) -> bool:
+    """Return True if an active deprecation row is permitted at the v0.11.3 milestone boundary.
+
+    Rows whose removal_eta is exactly ``v1.0.0`` are intentional next-major deprecations
+    (e.g. the Task-17 guarded-API taxonomy entries) and do not block milestone closure.
+    All other ETAs — v0.x, v1.0.0-rc, slash-delimited targets that include a pre-v1.0.0
+    milestone — are blocking.
+    """
+    return row["removal_eta"].strip() == "v1.0.0"
+
+
+def _write_active_deprecations_report(rows: list[dict[str, str]], output_path: Path) -> int:
+    """Write the active-deprecation ledger artifact and return its gate code.
+
+    Rows targeting exactly ``v1.0.0`` are permitted as intentional next-major deprecations
+    and do not contribute to the failure count.
+    """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    blocking = [r for r in rows if not _is_permitted_active_deprecation(r)]
+    permitted = [r for r in rows if _is_permitted_active_deprecation(r)]
+    payload = {
+        "schema_version": 1,
+        "generated_at": _utc_now_iso(),
+        "status": "pass" if not blocking else "fail",
+        "active_rows_count": len(rows),
+        "blocking_rows_count": len(blocking),
+        "permitted_rows_count": len(permitted),
+        "blocking_symbols": [r["deprecated_symbol"] for r in blocking],
+        "permitted_symbols": [r["deprecated_symbol"] for r in permitted],
+    }
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    if blocking:
+        print("ERROR: Blocking active deprecations remain in docs/migration/deprecations.md:")
+        for row in blocking:
+            print(f"  {row['deprecated_symbol']} (ETA: {row['removal_eta']})")
+        return 1
+    if permitted:
+        print(f"INFO: {len(permitted)} active deprecation(s) targeting v1.0.0 are permitted at this milestone boundary.")
+    return 0
+
+
+def _write_deprecation_closure_timing_report(
+    records: list[dict[str, object]],
+    started_at: float,
+    output_path: Path,
+) -> None:
+    """Write the v0.11.3 deprecation-closure timing report."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "generated_at": _utc_now_iso(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "steps": records,
+        "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
+    }
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+
+
+def deprecation_closure_steps() -> list[Step]:
+    """Return the v0.11.3 deprecation-closure validation sequence."""
+    return [
+        Step(
+            "Focused deprecation closure tests",
+            _python_cmd(
+                "-m",
+                "pytest",
+                "tests/",
+                "-k",
+                "deprecat or lime or shap or reject or plugin or parallel or calibration",
+                "-v",
+                "--no-cov",
+            ),
+        ),
+        Step("ADR-030 ratification lane", _python_cmd("scripts/local_checks.py", "--adr030-ratification")),
+        Step("PR local checks", ["make", "local-checks-pr"]),
+        Step("Main local checks", ["make", "local-checks"]),
+    ]
+
+
+def run_deprecation_closure() -> int:
+    """Run the v0.11.3 deprecation-closure lane and emit timing evidence."""
+    ledger_report = Path("reports/deprecations/active_deprecations_check.json")
+    timing_report = Path("reports/deprecations/deprecation_closure_timing.json")
+    records: list[dict[str, object]] = []
+    started_at = time.monotonic()
+
+    step_started_at = time.monotonic()
+    try:
+        rows = _active_deprecation_rows(Path("docs/migration/deprecations.md"))
+        rc = _write_active_deprecations_report(rows, ledger_report)
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
+        rc = 1
+    records.append(
+        {
+            "name": "Active deprecations ledger check",
+            "command": "parse docs/migration/deprecations.md",
+            "exit_code": rc,
+            "elapsed_seconds": round(time.monotonic() - step_started_at, 3),
+        }
+    )
+    _write_deprecation_closure_timing_report(records, started_at, timing_report)
+    if rc != 0:
+        return rc
+
+    for step in deprecation_closure_steps():
+        step_started_at = time.monotonic()
+        rc = _run_step(step)
+        records.append(
+            {
+                "name": step.name,
+                "command": _command_text(step.command),
+                "exit_code": rc,
+                "elapsed_seconds": round(time.monotonic() - step_started_at, 3),
+            }
+        )
+        _write_deprecation_closure_timing_report(records, started_at, timing_report)
+        if rc != 0:
+            return rc
+
+    return 0
+
+
+def _validate_adr030_ratification_outputs(timing_report: Path) -> int:
+    """Validate required ADR-030 ratification artifacts exist and are parseable."""
+    missing_reports = [path.as_posix() for path in adr030_expected_reports() if not path.exists()]
+    if missing_reports:
+        print("ERROR: ADR-030 ratification lane did not produce expected reports:")
+        for path in missing_reports:
+            print(f"  {path}")
+        return 1
+    try:
+        json.loads(timing_report.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"ERROR: ADR-030 timing report is not valid JSON: {exc}")
+        return 1
+    return 0
+
+
+def run_adr030_ratification() -> int:
+    """Run the focused ADR-030 ratification lane and emit timing evidence."""
+    timing_report = Path("reports/anti-pattern-analysis/adr030_ratification_timing.json")
+    records: list[dict[str, object]] = []
+    started_at = time.monotonic()
+
+    for step in adr030_ratification_steps():
+        step_started_at = time.monotonic()
+        rc = _run_step(step)
+        records.append(
+            {
+                "name": step.name,
+                "command": _command_text(step.command),
+                "exit_code": rc,
+                "elapsed_seconds": round(time.monotonic() - step_started_at, 3),
+            }
+        )
+        _write_adr030_timing_report(records, started_at, timing_report)
+        if rc != 0:
+            return rc
+
+    return _validate_adr030_ratification_outputs(timing_report)
+
+
 def _is_network_fetch_failure(stderr: str) -> bool:
     text = (stderr or "").lower()
     if "unable to access 'https://github.com" in text:
@@ -136,7 +542,29 @@ def main() -> int:
         action="store_true",
         help="Run docs/linkcheck in strict CI parity mode (make linkcheck fatal).",
     )
+    parser.add_argument(
+        "--uv-install-smoke",
+        action="store_true",
+        help="Run the optional uv install smoke and pip-vs-uv install timing lane.",
+    )
+    parser.add_argument(
+        "--adr030-ratification",
+        action="store_true",
+        help="Run the focused ADR-030 ratification lane and timing report.",
+    )
+    parser.add_argument(
+        "--deprecation-closure",
+        action="store_true",
+        help="Run the v0.11.3 deprecation-closure lane and timing report.",
+    )
     args = parser.parse_args()
+
+    if args.uv_install_smoke:
+        return _run_uv_install_smoke()
+    if args.adr030_ratification:
+        return run_adr030_ratification()
+    if args.deprecation_closure:
+        return run_deprecation_closure()
 
     # CI-parity mode: dynamically read CI workflows and run them locally.
     if args.ci_parity:
@@ -206,6 +634,7 @@ def main() -> int:
                 "--output",
                 "reports/governance/governance_status.json",
                 "--validate",
+                "--run-lint",
             ),
         ),
         Step(
@@ -226,6 +655,15 @@ def main() -> int:
                 "src/calibrated_explanations",
                 "--report",
                 "reports/nomenclature_violation_inventory.json",
+                "--check",
+            ),
+        ),
+        Step(
+            "Parameter naming CI guard (removed aliases)",
+            _python_cmd(
+                "scripts/quality/check_parameter_naming.py",
+                "--root",
+                "src/calibrated_explanations",
                 "--check",
             ),
         ),
@@ -324,7 +762,7 @@ def main() -> int:
         pr_steps.insert(2 if pre_commit_available else 1, Step("Notebook naming lint", _python_cmd("-m", "nbqa", "ruff", "notebooks", "--select", "N")))
     if pydocstyle_available:
         insert_at = 3 if pre_commit_available and nbqa_available else 2 if (pre_commit_available or nbqa_available) else 1
-        pr_steps.insert(insert_at, Step("Pydocstyle", ["pydocstyle", "src", "tests"]))
+        pr_steps.insert(insert_at, Step("Pydocstyle", _python_cmd("-m", "pydocstyle", "src", "tests")))
 
     if mypy_targets:
         pr_steps.insert(

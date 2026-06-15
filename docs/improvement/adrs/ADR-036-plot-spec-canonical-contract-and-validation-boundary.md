@@ -1,4 +1,4 @@
-> **Status note (2026-03-20):** Last edited 2026-03-20 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.1+.
+> **Status note (2026-05-15):** Last edited 2026-05-15 · Archive after: Retain indefinitely as architectural record · Implementation window: v0.11.1+. v0.11.3 Task 6 promotes PlotSpec to the default user-facing plotting path after v0.11.2 semantic/visual mending evidence and human acceptance.
 
 # ADR-036: PlotSpec Canonical Contract and Validation Boundary
 
@@ -91,6 +91,11 @@ Additional optional fields **MAY** be defined, but required semantics **MUST** r
   though routing/parity gate evidence was collected, because current
   PlotSpec-rendered visuals are not yet trusted to preserve legacy-equivalent
   explanatory meaning for default user-facing use.
+- **v0.11.3 decision update (2026-05-15):** v0.11.2 Task 9 mending evidence
+  and human review accepted all in-scope plotting surfaces. PlotSpec is promoted
+  to the default user-facing plotting path for factual, alternative, triangular,
+  and global plotting surfaces. Legacy rendering remains available only as an
+  explicit opt-out or visible fallback path.
 
 ## Non-goals
 
@@ -119,8 +124,8 @@ Additional optional fields **MAY** be defined, but required semantics **MUST** r
   legacy remains default in v0.11.2.
 - v0.11.2 Task 9 is the active PlotSpec semantic/visual mending task while the
   PlotSpec path remains opt-in.
-- v0.11.3 Task 6 is the explicit re-evaluation/finalization point for any later
-  default-path promotion.
+- v0.11.3 Task 6 completes the default-path promotion after the v0.11.2 mending
+  evidence and side-by-side human review accepted all in-scope plotting surfaces.
 
 ## Future considerations (narrow)
 

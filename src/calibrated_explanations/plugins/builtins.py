@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
@@ -412,6 +411,7 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": "plot_spec.default",
+        "supports_guarded": True,
         "trusted": True,
         "trust": {"trusted": True},
     }
@@ -445,6 +445,7 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": "plot_spec.default",
+        "supports_guarded": True,
         "trusted": True,
         "trust": {"trusted": True},
     }
@@ -714,14 +715,9 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             if callable(supports):
                 try:
                     if not supports(explain_request, explain_config):
-                        logging.getLogger(__name__).info(
-                            "Execution plugin unsupported; falling back to legacy sequential execution",
-                            extra={"mode": self._mode},
-                        )
-                        warnings.warn(
-                            f"Execution plugin does not support request/config for mode '{self._mode}'; falling back to legacy sequential execution.",
-                            UserWarning,
-                            stacklevel=2,
+                        logging.getLogger(__name__).warning(
+                            "Execution plugin unsupported; falling back to legacy sequential execution (mode=%s)",
+                            self._mode,
                         )
                         explanation_callable = getattr(self.explainer, self._explanation_attr)
                         kwargs = {
@@ -756,15 +752,6 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         "Execution plugin supports() check failed for mode '%s': %s; falling back to legacy",
                         self._mode,
                         exc_supports,
-                    )
-                    logging.getLogger(__name__).info(
-                        "Execution plugin supports() failure; legacy sequential fallback (mode=%s)",
-                        self._mode,
-                    )
-                    warnings.warn(
-                        f"Execution plugin supports() check failed for mode '{self._mode}' ({exc_supports!r}); falling back to legacy sequential execution.",
-                        UserWarning,
-                        stacklevel=2,
                     )
                     try:
                         explanation_callable = getattr(self.explainer, self._explanation_attr)
@@ -826,14 +813,6 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             )
             # Log full exception stack for debugging plugin failures
             _logger.exception("Execution plugin exception:", exc_info=True)
-            _logger.info(
-                "Execution plugin error; legacy sequential fallback engaged (mode=%s)", self._mode
-            )
-            warnings.warn(
-                f"Execution plugin failed for mode '{self._mode}' ({exc!r}); falling back to legacy sequential execution.",
-                UserWarning,
-                stacklevel=2,
-            )
             try:
                 explanation_callable = getattr(self.explainer, self._explanation_attr)
             except Exception:  # adr002_allow
@@ -1161,6 +1140,8 @@ class LegacyPlotBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "legacy_compatible": True,
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
@@ -1206,6 +1187,8 @@ class LegacyPlotRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "supports_interactive": False,
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def render(
@@ -1214,7 +1197,7 @@ class LegacyPlotRenderer(PlotRenderer):
         """Render using the legacy plotting pathway."""
         legacy_function = artifact.get("legacy_function")
         if legacy_function == "global":
-            from ..legacy import plotting as legacy
+            from ..viz import _matplotlib_compat as legacy
 
             legacy.plot_global(
                 explainer=artifact["explainer"],
@@ -1246,6 +1229,8 @@ class PlotSpecDefaultBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "legacy_compatible": True,
         "output_formats": ["png", "svg", "pdf"],
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
@@ -1557,6 +1542,8 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png", "svg", "pdf"],
         "supports_interactive": False,
+        "plot_kinds": ("instance", "collection", "global"),
+        "plot_modes": ("factual", "alternative", "fast"),
     }
 
     def render(self, artifact: Any, *, context: PlotRenderContext) -> PlotRenderResult:
@@ -1810,7 +1797,7 @@ def _register_builtins() -> None:
         source="builtin",
     )
 
-    # Register legacy plugins as fallback defaults
+    # Register legacy plugins as explicit opt-out/fallback paths.
     register_explanation_plugin(
         "core.explanation.factual",
         LegacyFactualExplanationPlugin(),
@@ -1852,8 +1839,8 @@ def _register_builtins() -> None:
             "renderer_id": "core.plot.legacy",
             "fallbacks": (),
             "legacy_compatible": True,
-            "is_default": True,
-            "default_for": ("global", "alternative"),
+            "is_default": False,
+            "default_for": (),
         },
     )
 
@@ -1877,8 +1864,13 @@ def _register_builtins() -> None:
             "renderer_id": "core.plot.plot_spec.default",
             "fallbacks": ("legacy",),
             "legacy_compatible": True,
-            "is_default": False,
-            "default_for": (),
+            "is_default": True,
+            "default_for": (
+                "factual",
+                "alternative",
+                "triangular",
+                "global",
+            ),
         },
     )
 

@@ -47,6 +47,26 @@ def test_fallback_from_predict_p_to_predict_set(orchestrator):
     assert breakdown["prediction_set"].shape == (5, 2)
 
 
+def test_predict_p_boundary_is_included_in_prediction_set(orchestrator):
+    x = np.zeros((3, 2))
+    orchestrator.explainer.reject_learner.predict_p.return_value = np.array(
+        [
+            [0.10, 0.11],
+            [0.09, 0.10],
+            [0.08, 0.12],
+        ],
+        dtype=float,
+    )
+
+    breakdown = orchestrator.predict_reject_breakdown(x, confidence=0.9)
+
+    assert breakdown["prediction_set"].tolist() == [
+        [True, True],
+        [False, True],
+        [False, True],
+    ]
+
+
 def test_fallback_from_bulk_predict_set_to_per_instance(orchestrator):
     # Setup
     x = np.zeros((3, 2))

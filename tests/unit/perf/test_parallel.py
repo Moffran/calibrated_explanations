@@ -7,7 +7,6 @@ import pytest
 
 from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
 
 
 class DummyCache:
@@ -51,22 +50,23 @@ def test_parallel_metrics_snapshot():
     }
 
 
+def test_should_raise_configuration_error_when_feature_granularity_used(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ConfigurationError
+
+    base = ParallelConfig(enabled=True, min_batch_size=4)
+    monkeypatch.setenv("CE_PARALLEL", "granularity=feature")
+    with pytest.raises(ConfigurationError):
+        ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
+
+
 def test_parallel_config_from_env_extended_tokens(monkeypatch):
     base = ParallelConfig(enabled=True, min_batch_size=4)
     monkeypatch.setenv(
         "CE_PARALLEL",
         "min_instances=3,instance_chunk=5,feature_chunk=7,task_bytes=1024,"
-        "force_serial=true,granularity=feature",
+        "force_serial=true,granularity=instance",
     )
-    if deprecations_error_enabled():
-        with pytest.raises(
-            DeprecationWarning, match="Feature parallelism is deprecated and removed"
-        ):
-            ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
-        return
-
-    with warns_or_raises("Feature parallelism is deprecated and removed"):
-        cfg = ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
+    cfg = ParallelConfig.from_env(base, config_manager=ConfigManager.from_sources())
     assert cfg.min_instances_for_parallel == 3
     assert cfg.instance_chunk_size == 5
     assert cfg.feature_chunk_size == 7
@@ -107,7 +107,8 @@ def test_resolve_strategy_variants(monkeypatch):
 
     config.strategy = "auto"
     monkeypatch.setattr(executor, "_auto_strategy", lambda **k: "threads")
-    assert executor.resolve_strategy().func.__name__ == "thread_strategy"
+    with pytest.warns(DeprecationWarning, match="strategy='auto'"):
+        assert executor.resolve_strategy().func.__name__ == "thread_strategy"
 
 
 def test_auto_strategy(monkeypatch):
@@ -278,7 +279,9 @@ def test_emit_with_telemetry(monkeypatch):
     executor.emit("test", {"value": 2})  # should not raise
 
 
-def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, enable_fallbacks):
+def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, caplog):
+    import logging
+
     class ExplodingPool:
         def __init__(self, *args, **kwargs):
             raise RuntimeError("boom")
@@ -290,9 +293,13 @@ def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, ena
     )
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
     executor = ParallelExecutor(cfg)
-    with pytest.warns(UserWarning, match="Failed to initialize parallel pool"), executor as ctx:
+    with caplog.at_level(logging.WARNING, logger="calibrated_explanations"), executor as ctx:
         assert ctx.active_strategy_name == "sequential"
         assert ctx.pool is None
+    assert any(
+        "Failed to initialize parallel pool" in r.message and r.levelno == logging.WARNING
+        for r in caplog.records
+    ), f"Expected WARNING log about pool init failure; got: {[r.message for r in caplog.records]}"
 
 
 def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):
@@ -603,18 +610,6 @@ def test_parallel_executor_cancel_without_shutdown_still_clears_state() -> None:
     assert executor.active_strategy_name is None
 
 
-def test_map_emits_tiny_workload_fallback_branch(enable_fallbacks) -> None:
-    cfg = ParallelConfig(enabled=True, strategy="sequential", min_batch_size=4)
-    # Exercise the non-instance tiny-workload path.
-    cfg.granularity = "feature"  # type: ignore[assignment]
-    executor = ParallelExecutor(cfg)
-
-    with pytest.warns(UserWarning, match="tiny-workload threshold"):
-        result = executor.map(lambda x: x + 1, [1, 2, 3, 4, 5], work_items=5)
-
-    assert result == [2, 3, 4, 5, 6]
-
-
 def test_get_cgroup_cpu_quota_handles_notimplemented_path(monkeypatch) -> None:
     class MockOS:
         name = "posix"
@@ -765,3 +760,42 @@ def test_emit_reraises_non_exception_baseexception() -> None:
     executor = ParallelExecutor(ParallelConfig(enabled=True, telemetry=broken))
     with pytest.raises(KeyboardInterrupt):
         executor.emit("event", {"k": 1})
+
+
+def test_should_emit_deprecation_when_strategy_auto_and_enabled():
+    """ParallelConfig(strategy='auto') with enabled=True must emit DeprecationWarning (ADR-004, Gap E)."""
+    executor = ParallelExecutor(ParallelConfig(enabled=True, strategy="auto"))
+    with pytest.warns(DeprecationWarning, match="strategy='auto'"):
+        executor.resolve_strategy(work_items=10)
+
+
+def test_should_not_emit_deprecation_when_explicit_strategy_and_enabled():
+    """Explicit strategy with enabled=True must NOT emit DeprecationWarning (ADR-004, Gap E)."""
+    import warnings
+
+    executor = ParallelExecutor(ParallelConfig(enabled=True, strategy="sequential"))
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        executor.resolve_strategy(work_items=10)
+    deprecations = [
+        w
+        for w in record
+        if issubclass(w.category, DeprecationWarning) and "strategy='auto'" in str(w.message)
+    ]
+    assert not deprecations
+
+
+def test_should_not_emit_deprecation_when_enabled_false():
+    """ParallelConfig(enabled=False) must NOT emit DeprecationWarning regardless of strategy (ADR-004, Gap E)."""
+    import warnings
+
+    executor = ParallelExecutor(ParallelConfig(enabled=False, strategy="auto"))
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        executor.resolve_strategy(work_items=10)
+    deprecations = [
+        w
+        for w in record
+        if issubclass(w.category, DeprecationWarning) and "strategy='auto'" in str(w.message)
+    ]
+    assert not deprecations

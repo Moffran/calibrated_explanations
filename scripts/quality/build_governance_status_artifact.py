@@ -24,10 +24,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-
 
 try:
     import jsonschema  # type: ignore
@@ -67,6 +67,38 @@ def _status_from_report(path: Path) -> str:
     if "total_violations" in data:
         return "passed" if data["total_violations"] == 0 else "failed"
     return "unavailable"
+
+
+_MYPY_CANDIDATES = [
+    "src/calibrated_explanations/core/exceptions.py",
+    "src/calibrated_explanations/core/validation.py",
+    "src/calibrated_explanations/api/params.py",
+]
+
+
+def _run_lint_checks() -> dict[str, str]:
+    """Run ruff and mypy locally and return a lint_status dict.
+
+    ``local_checks_pr`` is always ``"unavailable"`` from this path because the
+    full PR gate requires the complete test suite; only CI can set it to
+    ``"passed"``/``"failed"``.
+    """
+
+    def _check(command: list[str]) -> str:
+        try:
+            result = subprocess.run(command, check=False, capture_output=True)
+            return "passed" if result.returncode == 0 else "failed"
+        except FileNotFoundError:
+            return "unavailable"
+
+    ruff_status = _check([sys.executable, "-m", "ruff", "check", "src/"])
+    mypy_targets = [p for p in _MYPY_CANDIDATES if Path(p).is_file()]
+    mypy_status = (
+        _check([sys.executable, "-m", "mypy", *mypy_targets, "--config-file", "pyproject.toml"])
+        if mypy_targets
+        else "unavailable"
+    )
+    return {"local_checks_pr": "unavailable", "mypy": mypy_status, "ruff": ruff_status}
 
 
 def build_artifact(*, lint_status: dict[str, str] | None = None) -> dict:
@@ -172,13 +204,26 @@ def main(argv: list[str] | None = None) -> int:
         dest="lint_ruff",
         help="Result of the ruff lint step.",
     )
+    parser.add_argument(
+        "--run-lint",
+        action="store_true",
+        dest="run_lint",
+        help=(
+            "Run ruff and mypy locally and use the actual exit codes for lint status. "
+            "Overrides --lint-ruff and --lint-mypy. local_checks_pr stays unavailable "
+            "because the full PR gate requires the test suite (only CI can set it)."
+        ),
+    )
     args = parser.parse_args(argv)
 
-    lint_status = {
-        "local_checks_pr": args.lint_local_checks_pr,
-        "mypy": args.lint_mypy,
-        "ruff": args.lint_ruff,
-    }
+    if args.run_lint:
+        lint_status = _run_lint_checks()
+    else:
+        lint_status = {
+            "local_checks_pr": args.lint_local_checks_pr,
+            "mypy": args.lint_mypy,
+            "ruff": args.lint_ruff,
+        }
     artifact = build_artifact(lint_status=lint_status)
 
     if args.validate:

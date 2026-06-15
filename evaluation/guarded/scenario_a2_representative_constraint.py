@@ -343,8 +343,9 @@ def _build_method_bundle_for_instance(
         instance_id=instance_id,
     )
 
-    mb_expl = wrapper.explain_guarded_factual(
+    mb_expl = wrapper.explain_factual(
         x_instance,
+        guarded=True,
         significance=multibin_noguard_sig,
         n_neighbors=DEFAULT_N_NEIGHBORS,
         merge_adjacent=DEFAULT_MERGE_ADJACENT,
@@ -374,8 +375,9 @@ def _build_method_bundle_for_instance(
         multibin_rows_by_significance[float(significance)] = mb_emitted
         candidate_rows_by_method_and_significance[("multibin_noguard", float(significance))] = mb_candidates
 
-        guarded_expl = wrapper.explain_guarded_factual(
+        guarded_expl = wrapper.explain_factual(
             x_instance,
+            guarded=True,
             significance=float(significance),
             n_neighbors=DEFAULT_N_NEIGHBORS,
             merge_adjacent=DEFAULT_MERGE_ADJACENT,

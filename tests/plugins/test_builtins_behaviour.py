@@ -78,7 +78,7 @@ def test_derive_threshold_labels_logs_interval_failure(caplog):
     assert "Failed to parse threshold" in caplog.text
 
 
-def test_execution_plugin_supports_false_falls_back_to_legacy(monkeypatch):
+def test_execution_plugin_supports_false_falls_back_to_legacy(monkeypatch, caplog):
     class DummyExecutionPlugin:
         def supports(self, *_args, **_kwargs):
             return False
@@ -136,13 +136,18 @@ def test_execution_plugin_supports_false_falls_back_to_legacy(monkeypatch):
         feature_filter_per_instance_ignore=((0, 2),),
     )
 
-    with pytest.warns(UserWarning):
+    import logging
+
+    with caplog.at_level(logging.WARNING, logger="calibrated_explanations"):
         batch = plugin.explain_batch(np.asarray([[1.0]]), request)
 
     assert isinstance(batch, ExplanationBatch)
     assert explainer.last_collection.feature_filter_per_instance_ignore == ((0, 2),)
     assert explainer.last_collection.explanations[0].reset_called is True
     assert "filter_error" in explainer.last_collection.filter_telemetry
+    assert any(
+        "unsupported" in r.message.lower() or "fall" in r.message.lower() for r in caplog.records
+    )
 
 
 def test_legacy_plot_builder_global_payload():
@@ -178,7 +183,7 @@ def test_legacy_plot_renderer_invokes_global(monkeypatch):
         calls.update(kwargs)
 
     monkeypatch.setattr(
-        "calibrated_explanations.legacy.plotting.plot_global",
+        "calibrated_explanations.viz._matplotlib_compat.plot_global",
         fake_plot_global,
     )
 

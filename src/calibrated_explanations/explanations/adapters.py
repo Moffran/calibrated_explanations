@@ -10,7 +10,9 @@ Scope: minimal parity with current legacy fields used in tests.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Union
+
+import numpy as np
 
 from . import models
 
@@ -71,7 +73,7 @@ def domain_to_legacy(exp: models.Explanation) -> Dict[str, Any]:
 
     # Prepare parallel arrays for rules
     rule_texts: List[str] = []
-    rule_features: List[int] = []
+    rule_features: List[Union[int, tuple]] = []
 
     # Aggregate per-rule mappings into parallel arrays keyed by metric name
     weights_acc: Dict[str, List[Any]] = {}
@@ -79,7 +81,12 @@ def domain_to_legacy(exp: models.Explanation) -> Dict[str, Any]:
 
     for fr in exp.rules:
         rule_texts.append(fr.rule)
-        rule_features.append(fr.feature)
+        # Normalize conjunction features to tuple so legacy→domain→legacy round-trips
+        # preserve type identity. Single-feature ints are stored as-is.
+        feat = fr.feature
+        if isinstance(feat, (list, np.ndarray)):
+            feat = tuple(feat)
+        rule_features.append(feat)
 
         for k, v in fr.rule_weight.items():
             weights_acc.setdefault(k, []).append(v)

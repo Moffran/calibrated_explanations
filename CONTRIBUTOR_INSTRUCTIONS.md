@@ -25,8 +25,16 @@ or explanation output.
 3. **Fit** – `explainer.fit(x_proper, y_proper)` → assert `explainer.fitted is True`.
 4. **Calibrate** – `explainer.calibrate(x_cal, y_cal)` → assert `explainer.calibrated is True`.
 5. **Explain** – Use `explainer.explain_factual(X)` or `explainer.explore_alternatives(X)`.
-    For higher security / in-distribution filtering, use `explainer.explain_guarded_factual(X)`
-    or `explainer.explore_guarded_alternatives(X)` instead.
+    For in-distribution filtering (guarded explanations), use `guarded_options=GuardedOptions()`:
+    ```python
+    from calibrated_explanations.explanations.guarded_options import GuardedOptions
+    explainer.explain_factual(X, guarded_options=GuardedOptions())
+    explainer.explore_alternatives(X, guarded_options=GuardedOptions())
+    ```
+    `GuardedOptions` fields: `confidence` (default 0.9), `n_neighbors`, `normalize`,
+    `merge_adjacent`. Do NOT use the REMOVED methods `explain_guarded_factual(X)` /
+    `explore_guarded_alternatives(X)` (deleted v0.11.3) or the deprecated `guarded=True`
+    boolean kwarg (emits `DeprecationWarning`; removed in v1.0.0).
 6. **Calibrated by default** – Do not return uncalibrated outputs unless explicitly
    requested.
 7. **Conjunctions** – `explanations.add_conjunctions(...)` or
@@ -46,6 +54,7 @@ retained for backward compatibility and as a legacy example only.
 | Package | Purpose | Rules |
 |---|---|---|
 | `core/` | `CalibratedExplainer`, `WrapCalibratedExplainer`, `core.exceptions` | Never import `plugins/` here (ADR-001) |
+| `core/config_manager.py` | Runtime configuration authority (`ConfigManager`) | Only boundary module for env/pyproject reads (ADR-034) |
 | `plugins/` | Calibrators, plotters, explanation plugins | Register via plugin registry; never hard-code in `core/` |
 | `calibration/` | Venn-Abers & Conformal Prediction primitives | Stateless helpers only |
 | `utils/` | `deprecate`, logging, serialization | Shared across packages |
@@ -56,6 +65,10 @@ Design patterns:
 - **Plugin-First**: New functionality goes into `plugins/`, not `core/`.
 - **Exception hierarchy**: Use `core.exceptions` (ADR-002). No bare `Exception` or
   `ValueError` unless documented.
+- **Config authority**: All runtime configuration reads go through
+  `ConfigManager` (ADR-034). Do not call `os.getenv` or parse `pyproject.toml`
+  directly outside `core/config_manager.py` and `core/config_helpers.py`. Use
+  `get_process_config_manager()` to access the process-level singleton.
 
 ---
 
@@ -104,9 +117,11 @@ Every fallback must be visible to users. No silent fallbacks.
 | Path | Purpose |
 |---|---|
 | `src/calibrated_explanations/core/__init__.py` | Public API surface |
+| `src/calibrated_explanations/core/config_manager.py` | Runtime configuration authority: `ConfigManager`, `get_process_config_manager`, `init_process_config_manager` |
 | `src/calibrated_explanations/plugins/` | Plugin implementations |
 | `src/calibrated_explanations/ce_agent_utils.py` | Legacy compatibility module — backward-compat and example only, not the recommended agent interface |
 | `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
+| `docs/foundations/how-to/configure_runtime.md` | How-to guide: ConfigManager, env vars, pyproject.toml sections, export diagnostics |
 | `docs/improvement/RELEASE_PLAN_v1.md` | Active release plan and milestone gates |
 | `docs/improvement/adrs/` | Architectural Decision Records |
 | `docs/standards/` | Engineering Standards (STD-001 through STD-005) |
@@ -204,21 +219,67 @@ every existing skill directory under `.claude/skills/`.
 
 ## 7. Development Workflow
 
+### First-time setup (required before running any checks)
+
 ```bash
-# Install (editable, with dev extras)
-pip install -e .[dev]
+# Install the package in editable mode with all dev dependencies
+pip install -e .[dev] -c constraints.txt
 
-# Run tests
-make test
-# or
-pytest --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-fail-under=90
+# Optional: faster install if uv is available
+uv pip install -e .[dev] -c constraints.txt
 
-# Run full local CI (lint + type-check + tests)
-make ci-local
-
-# Pre-commit hooks
-pre-commit install && pre-commit run --all-files
+# Install pre-commit hooks (run once per clone)
+pre-commit install
 ```
+
+Verify the environment is healthy:
+
+```bash
+python -m ruff --version    # must be present
+python -m mypy --version    # must be present
+python -m pytest --version  # must be present
+```
+
+### Routine local validation
+
+```bash
+# Fast PR-scope checks (lint + type-check + core tests + policy scanners)
+# This is the primary local validation path — run before every commit.
+make local-checks-pr
+
+# Full local CI including main-branch gates (coverage, perf, over-testing)
+make local-checks
+
+# Run tests only
+make test
+
+# Run only non-viz tests (faster; avoids matplotlib import)
+make test-core
+```
+
+### Performance profiling
+
+See `docs/contributor/performance_harness.md` for a guide to the available
+profiling scripts (`scripts/perf/`) and how to run baseline snapshots and
+regression checks.
+
+### Governance status artifact
+
+`reports/governance/governance_status.json` is a CI-derived artifact.
+The `lint` fields (`ruff`, `mypy`) show **"unavailable"** when generated
+without running lint tools. Use the local target to populate them:
+
+```bash
+# Run ruff + mypy locally, write results into the artifact
+make governance-status-local
+```
+
+`local_checks_pr` always shows **"unavailable"** locally — only CI can
+set it after the full test suite passes. The `schema_checks` fields are
+populated from local report files and reflect the last time those scripts ran.
+
+`make local-checks-pr` calls `make governance-status-local` internally,
+so after a full local checks run the artifact will have real ruff/mypy results.
 
 Before any implementation work:
 1. Read `docs/improvement/RELEASE_PLAN_v1.md` to identify the active milestone.

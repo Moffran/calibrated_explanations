@@ -178,6 +178,17 @@ pip install calibrated-explanations
 
 Optional: `matplotlib` is required only for `.plot()` visualisation calls.
 
+Contributor fast path: if you already use `uv`, you may install the editable
+development environment with the same constraints used by CI:
+
+```bash
+uv pip install -e .[dev] -c constraints.txt
+```
+
+This is an optional contributor workflow. The canonical user installation remains
+`pip install calibrated-explanations`, and this repository does not currently
+treat `uv.lock` as an authoritative dependency lockfile.
+
 ---
 
 ## Documentation

@@ -1,10 +1,12 @@
-"""Central deprecation helper for ADR-011 migration gates.
+"""Central deprecation helper for ADR-011 migration gates (legacy module).
 
-This module provides structured deprecation warnings that are:
-- Consistent across all deprecation sites
-- Testable and mockable
-- Tagged with removal version and alternative imports
-- Suitable for CI/CD enforcement
+This module provides structured deprecation warnings for top-level API symbols.
+New deprecation sites must use :mod:`calibrated_explanations.utils.deprecations`
+(plural) which provides the :func:`deprecate` helper with per-test deduplication
+and CE_DEPRECATIONS enforcement. Do not add a third deprecation module.
+
+This module (singular) remains for ``deprecate_public_api_symbol`` used by
+``__init__.py`` during lazy attribute access.
 """
 
 import warnings

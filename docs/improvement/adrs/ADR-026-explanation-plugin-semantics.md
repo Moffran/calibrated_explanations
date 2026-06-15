@@ -34,7 +34,7 @@ clear contract without duplicating the in-tree implementation details.
 
 **Note on ADR-015:** ADR-015 defines the *architecture* (how plugins are resolved and invoked), while this ADR (ADR-026) defines the *policy* (visibility and semantic contracts). The internalization of `explain` is a policy decision enforced by this ADR.
 
-* **Plugin Resolution:** The internal orchestration delegates all work to `_invoke_explanation_plugin`, which resolves or instantiates a plugin per mode, initialises it once with an `ExplanationContext`, and reuses the instance for subsequent calls. Resolution draws from (in priority order) keyword overrides, environment variables, pyproject configuration, descriptor-declared fallbacks, and the default built-ins before giving up, so authors can override behaviour without touching code.【F:src/calibrated_explanations/core/calibrated_explainer.py†L421-L459】【F:src/calibrated_explanations/core/calibrated_explainer.py†L894-L959】
+* **Plugin Resolution:** The internal orchestration delegates all work to `PluginManager` and its `explanation_orchestrator`, which resolve or instantiate a plugin per mode, initialise it once with an `ExplanationContext`, and reuse the instance for subsequent calls. Resolution draws from (in priority order) keyword overrides, environment variables, pyproject configuration, descriptor-declared fallbacks, and the default built-ins before giving up, so authors can override behaviour without touching code.
 * Runtime metadata is validated before a plugin is accepted. The resolver checks
   schema versions, declared modes/tasks, and capability tags (`explain`,
   `explanation:{mode}`, and the active task or `task:both`) so misconfigured
@@ -186,6 +186,12 @@ The validator must check:
   `plot_dependency`, and trust settings to enforce ADR-006/ADR-013/ADR-037, so
   authors should keep those aligned with the calibrators and plotters they
   expect to use.
+* `"supports_guarded": bool` must be declared by every explanation plugin (default: `False`).
+  The resolver uses this field to filter eligible plugins for guarded requests; see §6a.
+  Authors that wish to support `explain_factual(..., guarded_options=GuardedOptions())` and
+  `explore_alternatives(..., guarded_options=GuardedOptions())` must set this to `True` and
+  route accordingly. (`guarded=True` kwarg is deprecated but still triggers guarded routing;
+  removed v1.0.0.)
 
 ### 6. Legacy compatibility guarantees
 
@@ -200,16 +206,26 @@ The validator must check:
   populate equivalent attributes so downstream utilities continue to operate
   without change.【F:src/calibrated_explanations/explanations/explanations.py†L24-L249】
 
-### 6a. Scoped exception for guarded entrypoints (v0.11.x)
+### 6a. Guarded entrypoints and plugin opt-in (v0.11.3+)
 
-* `explain_guarded_factual(...)` and `explore_guarded_alternatives(...)` are
-  sanctioned core-side guarded execution paths in v0.11.x.
-* They reuse CE containers, explanation subclasses, and helper surfaces, but
-  they are **not** explanation-plugin modes and are not required to execute
-  through `_invoke_explanation_plugin`.
-* Their semantics are governed by ADR-032, which contracts schema compatibility
-  and representative-point guarded interval candidates rather than plugin-path
-  identity with standard CE.
+* `explain_factual(..., guarded_options=GuardedOptions())` and `explore_alternatives(..., guarded_options=GuardedOptions())` are
+  the canonical guarded execution paths as of v0.11.3. The deprecated `guarded=True`
+  boolean kwarg still works but emits `DeprecationWarning` and will be removed in v1.0.0.
+  The method pair `explain_guarded_factual(...)` / `explore_guarded_alternatives(...)` were
+  **REMOVED in v0.11.3** (not deprecated for future removal — already gone).
+* As of v0.11.3, guarded execution **is** an explanation-plugin concern. The `guarded`
+  flag is carried on `ExplanationRequest` and the resolver enforces it: a plugin is only
+  eligible for a guarded request when its metadata declares `"supports_guarded": True`.
+  Plugins that omit the field or set it to `False` are rejected by the resolver when
+  guarded execution is requested; a `ValidationError` is raised if no capable plugin is found.
+* Plugins that set `"supports_guarded": True` are responsible for routing the request
+  through the guarded execution path (e.g. delegating to `guarded_explain()`). They still
+  reuse CE containers, explanation subclasses (`GuardedFactualExplanation`,
+  `GuardedAlternativeExplanation`), and helper surfaces, and must satisfy the standard
+  `ExplanationBatch` schema so downstream tooling remains stable.
+* Semantics — schema compatibility, representative-point interval candidates, audit
+  surface — are governed by ADR-032 and apply regardless of whether the guarded path
+  runs through a built-in plugin or a third-party plugin that opts in.
 
 ## Consequences
 

@@ -44,13 +44,7 @@ def test_feature_filter_exception_reading_chain(explainer, caplog):
     # We want .get("factual", ()) to raise
     pm.explanation_plugin_fallbacks.get.side_effect = RuntimeError("Simulated read error")
 
-    with (
-        caplog.at_level(logging.WARNING),
-        pytest.warns(
-            UserWarning,
-            match="Feature filter is enabled but plugin fallback chain could not be read",
-        ),
-    ):
+    with caplog.at_level(logging.WARNING):
         # Call the public method that triggers the private one
         explainer.get_plugin_manager()
 
@@ -76,13 +70,7 @@ def test_feature_filter_empty_chain_init_exception(explainer, caplog):
     pm.explanation_plugin_fallbacks.get.side_effect = None
     pm.explanation_plugin_fallbacks.get.return_value = ()
 
-    with (
-        caplog.at_level(logging.WARNING),
-        pytest.warns(
-            UserWarning,
-            match="Feature filter is enabled but plugin chains could not be initialized",
-        ),
-    ):
+    with caplog.at_level(logging.WARNING):
         explainer.get_plugin_manager()
 
     assert "Failed to initialize plugin chains" in caplog.text
@@ -102,10 +90,7 @@ def test_feature_filter_enforcement_exception(explainer, caplog):
     # Let's make initialize_chains raise, as it's called at the end of the try block
     pm.initialize_chains.side_effect = RuntimeError("Simulated enforcement error")
 
-    with (
-        caplog.at_level(logging.WARNING),
-        pytest.warns(UserWarning, match="forcing the factual explanation plugin failed"),
-    ):
+    with caplog.at_level(logging.WARNING):
         explainer.get_plugin_manager()
 
     assert "Failed to enforce factual explanation plugin" in caplog.text

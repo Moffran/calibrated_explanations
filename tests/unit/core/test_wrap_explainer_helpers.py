@@ -275,8 +275,8 @@ def test_set_difficulty_estimator_delegates(wrapper: WrapCalibratedExplainer) ->
         def __init__(self) -> None:
             self.received: list[Any] = []
 
-        def set_difficulty_estimator(self, estimator: Any) -> None:
-            self.received.append(estimator)
+        def set_difficulty_estimator(self, estimator: Any, *, initialize: bool = True) -> None:
+            self.received.append((estimator, initialize))
 
     wrapper.fitted = True
     wrapper.calibrated = True
@@ -284,7 +284,26 @@ def test_set_difficulty_estimator_delegates(wrapper: WrapCalibratedExplainer) ->
 
     wrapper.set_difficulty_estimator("estimator")
 
-    assert wrapper.explainer.received == ["estimator"]  # type: ignore[union-attr]
+    assert wrapper.explainer.received == [("estimator", True)]  # type: ignore[union-attr]
+
+
+def test_set_difficulty_estimator_forwards_initialize_flag(
+    wrapper: WrapCalibratedExplainer,
+) -> None:
+    class Recorder:
+        def __init__(self) -> None:
+            self.received: list[tuple[Any, bool]] = []
+
+        def set_difficulty_estimator(self, estimator: Any, *, initialize: bool = True) -> None:
+            self.received.append((estimator, initialize))
+
+    wrapper.fitted = True
+    wrapper.calibrated = True
+    wrapper.explainer = Recorder()
+
+    wrapper.set_difficulty_estimator("estimator", initialize=False)
+
+    assert wrapper.explainer.received == [("estimator", False)]  # type: ignore[union-attr]
 
 
 def test_plot_uses_configured_defaults() -> None:

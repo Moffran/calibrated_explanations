@@ -73,7 +73,7 @@ def update_interval_learner(  # pylint: disable=invalid-name
     -----
     - For classification mode: Obtains a fresh interval calibrator from the explainer
     - For regression mode: Delegates to the interval learner's insert_calibration method
-    - Sets the explainer's __initialized flag to True after successful update
+    - Sets the explainer's _initialized flag to True after successful update
     """
     if explainer.is_fast():
         raise ConfigurationError("Fast explanations are not supported in this update path.")
@@ -115,7 +115,7 @@ def initialize_interval_learner(explainer: CalibratedExplainer) -> None:
     - Ensures interval runtime state is valid before initialization
     - For fast mode: Delegates to initialize_interval_learner_for_fast_explainer()
     - For standard mode: Obtains interval calibrator from the explainer
-    - Sets the explainer's __initialized flag to True after successful initialization
+    - Sets the explainer's _initialized flag to True after successful initialization
 
     See Also
     --------
@@ -156,7 +156,7 @@ def initialize_interval_learner_for_fast_explainer(explainer: CalibratedExplaine
     - Ensures interval runtime state is valid before initialization
     - Obtains interval calibrator with fast=True from the explainer
     - Assigns the result to the explainer's interval_learner property
-    - Sets the explainer's __initialized flag to True after successful initialization
+    - Sets the explainer's _initialized flag to True after successful initialization
 
     See Also
     --------

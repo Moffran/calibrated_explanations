@@ -10,7 +10,7 @@ team.
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e .[dev,eval]
+python -m pip install -e .[dev,eval] -c constraints.txt
 ```
 
 The ``[eval]`` extra installs ``xgboost``, ``venn-abers``, and plotting

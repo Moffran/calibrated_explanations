@@ -11,6 +11,7 @@ import copyreg
 import importlib
 import logging as _logging
 from types import MappingProxyType
+from typing import Any
 
 # Ensure MappingProxyType objects can be pickled project-wide by reducing them
 # to plain dicts. This avoids "cannot pickle 'mappingproxy' object" errors
@@ -38,7 +39,7 @@ except (TypeError, AttributeError) as exc:
 # Provide a default no-op handler to avoid "No handler" warnings for library users.
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
-__version__ = "v0.11.3-dev"
+__version__ = "0.11.3"
 
 # Note: core submodules are intentionally not imported here to avoid importing
 # large backends and to make deprecation transitions explicit. We still expose
@@ -46,6 +47,9 @@ __version__ = "v0.11.3-dev"
 # works without triggering an eager import of `calibrated_explanations.core`.
 __all__ = [
     "CalibratedExplainer",
+    "ExplainerBuilder",
+    "ExplainerConfig",
+    "GuardedOptions",
     "NormalizationStrategy",
     "RejectPolicySpec",
     "WrapCalibratedExplainer",
@@ -53,7 +57,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Lazy import for sanctioned public symbols.
 
     This avoids importing `calibrated_explanations.core` at package import time
@@ -88,11 +92,24 @@ def __getattr__(name: str):
         globals()[name] = value
         return value
 
+    if name == "GuardedOptions":
+        from .explanations.guarded_options import GuardedOptions
+
+        globals()[name] = GuardedOptions
+        return GuardedOptions
+
     if name == "RejectPolicySpec":
         from .explanations.reject import RejectPolicySpec
 
         globals()[name] = RejectPolicySpec
         return RejectPolicySpec
+
+    if name in ("ExplainerBuilder", "ExplainerConfig"):
+        from .api.config import ExplainerBuilder, ExplainerConfig  # noqa: F401
+
+        globals()["ExplainerBuilder"] = ExplainerBuilder
+        globals()["ExplainerConfig"] = ExplainerConfig
+        return globals()[name]
 
     if name == "NormalizationStrategy":
         from .calibration.normalization_strategy import NormalizationStrategy
@@ -100,4 +117,4 @@ def __getattr__(name: str):
         globals()[name] = NormalizationStrategy
         return NormalizationStrategy
 
-    raise AttributeError(name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

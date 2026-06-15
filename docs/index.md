@@ -41,6 +41,7 @@ api/index
 
 plugins
 migration/index
+upgrade/index
 appendices/external_plugins
 appendices/changelog_links
 appendices/rtd_tier_map

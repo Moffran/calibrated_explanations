@@ -24,11 +24,12 @@ Selecting any policy other than `NONE` implicitly enables reject orchestration; 
 is equivalent to `reject=True` for that call or explainer, so you no longer need to
 set the legacy `reject` flag explicitly.
 
-### Deprecated Policies
+### Removed legacy policy aliases
 
-The following policy names are deprecated and will be removed in v1.0.0:
+Older releases exposed alias names for the four policy modes. Those aliases have
+now been removed; use the canonical enum members directly:
 
-| Deprecated | New Name | Notes |
+| Removed alias | Use instead | Notes |
 |------------|----------|-------|
 | `PREDICT_AND_FLAG` | `FLAG` | Use `FLAG` instead |
 | `EXPLAIN_ALL` | `FLAG` | Use `FLAG` instead |
@@ -36,26 +37,25 @@ The following policy names are deprecated and will be removed in v1.0.0:
 | `EXPLAIN_NON_REJECTS` | `ONLY_ACCEPTED` | Use `ONLY_ACCEPTED` instead |
 | `SKIP_ON_REJECT` | `ONLY_ACCEPTED` | Use `ONLY_ACCEPTED` instead |
 
-Using deprecated names will emit a `DeprecationWarning`.
+Passing old string values to `RejectPolicy(...)` raises `ValueError`; module-level
+attribute access raises `AttributeError`.
 
-## CalibratedExplainer configuration
+## WrapCalibratedExplainer configuration
 
-Pass `default_reject_policy` to the explainer constructor to set a reusable default,
-but you can still override the behaviour per-call with the `reject_policy` argument
-on `predict_*` and `explain_*` entry points.
+For CE-first application code, prefer `WrapCalibratedExplainer`. Pass
+`default_reject_policy` to `calibrate(...)` to set a reusable default, and
+override the behaviour per-call with the `reject_policy` argument on prediction
+and explanation entry points.
 
 ```python
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
-explainer = CalibratedExplainer(
-    model,
-    x_cal,
-    y_cal,
-    default_reject_policy=RejectPolicy.FLAG,
-)
+wrapper = WrapCalibratedExplainer(model)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal, default_reject_policy=RejectPolicy.FLAG)
 
-envelope = explainer.explain_factual(
+envelope = wrapper.predict(
     x_test,
     reject_policy=RejectPolicy.FLAG,
 )
@@ -123,6 +123,7 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
 wrapper = WrapCalibratedExplainer(model)
+wrapper.fit(x_train, y_train)
 wrapper.calibrate(
     x_cal,
     y_cal,
@@ -155,7 +156,7 @@ and `explainer.reject_ncf` records which NCF was chosen. You can read these attr
 to understand which NCF was used:
 
 ```python
-wrapper.initialize_reject_learner()          # auto-selects based on task type
+wrapper.explainer.reject_orchestrator.initialize_reject_learner()
 print(wrapper.explainer.reject_ncf)          # "default"
 print(wrapper.explainer.reject_ncf_auto_selected)  # True
 ```
@@ -185,6 +186,204 @@ For `default`, `w` is accepted for API compatibility but ignored.
 > **w=0.0 guard:** Passing `w=0.0` with `ncf='ensured'` raises a `ValidationError`.
 > Values `w < 0.1` with `ensured` emit a `UserWarning`.
 
+## Reject-option conformal classification semantics
+
+Reject-option conformal classification in CE builds a conformal prediction set for each
+instance and uses the set geometry to route outcomes:
+
+- Singleton set (`|S(x)| = 1`): accepted (confident classification).
+- Empty set (`|S(x)| = 0`): novelty reject (out-of-distribution / non-covered behavior).
+- Multi-label set (`|S(x)| >= 2`): ambiguity reject (too many plausible classes).
+
+At runtime this appears in metadata as:
+
+- `reject_rate = ambiguity_rate + novelty_rate`
+- `singleton_rate` (accepted)
+- `prediction_set_size`, `ambiguity_mask`, `novelty_mask`
+
+These semantics are the same whether you use `default`, `ensured`, or an experimental
+reject scoring strategy.
+
+## Difficulty in CE reject flows
+
+CE currently has two distinct difficulty paths for classification reject workflows:
+
+1. Existing behavior (indirect):
+    `difficulty_estimator -> VennAbers probability scaling -> reject NCF`
+2. Experimental behavior (direct reject normalization):
+    `difficulty_estimator -> reject nonconformity normalization -> conformal p-values`
+
+The existing built-in path already allows `difficulty_estimator` to influence calibrated
+probabilities through Venn-Abers. The experimental path additionally normalizes reject
+scores directly before conformal p-values and prediction sets are computed.
+
+### Why normalize before p-values and sets
+
+Difficulty normalization must happen at the nonconformity-score stage.
+
+- Correct place: transform calibration/test nonconformity scores, then calibrate p-values.
+- Incorrect place: keep scores unchanged and only move a final reject threshold post-hoc.
+
+Post-hoc thresholding changes only the decision boundary and does not redefine the
+conformal score distribution. In contrast, pre-p-value normalization changes the score
+space used by conformal calibration itself.
+
+## Difficulty Estimator Provenance (Experimental Strategy)
+
+The experimental reject strategy `experimental.difficulty_normalized` modifies
+the non-conformity scores directly by dividing by per-instance difficulty before
+conformal p-values and prediction sets are computed.
+
+This is different from post-hoc thresholding. Post-hoc thresholding changes only
+the final decision boundary and does not change the conformal score distribution.
+Difficulty-aware conformal reject scoring must act on the scores themselves.
+
+## When to use which reject mode
+
+Use this decision guide for classification tasks:
+
+- `ncf="default"`:
+    Best baseline. Use when you want conservative changes and current public behavior.
+- `ncf="ensured"`:
+    Use when you need interval-width-aware scoring and can tune `w`.
+- `strategy="experimental.difficulty_normalized"`:
+    Use for research/ablation runs when difficulty should directly shape reject scoring.
+    Keep this opt-in and experimental.
+- `strategy="experimental.ambiguity_normalized_novelty_penalized"`:
+    Use only for research diagnostics when exploring ambiguity-vs-novelty routing tradeoffs.
+    Treat as evaluation-only until promoted.
+
+## Validity and methodology caveats
+
+- Keep the difficulty estimator fixed before reject calibration alphas are estimated.
+- Avoid fitting the estimator on calibration labels/residuals unless you apply
+    explicit cross-fitting.
+- Separate empirical utility from formal finite-sample coverage guarantees.
+- Treat difficulty-normalized and novelty-penalized strategies as experimental evidence,
+    not yet public contract expansion.
+
+## Scenario 8-11 evaluation summary
+
+The reject evaluation suite under `evaluation/reject/` reports:
+
+- Scenario 8 (baseline indirect difficulty effect):
+    enabling VA difficulty made reject stricter (`accept_rate` down; error capture up),
+    with strong accepted-accuracy cost in this setup.
+- Scenario 9 (direct difficulty-normalized scores):
+    primary contrast A vs C showed that arm C selects harder instances for rejection
+    (`difficulty_reject_auc` delta +0.1651 full-grid, driven by high-confidence rows).
+    At matched reject-rate operating points (10–40% targets), accepted-accuracy delta
+    was marginally negative (−0.0089 at target 0.40). The AUC advantage seen in the
+    full confidence grid is a selection effect at high rejection rates (>40%), not a
+    benefit in the deployment-relevant 10–40% range. Arm C remains the current
+    experimental baseline but is not yet promoted to the public API.
+- Scenario 10 (ambiguity-normalized novelty-penalized variant):
+    novelty increase was small and did not clearly outperform arm C; C remains the
+    simpler recommended experimental path.
+- Scenario 11 (matched operating-point selection):
+    matched target reject-rate evidence was mixed. C had accepted-accuracy deltas
+    of +0.0012, -0.0029, -0.0070, and -0.0089 at targets 0.10, 0.20, 0.30, and
+    0.40, so public API promotion is not justified yet. The novelty-aware variant
+    should remain internal/experimental.
+
+See scenario artifacts for exact metrics:
+
+- `evaluation/reject/artifacts/scenario_8_difficulty_reject_ablation.md`
+- `evaluation/reject/artifacts/scenario_9_difficulty_normalized_ncf.md`
+- `evaluation/reject/artifacts/scenario_10_ambiguity_novelty_reject.md`
+- `evaluation/reject/artifacts/scenario_11_operating_point_selection.md`
+
+## Minimal CE-first examples
+
+### Public baseline reject (`default` / `ensured`)
+
+```python
+from calibrated_explanations import RejectPolicySpec, WrapCalibratedExplainer
+
+wrapper = WrapCalibratedExplainer(model)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(x_cal, y_cal, feature_names=feature_names)
+
+policy = RejectPolicySpec.flag(ncf="default")
+result = wrapper.predict(x_test, reject_policy=policy, confidence=0.95)
+print(result.metadata["reject_rate"])
+```
+
+```python
+policy = RejectPolicySpec.flag(ncf="ensured", w=0.5)
+result = wrapper.predict(x_test, reject_policy=policy, confidence=0.95)
+print(result.metadata["reject_ncf"], result.metadata["reject_ncf_w"])
+```
+
+### Experimental difficulty-normalized reject scoring
+
+```python
+from calibrated_explanations import RejectPolicySpec, WrapCalibratedExplainer
+
+wrapper = WrapCalibratedExplainer(model)
+wrapper.fit(x_train, y_train)
+wrapper.calibrate(
+    x_cal,
+    y_cal,
+    feature_names=feature_names,
+    difficulty_estimator=difficulty_estimator,
+)
+
+policy = RejectPolicySpec.flag(ncf="default")
+result = wrapper.predict(
+    x_test,
+    reject_policy=policy,
+    confidence=0.95,
+    strategy="experimental.difficulty_normalized",
+)
+print(result.metadata["reject_rate"])
+print(result.metadata["difficulty_normalized"])
+```
+
+Keep this path explicitly experimental. It preserves the public `RejectPolicy`
+contract, but the strategy identifier is not a promoted public NCF mode.
+The experimental difficulty strategies require `difficulty_estimator` to be set
+on the calibrated explainer; omitting it raises `ConfigurationError` instead of
+silently falling back to the built-in reject score.
+
+### Why provenance matters
+
+Conformal validity depends on calibration/test exchangeability with respect to the
+scoring pipeline. If a difficulty estimator is fitted using calibration labels or
+calibration residuals without cross-fitting, score calibration can be biased.
+
+### Safe and unsafe provenance patterns
+
+- Safe: estimator fitted on proper-training data only.
+- Safe: unsupervised feature-only use of calibration features when explicitly
+    marked by estimator metadata.
+- Risky: estimator fitted on calibration labels/residuals without cross-fitting.
+
+### Runtime behavior and compatibility
+
+By default, provenance checks are permissive and backward compatible:
+
+- Estimators with only `fitted` + `apply(x)` continue to work.
+- If optional provenance metadata is absent, CE does not fail.
+- If metadata indicates calibration-label/residual leakage without cross-fitting,
+    CE emits a `UserWarning` and INFO log in permissive mode.
+
+You can request strict enforcement per explainer:
+
+```python
+wrapper.explainer.reject_difficulty_provenance_policy = "strict"
+```
+
+In strict mode, the same leakage pattern raises `ValidationError`.
+
+When `experimental.difficulty_normalized` is used, result metadata includes:
+
+- `difficulty_estimator_provenance_available`
+- `difficulty_estimator_provenance_warning_emitted`
+- `difficulty_estimator_provenance_validation_mode`
+
+plus optional fields such as fit source and calibration-label/residual markers.
+
 ## Regression and the reject framework
 
 > **Important:** The reject framework supports regression **only when a decision threshold
@@ -196,8 +395,9 @@ For `default`, `w` is accepted for API compatibility but ignored.
 
 For classification, the reject learner works directly with calibrated class probabilities
 (`predict_proba`). For regression there are no inherent class probabilities, so the
-framework converts the problem into a binary event: *"will the target be below the
-threshold?"* It then applies conformal prediction to that binary event.
+framework converts the problem into a binary event. For a scalar threshold, the event
+is `y <= threshold`. For an interval threshold `(low, high)`, the event is
+`low < y <= high`. It then applies conformal prediction to that binary event.
 
 Concretely, `initialize_reject_learner(threshold=t)` calls
 `predict_probability(x, y_threshold=t)` to obtain calibrated probabilities
@@ -210,10 +410,16 @@ immediately.
 
 ### Threshold tie behavior
 
-Regression threshold binarization uses strict `< threshold` semantics on calibration
-targets (`y_cal < threshold`). Values equal to `threshold` are treated as the
-non-event class. This tie policy is deterministic and should be reflected in
-downstream analysis.
+Regression threshold binarization uses the same binary event contract at calibration
+and test time:
+
+- Scalar threshold: `y <= threshold`; values equal to the threshold are event class `1`.
+- Interval threshold `(low, high)`: `low < y <= high`; values equal to `low` are event
+  class `0`, and values equal to `high` are event class `1`.
+
+Per-instance threshold arrays are not supported for reject. They raise
+`ValidationError` because the calibration labels, event probabilities, prediction sets,
+and coverage diagnostics must all refer to one shared binary event contract.
 
 ### Regression usage example
 
@@ -228,16 +434,23 @@ wrapper.calibrate(x_cal, y_cal)
 
 # Threshold is REQUIRED — choose a meaningful decision boundary
 threshold = float(np.median(y_cal))
-wrapper.initialize_reject_learner(threshold=threshold, ncf="default")
+wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+    threshold=threshold,
+    ncf="default",
+)
 
-result = wrapper.predict(x_test, reject_policy=RejectPolicy.FLAG)
+result = wrapper.predict(x_test, reject_policy=RejectPolicy.FLAG, threshold=threshold)
 print(f"Reject rate: {result.metadata['reject_rate']:.2%}")
 ```
 
 To use `ensured` NCF with regression:
 
 ```python
-wrapper.initialize_reject_learner(threshold=threshold, ncf="ensured", w=0.5)
+wrapper.explainer.reject_orchestrator.initialize_reject_learner(
+    threshold=threshold,
+    ncf="ensured",
+    w=0.5,
+)
 ```
 
 ### What the threshold means
@@ -503,3 +716,5 @@ confidence levels result in more rejections:
 
 See `evaluation/reject_policy_ablation.py` for empirical comparisons of different
 confidence levels on standard datasets.
+
+Entry-point tier: Tier 2

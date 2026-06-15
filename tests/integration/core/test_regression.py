@@ -374,7 +374,7 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
     assert cal_exp.reject_threshold == 0.6
 
     rejected, error_rate, reject_rate = cal_exp.reject_orchestrator.predict_reject(
-        x_test, confidence=0.9, threshold=0.6
+        x_test, reject_confidence=0.9, threshold=0.6
     )
 
     assert rejected.shape == (len(x_test),)

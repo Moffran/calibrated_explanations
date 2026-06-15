@@ -17,7 +17,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import binomtest
@@ -29,6 +28,7 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import RejectPolicySpec
 from calibrated_explanations.ce_agent_utils import ensure_ce_first_wrapper, fit_and_calibrate
+from calibrated_explanations.core.reject.orchestrator import regression_threshold_event_labels
 from calibrated_explanations.core.reject.policy import RejectPolicy
 
 ROOT = Path(__file__).resolve().parent
@@ -129,11 +129,14 @@ def _format_scalar(value: Any) -> str:
     return str(value)
 
 
-def _markdown_table_from_df(table: pd.DataFrame, max_rows: int = 12) -> str:
-    """Render a small markdown table without external formatting dependencies."""
+def _markdown_table_from_df(table: pd.DataFrame, max_rows: int | None = None) -> str:
+    """Render a markdown table without external formatting dependencies.
+
+    All rows are shown by default. Pass max_rows to explicitly truncate.
+    """
     if table.empty:
         return "_No rows generated._"
-    clipped = table.head(max_rows).copy()
+    clipped = table if max_rows is None else table.head(max_rows)
     headers = list(clipped.columns)
     lines = [
         "| " + " | ".join(headers) + " |",
@@ -143,21 +146,28 @@ def _markdown_table_from_df(table: pd.DataFrame, max_rows: int = 12) -> str:
         lines.append(
             "| " + " | ".join(_format_scalar(row[col]) for col in headers) + " |"
         )
-    if len(table) > max_rows:
+    if max_rows is not None and len(table) > max_rows:
         lines.append("")
         lines.append(f"_Showing first {max_rows} of {len(table)} rows._")
     return "\n".join(lines)
 
 
-def save_plot(prefix: str, fig: plt.Figure, suffix: str) -> str:
+def save_plot(prefix: str, fig: Any, suffix: str) -> str:
     """Persist a matplotlib figure under the artifacts directory."""
+    import matplotlib.pyplot as plt  # noqa: PLC0415
+
     path = ARTIFACTS_DIR / f"{prefix}_{suffix}.png"
     fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)
     return path.name
 
 
-def write_csv_json_md(prefix: str, table: pd.DataFrame, meta: Mapping[str, Any]) -> None:
+def write_csv_json_md(
+    prefix: str,
+    table: pd.DataFrame,
+    meta: Mapping[str, Any],
+    extra_sections: list[str] | None = None,
+) -> None:
     """Write a scenario artifact bundle."""
     csv_path = ARTIFACTS_DIR / f"{prefix}.csv"
     json_path = ARTIFACTS_DIR / f"{prefix}.json"
@@ -191,7 +201,9 @@ def write_csv_json_md(prefix: str, table: pd.DataFrame, meta: Mapping[str, Any])
             lines.append(f"- ![{plot}]({plot})")
         lines.append("")
 
-    lines.extend(["## Result table", "", _markdown_table_from_df(table), ""])
+    if extra_sections:
+        lines.extend(extra_sections)
+
     md_path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -388,7 +400,11 @@ def split_dataset(
     if n_cal is None:
         cal_size: float | int = cal_fraction
     else:
-        cal_size = min(max(1, int(n_cal)), len(x_train) - 1)
+        # Reserve at least n_classes samples for x_fit so stratified splitting never
+        # fails (sklearn requires >= n_classes in each part of the split).
+        n_classes = max(2, len(np.unique(y_train)))
+        max_cal = len(x_train) - n_classes
+        cal_size = min(max(1, int(n_cal)), max(1, max_cal))
     x_fit, x_cal, y_fit, y_cal = train_test_split(
         x_train,
         y_train,
@@ -808,7 +824,10 @@ def binary_accuracy_from_threshold(
 ) -> float:
     """Evaluate regression predictions as thresholded binary decisions."""
     return float(
-        accuracy_score((y_true >= threshold).astype(int), (y_pred >= threshold).astype(int))
+        accuracy_score(
+            regression_threshold_event_labels(y_true, threshold),
+            regression_threshold_event_labels(y_pred, threshold),
+        )
     )
 
 
@@ -835,6 +854,64 @@ def empirical_coverage(prediction_set: np.ndarray, y_true: np.ndarray) -> float:
         return float("nan")
     rows = np.arange(len(y_true))
     return float(np.mean(np.asarray(prediction_set, dtype=bool)[rows, np.asarray(y_true, dtype=int)]))
+
+
+def singleton_precision_recall(prediction_set: Any, y_true: np.ndarray) -> dict[str, float | int | bool]:
+    """Return precision/recall diagnostics for singleton conformal sets.
+
+    ``singleton_precision`` is the empirical correctness rate conditional on a
+    singleton set. ``singleton_recall`` is the fraction of all labelled rows
+    resolved as a correct singleton. If labels do not align with prediction-set
+    columns, the metrics are marked undefined rather than guessed.
+    """
+    try:
+        prediction_set_arr = np.asarray(prediction_set, dtype=bool)
+    except Exception:  # pragma: no cover - defensive for malformed artifacts
+        prediction_set_arr = np.empty((0, 0), dtype=bool)
+    y_arr = np.asarray(y_true, dtype=int).reshape(-1)
+    if (
+        prediction_set_arr.ndim != 2
+        or prediction_set_arr.shape[0] != len(y_arr)
+        or len(y_arr) == 0
+        or (len(y_arr) and (np.min(y_arr) < 0 or np.max(y_arr) >= prediction_set_arr.shape[1]))
+    ):
+        return {
+            "singleton_precision": float("nan"),
+            "singleton_recall": float("nan"),
+            "singleton_correct_count": 0,
+            "singleton_count": 0,
+            "singleton_precision_recall_defined": False,
+        }
+
+    set_sizes = np.sum(prediction_set_arr, axis=1)
+    singleton_mask = set_sizes == 1
+    correct_mask = prediction_set_arr[np.arange(len(y_arr)), y_arr]
+    correct_singleton = singleton_mask & correct_mask
+    singleton_count = int(np.sum(singleton_mask))
+    correct_count = int(np.sum(correct_singleton))
+    return {
+        "singleton_precision": (
+            float(correct_count / singleton_count) if singleton_count > 0 else float("nan")
+        ),
+        "singleton_recall": float(correct_count / len(y_arr)),
+        "singleton_correct_count": correct_count,
+        "singleton_count": singleton_count,
+        "singleton_precision_recall_defined": bool(singleton_count > 0),
+    }
+
+
+def classification_singleton_precision_recall(
+    bundle: ClassificationBundle,
+    prediction_set: Any,
+) -> dict[str, float | int | bool]:
+    """Return singleton diagnostics using label-set or multiclass proxy labels."""
+    labels = (
+        (np.asarray(bundle.baseline_pred) == np.asarray(bundle.y_test)).astype(int)
+        if np.asarray(bundle.baseline_proba).ndim == 2
+        and np.asarray(bundle.baseline_proba).shape[1] > 2
+        else np.asarray(bundle.y_test, dtype=int)
+    )
+    return singleton_precision_recall(prediction_set, labels)
 
 
 def clopper_pearson_interval(successes: int, total: int, *, confidence: float = 0.95) -> tuple[float, float]:

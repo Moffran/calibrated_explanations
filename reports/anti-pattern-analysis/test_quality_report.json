@@ -1,7 +1,7 @@
 {
   "baseline_path": ".github/test-quality-baseline.json",
   "findings": [],
-  "generated_at": "2026-05-12T08:40:24+00:00",
+  "generated_at": "2026-06-15T13:37:23+00:00",
   "new_violations": 0,
   "tests_dir": "tests",
   "total_findings": 0,

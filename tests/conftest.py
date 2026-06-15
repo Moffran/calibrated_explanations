@@ -441,7 +441,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "Calibra
 
     def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
-        setattr(explainer, "_CalibratedExplainer__initialized", True)  # noqa: SLF001
+        setattr(explainer, "_initialized", True)  # noqa: SLF001
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
@@ -477,6 +477,21 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., "Calibra
         return CalibratedExplainer(learner, x_cal, y_cal, mode=mode, **kwargs)
 
     return factory
+
+
+@pytest.fixture(autouse=True)
+def reset_process_config_manager():
+    """Reset the process-level ConfigManager singleton before each test.
+
+    Ensures tests that mutate env via monkeypatch see a fresh ConfigManager
+    rather than one cached from a prior test with a different env state.
+    See ADR-034 §3 and reset_process_config_manager_for_testing().
+    """
+    from calibrated_explanations.core.config_manager import reset_process_config_manager_for_testing
+
+    reset_process_config_manager_for_testing()
+    yield
+    reset_process_config_manager_for_testing()
 
 
 @pytest.fixture(autouse=True)
@@ -565,3 +580,64 @@ def enable_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     from tests.helpers.fallback_control import restore_runtime_warnings
 
     restore_runtime_warnings(monkeypatch)
+
+
+# ---------------------------------------------------------------------------
+# Per-file coverage minimums (ratchet — raise when coverage improves, never lower)
+# ---------------------------------------------------------------------------
+_FILE_COVERAGE_MINIMUMS: dict[str, float] = {
+    "src/calibrated_explanations/core/difficulty_estimator_helpers.py": 80.0,
+    "src/calibrated_explanations/core/explain/_guarded_explain.py": 80.0,
+    "src/calibrated_explanations/core/explain/orchestrator.py": 80.0,
+    "src/calibrated_explanations/core/wrap_explainer.py": 80.0,
+    "src/calibrated_explanations/plotting.py": 80.0,
+    "src/calibrated_explanations/plugins/base.py": 82.0,
+    "src/calibrated_explanations/plugins/manager.py": 80.0,
+    "src/calibrated_explanations/viz/coloring.py": 81.0,
+    "src/calibrated_explanations/viz/narrative_plugin.py": 80.0,
+    "src/calibrated_explanations/plugins/plots.py": 86.0,
+}
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Check per-file coverage minimums after the test session."""
+    import xml.etree.ElementTree as ET
+
+    xml_path = Path(__file__).parent.parent / "coverage.xml"
+    if not xml_path.exists():
+        return
+
+    try:
+        root = ET.parse(xml_path).getroot()
+    except ET.ParseError:
+        return
+
+    # Build a map of normalised path -> line_rate from coverage.xml
+    coverage_by_file: dict[str, float] = {}
+    for cls in root.iter("class"):
+        filename = cls.get("filename", "")
+        line_rate = cls.get("line-rate")
+        if filename and line_rate is not None:
+            # Normalise to forward-slash, strip leading path separators
+            normalised = filename.replace("\\", "/").lstrip("./")
+            coverage_by_file[normalised] = float(line_rate) * 100
+
+    failures: list[str] = []
+    for file_key, minimum in _FILE_COVERAGE_MINIMUMS.items():
+        normalised_key = file_key.replace("\\", "/").lstrip("./")
+        actual = coverage_by_file.get(normalised_key)
+        if actual is None:
+            continue
+        if actual < minimum:
+            failures.append(f"  {file_key}: {actual:.1f}% < {minimum:.0f}% required")
+
+    if failures:
+        import sys
+
+        print(  # noqa: T201
+            "\n\nPER-FILE COVERAGE FAILURES:\n" + "\n".join(failures),
+            file=sys.stderr,
+        )
+        # Only override a passing exit status — don't mask a test failure
+        if exitstatus == 0:
+            session.exitstatus = 1

@@ -17,6 +17,7 @@ Since we are now open to contributions, we welcome your feedback, suggestions, a
 - Milestone Plan: see `vx.y.z_plan.md` (e.g., `v0.10.1_plan.md`) for detailed checklists that map to each release plan milestone.
 - ADRs: see `docs/improvement/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
 - Documentation: Follow [Standard-004](docs/standards/STD-004-documentation-audience-standard.md) for all documentation structure and audience guidelines.
+- Legacy API: If your change affects `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods, update `docs/improvement/legacy_user_api_contract.md` and the associated parity tests in the same PR (ADR-020).
 
 Current highlights coming from reported issues and the release plan:
 
@@ -75,7 +76,15 @@ python -m pip install -e .[dev] -c constraints.txt
 python -m pip install -r docs/requirements-doc.txt -c constraints.txt
 ```
 
+If you use `uv`, the supported optional fast path mirrors the same constraint
+policy:
 
+```bash
+uv pip install -e .[dev] -c constraints.txt
+```
+
+The `uv` path is for contributor setup and CI install timing only. It does not
+replace the canonical `pip` workflow, release builds, or `constraints.txt`.
 
 ## Testing and Code Coverage
 

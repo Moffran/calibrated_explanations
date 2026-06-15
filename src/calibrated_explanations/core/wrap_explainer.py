@@ -32,7 +32,7 @@ from ..api.params import (
     reject_removed_aliases,
     validate_param_combination,
 )
-from ..utils import check_is_fitted, deprecate, safe_isinstance  # noqa: F401
+from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
 from ..utils.exceptions import (
     DataShapeError,
     IncompatibleStateError,
@@ -156,9 +156,15 @@ class WrapCalibratedExplainer:
 
         Notes
         -----
-        - Intentionally minimal and only uses the provided model.
-        - Further wiring of preprocessing and knobs will be added later.
-        - Private API to avoid public snapshot changes.
+        Fields wired during construction
+            ``preprocessor``, ``auto_encode``, ``unseen_category_policy``;
+            performance primitives (cache, parallel executor) via the perf
+            factory; internal feature-filter config.
+
+        Fields applied at explain-time
+            ``threshold`` and ``low_high_percentiles`` are stored on the config
+            and forwarded to ``explain_factual`` / ``explore_alternatives`` via
+            ``kwargs.setdefault()``.
         """
         w = cls(cfg.model)
         # Stash config on the instance for later optional use (private attr)
@@ -472,48 +478,6 @@ class WrapCalibratedExplainer:
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explore_alternatives(x_local, **kwargs)
 
-    def explain_guarded_factual(self, x: Any, **kwargs: Any) -> Any:
-        """Generate guarded factual explanations that only use in-distribution perturbations.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.explain_guarded_factual` : Refer to the docstring for full parameter documentation.
-        """
-        self._assert_fitted(
-            "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-        )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-        x_local = self._maybe_preprocess_for_inference(x)
-        kwargs = self._normalize_public_kwargs(kwargs)
-        cfg = getattr(self, "_cfg", None)
-        if cfg is not None:
-            kwargs.setdefault("threshold", cfg.threshold)
-            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
-        validate_inputs_matrix(x_local, allow_nan=True)
-        validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explain_guarded_factual(x_local, **kwargs)
-
-    def explore_guarded_alternatives(self, x: Any, **kwargs: Any) -> Any:
-        """Generate guarded alternative explanations that only use in-distribution perturbations.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.explore_guarded_alternatives` : Refer to the docstring for full parameter documentation.
-        """
-        self._assert_fitted(
-            "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
-        )._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
-        x_local = self._maybe_preprocess_for_inference(x)
-        kwargs = self._normalize_public_kwargs(kwargs)
-        cfg = getattr(self, "_cfg", None)
-        if cfg is not None:
-            kwargs.setdefault("threshold", cfg.threshold)
-            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
-        validate_inputs_matrix(x_local, allow_nan=True)
-        validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        return self.explainer.explore_guarded_alternatives(x_local, **kwargs)
-
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.
 
@@ -673,8 +637,19 @@ class WrapCalibratedExplainer:
         )
         return self.explainer.calibrated_confusion_matrix()
 
-    def set_difficulty_estimator(self, difficulty_estimator: Any) -> None:
+    def set_difficulty_estimator(
+        self, difficulty_estimator: Any, *, initialize: bool = True
+    ) -> None:
         """Assign or update the difficulty estimator.
+
+        Parameters
+        ----------
+        difficulty_estimator : Any
+            Difficulty estimator to assign, or ``None`` to clear it.
+        initialize : bool, default=True
+            Whether to reinitialize calibrated prediction internals after assignment.
+            Use ``False`` only for advanced workflows that need to update reject
+            strategy metadata without changing the calibrated probability path.
 
         See Also
         --------
@@ -690,97 +665,7 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
-        self.explainer.set_difficulty_estimator(difficulty_estimator)
-
-    def initialize_reject_learner(  # pylint: disable=invalid-name
-        self, threshold: float | None = None, ncf=None, w: float = 0.5
-    ) -> Any:
-        """Initialize the reject learner with a threshold value.
-
-        .. deprecated:: 0.11.1
-            Use ``reject_orchestrator.initialize_reject_learner`` on the
-            calibrated explainer instead. This wrapper will be removed no
-            earlier than v0.13.0.
-
-        Parameters
-        ----------
-        threshold : float or None
-            Decision threshold (regression only). Defaults to None.
-        ncf : str or None, default None
-            Non-conformity function type: ``'default'`` or ``'ensured'``.
-            The internal default score is task-dependent (margin for
-            multiclass, hinge for binary/regression). Legacy ``'entropy'``
-            is accepted and mapped to ``'default'``.
-        w : float, default 0.5
-            Blending weight in [0, 1] used only when ``ncf='ensured'``.
-            Ignored for ``ncf='default'``.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.initialize_reject_learner` : Refer to the docstring for initialize_reject_learner in CalibratedExplainer for more details.
-        """
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted before initializing the reject learner."
-            )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before initializing the reject learner."
-            )
-            .explainer
-            is not None
-        )
-        deprecate(
-            "WrapCalibratedExplainer.initialize_reject_learner is deprecated since v0.11.1; "
-            "use explainer.reject_orchestrator.initialize_reject_learner instead. "
-            "This wrapper will be removed no earlier than v0.13.0.",
-            key=(
-                "calibrated_explanations.core.wrap_explainer."
-                "WrapCalibratedExplainer.initialize_reject_learner_deprecation"
-            ),
-            stacklevel=2,
-        )
-        self.explainer.plugin_manager.initialize_orchestrators()
-        return self.explainer.reject_orchestrator.initialize_reject_learner(
-            threshold=threshold, ncf=ncf, w=w
-        )
-
-    def predict_reject(self, x: Any, bins: Any = None, confidence: float = 0.95) -> Any:
-        """Predict whether to reject the explanations for the test data.
-
-        .. deprecated:: 0.11.1
-            Use ``reject_orchestrator.predict_reject`` on the calibrated
-            explainer instead. This wrapper will be removed no earlier than
-            v0.13.0.
-
-        See Also
-        --------
-        :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
-        """
-        bins = self._get_bins(x, **{"bins": bins})
-        assert (
-            self._assert_fitted(
-                "The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection."
-            )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before predicting rejection."
-            )
-            .explainer
-            is not None
-        )
-        deprecate(
-            "WrapCalibratedExplainer.predict_reject is deprecated since v0.11.1; "
-            "use explainer.reject_orchestrator.predict_reject instead. "
-            "This wrapper will be removed no earlier than v0.13.0.",
-            key=(
-                "calibrated_explanations.core.wrap_explainer."
-                "WrapCalibratedExplainer.predict_reject_deprecation"
-            ),
-            stacklevel=2,
-        )
-        self.explainer.plugin_manager.initialize_orchestrators()
-        return self.explainer.reject_orchestrator.predict_reject(
-            x, bins=bins, confidence=confidence
-        )
+        self.explainer.set_difficulty_estimator(difficulty_estimator, initialize=initialize)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> Any:
@@ -799,7 +684,8 @@ class WrapCalibratedExplainer:
 
         Returns
         -------
-        None
+        object or None
+            The value returned by the underlying plot implementation.
 
         See Also
         --------
@@ -821,7 +707,7 @@ class WrapCalibratedExplainer:
                 threshold = cfg.threshold
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
         kwargs["bins"] = self._get_bins(x, **kwargs)
-        self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
+        return self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
 
     def _get_bins(self, x: Any, **kwargs: Any) -> Any:
         """Derive bin assignments from the configured Mondrian categorizer."""

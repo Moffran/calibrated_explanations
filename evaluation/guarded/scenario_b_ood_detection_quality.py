@@ -124,8 +124,9 @@ def _run_one_config(
     n_id = len(x_id)
 
     t0 = time.perf_counter()
-    guarded_expl = wrapper.explain_guarded_factual(
+    guarded_expl = wrapper.explain_factual(
         x_all,
+        guarded=True,
         significance=cfg.significance,
         n_neighbors=cfg.n_neighbors,
         merge_adjacent=cfg.merge_adjacent,
@@ -553,7 +554,7 @@ def main() -> None:
                 "In-distribution test instances also from N(0, I_d). "
                 "OOD instances are N(0, I_d) + shift_vector, with shift magnitude "
                 "= 1σ (mild), 2σ (moderate), 5σ (extreme).\n\n"
-                "For each test instance, explain_guarded_factual is called and the "
+                "For each test instance, explain_factual(guarded=True) is called and the "
                 "interval-level guard p-values are combined into one Fisher "
                 "p-value per instance. AUROC treats 1 - p_combined as the anomaly "
                 "score against the ground-truth OOD label. The rejection-rate "

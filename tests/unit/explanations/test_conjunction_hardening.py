@@ -57,8 +57,8 @@ def test_fallback_to_legacy(monkeypatch):
 # --- Phase 4A: Conjunction output validation tests ---
 
 
-def test_raise_on_predict_error_surfaces_exceptions():
-    """Calling with raise_on_predict_error=True should propagate prediction errors."""
+def test__raise_on_predict_error_surfaces_exceptions():
+    """Calling with _raise_on_predict_error=True should propagate prediction errors."""
     f = FactualExplanation.__new__(FactualExplanation)
     f.has_rules = True
     f.rules = {
@@ -83,7 +83,7 @@ def test_raise_on_predict_error_surfaces_exceptions():
 
     with pytest.raises(ValueError, match="broken predictor"):
         FactualExplanation.add_conjunctions(
-            f, n_top_features=2, max_rule_size=2, raise_on_predict_error=True
+            f, n_top_features=2, max_rule_size=2, _raise_on_predict_error=True
         )
 
 
@@ -148,8 +148,8 @@ def test_max_rule_size_1_returns_self():
     assert result is f
 
 
-def test_alternative_raise_on_predict_error():
-    """AlternativeExplanation should also support raise_on_predict_error."""
+def test_alternative__raise_on_predict_error():
+    """AlternativeExplanation should also support _raise_on_predict_error."""
     f = AlternativeExplanation.__new__(AlternativeExplanation)
     f.has_rules = True
     f.rules = {
@@ -179,5 +179,5 @@ def test_alternative_raise_on_predict_error():
 
     with pytest.raises(ValueError, match="alt broken"):
         AlternativeExplanation.add_conjunctions(
-            f, n_top_features=2, max_rule_size=2, raise_on_predict_error=True
+            f, n_top_features=2, max_rule_size=2, _raise_on_predict_error=True
         )

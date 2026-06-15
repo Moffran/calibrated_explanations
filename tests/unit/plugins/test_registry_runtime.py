@@ -191,10 +191,7 @@ def test_should_synchronise_all_descriptor_kinds_when_legacy_trust_changes():
         trusted=False,
     )
 
-    with pytest.warns(DeprecationWarning, match=r"register\(\) is deprecated"):
-        registry.register(plugin)
-    with pytest.warns(DeprecationWarning, match=r"trust_plugin\(\) is deprecated"):
-        registry.trust_plugin(plugin)
+    registry.mark_explanation_trusted("tests.registry.runtime.shared.expl")
     registry.untrust_plugin(plugin)
 
     assert (
@@ -307,10 +304,12 @@ def test_should_untrust_legacy_plugin_when_metadata_is_setitem_mapping():
             return {}
 
     plugin = PluginWithMutableMappingMeta()
-    with pytest.warns(DeprecationWarning, match=r"register\(\) is deprecated"):
-        registry.register(plugin)
-    with pytest.warns(DeprecationWarning, match=r"trust_plugin\(\) is deprecated"):
-        registry.trust_plugin(plugin)
+    registry.register_explanation_plugin(
+        "tests.registry.runtime.mutable-meta",
+        plugin,
+        metadata=plugin.plugin_meta,
+    )
+    registry.mark_explanation_trusted("tests.registry.runtime.mutable-meta")
     registry.untrust_plugin(plugin)
 
     assert plugin.plugin_meta["trusted"] is False

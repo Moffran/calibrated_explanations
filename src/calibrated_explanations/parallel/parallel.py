@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 import time
-import warnings
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
@@ -34,26 +33,11 @@ except BaseException:  # pragma: no cover - joblib remains optional
     _joblib_delayed = None  # type: ignore[assignment]
 
 from ..cache import CalibratorCache, TelemetryCallback
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import ConfigManager, get_process_config_manager
+from ..utils.deprecations import deprecate
+from ..utils.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
-
-_parallel_config_manager: ConfigManager | None = None
-
-
-def _get_parallel_config_manager() -> ConfigManager:
-    """Return the process-level ConfigManager singleton for parallel config reads."""
-    global _parallel_config_manager
-    if _parallel_config_manager is None:
-        _parallel_config_manager = ConfigManager.from_sources()
-    return _parallel_config_manager
-
-
-def _reset_parallel_config_manager_for_testing() -> None:
-    """Reset cached config manager singleton (tests only)."""
-    global _parallel_config_manager
-    _parallel_config_manager = None
-
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -105,6 +89,18 @@ class ParallelConfig:
     # Optional args to pass to the worker initializer
     worker_init_args: Optional[Tuple] = None
 
+    def __post_init__(self) -> None:
+        """Validate public parallel configuration values."""
+        if self.granularity != "instance":
+            raise ConfigurationError(
+                "ParallelConfig granularity='feature' is not supported. Use granularity='instance'.",
+                details={
+                    "param": "granularity",
+                    "received": self.granularity,
+                    "allowed": ["instance"],
+                },
+            )
+
     @classmethod
     def from_env(
         cls,
@@ -113,7 +109,7 @@ class ParallelConfig:
         config_manager: ConfigManager | None = None,
     ) -> "ParallelConfig":
         """Merge ``CE_PARALLEL`` overrides with an optional ``base`` configuration."""
-        mgr = config_manager if config_manager is not None else _get_parallel_config_manager()
+        mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
         raw = mgr.env("CE_PARALLEL")
         if not raw:
@@ -162,15 +158,15 @@ class ParallelConfig:
                 value = token.split("=", 1)[1].strip().lower()
 
                 if value == "feature":
-                    from ..utils.deprecations import deprecate
-
-                    deprecate(
-                        "Feature parallelism is deprecated and removed. Using 'instance' parallelism instead.",
-                        key="parallel:granularity:feature",
-                        stacklevel=2,
+                    raise ConfigurationError(
+                        "CE_PARALLEL granularity='feature' is not supported. Use granularity='instance'.",
+                        details={
+                            "param": "granularity",
+                            "received": "feature",
+                            "allowed": ["instance"],
+                        },
                     )
-                    cfg.granularity = "instance"
-                elif value == "instance":
+                if value == "instance":
                     cfg.granularity = "instance"
         return cfg
 
@@ -194,7 +190,7 @@ class ParallelExecutor:
         self._warned_min_batch: bool = False
         self._warned_tiny_workload: bool = False
         self._config_manager = (
-            config_manager if config_manager is not None else ConfigManager.from_sources()
+            config_manager if config_manager is not None else get_process_config_manager()
         )
 
     def __getstate__(self) -> dict[str, Any]:
@@ -242,12 +238,6 @@ class ParallelExecutor:
             if not isinstance(exc, Exception):
                 raise
             logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
-            logger.info("Parallel pool init failure; switching to sequential execution")
-            warnings.warn(
-                f"Failed to initialize parallel pool ({exc!r}); falling back to sequential execution.",
-                UserWarning,
-                stacklevel=2,
-            )
             self.pool = None
             self.active_strategy_name = "sequential"
 
@@ -343,16 +333,6 @@ class ParallelExecutor:
                     candidate,
                     min_batch_threshold,
                 )
-                logger.info(
-                    "Parallel decision: sequential (reason=below_min_batch_size, workload=%d, threshold=%d)",
-                    candidate,
-                    min_batch_threshold,
-                )
-                warnings.warn(
-                    f"Parallel execution disabled: workload ({candidate}) below minimum parallel threshold ({min_batch_threshold}); running sequential.",
-                    UserWarning,
-                    stacklevel=2,
-                )
                 self._warned_min_batch = True
             self._emit(
                 "parallel_decision",
@@ -374,16 +354,6 @@ class ParallelExecutor:
                     "Parallel execution disabled: workload (%d) below tiny-workload threshold (%d); running sequential.",
                     candidate,
                     tiny_threshold,
-                )
-                logger.info(
-                    "Parallel decision: sequential (reason=tiny_workload, workload=%d, threshold=%d)",
-                    candidate,
-                    tiny_threshold,
-                )
-                warnings.warn(
-                    f"Parallel execution disabled: workload ({candidate}) below tiny-workload threshold ({tiny_threshold}); running sequential.",
-                    UserWarning,
-                    stacklevel=2,
                 )
                 self._warned_tiny_workload = True
             self._emit(
@@ -418,14 +388,9 @@ class ParallelExecutor:
                 # via the testing fixture (the autouse disable sets
                 # `CE_PARALLEL_MIN_BATCH_SIZE` to a large value; enabling
                 # fallbacks removes that env var). Otherwise log info.
-                if self._config_manager.env("CE_PARALLEL_MIN_BATCH_SIZE") is None:
-                    warnings.warn(
-                        f"Parallel execution failed ({exc!r}); falling back to sequential execution.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                else:
-                    logger.info("Parallel failure; forced serial fallback engaged: %s", exc)
+                logger.warning(
+                    "Parallel execution failed (%s); falling back to sequential execution.", exc
+                )
                 results = [fn(item) for item in items_list]
             else:
                 raise exc from None
@@ -480,6 +445,15 @@ class ParallelExecutor:
     ) -> Callable[[Callable[[T], R], Sequence[T], Any], List[R]]:
         """Return a concrete execution strategy based on configuration."""
         strategy = self.active_strategy_name or self.config.strategy
+        if strategy == "auto" and self.config.enabled:
+            deprecate(
+                "ParallelConfig(strategy='auto') with enabled=True performs automatic "
+                "backend selection and will be removed in v1.0.0. "
+                "Set an explicit strategy: 'sequential', 'threads', 'processes', or 'joblib'.",
+                key="parallel:strategy=auto:enabled",
+                stacklevel=3,
+                raise_on_error=False,
+            )
         if strategy == "auto":
             strategy = self._auto_strategy(work_items=work_items)
         if strategy == "threads":
@@ -719,17 +693,9 @@ class ParallelExecutor:
     ) -> List[R]:
         """Dispatch work through joblib's Parallel abstraction when available."""
         if _JoblibParallel is None:
-            # Emit a UserWarning only when parallel fallbacks are enabled by
-            # the test fixture; otherwise log info to avoid triggering the
-            # fallback enforcement that converts such warnings to test failures.
-            if self._config_manager.env("CE_PARALLEL_MIN_BATCH_SIZE") is None:
-                warnings.warn(
-                    "Joblib is not available; falling back to thread-based parallel execution.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-            else:
-                logger.info("Joblib not available; falling back to threads")
+            logger.warning(
+                "Joblib is not available; falling back to thread-based parallel execution."
+            )
             return self.thread_strategy(fn, items, workers=workers, chunksize=chunksize)
 
         # joblib uses 'batch_size' instead of 'chunksize'

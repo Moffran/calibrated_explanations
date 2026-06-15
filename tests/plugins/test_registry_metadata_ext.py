@@ -42,6 +42,10 @@ def base_meta(**extra):
         "provider": "tests",
         "capabilities": ["explain"],
         "data_modalities": ("tabular",),
+        "modes": ("factual",),
+        "tasks": ("classification",),
+        "dependencies": (),
+        "trusted": False,
     }
     meta.update(extra)
     return meta
@@ -167,9 +171,13 @@ def test_register_emits_governance_event_for_accepted_registration(caplog):
 
     with (
         caplog.at_level("INFO", logger="calibrated_explanations.governance.plugins"),
-        pytest.warns(DeprecationWarning, match="register\\(\\) is deprecated"),
     ):
-        registry.register(Plugin(), source="manual")
+        registry.register_explanation_plugin(
+            Plugin.plugin_meta["name"],
+            Plugin(),
+            metadata=Plugin.plugin_meta,
+            source="manual",
+        )
 
     matches = [
         record

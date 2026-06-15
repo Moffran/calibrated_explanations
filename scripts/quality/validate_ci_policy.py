@@ -108,6 +108,8 @@ def _check_permissions(file_path: Path, text: str, errors: list[str]) -> None:
 def _check_pip_constraints(file_path: Path, text: str, errors: list[str]) -> None:
     for line in text.splitlines():
         stripped = line.strip()
+        if re.search(r"\bpip install\s+--upgrade\s+pip\b", stripped):
+            continue
         if "pip install" in stripped and "-c constraints.txt" not in stripped:
             errors.append(f"{file_path.as_posix()}: pip install must include -c constraints.txt -> '{stripped}'.")
 

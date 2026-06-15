@@ -15,7 +15,7 @@ from typing import Any, Mapping
 
 from .explanations import Explanation, FeatureRule
 from .schema import (
-    validate_payload as _schema_validate_payload,  # noqa: F401 - re-exported under alias
+    validate_payload as _schema_validate_payload,
 )
 from .utils.exceptions import ValidationError
 
@@ -69,7 +69,7 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
 
     _validate_invariants(payload)
     try:
-        validate_payload(payload)
+        _schema_validate_payload(payload)
     except Exception as exc:  # adr002_allow
         from .utils.exceptions import ValidationError
 
@@ -190,13 +190,4 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
     )
 
 
-def validate_payload(obj: Mapping[str, Any]) -> None:
-    """Validate a JSON payload against schema v1 if validator is available.
-
-    DEPRECATED: Use calibrated_explanations.schema.validate_payload instead.
-    """
-    # Delegate to the schema module's validator (kept as a compatibility wrapper)
-    return _schema_validate_payload(obj)
-
-
-__all__ = ["to_json", "from_json", "validate_payload"]
+__all__ = ["to_json", "from_json"]

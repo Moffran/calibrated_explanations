@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 
-from ..utils.deprecations import deprecate
 from ..utils.exceptions import DataShapeError, ValidationError
 from .explanations import AlternativeExplanations, CalibratedExplanations
 
@@ -26,44 +25,12 @@ class RejectPolicy(Enum):
     - FLAG: Process all instances and tag rejection status in the envelope.
     - ONLY_REJECTED: Process only rejected (uncertain) instances.
     - ONLY_ACCEPTED: Process only non-rejected (confident) instances.
-
-    Deprecated Aliases (emit DeprecationWarning, removed in v1.0.0)
-    ---------------------------------------------------------------
-    - PREDICT_AND_FLAG -> FLAG
-    - EXPLAIN_ALL -> FLAG
-    - EXPLAIN_REJECTS -> ONLY_REJECTED
-    - EXPLAIN_NON_REJECTS -> ONLY_ACCEPTED
-    - SKIP_ON_REJECT -> ONLY_ACCEPTED
     """
 
     NONE = "none"
     FLAG = "flag"
     ONLY_REJECTED = "only_rejected"
     ONLY_ACCEPTED = "only_accepted"
-
-    @classmethod
-    def _missing_(cls, value: object) -> RejectPolicy | None:
-        """Handle deprecated policy names with warnings."""
-        if not isinstance(value, str):
-            return None
-
-        deprecation_map = {
-            "predict_and_flag": ("FLAG", cls.FLAG),
-            "explain_all": ("FLAG", cls.FLAG),
-            "explain_rejects": ("ONLY_REJECTED", cls.ONLY_REJECTED),
-            "explain_non_rejects": ("ONLY_ACCEPTED", cls.ONLY_ACCEPTED),
-            "skip_on_reject": ("ONLY_ACCEPTED", cls.ONLY_ACCEPTED),
-        }
-
-        lower_value = value.lower()
-        if lower_value in deprecation_map:
-            new_name, new_policy = deprecation_map[lower_value]
-            from ..utils.deprecations import deprecate_alias
-
-            # Emit a standardized alias deprecation message
-            deprecate_alias(lower_value, new_name, stacklevel=3)
-            return new_policy
-        return None
 
 
 _VALID_NCF = frozenset({"default", "ensured"})
@@ -226,10 +193,10 @@ class RejectResult:
 
     Notes
     -----
-    **Deprecation status:** ``RejectResult`` is the public return type only
-    during the v0.11.x transition period.  It will be replaced by
-    :class:`RejectResultV2` at v1.0.0-rc.  Do not add new fields to this
-    class; add them to the V2 artifacts instead.
+    **Stability status:** ``RejectResult`` remains the stable public return
+    type for v1.0.0. ``RejectResultV2`` is available as an opt-in strict
+    schema. Migration to a V2-first public return surface is planned for
+    v1.1+ via the standard ADR-011 deprecation cycle.
 
     **Synchronisation contract:** This class and :class:`RejectResultV2` must
     be kept in sync whenever the reject envelope schema changes:
@@ -328,13 +295,7 @@ def reject_result_v2_to_legacy(
     """Convert `RejectResultV2` to legacy `RejectResult` with additive metadata."""
     # SYNC: If RejectResultV2 / RejectDecisionArtifact / RejectPayloadArtifact gain
     # new fields, mirror them into `metadata` below and update upgrade_reject_result.
-    if emit_deprecation_warning:
-        deprecate(
-            "RejectResult is deprecated and will be removed at v1.0.0-rc. "
-            "The public API will return RejectResultV2 directly. "
-            "Use result.decision / result.payload for structured access.",
-            key="RejectResult:legacy_return_type",
-        )
+    del emit_deprecation_warning
     metadata = dict(result.metadata or {})
     metadata.setdefault("schema_version", result.schema_version)
     metadata.setdefault("source_indices", list(result.payload.source_indices))
@@ -1273,7 +1234,32 @@ def _prune_unpickleable_state(state: dict[str, Any]) -> dict[str, Any]:
 
 
 class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
-    """A CalibratedExplanations collection that carries rejection metadata."""
+    """A :class:`.CalibratedExplanations` collection with per-instance rejection metadata.
+
+    Returned by :meth:`.CalibratedExplainer.explain_factual` (and the guarded
+    factual path) when a non-``NONE`` ``reject_policy`` is supplied.  Each
+    instance in the collection is annotated with a boolean rejection flag
+    derived from the active :class:`.RejectPolicy`, and the collection exposes
+    the aggregated ``rejected`` array and the policy that produced it via the
+    :class:`.RejectMixin` interface.
+
+    Notes
+    -----
+    Obtain instances of this class by calling
+    ``explain_factual(X, reject_policy=RejectPolicySpec.flag())`` (or
+    ``only_accepted`` / ``only_rejected`` variants).  Do **not** construct
+    directly; use :meth:`.from_collection`.
+
+    The ``rejected`` attribute is a boolean array aligned to the payload
+    explanations (after any subsetting by the active policy).  A ``True``
+    value indicates that the model's confidence for that instance fell below
+    the policy threshold.
+
+    See Also
+    --------
+    RejectAlternativeExplanations : Analogous collection for alternative explanations.
+    RejectPolicySpec : Factory for reject-policy configurations.
+    """
 
     @classmethod
     def from_collection(
@@ -1431,7 +1417,39 @@ class RejectCalibratedExplanations(CalibratedExplanations, RejectMixin):
 
 
 class RejectAlternativeExplanations(AlternativeExplanations, RejectMixin):
-    """An AlternativeExplanations collection that carries rejection metadata."""
+    """An :class:`.AlternativeExplanations` collection with per-instance rejection metadata.
+
+    Returned by :meth:`.CalibratedExplainer.explore_alternatives` (and the
+    guarded alternative path) when a non-``NONE`` ``reject_policy`` is
+    supplied.  Each instance in the collection is annotated with a boolean
+    rejection flag derived from the active :class:`.RejectPolicy`, and the
+    collection exposes the aggregated ``rejected`` array and the policy that
+    produced it via the :class:`.RejectMixin` interface.
+
+    Notes
+    -----
+    Obtain instances of this class by calling
+    ``explore_alternatives(X, reject_policy=RejectPolicySpec.flag())`` (or
+    ``only_accepted`` / ``only_rejected`` variants).  For the guarded path use
+    ``explore_alternatives(X, guarded_options=GuardedOptions(), reject_policy=...)``.  Do **not**
+    construct directly; use :meth:`.from_collection`.
+
+    The ``rejected`` attribute is a boolean array aligned to the payload
+    explanations (after any subsetting by the active policy).  A ``True``
+    value indicates that the model's confidence for that source instance fell
+    below the policy threshold.
+
+    To further filter alternative intervals by the model's confidence at the
+    target perturbation point, call
+    :meth:`.AlternativeExplanations.filter_by_target_confidence` on this
+    object after generation.
+
+    See Also
+    --------
+    RejectCalibratedExplanations : Analogous collection for factual explanations.
+    RejectPolicySpec : Factory for reject-policy configurations.
+    AlternativeExplanations.filter_by_target_confidence : Post-generation interval filter.
+    """
 
     @classmethod
     def from_collection(

@@ -215,10 +215,12 @@ def test_reject_confidence_forwarded_across_explain_and_guarded_paths(monkeypatc
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification"
     )
 
+    from calibrated_explanations import GuardedOptions
+
     seen_confidences = []
 
-    def fake_apply_policy(policy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
-        seen_confidences.append(float(confidence))
+    def fake_apply_policy(policy, x, explain_fn=None, bins=None, reject_confidence=0.95, **kwargs):
+        seen_confidences.append(float(reject_confidence))
         return RejectResult(
             prediction=None,
             explanation=None,
@@ -229,11 +231,21 @@ def test_reject_confidence_forwarded_across_explain_and_guarded_paths(monkeypatc
 
     monkeypatch.setattr(cal_exp.reject_orchestrator, "apply_policy", fake_apply_policy)
 
-    cal_exp.explain_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.81)
-    cal_exp.explore_alternatives(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.82)
-    cal_exp.explain_guarded_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.83)
-    cal_exp.explore_guarded_alternatives(
-        x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=0.84
+    cal_exp.explain_factual(x_test[:2], reject_policy=RejectPolicy.FLAG, reject_confidence=0.81)
+    cal_exp.explore_alternatives(
+        x_test[:2], reject_policy=RejectPolicy.FLAG, reject_confidence=0.82
+    )
+    cal_exp.explain_factual(
+        x_test[:2],
+        guarded_options=GuardedOptions(),
+        reject_policy=RejectPolicy.FLAG,
+        reject_confidence=0.83,
+    )
+    cal_exp.explore_alternatives(
+        x_test[:2],
+        guarded_options=GuardedOptions(),
+        reject_policy=RejectPolicy.FLAG,
+        reject_confidence=0.84,
     )
 
     assert seen_confidences == [0.81, 0.82, 0.83, 0.84]
@@ -261,14 +273,16 @@ def test_invalid_confidence_rejected_across_predict_and_explain(bad_confidence):
     )
 
     with pytest.raises(ValidationError, match="confidence must be a float"):
-        cal_exp.predict(x_test[:3], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence)
+        cal_exp.predict(
+            x_test[:3], reject_policy=RejectPolicy.FLAG, reject_confidence=bad_confidence
+        )
     with pytest.raises(ValidationError, match="confidence must be a float"):
         cal_exp.predict_proba(
-            x_test[:3], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence
+            x_test[:3], reject_policy=RejectPolicy.FLAG, reject_confidence=bad_confidence
         )
     with pytest.raises(ValidationError, match="confidence must be a float"):
         cal_exp.explain_factual(
-            x_test[:2], reject_policy=RejectPolicy.FLAG, confidence=bad_confidence
+            x_test[:2], reject_policy=RejectPolicy.FLAG, reject_confidence=bad_confidence
         )
 
 
@@ -299,7 +313,7 @@ def test_reject_context_uses_source_indices_for_only_accepted(monkeypatch):
 
     payload = [DummyExplanation("accepted-1"), DummyExplanation("accepted-3")]
 
-    def fake_apply_policy(policy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+    def fake_apply_policy(policy, x, explain_fn=None, bins=None, reject_confidence=0.95, **kwargs):
         return RejectResult(
             prediction=None,
             explanation=payload,
@@ -349,7 +363,7 @@ def test_reject_context_fallback_mapping_warns_when_source_indices_missing(monke
 
     payload = [DummyExplanation(), DummyExplanation()]
 
-    def fake_apply_policy(policy, x, explain_fn=None, bins=None, confidence=0.95, **kwargs):
+    def fake_apply_policy(policy, x, explain_fn=None, bins=None, reject_confidence=0.95, **kwargs):
         return RejectResult(
             prediction=None,
             explanation=payload,
@@ -390,7 +404,7 @@ def test_regression_predict_proba_forwards_threshold_to_reject_policy(monkeypatc
     seen_thresholds = []
 
     def fake_apply_policy(
-        policy, x, explain_fn=None, bins=None, confidence=0.95, threshold=None, **kwargs
+        policy, x, explain_fn=None, bins=None, reject_confidence=0.95, threshold=None, **kwargs
     ):
         seen_thresholds.append(threshold)
         return RejectResult(

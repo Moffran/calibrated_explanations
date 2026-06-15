@@ -18,7 +18,6 @@ import contextlib
 import logging
 import sys
 import threading
-import warnings
 from dataclasses import dataclass as _dataclass
 from dataclasses import field
 from hashlib import blake2b
@@ -34,7 +33,7 @@ from typing import (
     TypeVar,
 )
 
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import ConfigManager, get_process_config_manager
 
 try:  # pragma: no cover - behaviour varies by environment
     import cachetools
@@ -47,11 +46,8 @@ except:  # noqa: E722
     _HAVE_CACHETOOLS = False
     # Visible notification: cachetools missing, falling back to minimal backend
     _logger = logging.getLogger(__name__)
-    _logger.info("cachetools not available; falling back to minimal LRU/TTL cache backend")
-    warnings.warn(
-        "Cache backend fallback: using minimal in-package LRU/TTL implementation due to missing 'cachetools'",
-        UserWarning,
-        stacklevel=2,
+    _logger.warning(
+        "Cache backend fallback: cachetools not available; using minimal in-package LRU/TTL implementation"
     )
     # Provide a tiny, well-tested fallback for environments where
     # `cachetools` is not installed (CI minimal images). The fallback
@@ -194,23 +190,6 @@ except:  # noqa: E722
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-_cache_config_manager: ConfigManager | None = None
-
-
-def _get_cache_config_manager() -> ConfigManager:
-    """Return the process-level ConfigManager singleton for cache config reads."""
-    global _cache_config_manager
-    if _cache_config_manager is None:
-        _cache_config_manager = ConfigManager.from_sources()
-    return _cache_config_manager
-
-
-def _reset_cache_config_manager_for_testing() -> None:
-    """Reset cached config manager singleton (tests only)."""
-    global _cache_config_manager
-    _cache_config_manager = None
-
 
 # Export monotonic to support legacy shims/tests that reference
 # `calibrated_explanations.cache.cache.monotonic`.
@@ -391,7 +370,7 @@ class CacheConfig:
         config_manager: ConfigManager | None = None,
     ) -> "CacheConfig":
         """Merge ``CE_CACHE`` overrides with ``base`` defaults."""
-        mgr = config_manager if config_manager is not None else _get_cache_config_manager()
+        mgr = config_manager if config_manager is not None else get_process_config_manager()
         cfg = CacheConfig(**(base.__dict__ if base is not None else {}))
         raw = mgr.env("CE_CACHE")
         if not raw:
@@ -660,13 +639,9 @@ class LRUCache(Generic[K, V]):
         if estimator is default_size_estimator:
             state["_size_estimator"] = "__default_size_estimator__"
         elif callable(estimator):
-            logger.info(
-                "Dropping non-default size_estimator during pickle to keep cache state portable"
-            )
-            warnings.warn(
-                "Cache pickle fallback: non-default size_estimator is not preserved; restored to default_size_estimator on unpickle",
-                UserWarning,
-                stacklevel=2,
+            logger.warning(
+                "Cache pickle: non-default size_estimator is not preserved; "
+                "restored to default_size_estimator on unpickle"
             )
             state["_size_estimator"] = "__dropped_size_estimator__"
         return state

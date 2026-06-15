@@ -15,7 +15,7 @@ Scenario B asks: can the guard's p-values reliably distinguish out-of-distributi
 
 Data: calibration and training from N(0, I_d). In-distribution test instances also from N(0, I_d). OOD instances are N(0, I_d) + shift_vector, with shift magnitude = 1σ (mild), 2σ (moderate), 5σ (extreme).
 
-For each test instance, explain_guarded_factual is called and the interval-level guard p-values are combined into one Fisher p-value per instance. AUROC treats 1 - p_combined as the anomaly score against the ground-truth OOD label. The rejection-rate diagnostic is computed separately from raw interval-level p-values on in-distribution audit rows.
+For each test instance, explain_factual(guarded=True) is called and the interval-level guard p-values are combined into one Fisher p-value per instance. AUROC treats 1 - p_combined as the anomaly score against the ground-truth OOD label. The rejection-rate diagnostic is computed separately from raw interval-level p-values on in-distribution audit rows.
 
 The paper-facing slice of this scenario uses normalize_guard=True and n_neighbors=[5].
 

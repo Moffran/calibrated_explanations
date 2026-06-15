@@ -36,3 +36,21 @@ python -c "import calibrated_explanations; print(calibrated_explanations.__versi
 ```
 
 The command should echo `0.10.3` or later once your environment is ready.
+
+## Optional contributor fast path
+
+For repository development, `pip` remains the canonical fallback:
+
+```bash
+python -m pip install -e .[dev] -c constraints.txt
+```
+
+If you already use `uv`, you can install the editable development environment
+with the same CI constraints:
+
+```bash
+uv pip install -e .[dev] -c constraints.txt
+```
+
+This `uv` command is optional and constraint-based. The project does not treat
+`uv.lock` as an authoritative lockfile for v0.11.3.

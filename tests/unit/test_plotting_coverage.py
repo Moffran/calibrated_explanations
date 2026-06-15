@@ -30,10 +30,10 @@ def test_split_csv_coverage():
     assert plotting.split_csv(" , , ") == ()
 
 
-def test_plotting_module_should_expose_legacy_module_via_getattr():
-    legacy = getattr(plotting, "legacy")
+def test_plotting_module_legacy_attr_is_matplotlib_compat():
+    import calibrated_explanations.viz._matplotlib_compat as compat
 
-    assert legacy.__name__.endswith("legacy.plotting")
+    assert plotting.legacy is compat
 
 
 def test_plotting_module_should_raise_attribute_error_for_unknown_getattr():
@@ -125,8 +125,8 @@ def test_resolve_plot_style_chain_should_delegate_to_plugin_manager_when_availab
 
 
 def test_setup_plot_style_should_apply_config_values_to_matplotlib(monkeypatch):
-    require_name = "__" + "require_matplotlib"
-    setup_name = "__" + "setup_plot_style"
+    require_name = "_" + "require_matplotlib"
+    setup_name = "_" + "setup_plot_style"
     style_calls: list[str] = []
     fake_plt = SimpleNamespace(
         style=SimpleNamespace(use=lambda value: style_calls.append(value)),
@@ -147,8 +147,8 @@ def test_setup_plot_style_should_apply_config_values_to_matplotlib(monkeypatch):
 
 
 def test_setup_plot_style_should_warn_for_unknown_override_section(monkeypatch):
-    require_name = "__" + "require_matplotlib"
-    setup_name = "__" + "setup_plot_style"
+    require_name = "_" + "require_matplotlib"
+    setup_name = "_" + "setup_plot_style"
     fake_plt = SimpleNamespace(style=SimpleNamespace(use=lambda _value: None), rcParams={})
     monkeypatch.setattr(plotting, "plt", fake_plt)
     monkeypatch.setattr(plotting, require_name, lambda: None)
@@ -249,7 +249,7 @@ def test_plot_alternative__should_fallback_to_legacy_when_builder_raises(
     monkeypatch, enable_fallbacks
 ):
     import calibrated_explanations.viz.builders as builders
-    import calibrated_explanations.legacy.plotting as legacy
+    import calibrated_explanations.viz._matplotlib_compat as legacy
 
     def boom_builder(**_kwargs: Any):
         raise Exception("boom")
@@ -370,10 +370,10 @@ def test_require_matplotlib_should_retry_after_stale_cached_import_error(monkeyp
 
     Some tests temporarily install fake matplotlib modules.  If plotting first
     sees that fake environment, ``_MATPLOTLIB_IMPORT_ERROR`` can be populated.
-    Once the real dependency is available again, ``__require_matplotlib`` must
+    Once the real dependency is available again, ``_require_matplotlib`` must
     retry the import instead of treating the cached error as permanent.
     """
-    require_name = "__" + "require_matplotlib"
+    require_name = "_" + "require_matplotlib"
     error_name = "_" + "MATPLOTLIB_IMPORT_ERROR"
     original_plt = plotting.plt
     original_mcolors = plotting.mcolors

@@ -12,9 +12,9 @@ def test_coerce_string_tuple_non_iterable_returns_empty_tuple() -> None:
 
 
 def test_reject_policy_deprecated_attr_and_invalid_policy_path() -> None:
-    with pytest.warns(DeprecationWarning):
-        deprecated_value = reject_policy.__getattr__("PREDICT_AND_FLAG")
-    assert deprecated_value.value == "flag"
+    with pytest.raises(AttributeError):
+        reject_policy.__getattr__("PREDICT_AND_FLAG")
+    assert not hasattr(reject_policy, "PREDICT_AND_FLAG")
     assert reject_policy.is_policy_enabled("not-a-policy") is False
     assert reject_policy.is_policy_enabled("flag") is True
 

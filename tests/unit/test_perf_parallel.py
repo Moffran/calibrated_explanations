@@ -2,14 +2,13 @@
 
 import importlib
 import os
-import warnings
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from calibrated_explanations.core.config_manager import ConfigManager
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
-from tests.helpers.deprecation import deprecations_error_enabled
 
 
 @pytest.fixture
@@ -28,23 +27,15 @@ def clean_env():
 class TestParallelConfig:
     """Tests for configuration loading and environment overrides."""
 
-    def test_perf_parallel_shim_warns_and_forwards(self, clean_env):
-        """Deprecated perf shim should forward to canonical parallel module."""
-        if deprecations_error_enabled():
-            with pytest.raises(DeprecationWarning, match="calibrated_explanations.perf.parallel"):
-                importlib.reload(importlib.import_module("calibrated_explanations.perf.parallel"))
-            return
+    def test_should_raise_import_error_when_perf_parallel_shim_imported(self, clean_env):
+        for name in list(sys.modules):
+            if name == "calibrated_explanations.perf.parallel" or name.startswith(
+                "calibrated_explanations.perf.parallel."
+            ):
+                sys.modules.pop(name)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            shim = importlib.reload(
-                importlib.import_module("calibrated_explanations.perf.parallel")
-            )
-
-        assert shim.ParallelExecutor.__name__ == ParallelExecutor.__name__
-        assert shim.ParallelExecutor.__module__ == ParallelExecutor.__module__
-        assert shim.ParallelConfig.__name__ == ParallelConfig.__name__
-        assert shim.ParallelConfig.__module__ == ParallelConfig.__module__
+        with pytest.raises(ImportError):
+            importlib.import_module("calibrated_explanations.perf.parallel")
 
     def test_defaults(self):
         """Test default configuration values."""
@@ -109,21 +100,25 @@ class TestParallelExecutor:
             patch.object(ParallelExecutor, "_is_ci_environment", return_value=False),
             patch.object(ParallelExecutor, "get_cgroup_cpu_quota", return_value=None),
         ):
-            strategy = executor.resolve_strategy()
+            with pytest.warns(DeprecationWarning, match="strategy='auto'"):
+                strategy = executor.resolve_strategy()
             assert strategy.func == executor.joblib_strategy
 
-    def test_joblib_missing_fallback(self, enable_fallbacks):
+    def test_joblib_missing_fallback(self, enable_fallbacks, caplog):
         """Test fallback to threads if joblib is requested but missing."""
+        import logging
+
         cfg = ParallelConfig(enabled=True, strategy="joblib")
         executor = ParallelExecutor(cfg)
         # Force joblib to be None
         with (
             patch("calibrated_explanations.parallel.parallel._JoblibParallel", None),
             patch.object(executor, "thread_strategy") as mock_thread,
+            caplog.at_level(logging.WARNING, logger="calibrated_explanations"),
         ):
-            with pytest.warns(UserWarning, match=r"fall.*back"):
-                executor.joblib_strategy(lambda x: x, [1])
+            executor.joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
+        assert any("Joblib" in r.message and "fall" in r.message for r in caplog.records)
 
     def test_metrics_tracking_with_failures(self):
         """Test that metrics track failures correctly when strategy raises."""

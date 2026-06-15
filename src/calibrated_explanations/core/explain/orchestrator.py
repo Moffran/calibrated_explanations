@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
 
+from ...api.decorators import experimental
 from ...core.config_helpers import coerce_string_tuple
 from ...logging import (
     ensure_logging_context_filter,
@@ -411,13 +412,8 @@ class ExplanationOrchestrator:
                 # producing an empty calibration set — fall back to observed
                 # labels so discretization can proceed.
                 if mask.sum() == 0:
-                    _TELEMETRY_LOGGER.info(
+                    _TELEMETRY_LOGGER.warning(
                         "All prediction-derived condition labels are NaN; falling back to observed y_cal"
-                    )
-                    warnings.warn(
-                        "All prediction-derived condition labels are NaN; falling back to observed y_cal.",
-                        UserWarning,
-                        stacklevel=2,
                     )
                     condition_labels = None
                 else:
@@ -520,7 +516,17 @@ class ExplanationOrchestrator:
         from ...core.reject.policy import RejectPolicy
 
         if not _ce_skip_reject:
-            confidence = extras.get("confidence", 0.95) if isinstance(extras, Mapping) else 0.95
+            if isinstance(extras, Mapping):
+                reject_confidence = extras.get("reject_confidence", extras.get("confidence", 0.95))
+                if "confidence" in extras and "reject_confidence" not in extras:
+                    warnings.warn(
+                        "confidence= is deprecated in the reject path; use reject_confidence=.",
+                        DeprecationWarning,
+                        stacklevel=3,
+                    )
+            else:
+                reject_confidence = 0.95
+            confidence = reject_confidence
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
@@ -565,7 +571,7 @@ class ExplanationOrchestrator:
                         x,
                         explain_fn=_explain_fn,
                         bins=bins,
-                        confidence=confidence,
+                        reject_confidence=confidence,
                         threshold=threshold,
                         result_schema="v2",
                     )
@@ -1060,7 +1066,13 @@ class ExplanationOrchestrator:
                     default_policy=RejectPolicy.NONE,
                 )
                 effective_policy = resolution.policy
-                confidence = kwargs.get("confidence", 0.95)
+                confidence = kwargs.get("reject_confidence", kwargs.get("confidence", 0.95))
+                if "confidence" in kwargs and "reject_confidence" not in kwargs:
+                    warnings.warn(
+                        "confidence= is deprecated in the reject path; use reject_confidence=.",
+                        DeprecationWarning,
+                        stacklevel=3,
+                    )
 
                 # Prepare a per-class explain_fn closure that legacy_explain can call
                 def make_explain_fn_for_class(cls_val):
@@ -1092,7 +1104,7 @@ class ExplanationOrchestrator:
                                 x,
                                 explain_fn=explain_fn,
                                 bins=bins,
-                                confidence=confidence,
+                                reject_confidence=confidence,
                                 threshold=threshold,
                                 result_schema="v2",
                             )
@@ -1259,7 +1271,13 @@ class ExplanationOrchestrator:
                     default_policy=RejectPolicy.NONE,
                 )
                 effective_policy = resolution.policy
-                confidence = kwargs.get("confidence", 0.95)
+                confidence = kwargs.get("reject_confidence", kwargs.get("confidence", 0.95))
+                if "confidence" in kwargs and "reject_confidence" not in kwargs:
+                    warnings.warn(
+                        "confidence= is deprecated in the reject path; use reject_confidence=.",
+                        DeprecationWarning,
+                        stacklevel=3,
+                    )
 
                 def make_explain_fn_for_class(cls_val):
                     def _explain_fn(x_subset, **inner_kw):
@@ -1359,6 +1377,7 @@ class ExplanationOrchestrator:
             **({"reject_policy": reject_policy} if reject_policy is not None else {}),
         )
 
+    @experimental
     def invoke_guarded_factual(  # pylint: disable=invalid-name
         self,
         x: Any,  # pylint: disable=invalid-name
@@ -1368,14 +1387,15 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         per_instance_features_to_ignore: Any = None,
         reject_policy: Any | None = None,
-        significance: float = 0.1,
+        guarded_options: Any | None = None,
+        significance: float | None = None,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
         verbose: bool = False,
         **kwargs: Any,
     ) -> Any:
-        """Execute guarded factual explanation.
+        """[EXPERIMENTAL] Execute guarded factual explanation.
 
         Uses a multi-bin discretiser (``max_depth=3``) and prunes
         out-of-distribution leaves via KNN-based conformity testing.
@@ -1395,31 +1415,96 @@ class ExplanationOrchestrator:
             Mondrian categories.
         features_to_ignore : sequence or None
             Feature indices to exclude.
-        significance : float, default=0.1
-            Conformity significance level.
+        guarded_options : GuardedOptions or None, default=None
+            Per-call tuning for the in-distribution guard (ADR-038). When provided,
+            all individual guard tuning kwargs are ignored.
+        significance : float or None, default=None
+            **Deprecated.** Use ``guarded_options=GuardedOptions(confidence=1-significance)``.
+            The numeric value is inverted: ``significance=0.1`` becomes
+            ``GuardedOptions(confidence=0.9)``.
         merge_adjacent : bool, default=False
-            Merge adjacent conforming bins into wider intervals.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(merge_adjacent=True)``.
         n_neighbors : int, default=5
-            KNN neighbour count for the in-distribution guard.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(n_neighbors=...)``.
         normalize_guard : bool, default=True
-            Apply per-feature normalisation in the guard.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(normalize=...)``.
         verbose : bool, default=False
-            When True, emit UserWarnings for guarded-explanation diagnostics.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(verbose=True)``.
         **kwargs : Any
-            Currently unused; reserved for future parameters.
+            Reserved.
 
         Returns
         -------
         CalibratedExplanations
             Container with :class:`GuardedFactualExplanation` objects.
         """
+        import warnings as _warnings  # pylint: disable=import-outside-toplevel
+
         import numpy as np  # pylint: disable=import-outside-toplevel
 
         from ...core.reject.policy import RejectPolicy
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
+        # Resolve guard parameters from GuardedOptions or deprecated kwargs
+        if guarded_options is not None:
+            # New API: derive all params from GuardedOptions
+            _significance = 1.0 - guarded_options.confidence
+            _n_neighbors = guarded_options.n_neighbors
+            _normalize = guarded_options.normalize
+            _merge_adjacent = guarded_options.merge_adjacent
+            _verbose = guarded_options.verbose
+        else:
+            # Deprecated path: use individual kwargs directly (bypass GuardedOptions validation
+            # so that legacy edge cases like significance=1.0 continue to work until v1.0.0)
+            _significance = significance if significance is not None else 0.1
+            _n_neighbors = n_neighbors
+            _normalize = normalize_guard
+            _merge_adjacent = merge_adjacent
+            _verbose = verbose
+            _defaults = {
+                "merge_adjacent": False,
+                "n_neighbors": 5,
+                "normalize_guard": True,
+                "verbose": False,
+            }
+            if significance is not None:
+                _warnings.warn(
+                    f"significance={significance!r} is deprecated; use "
+                    f"guarded_options=GuardedOptions(confidence={1.0 - significance!r}) — "
+                    "note the value is inverted: confidence = 1 − significance.",
+                    DeprecationWarning,
+                    stacklevel=3,
+                )
+            for _kwarg, _field in [
+                ("merge_adjacent", "merge_adjacent"),
+                ("n_neighbors", "n_neighbors"),
+                ("normalize_guard", "normalize"),
+                ("verbose", "verbose"),
+            ]:
+                _local = {
+                    "merge_adjacent": merge_adjacent,
+                    "n_neighbors": n_neighbors,
+                    "normalize_guard": normalize_guard,
+                    "verbose": verbose,
+                }
+                if _local[_kwarg] != _defaults[_kwarg]:
+                    _warnings.warn(
+                        f"{_kwarg}= is deprecated; use guarded_options=GuardedOptions({_field}=...).",
+                        DeprecationWarning,
+                        stacklevel=3,
+                    )
+
         if not kwargs.pop("_ce_skip_reject", False):
-            confidence = kwargs.get("confidence", 0.95)
+            reject_confidence = kwargs.get(
+                "reject_confidence",
+                kwargs.get("confidence", 0.95),
+            )
+            if "confidence" in kwargs and "reject_confidence" not in kwargs:
+                _warnings.warn(
+                    "confidence= is deprecated in the reject path; use reject_confidence=.",
+                    DeprecationWarning,
+                    stacklevel=3,
+                )
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
@@ -1441,15 +1526,11 @@ class ExplanationOrchestrator:
                             features_to_ignore=features_to_ignore,
                             per_instance_features_to_ignore=per_instance_features_to_ignore,
                             reject_policy=RejectPolicy.NONE,
-                            significance=significance,
-                            merge_adjacent=merge_adjacent,
-                            n_neighbors=n_neighbors,
-                            normalize_guard=normalize_guard,
-                            verbose=verbose,
+                            guarded_options=guarded_options,
                             _ce_skip_reject=True,
                         ),
                         bins=bins,
-                        confidence=confidence,
+                        reject_confidence=reject_confidence,
                         threshold=threshold,
                         result_schema="v2",
                     )
@@ -1472,7 +1553,7 @@ class ExplanationOrchestrator:
                 mapped, unknown = self._coerce_ignore_items(mask)
                 unknown_names.extend(unknown)
                 per_instance_ignore_list.append(tuple(as_int_array(mapped).tolist()))
-            if unknown_names and verbose:
+            if unknown_names and _verbose:
                 unknown_sorted = sorted(set(unknown_names))
                 warnings.warn(
                     "Unknown feature names in features_to_ignore were ignored: "
@@ -1493,7 +1574,7 @@ class ExplanationOrchestrator:
         else:
             if isinstance(features_arg, (list, tuple)):
                 mapped, unknown = self._coerce_ignore_items(features_arg)
-                if unknown and verbose:
+                if unknown and _verbose:
                     unknown_sorted = sorted(set(unknown))
                     warnings.warn(
                         "Unknown feature names in features_to_ignore were ignored: "
@@ -1518,13 +1599,14 @@ class ExplanationOrchestrator:
             mondrian_bins=bins,
             features_to_ignore=features_to_ignore_flat,
             per_instance_features_to_ignore=per_instance_ignore,
-            significance=significance,
-            merge_adjacent=merge_adjacent,
-            n_neighbors=n_neighbors,
-            normalize_guard=normalize_guard,
-            verbose=verbose,
+            significance=_significance,
+            merge_adjacent=_merge_adjacent,
+            n_neighbors=_n_neighbors,
+            normalize_guard=_normalize,
+            verbose=_verbose,
         )
 
+    @experimental
     def invoke_guarded_alternative(  # pylint: disable=invalid-name
         self,
         x: Any,  # pylint: disable=invalid-name
@@ -1534,14 +1616,15 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         per_instance_features_to_ignore: Any = None,
         reject_policy: Any | None = None,
-        significance: float = 0.1,
+        guarded_options: Any | None = None,
+        significance: float | None = None,
         merge_adjacent: bool = False,
         n_neighbors: int = 5,
         normalize_guard: bool = True,
         verbose: bool = False,
         **kwargs: Any,
     ) -> Any:
-        """Execute guarded alternative explanation.
+        """[EXPERIMENTAL] Execute guarded alternative explanation.
 
         Uses a multi-bin discretiser (``max_depth=3``) and prunes
         out-of-distribution leaves via KNN-based conformity testing.
@@ -1562,31 +1645,94 @@ class ExplanationOrchestrator:
             Mondrian categories.
         features_to_ignore : sequence or None
             Feature indices to exclude.
-        significance : float, default=0.1
-            Conformity significance level.
+        guarded_options : GuardedOptions or None, default=None
+            Per-call tuning for the in-distribution guard (ADR-038). When provided,
+            all individual guard tuning kwargs are ignored.
+        significance : float or None, default=None
+            **Deprecated.** Use ``guarded_options=GuardedOptions(confidence=1-significance)``.
         merge_adjacent : bool, default=False
-            Merge adjacent conforming bins into wider intervals.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(merge_adjacent=True)``.
         n_neighbors : int, default=5
-            KNN neighbour count for the in-distribution guard.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(n_neighbors=...)``.
         normalize_guard : bool, default=True
-            Apply per-feature normalisation in the guard.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(normalize=...)``.
         verbose : bool, default=False
-            When True, emit UserWarnings for guarded-explanation diagnostics.
+            **Deprecated.** Use ``guarded_options=GuardedOptions(verbose=True)``.
         **kwargs : Any
-            Currently unused; reserved for future parameters.
+            Reserved.
 
         Returns
         -------
         AlternativeExplanations
             Container with :class:`GuardedAlternativeExplanation` objects.
         """
+        import warnings as _warnings  # pylint: disable=import-outside-toplevel
+
         import numpy as np  # pylint: disable=import-outside-toplevel
 
         from ...core.reject.policy import RejectPolicy
         from ._guarded_explain import guarded_explain  # pylint: disable=import-outside-toplevel
 
+        # Resolve guard parameters from GuardedOptions or deprecated kwargs
+        if guarded_options is not None:
+            # New API: derive all params from GuardedOptions
+            _significance = 1.0 - guarded_options.confidence
+            _n_neighbors = guarded_options.n_neighbors
+            _normalize = guarded_options.normalize
+            _merge_adjacent = guarded_options.merge_adjacent
+            _verbose = guarded_options.verbose
+        else:
+            # Deprecated path: use individual kwargs directly (bypass GuardedOptions validation
+            # so that legacy edge cases like significance=1.0 continue to work until v1.0.0)
+            _significance = significance if significance is not None else 0.1
+            _n_neighbors = n_neighbors
+            _normalize = normalize_guard
+            _merge_adjacent = merge_adjacent
+            _verbose = verbose
+            _defaults = {
+                "merge_adjacent": False,
+                "n_neighbors": 5,
+                "normalize_guard": True,
+                "verbose": False,
+            }
+            if significance is not None:
+                _warnings.warn(
+                    f"significance={significance!r} is deprecated; use "
+                    f"guarded_options=GuardedOptions(confidence={1.0 - significance!r}) — "
+                    "note the value is inverted: confidence = 1 − significance.",
+                    DeprecationWarning,
+                    stacklevel=3,
+                )
+            for _kwarg, _field in [
+                ("merge_adjacent", "merge_adjacent"),
+                ("n_neighbors", "n_neighbors"),
+                ("normalize_guard", "normalize"),
+                ("verbose", "verbose"),
+            ]:
+                _local = {
+                    "merge_adjacent": merge_adjacent,
+                    "n_neighbors": n_neighbors,
+                    "normalize_guard": normalize_guard,
+                    "verbose": verbose,
+                }
+                if _local[_kwarg] != _defaults[_kwarg]:
+                    _warnings.warn(
+                        f"{_kwarg}= is deprecated; use guarded_options=GuardedOptions({_field}=...).",
+                        DeprecationWarning,
+                        stacklevel=3,
+                    )
+
         if not kwargs.pop("_ce_skip_reject", False):
-            confidence = kwargs.get("confidence", 0.95)
+            reject_confidence = kwargs.get(
+                "reject_confidence",
+                kwargs.get("confidence", 0.95),
+            )
+            if "confidence" in kwargs and "reject_confidence" not in kwargs:
+                _warnings.warn(
+                    "confidence= is deprecated in the reject path; use reject_confidence=.",
+                    DeprecationWarning,
+                    stacklevel=3,
+                )
             resolution = _resolve_effective_reject_policy(
                 reject_policy,
                 self.explainer,
@@ -1608,15 +1754,11 @@ class ExplanationOrchestrator:
                             features_to_ignore=features_to_ignore,
                             per_instance_features_to_ignore=per_instance_features_to_ignore,
                             reject_policy=RejectPolicy.NONE,
-                            significance=significance,
-                            merge_adjacent=merge_adjacent,
-                            n_neighbors=n_neighbors,
-                            normalize_guard=normalize_guard,
-                            verbose=verbose,
+                            guarded_options=guarded_options,
                             _ce_skip_reject=True,
                         ),
                         bins=bins,
-                        confidence=confidence,
+                        reject_confidence=reject_confidence,
                         threshold=threshold,
                         result_schema="v2",
                     )
@@ -1639,7 +1781,7 @@ class ExplanationOrchestrator:
                 mapped, unknown = self._coerce_ignore_items(mask)
                 unknown_names.extend(unknown)
                 per_instance_ignore_list.append(tuple(as_int_array(mapped).tolist()))
-            if unknown_names and verbose:
+            if unknown_names and _verbose:
                 unknown_sorted = sorted(set(unknown_names))
                 warnings.warn(
                     "Unknown feature names in features_to_ignore were ignored: "
@@ -1660,7 +1802,7 @@ class ExplanationOrchestrator:
         else:
             if isinstance(features_arg, (list, tuple)):
                 mapped, unknown = self._coerce_ignore_items(features_arg)
-                if unknown and verbose:
+                if unknown and _verbose:
                     unknown_sorted = sorted(set(unknown))
                     warnings.warn(
                         "Unknown feature names in features_to_ignore were ignored: "
@@ -1685,11 +1827,11 @@ class ExplanationOrchestrator:
             mondrian_bins=bins,
             features_to_ignore=features_to_ignore_flat,
             per_instance_features_to_ignore=per_instance_ignore,
-            significance=significance,
-            merge_adjacent=merge_adjacent,
-            n_neighbors=n_neighbors,
-            normalize_guard=normalize_guard,
-            verbose=verbose,
+            significance=_significance,
+            merge_adjacent=_merge_adjacent,
+            n_neighbors=_n_neighbors,
+            normalize_guard=_normalize,
+            verbose=_verbose,
         )
 
     def ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
@@ -1954,6 +2096,11 @@ class ExplanationOrchestrator:
         # Use the bridge monitor for this plugin to track usage.
         # We use the identifier if available, otherwise fall back to mode.
         monitor = self.explainer.plugin_manager.get_bridge_monitor(identifier or mode)
+        plugin_config = self.explainer.plugin_manager.bind_plugin_config(
+            identifier,
+            plugin,
+            getattr(plugin, "plugin_meta", None),
+        )
 
         context = ExplanationContext(
             task=self.explainer.mode,
@@ -1970,6 +2117,7 @@ class ExplanationOrchestrator:
             predict_bridge=monitor,
             interval_settings=interval_settings,
             plot_settings=plot_settings,
+            plugin_config=plugin_config,
         )
         return context
 

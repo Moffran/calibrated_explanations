@@ -1,4 +1,4 @@
-> **Status note (2026-04-20):** Last edited 2026-04-20 to record v0.11.2 runtime conformance closure evidence and implementation summary.
+> **Status note (2026-06-04):** Last edited 2026-06-04 to add §8 provisional plugin config hardening: raw snapshotting, source attribution, redaction, trusted binding after plugin trust/metadata resolution, and provisional export diagnostics. The plugin config surface is a hardened implementation milestone, not a compatibility-frozen contract.
 > Archive after: Retain indefinitely as architectural record
 > Implementation window: v0.11.1–v1.0.0
 
@@ -101,8 +101,9 @@ invocation's effective snapshot; they do not introspect already-instantiated in-
 runtime objects. The export includes profile ID, schema version, effective values,
 and per-key source attribution. `ce config show` and `ce config export` are
 diagnostic/operator commands for the effective snapshot created for that invocation.
-Until export schema versioning is introduced, CLI/export output is diagnostic rather
-than a stable external automation contract.
+The payload carries schema markers for diagnostic consumers. Plugin configuration
+diagnostics are explicitly provisional until a separate stabilization review freezes
+the schema shape and compatibility rules.
 
 ### 6. Enforcement-oriented boundary rule
 
@@ -141,9 +142,9 @@ target-release ownership.
 
 - Migration requires touchpoints across several modules in phases.
 - Strict validation will surface latent misconfigurations in user `pyproject.toml` files.
-- Sensitive values (e.g., plugin identifiers containing secret-like names) currently
-  appear in plain text in exports and governance logs. Redaction is deferred to v1.0
-  (see Open Items).
+- Config diagnostics redact secret-like keys and schema-marked sensitive plugin
+  values. Wider governance-log redaction remains tracked separately (see Open
+  Items).
 - Schema-backed event emission is governed separately and closes through the release
   plan.
 - Centralized snapshot-based configuration changes the effective behavior of some
@@ -164,19 +165,172 @@ Use ADR-011 deprecation process for any public API changes during implementation
 - Phase A (v0.11.1): centralized authority and governance-schema closure landed for runtime ConfigManager adoption and `governance.config` lifecycle-event schema alignment.
 - Phase B (v0.11.2): completed migration of `cache/cache.py`, `parallel/parallel.py`, `core/explain/_feature_filter.py`, and `core/prediction/orchestrator.py` to ConfigManager-owned reads.
 - CI enforcement: `scripts/quality/check_config_manager_usage.py --scope targeted --report reports/config_manager_usage_report.json` reports zero violations as of 2026-04-20.
-- Remaining deferred items: sensitive-value redaction for governance logs/exports and export payload schema versioning (see Open Items).
+- Remaining deferred items: wider governance-log redaction and any compatibility-frozen export contract beyond the current diagnostic schema markers (see Open Items).
 - Evidence commands:
    - `python scripts/quality/check_config_manager_usage.py --scope targeted --report reports/config_manager_usage_report.json`
    - `python -m pytest -q tests/scripts/test_check_config_manager_usage.py -o addopts= --no-cov`
    - `make local-checks-pr`
 
+## §7 Configuration scope boundaries (v0.11.3 addendum)
+
+### Capabilities governed by ConfigManager
+
+`ConfigManager` governs behavioral and deployment configuration: plugin
+selection (explanation, interval, plot, trust/deny), telemetry diagnostic
+mode, cache settings, parallel settings, feature-filter settings, strict
+observability mode, and CI-environment markers.
+
+### Env-only-by-design keys (v0.11.x)
+
+The following keys resolve `(None, None, None)` in `_RESOLUTION_SPEC` —
+they are intentionally env-or-programmatic-only with no pyproject.toml
+mapping in v0.11.x. This is a deliberate design choice, not an oversight:
+
+| Key | Reason env-only in v0.11.x |
+| --- | --- |
+| `CE_CACHE` | Deployment toggle; pyproject.toml wiring deferred |
+| `CE_PARALLEL` | Deployment toggle; pyproject.toml wiring deferred |
+| `CE_PARALLEL_MIN_BATCH_SIZE` | Tuning knob; env-sufficient for v0.11.x |
+| `CE_FEATURE_FILTER` | Experimental; pyproject.toml wiring deferred |
+| `CE_STRICT_OBSERVABILITY` | Ops flag; env-sufficient for v0.11.x |
+| `CI` / `GITHUB_ACTIONS` | Read-only environment markers; no user configuration |
+
+### Sanctioned direct env read: CE_DEBUG_TRUST_INVARIANTS
+
+`plugins/_trust.py` reads `CE_DEBUG_TRUST_INVARIANTS` directly via
+`os.getenv()` rather than through `ConfigManager`. This is a sanctioned
+exception: routing it through `ConfigManager` would require `_trust.py` to
+import `config_manager`, creating a circular import via `plugins/registry.py`
+(which already imports both modules). The key is present in `_KNOWN_ENV_KEYS`
+for governance visibility and appears in `export_effective()` output; its
+runtime behavior is unaffected by the ConfigManager registration.
+
+### ExplainerBuilder / env-var precedence rule
+
+For cache and parallel settings, env vars take precedence over
+`ExplainerBuilder` settings set via `perf_cache()` / `perf_parallel()`.
+This is because `CacheConfig.from_env()` and `ParallelConfig.from_env()` are
+applied inside `_build_perf_factory()` after builder construction, overriding
+any builder-supplied values. The rule is documented at the call site in each
+method's docstring.
+
+### Intentional two-system plot configuration design
+
+`ConfigManager` governs plugin/style selection (which renderer and style
+plugin to use). Aesthetic settings — fonts, DPI, colors — are governed by a
+separate `plot_config.ini` read by `plotting.py:load_plot_config()` via
+`configparser`. These serve different concerns and different update frequencies.
+Bridging them into a single system would add complexity without benefit.
+This separation is intentional and is not planned to change in v1.0.0.
+
+### Root namespace exports (v0.11.3)
+
+`ExplainerBuilder` and `ExplainerConfig` are promoted to the root
+`calibrated_explanations` namespace as of v0.11.3. `ConfigManager` is
+intentionally not promoted — it is an infrastructure primitive; its stable
+import path is `calibrated_explanations.core.config_manager`.
+
+### Process-level lifecycle API (v0.11.3)
+
+`get_process_config_manager()` is the default process-level singleton for
+migrated runtime consumers that do not receive an explicit `ConfigManager`
+through injection. `init_process_config_manager()` may be called once by a
+top-level process boundary before runtime consumers initialize. A second
+initialization raises `CalibratedError` because double initialization is a
+programming error that would make snapshot ownership ambiguous.
+
+`reset_process_config_manager_for_testing()` is test-only and exists so tests
+that mutate environment variables can reset the singleton between test cases.
+Production code should not reset the process manager after initialization.
+The process singleton is protected by a lock so concurrent first callers share
+one constructed snapshot.
+
+### ConfigSpec extension surface (v0.11.3)
+
+`ConfigManager` owns a class-level `ConfigSpec` describing known environment
+keys, pyproject sections, resolution metadata, validators, and the pyproject
+tool namespace. The legacy module-level aliases (`_KNOWN_ENV_KEYS`,
+`_SECTION_SCHEMA`, `_RESOLUTION_SPEC`, `_VALUE_VALIDATORS`) remain for import
+compatibility, but internal resolution uses the class-level spec so subclasses
+can override or merge configuration schemas without rewriting resolution logic.
+
+## §8 Provisional plugin config hardening (2026-06-04 addendum)
+
+This addendum hardens plugin configuration behavior without freezing the
+plugin-facing contract. `ConfigManager.plugin_config(...)`,
+`CE_PLUGIN_CONFIG_JSON`,
+`[tool.calibrated_explanations.plugin_configs."<plugin_id>"]`,
+`plugin_meta["config_schema"]`, `context.plugin_config`, and the plugin config
+portion of `export_effective()` are provisional hardening surfaces. They are
+available for integration across OSS CE and official plugins, but their
+API shape, schema shape, export shape, and environment-variable interface remain
+subject to stabilization after cross-repository validation.
+
+### Raw config snapshotting
+
+OSS `ConfigManager` owns raw plugin config snapshotting. It captures the process
+environment and `pyproject.toml` content once, resolves plugin config with the
+standard precedence model, records per-key source attribution, validates only the
+raw shape, and redacts sensitive diagnostics. It does not load plugin metadata or
+plugin modules during process initialization.
+
+Malformed `CE_PLUGIN_CONFIG_JSON` fails clearly when present. Unknown or
+unselected plugin config is handled through an explicit strict/permissive
+selection check so deployments can choose whether configured-but-unselected
+plugin entries are fatal.
+
+`validate_plugin_config_selection(...)` is intentionally not called by
+`bind_plugin_config(...)`, which validates one selected trusted plugin at a
+time. The owner that knows the complete selected-plugin set for a runtime
+boundary — for example `CalibratedExplainer`/`PluginManager` orchestration or a
+server startup bridge — is responsible for calling it when strict
+configured-but-unselected behavior is required. Diagnostic or migration
+workflows may call it with `strict=False`.
+
+### Trusted plugin config binding
+
+Plugin config validation happens after plugin selection, trust resolution, and
+metadata availability through the approved registry path. The plugin owns its
+schema and semantic interpretation. OSS may validate the provisional schema shape
+and apply defaults, but it must not imply that raw configuration can be fully
+validated independently of plugin trust and metadata resolution.
+
+Runtime plugin config delivered through context objects is deeply immutable,
+including list-like values, so trusted plugins observe a deterministic snapshot
+and cannot mutate shared config state.
+
+### Export diagnostics
+
+`export_effective()` includes source attribution and redacted plugin config
+diagnostics with a plugin config export schema marker. The plugin config export
+shape is diagnostic and provisional; external consumers must not treat it as
+compatibility-frozen until a future stabilization gate explicitly freezes the
+schema and release notes identify the supported contract.
+
+### Future stabilization gate
+
+The plugin config surface may be stabilized only after OSS CE and the
+official plugin repository have passing integration evidence for snapshotting,
+precedence, validation routing, redaction, strict/permissive behavior, runtime
+immutability, no untrusted plugin loading, plugin template/schema validation,
+and a documented selected/trusted/installed/configured plugin state matrix.
+
 ## Open Items
 
-1. **Sensitive-value redaction (v1.0.0-rc):** Governance logs and exports should not leak
-   secret-like values. A hybrid redaction policy (pattern-based deny + safe-key allowlist)
-   is the intended approach; both the allowlist contents and the implementation are
-   deferred to v1.0.0-rc.
+> **Resolution (2026-06-13, v0.11.3 RC-scope review):** Both items below have been
+> formally evaluated. No RC work remains for this ADR.
 
-2. **Export payload schema contract (v1.0.0-rc):** The `export_effective()` payload structure
-   is not yet versioned for consumers. A stable schema contract with version-gating is
-   needed before the export surface can be relied on by external tooling.
+1. **Governance-log redaction:** Config diagnostics now redact secret-like keys and
+   schema-marked sensitive values. Wider governance logs should receive the same
+   redaction posture before they are treated as safe for external support bundles.
+   **Status:** Declared out of scope for v1.0.0-rc. Sensitive-value redaction for
+   diagnostic paths is sufficient; the broader governance-log posture is a post-v1.0
+   hardening item and does not block the release.
+
+2. **Export payload schema contract:** `export_effective()` carries diagnostic
+   schema markers, including a provisional plugin config export marker. A
+   compatibility-frozen schema contract with version-gating is needed before
+   external tooling can rely on the full export surface.
+   **Status:** The export payload is already schema-versioned via `config_schema_version`
+   markers. The full compatibility-frozen contract (with formal version-gating and
+   a stability guarantee) is a post-v1.0 item. No RC deferrals remain for this ADR.

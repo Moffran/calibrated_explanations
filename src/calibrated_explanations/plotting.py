@@ -19,31 +19,35 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
-from .core.config_manager import ConfigManager
-
-_plotting_config_manager: ConfigManager | None = None
+from .core.config_manager import (
+    ConfigManager,
+    get_process_config_manager,
+    reset_process_config_manager_for_testing,
+)
+from .viz import _matplotlib_compat as legacy  # noqa: F401 - re-exported as plotting.legacy
 
 
 def _get_plotting_config_manager() -> ConfigManager:
-    global _plotting_config_manager
-    if _plotting_config_manager is None:
-        _plotting_config_manager = ConfigManager.from_sources()
-    return _plotting_config_manager
+    return get_process_config_manager()
 
 
 def reset_plotting_config_manager() -> None:
-    """Reset plotting module config singleton (tests only)."""
-    global _plotting_config_manager
-    _plotting_config_manager = None
+    """Reset the shared process config snapshot for plotting tests."""
+    reset_process_config_manager_for_testing()
+
+
+def _bind_plot_plugin_config(
+    manager: Any,
+    identifier: str | None,
+    plugin: Any,
+) -> Mapping[str, Any]:
+    binder = getattr(manager, "bind_plugin_config", None)
+    if not callable(binder):
+        return {}
+    return binder(identifier, plugin, getattr(plugin, "plugin_meta", None))
 
 
 def __getattr__(name: str) -> Any:
-    """Lazily load legacy plotting module."""
-    if name == "legacy":
-        from .legacy import plotting as legacy
-
-        globals()["legacy"] = legacy
-        return legacy
     raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
@@ -76,7 +80,7 @@ mcolors = None
 plt = None
 
 
-def __require_matplotlib() -> None:
+def _require_matplotlib() -> None:
     """Ensure matplotlib is available before using plotting functions."""
     global mcolors, plt, _MATPLOTLIB_IMPORT_ERROR
     from .utils.exceptions import ConfigurationError
@@ -158,7 +162,7 @@ def format_save_path(base_path: Any, filename: str) -> str:
 
 def _resolve_explainer_from_explanation(explanation: Any) -> Any:
     """Best-effort resolver for explanation -> explainer references."""
-    resolved = None
+    resolved = explanation if hasattr(explanation, "plugin_manager") else None
     getter = getattr(explanation, "get_explainer", None)
     if callable(getter):
         resolved = getter()
@@ -257,6 +261,76 @@ def _resolve_named_plot_style(
     return None
 
 
+def _select_default_plot_style(
+    explanation: Any,
+    explicit_style: str | None,
+) -> tuple[str, bool]:
+    """Return the PlotSpec-first style selection and legacy opt-out flag."""
+    if explicit_style == "legacy":
+        return "legacy", True
+    if explicit_style:
+        return explicit_style, False
+
+    explainer = _resolve_explainer_from_explanation(explanation)
+    manager = getattr(explainer, "plugin_manager", None)
+    manager_style = getattr(manager, "plot_style_override", None)
+    if isinstance(manager_style, str) and manager_style:
+        return manager_style, manager_style == "legacy"
+
+    config_manager = _get_plotting_config_manager()
+    env_style = config_manager.env("CE_PLOT_STYLE")
+    if isinstance(env_style, str) and env_style.strip():
+        env_style = env_style.strip()
+        return env_style, env_style == "legacy"
+
+    py_settings = _read_plot_pyproject()
+    py_style = py_settings.get("style")
+    if isinstance(py_style, str) and py_style:
+        return py_style, py_style == "legacy"
+
+    chain = (
+        _resolve_plot_style_chain(explainer, explicit_style)
+        if explainer is not None
+        else ("plot_spec.default", "legacy")
+    )
+    for identifier in chain:
+        if identifier and identifier != "legacy":
+            return identifier, False
+    return "plot_spec.default", False
+
+
+def _warn_and_log_plotspec_fallback(message: str) -> None:
+    """Emit the visible fallback signals required for PlotSpec -> legacy."""
+    logging.getLogger(__name__).info(message)
+    warnings.warn(message, UserWarning, stacklevel=2)
+
+
+def validate_plot_artifact(artifact: Any, *, identifier: str) -> None:
+    """ADR-036 §5: validate canonical PlotSpec artifacts before renderer invocation.
+
+    Accepts canonical PlotSpec dataclasses and dicts that pass validate_plotspec.
+    Raises ValidationError for raw dicts that fail validation so the error is
+    surfaced at the build/render boundary rather than inside the renderer.
+    """
+    if not isinstance(artifact, Mapping):
+        return
+    if not ("kind" in artifact or "plotspec_version" in artifact or "plot_spec" in artifact):
+        return
+    from .utils.exceptions import ValidationError  # pylint: disable=import-outside-toplevel
+    from .viz.serializers import validate_plotspec  # pylint: disable=import-outside-toplevel
+
+    try:
+        validate_plotspec(dict(artifact))
+    except ValidationError:
+        raise
+    except Exception as exc:  # adr002_allow - catch-all for unknown third-party validator errors
+        raise ValidationError(
+            f"Plot plugin '{identifier}' returned an invalid PlotSpec artifact; "
+            "check the build() return value.",
+            details={"identifier": identifier},
+        ) from exc
+
+
 def _render_instance_plot_plugin(
     explanation: Any,
     *,
@@ -307,8 +381,10 @@ def _render_instance_plot_plugin(
         path=path,
         save_ext=tuple(save_ext) if save_ext else None,
         options=MappingProxyType(dict(options)),
+        plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
+    validate_plot_artifact(artifact, identifier=identifier)
     return plugin.render(artifact, context=context)
 
 
@@ -357,8 +433,10 @@ def _render_collection_plot_plugin(
         path=path,
         save_ext=tuple(save_ext) if save_ext else None,
         options=MappingProxyType(dict(options)),
+        plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
+    validate_plot_artifact(artifact, identifier=identifier)
     return plugin.render(artifact, context=context)
 
 
@@ -466,9 +544,9 @@ def update_plot_config(new_config):
         f.write(text)
 
 
-def __setup_plot_style(style_override=None):
+def _setup_plot_style(style_override=None):
     """Set up plot style using configuration with optional runtime overrides."""
-    __require_matplotlib()
+    _require_matplotlib()
     config = load_plot_config()
 
     # Apply style overrides if provided
@@ -571,21 +649,16 @@ def plot_probabilistic(
         style_override=style_override,
         style=kwargs.get("style"),
     )
-    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, explicit_style)
-        else:
-            chain = ("plot_spec.default", "legacy")
-        selected_style = chain[0] if chain else "legacy"
-        use_legacy = selected_style == "legacy"
+        selected_style, use_legacy = _select_default_plot_style(explanation, explicit_style)
     else:
         selected_style = explicit_style
+    explainer = _resolve_explainer_from_explanation(explanation)
 
     predict_payload = dict(predict or {})
 
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy._plot_probabilistic(
             explanation,
@@ -621,7 +694,7 @@ def plot_probabilistic(
         return plugin_result
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    __require_matplotlib()
+    _require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if (
@@ -801,11 +874,10 @@ def plot_probabilistic(
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        warnings.warn(
-            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-            stacklevel=2,
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy_module
+        from .viz import _matplotlib_compat as legacy_module
 
         legacy_module._plot_probabilistic(
             explanation,
@@ -896,19 +968,13 @@ def plot_regression(
         style_override=style_override,
         style=kwargs.get("style"),
     )
-    explainer = _resolve_explainer_from_explanation(explanation)
     if use_legacy is None:
-        if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, explicit_style)
-        else:
-            chain = ("plot_spec.default", "legacy")
-        selected_style = chain[0] if chain else "legacy"
-        use_legacy = selected_style == "legacy"
+        selected_style, use_legacy = _select_default_plot_style(explanation, explicit_style)
     else:
         selected_style = explicit_style
 
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_regression(
             explanation,
@@ -1014,11 +1080,10 @@ def plot_regression(
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        warnings.warn(
-            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-            stacklevel=2,
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy_module
+        from .viz import _matplotlib_compat as legacy_module
 
         legacy_module.plot_regression(
             explanation,
@@ -1051,7 +1116,7 @@ def plot_triangular(
     show,
     save_ext=None,
     style_override=None,
-    use_legacy=True,
+    use_legacy=None,
 ):
     """
     Plot triangular explanations.
@@ -1079,8 +1144,11 @@ def plot_triangular(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    explicit_style = _resolve_named_plot_style(style_override=style_override, style=None)
+    if use_legacy is None:
+        _, use_legacy = _select_default_plot_style(explanation, explicit_style)
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_triangular(
             explanation,
@@ -1096,13 +1164,6 @@ def plot_triangular(
         )
         return
 
-    # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
-    if not show and plt is None:  # lightweight path for tests/CI without viz extra
-        return
-    # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
-    if not show and (save_ext is None or len(save_ext) == 0):
-        return
-
     # Build canonical triangular PlotSpec via the builder and delegate rendering
     # to the adapter.
     from .viz.builders import build_triangular_plotspec
@@ -1111,6 +1172,13 @@ def plot_triangular(
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
 
+    is_probabilistic = True
+    with contextlib.suppress(Exception):
+        mode = explanation.get_mode()
+        is_probabilistic = mode == "classification" or (
+            mode == "regression" and bool(explanation.is_thresholded())
+        )
+
     spec = build_triangular_plotspec(
         title=title,
         proba=proba,
@@ -1118,22 +1186,46 @@ def plot_triangular(
         rule_proba=rule_proba,
         rule_uncertainty=rule_uncertainty,
         num_to_show=num_to_show,
-        is_probabilistic=True,
+        is_probabilistic=is_probabilistic,
     )
 
     # Let adapter perform the rendering and handle saving behavior.
-    render_plotspec(spec, show=show, save_path=None)
-    # If caller requested saving in multiple extensions, call adapter for each
-    # extension so it can emit the expected save primitives (and actually save
-    # if matplotlib is available).
-    if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
-        for ext in save_ext:
-            render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
+    if not show and plt is None and (save_ext is None or len(save_ext) == 0):
+        return spec
+
+    try:
+        render_plotspec(spec, show=show, save_path=None)
+        # If caller requested saving in multiple extensions, call adapter for each
+        # extension so it can emit the expected save primitives (and actually save
+        # if matplotlib is available).
+        if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
+            for ext in save_ext:
+                render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
+        )
+        from .viz import _matplotlib_compat as legacy
+
+        legacy.plot_triangular(
+            explanation,
+            proba,
+            uncertainty,
+            rule_proba,
+            rule_uncertainty,
+            num_to_show,
+            title,
+            path,
+            show,
+            save_ext,
+        )
     return
 
 
 # `__plot_triangular`
-def __plot_proba_triangle():
+def _draw_proba_triangle_overlay():
     """Render the static probability triangle overlay."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -1197,22 +1289,14 @@ def plot_alternative(
         style_override=style_override,
         style=kwargs.get("style"),
     )
-    explainer = _resolve_explainer_from_explanation(explanation)
-    return_plot_spec = kwargs.get("return_plot_spec", False)
-    if return_plot_spec:
-        use_legacy = False
     if use_legacy is None:
-        if explainer is not None:
-            chain = _resolve_plot_style_chain(explainer, explicit_style)
-        else:
-            chain = ("plot_spec.default", "legacy")
-        selected_style = chain[0] if chain else "legacy"
-        use_legacy = selected_style == "legacy"
+        selected_style, use_legacy = _select_default_plot_style(explanation, explicit_style)
     else:
         selected_style = explicit_style
+    explainer = _resolve_explainer_from_explanation(explanation)
 
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_alternative(
             explanation,
@@ -1251,7 +1335,7 @@ def plot_alternative(
         return
 
     if not return_plot_spec:
-        __require_matplotlib()
+        _require_matplotlib()
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -1622,11 +1706,10 @@ def plot_alternative(
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
-            warnings.warn(
-                f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-                stacklevel=2,
+            _warn_and_log_plotspec_fallback(
+                f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
             )
-            from .legacy import plotting as legacy
+            from .viz import _matplotlib_compat as legacy
 
             legacy.plot_alternative(
                 explanation,
@@ -1645,11 +1728,10 @@ def plot_alternative(
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        warnings.warn(
-            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
-            stacklevel=2,
+        _warn_and_log_plotspec_fallback(
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot."
         )
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_alternative(
             explanation,
@@ -1692,15 +1774,21 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """
     show = kwargs.get("show", True)
     bins = kwargs.get("bins")
-    # style_override = kwargs.get("style_override")
-    use_legacy = kwargs.get("use_legacy", True)
+    use_legacy = kwargs.get("use_legacy")
+    explicit_style = _resolve_named_plot_style(
+        style_override=kwargs.get("style_override"),
+        style=kwargs.get("style"),
+    )
+    if use_legacy is None:
+        selected_style, use_legacy = _select_default_plot_style(explainer, explicit_style)
+    else:
+        selected_style = explicit_style
     if use_legacy:
-        from .legacy import plotting as legacy
+        from .viz import _matplotlib_compat as legacy
 
         legacy.plot_global(explainer, x, y, threshold, **kwargs)
         return
 
-    style = kwargs.get("style")
     path = kwargs.get("path")
     save_ext_value = kwargs.get("save_ext")
     if isinstance(save_ext_value, (list, tuple)):
@@ -1751,15 +1839,19 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
         )
 
     plugin, identifier, chain = resolve_plot_plugin(
-        explicit_style=style,
+        explicit_style=selected_style,
         renderer_override=kwargs.get("renderer"),
     )
 
     errors: List[str] = []
     if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
-        __require_matplotlib()
-    elif show and plt is None:  # pragma: no cover - optional dep path
-        errors.append(f"{identifier}: matplotlib backend unavailable")
+        _warn_and_log_plotspec_fallback(
+            "PlotSpec rendering resolved to legacy. Falling back to legacy plot."
+        )
+        from .viz import _matplotlib_compat as legacy
+
+        legacy.plot_global(explainer, x, y, threshold, **kwargs)
+        return
     else:
         context = PlotRenderContext(
             explanation=getattr(explainer, "latest_explanation", None),
@@ -1775,6 +1867,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             path=path,
             save_ext=save_ext_value,
             options=MappingProxyType({"payload": payload}),
+            plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
         )
         try:
             artifact = plugin.build(context)
@@ -1783,6 +1876,15 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
             errors.append(f"{identifier}: {sys.exc_info()[1]}")
+            if "legacy" in chain:
+                _warn_and_log_plotspec_fallback(
+                    f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. "
+                    "Falling back to legacy plot."
+                )
+                from .viz import _matplotlib_compat as legacy
+
+                legacy.plot_global(explainer, x, y, threshold, **kwargs)
+                return
         else:
             return result
 
@@ -1796,7 +1898,7 @@ def plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
 def _plot_proba_triangle():
     """Build a Matplotlib figure showcasing the probability triangle layout."""
-    __require_matplotlib()
+    _require_matplotlib()
     fig = plt.figure()
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -1866,7 +1968,7 @@ def _plot_alternative_dict(  # pragma: no cover  # ADR-023: multiclass visualiza
         The list of file extensions to save the plot.
     """
     # Set default values
-    config = __setup_plot_style(style_override)
+    config = _setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -2129,7 +2231,7 @@ def _plot_probabilistic_dict(  # pragma: no cover  # ADR-023: multiclass visuali
         The list of file extensions to save the plot.
     """
     # Set default values
-    config = __setup_plot_style(style_override)
+    config = _setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]

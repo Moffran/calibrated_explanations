@@ -25,7 +25,9 @@ from collections import OrderedDict
 from types import MappingProxyType
 from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
-from ..core.config_manager import ConfigManager
+from ..core.config_manager import ConfigManager, get_process_config_manager
+from ..utils.exceptions import ConfigurationError, ValidationError
+from .base import validate_plugin_config
 from .predict_monitor import PredictBridgeMonitor
 from .registry import (
     ensure_builtin_plugins,
@@ -61,7 +63,7 @@ EXTERNAL_EXPLANATION_FAST_IDENTIFIER: str = "external.explanation.fast"
 EXTERNAL_INTERVAL_FAST_IDENTIFIER: str = "external.interval.fast"
 
 # Default plot style fallback chain
-DEFAULT_PLOT_STYLE: str = "legacy"
+DEFAULT_PLOT_STYLE: str = "plot_spec.default"
 
 
 def _split_csv(value: str | None) -> tuple[str, ...]:
@@ -78,6 +80,21 @@ def _coerce_string_tuple(value: Any) -> tuple[str, ...]:
     if isinstance(value, Sequence):
         return tuple(str(item).strip() for item in value if str(item).strip())
     return ()
+
+
+def _plugin_meta_trusted(meta_source: Mapping[str, Any], *, default: bool = False) -> bool:
+    """Return plugin trust from normalized or legacy metadata.
+
+    Registry-resolved metadata should expose the normalized top-level
+    ``trusted`` key. The nested ``trust`` fallback is transitional compatibility
+    for plugin objects or tests that reach the manager before normalization.
+    """
+    if "trusted" in meta_source:
+        return bool(meta_source["trusted"])
+    trust_value = meta_source.get("trust", default)
+    if isinstance(trust_value, Mapping):
+        return bool(trust_value.get("trusted", default))
+    return bool(trust_value)
 
 
 class PluginManager:
@@ -123,7 +140,7 @@ class PluginManager:
         """
         self.explainer = explainer
         self._logger = logging.getLogger(__name__)
-        self._config_manager = config_manager or ConfigManager.from_sources()
+        self._config_manager = config_manager or get_process_config_manager()
         if policy is not None:
             set_trust_policy(policy)
 
@@ -936,6 +953,43 @@ class PluginManager:
         """Clear all cached explanation plugin identifiers."""
         self._explanation_plugin_identifiers.clear()
 
+    def bind_plugin_config(
+        self,
+        identifier: str | None,
+        plugin: Any,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> Mapping[str, Any]:
+        """Bind provisional raw config after plugin selection and trust resolution."""
+        if not identifier:
+            return MappingProxyType({})
+
+        meta_source = metadata or getattr(plugin, "plugin_meta", None)
+        if not isinstance(meta_source, Mapping):
+            return MappingProxyType({})
+        if not _plugin_meta_trusted(meta_source, default=False):
+            return MappingProxyType({})
+
+        configured_ids = set(self._config_manager.configured_plugin_ids())
+        meta_name = meta_source.get("name")
+        candidate_ids = [identifier]
+        if isinstance(meta_name, str) and meta_name and meta_name not in candidate_ids:
+            candidate_ids.append(meta_name)
+        config_id = next((item for item in candidate_ids if item in configured_ids), identifier)
+        raw_config = self._config_manager.plugin_config(config_id)
+        schema = meta_source.get("config_schema")
+        if not isinstance(schema, Mapping):
+            return raw_config
+        try:
+            return validate_plugin_config(
+                plugin_id=config_id,
+                config=raw_config,
+                schema=schema,
+            )
+        except ValidationError as exc:
+            raise ConfigurationError(
+                f"Invalid config for selected trusted plugin {config_id!r}: {exc}"
+            ) from exc
+
     def resolve_explanation_plugin(
         self,
         identifier: str,
@@ -1003,15 +1057,13 @@ class PluginManager:
         if override is not None and not isinstance(override, str):
             identifier = getattr(override, "plugin_meta", {}).get("name")
             metadata = getattr(override, "plugin_meta", None)
-            if isinstance(metadata, Mapping):
-                trusted = metadata.get("trusted", metadata.get("trust", True))
-                if not bool(trusted):
-                    warnings.warn(
-                        f"Using untrusted explanation plugin '{identifier}' via explicit override. "
-                        "Ensure you trust the source of this plugin.",
-                        UserWarning,
-                        stacklevel=3,
-                    )
+            if isinstance(metadata, Mapping) and not _plugin_meta_trusted(metadata, default=True):
+                warnings.warn(
+                    f"Using untrusted explanation plugin '{identifier}' via explicit override. "
+                    "Ensure you trust the source of this plugin.",
+                    UserWarning,
+                    stacklevel=3,
+                )
             plugin = instantiate_plugin(override) if instantiate_plugin else override
             if metadata_validator is not None:
                 error = metadata_validator(metadata, identifier=identifier, mode=mode)

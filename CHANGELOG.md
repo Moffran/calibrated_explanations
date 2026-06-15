@@ -1,9 +1,150 @@
 <!-- markdownlint-disable-file -->
 # Changelog
 
-## [Unreleased]
+## [0.11.3] - 2026-06-15
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...v0.11.3)
+
+### Breaking changes (v0.11.3)
+
+- **RT-17: Call-time configuration taxonomy (`GuardedOptions` and `reject_confidence`).**
+  - New `GuardedOptions` frozen dataclass exported from root namespace (ADR-038). Replace
+    `explain_factual(x, guarded=True, significance=0.1)` with
+    `explain_factual(x, guarded_options=GuardedOptions(confidence=0.9))`.
+    Note the numeric inversion: `confidence = 1 − significance`.
+  - `predict_reject` and `apply_policy` rename their primary confidence parameter from
+    `confidence=` to `reject_confidence=` to disambiguate from `GuardedOptions.confidence`
+    and `confidence_level`. The old `confidence=` kwarg still works but emits a
+    `DeprecationWarning`; it will be removed at v1.0.0.
+  - The legacy `guarded=True`, `significance=`, `n_neighbors=`, `normalize_guard=`, and
+    `merge_adjacent=` keyword arguments in the guarded explain path now emit
+    `DeprecationWarning` and will be removed at v1.0.0.
+
+### Improvements
+
+- Centralized migrated runtime configuration consumers behind a process-level
+  `ConfigManager` singleton and added `ConfigSpec` for class-owned configuration
+  schema extension while preserving legacy module-level config aliases.
+- Introduced config management hardening for CE and official plugins:
+  deterministic plugin config snapshotting, source attribution, validation hooks,
+  runtime delivery, redaction, and provisional export diagnostics. The plugin
+  config pyproject namespace, environment override, metadata schema, context field,
+  and export shape are intended for cross-repository hardening and are not yet
+  declared stable public API.
+
+### Bug fixes
+
+- **RT-16: Treat thresholded regression reject as pure binary event classification.**
+  Runtime regression reject now derives calibration labels from the same central
+  event helper used by evaluation: scalar thresholds use `y <= threshold`, interval
+  thresholds use `low < y <= high`, invalid intervals raise `ValidationError`, and
+  per-instance threshold arrays are rejected. Scenario 3 was rebuilt around
+  event-label coverage, singleton precision/recall/error, and empty/singleton/
+  ambiguity accounting instead of interval-width selection.
+
+- **RT-14: Fix multiclass reject NCF — `_default_ncf_kind` now returns `"hinge"` for
+  multiclass (was `"margin"`).** With binarized proba `[1-p_max, p_max]`, margin NCF
+  produced a scalar broadcast identically to both columns, making singleton prediction
+  sets geometrically impossible and causing 100% rejection (mean_reject_rate = 1.0 in
+  Scenario 2). Hinge NCF produces column-specific scores (`alpha[:,0]=p_max`,
+  `alpha[:,1]=1-p_max`), restoring `{1}` positive correctness-proxy singletons and
+  `{0}` proxy-negative singletons. Added `default_ncf_kind()` public wrapper and
+  tests in `test_reject_ncf_redteam.py`. Scenario 2 re-run: mean accepted top-1
+  accuracy 0.901 (was NaN), mean non-accepted rate 0.471 (was 1.0).
+
+- **RT-15: Reframe Scenario 2 as an explicit multiclass top-1 correctness proxy.**
+  The `{1}`-only acceptance rule is no longer presented as a general multiclass
+  reject decision. It is now exposed through the opt-in
+  `experimental.multiclass_top1_correctness` strategy, which is valid only for
+  multiclass classification and treats `{0}` proxy singletons as non-accepted top-1
+  predictions. Scenario 2 now reports `positive_singleton_rate`,
+  `proxy_negative_singleton_rate`, `proxy_singleton_accuracy`, and
+  `non_accepted_rate`, with legacy aliases kept for artifact compatibility. Proxy
+  accuracy is computed against `1[top-1 prediction is correct]`, not only on the
+  `{1}` accepted subset.
+
+- **Reject scenario singleton precision/recall diagnostics.** All reject scenario
+  CSV/JSON/Markdown artifacts now include singleton precision and recall where
+  prediction-set labels align with empirical labels. For binary classification this
+  uses true class labels; for multiclass correctness-proxy rows it uses
+  `1[top-1 prediction is correct]`; for threshold-regression rows it uses the
+  threshold event label.
+
+- **RT-9: Fix regression mode support for `experimental.difficulty_normalized`.** The
+  explicit regression guard was removed from `_experimental_difficulty_normalized_strategy`.
+  `resolve_policy_spec` now stores NCF settings directly for regression mode instead of
+  calling `initialize_reject_learner` (which requires a call-time threshold). All four
+  `crepes.extras.DifficultyEstimator` setups are supported in both classification and
+  regression mode. 32 unit tests pass.
+
+- **RT-11: Guard `experimental.difficulty_normalized` against missing difficulty estimator.**
+  `apply_policy()` now raises `ConfigurationError` (not silent fallback) when any
+  `_DIFFICULTY_STRATEGIES` member is requested without `difficulty_estimator` set.
+
+- **RT-6: Add zero-value guard to `_difficulty_values()`.** Zero difficulty values now
+  raise `ValidationError` (division by zero is mathematically invalid).
+
+### Deprecated
+
+- **Guarded method pair deprecated (ADR-032, Task 13):** `CalibratedExplainer.explain_guarded_factual(...)` and `CalibratedExplainer.explore_guarded_alternatives(...)` (and their `WrapCalibratedExplainer` counterparts) are now deprecated in favour of the parameterized API: `explain_factual(..., guarded=True)` and `explore_alternatives(..., guarded=True)`. The old methods emit `DeprecationWarning` and delegate to the new API. Removal target: v1.0.0.
+
+### Packaging / CI
+
+- **RT-1 through RT-13 red-team remediation (difficulty_reject branch):** Completed
+  all 15 red-team items identified in the v0.11.3 Task 8 review:
+  - RT-1: Corrected Scenario 9 description in practitioner doc (sign error on AUC
+    delta — full-grid positive delta is a high-rejection-rate selection effect, not a
+    matched-operating-point improvement).
+  - RT-3: New `scenario_12_coverage_validity_difficulty_normalized.py` providing
+    coverage validity sweep for arm C, registered as supplementary in `run_all_reject.py`.
+  - RT-4: Added "Matching Quality" section to Scenario 11 artifact (mean abs error
+    0.045–0.088 per target).
+  - RT-5: Added "Metric Consistency Note" to Scenario 9 and 11 artifacts explaining
+    the AUC direction reversal (high-conf selection effect).
+  - RT-7: Added `--crepes-ablation` flag to Scenario 9 and 11 running all four
+    `crepes.extras.DifficultyEstimator` setups (knn_dist, knn_std, knn_res, rf_var).
+  - RT-8: Added `--diagnose-db` flag to Scenario 9 for D-B paradox score-distribution
+    diagnostics.
+  - RT-10: Added statistical significance note (t-test, none reach α=0.05) to
+    Scenario 11 artifact and JSON.
+  - RT-12: Added "Experimental API stability contract" section to researcher doc.
+  - RT-13: Added "Known limitations and fairness" section to researcher doc.
+
+- **Difficulty-normalized reject documentation update:** Expanded practitioner and
+  improvement documentation for reject-option conformal classification with
+  difficulty-aware routing, including singleton/empty/multi-label set semantics,
+  explicit pre-p-value normalization rationale, strategy usage guidance
+  (`default`, `ensured`, `experimental.difficulty_normalized`, novelty-aware
+  variant), validity caveats, and Scenario 8-10 evaluation summary. Added a new
+  researcher-facing reference page at
+  `docs/researcher/advanced/difficulty_normalized_reject.md`.
+
+- **Global plot public API plugin routing:** Restored return-value propagation through `CalibratedExplainer.plot(...)` and `WrapCalibratedExplainer.plot(...)` so explicit non-legacy global styles now return the plugin renderer result through the normal public API, while omitted styles and explicit `use_legacy=True` continue to follow the existing default or forced-legacy behavior.
+
+- **PlotSpec default promotion (v0.11.3 Task 6):** Promoted PlotSpec to the
+  default user-facing plotting path for factual, alternative, triangular, global,
+  and batch explanation plotting entrypoints. Legacy plotting remains available
+  through explicit opt-out (`use_legacy=True`, `style_override="legacy"`, or
+  supported style configuration) and visible failure fallback. Hardened a
+  notebook-discovered factual plotting regression where non-uncertainty
+  probabilistic PlotSpec rendering could index the feature-weight payload by rule
+  id instead of using the canonical `predict` weights.
+
+- **PlotSpec figure parity — layout fixes (v0.11.3 Task 6):** Fixed four layout regressions in PlotSpec-rendered figures vs. legacy:
+  (1) Alternative probabilistic x-axis label now defaults to `"Probability for the positive class"` (was bare `"Probability"`);
+  (2) Alternative regression x-axis label now defaults to `"Prediction interval with 95% confidence"` (was `"Prediction interval"`);
+  (3) Alternative plot side labels (`"Alternative rules"` left, `"Instance values"` right) no longer clipped at the canvas boundary — fixed via `subplots_adjust(left=0.22, right=0.87, bottom=0.15)` for single-panel alternative specs;
+  (4) Dual-header (probabilistic factual/conjunction) P(y=0) x-axis tick labels no longer overlap the body panel — replaced 3-row GridSpec + `subplots_adjust(hspace=0.5)` with a stable 4-row GridSpec (`height_ratios=[1, 1.8, 0.4, num_bars+2]`) where an invisible spacer row absorbs the tick-label overhang.
+  Added 4 new parity tests (27 total in `tests/unit/viz/test_plot_parity_adapter.py`). 1318 unit tests green.
+- **ADR-011 deprecation closure (v0.11.3 Task 5):** Removed all remaining active deprecations before v1.0 (Groups A–K): core calibration shims (deleted `src/calibrated_explanations/core/calibration/` directory; closed namespace-package gap), reject-policy aliases (`RejectPolicy._missing_`, `_DEPRECATED_ATTRS`/`__getattr__`), reject wrapper delegators, plugin-manager delegators/state aliases on `CalibratedExplainer`, collection `as_lime`/`as_shap`, registry list-path APIs (`register`, `trust_plugin`, `find_for`, `find_for_trusted`), legacy plugin mode aliases, `perf.cache`/`perf.parallel`, calibration-helper lazy aliases, and `ParallelConfig(granularity="feature")`. Added fail-closed tests for all 11 groups, emptied the Active deprecations ledger, and introduced `make deprecation-closure` / `python scripts/local_checks.py --deprecation-closure` with timing artifacts under `reports/deprecations/`. Two red-team gaps found and closed post-implementation: (1) empty `src/calibrated_explanations/core/calibration/` directory was creating a Python namespace package after source file deletion — directory deleted and shim test extended to cover parent package; (2) `reports/coverage_task5.json` (1.7 MB) was tracked as a new file, exceeding the `check-added-large-files` pre-commit limit — added to `.gitignore` and untracked. Final gate: `make local-checks-pr` passed (1666 tests green, 96.42% docstring coverage, all quality gates green).
+- **ADR-011 Group L closure (v0.11.3 Task 5):** Closed the remaining reject-envelope deprecation blocker via reset path. Removed the active `deprecate()` warning in `reject_result_v2_to_legacy()` that targeted v1.0.0-rc, kept `RejectResult` as the stable v1.0.0 public return type, retained `RejectResultV2` as an opt-in strict schema, and updated reject tests/docs/ADR-029 accordingly.
+- **Optional uv contributor workflow (v0.11.3 Task 7):** Added an optional `uv pip install -e .[dev] -c constraints.txt` contributor fast path, introduced a pinned `uv-install-smoke` PR lane that compares pip and uv install timing without replacing existing pip-based CI, and removed stale `uv.lock` so no unvalidated lockfile appears authoritative.
+- **Windows install-smoke wheel hardening:** Updated `uv-install-smoke` to provision CI-aligned Python 3.11 virtualenvs via `uv venv` and require binary wheels for `numpy`, `scipy`, and `scikit-learn` so local host-Python drift (for example, 3.14) does not trigger compiler-dependent source builds. Relaxed the Python >=3.13 NumPy constraint to `numpy>=2.1.2` to avoid over-constraining newer interpreter resolution.
+- **Parameter naming consistency hardening (v0.11.3 Task 14):** Added `scripts/quality/check_parameter_naming.py` (CI-blocking gate against re-introduction of banned aliases `alpha`/`alphas`); inline documentation of the `threshold`→`y_threshold` internal rename in `IntervalRegressor.predict_probability`; consistent numpydoc `confidence`, `confidence_level`, and `significance` parameter cross-references; and a canonical parameter reference page at `docs/foundations/concepts/parameter-reference.md`.
+- **ADR gap closure sweep (v0.11.3 Task 15):** Closed six ADR gaps identified in the 2026-06-11 full sweep: (1) ADR-011 — active-deprecations ledger rebuilt with 9 correctly filed rows, `make deprecation-closure` passes (0 blocking); three raw `warnings.warn(DeprecationWarning)` bypass sites in `normalization_strategy.py`, `core/reject.py`, and `core/explain/__init__.py` migrated to `deprecate()` helper; (2) ADR-028/STD-005 — `api/config.py:265` warning site classified, `check_warning_policy.py` reports 0 UNCLASSIFIED; (3) ADR-032 — `get_guarded_audit` error message corrected to recommend `explain_factual(..., guarded_options=GuardedOptions())`; (4) ADR-036 — `validate_plot_artifact()` inserted at both build/render pipeline boundaries (`plotting.py:387`, `:439`); (5) ADR-037 — `plot_kinds`/`plot_modes` metadata declared on all four built-in plugin descriptors and validated by `validate_plugin_meta`; (6) ADR-034 — status-source conflict resolved (Open Items now document post-v1.0 deferral rationale).
+- **Dependency constraint minimization (v0.11.3 Task 16):** Removed four stale `constraints.txt` lines: `numpy<2` cap for Python < 3.13 (CE has no NumPy 2.x removed aliases; 2.4.4 passes all tests) and exact `scikit-learn==` pins (asymmetric wheel-availability artefact, not a CE requirement). Declared minimums in `pyproject.toml` (`numpy>=1.24`, `scikit-learn>=1.3`) are unchanged and were confirmed correct against sklearn 1.5.2–1.9.0 across Python 3.10–3.14.
+- **Call-time configuration taxonomy (v0.11.3 Task 17):** Accepted ADR-038. Introduced `GuardedOptions` frozen dataclass and `reject_confidence` qualified kwarg. Added four-tier taxonomy (`Options`/`Config`/`Spec`/plain kwargs) documented in ADR-038 §1. Added `[EXPERIMENTAL]` markers to `**kwargs` surfaces on `explain_factual`/`explore_alternatives`.
+- **ADR-011 compliance follow-up (2026-06-15):** Migrated two remaining raw `warnings.warn(DeprecationWarning)` sites in `core/calibrated_explainer.py` (the `guarded=True` boolean kwarg path in `explain_factual` and `explore_alternatives`) to `deprecate(key="guarded_true_boolean_kwarg", raise_on_error=False)`. `raise_on_error=False` is correct for user-facing deprecated kwargs so `pytest.warns(DeprecationWarning)` captures the warning even when `CE_DEPRECATIONS=error` is set.
 
 ## [v0.11.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.2) - 2026-05-12
 

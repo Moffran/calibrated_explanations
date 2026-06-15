@@ -1,0 +1,22 @@
+{
+  "active_rows_count": 11,
+  "blocking_rows_count": 0,
+  "blocking_symbols": [],
+  "generated_at": "2026-06-15T13:36:44.365157+00:00",
+  "permitted_rows_count": 11,
+  "permitted_symbols": [
+    "`guarded=True` boolean kwarg on `explain_factual` / `explore_alternatives`",
+    "`significance=` kwarg on `explain_factual` / `explore_alternatives` (guarded path)",
+    "`n_neighbors=` kwarg on `explain_factual` / `explore_alternatives` (guarded path)",
+    "`normalize_guard=` kwarg on `explain_factual` / `explore_alternatives` (guarded path)",
+    "`merge_adjacent=` kwarg on `explain_factual` / `explore_alternatives` (guarded path)",
+    "`confidence=` kwarg on `predict_reject` / `apply_policy`",
+    "`normalize=True` / `normalize=False` bool kwarg to `NormalizationStrategy.coerce()`",
+    "`calibrated_explanations.core.reject` module import path",
+    "`calibrated_explanations.core.explain.explain(...)` function",
+    "`ExplainerHandle.learner` property",
+    "`ParallelConfig(strategy='auto')` with `enabled=True`"
+  ],
+  "schema_version": 1,
+  "status": "pass"
+}

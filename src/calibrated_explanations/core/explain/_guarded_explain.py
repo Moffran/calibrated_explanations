@@ -2,8 +2,10 @@
 """Core computation for guarded explanations.
 
 This module implements :func:`guarded_explain`, the single entry-point called
-by :meth:`~calibrated_explanations.CalibratedExplainer.explain_guarded_factual`
-and :meth:`~calibrated_explanations.CalibratedExplainer.explore_guarded_alternatives`.
+by :meth:`~calibrated_explanations.CalibratedExplainer.explain_factual` (with
+``guarded_options=GuardedOptions()``) and
+:meth:`~calibrated_explanations.CalibratedExplainer.explore_alternatives` (with
+``guarded_options=GuardedOptions()``).
 
 Algorithm outline
 -----------------
@@ -610,10 +612,15 @@ def guarded_explain(
     features_to_ignore : sequence of int or None
         Feature indices to skip.
     significance : float, default=0.1
-        Conformity significance level. A larger value yields a stricter
-        test (fewer bins accepted as in-distribution), because the
+        Conformity significance level for the in-distribution guard. A larger value
+        yields a stricter test (fewer bins accepted as in-distribution), because the
         conforming predicate compares the shipped decision p-value against
         ``significance``.
+        Not to be confused with ``confidence`` in the reject path (which is a coverage
+        target, the complement: ``significance = 1 - confidence``), or with
+        ``confidence_level`` (regression coverage derived from ``low_high_percentiles``).
+        Task 17 will rename this to ``GuardedOptions.confidence`` using the coverage
+        convention. See ``docs/foundations/concepts/parameter-reference.md``.
     merge_adjacent : bool, default=False
         Merge adjacent conforming bins into wider interval conditions.
         Merged representatives are re-tested via the guard; merges that fail

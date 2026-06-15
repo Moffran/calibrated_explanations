@@ -9,45 +9,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-APPROVED_COMPATIBILITY_BRIDGES: dict[str, set[str]] = {
-    "calibrated_explanations/calibration/venn_abers.py": {
-        "__is_multiclass",
-        "__predict_proba_with_difficulty",
-    },
-    "calibrated_explanations/calibration/state.py": {
-        "__X_cal",
-    },
-    "calibrated_explanations/core/calibrated_explainer.py": {
-        "__initialized",
-        "__fast",
-        "__noise_type",
-        "__scale_factor",
-        "__severity",
-        "__initialize_interval_learner_for_fast_explainer",
-    },
-    "calibrated_explanations/explanations/explanation.py": {
-        "__append_rule",
-        "__extracted_non_conjunctive_rules",
-        "__filter_rules",
-        "__is_counter_explanation",
-        "__is_semi_explanation",
-        "__is_super_explanation",
-        "__pareto_filter_rules",
-        "__pareto_rule_indexes",
-        "__set_up_result",
-    },
-    "calibrated_explanations/explanations/explanations.py": {
-        "__convert_to_alternative_explanations",
-    },
-}
+APPROVED_COMPATIBILITY_BRIDGES: dict[str, set[str]] = {}
 
-APPROVED_TRANSITIONAL_SHIMS: dict[str, set[str]] = {
-    "calibrated_explanations/plotting.py": {
-        "__plot_proba_triangle",
-        "__require_matplotlib",
-        "__setup_plot_style",
-    }
-}
+APPROVED_TRANSITIONAL_SHIMS: dict[str, set[str]] = {}
 
 APPROVED_UTILITY_IMPORT_BRIDGES: set[str] = {
     "calibrated_explanations/calibration/interval_learner.py",
@@ -60,14 +24,7 @@ APPROVED_UTILITY_IMPORT_BRIDGES: set[str] = {
     "calibrated_explanations/utils/discretizers.py",
 }
 
-APPROVED_SHIM_SURFACES: dict[str, dict[str, str]] = {
-    "calibrated_explanations/serialization.py": {
-        "validate_payload": "schema.validate_payload_compat_wrapper",
-    },
-    "calibrated_explanations/viz/builders.py": {
-        "legacy_get_fill_color": "legacy_color_api_alias",
-    },
-}
+APPROVED_SHIM_SURFACES: dict[str, dict[str, str]] = {}
 
 _MANGLED_PATTERN = re.compile(r"^_[A-Za-z][A-Za-z0-9]*__([_A-Za-z][A-Za-z0-9_]*)$")
 
@@ -145,22 +102,16 @@ def _classify_dunder_violation(node: ast.AST) -> str:
 
 
 def _allowed_for_dunder(rel: str, symbol: str) -> tuple[str, str, str]:
-    if "/legacy/" in rel:
-        return (
-            "non_legacy_dunder_access",
-            "legacy_namespace_exception",
-            "legacy_namespace",
-        )
     if symbol in APPROVED_TRANSITIONAL_SHIMS.get(rel, set()):
         return (
             "non_legacy_transitional_shim",
-            "approved_transitional_shim_remove_by_v0.11.3",
+            "approved_transitional_shim",
             "shim_confinement",
         )
     if symbol in APPROVED_COMPATIBILITY_BRIDGES.get(rel, set()):
         return (
             "compatibility_bridge",
-            "approved_compatibility_bridge_remove_by_v0.11.3",
+            "approved_compatibility_bridge",
             "compatibility_bridge",
         )
     return ("", "", "")
@@ -261,7 +212,7 @@ def _iter_shim_surface_records(tree: ast.AST, rel: str) -> list[ViolationRecord]
                 line=getattr(node, "lineno", 1),
                 symbol=f"{candidate_name}:{remaining.pop(candidate_name)}",
                 violation_kind="non_legacy_transitional_shim",
-                allowed_reason="approved_transitional_shim_remove_by_v0.11.3" if thin else "",
+                allowed_reason="approved_transitional_shim" if thin else "",
                 workstream="shim_confinement" if thin else "",
             )
         )

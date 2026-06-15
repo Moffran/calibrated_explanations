@@ -463,6 +463,29 @@ def test_prob_sort_by_label():
     assert labels == sorted(labels)
 
 
+def test_probabilistic_bars_uses_predict_weights_when_interval_disabled():
+    """Non-interval PlotSpec path should index predict weights, not the wrapper dict."""
+    spec = builders.build_probabilistic_bars_spec(
+        title=None,
+        predict={"predict": 0.6},
+        feature_weights={
+            "predict": [0.1, 0.2, 0.3, 0.4, 0.5, -0.7],
+            "color_role": ["positive", "positive", "positive", "positive", "positive", "negative"],
+        },
+        features_to_plot=[5],
+        column_names=["a", "b", "c", "d", "e", "f"],
+        rule_labels=None,
+        instance=[10, 20, 30, 40, 50, 60],
+        y_minmax=None,
+        interval=False,
+    )
+
+    assert [bar.label for bar in spec.body.bars] == ["f"]
+    assert [bar.value for bar in spec.body.bars] == [-0.7]
+    assert [bar.color_role for bar in spec.body.bars] == ["negative"]
+    assert [bar.instance_value for bar in spec.body.bars] == [60]
+
+
 # ---------------------------------------------------------------------------
 # is_valid_probability_values edge cases
 # ---------------------------------------------------------------------------

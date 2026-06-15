@@ -7,12 +7,13 @@ legacy ``entropy`` input mapping to ``default``.
 from __future__ import annotations
 
 from types import SimpleNamespace
+import warnings
 
 import numpy as np
 import pytest
 
 from calibrated_explanations.core.reject import orchestrator as orch
-from tests.helpers.deprecation import deprecations_error_enabled, warns_or_raises
+from calibrated_explanations.explanations.reject import RejectPolicy
 
 
 def test_reject_input_validators_reject_non_numeric_payloads():
@@ -23,6 +24,101 @@ def test_reject_input_validators_reject_non_numeric_payloads():
 
     with pytest.raises(ValidationError, match="w must be a float"):
         orch.validate_reject_w("bad")
+
+
+def test_regression_threshold_event_labels_scalar_includes_tie():
+    labels = orch.regression_threshold_event_labels(np.array([0.4, 0.5, 0.6]), 0.5)
+    assert labels.tolist() == [1, 1, 0]
+
+
+def test_regression_threshold_event_labels_interval_is_low_open_high_closed():
+    labels = orch.regression_threshold_event_labels(
+        np.array([0.2, 0.3, 0.5, 0.6]),
+        (0.2, 0.5),
+    )
+    assert labels.tolist() == [0, 1, 1, 0]
+
+
+def test_regression_threshold_event_labels_rejects_invalid_interval():
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    with pytest.raises(ValidationError, match="finite low < high"):
+        orch.regression_threshold_event_labels(np.array([0.1, 0.2]), (0.5, 0.5))
+
+
+def test_regression_threshold_event_labels_rejects_per_instance_thresholds():
+    from calibrated_explanations.utils.exceptions import ValidationError  # noqa: PLC0415
+
+    with pytest.raises(ValidationError, match="per-instance thresholds are not supported"):
+        orch.regression_threshold_event_labels(np.array([0.1, 0.2]), np.array([0.1, 0.2]))
+
+
+def test_initialize_regression_reject_learner_uses_scalar_event_labels(monkeypatch):
+    captured: dict[str, np.ndarray] = {}
+
+    class StubIntervalLearner:
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            assert y_threshold == 0.5
+            return np.full(len(x), 0.6), None, None, None
+
+    class DummyLearner:
+        def fit(self, *args, **kwargs):
+            return self
+
+    def fake_ncf_scores_cal(proba, classes, labels, ncf, w, default_kind):
+        captured["labels"] = np.asarray(labels, dtype=int)
+        return np.zeros(len(labels))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyLearner())
+    monkeypatch.setattr(orch, "_ncf_scores_cal", fake_ncf_scores_cal)
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.4, 0.5, 0.6]),
+        bins=None,
+        interval_learner=StubIntervalLearner(),
+        reject_learner=None,
+        is_multiclass=lambda: False,
+    )
+    orch.RejectOrchestrator(expl).initialize_reject_learner(threshold=0.5)
+
+    assert captured["labels"].tolist() == [1, 1, 0]
+    assert expl.reject_threshold == pytest.approx(0.5)
+
+
+def test_initialize_regression_reject_learner_uses_interval_event_labels(monkeypatch):
+    captured: dict[str, np.ndarray] = {}
+
+    class StubIntervalLearner:
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            assert y_threshold == (0.2, 0.5)
+            return np.full(len(x), 0.6), None, None, None
+
+    class DummyLearner:
+        def fit(self, *args, **kwargs):
+            return self
+
+    def fake_ncf_scores_cal(proba, classes, labels, ncf, w, default_kind):
+        captured["labels"] = np.asarray(labels, dtype=int)
+        return np.zeros(len(labels))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyLearner())
+    monkeypatch.setattr(orch, "_ncf_scores_cal", fake_ncf_scores_cal)
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0], [3.0]]),
+        y_cal=np.array([0.2, 0.3, 0.5, 0.6]),
+        bins=None,
+        interval_learner=StubIntervalLearner(),
+        reject_learner=None,
+        is_multiclass=lambda: False,
+    )
+    orch.RejectOrchestrator(expl).initialize_reject_learner(threshold=(0.2, 0.5))
+
+    assert captured["labels"].tolist() == [0, 1, 1, 0]
+    assert expl.reject_threshold == (0.2, 0.5)
 
 
 def test_initialize_reject_learner_warns_on_low_w(monkeypatch):
@@ -288,8 +384,183 @@ def test_ncf_auto_selected_false_when_explicit(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# RT-14 — _default_ncf_kind uses hinge for multiclass (singleton fix)
+# ---------------------------------------------------------------------------
+
+
+def test_default_ncf_kind_returns_hinge_for_multiclass():
+    """default_ncf_kind must return hinge for multiclass to allow singletons."""
+    assert orch.default_ncf_kind(True) == "hinge"
+
+
+def test_default_ncf_kind_returns_hinge_for_binary():
+    """default_ncf_kind also returns hinge for binary (unchanged behaviour)."""
+    assert orch.default_ncf_kind(False) == "hinge"
+
+
+def test_multiclass_hinge_test_scores_differ_per_column():
+    """With hinge NCF and binarized multiclass proba, the two columns must differ.
+
+    Before RT-14 fix, margin NCF broadcast a scalar identically to both columns,
+    making singletons geometrically impossible. This test asserts the fix holds:
+    hinge produces alpha[:,0] = p_max (high) != alpha[:,1] = 1-p_max (low).
+    """
+    p_max = 0.8
+    # Binarized multiclass proba: col-0 = 1-p_max (wrong), col-1 = p_max (correct)
+    proba = np.array([[1 - p_max, p_max]])
+    default_kind = orch.default_ncf_kind(True)
+    scores = orch.default_score_test(proba, default_kind)
+    assert scores.shape == (1, 2)
+    # Columns must be different; with margin they would be identical
+    assert scores[0, 0] != scores[0, 1], (
+        "RT-14: columns must differ for hinge NCF; "
+        "identical columns would make singletons impossible"
+    )
+    # Specific values: hinge gives 1-proba[:,j]
+    # col-0 score = 1 - (1-p_max) = p_max; col-1 score = 1 - p_max
+    np.testing.assert_allclose(scores[0, 0], p_max, rtol=1e-10)
+    np.testing.assert_allclose(scores[0, 1], 1 - p_max, rtol=1e-10)
+
+
+def test_multiclass_default_ncf_can_produce_singletons(monkeypatch):
+    """With hinge NCF, multiclass conformal can return {1} proxy singleton sets.
+
+    Before RT-14 fix, margin NCF produced 100% rejection (no singletons).
+    After fix: a conformal mock with col-1 p-value above threshold and col-0
+    below threshold correctly produces {1} positive correctness-proxy singletons.
+    """
+
+    class MulticlassIntervalLearner:
+        def predict_proba(self, x, bins=None):
+            n = len(x)
+            # 3-class probabilities; predicted class is always class 2 (p_max=0.7)
+            proba = np.tile(np.array([[0.1, 0.2, 0.7]]), (n, 1))
+            predicted_labels = np.full(n, 2, dtype=int)
+            return proba, predicted_labels
+
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            return np.zeros(len(x)), None, None, None
+
+    class MulticlassExplainerStub(SimpleNamespace):
+        def __init__(self):
+            super().__init__()
+            self.mode = "classification"
+            # Cal set: 3 wrong (bin=0), 3 correct (bin=1)
+            self.x_cal = np.array([[0]] * 6)
+            self.y_cal = np.array([0, 0, 0, 2, 2, 2])
+            self.bins = None
+            self.interval_learner = MulticlassIntervalLearner()
+            self.reject_learner = None
+
+        def is_multiclass(self):
+            return True
+
+    # Conformal returns: col-1 (top-1 correct event) has p=0.9 > 0.05 epsilon,
+    # while col-0 (top-1 not-correct event) fails, producing {1} proxy singletons.
+    class DummyConformal:
+        def fit(self, *args, **kwargs):
+            return self
+
+        def predict_p(self, alphas, **kwargs):
+            n = np.atleast_2d(alphas).shape[0]
+            # p-value layout: [p_top1_not_correct, p_top1_correct]
+            return np.tile(np.array([[0.02, 0.9]]), (n, 1))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
+
+    expl = MulticlassExplainerStub()
+    orchestrator = orch.RejectOrchestrator(expl)
+    orchestrator.initialize_reject_learner(ncf="default")
+
+    breakdown = orchestrator.predict_reject_breakdown([[0], [1], [2]], confidence=0.95)
+    prediction_set = breakdown["prediction_set"]
+
+    # With positive-proxy p-value high and negative-proxy p-value low:
+    # prediction set = {1} for all instances
+    assert prediction_set.shape == (3, 2)
+    expected = np.array([[False, True]] * 3, dtype=bool)
+    np.testing.assert_array_equal(prediction_set, expected)
+
+    # Reject rate should be 0 (all {1} positive proxy singletons = all accepted)
+    assert breakdown["reject_rate"] == 0.0
+
+
+# ---------------------------------------------------------------------------
 # MT-10 — w=0.0 raises ValidationError only for ensured NCF
 # ---------------------------------------------------------------------------
+
+
+def test_multiclass_top1_correctness_strategy_rejects_proxy_negative_singletons(monkeypatch):
+    """The stricter multiclass proxy policy is opt-in, not the default singleton rule."""
+
+    class MulticlassIntervalLearner:
+        def predict_proba(self, x, bins=None):
+            n = len(x)
+            proba = np.tile(np.array([[0.15, 0.15, 0.7]]), (n, 1))
+            predicted_labels = np.full(n, 2, dtype=int)
+            return proba, predicted_labels
+
+        def predict_probability(self, x, y_threshold=None, bins=None):
+            return np.zeros(len(x)), None, None, None
+
+    class MulticlassExplainerStub(SimpleNamespace):
+        def __init__(self):
+            super().__init__()
+            self.mode = "classification"
+            self.x_cal = np.array([[0]] * 6)
+            self.y_cal = np.array([0, 0, 0, 2, 2, 2])
+            self.bins = None
+            self.interval_learner = MulticlassIntervalLearner()
+            self.reject_learner = None
+
+        def is_multiclass(self):
+            return True
+
+    class DummyConformal:
+        def fit(self, *args, **kwargs):
+            return self
+
+        def predict_p(self, alphas, **kwargs):
+            n = np.atleast_2d(alphas).shape[0]
+            return np.tile(np.array([[0.9, 0.02]]), (n, 1))
+
+    monkeypatch.setattr(orch, "ConformalClassifier", lambda: DummyConformal())
+    expl = MulticlassExplainerStub()
+    orchestrator = orch.RejectOrchestrator(expl)
+    orchestrator.initialize_reject_learner(ncf="default")
+
+    default_result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        [[0], [1]],
+        reject_confidence=0.95,
+    )
+    strict_result = orchestrator.apply_policy(
+        RejectPolicy.FLAG,
+        [[0], [1]],
+        reject_confidence=0.95,
+        strategy="experimental.multiclass_top1_correctness",
+    )
+
+    np.testing.assert_array_equal(default_result.rejected, np.array([False, False]))
+    np.testing.assert_array_equal(strict_result.rejected, np.array([True, True]))
+    assert strict_result.metadata["reject_strategy"] == ("experimental.multiclass_top1_correctness")
+    assert strict_result.metadata["proxy_negative_singleton_rate"] == 1.0
+    assert strict_result.metadata["validity_claim"].startswith(
+        "multiclass binary correctness proxy"
+    )
+
+
+def test_multiclass_top1_correctness_strategy_rejects_non_multiclass(monkeypatch):
+    """The top-1 correctness proxy strategy must not silently run on binary tasks."""
+
+    _, orchestrator = make_stub(monkeypatch, singletons=True)
+    with pytest.raises(orch.ValidationError, match="only valid for multiclass"):
+        orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            [[0], [1]],
+            reject_confidence=0.95,
+            strategy="experimental.multiclass_top1_correctness",
+        )
 
 
 def test_w_zero_raises_for_ensured_ncf(monkeypatch):
@@ -439,7 +710,7 @@ def test_only_rejected_empty_subset_returns_none_and_matched_count_zero(monkeypa
         RejectPolicy.ONLY_REJECTED,
         np.array([[0], [1], [2]]),
         explain_fn=fake_explain_fn,
-        confidence=0.95,
+        reject_confidence=0.95,
     )
     assert result.explanation is None
     assert result.metadata["matched_count"] == 0
@@ -455,7 +726,7 @@ def test_apply_policy_metadata_includes_effective_confidence_and_w(monkeypatch):
         RejectPolicy.FLAG,
         np.array([[0], [1], [2]]),
         explain_fn=None,
-        confidence=0.77,
+        reject_confidence=0.77,
     )
 
     assert result.metadata is not None
@@ -477,7 +748,7 @@ def test_apply_policy_metadata_contains_required_contract_keys(monkeypatch):
         RejectPolicy.FLAG,
         np.array([[0], [1], [2]]),
         explain_fn=None,
-        confidence=0.77,
+        reject_confidence=0.77,
     )
     required = {
         "policy",
@@ -739,7 +1010,7 @@ def test_regression_apply_policy_same_threshold_does_not_reinitialize(monkeypatc
         interval_learner=SimpleNamespace(),
         prediction_orchestrator=DummyPredictionOrchestrator(),
         reject_learner=object(),
-        reject_threshold=np.array([0.8, 0.8, 0.8]),
+        reject_threshold=0.8,
         reject_ncf="default",
         reject_ncf_w=0.5,
         reject_ncf_auto_selected=False,
@@ -776,10 +1047,38 @@ def test_regression_apply_policy_same_threshold_does_not_reinitialize(monkeypatc
     result = orchestrator.apply_policy(
         RejectPolicy.FLAG,
         np.array([[0.0], [1.0], [2.0]]),
-        threshold=np.array([0.8, 0.8, 0.8]),
+        threshold=0.8,
     )
     assert init_calls == []
     assert result.metadata["threshold_source"] == "call"
+
+
+def test_regression_apply_policy_rejects_per_instance_threshold_array():
+    from calibrated_explanations.core.reject.policy import RejectPolicy
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    expl = SimpleNamespace(
+        mode="regression",
+        x_cal=np.array([[0.0], [1.0], [2.0]]),
+        y_cal=np.array([0.0, 1.0, 2.0]),
+        bins=None,
+        interval_learner=SimpleNamespace(),
+        prediction_orchestrator=SimpleNamespace(),
+        reject_learner=object(),
+        reject_threshold=0.8,
+        reject_ncf="default",
+        reject_ncf_w=0.5,
+        reject_ncf_auto_selected=False,
+        is_multiclass=lambda: False,
+    )
+    orchestrator = orch.RejectOrchestrator(expl)
+
+    with pytest.raises(ValidationError, match="per-instance thresholds are not supported"):
+        orchestrator.apply_policy(
+            RejectPolicy.FLAG,
+            np.array([[0.0], [1.0], [2.0]]),
+            threshold=np.array([0.8, 0.8, 0.8]),
+        )
 
 
 def test_predict_reject_breakdown_legacy_override_without_threshold_arg_fallback():
@@ -1076,15 +1375,13 @@ def test_apply_policy_result_schema_v2_returns_strict_artifacts(monkeypatch):
     assert isinstance(result.payload, RejectPayloadArtifact)
     assert result.metadata["schema_version"] == "2.0"
 
-    if deprecations_error_enabled():
-        with warns_or_raises():
-            result.to_legacy()
-    else:
-        with warns_or_raises():
-            legacy = result.to_legacy()
-        assert legacy.policy is RejectPolicy.FLAG
-        np.testing.assert_array_equal(legacy.rejected, result.decision.rejected)
-        assert legacy.metadata["schema_version"] == "2.0"
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
+        legacy = result.to_legacy()
+    assert not any(isinstance(item.message, DeprecationWarning) for item in caught)
+    assert legacy.policy is RejectPolicy.FLAG
+    np.testing.assert_array_equal(legacy.rejected, result.decision.rejected)
+    assert legacy.metadata["schema_version"] == "2.0"
 
 
 def test_reject_result_v2_round_trip_from_legacy(monkeypatch):
@@ -1099,15 +1396,13 @@ def test_reject_result_v2_round_trip_from_legacy(monkeypatch):
         explain_fn=lambda arr, **_: arr,
     )
     upgraded = RejectResultV2.from_legacy(legacy)
-    if deprecations_error_enabled():
-        with warns_or_raises():
-            upgraded.to_legacy()
-    else:
-        with warns_or_raises():
-            downgraded = upgraded.to_legacy()
-        np.testing.assert_array_equal(downgraded.rejected, legacy.rejected)
-        assert downgraded.policy is legacy.policy
-        assert downgraded.metadata["policy"] == legacy.metadata["policy"]
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
+        downgraded = upgraded.to_legacy()
+    assert not any(isinstance(item.message, DeprecationWarning) for item in caught)
+    np.testing.assert_array_equal(downgraded.rejected, legacy.rejected)
+    assert downgraded.policy is legacy.policy
+    assert downgraded.metadata["policy"] == legacy.metadata["policy"]
 
 
 def test_apply_policy_skips_prediction_payload_when_explain_fn_is_present(monkeypatch):
@@ -1188,3 +1483,35 @@ def test_subset_policy_gates_full_prediction_set_payload_by_default(monkeypatch)
         include_prediction_set=True,
     )
     assert full_result.metadata["prediction_set"] is not None
+
+
+def test_singleton_accounting_plugin_formula():
+    from calibrated_explanations.core.reject.orchestrator import compute_singleton_accounting
+
+    prediction_set = np.array(
+        [[True, False], [False, False], [True, True], [True, False]], dtype=bool
+    )
+    out = compute_singleton_accounting(prediction_set, 0.2)
+    assert out["n_total"] == 4
+    assert out["n_empty"] == 1
+    assert out["n_singleton"] == 2
+    assert out["singleton_error_rate_estimate_raw"] == pytest.approx((4 * 0.2 - 1) / 2)
+
+
+def test_singleton_accounting_undefined_when_no_singletons():
+    from calibrated_explanations.core.reject.orchestrator import compute_singleton_accounting
+
+    prediction_set = np.array([[False, False], [True, True]], dtype=bool)
+    out = compute_singleton_accounting(prediction_set, 0.1)
+    assert out["singleton_error_rate_estimate_defined"] is False
+    assert out["singleton_error_rate_estimate_raw"] is None
+
+
+def test_singleton_accounting_preserves_raw_and_sets_clamped_flag():
+    from calibrated_explanations.core.reject.orchestrator import compute_singleton_accounting
+
+    prediction_set = np.array([[False, False], [False, True]], dtype=bool)
+    out = compute_singleton_accounting(prediction_set, 0.1)
+    assert out["singleton_error_rate_estimate_raw"] < 0.0
+    assert out["singleton_error_rate_estimate_clamped"] == 0.0
+    assert out["singleton_error_rate_estimate_clamped_flag"] is True

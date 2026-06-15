@@ -1,0 +1,704 @@
+{
+  "total": 116,
+  "deprecation": 5,
+  "allowlisted": 111,
+  "unclassified": 0,
+  "sites": [
+    {
+      "file": "api/config.py",
+      "line": 265,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "ce_agent_utils.py",
+      "line": 787,
+      "message_snippet": "get_uncalibrated_predictions returns raw learner outputs that bypass CE calibrat",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "ce_agent_utils.py",
+      "line": 891,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/calibrated_explainer.py",
+      "line": 201,
+      "message_snippet": "condition_source not provided; defaulting to 'prediction' in v0.10.3. Pass condi",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/calibrated_explainer.py",
+      "line": 1507,
+      "message_snippet": "guarded=True is deprecated; use guarded_options=GuardedOptions() instead.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/calibrated_explainer.py",
+      "line": 1513,
+      "message_snippet": "_use_plugin has no effect on guarded explanation methods",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/calibrated_explainer.py",
+      "line": 1622,
+      "message_snippet": "guarded=True is deprecated; use guarded_options=GuardedOptions() instead.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/calibrated_explainer.py",
+      "line": 1628,
+      "message_snippet": "_use_plugin has no effect on guarded explanation methods",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/calibrated_explainer.py",
+      "line": 2226,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/config_manager.py",
+      "line": 543,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/config_manager.py",
+      "line": 677,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/config_manager.py",
+      "line": 418,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/difficulty_estimator_helpers.py",
+      "line": 224,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/discretizer_config.py",
+      "line": 120,
+      "message_snippet": "condition_source='prediction' requested but no condition_labels provided; fallin",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/discretizer_config.py",
+      "line": 143,
+      "message_snippet": "No usable condition labels available; falling back to observed y_cal.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/_guarded_explain.py",
+      "line": 545,
+      "message_snippet": "Prediction interval invariant violated (merged bin): low > high; reordering boun",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/_guarded_explain.py",
+      "line": 1189,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/_guarded_explain.py",
+      "line": 977,
+      "message_snippet": "Prediction interval invariant violated: low > high; reordering bounds.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/_guarded_explain.py",
+      "line": 785,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 117,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 807,
+      "message_snippet": "Auto-selecting experimental 'fast' explanation mode for feature filtering. The '",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 766,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1034,
+      "message_snippet": "multi_labels_enabled=True was requested but the problem appears to be binary; th",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1239,
+      "message_snippet": "multi_labels_enabled=True was requested but the problem appears to be binary; th",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1558,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1786,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 522,
+      "message_snippet": "confidence= is deprecated in the reject path; use reject_confidence=.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 787,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1071,
+      "message_snippet": "confidence= is deprecated in the reject path; use reject_confidence=.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1276,
+      "message_snippet": "confidence= is deprecated in the reject path; use reject_confidence=.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1579,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 1807,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/orchestrator.py",
+      "line": 731,
+      "message_snippet": "Reject wrapper upgrade skipped due to reject metadata/payload misalignment.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/parallel_instance.py",
+      "line": 284,
+      "message_snippet": "Instance-parallel execution on Windows is using a thread/sequential fallback. Se",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/explain/parallel_runtime.py",
+      "line": 67,
+      "message_snippet": "Parallel execution fell back to sequential. Check logs for details.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/prediction/orchestrator.py",
+      "line": 304,
+      "message_snippet": "Prediction interval invariant violated: low > high. This indicates an issue with",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/prediction/orchestrator.py",
+      "line": 314,
+      "message_snippet": "Prediction invariant violated: predict not in [low, high]. This may indicate poo",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/prediction/orchestrator.py",
+      "line": 546,
+      "message_snippet": "crepes produced an unexpected result while computing probabilities; returning ze",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/prediction/orchestrator.py",
+      "line": 511,
+      "message_snippet": "crepes produced an unexpected result (likely too-small calibration set); returni",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 877,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 2051,
+      "message_snippet": "confidence= is deprecated in predict_reject; use reject_confidence= instead.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 2098,
+      "message_snippet": "confidence= is deprecated in apply_policy; use reject_confidence= instead.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1442,
+      "message_snippet": "Reject threshold mismatch detected; reinitializing reject learner with call thre",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1535,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1755,
+      "message_snippet": "Reject prediction fallback engaged: predict_set returned unexpected shape; using",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1960,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 2333,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1690,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1733,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 2456,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 2506,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1219,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "core/reject/orchestrator.py",
+      "line": 1257,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 4114,
+      "message_snippet": "The add_conjunctions method is currently not supported for `FastExplanation`, ma",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 4131,
+      "message_snippet": "The add_new_rule_condition method is currently not supported for `FastExplanatio",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1436,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1442,
+      "message_snippet": "Alternatives for all categorical features are already included",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1452,
+      "message_snippet": "Rule already included",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1545,
+      "message_snippet": "The alternative explanation is identical to the original explanation",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 2389,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 3896,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 4282,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1468,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1477,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1816,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 1823,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 2300,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 2308,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 2505,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 2765,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 2772,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 3787,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 3799,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 336,
+      "message_snippet": "Prediction interval invariant violated: low > high",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanation.py",
+      "line": 344,
+      "message_snippet": "Prediction invariant violated: predict not in [low, high]",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanations.py",
+      "line": 2813,
+      "message_snippet": "No explanations found",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanations.py",
+      "line": 2845,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanations.py",
+      "line": 2905,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanations.py",
+      "line": 3115,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/explanations.py",
+      "line": 1945,
+      "message_snippet": "Deepcopy of explainer failed; using original instance for frozen wrapper",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/guarded_explanation.py",
+      "line": 276,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/guarded_explanation.py",
+      "line": 282,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "explanations/reject.py",
+      "line": 1145,
+      "message_snippet": "Reject result is missing source_indices metadata; derived mapping from policy/re",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plotting.py",
+      "line": 305,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plotting.py",
+      "line": 557,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/base.py",
+      "line": 105,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/manager.py",
+      "line": 1061,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/manager.py",
+      "line": 1020,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/manager.py",
+      "line": 1342,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/predict_monitor.py",
+      "line": 173,
+      "message_snippet": "Prediction interval invariant violated: low > high. This indicates an issue with",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/predict_monitor.py",
+      "line": 185,
+      "message_snippet": "Prediction invariant violated: predict not in [low, high]. This may indicate poo",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 205,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 288,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 299,
+      "message_snippet": "",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1755,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1786,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1824,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1836,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1874,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1809,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1855,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "plugins/registry.py",
+      "line": 1922,
+      "message_snippet": "<f-string>",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "utils/deprecation.py",
+      "line": 58,
+      "message_snippet": "",
+      "category": "DEPRECATION"
+    },
+    {
+      "file": "utils/deprecations.py",
+      "line": 108,
+      "message_snippet": "",
+      "category": "DEPRECATION"
+    },
+    {
+      "file": "utils/deprecations.py",
+      "line": 101,
+      "message_snippet": "",
+      "category": "DEPRECATION"
+    },
+    {
+      "file": "utils/deprecations.py",
+      "line": 91,
+      "message_snippet": "",
+      "category": "DEPRECATION"
+    },
+    {
+      "file": "utils/deprecations.py",
+      "line": 88,
+      "message_snippet": "",
+      "category": "DEPRECATION"
+    },
+    {
+      "file": "viz/_matplotlib_compat.py",
+      "line": 406,
+      "message_snippet": "All predictions are (almost) identical.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/_matplotlib_compat.py",
+      "line": 408,
+      "message_snippet": "All uncertainties are (almost) identical.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/_matplotlib_compat.py",
+      "line": 648,
+      "message_snippet": "All uncertainties are (almost) identical.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/_matplotlib_compat.py",
+      "line": 678,
+      "message_snippet": "plot_global requires a scalar threshold for non-probabilistic explainers.",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/matplotlib_adapter.py",
+      "line": 2033,
+      "message_snippet": "Visualization fallback: raw primitives used when normalization yielded no entrie",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/matplotlib_adapter.py",
+      "line": 1373,
+      "message_snippet": "Visualization fallback: alternative bar simplified due to drawing error",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/narrative_plugin.py",
+      "line": 148,
+      "message_snippet": "Narrative template fallback: default template used because provided relative pat",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/narrative_plugin.py",
+      "line": 159,
+      "message_snippet": "Narrative template fallback: default template used because provided absolute pat",
+      "category": "ALLOWLISTED"
+    },
+    {
+      "file": "viz/serializers.py",
+      "line": 412,
+      "message_snippet": "Failed to cast sequence to floats for axis hints; skipping hints.",
+      "category": "ALLOWLISTED"
+    }
+  ]
+}

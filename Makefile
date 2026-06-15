@@ -62,9 +62,40 @@ check-ci-policy:
 	# Includes full-SHA action pin enforcement and reusable-workflow checks.
 	python scripts/quality/validate_ci_policy.py --base-sha HEAD~1 --head-sha HEAD --advisory
 
+.PHONY: uv-install-smoke
+uv-install-smoke:
+	python scripts/local_checks.py --uv-install-smoke
+
+.PHONY: adr030-ratification
+adr030-ratification:
+	python scripts/local_checks.py --adr030-ratification
+
+.PHONY: warning-policy
+warning-policy:
+	python scripts/quality/check_warning_policy.py --check --report reports/quality/warning_policy.json
+
+.PHONY: check-extras-parity
+check-extras-parity:
+	python scripts/quality/check_core_extras_parity.py --check --report reports/quality/core_extras_parity.json
+
+.PHONY: deprecation-closure
+deprecation-closure:
+	python scripts/local_checks.py --deprecation-closure
+
+.PHONY: pydocstyle
+pydocstyle:
+	python -m pydocstyle src tests
+
+# CI mode: lint flags must be supplied by the caller (e.g. from workflow step exit codes).
 .PHONY: governance-status
 governance-status:
 	python scripts/quality/build_governance_status_artifact.py --output reports/governance/governance_status.json --validate
+
+# Local mode: runs ruff and mypy, captures their exit codes, then writes the artifact.
+# local_checks_pr will remain "unavailable" — only CI can set it after running the full suite.
+.PHONY: governance-status-local
+governance-status-local:
+	python scripts/quality/build_governance_status_artifact.py --output reports/governance/governance_status.json --validate --run-lint
 
 # Run stacked CI-equivalent checks in the current Python environment,
 # including `pre-commit run --all-files` (no install/bootstrap steps).

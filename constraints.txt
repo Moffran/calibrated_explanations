@@ -7,8 +7,19 @@
 # Update policy:
 # - Add pins ONLY when CI reveals unavoidable incompatibilities.
 # - Remove pins as soon as upstream fixes the issues.
-
-numpy>=1.24,<2; python_version < '3.13'
-numpy==2.1.2; python_version >= '3.13'
-scikit-learn==1.6.1; python_version < '3.13'
-scikit-learn==1.5.2; python_version >= '3.13'
+#
+# Task-16 findings (2026-06-12):
+#   numpy: no per-version split or <2 cap is needed.  CE uses no numpy 2.x
+#          removed aliases or C-extension APIs.  numpy 2.4.4 passes all tests
+#          on Python 3.14.  numpy>=1.24 in requirements.txt is the only floor.
+#
+#   scikit-learn: exact == pins removed.  Verified ranges by local + CI testing:
+#          1.5.2 (Python 3.13, CI), 1.6.1 (Python 3.10–3.12, CI), 1.7.2, 1.8.0,
+#          1.9.0 (Python 3.14, local).  CE uses only sklearn APIs stable since
+#          1.0 (criterion="absolute_error", standard estimators); the OneHotEncoder
+#          sparse/sparse_output compat shim already handles the 1.2 rename.
+#          scikit-learn>=1.3 in requirements.txt is the only floor.
+#          Lower-bound gap: sklearn 1.3–1.5.1 on Python 3.10–3.12 was not
+#          directly tested (no Python 3.14 wheels exist for those releases);
+#          code analysis confirms compatibility.  A CI lower-bound job should
+#          be added to close this gap.

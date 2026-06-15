@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
-from calibrated_explanations.core.config_manager import ConfigManager
+from calibrated_explanations.core.config_manager import ConfigManager, ConfigSpec
 from calibrated_explanations.core.config_manager import _KNOWN_ENV_KEYS
 from calibrated_explanations.utils.exceptions import ConfigurationError
 
@@ -140,6 +142,32 @@ def test_should_not_include_duplicate_known_env_keys() -> None:
     assert len(set(_KNOWN_ENV_KEYS)) == len(_KNOWN_ENV_KEYS)
 
 
+def test_should_merge_config_specs_while_preserving_base_namespace() -> None:
+    base = ConfigSpec(
+        known_env_keys=("CE_BASE",),
+        section_schema={"base": ("enabled",)},
+        resolution_spec={"CE_BASE": ("base", "enabled", False)},
+        value_validators={},
+        pyproject_tool_namespace=("tool", "base"),
+    )
+    extension = ConfigSpec(
+        known_env_keys=("CE_BASE", "CE_EXTENSION"),
+        section_schema={"base": ("mode",), "extension": ("enabled",)},
+        resolution_spec={"CE_EXTENSION": ("extension", "enabled", True)},
+        value_validators={
+            ("extension", "enabled"): (lambda value: isinstance(value, bool), "bool")
+        },
+        pyproject_tool_namespace=("tool", "extension"),
+    )
+
+    merged = base.merged_with(extension)
+
+    assert merged.known_env_keys == ("CE_BASE", "CE_EXTENSION")
+    assert merged.section_schema["base"] == ("enabled", "mode")
+    assert merged.resolution_spec["CE_EXTENSION"] == ("extension", "enabled", True)
+    assert merged.pyproject_tool_namespace == ("tool", "base")
+
+
 _EMPTY_PYPROJECT: dict = {
     "plugins": {},
     "explanations": {},
@@ -193,6 +221,101 @@ def test_effective_export_uses_default_profile_when_no_env_or_pyproject() -> Non
     snapshot = manager.export_effective()
     assert snapshot.values["effective.CE_PLOT_RENDERER"] is None
     assert snapshot.sources["effective.CE_PLOT_RENDERER"] == "default_profile"
+
+
+def test_should_snapshot_raw_plugin_config_without_live_env_reads(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "CE_PLUGIN_CONFIG_JSON",
+        json.dumps({"example.plugin": {"threshold": 0.7, "labels": ["a", "b"]}}),
+    )
+    manager = ConfigManager.from_sources()
+    monkeypatch.setenv(
+        "CE_PLUGIN_CONFIG_JSON",
+        json.dumps({"example.plugin": {"threshold": 0.1}}),
+    )
+
+    config = manager.plugin_config("example.plugin")
+
+    assert config["threshold"] == 0.7
+    assert config["labels"] == ("a", "b")
+
+
+def test_should_preserve_plugin_config_source_attribution_and_redact_secrets() -> None:
+    manager = ConfigManager(
+        env_snapshot={
+            "CE_PLUGIN_CONFIG_JSON": json.dumps(
+                {"example.plugin": {"threshold": 0.7, "api_token": "env-secret"}}
+            )
+        },
+        pyproject_snapshot={
+            **_EMPTY_PYPROJECT,
+            "plugin_configs": {
+                "example.plugin": {
+                    "threshold": 0.2,
+                    "api_token": "py-secret",
+                    "mode": "pyproject",
+                }
+            },
+        },
+    )
+
+    assert manager.plugin_config("example.plugin")["threshold"] == 0.7
+    assert manager.plugin_config_sources("example.plugin") == {
+        "threshold": "env",
+        "api_token": "env",
+        "mode": "pyproject",
+    }
+
+    snapshot = manager.export_effective(
+        plugin_config_schemas={
+            "example.plugin": {
+                "version": 1,
+                "keys": {"api_token": {"type": "str", "sensitive": True}},
+            }
+        }
+    )
+
+    assert snapshot.values["diagnostic.plugin_config_export_schema_version"] == "provisional-1"
+    assert snapshot.values["effective.plugin_config.example.plugin"]["api_token"] == "<redacted>"
+    assert snapshot.sources["effective.plugin_config.example.plugin.threshold"] == "env"
+    assert snapshot.sources["effective.plugin_config.example.plugin.mode"] == "pyproject"
+
+
+def test_should_fail_clearly_when_plugin_config_json_is_malformed() -> None:
+    with pytest.raises(ConfigurationError, match="Malformed CE_PLUGIN_CONFIG_JSON"):
+        ConfigManager(
+            env_snapshot={"CE_PLUGIN_CONFIG_JSON": "{not-json"},
+            pyproject_snapshot=_EMPTY_PYPROJECT,
+        )
+
+
+def test_should_validate_unselected_plugin_config_with_strict_or_permissive_behavior() -> None:
+    manager = ConfigManager(
+        env_snapshot={},
+        pyproject_snapshot={
+            **_EMPTY_PYPROJECT,
+            "plugin_configs": {"configured.plugin": {"enabled": True}},
+        },
+    )
+
+    with pytest.raises(ConfigurationError, match="unselected plugin"):
+        manager.validate_plugin_config_selection(("selected.plugin",), strict=True)
+
+    with pytest.warns(UserWarning, match="unselected plugin"):
+        report = manager.validate_plugin_config_selection(("selected.plugin",), strict=False)
+
+    assert report.has_errors is True
+
+
+def test_should_reject_malformed_pyproject_plugin_config_shape() -> None:
+    with pytest.raises(ConfigurationError, match="Plugin config values must be mappings"):
+        ConfigManager(
+            env_snapshot={},
+            pyproject_snapshot={
+                **_EMPTY_PYPROJECT,
+                "plugin_configs": {"example.plugin": "not-a-mapping"},
+            },
+        )
 
 
 # ---------------------------------------------------------------------------

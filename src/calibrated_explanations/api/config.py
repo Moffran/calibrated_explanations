@@ -1,24 +1,22 @@
 """Configuration primitives for calibrated_explanations.
 
-This module introduces a light-weight configuration dataclass and a builder
-to simplify constructing explainers with validated options.
-no wiring to core classes is performed to avoid behavior changes; consumers
-may import and use these types for future-facing code.
-
-See `RELEASE_PLAN_v1` milestone targets and ADR-009 for preprocessing-related fields.
+This module provides a configuration dataclass and a fluent builder for
+constructing explainers with validated options. See `ADR-009` for
+preprocessing-related fields and `ADR-034` §7 for env-var precedence rules.
 """
 
 from __future__ import annotations
 
 import sys
+import warnings
 from dataclasses import dataclass
 from typing import Any, Literal
+
+from ..utils.exceptions import ConfigurationError
 
 # Backward-compatible patch point used by tests. When set to a callable, build_config
 # uses it instead of the internal factory builder.
 _perf_from_config = None
-
-TaskLiteral = Literal["classification", "regression", "auto"]
 
 
 @dataclass
@@ -27,12 +25,22 @@ class ExplainerConfig:
 
     Notes
     -----
-    - Fields included here are future-facing.
-    - Keep defaults aligned with existing behavior to prevent drift when adopted.
+    Fields wired by ``from_config()``
+        ``model``, ``preprocessor``, ``auto_encode``, ``unseen_category_policy``;
+        performance primitives (cache, parallel executor) via the perf factory;
+        internal feature-filter config.
+
+    Fields applied at explain-time
+        ``threshold`` and ``low_high_percentiles`` are forwarded to
+        ``explain_factual`` / ``explore_alternatives`` via ``kwargs.setdefault()``.
+
+    ``WrapCalibratedExplainer`` auto-detects task from the fitted model;
+    there is no ``task`` field. ``perf_parallel_workers`` is the governed
+    parallel-worker count (``CE_PARALLEL`` env var takes precedence —
+    see ADR-034 §7).
     """
 
     model: Any
-    task: TaskLiteral = "auto"
     # Calibration / explanation knobs (subset; extend later as needed)
     low_high_percentiles: tuple[int, int] = (5, 95)
     threshold: float | None = None  # for probabilistic regression use-cases
@@ -41,9 +49,6 @@ class ExplainerConfig:
     preprocessor: Any | None = None
     auto_encode: bool | Literal["auto"] = "auto"
     unseen_category_policy: Literal["ignore", "error"] = "error"
-
-    # Parallelism placeholder (not wired yet)
-    parallel_workers: int | None = None
 
     # Performance feature flags (ADR-003/ADR-004) - disabled by default
     perf_cache_enabled: bool = False
@@ -58,7 +63,7 @@ class ExplainerConfig:
     perf_parallel_min_batch: int = 8
     perf_parallel_min_instances: int | None = None
     perf_parallel_tiny_workload: int | None = None
-    perf_parallel_granularity: Literal["feature", "instance"] = "feature"
+    perf_parallel_granularity: Literal["instance"] = "instance"
     perf_telemetry: Any | None = None
 
     # Internal FAST-based feature filtering (disabled by default)
@@ -82,17 +87,6 @@ class ExplainerBuilder:
         self._cfg = ExplainerConfig(model=model)
 
     # Simple fluent setters
-    def task(self, task: TaskLiteral) -> ExplainerBuilder:
-        """Set the task type for the explainer configuration.
-
-        Parameters
-        ----------
-        task : {"classification", "regression", "auto"}
-            Desired task literal to store in the configuration.
-        """
-        self._cfg.task = task
-        return self
-
     def low_high_percentiles(self, p: tuple[int, int]) -> ExplainerBuilder:
         """Update the percentile pair for interval explanations.
 
@@ -148,17 +142,6 @@ class ExplainerBuilder:
         self._cfg.unseen_category_policy = policy
         return self
 
-    def parallel_workers(self, n: int | None) -> ExplainerBuilder:
-        """Configure the desired number of parallel worker processes.
-
-        Parameters
-        ----------
-        n : int or None
-            Worker count for parallel execution; ``None`` leaves the default in place.
-        """
-        self._cfg.parallel_workers = n
-        return self
-
     # Perf flags (feature-flagged; no behavior change when off)
     def perf_cache(
         self,
@@ -178,6 +161,12 @@ class ExplainerBuilder:
             Flag indicating whether caching primitives should be provisioned.
         max_items : int, optional
             Maximum number of cached entries when caching is enabled.
+
+        Notes
+        -----
+        ``CE_CACHE`` env var takes precedence over ``enabled`` because
+        ``CacheConfig.from_env()`` is applied after builder construction
+        inside ``_build_perf_factory()`` (ADR-034 §7).
         """
         self._cfg.perf_cache_enabled = enabled
         if max_items is not None:
@@ -201,7 +190,7 @@ class ExplainerBuilder:
         min_batch: int | None = None,
         min_instances: int | None = None,
         tiny_workload: int | None = None,
-        granularity: Literal["feature", "instance"] | None = None,
+        granularity: Literal["instance"] | None = None,
     ) -> ExplainerBuilder:
         """Configure the parallel backend used for performance operations.
 
@@ -211,6 +200,12 @@ class ExplainerBuilder:
             Whether parallel primitives should be created.
         backend : {"auto", "sequential", "joblib"}, optional
             Explicit backend selection overriding the default when provided.
+
+        Notes
+        -----
+        ``CE_PARALLEL`` env var takes precedence over ``enabled`` because
+        ``ParallelConfig.from_env()`` is applied after builder construction
+        inside ``_build_perf_factory()`` (ADR-034 §7).
         """
         self._cfg.perf_parallel_enabled = enabled
         if backend is not None:
@@ -224,6 +219,15 @@ class ExplainerBuilder:
         if tiny_workload is not None:
             self._cfg.perf_parallel_tiny_workload = tiny_workload
         if granularity is not None:
+            if granularity != "instance":
+                raise ConfigurationError(
+                    "perf_parallel_granularity='feature' is not supported. Use 'instance'.",
+                    details={
+                        "param": "perf_parallel_granularity",
+                        "received": granularity,
+                        "allowed": ["instance"],
+                    },
+                )
             self._cfg.perf_parallel_granularity = granularity
         return self
 
@@ -254,6 +258,17 @@ class ExplainerBuilder:
 
     def build_config(self) -> ExplainerConfig:
         """Return the assembled configuration (no side effects)."""
+        # Warn if callers injected removed fields via direct attribute assignment
+        # (task / parallel_workers were removed in v0.11.3 — see ADR-034 §7).
+        for _removed in ("task", "parallel_workers"):
+            if hasattr(self._cfg, _removed):
+                warnings.warn(
+                    f"ExplainerConfig.{_removed} is not applicable and has been removed "
+                    f"(v0.11.3). The field has no effect and will be ignored. "
+                    f"Remove it from your configuration.",
+                    UserWarning,
+                    stacklevel=2,
+                )
         # attach a perf factory convenience object when building config so later
         # consumers can opt-in to perf primitives consistently. This does not
         # change behavior unless the factory is used.
@@ -316,7 +331,7 @@ def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
         min_batch_size=getattr(cfg, "perf_parallel_min_batch", 8),
         min_instances_for_parallel=getattr(cfg, "perf_parallel_min_instances", None),
         tiny_workload_threshold=getattr(cfg, "perf_parallel_tiny_workload", None),
-        granularity=getattr(cfg, "perf_parallel_granularity", "feature"),
+        granularity=getattr(cfg, "perf_parallel_granularity", "instance"),
         telemetry=getattr(cfg, "perf_telemetry", None),
     )
     parallel_cfg = ParallelConfig.from_env(parallel_cfg)
@@ -326,5 +341,4 @@ def _build_perf_factory(cfg: Any) -> _ConfigPerfFactory:
 __all__ = [
     "ExplainerConfig",
     "ExplainerBuilder",
-    "TaskLiteral",
 ]

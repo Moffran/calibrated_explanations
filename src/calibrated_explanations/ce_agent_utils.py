@@ -25,6 +25,7 @@ from .core.exceptions import (
     NotFittedError,
     ValidationError,
 )
+from .utils.deprecations import deprecate
 
 LOGGER = logging.getLogger(__name__)
 
@@ -577,9 +578,9 @@ def explain_and_narrate(
         If provided, takes precedence over ``expertise_level`` with a warning.
     """
     if narrative_format is not None:
-        warnings.warn(
+        deprecate(
             "narrative_format is deprecated; use expertise_level='beginner'|'intermediate'|'advanced'.",
-            DeprecationWarning,
+            key="ce_agent_utils.narrative_format",
             stacklevel=2,
         )
         expertise_level = _NARRATIVE_FORMAT_TO_EXPERTISE.get(narrative_format, expertise_level)

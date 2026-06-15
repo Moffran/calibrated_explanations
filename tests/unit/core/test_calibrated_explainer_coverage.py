@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
-import warnings
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.exceptions import ValidationError, DataShapeError
 
@@ -81,84 +80,91 @@ def test_preloads(mock_learner, mock_plugin_manager):
     assert True
 
 
-def test_plugin_delegations_and_aliases(
+def test_should_fail_closed_for_removed_plugin_delegations_and_aliases(
     monkeypatch: pytest.MonkeyPatch, mock_learner, mock_plugin_manager
 ):
     monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
     x_cal = np.array([[1, 2]])
     y_cal = np.array([0])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
-    plugin_manager = explainer.plugin_manager
 
-    plugin_manager.build_plot_chain.return_value = ("default",)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        assert explainer.build_plot_style_chain() == ("default",)
-
-    explainer.prediction_orchestrator.ensure_interval_runtime_state.return_value = "ok"
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        assert explainer.ensure_interval_runtime_state() == "ok"
-    explainer.prediction_orchestrator.gather_interval_hints.return_value = ("hint",)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        assert explainer.gather_interval_hints(fast=True) == ("hint",)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        plugin_manager.interval_plugin_hints = {"a": ("b",)}
-        assert explainer.interval_plugin_hints == {"a": ("b",)}
-        explainer.interval_plugin_hints = {"c": ("d",)}
-        assert plugin_manager.interval_plugin_hints == {"c": ("d",)}
-        assert explainer.interval_plugin_hints == {"c": ("d",)}
-
-        plugin_manager.interval_plugin_fallbacks = {"a": ("b",)}
-        assert explainer.interval_plugin_fallbacks == {"a": ("b",)}
-        explainer.interval_plugin_fallbacks = {"c": ("d",)}
-        assert plugin_manager.interval_plugin_fallbacks == {"c": ("d",)}
-        assert explainer.interval_plugin_fallbacks == {"c": ("d",)}
-
-        plugin_manager.interval_preferred_identifier = {"x": "y"}
-        assert explainer.interval_preferred_identifier == {"x": "y"}
-        explainer.interval_preferred_identifier = {"z": None}
-        assert plugin_manager.interval_preferred_identifier == {"z": None}
-
-        plugin_manager.telemetry_interval_sources = {"x": "y"}
-        assert explainer.telemetry_interval_sources == {"x": "y"}
-        explainer.telemetry_interval_sources = {"z": "w"}
-        assert plugin_manager.telemetry_interval_sources == {"z": "w"}
-
-        plugin_manager.interval_plugin_identifiers = {"x": "y"}
-        assert explainer.interval_plugin_identifiers == {"x": "y"}
-        explainer.interval_plugin_identifiers = {"z": "w"}
-        assert plugin_manager.interval_plugin_identifiers == {"z": "w"}
-
-        plugin_manager.interval_context_metadata = {"x": {"y": 1}}
-        assert explainer.interval_context_metadata == {"x": {"y": 1}}
-        explainer.interval_context_metadata = {"z": {"w": 2}}
-        assert plugin_manager.interval_context_metadata == {"z": {"w": 2}}
+    for name in (
+        "build_plot_style_chain",
+        "instantiate_plugin",
+        "invoke_explanation_plugin",
+        "ensure_interval_runtime_state",
+        "gather_interval_hints",
+        "interval_plugin_hints",
+        "interval_plugin_fallbacks",
+        "explanation_plugin_overrides",
+        "interval_plugin_override",
+        "fast_interval_plugin_override",
+        "plot_style_override",
+        "interval_preferred_identifier",
+        "telemetry_interval_sources",
+        "interval_plugin_identifiers",
+        "interval_context_metadata",
+    ):
+        assert not hasattr(explainer, name)
 
     explainer.plot_plugin_fallbacks = {"plot": ("fallback",)}
-    assert plugin_manager.plot_plugin_fallbacks == {"plot": ("fallback",)}
+    assert explainer.plugin_manager.plot_plugin_fallbacks == {"plot": ("fallback",)}
 
     explainer.explanation_plugin_instances = {"plugin": object()}
-    assert plugin_manager.explanation_plugin_instances == explainer.explanation_plugin_instances
-
-    explainer.interval_plugin_override = "override"
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        assert explainer.interval_plugin_override == "override"
-
-    explainer.fast_interval_plugin_override = "fast"
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        assert explainer.fast_interval_plugin_override == "fast"
+    assert (
+        explainer.plugin_manager.explanation_plugin_instances
+        == explainer.explanation_plugin_instances
+    )
 
     explainer.initialized = True
     assert explainer.is_initialized is True
 
     explainer.parallel_executor = MagicMock()
     explainer.predict_bridge = MagicMock()
+
+
+def test_constructor_reject_initialization_uses_orchestrator_path(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_learner,
+):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
+    x_cal = np.array([[1, 2], [2, 3]])
+    y_cal = np.array([0, 1])
+
+    explainer = CalibratedExplainer(
+        mock_learner,
+        x_cal,
+        y_cal,
+        mode="classification",
+        reject=True,
+    )
+
+    explainer.plugin_manager.initialize_orchestrators.assert_called()
+    explainer.reject_orchestrator.initialize_reject_learner.assert_called_with(
+        calibration_set=None,
+        threshold=None,
+        ncf=None,
+        w=0.5,
+    )
+
+
+def test_invalid_features_to_ignore_falls_back_to_constant_features(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_learner,
+    mock_identify_constant_features,
+):
+    monkeypatch.delenv("CE_DEPRECATIONS", raising=False)
+    mock_identify_constant_features.return_value = np.asarray([1])
+
+    explainer = CalibratedExplainer(
+        mock_learner,
+        np.array([[1, 2], [2, 3]]),
+        np.array([0, 1]),
+        mode="classification",
+        features_to_ignore=["not-an-int"],
+    )
+
+    assert explainer.features_to_ignore == [1]
 
 
 def test_enable_fast_mode_resets_on_error(mock_learner):
@@ -230,15 +236,13 @@ def test_additional_coverage(monkeypatch: pytest.MonkeyPatch, mock_learner, mock
     # properties
     explainer.plugin_manager = mock_plugin_manager
     _ = explainer.plot_plugin_fallbacks
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        _ = explainer.plot_style_override
     _ = explainer.explanation_plugin_instances
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        _ = explainer.explanation_plugin_overrides
-        _ = explainer.interval_plugin_override
-        _ = explainer.plot_style_override
+    for removed_alias in (
+        "plot_style_override",
+        "explanation_plugin_overrides",
+        "interval_plugin_override",
+    ):
+        assert not hasattr(explainer, removed_alias)
     _ = explainer.shap_helper
     _ = explainer.feature_filter_per_instance_ignore
     _ = explainer.runtime_telemetry

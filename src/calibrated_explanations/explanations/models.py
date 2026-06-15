@@ -9,10 +9,13 @@ See ADR-008 for rationale.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 import numpy as np
+
+_log = logging.getLogger(__name__)
 
 VALID_EXPLANATION_TYPES = {"alternative", "factual", "fast"}
 
@@ -67,7 +70,7 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
             features_list = rules_block.get("feature", [])
             raw_feat = features_list[i] if i < len(features_list) else i
             if isinstance(raw_feat, (list, tuple, np.ndarray)):
-                feat = list(raw_feat)
+                feat = tuple(raw_feat)
             else:
                 feat = int(raw_feat)
 
@@ -84,9 +87,21 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
                     KeyError,
                     TypeError,
                     AttributeError,
-                ):  # ADR002_ALLOW: tolerance for ragged arrays.  # pragma: no cover
+                ):  # ADR002_ALLOW: tolerance for ragged arrays.
                     if len(arr) > 0:
+                        _log.debug(
+                            "_safe_pick: index %d out of range for array of length %d; "
+                            "endpoint duplication detected — ragged feature/weight arrays "
+                            "in legacy payload (ADR-008 gap 5)",
+                            idx,
+                            len(arr),
+                        )
                         return arr[-1]
+                    _log.debug(
+                        "_safe_pick: index %d requested but array is empty; returning None "
+                        "(empty feature/weight array in legacy payload)",
+                        idx,
+                    )
                     return None
 
             weight_map = {k: _safe_pick(v, i) for k, v in weights_src.items()}

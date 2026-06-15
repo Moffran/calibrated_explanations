@@ -127,6 +127,76 @@ jobs:
       install-mode: core
       test-command: pytest -q -m "not viz" --no-cov
 
+  uv-install-smoke:
+    name: uv install smoke and timing
+    needs: [lint]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.11'
+      - name: Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            requirements.txt
+            constraints.txt
+      - name: Compare pip and uv install timing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/ci
+
+          python -m venv .venv-pip
+          python -m venv .venv-uv
+
+          pip_start=$(date +%s)
+          .venv-pip/bin/python -m pip install -e '.[dev]' -c constraints.txt
+          pip_seconds=$(( $(date +%s) - pip_start ))
+
+          uv_start=$(date +%s)
+          uv pip install --python .venv-uv/bin/python -e '.[dev]' -c constraints.txt
+          uv_seconds=$(( $(date +%s) - uv_start ))
+
+          {
+            echo "pip_install_seconds=$pip_seconds"
+            echo "uv_install_seconds=$uv_seconds"
+          } | tee reports/ci/uv_install_timing.txt
+
+          {
+            echo "### uv install timing"
+            echo ""
+            echo "| installer | elapsed seconds |"
+            echo "| --- | ---: |"
+            echo "| pip | $pip_seconds |"
+            echo "| uv pip | $uv_seconds |"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Public API smoke after uv install
+        shell: bash
+        run: |
+          .venv-uv/bin/python - <<'PY'
+          from importlib.metadata import version
+
+          import calibrated_explanations
+          from calibrated_explanations import WrapCalibratedExplainer
+
+          print("calibrated_explanations module:", calibrated_explanations.__name__)
+          print("WrapCalibratedExplainer:", WrapCalibratedExplainer.__name__)
+          print("installed version:", version("calibrated-explanations"))
+          PY
+      - name: Upload uv install timing
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: uv-install-timing
+          path: reports/ci/uv_install_timing.txt
+
   private-member-scan:
     needs: [lint]
     runs-on: ubuntu-latest
