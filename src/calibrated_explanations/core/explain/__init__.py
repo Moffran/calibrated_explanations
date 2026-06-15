@@ -31,6 +31,7 @@ def explain(*args, **kwargs):
         "use CalibratedExplainer.explain_factual instead.",
         key="core.explain.explain",
         stacklevel=2,
+        raise_on_error=False,
     )
     from ._legacy_explain import explain as _legacy_explain
 

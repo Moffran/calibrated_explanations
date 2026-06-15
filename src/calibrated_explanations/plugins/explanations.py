@@ -141,6 +141,7 @@ class ExplainerHandle:
             "access bypasses PredictBridge invariants.",
             key="plugin:ExplainerHandle.learner",
             stacklevel=2,
+            raise_on_error=False,
         )
         return self._explainer.learner
 

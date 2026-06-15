@@ -452,6 +452,7 @@ class ParallelExecutor:
                 "Set an explicit strategy: 'sequential', 'threads', 'processes', or 'joblib'.",
                 key="parallel:strategy=auto:enabled",
                 stacklevel=3,
+                raise_on_error=False,
             )
         if strategy == "auto":
             strategy = self._auto_strategy(work_items=work_items)

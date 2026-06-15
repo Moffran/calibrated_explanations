@@ -93,6 +93,7 @@ def coerce_normalization_strategy(value: Any) -> NormalizationStrategy:
                 "The new default is NormalizationStrategy.SIMPLEX.",
                 key="normalize_true_bool",
                 stacklevel=3,
+                raise_on_error=False,
             )
             return NormalizationStrategy.COHERENCE
         deprecate(
@@ -100,6 +101,7 @@ def coerce_normalization_strategy(value: Any) -> NormalizationStrategy:
             "Use normalization=NormalizationStrategy.NONE (or 'none') instead.",
             key="normalize_false_bool",
             stacklevel=3,
+            raise_on_error=False,
         )
         return NormalizationStrategy.NONE
     if isinstance(value, str):

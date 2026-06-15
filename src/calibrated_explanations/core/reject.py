@@ -37,6 +37,7 @@ if _emitted_warning:
         "import from calibrated_explanations.core.reject.policy instead.",
         key="core.reject.module_shim",
         stacklevel=2,
+        raise_on_error=False,
     )
 
 __all__ = ["RejectPolicy", "is_policy_enabled"]
