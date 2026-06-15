@@ -313,7 +313,7 @@ def _write_adr030_timing_report(records: list[dict[str, object]], started_at: fl
         "steps": records,
         "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
     }
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
 def _active_deprecation_rows(ledger_path: Path) -> list[dict[str, str]]:
@@ -349,22 +349,44 @@ def _active_deprecation_rows(ledger_path: Path) -> list[dict[str, str]]:
     return rows
 
 
+def _is_permitted_active_deprecation(row: dict[str, str]) -> bool:
+    """Return True if an active deprecation row is permitted at the v0.11.3 milestone boundary.
+
+    Rows whose removal_eta is exactly ``v1.0.0`` are intentional next-major deprecations
+    (e.g. the Task-17 guarded-API taxonomy entries) and do not block milestone closure.
+    All other ETAs — v0.x, v1.0.0-rc, slash-delimited targets that include a pre-v1.0.0
+    milestone — are blocking.
+    """
+    return row["removal_eta"].strip() == "v1.0.0"
+
+
 def _write_active_deprecations_report(rows: list[dict[str, str]], output_path: Path) -> int:
-    """Write the active-deprecation ledger artifact and return its gate code."""
+    """Write the active-deprecation ledger artifact and return its gate code.
+
+    Rows targeting exactly ``v1.0.0`` are permitted as intentional next-major deprecations
+    and do not contribute to the failure count.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    blocking = [r for r in rows if not _is_permitted_active_deprecation(r)]
+    permitted = [r for r in rows if _is_permitted_active_deprecation(r)]
     payload = {
         "schema_version": 1,
         "generated_at": _utc_now_iso(),
-        "status": "pass" if not rows else "fail",
+        "status": "pass" if not blocking else "fail",
         "active_rows_count": len(rows),
-        "active_symbols": [row["deprecated_symbol"] for row in rows],
+        "blocking_rows_count": len(blocking),
+        "permitted_rows_count": len(permitted),
+        "blocking_symbols": [r["deprecated_symbol"] for r in blocking],
+        "permitted_symbols": [r["deprecated_symbol"] for r in permitted],
     }
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
-    if rows:
-        print("ERROR: Active deprecations remain in docs/migration/deprecations.md:")
-        for row in rows:
-            print(f"  {row['deprecated_symbol']}")
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    if blocking:
+        print("ERROR: Blocking active deprecations remain in docs/migration/deprecations.md:")
+        for row in blocking:
+            print(f"  {row['deprecated_symbol']} (ETA: {row['removal_eta']})")
         return 1
+    if permitted:
+        print(f"INFO: {len(permitted)} active deprecation(s) targeting v1.0.0 are permitted at this milestone boundary.")
     return 0
 
 
@@ -383,7 +405,7 @@ def _write_deprecation_closure_timing_report(
         "steps": records,
         "total_elapsed_seconds": round(time.monotonic() - started_at, 3),
     }
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8", newline="\n")
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
 def deprecation_closure_steps() -> list[Step]:

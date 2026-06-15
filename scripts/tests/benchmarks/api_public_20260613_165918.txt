@@ -1,0 +1,10 @@
+# Public API snapshot for calibrated_explanations @ 20260613_165918 UTC
+# Root package exports:
+CalibratedExplainer
+ExplainerBuilder
+ExplainerConfig
+GuardedOptions
+NormalizationStrategy
+RejectPolicySpec
+WrapCalibratedExplainer
+transform_to_numeric

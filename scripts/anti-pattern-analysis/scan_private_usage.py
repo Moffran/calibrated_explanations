@@ -94,6 +94,15 @@ def scan_workspace(root_path, analysis_data):
 
         rel_path = str(p.relative_to(root))
 
+        # Collect names defined locally in this file (functions, classes, assigned
+        # variables) so that calls to local helpers like `_helper()` are not flagged
+        # as private-member accesses — they are test-internal organization.
+        locally_defined = {
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        }
+
         for node in ast.walk(tree):
             name = None
             type_str = ""
@@ -107,6 +116,7 @@ def scan_workspace(root_path, analysis_data):
                 and node.func.id.startswith("_")
                 and not node.func.id.startswith("__")
                 and node.func.id != "_"
+                and node.func.id not in locally_defined
             ):
                 name = node.func.id
                 type_str = "function_call"

@@ -50,7 +50,6 @@ _ENTRYPOINT_GROUP = "calibrated_explanations.plugins"
 _ENV_TRUST_CACHE: set[str] | None = None
 _PYPROJECT_TRUST_CACHE: set[str] | None = None
 _WARNED_UNTRUSTED: set[str] = set()
-_WARNED_MISSING_MODALITIES_ENTRYPOINTS: set[str] = set()
 _LAST_DISCOVERY_REPORT: "PluginDiscoveryReport | None" = None
 
 _LOGGER = logging.getLogger("calibrated_explanations.governance.registry")
@@ -1828,22 +1827,17 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             )
             continue
 
-        if (
-            isinstance(raw_meta, Mapping)
-            and "data_modalities" not in raw_meta
-            and identifier not in _WARNED_MISSING_MODALITIES_ENTRYPOINTS
-        ):
+        if isinstance(raw_meta, Mapping) and "data_modalities" not in raw_meta:
             warnings.warn(
-                f"Plugin '{identifier}' does not declare 'data_modalities'; defaulting to "
-                "('tabular',). Explicit declaration will be required in v0.12.0/v1.0.0-rc.",
-                DeprecationWarning,
+                f"Plugin '{identifier}' does not declare required 'data_modalities'; skipping.",
+                UserWarning,
                 stacklevel=2,
             )
-            _LOGGER.info(
-                "Entry-point plugin %r missing 'data_modalities'; defaulting to ('tabular',).",
+            _LOGGER.warning(
+                "Entry-point plugin %r missing required 'data_modalities'; skipping.",
                 identifier,
             )
-            _WARNED_MISSING_MODALITIES_ENTRYPOINTS.add(identifier)
+            continue
 
         meta: Dict[str, Any] = dict(raw_meta)
         try:

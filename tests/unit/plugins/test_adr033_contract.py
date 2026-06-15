@@ -284,7 +284,9 @@ def test_cli_list_modality_filter_invalid_token():
     assert exc_info.value.code == 1
 
 
-def test_deprecation_warning_on_plugin_without_modality(monkeypatch):
+def test_plugin_without_modality_is_skipped_with_warning(monkeypatch):
+    """Entry-point plugin missing 'data_modalities' is skipped with UserWarning (fail-closed)."""
+
     class EntryPointPlugin:
         plugin_meta = {
             "schema_version": 1,
@@ -327,14 +329,16 @@ def test_deprecation_warning_on_plugin_without_modality(monkeypatch):
         lambda: EntryPoints(),
     )
 
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"tests\.modality:EntryPointPlugin.*does not declare 'data_modalities'",
-    ):
-        load_entrypoint_plugins(include_untrusted=True)
+    with pytest.warns(UserWarning, match=r"does not declare required 'data_modalities'"):
+        result = load_entrypoint_plugins(include_untrusted=True)
+
+    loaded_names = [d.identifier for d in result] if result else []
+    assert "tests.modality.entrypoint.no_modality" not in loaded_names
 
 
-def test_deprecation_warning_on_plugin_without_modality_emitted_once_per_identifier(monkeypatch):
+def test_plugin_without_modality_skipped_on_every_discovery(monkeypatch):
+    """Plugin missing 'data_modalities' is skipped with UserWarning on each discovery call."""
+
     class EntryPointPlugin:
         plugin_meta = {
             "schema_version": 1,
@@ -378,17 +382,17 @@ def test_deprecation_warning_on_plugin_without_modality_emitted_once_per_identif
     )
 
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
+        warnings.simplefilter("always", UserWarning)
         load_entrypoint_plugins(include_untrusted=True)
         load_entrypoint_plugins(include_untrusted=True)
 
-    deprecation_messages = [
-        warning
-        for warning in caught
-        if issubclass(warning.category, DeprecationWarning)
-        and "does not declare 'data_modalities'" in str(warning.message)
+    skip_messages = [
+        w
+        for w in caught
+        if issubclass(w.category, UserWarning)
+        and "does not declare required 'data_modalities'" in str(w.message)
     ]
-    assert len(deprecation_messages) == 1
+    assert len(skip_messages) == 2
 
 
 def test_find_explanation_plugin_for_accepts_alias():

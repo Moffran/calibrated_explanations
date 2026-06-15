@@ -39,6 +39,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 # Core imports (no cross-sibling dependencies)
 from ..calibration.interval_wrappers import is_fast_interval_collection
 from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
+from ..utils.deprecations import deprecate
 
 from ..utils.exceptions import (
     DataShapeError,
@@ -1487,6 +1488,17 @@ class CalibratedExplainer:
             or ``RejectPolicySpec.only_rejected()``.  When active, the return
             type is :class:`~calibrated_explanations.explanations.reject.RejectCalibratedExplanations`
             rather than :class:`.CalibratedExplanations`.
+        multi_labels_enabled : bool, default=False
+            **[EXPERIMENTAL]** When ``True``, generates one explanation per class for
+            multi-class problems (3+ classes). Passed via ``**kwargs``. This parameter
+            surface is under active development; its signature will be promoted to an
+            explicit typed argument before graduation out of experimental status.
+            Unknown additional kwargs are forwarded to the explanation plugin and
+            silently ignored if not recognised (ADR-038 §3 experimental exception).
+        interval_summary : str or None, default=None
+            **[EXPERIMENTAL]** Controls the interval summary mode forwarded to the
+            explanation plugin. Passed via ``**kwargs``. Subject to the same
+            experimental-graduation constraint as ``multi_labels_enabled``.
         **kwargs : dict
             **[EXPERIMENTAL, Deprecated]** When ``guarded=True``, loose guard tuning
             parameters (``significance``, ``n_neighbors``, ``normalize_guard``,
@@ -1504,10 +1516,11 @@ class CalibratedExplainer:
         """
         if guarded_options is not None or guarded:
             if guarded and guarded_options is None:
-                warnings.warn(
+                deprecate(
                     "guarded=True is deprecated; use guarded_options=GuardedOptions() instead.",
-                    DeprecationWarning,
+                    key="guarded_true_boolean_kwarg",
                     stacklevel=2,
+                    raise_on_error=False,
                 )
             if not _use_plugin and kwargs.get("verbose", False):
                 warnings.warn(
@@ -1600,6 +1613,17 @@ class CalibratedExplainer:
             or ``RejectPolicySpec.only_rejected()``.  When active, the return
             type is :class:`~calibrated_explanations.explanations.reject.RejectAlternativeExplanations`
             rather than :class:`.AlternativeExplanations`.
+        multi_labels_enabled : bool, default=False
+            **[EXPERIMENTAL]** When ``True``, generates one explanation per class for
+            multi-class problems (3+ classes). Passed via ``**kwargs``. This parameter
+            surface is under active development; its signature will be promoted to an
+            explicit typed argument before graduation out of experimental status.
+            Unknown additional kwargs are forwarded to the explanation plugin and
+            silently ignored if not recognised (ADR-038 §3 experimental exception).
+        interval_summary : str or None, default=None
+            **[EXPERIMENTAL]** Controls the interval summary mode forwarded to the
+            explanation plugin. Passed via ``**kwargs``. Subject to the same
+            experimental-graduation constraint as ``multi_labels_enabled``.
         **kwargs : dict
             **[EXPERIMENTAL, Deprecated]** Loose guard tuning parameters accepted for
             backwards compatibility when ``guarded=True``. Use ``guarded_options=GuardedOptions(...)``
@@ -1619,10 +1643,11 @@ class CalibratedExplainer:
         """
         if guarded_options is not None or guarded:
             if guarded and guarded_options is None:
-                warnings.warn(
+                deprecate(
                     "guarded=True is deprecated; use guarded_options=GuardedOptions() instead.",
-                    DeprecationWarning,
+                    key="guarded_true_boolean_kwarg",
                     stacklevel=2,
+                    raise_on_error=False,
                 )
             if not _use_plugin and kwargs.get("verbose", False):
                 warnings.warn(

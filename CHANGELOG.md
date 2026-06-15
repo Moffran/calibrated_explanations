@@ -1,9 +1,9 @@
 <!-- markdownlint-disable-file -->
 # Changelog
 
-## [Unreleased]
+## [0.11.3] - 2026-06-15
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...v0.11.3)
 
 ### Breaking changes (v0.11.3)
 
@@ -140,6 +140,11 @@
 - **ADR-011 Group L closure (v0.11.3 Task 5):** Closed the remaining reject-envelope deprecation blocker via reset path. Removed the active `deprecate()` warning in `reject_result_v2_to_legacy()` that targeted v1.0.0-rc, kept `RejectResult` as the stable v1.0.0 public return type, retained `RejectResultV2` as an opt-in strict schema, and updated reject tests/docs/ADR-029 accordingly.
 - **Optional uv contributor workflow (v0.11.3 Task 7):** Added an optional `uv pip install -e .[dev] -c constraints.txt` contributor fast path, introduced a pinned `uv-install-smoke` PR lane that compares pip and uv install timing without replacing existing pip-based CI, and removed stale `uv.lock` so no unvalidated lockfile appears authoritative.
 - **Windows install-smoke wheel hardening:** Updated `uv-install-smoke` to provision CI-aligned Python 3.11 virtualenvs via `uv venv` and require binary wheels for `numpy`, `scipy`, and `scikit-learn` so local host-Python drift (for example, 3.14) does not trigger compiler-dependent source builds. Relaxed the Python >=3.13 NumPy constraint to `numpy>=2.1.2` to avoid over-constraining newer interpreter resolution.
+- **Parameter naming consistency hardening (v0.11.3 Task 14):** Added `scripts/quality/check_parameter_naming.py` (CI-blocking gate against re-introduction of banned aliases `alpha`/`alphas`); inline documentation of the `threshold`→`y_threshold` internal rename in `IntervalRegressor.predict_probability`; consistent numpydoc `confidence`, `confidence_level`, and `significance` parameter cross-references; and a canonical parameter reference page at `docs/foundations/concepts/parameter-reference.md`.
+- **ADR gap closure sweep (v0.11.3 Task 15):** Closed six ADR gaps identified in the 2026-06-11 full sweep: (1) ADR-011 — active-deprecations ledger rebuilt with 9 correctly filed rows, `make deprecation-closure` passes (0 blocking); three raw `warnings.warn(DeprecationWarning)` bypass sites in `normalization_strategy.py`, `core/reject.py`, and `core/explain/__init__.py` migrated to `deprecate()` helper; (2) ADR-028/STD-005 — `api/config.py:265` warning site classified, `check_warning_policy.py` reports 0 UNCLASSIFIED; (3) ADR-032 — `get_guarded_audit` error message corrected to recommend `explain_factual(..., guarded_options=GuardedOptions())`; (4) ADR-036 — `validate_plot_artifact()` inserted at both build/render pipeline boundaries (`plotting.py:387`, `:439`); (5) ADR-037 — `plot_kinds`/`plot_modes` metadata declared on all four built-in plugin descriptors and validated by `validate_plugin_meta`; (6) ADR-034 — status-source conflict resolved (Open Items now document post-v1.0 deferral rationale).
+- **Dependency constraint minimization (v0.11.3 Task 16):** Removed four stale `constraints.txt` lines: `numpy<2` cap for Python < 3.13 (CE has no NumPy 2.x removed aliases; 2.4.4 passes all tests) and exact `scikit-learn==` pins (asymmetric wheel-availability artefact, not a CE requirement). Declared minimums in `pyproject.toml` (`numpy>=1.24`, `scikit-learn>=1.3`) are unchanged and were confirmed correct against sklearn 1.5.2–1.9.0 across Python 3.10–3.14.
+- **Call-time configuration taxonomy (v0.11.3 Task 17):** Accepted ADR-038. Introduced `GuardedOptions` frozen dataclass and `reject_confidence` qualified kwarg. Added four-tier taxonomy (`Options`/`Config`/`Spec`/plain kwargs) documented in ADR-038 §1. Added `[EXPERIMENTAL]` markers to `**kwargs` surfaces on `explain_factual`/`explore_alternatives`.
+- **ADR-011 compliance follow-up (2026-06-15):** Migrated two remaining raw `warnings.warn(DeprecationWarning)` sites in `core/calibrated_explainer.py` (the `guarded=True` boolean kwarg path in `explain_factual` and `explore_alternatives`) to `deprecate(key="guarded_true_boolean_kwarg", raise_on_error=False)`. `raise_on_error=False` is correct for user-facing deprecated kwargs so `pytest.warns(DeprecationWarning)` captures the warning even when `CE_DEPRECATIONS=error` is set.
 
 ## [v0.11.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.2) - 2026-05-12
 

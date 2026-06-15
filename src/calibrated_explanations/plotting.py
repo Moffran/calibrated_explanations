@@ -305,7 +305,7 @@ def _warn_and_log_plotspec_fallback(message: str) -> None:
     warnings.warn(message, UserWarning, stacklevel=2)
 
 
-def _validate_plot_artifact(artifact: Any, *, identifier: str) -> None:
+def validate_plot_artifact(artifact: Any, *, identifier: str) -> None:
     """ADR-036 §5: validate canonical PlotSpec artifacts before renderer invocation.
 
     Accepts canonical PlotSpec dataclasses and dicts that pass validate_plotspec.
@@ -384,7 +384,7 @@ def _render_instance_plot_plugin(
         plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
-    _validate_plot_artifact(artifact, identifier=identifier)
+    validate_plot_artifact(artifact, identifier=identifier)
     return plugin.render(artifact, context=context)
 
 
@@ -436,7 +436,7 @@ def _render_collection_plot_plugin(
         plugin_config=_bind_plot_plugin_config(manager, identifier, plugin),
     )
     artifact = plugin.build(context)
-    _validate_plot_artifact(artifact, identifier=identifier)
+    validate_plot_artifact(artifact, identifier=identifier)
     return plugin.render(artifact, context=context)
 
 

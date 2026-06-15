@@ -2059,7 +2059,7 @@ class FactualExplanation(CalibratedExplanation):
         _dedupe_by_feature_only : bool
             Deduplicate by feature index only, ignoring sampled values
             (default ``True``).
-        raise_on_predict_error : bool
+        _raise_on_predict_error : bool
             Re-raise prediction exceptions instead of silently skipping
             (default ``False``).
         _fallback_to_legacy_on_zero : bool
@@ -2081,7 +2081,7 @@ class FactualExplanation(CalibratedExplanation):
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
         dedupe_by_feature_only = kwargs.get("_dedupe_by_feature_only", True)
-        raise_on_predict_error = kwargs.get("raise_on_predict_error", False)
+        _raise_on_predict_error = kwargs.get("_raise_on_predict_error", False)
 
         if max_rule_size >= 4 and not use_batched:
             from ..utils.exceptions import ConfigurationError
@@ -2260,7 +2260,7 @@ class FactualExplanation(CalibratedExplanation):
                         RuntimeError,
                         Exception,  # adr002_allow - defensive guard for predict_conjunctive failures
                     ) as e:
-                        if raise_on_predict_error:
+                        if _raise_on_predict_error:
                             raise
                         stats["skipped"]["predict_error"] += 1
                         if len(stats["predict_errors"]) < max_logged_errors:
@@ -3544,7 +3544,7 @@ class AlternativeExplanation(CalibratedExplanation):
             Whether to rank-filter outer loop candidates.
         _dedupe_by_feature_only : bool, default True
             Deduplication strategy for conjunctions.
-        raise_on_predict_error : bool, default False
+        _raise_on_predict_error : bool, default False
             Whether to surface prediction errors.
         _fallback_to_legacy_on_zero : bool, default False
             Whether to fall back to legacy on zero created.
@@ -3567,7 +3567,7 @@ class AlternativeExplanation(CalibratedExplanation):
         use_batched = kwargs.get("_use_batched", True)
         limit_outer_to_ranked = kwargs.get("_limit_outer_to_ranked", False)
         dedupe_by_feature_only = kwargs.get("_dedupe_by_feature_only", True)
-        raise_on_predict_error = kwargs.get("raise_on_predict_error", False)
+        _raise_on_predict_error = kwargs.get("_raise_on_predict_error", False)
         _MAX_LOGGED_ERRORS = 5  # noqa: N806
         if max_rule_size >= 4 and not use_batched:
             from ..utils.exceptions import ConfigurationError
@@ -3747,7 +3747,7 @@ class AlternativeExplanation(CalibratedExplanation):
                             use_batched=use_batched,
                         )
                     except (CalibratedError, ValueError, TypeError, RuntimeError) as e:
-                        if raise_on_predict_error:
+                        if _raise_on_predict_error:
                             raise
                         stats["skipped"]["predict_error"] += 1
                         if len(stats["predict_errors"]) < _MAX_LOGGED_ERRORS:

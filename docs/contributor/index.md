@@ -26,6 +26,7 @@ Contributor-facing semantics references:
 
 plugin-contract
 notebook_policy
+performance_harness
 extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced

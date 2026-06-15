@@ -116,4 +116,4 @@ def test_should_fail_before_running_commands_when_active_deprecations_remain(
     assert rc == 1
     assert ledger["status"] == "fail"
     assert ledger["active_rows_count"] == 1
-    assert ledger["active_symbols"] == ["`old_api()`"]
+    assert ledger["blocking_symbols"] == ["`old_api()`"]

@@ -75,14 +75,14 @@ class _NonMappingBuilder:
 def test_plotspec_shaped_invalid_artifact_raises_before_render():
     """A PlotSpec-shaped artifact that fails validate_plotspec must raise ValidationError
     at the build/render boundary, not inside the renderer."""
-    from calibrated_explanations.plotting import _validate_plot_artifact
+    from calibrated_explanations.plotting import validate_plot_artifact
     from calibrated_explanations.utils.exceptions import ValidationError
 
     builder = _PlotSpecShapedBadBuilder()
     artifact = builder.build(context=None)
 
     with pytest.raises((ValidationError, Exception)) as exc_info:
-        _validate_plot_artifact(artifact, identifier="test.bad_plotspec_builder")
+        validate_plot_artifact(artifact, identifier="test.bad_plotspec_builder")
 
     # Error must mention the identifier for actionable debugging
     assert "test.bad_plotspec_builder" in str(exc_info.value) or exc_info.type.__name__ in (
@@ -93,18 +93,18 @@ def test_plotspec_shaped_invalid_artifact_raises_before_render():
 
 def test_non_plotspec_artifact_passes_through():
     """A non-PlotSpec-shaped artifact must not be validated and must pass through unchanged."""
-    from calibrated_explanations.plotting import _validate_plot_artifact
+    from calibrated_explanations.plotting import validate_plot_artifact
 
     builder = _GoodBuilder()
     artifact = builder.build(context=None)
-    # Must not raise
-    _validate_plot_artifact(artifact, identifier="test.good_builder")
+    validate_plot_artifact(artifact, identifier="test.good_builder")
+    assert artifact == {"context": None, "custom_payload": "ok"}
 
 
 def test_non_mapping_artifact_passes_through():
     """A non-mapping artifact must be ignored by the validation boundary."""
-    from calibrated_explanations.plotting import _validate_plot_artifact
+    from calibrated_explanations.plotting import validate_plot_artifact
 
-    _validate_plot_artifact("raw_string", identifier="test.non_mapping_builder")
-    _validate_plot_artifact(None, identifier="test.null_builder")
-    _validate_plot_artifact(42, identifier="test.int_builder")
+    for value in ("raw_string", None, 42):
+        validate_plot_artifact(value, identifier="test.non_mapping_builder")
+    assert True  # no exception raised for non-mapping artifacts
