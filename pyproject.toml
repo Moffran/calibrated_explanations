@@ -116,6 +116,7 @@ markers = [
     "platform_dependent: marks tests that depend on platform-specific behavior (paths, system calls, etc.)",
 ]
 filterwarnings = [
+    "ignore:.*set_bad function will be deprecated.*:PendingDeprecationWarning",
     "error::DeprecationWarning",
     "error::PendingDeprecationWarning",
     "error::FutureWarning",
