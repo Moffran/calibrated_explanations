@@ -201,7 +201,8 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `normalize=True` / `normalize=False` bool kwarg to `NormalizationStrategy.coerce()` | `normalization=NormalizationStrategy.COHERENCE` / `normalization=NormalizationStrategy.NONE` | v0.11.x | v1.0.0 | Bool passthrough removed; use enum or string value. |
 | `calibrated_explanations.core.reject` module import path | `from calibrated_explanations.core.reject.policy import RejectPolicy, is_policy_enabled` | v0.11.x | v1.0.0 | Module shim; functionality moved to `core.reject.policy`. |
 | `calibrated_explanations.core.explain.explain(...)` function | `CalibratedExplainer.explain_factual(...)` | v0.11.x | v1.0.0 | Legacy explain function shim. |
-| Entry-point plugin missing `data_modalities` key (defaults to `('tabular',)`) | Declare `data_modalities` explicitly in plugin metadata | v0.11.x | v0.12.0/v1.0.0-rc | ADR-033-governed; emits `DeprecationWarning` via `plugins/registry.py`; deduped per plugin identifier. |
+| `ExplainerHandle.learner` property | `handle.predict()` | v0.11.3 | v1.0.0 | Returns raw underlying model; bypasses all `PredictBridge` invariants (shape checks, calibration state, trust-model enforcement). Plugin predictions must go through `handle.predict()`. ADR-015 gap 2. |
+| `ParallelConfig(strategy='auto')` with `enabled=True` | Pass an explicit strategy: `'sequential'`, `'threads'`, `'processes'`, or `'joblib'` | v0.11.3 | v1.0.0 | Silent heuristic backend selection violates ADR-004 §Decision ("callers must explicitly pass an executor"). `enabled=False` (the default) is unaffected. ADR-004. |
 
 ### Removed deprecations (history)
 
@@ -258,6 +259,7 @@ Symbols listed here have been deleted. Any remaining usage will raise `Attribute
 | `CalibratedExplainer.explore_guarded_alternatives(...)` | `explainer.explore_alternatives(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same. |
 | `WrapCalibratedExplainer.explain_guarded_factual(...)` | `wrapper.explain_factual(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same — wrapper delegates to `explain_factual(guarded_options=...)`. |
 | `WrapCalibratedExplainer.explore_guarded_alternatives(...)` | `wrapper.explore_alternatives(..., guarded_options=GuardedOptions())` | v0.11.3 | v0.11.3 | Same. |
+| Entry-point plugin missing `data_modalities` key | Declare `data_modalities` explicitly in plugin metadata | v0.11.x | v0.11.3 | Enforcement closed: missing key now emits `UserWarning` and skips the plugin (fail-closed). `DeprecationWarning`+default fallback path removed from `plugins/registry.py`. ADR-033-governed. |
 
 ## Breaking changes
 

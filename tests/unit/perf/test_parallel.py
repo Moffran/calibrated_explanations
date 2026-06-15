@@ -107,7 +107,8 @@ def test_resolve_strategy_variants(monkeypatch):
 
     config.strategy = "auto"
     monkeypatch.setattr(executor, "_auto_strategy", lambda **k: "threads")
-    assert executor.resolve_strategy().func.__name__ == "thread_strategy"
+    with pytest.warns(DeprecationWarning, match="strategy='auto'"):
+        assert executor.resolve_strategy().func.__name__ == "thread_strategy"
 
 
 def test_auto_strategy(monkeypatch):
@@ -759,3 +760,42 @@ def test_emit_reraises_non_exception_baseexception() -> None:
     executor = ParallelExecutor(ParallelConfig(enabled=True, telemetry=broken))
     with pytest.raises(KeyboardInterrupt):
         executor.emit("event", {"k": 1})
+
+
+def test_should_emit_deprecation_when_strategy_auto_and_enabled():
+    """ParallelConfig(strategy='auto') with enabled=True must emit DeprecationWarning (ADR-004, Gap E)."""
+    executor = ParallelExecutor(ParallelConfig(enabled=True, strategy="auto"))
+    with pytest.warns(DeprecationWarning, match="strategy='auto'"):
+        executor.resolve_strategy(work_items=10)
+
+
+def test_should_not_emit_deprecation_when_explicit_strategy_and_enabled():
+    """Explicit strategy with enabled=True must NOT emit DeprecationWarning (ADR-004, Gap E)."""
+    import warnings
+
+    executor = ParallelExecutor(ParallelConfig(enabled=True, strategy="sequential"))
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        executor.resolve_strategy(work_items=10)
+    deprecations = [
+        w
+        for w in record
+        if issubclass(w.category, DeprecationWarning) and "strategy='auto'" in str(w.message)
+    ]
+    assert not deprecations
+
+
+def test_should_not_emit_deprecation_when_enabled_false():
+    """ParallelConfig(enabled=False) must NOT emit DeprecationWarning regardless of strategy (ADR-004, Gap E)."""
+    import warnings
+
+    executor = ParallelExecutor(ParallelConfig(enabled=False, strategy="auto"))
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        executor.resolve_strategy(work_items=10)
+    deprecations = [
+        w
+        for w in record
+        if issubclass(w.category, DeprecationWarning) and "strategy='auto'" in str(w.message)
+    ]
+    assert not deprecations

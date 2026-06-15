@@ -598,6 +598,19 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
   stale `uv.lock` removal, a pinned `uv-install-smoke` PR lane, and local timing
   evidence (`pip_install_seconds=209`, `uv_install_seconds=53`).
 
+  **Milestone closure — 2026-06-13:** v0.11.3 is complete. All 18 tasks implemented and verified. Key closures: Standard-001 shim removal (Task 1), Standard-002 numpydoc gap (Task 2), ADR-030 zero-tolerance ratification (Task 3), full deprecation ledger closure including `data_modalities` fail-closed enforcement (Tasks 5, 15, 17, 18), PlotSpec default promotion (Task 6), `uv` workflow support (Task 7), reject hardening (Tasks 8, 11), config management contract (Task 10), RC upgrade checklist and safe-defaults guide (Task 12), guarded explanation parameterization (Task 13), parameter naming CI guard (Task 14), ADR gap closure sweep (Task 15), constraint minimization (Task 16), call-time configuration taxonomy `GuardedOptions`/`reject_confidence` (Task 17), release preparation (Task 18). Gates: `make local-checks-pr` ✅, `make deprecation-closure` ✅ (9 v1.0.0 permitted, 0 blocking), Sphinx strict build ✅, warning policy ✅ (0 unclassified), `uv-install-smoke` ✅. Version tagged: `0.11.3`. CHANGELOG converted. ADR/appendix rows closed. Next: v1.0.0-rc.
+
+**Known open implementation gaps — must be resolved before RC snapshot is taken.** These are pre-RC patch work (most likely v0.11.4), not RC validation tasks per the no-implementation posture above. Full gap details and resolution checklist tracked in `docs/improvement/v0.11.3_plan.md §15+) ADR gap closure: pre-RC implementation gaps (re-opened 2026-06-14)`. Summary:
+
+| Gap | ADR | Severity | Decision required |
+|-----|-----|----------|-------------------|
+| `strategy="auto"` silently selects backend when `enabled=True` | ADR-004 gap 1 | 9 | Deprecate `strategy="auto"` via ADR-011 cycle; require explicit strategy for v1.0.0 |
+| Domain model authority (3 sub-gaps) | ADR-008 gaps 1/2/3 | 20/14/12 | Scope decision: RC gate vs. post-v1.0 re-target |
+| `ExplainerHandle.learner` direct bypass | ADR-015 gap 2 | 8 | Restrict or document as escape hatch |
+| Unfrozen nested context fields | ADR-026 gap 1 | 6 | Freeze mapping-type fields or scope to post-v1.0 |
+| Docs HTML/linkcheck CI job unwired | ADR-012 | — | Wire `reusable-build-docs.yml` caller |
+
+
 ### v1.0.0-rc (release candidate readiness)
 
 <!-- Removed items (evidence in parentheses):
@@ -641,7 +654,6 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
    public API is frozen except for release-blocking defects.
 
 Release gate: Explanation Schema v1 frozen and compatibility statement published; wrap interface and exception taxonomy compatibility confirmed against v0.6.x; caching/parallel staging validation signed off and telemetry verified against v0.11.3 documentation; Standard-002 ≥90% verified; upgrade checklist present, accurate, and reviewed; deprecation ledger is empty (zero active deprecations; verified as closed by v0.11.3); RC package metadata is `Development Status :: 4 - Beta`; RC release notes state the public API freeze posture.
-
 ### v1.0.0 (stability declaration)
 
 <!-- Removed item #6 (Ratify ADR-030): moved to v0.11.3 so ratification informs RC readiness. -->
@@ -687,6 +699,61 @@ Release gate: Tagged release artifacts available; documentation hubs current and
   ADR-003/ADR-004 rollout notes as needed.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】
 - Evaluate additional renderer plugins (plotly) after verifying PlotSpec default
   adoption.
+- **`transform_to_numeric` root-namespace deprecation (v1.1+ ADR-011 cycle):**
+  `transform_to_numeric` is currently in `__all__` as a public API symbol.
+  Its core purpose (categorical-to-numeric encoding) is now largely covered by
+  `WrapCalibratedExplainer`'s `auto_encode` / `preprocessor` config and
+  `export_preprocessor_mapping()` / `import_preprocessor_mapping()`. Once the
+  `auto_encode='auto'` mapping-persistence path (ADR-009 pending item) is complete,
+  `transform_to_numeric` should be deprecated from the root namespace and moved to
+  `calibrated_explanations.utils` only, then removed in a v1.2+ cycle.
+  See ADR-009 §Implementation status for the full rationale and migration path.
+- **ADR-009 pending items — `auto_encode='auto'` path and unseen-category policy (v1.1+):**
+  The wrapper preprocessing surface decision (wrapper-only, core stays numeric) is implemented
+  and stable for v1.0.0. Two ADR-009 pending items remain open: the `auto_encode='auto'`
+  automatic encoding mode with deterministic mapping storage, and the unseen-category policy
+  behavior (`'error'` default / `'ignore'` opt-in) with documentation. These are the
+  prerequisite work before `transform_to_numeric` can be deprecated (see bullet above).
+  Target: v1.1+.
+- **ADR-029 — Reject strategy lifecycle hooks and full config surface (v1.1+):**
+  ADR-029 documents three lifecycle hooks (`pre_apply_hook`, `pre_emit_hook`, `post_emit_hook`)
+  and a full strategy configuration surface beyond the policy enum. These were deferred from
+  Task 8 (reject hardening) as research-dependent. The `RejectResult`→`RejectResultV2` public
+  API migration closed in v0.11.3 (Task 5 Group L); the hook surface and extended config are
+  post-v1.0 scope. A separate v1.1+ ADR or ADR-029 amendment is needed before implementation.
+- **ADR-029 / Task 8 — C3 reject scenario (research-dependent, v1.1+):**
+  The "C3" confidence-region reject scenario (non-singleton reject regions; probabilistic
+  reject boundaries) was documented in Task 8 planning but deferred: it requires upstream
+  research results before a stable API surface can be committed. Not a v1.0.0 gate.
+  Track under the ADR-029 lifecycle-hooks work above.
+- **ADR-033 — Timeseries modality (separate ADR needed, v1.1+):**
+  ADR-033 establishes the entry-point plugin modality contract (`data_modalities` key,
+  `('tabular',)` as the v1.0.0 baseline). Timeseries support requires a dedicated new ADR
+  covering data layout (rolling windows, indexing semantics), calibration applicability, and
+  plugin registration conventions. Explicitly out of scope for v1.0.0.
+- **ADR-034 — Governance-log sensitive-value redaction (v1.1+):**
+  ADR-034 item "sensitive-value redaction" was declared out of scope for v1.0.0 (comment in
+  RELEASE_PLAN_v1.md RC removed items). The current governance log emits raw config values;
+  redaction of secrets or PII from governance events needs a v1.1+ implementation pass with a
+  configurable redaction policy.
+- **ADR-034 — `export_effective()` full schema stability contract (v1.1+):**
+  `ResolvedConfigSnapshot.schema_version` is implemented, but the full guarantee that
+  `export_effective()` output is a stability-versioned, consumer-safe schema contract (not just
+  a diagnostic dump) has not been formalized. Requires a schema stability statement and a
+  breaking-change policy for `export_effective()` output format. Target: v1.1+.
+- **`multi_labels_enabled` / `interval_summary` — graduation from `**kwargs` to explicit typed surface (v1.1+):**
+  Both parameters are currently consumed from `**kwargs` in `explain_factual` and
+  `explore_alternatives` (documented as `[EXPERIMENTAL]` per ADR-038 §3). Before the
+  multi-label surface can leave experimental status, `multi_labels_enabled` and
+  `interval_summary` must be promoted to explicit keyword-only arguments and, if 3+
+  multi-label tuning parameters are bundled together, wrapped in a `MultiLabelOptions`
+  dataclass per ADR-038 §2c. The `**kwargs` forwarding path must be removed at that
+  point per ADR-038 §3 graduation gate.
+- **ADR-012 — sphinx-gallery adoption for executable example docs (v1.1+):**
+  Current docs pipeline uses `nbconvert` for notebook execution (nightly-advisory with
+  timeouts). ADR-012 identified `sphinx-gallery` as the preferred tool for executable,
+  gallery-style documentation examples. Adoption is deferred until after the docs HTML/linkcheck
+  CI job is wired (RC pre-condition above) and the v1.0.0 doc state is stable.
 
 ## Detailed status material relocation
 

@@ -282,6 +282,105 @@ class TestImmutablePluginHandles:
 
 
 # ==============================================================================
+# Gap C: ADR-026 context field freezing (unfrozen mutable containers)
+# ==============================================================================
+
+
+class TestExplanationContextMutableFieldFreezing:
+    """Verify that mutable containers passed to ExplanationContext are frozen (ADR-026 gap C)."""
+
+    def make_context(self, feature_names, categorical_features, helper_handles):
+        return ExplanationContext(
+            task="classification",
+            mode="factual",
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels={},
+            discretizer=None,
+            helper_handles=helper_handles,
+            predict_bridge=FakeBridge(),
+            interval_settings={},
+            plot_settings={},
+        )
+
+    def test_should_freeze_feature_names_list(self):
+        names = ["a", "b", "c"]
+        ctx = self.make_context(names, [], {})
+        names.append("d")
+        assert "d" not in ctx.feature_names
+
+    def test_should_freeze_categorical_features_list(self):
+        cats = [0, 2]
+        ctx = self.make_context(["x", "y", "z"], cats, {})
+        cats.append(5)
+        assert 5 not in ctx.categorical_features
+
+    def test_should_freeze_helper_handles_dict(self):
+        handles = {"h1": object()}
+        ctx = self.make_context(["x"], [], handles)
+        handles["h2"] = object()
+        assert "h2" not in ctx.helper_handles
+
+
+class TestIntervalCalibratorContextMutableFieldFreezing:
+    """Verify that mutable containers passed to IntervalCalibratorContext are frozen (ADR-026 gap C)."""
+
+    def make_context(self, **kwargs):
+        from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
+
+        defaults = {
+            "learner": None,
+            "calibration_splits": [],
+            "bins": {},
+            "residuals": {},
+            "difficulty": {},
+            "metadata": {},
+            "fast_flags": {},
+        }
+        defaults.update(kwargs)
+        return IntervalCalibratorContext(**defaults)
+
+    def test_should_freeze_calibration_splits_list(self):
+        splits = [1, 2, 3]
+        ctx = self.make_context(calibration_splits=splits)
+        splits.append(4)
+        assert 4 not in ctx.calibration_splits
+        assert isinstance(ctx.calibration_splits, tuple)
+
+    def test_should_freeze_bins_dict(self):
+        bins = {"k": "v"}
+        ctx = self.make_context(bins=bins)
+        bins["new"] = "x"
+        assert "new" not in ctx.bins
+        from types import MappingProxyType
+
+        assert isinstance(ctx.bins, MappingProxyType)
+
+    def test_should_freeze_residuals_dict(self):
+        residuals = {"r": 0.1}
+        ctx = self.make_context(residuals=residuals)
+        residuals["new"] = 9.9
+        assert "new" not in ctx.residuals
+
+    def test_should_freeze_difficulty_dict(self):
+        diff = {"d": 0.5}
+        ctx = self.make_context(difficulty=diff)
+        diff["extra"] = 1.0
+        assert "extra" not in ctx.difficulty
+
+    def test_should_freeze_fast_flags_dict(self):
+        flags = {"flag": True}
+        ctx = self.make_context(fast_flags=flags)
+        flags["new_flag"] = False
+        assert "new_flag" not in ctx.fast_flags
+
+    def test_should_keep_plugin_state_mutable(self):
+        ctx = self.make_context()
+        ctx.plugin_state["transient"] = 42
+        assert ctx.plugin_state["transient"] == 42
+
+
+# ==============================================================================
 # Integration Tests
 # ==============================================================================
 

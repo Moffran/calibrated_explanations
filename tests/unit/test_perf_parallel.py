@@ -100,7 +100,8 @@ class TestParallelExecutor:
             patch.object(ParallelExecutor, "_is_ci_environment", return_value=False),
             patch.object(ParallelExecutor, "get_cgroup_cpu_quota", return_value=None),
         ):
-            strategy = executor.resolve_strategy()
+            with pytest.warns(DeprecationWarning, match="strategy='auto'"):
+                strategy = executor.resolve_strategy()
             assert strategy.func == executor.joblib_strategy
 
     def test_joblib_missing_fallback(self, enable_fallbacks, caplog):

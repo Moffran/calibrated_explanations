@@ -233,6 +233,13 @@ jobs:
           path: |
             reports/over_testing/
 
+  docs-build:
+    needs: coverage-and-gates
+    uses: ./.github/workflows/reusable-build-docs.yml
+    with:
+      build-target: html
+      python-version: '3.11'
+
   private-member-scan:
     needs: coverage-and-gates
     runs-on: ubuntu-latest

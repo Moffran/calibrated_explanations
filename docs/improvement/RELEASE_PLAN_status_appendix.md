@@ -27,35 +27,35 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-004 | Partially complete | Only explicit `strategy="auto"` policy closure remains (v1.0.0-rc) |
 | ADR-005 | Completed (2026-06-11) | Last gap closed on code evidence: provenance propagates through both adapters (`explanations/adapters.py:36-41`, `:68`); `schema.validate_payload` and serialization invariants intact post-Task-1 |
 | ADR-006 | Completed | All v0.11.3 gaps closed: gap 3 superseded (Task 5 Group K); gap 2 closed 2026-06-02 (accepted-registration audit events added to all 4 typed registration functions); gap 1 carry-forward (monitor, no code gap) |
-| ADR-008 | Partially complete | v0.11.3 golden fixture tests and `_safe_pick` observability closed (gaps 4/5, 2026-06-02); domain-authoritative migration (gaps 1/2/3) remains v1.0.0-rc |
+| ADR-008 | Partially complete | v0.11.3 golden fixture tests and `_safe_pick` observability closed (gaps 4/5, 2026-06-02); stale coverage omit entries confirmed clean (pyproject.toml:144-153 checked 2026-06-13; no stale paths); domain-authoritative migration (gaps 1/2/3) remains v1.0.0-rc |
 | ADR-009 | Partially complete | JSON-safe export closed (gap 2, 2026-06-02); helper-placement gap 3 closed (Workstream B, 2026-06-02); wrapper/core surface decision in v1.0.0-rc |
 | ADR-010 | Completed | Core-only vs extras parity automation closed v0.11.3 (gap 1 closed 2026-06-02; `scripts/quality/check_core_extras_parity.py` added) |
-| ADR-011 | Reopened (2026-06-11) | New gaps: active-deprecations ledger empty/mis-filed while ≥7 active deprecation surfaces exist; raw `warnings.warn(DeprecationWarning)` sites bypass central `deprecate()`; Task-13 guarded-wrapper removal targeted "v1.0.0" conflicts with ADR-011 §2 binding rule. Scheduled in v0.11.3 plan Task 15 |
+| ADR-011 | Closed (2026-06-13) | All gaps resolved: (1) guarded-wrapper deprecations removed in Task 13 (not merely deferred); 9 Task-17 active surfaces target v1.0.0 — within ADR-011 §2 final-cycle allowance; (2) raw `warnings.warn(DeprecationWarning)` bypass sites fixed — `normalization_strategy.py`, `core/reject.py`, `core/explain/__init__.py` all use `deprecate()` helper; (3) active-deprecations ledger rebuilt with all surfaces; `make deprecation-closure` passes with 9 v1.0.0 rows permitted and 0 blocking. `data_modalities` deprecation closed fail-closed 2026-06-13. |
 | ADR-012 | Accepted with open hardening (re-evidenced 2026-06-11) | Notebook execution exists (nightly advisory driver + `nbsphinx_execute="always"` on non-RTD builds); real gap is that the docs HTML/linkcheck CI job is unwired (`reusable-build-docs.yml` has no caller). Runtime ceilings advisory-only. Remains v1.0.0-rc |
 | ADR-013 | Completed | All v0.11.3 gaps closed (gaps 1/2/3/4 closed 2026-06-02; protocol tests, FAST chain separation guard, third-party conformance test, doc path corrected) |
 | ADR-015 | Partially complete | v0.11.3 gaps 1/3 closed (2026-06-02; invariant consistency + task-type parity tests); gap 2 (direct learner bypass) deferred to v1.0.0-rc |
 | ADR-020 | Completed | All v0.11.3 gaps closed (gap 1: release checklist 2026-06-02; gap 2: wrapper parity tests 2026-06-02; gap 3: CONTRIBUTING.md 2026-06-02) |
 | ADR-026 | Partially complete (re-scoped 2026-06-11) | Context immutability substantially landed (frozen dataclasses + nested freezing in `plugins/explanations.py:35-69`, `plugins/intervals.py:12-43`); residual unfrozen nested fields remain (v1.0.0-rc); telemetry quick wins closed in v0.11.2 |
 | ADR-027 | Completed | All gaps closed v0.11.3 (gaps 1/2 closed 2026-06-02; `docs/practitioner/performance-tuning.md` covers observability policy and telemetry examples) |
-| ADR-028 | Reopened (2026-06-11) | Warning-policy inventory regressed: `check_warning_policy.py` reports 1 unclassified site (`api/config.py:265`, added by Task 12). Scheduled in v0.11.3 plan Task 15 |
+| ADR-028 | Closed (2026-06-13) | Warning-policy regression fixed in Task 15; `make warning-policy` now reports 0 unclassified sites (verified 2026-06-13: 116 sites — 5 deprecation-helper, 111 allowlisted, 0 unclassified). |
 | ADR-030 | Completed | Zero-tolerance ratification closed v0.11.3 Task 3 (2026-05-12); marker hygiene taxonomy and mutation policy sections added to ADR-030; gaps 1/2 closed in appendix (2026-06-02) |
-| ADR-032 | Reopened minor (2026-06-11) | Core decisions verified in code (parameterized guarded API, `supports_guarded` contract, fast-explainer hard-fail, conjunction guarding, `filter_by_target_confidence`). Open: `get_guarded_audit` error message recommends the deprecated wrapper methods. Scheduled in v0.11.3 plan Task 15 |
-| ADR-033 | Accepted with scheduled follow-through | v0.11.1 obligations verified 2026-06-11 (entry-point `DeprecationWarning` at `plugins/registry.py:1830-1845`, shims, `MissingExtensionError`). Per ADR-033 §6.2 the shims are permanent; the only open item is removing the `data_modalities` default-fallback at v0.12.0/v1.0.0-rc |
-| ADR-034 | Accepted with deferred v1.0 open items | Runtime conformance closure complete in v0.11.2; remaining work is redaction + export schema versioning. New (2026-06-11): status-source conflict — v0.11.3 plan RC-scope note (2026-05-28) claims both Open Items resolved, but ADR-034 §Open Items (last edited 2026-06-04) still lists both open; reconcile in Task 15 |
+| ADR-032 | Closed (2026-06-13) | All decisions verified. `get_guarded_audit` error message corrected in Task 15: `explanations/explanations.py:236-238` now recommends `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(...)` — canonical API per ADR-032 decision 1. Deprecated wrappers removed. |
+| ADR-033 | Closed (2026-06-13) | All obligations met. `data_modalities` enforcement closed early in v0.11.3: plugin missing the key now emits `UserWarning` and is skipped (fail-closed). `DeprecationWarning`+default-fallback path removed from `plugins/registry.py`. ADR-033 §6.2 shims are permanent. |
+| ADR-034 | Accepted with deferred v1.0 open items (reconciled 2026-06-13) | Runtime conformance closure complete in v0.11.2. Status-source conflict resolved: ADR-034 §Open Items now documents "Status: Declared out of scope for v1.0.0-rc" for both redaction and export schema contract items. No RC deferrals remain for this ADR. |
 | ADR-035 | Accepted with accepted operational constraint | v0.11.3 re-evaluation complete (2026-06-02): advisory-to-required branch-protection flip is platform-governed; recorded as accepted operational constraint in ADR-035 §v0.11.3 Re-evaluation Record; no in-repo work remains |
-| ADR-036 | Accepted with open gap (2026-06-11) | Default promotion verified in code (`plotting.py:264-299`); built-in builders self-validate. Open: no pipeline-enforced canonical validation between third-party builder output and renderer invocation (§5). Scheduled in v0.11.3 plan Task 15 |
-| ADR-037 | Accepted with open gap (2026-06-11) | Default promotion and plot-kind prohibition verified. Open: builder/renderer extension metadata lacks mandated supported-plot-kinds/modes declarations (§4); registration does not validate them. Scheduled in v0.11.3 plan Task 15 |
+| ADR-036 | Closed (2026-06-13) | §5 validation boundary implemented in Task 15: `validate_plot_artifact()` (public, `plotting.py:308`) called at both build/render boundary points (`plotting.py:387`, `:439`). Artifacts that fail `validate_plotspec` raise `ValidationError` before renderer invocation. 3 dedicated boundary tests in `test_plot_plugin_validation_boundary.py` pass. |
+| ADR-037 | Closed (2026-06-13) | §4 extension metadata implemented in Task 15: `validate_plugin_meta` (via `plugins/base.py:381-403`) validates `plot_kinds` against allowed values and `plot_modes` against allowed values; both default when absent. 11 tests in `test_plot_extension_metadata.py` pass. |
 | STD-001 | Completed | All v0.11.3 bridges closed (Task 1, 2026-06-02); 0 expired remove_by_v0.11.3 records; checker passes; internal bridge dunders renamed; APPROVED_COMPATIBILITY_BRIDGES = {} |
 | STD-002 | Completed | WrapCalibratedExplainer numpydoc gap closed in v0.11.3 Task 2; coverage 96.73%, zero pydocstyle violations (2026-06-02) |
 | STD-003 | Completed | Monitor for regressions |
 | STD-004 | Completed | Monitor for regressions |
-| STD-005 | Reopened (2026-06-11) | Shares the ADR-028 regression: 1 unclassified `warnings.warn` site (`api/config.py:265`). Scheduled in v0.11.3 plan Task 15 |
+| STD-005 | Closed (2026-06-13) | Shares ADR-028 closure: 0 unclassified `warnings.warn` sites (verified 2026-06-13). |
 
 ## Detailed gap inventory and historical notes
 
 - The authoritative detailed execution/gap notes remain in milestone execution plans:
-  - `docs/improvement/v0.11.1_plan.md`
-  - `docs/improvement/v0.11.2_plan.md`
+  - `docs/improvement/archive/v0.11.1_plan.md`
+  - `docs/improvement/archive/v0.11.2_plan.md`
   - `docs/improvement/v0.11.3_plan.md`
 - Completed items are retained in those plans for traceability and are not removed for brevity.
 - Future milestone detail is preserved for continuity but is not maintained continuously outside milestone-boundary updates.
@@ -97,7 +97,7 @@ _Last gap analysis: 2026-06-11_
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Implicit `auto` strategy enables auto-selection contrary to ADR decision | 3 | 3 | 9 | Default `strategy="auto"` allows implicit selection (re-verified 2026-06-11 at `parallel/parallel.py:75`). Target milestone: v1.0.0-rc. Blocker: coordinated strategy API change + user-facing migration guide; architecture-heavy and above quick-win threshold. |
+| 1 | Implicit `auto` strategy enables environment-dependent backend selection contrary to ADR decision | 3 | 3 | 9 | `ParallelConfig(strategy="auto")` is the default; when `enabled=True` the 5-step `auto_strategy()` heuristic (`parallel/parallel.py:517-589`) selects `sequential` / `threads` / `processes` / `joblib` based on CPU count, CI detection, task size, workload count, joblib availability, and OS. A caller who sets `enabled=True` without an explicit strategy gets a silently environment-dependent backend — non-deterministic across machines and in violation of ADR-004 §Decision "no automatic strategy selection." Fix: deprecate `strategy="auto"` with an ADR-011 `DeprecationWarning` when `enabled=True AND strategy resolves to "auto"`; require explicit strategy for v1.0.0. Target milestone: v1.0.0-rc. |
 
 ### ADR-005 - Explanation Payload Schema
 

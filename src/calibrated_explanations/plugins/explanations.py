@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
 else:
     CalibratedExplanationsType = object
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import ValidationError
 from .base import ExplainerPlugin, PluginMeta, freeze_plugin_config
 from .predict import PredictBridge
@@ -67,6 +68,9 @@ class ExplanationContext:
         object.__setattr__(self, "interval_settings", _freeze_value(self.interval_settings))
         object.__setattr__(self, "plot_settings", _freeze_value(self.plot_settings))
         object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
+        object.__setattr__(self, "helper_handles", _freeze_value(self.helper_handles))
+        object.__setattr__(self, "feature_names", _freeze_value(self.feature_names))
+        object.__setattr__(self, "categorical_features", _freeze_value(self.categorical_features))
 
     def __getstate__(self):
         """Get state for pickling.
@@ -122,7 +126,22 @@ class ExplainerHandle:
 
     @property
     def learner(self) -> Any:
-        """Return the underlying learner."""
+        """Return the underlying learner.
+
+        .. deprecated:: v0.11.3
+            ``ExplainerHandle.learner`` is deprecated and will be removed in v1.0.0.
+            Plugin predictions must go through ``handle.predict()`` to preserve
+            ``PredictBridge`` invariants (shape validation, calibration state checks,
+            and trust-model enforcement).  Direct learner access bypasses all of these
+            guarantees silently.
+        """
+        deprecate(
+            "ExplainerHandle.learner is deprecated and will be removed in v1.0.0. "
+            "Use handle.predict() for all prediction use cases; direct learner "
+            "access bypasses PredictBridge invariants.",
+            key="plugin:ExplainerHandle.learner",
+            stacklevel=2,
+        )
         return self._explainer.learner
 
     @property

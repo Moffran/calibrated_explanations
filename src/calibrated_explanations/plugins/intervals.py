@@ -38,6 +38,17 @@ class IntervalCalibratorContext:
             )
         object.__setattr__(self, "metadata", MappingProxyType(normalized))
         object.__setattr__(self, "plugin_config", freeze_plugin_config(self.plugin_config))
+        # Freeze mutable container fields. calibration_splits elements may be numpy
+        # arrays (accepted array-payload exception); only the outer sequence is frozen.
+        object.__setattr__(self, "calibration_splits", tuple(self.calibration_splits or ()))
+        if self.bins is not None:
+            object.__setattr__(self, "bins", MappingProxyType(dict(self.bins)))
+        if self.residuals is not None:
+            object.__setattr__(self, "residuals", MappingProxyType(dict(self.residuals)))
+        if self.difficulty is not None:
+            object.__setattr__(self, "difficulty", MappingProxyType(dict(self.difficulty)))
+        if self.fast_flags is not None:
+            object.__setattr__(self, "fast_flags", MappingProxyType(dict(self.fast_flags)))
         # Ensure plugin_state is mutable so plugins can store transient data.
         if not isinstance(self.plugin_state, MutableMapping):  # pragma: no cover - defensive
             object.__setattr__(self, "plugin_state", dict(self.plugin_state))  # type: ignore[arg-type]

@@ -70,7 +70,7 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
             features_list = rules_block.get("feature", [])
             raw_feat = features_list[i] if i < len(features_list) else i
             if isinstance(raw_feat, (list, tuple, np.ndarray)):
-                feat = list(raw_feat)
+                feat = tuple(raw_feat)
             else:
                 feat = int(raw_feat)
 
