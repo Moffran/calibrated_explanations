@@ -1,0 +1,20 @@
+# Parity-reference determinism pin — scoped to this directory's CI job only.
+#
+# See tests/parity_reference/README.md for the full rationale. Summary:
+# scikit-learn>=1.8.0 changed `DecisionTreeRegressor` split-selection behavior
+# (confirmed by bisection 2026-06-16: 1.6.1-1.7.2 reproduce the committed
+# golden fixtures byte-for-byte; 1.8.0+ do not). `DecisionTreeClassifier` is
+# unaffected, so classification/multiclass fixtures are not pinned by this.
+#
+# This file is layered ONLY on top of the project-wide constraints.txt in the
+# ci-nightly.yml `parity-reference` job (`pip install -c constraints.txt
+# -c tests/parity_reference/constraints.txt`). It intentionally does NOT
+# change the project-wide scikit-learn floor (constraints.txt / requirements.txt
+# remain scikit-learn>=1.3) — that floor is a general-compatibility statement,
+# while this pin is a reproducibility statement for one specific test harness.
+#
+# Update policy: bump the upper bound only after regenerating
+# tests/parity_reference/*regression*.json against the new scikit-learn
+# version AND re-verifying byte-for-byte parity, per
+# docs/improvement/v0.11.4_plan.md Task 7.
+scikit-learn<1.8

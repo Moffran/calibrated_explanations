@@ -5,6 +5,19 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.3...main)
 
+### CI / infrastructure
+
+- Fixed nightly `parity-reference` CI failures for `regression`/`probabilistic_regression`
+  datasets. Root cause: commit `9693c3d8` (2026-06-12) removed the `scikit-learn==1.6.1`/`1.5.2`
+  exact pins from `constraints.txt`, letting fresh installs resolve scikit-learn ≥1.8.0, which
+  changed `DecisionTreeRegressor` split-selection behavior and broke byte-for-byte parity with
+  the committed golden fixtures (`DecisionTreeClassifier`-based classification/multiclass
+  fixtures were unaffected). Added `tests/parity_reference/constraints.txt`, a
+  `scikit-learn<1.8` overlay scoped to the `parity-reference` nightly job only — the
+  project-wide `scikit-learn>=1.3` floor in `constraints.txt`/`requirements.txt` is unchanged.
+  See `tests/parity_reference/README.md` and `docs/improvement/v0.11.4_plan.md` Task 7 for the
+  full investigation and rationale.
+
 ## [v0.11.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.3) - 2026-06-16
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...v0.11.3)
