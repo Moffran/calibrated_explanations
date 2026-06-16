@@ -1,7 +1,11 @@
 <!-- markdownlint-disable-file -->
 # Changelog
 
-## [0.11.3] - 2026-06-15
+## [Unreleased]
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.3...main)
+
+## [v0.11.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.11.3) - 2026-06-16
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.2...v0.11.3)
 
