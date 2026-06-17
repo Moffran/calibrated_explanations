@@ -140,7 +140,7 @@ class ExplainerHandle:
             "Use handle.predict() for all prediction use cases; direct learner "
             "access bypasses PredictBridge invariants.",
             key="plugin:ExplainerHandle.learner",
-            stacklevel=2,
+            stacklevel=3,
             raise_on_error=False,
         )
         return self._explainer.learner

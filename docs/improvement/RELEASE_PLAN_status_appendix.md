@@ -35,7 +35,7 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-011 | Closed (2026-06-13) | All gaps resolved: (1) guarded-wrapper deprecations removed in Task 13 (not merely deferred); 9 Task-17 active surfaces target v1.0.0 — within ADR-011 §2 final-cycle allowance; (2) raw `warnings.warn(DeprecationWarning)` bypass sites fixed — `normalization_strategy.py`, `core/reject.py`, `core/explain/__init__.py` all use `deprecate()` helper; (3) active-deprecations ledger rebuilt with all surfaces; `make deprecation-closure` passes with 9 v1.0.0 rows permitted and 0 blocking. `data_modalities` deprecation closed fail-closed 2026-06-13. |
 | ADR-012 | Accepted with open hardening (re-evidenced 2026-06-11) | Notebook execution exists (nightly advisory driver + `nbsphinx_execute="always"` on non-RTD builds); real gap is that the docs HTML/linkcheck CI job is unwired (`reusable-build-docs.yml` has no caller). Runtime ceilings advisory-only. Remains v1.0.0-rc |
 | ADR-013 | Completed | All v0.11.3 gaps closed (gaps 1/2/3/4 closed 2026-06-02; protocol tests, FAST chain separation guard, third-party conformance test, doc path corrected) |
-| ADR-015 | Partially complete | v0.11.3 gaps 1/3 closed (2026-06-02; invariant consistency + task-type parity tests); gap 2 (direct learner bypass) deferred to v1.0.0-rc |
+| ADR-015 | Completed (2026-06-17) | All gaps closed: gaps 1/3 closed 2026-06-02 (invariant consistency + task-type parity tests); gap 2 (direct learner bypass) closed v0.11.4 — `ExplainerHandle.learner` emits `deprecate()` at `plugins/explanations.py:138-145`; active-deprecations ledger row and test `test_should_emit_deprecation_warning_when_learner_accessed` confirm closure |
 | ADR-020 | Completed | All v0.11.3 gaps closed (gap 1: release checklist 2026-06-02; gap 2: wrapper parity tests 2026-06-02; gap 3: CONTRIBUTING.md 2026-06-02) |
 | ADR-026 | Completed (2026-06-15) | Context immutability fully landed: `ExplanationContext.__post_init__` freezes all nested fields including `helper_handles`, `feature_names`, `categorical_features` (`plugins/explanations.py:64-73`); `IntervalCalibratorContext` freezes `calibration_splits`, `bins`, `residuals`, `difficulty`, `fast_flags` (`plugins/intervals.py:29-54`). Appendix gap was stale; closed in v0.11.4 Task 1. |
 | ADR-027 | Completed | All gaps closed v0.11.3 (gaps 1/2 closed 2026-06-02; `docs/practitioner/performance-tuning.md` covers observability policy and telemetry examples) |
@@ -155,11 +155,7 @@ Evidence update (2026-06-11): the former gap framing ("docs build disables noteb
 
 ### ADR-015 - Explanation Plugin Integration
 
-_Last gap analysis: 2026-06-11_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Explainer handle exposes direct `learner` (bypass bridge) | 4 | 2 | 8 | Re-verified 2026-06-11: `ExplainerHandle.learner` property returns the raw underlying learner (`plugins/explanations.py:124-126`), letting plugins bypass the `PredictBridge` invariant enforcement. Restrict direct learner access or document as escape hatch with warnings. Target milestone: v1.0.0-rc (public API semantic). |
+**Compliance verification (2026-06-17):** Reviewed code — no ADR-015 gaps remain. `ExplainerHandle.learner` property at `plugins/explanations.py:128-146` emits `deprecate("ExplainerHandle.learner is deprecated...", key="plugin:ExplainerHandle.learner", stacklevel=3, raise_on_error=False)` before returning the raw learner (added no later than v0.11.3; `stacklevel` corrected from 2 to 3 on 2026-06-17 so the warning attributes to plugin caller code, not the internal call-site). Active-deprecations ledger row present (`docs/migration/deprecations.md`: `ExplainerHandle.learner property | handle.predict() | v0.11.3 | v1.0.0`). Test `test_should_emit_deprecation_warning_when_learner_accessed` in `tests/plugins/test_explanation_plugins.py:150-159` asserts the `DeprecationWarning` fires on access. ADR-015 gap 2 is closed by the deprecation path. ADR-015 is fully compliant. No further action required.
 
 ### ADR-016 - PlotSpec Separation and Schema (superseded; see ADR-036/ADR-037)
 
