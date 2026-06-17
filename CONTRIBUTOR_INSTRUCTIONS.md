@@ -255,12 +255,15 @@ Every fallback must be visible to users. No silent fallbacks.
 | `verification/capabilities/` | Capability verification scenarios and helpers when introduced |
 | `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
 | `docs/foundations/how-to/configure_runtime.md` | How-to guide: ConfigManager, env vars, pyproject.toml sections, export diagnostics |
-| `docs/improvement/` | Legacy entry point only; active files have been migrated to `development/`. Do not add new planning or verification-governance files here. |
-| `docs/standards/` | Legacy entry point only; active standards have been migrated to `development/standards/`. The `index.md` remains for Sphinx navigation. |
 | `development/standards/test-quality-method/` | ADR-030 quality method tooling — canonical location |
 | `tests/README.md` | Authoritative test guidance |
 | `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
 | `Makefile` | Entry points: `make test`, `make ci-local` |
+
+Removed legacy docs locations: docs/improvement/ and docs/standards/ were fully
+removed after migration to `development/`. Do not recreate them or add new
+planning, ADR, Standard, claim, requirement, verification-framework, or curated
+evidence files there.
 
 ### Root-directory policy
 
@@ -453,11 +456,11 @@ is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
 repository-wide engineering rules.
 
-`docs/improvement/` is a legacy entry point. Active planning, ADR, Standard, and
-governance files have been migrated to `development/`. Do not add new planning,
-ADR, Standard, claim, requirement, verification-framework, or curated evidence
-files to `docs/improvement/`. The README and Sphinx navigation index remain there
-as legacy redirect pointers.
+The removed legacy docs locations docs/improvement/ and docs/standards/ are not
+active entry points. Active planning, ADR, Standard, and governance files have
+been migrated to `development/`. Do not recreate those directories or add new
+planning, ADR, Standard, claim, requirement, verification-framework, or curated
+evidence files there.
 
 Default execution posture for plan/instruction edits:
 
