@@ -84,7 +84,9 @@ ALLOWLISTED_PATHS: frozenset[str] = frozenset(
         "explanations/explanations.py",
         # explanations/guarded_explanation.py: guarded explanation contract warnings
         "explanations/guarded_explanation.py",
-        # core/calibrated_explainer.py: verbose-mode migration warning (condition_source)
+        # core/calibrated_explainer.py: verbose-mode migration UserWarning (condition_source);
+        #   _use_plugin UserWarning in guarded path (fires when verbose=True and _use_plugin=False);
+        #   RejectResult.prediction formatting failure UserWarning (predict_reject exception path)
         "core/calibrated_explainer.py",
         # core/reject/orchestrator.py: reject contract warnings (RejectContractWarning subclass)
         "core/reject/orchestrator.py",

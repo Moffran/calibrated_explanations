@@ -605,6 +605,25 @@ Document how probabilistic and interval regression stay calibrated after your
 extension by linking back to the practitioner quickstarts and interpretation
 guides.
 
+## Config surface naming convention (ADR-038 §5)
+
+Any configuration surface you expose through the plugin contract must follow the
+`*Spec` / `*Options` / `*Config` naming taxonomy defined in ADR-038 §5:
+
+| Suffix | Intended use |
+|--------|-------------|
+| `*Spec` | Declarative, user-authored payloads (immutable after construction) |
+| `*Options` | Call-time tuning knobs passed to a single operation |
+| `*Config` | Durable per-instance configuration bound at construction time |
+
+Example: a plugin that accepts tuning parameters for a single `explain_batch`
+call should name the class `MyExplanationOptions`, not `MyExplanationConfig`.
+
+This convention is enforced by code review, not by `validate_plugin_meta`. The
+`validate_plugin_meta` function contains a comment marking the extension point
+for future automated checking. Non-conforming names will not be rejected at
+registration time, but they may be flagged in contributor review.
+
 ## Guardrails and ADR references
 
 Use these decision records when designing new plugins:

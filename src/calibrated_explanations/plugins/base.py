@@ -309,6 +309,11 @@ def validate_plugin_config(
 
 def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     """Validate minimal plugin metadata required by ADR-006."""
+    # ADR-038 §5: plugin config surfaces exposed through the plugin contract
+    # should follow the *Spec/*Options/*Config naming taxonomy. This is a
+    # documentation-level requirement; runtime enforcement of third-party naming
+    # conventions is not feasible at registration time. See
+    # docs/contributor/plugin-contract.md for the naming convention guidance.
     if not isinstance(meta, dict):
         raise ValidationError("plugin_meta must be a dict")
 
