@@ -1,7 +1,7 @@
 # CI: Full PR checks (includes viz)
 # Purpose: Extended PR validation; runs viz tests and provides a manual parity
 # run. Intended for broader PR validation or manual invocation.
-# See docs/improvement/CI-upgrade.md for migration and scope.
+# See development/current-work/CI-upgrade.md for migration and scope.
 name: CI — Full PR checks (includes viz)
 on:
   pull_request:

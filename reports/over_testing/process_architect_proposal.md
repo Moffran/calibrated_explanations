@@ -1,7 +1,7 @@
 # Process Architect Proposal (2026-02-17)
 
 ## Evidence
-- Canonical method reviewed: `docs/improvement/test-quality-method/README.md`.
+- Canonical method reviewed: `development/standards/test-quality-method/README.md`.
 - Over-testing scripts present: 14 in `scripts/over_testing/` (including mandatory `detect_redundant_tests.py`).
 - Anti-pattern scripts present: 8 in `scripts/anti-pattern-analysis/`.
 - CI workflow coverage includes quality/test lanes in `.github/workflows/` (e.g., `ci-pr.yml`, `ci-main.yml`, `lint.yml`, `test.yml`, `scan-private-members.yml`, `deprecation-check.yml`).

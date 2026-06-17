@@ -20,12 +20,12 @@ Required sections:
 # CE Test Creator
 
 This skill implements the **Test Creator** role from ADR-030 and mirrors the
-prompt in `docs/improvement/test-quality-method/test_creator.md`.
+prompt in `development/standards/test-quality-method/test_creator.md`.
 
 ## Required references
 
-- `docs/improvement/test-quality-method/README.md` (canonical method + options)
-- `docs/improvement/test-quality-method/test_creator.md` (full role prompt)
+- `development/standards/test-quality-method/README.md` (canonical method + options)
+- `development/standards/test-quality-method/test_creator.md` (full role prompt)
 
 ## Use this skill when
 

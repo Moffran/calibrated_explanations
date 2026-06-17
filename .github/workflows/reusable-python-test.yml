@@ -1,7 +1,7 @@
 # CI: Reusable — Python + Test job
 # Purpose: Reusable workflow for standard Python setup and test execution.
 # Scope: Call from top-level entrypoints to centralize install, cache, and
-# test invocation conventions. See docs/improvement/CI-upgrade.md.
+# test invocation conventions. See development/current-work/CI-upgrade.md.
 name: Reusable Python + Test job
 on:
   workflow_call:

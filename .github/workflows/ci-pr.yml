@@ -1,7 +1,7 @@
 # CI: Pull Request checks (fast)
 # Purpose: Run fast, required checks for PRs (lint, typechecks, core tests).
 # Scope: Lightweight; intended to be required for PR branch-protection during
-# validation. See docs/improvement/CI-upgrade.md for migration details.
+# validation. See development/current-work/CI-upgrade.md for migration details.
 name: CI — Pull Request checks
 on:
   pull_request:

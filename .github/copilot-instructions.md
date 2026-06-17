@@ -27,8 +27,8 @@
   - Run local CI: `make ci-local` (runs linting, type checking, and tests).
   - **Strict Gates:** The project enforces high standards for coverage (90%+), docstrings, and linting.
 - **Release Process:**
-  - Follow `docs/improvement/RELEASE_PLAN_v1.md`.
-  - Check `docs/improvement/adrs/` for architectural constraints before major changes.
+  - Follow `development/current-work/RELEASE_PLAN_v1.md`.
+  - Check `development/adrs/` for architectural constraints before major changes.
 
 ## 3. Coding Standards
 - **Type Hinting:** Use `from __future__ import annotations` and comprehensive type hints.
@@ -49,7 +49,7 @@
 - `src/calibrated_explanations/core/__init__.py`: Public API surface (lazy loaded).
 - `src/calibrated_explanations/plugins/`: Plugin implementations.
 - `src/calibrated_explanations/ce_agent_utils.py`: CE-first runtime guardrails for agents.
-- `docs/improvement/adrs/`: Architectural Decision Records (Read these!).
+- `development/adrs/`: Architectural Decision Records (Read these!).
 - `Makefile`: Entry points for build and test tasks.
 
 ## 6. Design Patterns & TDD
@@ -81,7 +81,7 @@ All runtime, plugin, visualization, and utility fallbacks must be visible to use
 - **Tests:**
   - If a test depends on a fallback, assert that a warning is raised using `pytest.warns(UserWarning)`.
   - If a test does not depend on a fallback, then the fallback chain must be explicitly made empty to avoid unexpected fallbacks.
-- **Docs:** When introducing a new fallback, update `docs/improvement/RELEASE_PLAN_v1.md` and `CHANGELOG.md` with a short note.
+- **Docs:** When introducing a new fallback, update `development/current-work/RELEASE_PLAN_v1.md` and `CHANGELOG.md` with a short note.
 
 This policy enforces traceability and observability across all fallback decisions and is required for PR approval.
 

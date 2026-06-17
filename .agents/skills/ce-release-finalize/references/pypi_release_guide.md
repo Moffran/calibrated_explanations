@@ -18,7 +18,7 @@ Canonical source: `debug/release.md` in the calibrated_explanations repository.
 | `docs/conf.py` | `release` + `version` | `X.Y.Z` + `X.Y` | `0.11.0` / `0.11` |
 | `docs/citing.md` | BibTeX `version` | `vX.Y.Z` | `v0.11.0` |
 | `METADATA.json` | `version` | `X.Y.Z` | `0.11.0` |
-| `docs/improvement/RELEASE_PLAN_v1.md` | `Current released version` | `vX.Y.Z` | `v0.11.0` |
+| `development/current-work/RELEASE_PLAN_v1.md` | `Current released version` | `vX.Y.Z` | `v0.11.0` |
 
 ## Release steps
 

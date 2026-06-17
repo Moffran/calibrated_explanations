@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Set, Union
 
-# Documented legacy API methods/properties from docs/improvement/legacy_user_api_contract.md
+# Documented legacy API methods/properties from development/current-work/legacy_user_api_contract.md
 ALLOWED_API = {
     # Methods
     "fit",

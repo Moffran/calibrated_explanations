@@ -9,12 +9,12 @@ description: >
 # CE Dead-Code Hunter
 
 This skill implements the **Dead-Code Hunter** role from ADR-030 and mirrors
-the prompt in `docs/improvement/test-quality-method/deadcode_hunter.md`.
+the prompt in `development/standards/test-quality-method/deadcode_hunter.md`.
 
 ## Required references
 
-- `docs/improvement/test-quality-method/README.md` (canonical method + options)
-- `docs/improvement/test-quality-method/deadcode_hunter.md` (full role prompt)
+- `development/standards/test-quality-method/README.md` (canonical method + options)
+- `development/standards/test-quality-method/deadcode_hunter.md` (full role prompt)
 
 ## Use this skill when
 

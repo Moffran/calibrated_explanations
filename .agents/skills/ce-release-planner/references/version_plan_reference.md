@@ -15,7 +15,7 @@ the planning structure stable and repeatable.
    - `# vX.Y.Z Release Task Implementation Plan`
 2. Scope paragraph:
    - state that this plan expands milestone tasks from
-     `docs/improvement/RELEASE_PLAN_v1.md`.
+     `development/current-work/RELEASE_PLAN_v1.md`.
 3. Milestone framing:
    - state milestone type (for example ADR gap closure, hardening, RC, etc.).
 4. Authoritative task source:

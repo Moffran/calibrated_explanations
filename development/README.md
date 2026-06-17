@@ -1,3 +1,5 @@
+> **Active scope:** Canonical development documentation map; the single entry point for maintainer planning, ADRs, Standards, and governance navigation. Remains active indefinitely; updated when the layout changes or new canonical locations are added.
+
 # Development Documentation Map
 
 This map defines the internal development documentation surface for
@@ -6,9 +8,6 @@ Calibrated Explanations.
 `docs/` is for user-facing and contributor-facing documentation. `development/`
 is for maintainer planning, engineering governance, capability claim and
 requirement catalogs, and curated closure evidence summaries.
-
-This file defines the target layout. Some existing material still lives in
-`docs/improvement/` during migration.
 
 ---
 
@@ -21,6 +20,8 @@ This file defines the target layout. Some existing material still lives in
 | Closed planning and curated closure evidence summaries | `development/finished-work/` |
 | Architectural Decision Records | `development/adrs/` |
 | Engineering Standards | `development/standards/` |
+| ADR-030 quality method tooling | `development/standards/test-quality-method/` |
+| CI/tooling JSON schemas (non-runtime) | `development/schemas/` |
 | Capability claims | `development/capabilities/claims/` |
 | Requirements derived from capability claims | `development/capabilities/requirements/` |
 | Verification scenarios and helpers | `verification/capabilities/` |
@@ -61,18 +62,12 @@ tests, or evidence records unless a task explicitly asks for that work.
 
 ---
 
-## Migration Rule
+## Legacy Notice
 
-`docs/improvement/` is a legacy planning area.
-
-- Existing files in `docs/improvement/` remain valid until migrated.
-- Do not add new planning, ADR, Standard, claim, requirement, verification
-  framework, or curated evidence files to `docs/improvement/`.
-- If active material in `docs/improvement/` is being substantially changed,
-  move it to the appropriate `development/` location in the same change when
-  that move is within scope.
-- Keep path references accurate while migration is incomplete; do not update a
-  reference to `development/` until the referenced file has actually moved.
+`docs/improvement/` and `docs/standards/` were legacy entry points. Both have
+been fully removed (Task 8, v0.11.4). All active planning, ADRs, Standards,
+test-quality-method documents, CI/tooling schemas, and PlotSpec evidence records
+now live exclusively under `development/`. Do not recreate these directories.
 
 ---
 
@@ -80,11 +75,9 @@ tests, or evidence records unless a task explicitly asks for that work.
 
 Start here, then follow the current locations:
 
-1. Active release plan: `development/current-work/` after migration; currently
-   existing plans may still be in `docs/improvement/`.
-2. ADRs: `development/adrs/` after migration; currently existing ADRs may still
-   be in `docs/improvement/adrs/`.
-3. Standards: `development/standards/` after migration; currently existing
-   Standards may still be in `docs/standards/`.
-4. Test guidance: `tests/README.md`.
-5. Repository-wide agent rules: `CONTRIBUTOR_INSTRUCTIONS.md`.
+1. Active release plan: `development/current-work/RELEASE_PLAN_v1.md`
+2. ADRs: `development/adrs/`
+3. Standards: `development/standards/`
+4. Test quality method (ADR-030 tooling): `development/standards/test-quality-method/`
+5. Test guidance: `tests/README.md`
+6. Repository-wide agent rules: `CONTRIBUTOR_INSTRUCTIONS.md`

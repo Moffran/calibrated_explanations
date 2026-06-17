@@ -45,7 +45,6 @@ upgrade/index
 appendices/external_plugins
 appendices/changelog_links
 appendices/rtd_tier_map
-standards/index
 get-started/ce_first_agent_guide
 get-started/copilot-setup
 maintenance/legacy-plotting-reference

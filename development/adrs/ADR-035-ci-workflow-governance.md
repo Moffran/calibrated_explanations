@@ -1,0 +1,98 @@
+> **Active scope:** Governing architectural decision for CI workflow policy, job-level contracts, and the `validate_ci_policy` governance gate. The parity-reference scikit-learn pin (Task 7, v0.11.4) is an implementation milestone within this ADR's lifecycle.
+
+> **Status note (2026-04-09):** Last edited 2026-04-09
+> Archive after: Retain indefinitely as architectural record
+> Implementation window: v0.11.1–v1.0.0
+
+# ADR-035: CI Workflow Governance — CI Upgrade & Enforcement
+
+Status: Accepted
+Date: 2026-03-08
+Deciders: Core maintainers
+Reviewers: CI owners and governance maintainers
+Supersedes: None
+Superseded-by: None
+Related: ADR-020, ADR-028, ADR-030
+
+## Context
+
+The repository has already migrated to modular GitHub Actions workflows with reusable primitives and a local reproducibility story (`make local-checks`). The implementation plan was documented in `development/finished-work/CI-upgrade.md` (migration complete; retained as historical record), including rollout, cleanup, least-privilege permissions, and path-gating expectations.
+
+Without binding governance and automated enforcement, future PRs can reintroduce ad-hoc workflows that regress reproducibility, security, and CI feedback speed.
+
+## Decision
+
+### 1. Authoritative policy
+
+This ADR is the authoritative policy for CI workflow governance for any change touching `.github/workflows/**`, `.github/actions/ci-policy/**`, or `scripts/local_checks.py`. `development/finished-work/CI-upgrade.md` is the implementation appendix and migration playbook (migration complete).
+
+### 2. Merge blocking criteria
+
+A PR that modifies CI-governed files MUST NOT merge unless all are satisfied:
+
+1. `ci-policy/validate-workflows` succeeds,
+2. CODEOWNERS approval for workflow/policy files is present,
+3. PR includes CI checklist and short rationale.
+
+> **Rollout status note (2026-04-22):** `ci-policy/validate-workflows` currently runs in advisory mode (Rollout step 1). The MUST criteria above become fully enforceable at Rollout step 3 when the check is flipped to required in branch protection. Until then, violations are reported but non-blocking.
+
+### 3. CI policy rules
+
+- **Reusable workflow first:** New entrypoints must call approved reusables (`reusable-python-test.yml`, `reusable-run-make.yml`, `reusable-build-docs.yml`) unless classified as experimental.
+- **Least-privilege permissions:** default `contents: read`; write scopes only in approved maintenance workflows.
+- **External action pinning:** all external `uses:` references MUST be pinned to a full 40-character commit SHA. Local workflow references (for example `./.github/workflows/...`) and local composite actions under `.github/actions/` are exempt.
+- **Pip constraints enforcement:** `pip install` in CI MUST include `-c constraints.txt` or a documented approved equivalent.
+- **Heavy workload gating:** heavy jobs (`parity`, `perf`, `notebook-audit`, `docs`) MUST be path-gated and/or manual/scheduled (`workflow_dispatch` / `schedule`).
+- **Local reproducibility parity:** CI changes that affect contributor-runnable checks MUST update `scripts/local_checks.py` and `Makefile` targets.
+- **Cleanup process:** legacy workflow deletions should be grouped in a `ci:cleanup` PR and reference `development/finished-work/CI-upgrade.md`.
+
+### 4. Exceptions and emergency path
+
+- **Experimental workflows:** must be under `.github/workflows/experimental/` or include `experimental: true`, include expiry (<=30 days), and use label `ci-experimental`.
+- **Urgent exception path:** `ci-exception` label + rollback/migration plan + two maintainer approvals. Exceptions are appended in ADR update notes.
+
+### 5. Policy integrity
+
+Changes to `.github/actions/ci-policy/**` are high-integrity and require two core maintainer approvals.
+
+## Implementation
+
+- Add local action `.github/actions/ci-policy/action.yml` and validator script `scripts/quality/validate_ci_policy.py`.
+- Add workflow `.github/workflows/ci-policy.yml` to run on PRs touching CI-governed files.
+- Add CODEOWNERS coverage for workflow and policy paths.
+- Add CI PR template for mandatory checklist and audit metadata.
+
+## Rollout
+
+1. Advisory mode for approximately two weeks / two dev cycles.
+2. Tune false positives and document accepted equivalent patterns.
+3. Flip `ci-policy/validate-workflows` to required status check in branch protection.
+
+## Consequences
+
+**Positive**
+- Codifies CI design constraints from CI-upgrade work.
+- Prevents ad-hoc drift and insecure defaults.
+- Improves local reproducibility and auditability.
+
+**Negative / trade-offs**
+- Increases PR overhead for CI-related changes.
+- Requires active CI owner review capacity.
+- Heuristic checks may need periodic maintenance.
+
+## Implementation Appendix
+
+Normative implementation details and migration sequence are documented in:
+
+- `development/finished-work/CI-upgrade.md` (migration complete; retained as historical record)
+
+## v0.11.3 Re-evaluation Record (2026-06-02)
+
+**Gap 1 — Advisory-to-required branch-protection flip:** Re-evaluated as required by `v0.11.3_plan.md` Task 9 Workstream D. Outcome: the advisory-to-required promotion of `ci-policy/validate-workflows` to a required branch-protection status check is a **platform-governed** setting that cannot be enforced from repository code alone. It requires repository administrator access and GitHub branch-protection rule changes that are outside the scope of PR-level governance. This is recorded as an **accepted operational constraint** for v0.11.3:
+
+- The `ci-policy/validate-workflows` check runs on PRs touching CI-governed files and reports violations (advisory mode, Rollout step 1).
+- The validator logic and CODEOWNERS coverage for workflow/policy paths are complete.
+- Promotion to required status is recorded as a pending platform action for repository administrators; it is not a code or ADR gap.
+- No milestone-blocking work remains in-repo; further promotion follows the Rollout plan in ADR-035 §Rollout when administrators apply the change.
+
+This re-evaluation closes the v0.11.3 appendix gap with an accepted-constraint record.

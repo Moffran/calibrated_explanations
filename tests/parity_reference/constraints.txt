@@ -16,5 +16,5 @@
 # Update policy: bump the upper bound only after regenerating
 # tests/parity_reference/*regression*.json against the new scikit-learn
 # version AND re-verifying byte-for-byte parity, per
-# docs/improvement/v0.11.4_plan.md Task 7.
+# development/current-work/v0.11.4_plan.md Task 7.
 scikit-learn<1.8

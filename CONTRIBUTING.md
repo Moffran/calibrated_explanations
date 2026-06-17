@@ -90,17 +90,17 @@ Style guardrails
 - Run naming guardrails locally with `pre-commit run ruff-naming --all-files`
   (or `ruff check --select N`) before opening a PR.
 - Legacy API contract updates are required for user-facing API changes:
-  update `docs/improvement/legacy_user_api_contract.md`,
-  `tests/unit/api/test_legacy_user_api_contract.py`, and
-  `docs/improvement/release_checklist.md` in the same PR (ADR-020).
+  verify against `development/finished-work/legacy_user_api_contract.md` (historical surface inventory) and
+  update `tests/unit/api/test_legacy_user_api_contract.py` in the same PR (ADR-020).
+  Review the `## Release preparation` section in the active milestone plan before cutting a release.
 
 Logging and Observability
 -------------------------
 
-We follow [Standard-005](docs/standards/STD-005-logging-and-observability-standard.md) for logging. When adding new features:
+We follow [Standard-005](development/standards/STD-005-logging-and-observability-standard.md) for logging. When adding new features:
 1. Use the appropriate logger domain (e.g. `calibrated_explanations.core.*`, `calibrated_explanations.plugins.*`).
 2. Use `calibrated_explanations.logging.logging_context` to propagate identifiers like `explainer_id` or `plugin_identifier`.
-3. Consult [ADR-028](docs/improvement/adrs/ADR-028-logging-and-governance-observability.md) for architecture details.
+3. Consult [ADR-028](development/adrs/ADR-028-logging-and-governance-observability.md) for architecture details.
 
 Notes
 -----

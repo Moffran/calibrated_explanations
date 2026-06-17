@@ -8,13 +8,13 @@ description: >
 # CE ADR Author
 
 Use this skill for any architectural record work in
-`docs/improvement/adrs/`.
+`development/adrs/`.
 
 ## Core assets
 
 - `assets/adr_template.md` - canonical ADR template (copy this first).
-- `docs/improvement/adrs/` - authoritative ADR directory.
-- `docs/improvement/RELEASE_PLAN_v1.md` - roadmap entry that must stay aligned.
+- `development/adrs/` - authoritative ADR directory.
+- `development/current-work/RELEASE_PLAN_v1.md` - roadmap entry that must stay aligned.
 
 ## Workflow
 
@@ -22,7 +22,7 @@ Use this skill for any architectural record work in
 2. For new ADRs, calculate the next ADR number:
 
 ```bash
-Get-ChildItem docs/improvement/adrs/ADR-*.md |
+Get-ChildItem development/adrs/ADR-*.md |
   ForEach-Object { [int]($_.Name -replace 'ADR-(\d+).*','$1') } |
   Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
 ```
@@ -31,14 +31,14 @@ Get-ChildItem docs/improvement/adrs/ADR-*.md |
 
 ```bash
 Copy-Item .Codex/skills/ce-adr-author/assets/adr_template.md `
-  docs/improvement/adrs/ADR-<NNN>-<kebab-slug>.md
+  development/adrs/ADR-<NNN>-<kebab-slug>.md
 ```
 
 4. Fill every required field and section in the template. Keep language
    normative when needed (`MUST`, `MUST NOT`, `SHOULD`).
 5. Add/validate `Related:` ADR links and update references to superseded ADRs.
 6. If the decision changes implementation sequencing, add a one-line summary in
-   `docs/improvement/RELEASE_PLAN_v1.md` under ADR roadmap summary.
+   `development/current-work/RELEASE_PLAN_v1.md` under ADR roadmap summary.
 7. If status changes to `Superseded`, rename the replaced ADR with
    `superseded ` prefix and set `Superseded-by`.
 

@@ -23,7 +23,7 @@ You are creating a versioned implementation plan for an upcoming CE release.
 
 ## Required references
 
-- `docs/improvement/RELEASE_PLAN_v1.md` (master release plan with milestones,
+- `development/current-work/RELEASE_PLAN_v1.md` (master release plan with milestones,
   ADR gap appendix, and release gates)
 - `references/version_plan_reference.md` (canonical structure/template for
   `docs/improvement/vX.Y.Z_plan.md` files)

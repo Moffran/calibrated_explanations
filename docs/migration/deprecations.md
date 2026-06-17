@@ -312,7 +312,7 @@ A warning is issued when `condition_source` is not provided, guiding users to th
 ## For maintainers
 
 - When introducing a deprecation, use `deprecate(message, key="unique:key", stacklevel=3)` and prefer a stable `key` value.
-- Add a line to this document and update the release plan (`docs/improvement/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
+- Add a line to this document and update the release plan (`development/current-work/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
 - In the v0.11.x finalization window, each new/remaining deprecation entry must include explicit removal ownership in v0.11.2 or v0.11.3.
 - Add a unit test in `tests/unit/` validating the desired behaviour of `deprecate()` if you change its semantics.
 

@@ -4,7 +4,7 @@ Module for testing the WrapCalibratedExplainer class for regression tasks.
 
 IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
 protected integration tests relied on by release gating and regression
-protection tooling. See docs/improvement/test-quality-method/README.md.
+protection tooling. See development/standards/test-quality-method/README.md.
 
 This module contains test functions that verify the functionality of the WrapCalibratedExplainer class
 using a RandomForestRegressor. The tests cover various aspects including fitting, calibration, prediction,

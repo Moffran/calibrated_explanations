@@ -11,7 +11,7 @@ You are identifying which ADRs govern a proposed change and extracting their
 binding constraints. ADR decisions take precedence over the release plan whenever
 they conflict (execution-plan.instructions.md §3).
 
-ADRs live in `docs/improvement/adrs/`. Superseded ADRs are prefixed with
+ADRs live in `development/adrs/`. Superseded ADRs are prefixed with
 `superseded ` and should not be consulted for new work.
 
 ---
@@ -51,16 +51,16 @@ ADRs live in `docs/improvement/adrs/`. Superseded ADRs are prefixed with
 
 ## How to consult an ADR
 
-1. Locate the file: `docs/improvement/adrs/ADR-<NNN>-<slug>.md`
+1. Locate the file: `development/adrs/ADR-<NNN>-<slug>.md`
 2. Check `Status:` — skip if `Superseded`.
 3. Read the **Decision** section to extract binding constraints.
 4. Note the **Consequences** section for risk awareness.
-5. Check the `docs/improvement/RELEASE_PLAN_v1.md` entry for the ADR to see
+5. Check the `development/current-work/RELEASE_PLAN_v1.md` entry for the ADR to see
    which release milestone closes outstanding gaps.
 
 ```bash
 # List all active (non-superseded) ADRs
-Get-ChildItem docs/improvement/adrs/*.md | Where-Object Name -NotMatch '^superseded'
+Get-ChildItem development/adrs/*.md | Where-Object Name -NotMatch '^superseded'
 ```
 
 ---

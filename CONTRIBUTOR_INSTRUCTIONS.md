@@ -255,9 +255,9 @@ Every fallback must be visible to users. No silent fallbacks.
 | `verification/capabilities/` | Capability verification scenarios and helpers when introduced |
 | `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
 | `docs/foundations/how-to/configure_runtime.md` | How-to guide: ConfigManager, env vars, pyproject.toml sections, export diagnostics |
-| `docs/improvement/` | Legacy development-planning area; existing files remain valid until migrated, but no new planning or verification-governance files should be added there |
-| `docs/standards/` | Legacy Engineering Standards location until migrated |
-| `docs/improvement/test-quality-method/` | Legacy test-quality agent team definitions until migrated |
+| `docs/improvement/` | Legacy entry point only; active files have been migrated to `development/`. Do not add new planning or verification-governance files here. |
+| `docs/standards/` | Legacy entry point only; active standards have been migrated to `development/standards/`. The `index.md` remains for Sphinx navigation. |
+| `development/standards/test-quality-method/` | ADR-030 quality method tooling — canonical location |
 | `tests/README.md` | Authoritative test guidance |
 | `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
 | `Makefile` | Entry points: `make test`, `make ci-local` |
@@ -420,25 +420,20 @@ so after a full local checks run the artifact will have real ruff/mypy results.
 Before any implementation work:
 1. Read `development/README.md` to identify the current development map and
    transition rules.
-2. Read the active release plan. During migration, this may still be
-   `docs/improvement/RELEASE_PLAN_v1.md`; after migration it belongs under
-   `development/current-work/`.
-3. Check the governing ADRs and Standards. During migration, active records may
-   still live in `docs/improvement/adrs/` and `docs/standards/`; after migration
-   they belong under `development/adrs/` and `development/standards/`.
+2. Read the active release plan at `development/current-work/RELEASE_PLAN_v1.md`.
+3. Check the governing ADRs and Standards. Active records live in
+   `development/adrs/` and `development/standards/`.
 
 ### 7A. Engineering planning hierarchy authority (mandatory)
 
 The repository planning/control hierarchy is authoritative and must be preserved:
 
 1. `development/README.md` (development documentation map and location authority)
-2. Active release plan in `development/current-work/` after migration; during
-   migration, `docs/improvement/RELEASE_PLAN_v1.md` remains valid
+2. Active release plan at `development/current-work/RELEASE_PLAN_v1.md`
 3. Concrete implementation plans in `development/current-work/` or
    `development/future-work/`
 4. Governance via ADRs and Standards in `development/adrs/` and
-   `development/standards/` after migration; during migration, existing records
-   in `docs/improvement/adrs/` and `docs/standards/` remain valid
+   `development/standards/`
 
 Conflict rule: ADRs and Standards govern design, behavior, architecture, and
 engineering standards. If any plan text conflicts with an ADR/Standard, the
@@ -458,12 +453,11 @@ is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
 repository-wide engineering rules.
 
-`docs/improvement/` is a legacy planning area during migration. Do not add new
-planning, ADR, Standard, claim, requirement, verification-framework, or curated
-evidence files there. Existing files may be edited in place only when moving them
-would be outside the scope of the current task. When active material from
-`docs/improvement/` is already being substantially changed, move it to the
-appropriate `development/` location in the same change.
+`docs/improvement/` is a legacy entry point. Active planning, ADR, Standard, and
+governance files have been migrated to `development/`. Do not add new planning,
+ADR, Standard, claim, requirement, verification-framework, or curated evidence
+files to `docs/improvement/`. The README and Sphinx navigation index remain there
+as legacy redirect pointers.
 
 Default execution posture for plan/instruction edits:
 
@@ -536,13 +530,11 @@ decisions. The ADR takes precedence over any plan document.
 
 > **Note:** ADR-017, ADR-018, and ADR-019 were reclassified as engineering standards
 > (STD-001, STD-002, STD-003 respectively); the original ADR files were removed and
-> replaced by the standards files in `docs/standards/`. ADR-022, ADR-024, and ADR-025
-> are superseded and retained in `docs/improvement/adrs/` with a `superseded` prefix.
-> See `docs/improvement/adrs/` for the full list.
+> replaced by the standards files now in `development/standards/`. ADR-022, ADR-024, and ADR-025
+> are superseded and retained in `development/adrs/` with a `superseded` prefix.
+> See `development/adrs/` for the full list.
 
-Current ADRs live in `docs/improvement/adrs/` until migrated. New ADRs belong
-under `development/adrs/` unless the task is explicitly scoped to maintaining an
-existing legacy file in place.
+ADRs live in `development/adrs/`. New ADRs belong under `development/adrs/`.
 
 ### Engineering Standards (STDs)
 
@@ -554,9 +546,8 @@ existing legacy file in place.
 | STD-004 | Documentation Audience Standard | Writing or restructuring docs |
 | STD-005 | Logging and Observability Standard | Adding log statements or telemetry |
 
-Current standards live in `docs/standards/` until migrated. New standards belong
-under `development/standards/` unless the task is explicitly scoped to
-maintaining an existing legacy file in place.
+Standards live in `development/standards/`. New standards belong under
+`development/standards/`.
 
 ---
 
@@ -565,7 +556,7 @@ maintaining an existing legacy file in place.
 When making architectural or design decisions:
 1. Read `development/README.md` to identify the current authoritative locations.
 2. Read the relevant ADRs. During migration, existing ADRs may still live in
-   `docs/improvement/adrs/`; new ADRs belong under `development/adrs/`.
+   `development/adrs/`; new ADRs belong under `development/adrs/`.
 3. If an ADR governs the area, the ADR takes precedence over any plan document.
 4. Record the ADR reference in inline code comments for future agents.
 5. If a conflict arises, request clarification rather than guessing.
@@ -618,7 +609,7 @@ agents should understand this method.
 ### Method overview
 
 The full method currently lives in
-`docs/improvement/test-quality-method/README.md` until migrated. Three usage
+`development/standards/test-quality-method/README.md` until migrated. Three usage
 modes:
 
 - **Option A – Test-Focused Cycle**: Run per-test coverage pipeline → prune redundant
@@ -643,14 +634,14 @@ All outputs land in `reports/over_testing/`.
 
 | Agent | File | Mission |
 |---|---|---|
-| **test-creator** | `docs/improvement/test-quality-method/test_creator.md` | Analyze coverage gaps; design high-value tests to close them |
-| **pruner** | `docs/improvement/test-quality-method/pruner.md` | Remove/consolidate redundant tests (zero-unique-lines candidates) |
-| **anti-pattern-auditor** | `docs/improvement/test-quality-method/anti_pattern_auditor.md` | Detect test quality violations (private members, weak assertions, non-determinism) |
-| **code-quality-auditor** | `docs/improvement/test-quality-method/code_quality_auditor.md` | Audit source-code quality gates (exception taxonomy, imports, docstrings) |
-| **deadcode-hunter** | `docs/improvement/test-quality-method/deadcode_hunter.md` | Identify source code that is dead or covered only incidentally |
-| **process-architect** | `docs/improvement/test-quality-method/process_architect.md` | Design and improve the test-quality enforcement workflow |
-| **devils-advocate** | `docs/improvement/test-quality-method/devils_advocate.md` | Critically review every other agent's proposals before implementation |
-| **implementer** | `docs/improvement/test-quality-method/implementer.md` | Consolidate specialist proposals into a final remedy plan and execute |
+| **test-creator** | `development/standards/test-quality-method/test_creator.md` | Analyze coverage gaps; design high-value tests to close them |
+| **pruner** | `development/standards/test-quality-method/pruner.md` | Remove/consolidate redundant tests (zero-unique-lines candidates) |
+| **anti-pattern-auditor** | `development/standards/test-quality-method/anti_pattern_auditor.md` | Detect test quality violations (private members, weak assertions, non-determinism) |
+| **code-quality-auditor** | `development/standards/test-quality-method/code_quality_auditor.md` | Audit source-code quality gates (exception taxonomy, imports, docstrings) |
+| **deadcode-hunter** | `development/standards/test-quality-method/deadcode_hunter.md` | Identify source code that is dead or covered only incidentally |
+| **process-architect** | `development/standards/test-quality-method/process_architect.md` | Design and improve the test-quality enforcement workflow |
+| **devils-advocate** | `development/standards/test-quality-method/devils_advocate.md` | Critically review every other agent's proposals before implementation |
+| **implementer** | `development/standards/test-quality-method/implementer.md` | Consolidate specialist proposals into a final remedy plan and execute |
 
 **Recommended workflow:**
 1. `test-creator` → produces prioritized coverage-gap analysis and test designs.

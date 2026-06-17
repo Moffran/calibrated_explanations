@@ -22,10 +22,10 @@ Current maintainers:
 
 - **Small changes** (docs, tests, refactors) can be approved by any maintainer.
 - **Significant changes** (public APIs, architecture, serialization contracts,
-  plugin registry rules) require an ADR in `docs/improvement/adrs/` and at least
+  plugin registry rules) require an ADR in `development/adrs/` and at least
   one additional maintainer review.
-- **Release gates** are tracked in `docs/improvement/RELEASE_PLAN_v1.md` and the
-  matching `docs/improvement/vx.y.z_plan.md` implementation plans.
+- **Release gates** are tracked in `development/current-work/RELEASE_PLAN_v1.md` and the
+  matching `development/current-work/vX.Y.Z_plan.md` implementation plans.
 
 ## Contributor expectations
 

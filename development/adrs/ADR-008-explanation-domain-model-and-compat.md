@@ -1,0 +1,109 @@
+> **Active scope:** Governing architectural decision for the `Explanation` dataclass as the authoritative domain model and the `legacy_to_domain`/`domain_to_legacy` compatibility layer. Remains active through the serialization boundary migration and v1.0.0; superseded when the domain-authority migration to core pipelines is complete.
+
+> **Status note (2025-12-02):** Last edited 2025-12-02 · Archive after: Retain indefinitely as architectural record · Implementation window: Completed in v0.11.0.
+
+# ADR-008: Explanation Domain Model & Legacy-Compatibility Strategy
+
+Status: Accepted (completed in v0.11.0)
+Date: 2025-08-22
+Deciders: Core maintainers
+Reviewers: TBD
+Supersedes: None
+Superseded-by: None
+
+Updated: 2025-10-31
+Update Note: Added Paper-aligned semantics for clarification
+
+## Context
+
+Issue reported: The current `explanations.py` stores explanation data in a dict with a mix of
+singletons (for instance-level values) and lists/arrays (per-feature rule values).
+This makes iteration/filtering awkward and hard to reason about.
+
+## Decision
+
+Introduce an internal domain model with first-class rule objects:
+
+- `Explanation`: top-level metadata (task, model info, calibration params, provenance), and `rules: list[FeatureRule]`.
+- `FeatureRule`: per-rule payload (feature id/name, predicate/interval, attribution/weight, support, confidence/uncertainty, local details).
+- Build `Explanation` internally from existing pipelines, but keep public APIs and serializers returning the legacy dict shape via an adapter until schema v1 is adopted.
+
+Rationale: improves clarity, enables easy filtering/transforms, and aligns with future schema and visualization work.
+
+### Paper-aligned semantics
+
+The CE classification and regression papers define the structure of factual and
+alternative explanations. The domain model, adapters, and any future
+implementations **must** preserve these semantics:
+
+- **Factual explanations** always emit the calibrated prediction with its
+  uncertainty interval plus factual feature rules. Each rule binds the observed
+  feature value to a condition and exposes the calibrated feature weight with
+  its own uncertainty interval.
+- **Alternative explanations** only surface collections of alternative feature
+  rules. Every rule pairs the alternative condition with the calibrated
+  prediction estimate and associated uncertainty interval for that scenario. Any
+  feature-weight deltas are auxiliary metadata used for ranking but do not
+  replace the prediction interval in the primary payload.
+
+### Formal Rule Definitions
+
+A **factual condition** is a predicate that captures a threshold condition (numeric) or
+exact value (categorical) of a feature instance. Examples:
+
+- "numeric_feature_x <= 0.5" (if value is equal to or below 0.5) or "numeric_feature_x > 0.5" (if value is above 0.5)
+- "nominal_feature_x = cat_y" (if value is equal to cat_y)
+
+An **alternative condition** is a predicate for a counterfactual or
+hypothetical feature value. Examples:
+
+- "numeric_feature_x <= 0.5" (if value is above 0.5) or "numeric_feature_x > 0.5" (if value is equal to or below 0.5)
+- "nominal_feature_x = cat_y" (if value is not cat_y)
+
+Each condition is paired with:
+
+- In factual rules: a calibrated feature weight + uncertainty interval
+- In alternative rules: a calibrated prediction + uncertainty interval
+
+Adapters that serialise to legacy dicts or JSON schemas must retain these
+invariants so downstream consumers continue to receive paper-consistent
+explanations.
+
+## Consequences
+
+- Positive: simpler iteration/filtering, safer invariants, clearer ownership of fields, smoother future schema migration.
+- Negative: adds an adapter layer; requires adapter parity tests and slight maintenance.
+
+## Alternatives
+
+- Keep dict-only approach (status quo): continues complexity and duplication in consumers.
+- Hard break to new dict shape now: would violate deprecation policy and break golden tests.
+
+## Adoption & Migration
+
+- Phase B: implement domain model (`explanations/models.py`) + adapters; add tests ensuring adapter output matches golden fixtures byte-for-byte.
+- Phase B/C: round-trip serialization (domain → JSON → domain) using ADR-005 envelope.
+- Removal: continue supporting legacy public dicts via adapter until v0.8.0 per deprecation policy (ADR-011).
+
+## Addendum (2025-12-02): Domain-Model Hardening for v0.11.0
+
+### Decision
+Complete domain-model hardening by implementing comprehensive adapter tests and ensuring round-trip compatibility between domain and legacy formats.
+
+### Rationale
+The ADR specified domain-model hardening for v0.11.0, including clarifying domain/legacy round-trips and addressing remaining structured metadata gaps. The domain model and basic adapters existed, but lacked comprehensive testing for round-trip fidelity and adapter correctness.
+
+### Implementation
+- **Adapters**: Enhanced `domain_to_legacy` and `legacy_to_domain` functions with robust handling of ragged arrays and missing fields.
+- **Testing**: Added comprehensive unit tests for adapters, including round-trip tests to ensure domain → legacy → domain preserves structure.
+- **Round-Trip Compatibility**: Verified that conversions maintain data integrity for rule weights, predictions, and metadata.
+- **Metadata Gaps**: Addressed structured metadata by ensuring provenance and metadata fields are properly handled in adapters.
+
+### Testing
+- Unit tests cover adapter conversions, round-trip fidelity, and edge cases like ragged arrays.
+- Tests ensure adapters handle missing fields gracefully and preserve paper-aligned semantics.
+
+## Open Questions
+
+- Do we expose the domain model publicly later? Initial stance: internal only; revisit post v0.7.0.
+- Naming and minimal required fields for `FeatureRule`—finalize in implementation PR.

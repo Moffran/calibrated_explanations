@@ -4,7 +4,7 @@ This module contains tests for regression models using the CalibratedExplainer f
 
 IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
 protected integration tests relied on release gating and regression
-protection tooling. See docs/improvement/test-quality-method/README.md.
+protection tooling. See development/standards/test-quality-method/README.md.
 
 The tests cover various scenarios including failure cases, probabilistic explanations, conditional explanations,
 and explanations with difficulty estimators. The tests use pytest for testing and include fixtures for generating

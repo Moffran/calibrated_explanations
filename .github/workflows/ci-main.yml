@@ -1,6 +1,6 @@
 # CI: Main branch gates
 # Purpose: Main-branch gating workflow — coverage upload, perf guard, anti-pattern audits.
-# Scope: Runs on `main` pushes; protects releases. See docs/improvement/CI-upgrade.md
+# Scope: Runs on `main` pushes; protects releases. See development/current-work/CI-upgrade.md
 # for branch-protection flip instructions.
 name: CI — Main branch gates
 on:

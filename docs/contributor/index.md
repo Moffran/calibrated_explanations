@@ -17,8 +17,8 @@ Repository authority:
 
 Contributor-facing semantics references:
 - {doc}`../foundations/concepts/calibrated_interval_semantics`
-- `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` (maintainer-only docs set)
-- `docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
+- `development/adrs/ADR-021-calibrated-interval-semantics.md` (maintainer-only docs set)
+- `development/adrs/ADR-026-explanation-plugin-semantics.md` (maintainer-only docs set)
 
 ```{toctree}
 :maxdepth: 1

@@ -45,7 +45,7 @@ Before removing a symbol, verify it meets the ADR-011 "Two Minor Release" rule:
 1. Delete the implementation, deprecated parameters, or module shims.
 2. Update `docs/migration/deprecations.md`: move entry to "Removed" section.
 3. Remove associated deprecation tests.
-4. Update `docs/improvement/RELEASE_PLAN_v1.md` status table.
+4. Update `development/current-work/RELEASE_PLAN_v1.md` status table.
 
 ---
 
@@ -88,7 +88,7 @@ Add an entry to `docs/migration/deprecations.md`:
 | `old_param` | `top_features` | v0.11.0 | v0.13.0 | Uses `deprecate()` in `explain_factual`. |
 ```
 
-Also update the status table in `docs/improvement/RELEASE_PLAN_v1.md`.
+Also update the status table in `development/current-work/RELEASE_PLAN_v1.md`.
 
 ---
 

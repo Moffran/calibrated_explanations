@@ -13,11 +13,11 @@ Since we are now open to contributions, we welcome your feedback, suggestions, a
 ## Roadmap and ADR-driven development
 
 - Roadmap: see `ROADMAP.md` for a high-level summary of the current release pillars and the implementation plan that supports them.
-- Release Plan: see `docs/improvement/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
+- Release Plan: see `development/current-work/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
 - Milestone Plan: see `vx.y.z_plan.md` (e.g., `v0.10.1_plan.md`) for detailed checklists that map to each release plan milestone.
-- ADRs: see `docs/improvement/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
-- Documentation: Follow [Standard-004](docs/standards/STD-004-documentation-audience-standard.md) for all documentation structure and audience guidelines.
-- Legacy API: If your change affects `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods, update `docs/improvement/legacy_user_api_contract.md` and the associated parity tests in the same PR (ADR-020).
+- ADRs: see `development/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
+- Documentation: Follow [Standard-004](development/standards/STD-004-documentation-audience-standard.md) for all documentation structure and audience guidelines.
+- Legacy API: If your change affects `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods, verify against `development/finished-work/legacy_user_api_contract.md` (historical surface inventory) and update the associated parity tests in the same PR (ADR-020).
 
 Current highlights coming from reported issues and the release plan:
 
@@ -63,8 +63,8 @@ PR expectations:
 - Add/adjust tests: unit tests for new modules/paths, and keep golden/API snapshot tests unchanged unless the release plan explicitly calls for a public change (then update snapshots intentionally).
 - Quality gates should pass: ruff lint/format, pytest, and mypy. New modules may be subject to stricter mypy settings (see `pyproject.toml`).
 - If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `tests/benchmarks/` and `scripts/`.
-- For architectural/public changes, include/modify an ADR in `docs/improvement/adrs/` and link it in the PR.
-- **Legacy API compatibility**: Changes to `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods must preserve the documented contract in `docs/improvement/legacy_user_api_contract.md`. The PR template includes a parity review checkpoint; regression tests in `tests/unit/api/test_legacy_user_api_contract.py` enforce this guardrail (ADR-020).
+- For architectural/public changes, include/modify an ADR in `development/adrs/` and link it in the PR.
+- **Legacy API compatibility**: Changes to `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods must preserve the documented contract in `development/current-work/legacy_user_api_contract.md`. The PR template includes a parity review checkpoint; regression tests in `tests/unit/api/test_legacy_user_api_contract.py` enforce this guardrail (ADR-020).
 
 ### Dependency constraints
 
@@ -112,7 +112,7 @@ Additional checks:
 ADR-017 and ADR-018 define the internal style rules that keep the plugin-first
 architecture consistent. The cheat-sheet below summarises what reviewers expect
 in day-to-day contributions; consult the ADRs for the full context and
-motivation.【F:docs/improvement/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:docs/improvement/adrs/ADR-018-code-documentation-standard.md†L1-L62】
+motivation.【F:development/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:development/adrs/ADR-018-code-documentation-standard.md†L1-L62】
 
 ### Naming conventions (ADR-017)
 

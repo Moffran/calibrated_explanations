@@ -13,9 +13,9 @@ roles from ADR-030.
 
 ## Required references
 
-- `docs/improvement/test-quality-method/README.md` (canonical method + options)
-- `docs/improvement/test-quality-method/code_quality_auditor.md` (code-quality prompt)
-- `docs/improvement/test-quality-method/anti_pattern_auditor.md` (anti-pattern prompt)
+- `development/standards/test-quality-method/README.md` (canonical method + options)
+- `development/standards/test-quality-method/code_quality_auditor.md` (code-quality prompt)
+- `development/standards/test-quality-method/anti_pattern_auditor.md` (anti-pattern prompt)
 
 ## Use this skill when
 

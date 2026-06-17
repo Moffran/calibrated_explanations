@@ -1,7 +1,7 @@
 # CI: Nightly heavy jobs
 # Purpose: Scheduled heavy jobs (parity harness, notebook audits, examples).
 # Scope: Runs nightly or on demand; not required for quick PRs. See
-# docs/improvement/CI-upgrade.md for rationale and scheduling guidance.
+# development/current-work/CI-upgrade.md for rationale and scheduling guidance.
 name: CI — Nightly heavy jobs
 on:
   schedule:

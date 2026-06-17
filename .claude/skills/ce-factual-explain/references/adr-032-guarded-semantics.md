@@ -1,6 +1,6 @@
 # ADR-032: Guarded Explanation Semantics — Reference Extract
 
-> **Source:** `docs/improvement/adrs/ADR-032-guarded-explanation-semantics.md`
+> **Source:** `development/adrs/ADR-032-guarded-explanation-semantics.md`
 > Loaded by `ce-factual-explain` and `ce-alternatives-explore` skills.
 
 ---

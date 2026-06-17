@@ -16,7 +16,7 @@ As of **v0.11.3 Task 6**, PlotSpec is the default user-facing plotting path for:
   into those functions
 
 This default change follows the v0.11.2 semantic/visual mending evidence and
-human review recorded under `docs/improvement/plot_spec/`.
+human review recorded under `development/finished-work/plot_spec/`.
 
 ## Legacy opt-out and fallback
 

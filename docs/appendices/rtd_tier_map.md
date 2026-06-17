@@ -2,7 +2,7 @@
 
 This page maps the public RTD pages to STD-004 tiers.
 
-- Tier assignment policy follows `docs/standards/STD-004-documentation-audience-standard.md`.
+- Tier assignment policy follows `development/standards/STD-004-documentation-audience-standard.md`.
 - Entry-point pages also include bottom-of-page `Entry-point tier: Tier X.` labels.
 
 | Page | Tier |

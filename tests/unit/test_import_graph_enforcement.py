@@ -361,13 +361,13 @@ class TestImportGraphIntegration:
         """Verify Stage 5 completion is documented."""
         # Note: This will pass as soon as Stage 5 is marked complete
         release_plan_candidates = [
-            Path("docs/improvement/RELEASE_PLAN_v1.md"),
-            Path("docs/improvement/RELEASE_PLAN_v1.md"),
+            Path("development/current-work/RELEASE_PLAN_v1.md"),
+            Path("development/current-work/RELEASE_PLAN_v1.md"),
         ]
         # Some environments (Linux) are case-sensitive while others (Windows) are not.
         assert any(
             plan.exists() for plan in release_plan_candidates
-        ), "Stage 5 documentation should include the release plan in docs/improvement."
+        ), "Stage 5 documentation should include the release plan in development/current-work/."
 
         # After implementation, this should reference Stage 5 completion
         # This test serves as a marker for Stage 5 readiness

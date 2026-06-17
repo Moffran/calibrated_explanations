@@ -34,7 +34,7 @@ probabilities, probability_interval = explainer.predict_proba(
 
 ### 1.2 What does "thresholded regression" mean?
 
-Definition source: `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md`.
+Definition source: `development/adrs/ADR-021-calibrated-interval-semantics.md`.
 
 It is the same regression mode described from the implementation angle:
 
@@ -80,9 +80,9 @@ va = VennAbers(None, (self.ce.y_cal[cal_va] <= y_threshold).astype(int), ...)
 
 | File | Context |
 | --- | --- |
-| `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` | Architecture semantics |
-| `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` | Plugin strategy terminology |
-| `docs/improvement/legacy_user_api_contract.md` | Historical contract references |
+| `development/adrs/ADR-021-calibrated-interval-semantics.md` | Architecture semantics |
+| `development/adrs/ADR-013-interval-calibrator-plugin-strategy.md` | Plugin strategy terminology |
+| `development/current-work/legacy_user_api_contract.md` | Historical contract references |
 | `docs/foundations/governance/optional_telemetry.md` | Technical telemetry context |
 
 ### 2.3 Code usage patterns
@@ -139,8 +139,8 @@ Control: keep this mapping in Tier 3 reference pages and keep Tier 1 and Tier 2 
 ## Section 6: Related references
 
 - {doc}`calibrated_interval_semantics`
-- `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md`
-- `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md`
+- `development/adrs/ADR-021-calibrated-interval-semantics.md`
+- `development/adrs/ADR-013-interval-calibrator-plugin-strategy.md`
 - {doc}`probabilistic_regression`
 - {doc}`terminology`
 

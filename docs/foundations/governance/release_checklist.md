@@ -1,6 +1,6 @@
 # Release checklist
 
-Before publishing a release, review `ROADMAP.md` and the more detailed implementation plan in `docs/improvement/RELEASE_PLAN_v1.md` to ensure each pillar is on track. The checklist below keeps the release gate lightweight:
+Before publishing a release, review `ROADMAP.md` and the more detailed implementation plan in `development/current-work/RELEASE_PLAN_v1.md` to ensure each pillar is on track. The checklist below keeps the release gate lightweight:
 
 1. **Alignment check** – confirm every planned change is captured either through
    the selected pillar in the roadmap or through supporting ADRs, and note the
@@ -12,7 +12,7 @@ Before publishing a release, review `ROADMAP.md` and the more detailed implement
    Preserve the `pytest --cov` summary for the release notes and update the
    public coverage badge if the percentage changes.
 3. **Legacy API gate** – verify that the legacy user API contract documented in
-   `docs/improvement/legacy_user_api_contract.md` is intact. Run
+   `development/finished-work/legacy_user_api_contract.md` is intact. Run
    `pytest tests/unit/api/test_legacy_user_api_contract.py -v` and confirm
    zero failures. If any legacy surface changed, confirm it was explicitly
    scheduled by the release plan and that the contract doc and parity tests

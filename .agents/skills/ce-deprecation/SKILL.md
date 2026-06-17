@@ -45,7 +45,7 @@ Before removing a symbol, verify it meets the ADR-011 "Two Minor Release" rule:
 2. Update `docs/migration/deprecations.md`: move the row from **Active Deprecations** to **Removed Deprecations (History)** and fill in the actual removal version.
 3. Confirm no remaining call sites exist in `src/` via `grep -r "<symbol>" src/`.
 4. Remove associated deprecation tests.
-5. Update `docs/improvement/RELEASE_PLAN_v1.md` status table.
+5. Update `development/current-work/RELEASE_PLAN_v1.md` status table.
 
 ---
 
@@ -88,7 +88,7 @@ Add an entry to `docs/migration/deprecations.md`:
 | `old_param` | `top_features` | v0.9.0 | v0.11.0 | Uses `deprecate()` in `explain_factual`. |
 ```
 
-Also update the status table in `docs/improvement/RELEASE_PLAN_v1.md`.
+Also update the status table in `development/current-work/RELEASE_PLAN_v1.md`.
 
 ---
 

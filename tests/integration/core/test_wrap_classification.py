@@ -4,7 +4,7 @@ This module contains unit tests for the `WrapCalibratedExplainer` class from the
 
 IMPORTANT: THESE TESTS MUST NOT BE REMOVED OR SILENTLY MODIFIED. They are
 protected integration tests relied on release gating and regression
-protection tooling. See docs/improvement/test-quality-method/README.md.
+protection tooling. See development/standards/test-quality-method/README.md.
 
 The tests cover both binary and multiclass classification scenarios.
 Fixtures:

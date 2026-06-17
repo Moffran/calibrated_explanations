@@ -34,7 +34,7 @@ below. It will NOT generate new files unless asked.
    `src/calibrated_explanations/__init__.py` for exported names and their signatures.
 2. **Diff against `CONTRIBUTOR_INSTRUCTIONS.md`** – identify stale method names, removed
    parameters, or missing new symbols.
-3. **Read active ADRs** – check `docs/improvement/adrs/` for any ADR whose status
+3. **Read active ADRs** – check `development/adrs/` for any ADR whose status
    changed since the last context update.
 4. **Update `CONTRIBUTOR_INSTRUCTIONS.md` first** – minimal diff only; do not rewrite
    unchanged sections.
