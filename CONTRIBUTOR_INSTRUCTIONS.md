@@ -98,6 +98,130 @@ Design patterns:
 - Fallback tests: tests that rely on a fallback **must** use the `enable_fallbacks`
   fixture and assert a `UserWarning` is raised.
 
+### 4A. Capability-Based Verification
+
+Externally visible CE capability claims are product/library claims about
+`calibrated_explanations` behavior. Treat them as verifiable engineering
+contracts, not as verified facts merely because they appear in documentation.
+
+Use this chain for release confidence:
+
+```text
+Capability claim
+    -> requirement
+    -> verification case
+    -> evidence record
+```
+
+Definitions:
+
+- **Capability claim**: a user-visible or release-visible statement about what
+  CE provides.
+- **Requirement**: a scoped, testable obligation derived from one or more
+  capability claims.
+- **Verification case**: an automated, manual, analytical, or review-based
+  check mapped to a requirement.
+- **Evidence**: a durable record of the verification result, including enough
+  metadata to reconstruct the context.
+
+Rules:
+
+1. Capability claims are not requirements.
+2. Requirements are not tests.
+3. Tests are not evidence.
+4. Evidence is the recorded result of running a defined verification against a
+   specific version and configuration.
+5. Capability claims must be decomposed into explicit requirements before they
+   are used for release confidence.
+6. Requirements must be testable, scoped, and linked to concrete public
+   behavior.
+7. Tests must verify requirements, not vague promotional language.
+8. Evidence should record enough information to reconstruct what was checked,
+   including the version, data/configuration, verification identifier, and
+   result.
+
+Each requirement should distinguish the obligation type it expresses, for
+example:
+
+- API contract
+- payload/schema contract
+- numerical behavior
+- statistical-method assumption
+- documentation boundary
+- visualization behavior
+- plugin or extension behavior
+
+Statistical claims must state their assumptions explicitly, especially
+calibration-data assumptions, exchangeability assumptions, task-type
+constraints, and empirical-vs-theoretical verification boundaries.
+
+Avoid overclaiming:
+
+- Empirical tests do not prove finite-sample theoretical guarantees by
+  themselves.
+- A test that checks output shape does not prove calibration validity.
+- A visual rendering test does not prove the scientific meaning of an
+  explanation.
+- Documentation claims must be scoped to what the implementation and tests
+  actually support.
+
+Anti-patterns:
+
+- Treating vague documentation prose as a testable requirement without
+  normalization.
+- Hiding acceptance criteria inside test code only.
+- Claiming that empirical smoke tests prove theoretical guarantees.
+- Adding tests with no requirement link.
+- Adding requirements with no verification strategy.
+- Adding claims with no owner.
+- Duplicating capability definitions in multiple places.
+- Using vague claims as release evidence.
+
+Future claim IDs and requirement IDs should use CE-native prefixes, for example
+`CE-CAP-...` and `CE-REQ-...`.
+
+Canonical CE locations for capability verification material:
+
+| Material | Location |
+|---|---|
+| Capability claims | `development/capabilities/claims/` |
+| Requirements | `development/capabilities/requirements/` |
+| Verification scenarios and helpers | `verification/capabilities/` |
+| Pytest verification | `tests/capabilities/` for new capability-contract tests; existing nearby unit or integration tests may be linked from requirements when appropriate |
+| Evidence run outputs | `reports/verification/` |
+| Curated release or closure evidence summaries | `development/finished-work/` |
+
+These paths define the CE verification layout even if the directories do not yet
+exist. Do not create additional locations for the same material. This instruction
+defines the layout only; do not add claim catalogs, requirement catalogs,
+schemas, verification code, tests, or evidence records unless the task explicitly
+requires that work.
+
+Illustrative example only, not a binding schema:
+
+```yaml
+claim_id: CE-PRED-REG-001
+claim_type: capability
+claim_text: >
+  CE supports calibrated prediction intervals for supported regression workflows.
+requirements:
+  - CE-REQ-PRED-REG-API-001
+  - CE-REQ-PRED-REG-BOUNDS-001
+  - CE-REQ-PRED-REG-ASSUMPTIONS-001
+verification:
+  proves:
+    - api_contract
+    - interval_bounds_contract
+    - documented_assumption_boundary
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result
+```
+
 ---
 
 ## 5. Fallback Visibility Policy (mandatory)
@@ -120,12 +244,20 @@ Every fallback must be visible to users. No silent fallbacks.
 | `src/calibrated_explanations/core/config_manager.py` | Runtime configuration authority: `ConfigManager`, `get_process_config_manager`, `init_process_config_manager` |
 | `src/calibrated_explanations/plugins/` | Plugin implementations |
 | `src/calibrated_explanations/ce_agent_utils.py` | Legacy compatibility module — backward-compat and example only, not the recommended agent interface |
+| `development/README.md` | Canonical development documentation map |
+| `development/current-work/` | Active release plans, status tracking, and execution checklists |
+| `development/future-work/` | Forward-looking plans that are not active execution state |
+| `development/finished-work/` | Closed plans and curated closure evidence summaries |
+| `development/adrs/` | Architectural Decision Records after migration |
+| `development/standards/` | Engineering Standards after migration |
+| `development/capabilities/claims/` | Capability claim catalog when introduced |
+| `development/capabilities/requirements/` | Requirement catalog when introduced |
+| `verification/capabilities/` | Capability verification scenarios and helpers when introduced |
 | `docs/get-started/ce_first_agent_guide.md` | Runnable CE-first guide |
 | `docs/foundations/how-to/configure_runtime.md` | How-to guide: ConfigManager, env vars, pyproject.toml sections, export diagnostics |
-| `docs/improvement/RELEASE_PLAN_v1.md` | Active release plan and milestone gates |
-| `docs/improvement/adrs/` | Architectural Decision Records |
-| `docs/standards/` | Engineering Standards (STD-001 through STD-005) |
-| `docs/improvement/test-quality-method/` | Test-quality agent team definitions |
+| `docs/improvement/` | Legacy development-planning area; existing files remain valid until migrated, but no new planning or verification-governance files should be added there |
+| `docs/standards/` | Legacy Engineering Standards location until migrated |
+| `docs/improvement/test-quality-method/` | Legacy test-quality agent team definitions until migrated |
 | `tests/README.md` | Authoritative test guidance |
 | `CHANGELOG.md` | Changelog; update under `## [Unreleased]` for every change |
 | `Makefile` | Entry points: `make test`, `make ci-local` |
@@ -133,8 +265,12 @@ Every fallback must be visible to users. No silent fallbacks.
 ### Root-directory policy
 
 **No new root-level directories may be created** without explicit maintainer approval.
+`development/` is the approved exception for maintainer planning, engineering
+governance, capability claim/requirement catalogs, and curated closure evidence
+summaries.
 Artifact and report outputs must be placed under an existing top-level directory:
-`reports/`, `artifacts/`, `docs/`, `scripts/`, or `tests/`.
+`reports/`, `artifacts/`, `docs/`, `scripts/`, `tests/`, or `development/`
+according to the location map above.
 Proposing a new root directory requires a PR rationale and an update to this file.
 
 ---
@@ -282,22 +418,33 @@ populated from local report files and reflect the last time those scripts ran.
 so after a full local checks run the artifact will have real ruff/mypy results.
 
 Before any implementation work:
-1. Read `docs/improvement/RELEASE_PLAN_v1.md` to identify the active milestone.
-2. Check `docs/improvement/adrs/` for ADRs governing the area being changed.
+1. Read `development/README.md` to identify the current development map and
+   transition rules.
+2. Read the active release plan. During migration, this may still be
+   `docs/improvement/RELEASE_PLAN_v1.md`; after migration it belongs under
+   `development/current-work/`.
+3. Check the governing ADRs and Standards. During migration, active records may
+   still live in `docs/improvement/adrs/` and `docs/standards/`; after migration
+   they belong under `development/adrs/` and `development/standards/`.
 
 ### 7A. Engineering planning hierarchy authority (mandatory)
 
 The repository planning/control hierarchy is authoritative and must be preserved:
 
-1. `docs/improvement/RELEASE_PLAN_v1.md` (release-level plan and control gates)
-2. Concrete implementation plans in `vX.Y.Z_plan.md`
-3. Governance via ADRs (`docs/improvement/adrs/`) and Standards (`docs/standards/`)
+1. `development/README.md` (development documentation map and location authority)
+2. Active release plan in `development/current-work/` after migration; during
+   migration, `docs/improvement/RELEASE_PLAN_v1.md` remains valid
+3. Concrete implementation plans in `development/current-work/` or
+   `development/future-work/`
+4. Governance via ADRs and Standards in `development/adrs/` and
+   `development/standards/` after migration; during migration, existing records
+   in `docs/improvement/adrs/` and `docs/standards/` remain valid
 
 Conflict rule: ADRs and Standards govern design, behavior, architecture, and
 engineering standards. If any plan text conflicts with an ADR/Standard, the
 ADR/Standard is authoritative and must win.
 
-Do not redesign, replace, or create a parallel planning hierarchy unless one of these
+Do not redesign, replace, or create another planning hierarchy unless one of these
 is true:
 
 - The current documents directly contradict each other.
@@ -310,6 +457,13 @@ When a shared instruction must be added or updated, `CONTRIBUTOR_INSTRUCTIONS.md
 is the primary location. Platform-specific files (`AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`, `.github/copilot-instructions.md`) must not become the main source of
 repository-wide engineering rules.
+
+`docs/improvement/` is a legacy planning area during migration. Do not add new
+planning, ADR, Standard, claim, requirement, verification-framework, or curated
+evidence files there. Existing files may be edited in place only when moving them
+would be outside the scope of the current task. When active material from
+`docs/improvement/` is already being substantially changed, move it to the
+appropriate `development/` location in the same change.
 
 Default execution posture for plan/instruction edits:
 
@@ -386,7 +540,9 @@ decisions. The ADR takes precedence over any plan document.
 > are superseded and retained in `docs/improvement/adrs/` with a `superseded` prefix.
 > See `docs/improvement/adrs/` for the full list.
 
-All active ADRs live in `docs/improvement/adrs/`.
+Current ADRs live in `docs/improvement/adrs/` until migrated. New ADRs belong
+under `development/adrs/` unless the task is explicitly scoped to maintaining an
+existing legacy file in place.
 
 ### Engineering Standards (STDs)
 
@@ -398,17 +554,21 @@ All active ADRs live in `docs/improvement/adrs/`.
 | STD-004 | Documentation Audience Standard | Writing or restructuring docs |
 | STD-005 | Logging and Observability Standard | Adding log statements or telemetry |
 
-All standards live in `docs/standards/`.
+Current standards live in `docs/standards/` until migrated. New standards belong
+under `development/standards/` unless the task is explicitly scoped to
+maintaining an existing legacy file in place.
 
 ---
 
 ## 10. ADR Conformance Workflow
 
 When making architectural or design decisions:
-1. Read the relevant ADRs in `docs/improvement/adrs/`.
-2. If an ADR governs the area, the ADR takes precedence over any plan document.
-3. Record the ADR reference in inline code comments for future agents.
-4. If a conflict arises, request clarification rather than guessing.
+1. Read `development/README.md` to identify the current authoritative locations.
+2. Read the relevant ADRs. During migration, existing ADRs may still live in
+   `docs/improvement/adrs/`; new ADRs belong under `development/adrs/`.
+3. If an ADR governs the area, the ADR takes precedence over any plan document.
+4. Record the ADR reference in inline code comments for future agents.
+5. If a conflict arises, request clarification rather than guessing.
 
 ---
 
@@ -457,8 +617,9 @@ agents should understand this method.
 
 ### Method overview
 
-The full method lives in `docs/improvement/test-quality-method/README.md`. Three
-usage modes:
+The full method currently lives in
+`docs/improvement/test-quality-method/README.md` until migrated. Three usage
+modes:
 
 - **Option A – Test-Focused Cycle**: Run per-test coverage pipeline → prune redundant
   tests → close coverage gaps with high-signal behavioral tests.

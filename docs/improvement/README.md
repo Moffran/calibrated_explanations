@@ -1,13 +1,27 @@
-# Improvement (Maintainers & Contributors)
+# Improvement (Legacy Transition Area)
 
-This folder collects improvement plans, ADRs, and work-in-progress governance
-material used to steer releases.
+This folder contains existing improvement plans, ADRs, and work-in-progress
+governance material created before the `development/` documentation map was
+introduced.
+
+New development planning, ADRs, Standards, capability claims, requirements,
+verification-framework material, and curated evidence summaries belong under
+`development/` according to `development/README.md`. Existing files in this
+folder remain valid until migrated.
 
 ## Start here
 
-- Release plan: `docs/improvement/RELEASE_PLAN_v1.md`
-- ADRs: `docs/improvement/adrs/`
-- Test quality method (ADR-030 tooling + roles): `docs/improvement/test-quality-method/README.md`
+- Development map: `development/README.md`
+- Current release plan: `docs/improvement/RELEASE_PLAN_v1.md` until migrated
+- ADRs: `docs/improvement/adrs/` until migrated
+- Test quality method (ADR-030 tooling + roles): `docs/improvement/test-quality-method/README.md` until migrated
+
+## Transition rules
+
+- Do not add new planning or verification-governance files here.
+- When active material here is substantially changed, move it to the appropriate
+  `development/` location in the same change when that move is in scope.
+- Keep existing references accurate while migration is incomplete.
 
 ## Related plans
 
