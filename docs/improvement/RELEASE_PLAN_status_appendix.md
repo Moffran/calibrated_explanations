@@ -26,7 +26,7 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 
 | Item | Current status | Target milestone or note |
 | --- | --- | --- |
-| ADR-004 | Partially complete | Only explicit `strategy="auto"` policy closure remains (v1.0.0-rc) |
+| ADR-004 | Completed (2026-06-17) | Gap 1 closed (v0.11.4): `deprecate()` fires at `parallel/parallel.py:448-456` when `strategy="auto"` and `enabled=True`; test in `tests/unit/core/test_parallel_deprecation.py`; removal ETA v1.0.0 |
 | ADR-005 | Completed (2026-06-11) | Last gap closed on code evidence: provenance propagates through both adapters (`explanations/adapters.py:36-41`, `:68`); `schema.validate_payload` and serialization invariants intact post-Task-1 |
 | ADR-006 | Completed | All v0.11.3 gaps closed: gap 3 superseded (Task 5 Group K); gap 2 closed 2026-06-02 (accepted-registration audit events added to all 4 typed registration functions); gap 1 carry-forward (monitor, no code gap) |
 | ADR-008 | Partially complete | v0.11.3 golden fixture tests and `_safe_pick` observability closed (gaps 4/5, 2026-06-02); gap 2 (conjunctive round-trip) closed in code pre-v0.11.4 (`adapters.py:82-89`); open: gap 1 (domain authority, v1.0.0-rc), gap 3 (structured metadata, v0.11.4 Task 7) |
@@ -96,11 +96,7 @@ Unified severity scales (brief)
 
 ### ADR-004 - Parallel Execution Framework
 
-_Last gap analysis: 2026-06-11_
-
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Implicit `auto` strategy enables environment-dependent backend selection contrary to ADR decision | 3 | 3 | 9 | `ParallelConfig(strategy="auto")` is the default; when `enabled=True` the 5-step `auto_strategy()` heuristic (`parallel/parallel.py:517-589`) selects `sequential` / `threads` / `processes` / `joblib` based on CPU count, CI detection, task size, workload count, joblib availability, and OS. A caller who sets `enabled=True` without an explicit strategy gets a silently environment-dependent backend — non-deterministic across machines and in violation of ADR-004 §Decision "no automatic strategy selection." Fix: deprecate `strategy="auto"` with an ADR-011 `DeprecationWarning` when `enabled=True AND strategy resolves to "auto"`; require explicit strategy for v1.0.0. Target milestone: v1.0.0-rc. |
+**Compliance verification (2026-06-17):** Gap 1 closed in v0.11.4. `deprecate()` call fires at `parallel/parallel.py:448-456` when `strategy == "auto"` and `enabled=True`; verified by `tests/unit/core/test_parallel_deprecation.py`. Active-deprecations ledger row added to `docs/migration/deprecations.md` with removal ETA v1.0.0. The `auto_strategy()` heuristic is retained but deprecated; explicit strategy is required for v1.0.0. No remaining open gaps. `make deprecation-closure` passes (0 blocking).
 
 ### ADR-005 - Explanation Payload Schema
 
