@@ -42,6 +42,7 @@ class PyprojectRecordingIntervalPlugin(IntervalCalibratorPlugin):
         "provider": "tests",
         "capabilities": ["interval:classification"],
         "modes": ("classification",),
+        "data_modalities": ("tabular",),
         "dependencies": (),
         "trusted": True,
         "trust": {"trusted": True},

@@ -25,6 +25,7 @@ class ExplanationPluginStub:
         "capabilities": ("explain", "task:classification"),
         "modes": ("factual",),
         "tasks": ("classification",),
+        "data_modalities": ("tabular",),
         "trust": {"trusted": False},
         "dependencies": (),
     }
@@ -44,6 +45,7 @@ class IntervalPluginStub:
         "provider": "tests",
         "capabilities": ("interval",),
         "modes": ("classification",),
+        "data_modalities": ("tabular",),
         "dependencies": (),
         "fast_compatible": True,
         "requires_bins": False,

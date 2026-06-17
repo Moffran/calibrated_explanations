@@ -353,7 +353,13 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     meta["plugin_api_version"] = _parse_plugin_api_version(
         meta.get("plugin_api_version", "1.0"), plugin_name=meta.get("name")
     )
-    meta["data_modalities"] = _normalise_data_modalities(meta.get("data_modalities", ("tabular",)))
+    # ADR-033 §6.2: plugins must declare data_modalities explicitly; default-fallback removed in v0.11.4.
+    if "data_modalities" not in meta:
+        raise ValidationError(
+            "plugin_meta missing required key: data_modalities. "
+            "Declare e.g. data_modalities=['tabular'] per ADR-033 §6.2."
+        )
+    meta["data_modalities"] = _normalise_data_modalities(meta["data_modalities"])
     if "config_schema" in meta:
         validate_plugin_config_schema(meta["config_schema"])
 

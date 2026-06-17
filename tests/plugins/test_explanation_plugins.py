@@ -44,6 +44,7 @@ def test_registry_respects_denylist_on_resolution_and_explicit_override_allows_u
             "capabilities": ("explain", "explanation:fast", "task:classification"),
             "modes": ("fast",),
             "tasks": ("classification",),
+            "data_modalities": ("tabular",),
             "dependencies": (),
             "trusted": False,
         }

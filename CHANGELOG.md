@@ -5,6 +5,15 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.11.3...main)
 
+### Breaking changes
+
+- **ADR-033 §6.2: `data_modalities` is now required in `plugin_meta`.**
+  `validate_plugin_meta` previously applied a silent `("tabular",)` default when
+  `data_modalities` was absent. That default-fallback is removed in v0.11.4. Plugins
+  missing the key now raise `ValidationError` at registration time. Add
+  `"data_modalities": ["tabular"]` (or the appropriate modality) to your `plugin_meta`
+  dict. See `docs/upgrade/v0.11.4-upgrade-checklist.md` for the full migration note.
+
 ### CI / infrastructure
 
 - Fixed nightly `parity-reference` CI failures for `regression`/`probabilistic_regression`

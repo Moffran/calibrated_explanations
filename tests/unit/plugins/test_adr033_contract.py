@@ -84,17 +84,32 @@ def reset_registry_and_policy():
     set_trust_policy(DefaultPluginTrustPolicy())
 
 
-def test_validate_plugin_meta_defaults_modality_and_api_version():
+def test_validate_plugin_meta_defaults_api_version():
+    """plugin_api_version defaults to '1.0' when absent; data_modalities is now required."""
     meta = {
         "schema_version": 1,
         "name": "tests.base.meta",
         "version": "0.1",
         "provider": "tests",
         "capabilities": ("explain",),
+        "data_modalities": ("tabular",),
     }
     validate_plugin_meta(meta)
     assert meta["plugin_api_version"] == "1.0"
     assert meta["data_modalities"] == ("tabular",)
+
+
+def test_validate_plugin_meta_requires_data_modalities():
+    """Missing data_modalities must raise ValidationError after ADR-033 §6.2 (v0.11.4)."""
+    meta = {
+        "schema_version": 1,
+        "name": "tests.base.no_modality",
+        "version": "0.1",
+        "provider": "tests",
+        "capabilities": ("explain",),
+    }
+    with pytest.raises(ValidationError, match="data_modalities"):
+        validate_plugin_meta(meta)
 
 
 def test_validate_plugin_meta_rejects_invalid_api_version():
@@ -104,6 +119,7 @@ def test_validate_plugin_meta_rejects_invalid_api_version():
         "version": "0.1",
         "provider": "tests",
         "capabilities": ("explain",),
+        "data_modalities": ("tabular",),
         "plugin_api_version": "v1",
     }
     with pytest.raises(ValidationError, match="MAJOR.MINOR"):
@@ -117,6 +133,7 @@ def test_validate_plugin_meta_warns_on_newer_minor_patch_api_version(caplog):
         "version": "0.1",
         "provider": "tests",
         "capabilities": ("explain",),
+        "data_modalities": ("tabular",),
         "plugin_api_version": "1.1",
     }
 

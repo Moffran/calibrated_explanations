@@ -42,7 +42,7 @@ This appendix isolates detailed status material from `docs/improvement/RELEASE_P
 | ADR-028 | Closed (2026-06-15) | Warning-policy regression fixed in Task 15; post-Task-17 fix migrated 2 `calibrated_explainer.py` sites to `deprecate()`. `check_warning_policy.py` now reports 114 sites, 0 unclassified (2026-06-15). |
 | ADR-030 | Completed | Zero-tolerance ratification closed v0.11.3 Task 3 (2026-05-12); marker hygiene taxonomy and mutation policy sections added to ADR-030; gaps 1/2 closed in appendix (2026-06-02) |
 | ADR-032 | Closed (2026-06-13) | All decisions verified. `get_guarded_audit` error message corrected in Task 15: `explanations/explanations.py:236-238` now recommends `explain_factual(..., guarded_options=GuardedOptions())` / `explore_alternatives(...)` — canonical API per ADR-032 decision 1. Deprecated wrappers removed. |
-| ADR-033 | Closed (2026-06-13) | All obligations met. `data_modalities` enforcement closed early in v0.11.3: plugin missing the key now emits `UserWarning` and is skipped (fail-closed). `DeprecationWarning`+default-fallback path removed from `plugins/registry.py`. ADR-033 §6.2 shims are permanent. |
+| ADR-033 | Closed (2026-06-17) | All obligations met. `data_modalities` default-fallback removed in v0.11.4 (Task 3): `validate_plugin_meta` now raises `ValidationError` for plugins missing the key; entry-point path retains `UserWarning`-and-skip pre-check. Breaking change documented in `docs/upgrade/v0.11.4-upgrade-checklist.md`. ADR-033 §6.2 shims are permanent. |
 | ADR-034 | Accepted with deferred v1.0 open items (reconciled 2026-06-13) | Runtime conformance closure complete in v0.11.2. Status-source conflict resolved: ADR-034 §Open Items now documents "Status: Declared out of scope for v1.0.0-rc" for both redaction and export schema contract items. No RC deferrals remain for this ADR. |
 | ADR-035 | Accepted with accepted operational constraint | v0.11.3 re-evaluation complete (2026-06-02): advisory-to-required branch-protection flip is platform-governed; recorded as accepted operational constraint in ADR-035 §v0.11.3 Re-evaluation Record; no in-repo work remains |
 | ADR-036 | Closed (2026-06-13) | §5 validation boundary implemented in Task 15: `validate_plot_artifact()` (public, `plotting.py:308`) called at both build/render boundary points (`plotting.py:387`, `:439`). Artifacts that fail `validate_plotspec` raise `ValidationError` before renderer invocation. 3 dedicated boundary tests in `test_plot_plugin_validation_boundary.py` pass. |
@@ -226,13 +226,11 @@ Re-verified 2026-06-11 against code: `RejectPolicy` canonical members in `core/r
 
 ### ADR-033 - Modality Extension Plugin Contract and Packaging Strategy
 
-_Last gap analysis: 2026-06-11_
+_Last gap analysis: 2026-06-17_
 
 Re-verified 2026-06-11: CLI `--modality` filtering, `vision.py`/`audio.py` shims with `MissingExtensionError`, packaging smoke test, contributor docs, and the v0.11.1 entry-point `DeprecationWarning` for missing `data_modalities` (`plugins/registry.py:1830-1845`) are all delivered. Per ADR-033 §6.2 the shim modules are permanent integration paths (the earlier appendix phrase "shim removal" was incorrect).
 
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | ---: | ---: | ---: | --- |
-| 1 | `data_modalities` default-fallback removal scheduled for v0.12.0/v1.0.0-rc not yet executed | 2 | 2 | 4 | ADR-033 §6.2: at v0.12.0/v1.0.0-rc, plugins without an explicit `data_modalities` declaration must fail `validate_plugin_meta` (`plugins/base.py:352` currently applies the `("tabular",)` default). On schedule — not yet due. Target milestone: v1.0.0-rc. |
+**Compliance verification (2026-06-17):** Gap 1 closed in v0.11.4. `validate_plugin_meta` (`plugins/base.py:356`) now raises `ValidationError` when `data_modalities` is absent — the `("tabular",)` default-fallback has been removed. All first-party CE plugins already declare `data_modalities` explicitly. Entry-point path continues to emit `UserWarning`-and-skip before calling `validate_plugin_meta` (registry.py:1830-1840). Breaking-change note in `docs/upgrade/v0.11.4-upgrade-checklist.md`. No remaining open gaps.
 
 ### ADR-034 - Centralized Configuration Management
 

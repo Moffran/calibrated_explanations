@@ -52,6 +52,7 @@ def make_metadata(name: str, trusted: bool) -> dict[str, object]:
         "capabilities": capabilities,
         "modes": ("factual",),
         "tasks": ("regression",),
+        "data_modalities": ("tabular",),
         "trust": {"trusted": trusted},
         "dependencies": (),
     }
@@ -135,6 +136,7 @@ def test_should_synchronise_all_descriptor_kinds_when_legacy_trust_changes():
                 "capabilities": ("explain", "task:classification"),
                 "modes": ("factual",),
                 "tasks": ("classification",),
+                "data_modalities": ("tabular",),
                 "trust": {"trusted": False},
                 "dependencies": (),
             }
@@ -160,6 +162,7 @@ def test_should_synchronise_all_descriptor_kinds_when_legacy_trust_changes():
             "provider": "tests",
             "capabilities": ("interval",),
             "modes": ("classification",),
+            "data_modalities": ("tabular",),
             "fast_compatible": True,
             "requires_bins": False,
             "confidence_source": "posterior",
@@ -292,6 +295,7 @@ def test_should_untrust_legacy_plugin_when_metadata_is_setitem_mapping():
                     "capabilities": ("explain", "task:classification"),
                     "modes": ("factual",),
                     "tasks": ("classification",),
+                    "data_modalities": ("tabular",),
                     "trust": {"trusted": True},
                     "dependencies": (),
                 }
