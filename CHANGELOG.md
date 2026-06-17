@@ -14,6 +14,10 @@
   `"data_modalities": ["tabular"]` (or the appropriate modality) to your `plugin_meta`
   dict. See `docs/upgrade/v0.11.4-upgrade-checklist.md` for the full migration note.
 
+### Bug fixes
+
+- **ADR-008: Fixed multiclass `class_index` latent serialization bug.** `MultiClassCalibratedExplanations.to_json()` and `to_json_stream()` previously lost `class_index` (and `class_label`) because those keys were added to the legacy payload dict after `legacy_to_domain()` had already constructed the `Explanation` object, so `from_legacy_dict` never extracted them and the domain object carried no class annotation. After the `_exp_to_domain` migration, class annotations are now explicitly merged into `domain.metadata` before serialization — `to_json → from_json` round-trips for multiclass collections preserve `class_index` in each explanation's metadata.
+
 ### CI / infrastructure
 
 - Fixed nightly `parity-reference` CI failures for `regression`/`probabilistic_regression`

@@ -101,6 +101,30 @@ def _make_minimal_factual():
     return result
 
 
+def test_exp_to_domain_returns_explanation_instance():
+    """`_exp_to_domain` must return an Explanation dataclass instance."""
+    ce = _make_minimal_factual()
+    domain = ce._exp_to_domain(ce.explanations[0])
+    assert isinstance(domain, Explanation)
+
+
+def test_exp_to_domain_populates_calibration_metadata():
+    """`_exp_to_domain` must set calibration_metadata as a CalibrationDescriptor with a non-None method."""
+    ce = _make_minimal_factual()
+    domain = ce._exp_to_domain(ce.explanations[0])
+    assert isinstance(domain.calibration_metadata, CalibrationDescriptor)
+    assert domain.calibration_metadata.method is not None
+    assert domain.calibration_metadata.method == ce.calibrated_explainer.mode
+
+
+def test_exp_to_domain_populates_model_metadata():
+    """`_exp_to_domain` must set model_metadata as a ModelDescriptor with the learner class name."""
+    ce = _make_minimal_factual()
+    domain = ce._exp_to_domain(ce.explanations[0])
+    assert isinstance(domain.model_metadata, ModelDescriptor)
+    assert domain.model_metadata.type == "DecisionTreeClassifier"
+
+
 def test_to_json_task_field_matches_explainer_mode():
     """to_json 'task' field must match the explainer mode."""
     ce = _make_minimal_factual()

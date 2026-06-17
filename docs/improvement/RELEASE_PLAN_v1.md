@@ -31,9 +31,9 @@ Detailed ADR/Standard status tables, gap inventories, and historical compliance 
 
 ### Control snapshot
 
-- **Current released version:** v0.11.2
-- **Active detailed milestone:** v0.11.3 (`docs/improvement/v0.11.3_plan.md`)
-- **Next milestone:** v1.0.0-rc (after v0.11.3 closes)
+- **Current released version:** v0.11.3
+- **Active detailed milestone:** v0.11.4 (`docs/improvement/v0.11.4_plan.md`)
+- **Next milestone:** v1.0.0-rc (after v0.11.4 closes)
 - **Status appendix:** `docs/improvement/RELEASE_PLAN_status_appendix.md`
 
 ### Release-blocking conditions
@@ -198,6 +198,7 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 | v0.11.1 | Notebook execution + runtime ceilings (ADR-012); remaining ADR-027/028 enforcement hardening; ADR-033 additive modality rollout follow-through. | No major new code-doc initiative planned beyond maintenance. | No major new coverage initiative planned beyond maintenance. | Double-underscore mutation cleanup completion tasks (Standard-001). | Registry hardening deferred from v0.11.0: full PluginManager resolution migration, trust-state atomicity unification, governance audit completion, and legacy list deprecation. CI upgrade: decommission legacy workflows. |
 | v0.11.2 | Gap audit quick-win docs updates only; no doc-build changes. | Minor maintenance only. | No new coverage work planned. | No new naming work; enforcement maintained. | ConfigManager completion (ADR-034 Phase B), ADR governance sweep, governance dashboard artifact, LIME/SHAP v0.11.2 removal phase (Task 21 execution), deep memory audit (retention/leak fixes), PlotSpec default-promotion follow-up decision (ADR-036/ADR-037), ADR-035 conformance gap remediation, and packaging metadata maturity correction. |
 | v0.11.3 | Minimal docs-build changes; Standard-002 numpydoc gap closure. | Close WrapCalibratedExplainer numpydoc blocks (Standard-002). | No new coverage work planned. | Final transitional shim removal (Standard-001). | RC readiness: Standard-001 shim closure, Standard-002 gap, ADR-030 zero-tolerance ratification, OSS perf harness (stretch), RejectResult→V2 migration (Group L, ADR-011 finalization), configuration management contract closure (Task 10), RC upgrade checklist + safe-defaults guide (Task 11). All implementation work that was previously in v1.0.0-rc is now in this milestone. |
+| v0.11.4 | No new documentation-overhaul work. | No new code-docs work. | No new coverage work. | No new naming work. | Pre-RC ADR gap closure: ADR-004 Gap 1 (`strategy="auto"` deprecation), ADR-008 Gaps 1+3 (serialization domain authority, `CalibrationDescriptor`/`ModelDescriptor` structured metadata, multiclass `class_index` bug fix), ADR-012 Gap 1 (docs linkcheck CI wired), ADR-015 Gap 2 (`ExplainerHandle.learner` deprecation stacklevel), ADR-033 Gap 1 (`data_modalities` required), ADR-038 Gaps 2+3 (plugin taxonomy documentation policy). Nightly parity-reference scikit-learn determinism fix (Task 7). |
 | v1.0.0 | Docs maintenance review; parity checks remain blocking. | Continuous improvement cadence; badge and quarterly reviews. | Waiver backlog should be zero; mutation/fuzzing exploration optional. | Final shim removals verified post-tag; legacy API guard tests green. | Stability declaration: RC contract freeze confirmed, production staging signed off, post-release maintenance cadences scheduled, and packaging classifier promoted to `Development Status :: 5 - Production/Stable` at GA cutover. |
 
 ### v0.6.x (stabilisation patches)

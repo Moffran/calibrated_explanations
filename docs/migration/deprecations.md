@@ -203,6 +203,7 @@ Symbols listed here still emit warnings. Stop using them — they will be remove
 | `calibrated_explanations.core.explain.explain(...)` function | `CalibratedExplainer.explain_factual(...)` | v0.11.x | v1.0.0 | Legacy explain function shim. |
 | `ExplainerHandle.learner` property | `handle.predict()` | v0.11.3 | v1.0.0 | Returns raw underlying model; bypasses all `PredictBridge` invariants (shape checks, calibration state, trust-model enforcement). Plugin predictions must go through `handle.predict()`. ADR-015 gap 2. |
 | `ParallelConfig(strategy='auto')` with `enabled=True` | Pass an explicit strategy: `'sequential'`, `'threads'`, `'processes'`, or `'joblib'` | v0.11.4 | v1.0.0 | Silent heuristic backend selection violates ADR-004 §Decision ("callers must explicitly pass an executor"). `enabled=False` (the default) is unaffected. ADR-004. |
+| `CalibratedExplanations.legacy_payload(exp)` | `to_json()` for serialization; `_exp_to_domain(exp)` for domain model construction | v0.11.4 | v1.0.0 | Category A remediation wrapper around the internal `_legacy_payload` helper. The serialization chain now goes through `_exp_to_domain` directly (ADR-008 Gap 1); `legacy_payload` has no remaining call sites in the production path. |
 
 ### Removed deprecations (history)
 

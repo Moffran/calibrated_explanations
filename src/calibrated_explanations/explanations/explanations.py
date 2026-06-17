@@ -728,18 +728,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Build a legacy-shaped payload from an explanation instance.
 
         .. deprecated::
-            Use _exp_to_domain(exp) instead. This method is retained for
-            backward-compatibility but will be removed in v1.0.0.
+            Internal use only. Call sites inside this module now use
+            ``_exp_to_domain(exp)`` directly. The public surface is
+            ``legacy_payload(exp)`` (deprecated) or ``to_json()`` (preferred).
         """
-        from ..utils.deprecations import deprecate
-
-        deprecate(
-            "_legacy_payload is deprecated and will be removed in v1.0.0. "
-            "Use _exp_to_domain(exp) in serialization paths.",
-            key="explanations__legacy_payload",
-            stacklevel=3,
-            raise_on_error=False,
-        )
         rules_blob = None
         # prefer conjunctive rules when present and populated
         if getattr(exp, "has_conjunctive_rules", False):
@@ -905,7 +897,22 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return self._collection_metadata()
 
     def legacy_payload(self, exp) -> Mapping[str, Any]:
-        """Public wrapper to obtain the legacy payload for an explanation."""
+        """Return the legacy-shaped payload dict for an explanation.
+
+        .. deprecated:: v0.11.4
+            ``legacy_payload`` will be removed in v1.0.0.  Use ``to_json()``
+            for serialization or ``_exp_to_domain(exp)`` for domain model
+            construction.
+        """
+        from ..utils.deprecations import deprecate
+
+        deprecate(
+            "CalibratedExplanations.legacy_payload is deprecated and will be removed in v1.0.0. "
+            "Use to_json() for serialization or _exp_to_domain(exp) for domain model construction.",
+            key="explanations:legacy_payload",
+            stacklevel=2,
+            raise_on_error=False,
+        )
         return self._legacy_payload(exp)
 
     @property
