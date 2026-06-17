@@ -29,9 +29,9 @@ from ..core.prediction_helpers import validate_and_prepare_input
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from ..utils.exceptions import ValidationError
 from ..utils.helper import calculate_metrics
-from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
+from .models import from_legacy_dict as _from_legacy_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -565,13 +565,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         instances = []
         for exp in self.explanations:
-            domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
-            provenance = getattr(exp, "provenance", None)
-            metadata = getattr(exp, "metadata", None)
-            if provenance is not None:
-                domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
-            if metadata is not None:
-                domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
+            domain = self._exp_to_domain(exp)
             instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
@@ -624,13 +618,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         chunk: List[str] = []
         n = 0
         for exp in self.explanations:
-            domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
-            provenance = getattr(exp, "provenance", None)
-            metadata_exp = getattr(exp, "metadata", None)
-            if provenance is not None:
-                domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
-            if metadata_exp is not None:
-                domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata_exp))
+            domain = self._exp_to_domain(exp)
             item = _explanation_to_json(domain, include_version=True)
             line = json.dumps(item, default=jsonify_value)
             n += 1
@@ -737,7 +725,21 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     # ------------------------------------------------------------------
 
     def _legacy_payload(self, exp) -> Mapping[str, Any]:
-        """Build a legacy-shaped payload from an explanation instance."""
+        """Build a legacy-shaped payload from an explanation instance.
+
+        .. deprecated::
+            Use _exp_to_domain(exp) instead. This method is retained for
+            backward-compatibility but will be removed in v1.0.0.
+        """
+        from ..utils.deprecations import deprecate
+
+        deprecate(
+            "_legacy_payload is deprecated and will be removed in v1.0.0. "
+            "Use _exp_to_domain(exp) in serialization paths.",
+            key="explanations__legacy_payload",
+            stacklevel=3,
+            raise_on_error=False,
+        )
         rules_blob = None
         # prefer conjunctive rules when present and populated
         if getattr(exp, "has_conjunctive_rules", False):
@@ -771,6 +773,75 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             "explanation_type": explanation_type,
         }
         return payload
+
+    def _exp_to_domain(self, exp) -> DomainExplanation:
+        """Build an Explanation domain object directly from a rich explanation instance.
+
+        Replaces the _legacy_payload() → legacy_to_domain() chain. Makes the
+        Explanation domain model the authoritative representation for all
+        serialization paths (ADR-008 Gap 1).
+        """
+        rules_blob = None
+        if getattr(exp, "has_conjunctive_rules", False):
+            rules_blob = getattr(exp, "conjunctive_rules", None)
+        if not rules_blob:
+            rules_blob = getattr(exp, "rules", None)
+        if not rules_blob and hasattr(exp, "get_rules"):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                try:
+                    rules_blob = exp.get_rules()  # type: ignore[attr-defined]
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
+                    rules_blob = {}
+
+        explanation_type = "factual"
+        if isinstance(exp, AlternativeExplanation):
+            explanation_type = "alternative"
+        elif isinstance(exp, FastExplanation):
+            explanation_type = "fast"
+
+        payload: dict[str, Any] = {
+            "task": getattr(
+                exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
+            )(),
+            "rules": jsonify_value(rules_blob or {}),
+            "feature_weights": jsonify_value(getattr(exp, "feature_weights", {})),
+            "feature_predict": jsonify_value(getattr(exp, "feature_predict", {})),
+            "prediction": jsonify_value(getattr(exp, "prediction", {})),
+            "explanation_type": explanation_type,
+        }
+
+        domain = _from_legacy_dict(exp.index, payload)
+
+        provenance = getattr(exp, "provenance", None)
+        metadata = getattr(exp, "metadata", None)
+        if provenance is not None:
+            domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
+        if metadata is not None:
+            domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
+
+        domain.calibration_metadata = self._build_calibration_metadata()
+        domain.model_metadata = self._build_model_metadata()
+
+        return domain
+
+    def _build_calibration_metadata(self):
+        """Return CalibrationDescriptor(method=mode_string) from the frozen explainer wrapper."""
+        from .models import CalibrationDescriptor
+
+        mode = getattr(self.calibrated_explainer, "mode", None)
+        return CalibrationDescriptor(method=str(mode)) if mode is not None else None
+
+    def _build_model_metadata(self):
+        """Return ModelDescriptor(type=learner_class_name) from the underlying learner."""
+        from .models import ModelDescriptor
+
+        learner = getattr(self.calibrated_explainer, "learner", None)
+        if learner is None:
+            return None
+        return ModelDescriptor(type=type(learner).__name__)
 
     def _collection_metadata(self) -> Mapping[str, Any]:
         """Collect calibration metadata required to interpret the payload."""
@@ -2615,27 +2686,25 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         instances = []
         for idx, class_dict in enumerate(self.explanations):
             for cls_key, exp in class_dict.items():
-                # Build legacy-shaped payload and annotate with class info
-                payload = dict(self._legacy_payload(exp))
-                payload["class_index"] = int(cls_key)
+                domain = self._exp_to_domain(exp)
+                domain.index = int(idx)
+                class_ann: dict = {"class_index": int(cls_key)}
                 try:
                     first = self._first_explanation_for_instance(idx)
                     if first is not None:
                         labels = first.get_class_labels()
-                        payload.setdefault("class_label", labels.get(int(cls_key)))
+                        label = labels.get(int(cls_key))
+                        if label is not None:
+                            class_ann["class_label"] = label
                 except (AttributeError, TypeError, ValueError, KeyError):
                     _LOGGER.debug(
                         "Failed to resolve class_label while exporting multiclass payload",
                         exc_info=True,
                     )
-
-                domain = legacy_to_domain(int(idx), payload)
-                provenance = getattr(exp, "provenance", None)
-                metadata = getattr(exp, "metadata", None)
-                if provenance is not None:
-                    domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
-                if metadata is not None:
-                    domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata))
+                domain.metadata = {
+                    **(dict(domain.metadata) if isinstance(domain.metadata, Mapping) else {}),
+                    **class_ann,
+                }
                 instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
@@ -2669,26 +2738,25 @@ class MultiClassCalibratedExplanations(CalibratedExplanations):
         n = 0
         for idx, class_dict in enumerate(self.explanations):
             for cls_key, exp in class_dict.items():
-                payload = dict(self._legacy_payload(exp))
-                payload["class_index"] = int(cls_key)
+                domain = self._exp_to_domain(exp)
+                domain.index = int(idx)
+                class_ann: dict = {"class_index": int(cls_key)}
                 try:
                     first = self._first_explanation_for_instance(idx)
                     if first is not None:
                         labels = first.get_class_labels()
-                        payload.setdefault("class_label", labels.get(int(cls_key)))
+                        label = labels.get(int(cls_key))
+                        if label is not None:
+                            class_ann["class_label"] = label
                 except (AttributeError, TypeError, ValueError, KeyError):
                     _LOGGER.debug(
                         "Failed to resolve class_label while streaming multiclass payload",
                         exc_info=True,
                     )
-
-                domain = legacy_to_domain(int(idx), payload)
-                provenance = getattr(exp, "provenance", None)
-                metadata_exp = getattr(exp, "metadata", None)
-                if provenance is not None:
-                    domain.provenance = cast(Optional[Mapping[str, Any]], jsonify_value(provenance))
-                if metadata_exp is not None:
-                    domain.metadata = cast(Optional[Mapping[str, Any]], jsonify_value(metadata_exp))
+                domain.metadata = {
+                    **(dict(domain.metadata) if isinstance(domain.metadata, Mapping) else {}),
+                    **class_ann,
+                }
                 item = _explanation_to_json(domain, include_version=True)
                 line = json.dumps(item, default=jsonify_value)
                 n += 1

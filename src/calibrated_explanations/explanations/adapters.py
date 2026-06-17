@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Mapping, Union
 import numpy as np
 
 from . import models
+from .models import CalibrationDescriptor, ModelDescriptor
 
 
 def legacy_to_domain(idx: int, payload: Mapping[str, Any]) -> models.Explanation:
@@ -45,6 +46,20 @@ def legacy_to_domain(idx: int, payload: Mapping[str, Any]) -> models.Explanation
         domain.metadata = dict(metadata)
     else:
         domain.metadata = None
+    # Reconstruct typed descriptor fields from the metadata dict (Gap 3 round-trip)
+    if isinstance(domain.metadata, dict):
+        raw_cal = domain.metadata.get("calibration_metadata")
+        if isinstance(raw_cal, dict):
+            try:
+                domain.calibration_metadata = CalibrationDescriptor(**raw_cal)
+            except TypeError:
+                domain.calibration_metadata = None
+        raw_mod = domain.metadata.get("model_metadata")
+        if isinstance(raw_mod, dict):
+            try:
+                domain.model_metadata = ModelDescriptor(**raw_mod)
+            except TypeError:
+                domain.model_metadata = None
     return domain
 
 

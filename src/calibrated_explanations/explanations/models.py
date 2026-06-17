@@ -40,6 +40,20 @@ class FeatureRule:
 
 
 @dataclass
+class CalibrationDescriptor:
+    """Structured descriptor for calibration method metadata."""
+
+    method: str
+
+
+@dataclass
+class ModelDescriptor:
+    """Structured descriptor for model type metadata."""
+
+    type: str
+
+
+@dataclass
 class Explanation:
     """Domain-model representation of a calibrated explanation instance."""
 
@@ -50,6 +64,8 @@ class Explanation:
     rules: Sequence[FeatureRule]
     provenance: Mapping[str, Any] | None = None
     metadata: Mapping[str, Any] | None = None
+    calibration_metadata: CalibrationDescriptor | None = None
+    model_metadata: ModelDescriptor | None = None
 
 
 def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
@@ -159,4 +175,10 @@ def _normalize_explanation_type(value: Any) -> str | None:
     return normalized if normalized in VALID_EXPLANATION_TYPES else None
 
 
-__all__ = ["Explanation", "FeatureRule", "from_legacy_dict"]
+__all__ = [
+    "CalibrationDescriptor",
+    "Explanation",
+    "FeatureRule",
+    "ModelDescriptor",
+    "from_legacy_dict",
+]
