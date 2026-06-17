@@ -1,0 +1,49 @@
+claim_id: CE-CAP-PRED-CLASS-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations produces Venn-Abers calibrated class probabilities for
+  binary and multiclass classification tasks via WrapCalibratedExplainer.predict_proba,
+  returning a probability array bounded in [0, 1] with shape matching the input, and
+  class label arrays via WrapCalibratedExplainer.predict.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.predict_proba
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.predict
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+
+requirements:
+  - CE-REQ-PRED-CLASS-API-001
+
+verification:
+  proves:
+    - api_contract
+    - output_shape
+    - probability_bounds
+  verification_type: automated
+
+assumptions:
+  - The explainer must be fitted and calibrated on a representative calibration set
+    before calling predict_proba or predict.
+  - Venn-Abers calibration validity (interval coverage) holds under the exchangeability
+    assumption: calibration and test instances must be exchangeable draws from the same
+    distribution. Distribution shift invalidates coverage guarantees.
+  - predict_proba returns empirical Venn-Abers probabilities. These are not guaranteed
+    to equal true posterior probabilities; they are calibrated in the conformal sense.
+  - Class label correctness assumes no label encoding mismatch between training and
+    calibration data.
+  - The API test verifies shape and bounds only; it does not verify calibration validity
+    in a finite-sample or distribution-shift sense.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

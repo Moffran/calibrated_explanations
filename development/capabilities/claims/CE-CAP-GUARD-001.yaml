@@ -1,0 +1,47 @@
+claim_id: CE-CAP-GUARD-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations supports guarded explanations: passing a GuardedOptions
+  instance to WrapCalibratedExplainer.explain_factual or explore_alternatives restricts
+  explanation output to instances that lie within the support of the calibration data,
+  returning a CalibratedExplanations collection.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.explain_factual
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.explore_alternatives
+  - calibrated_explanations.GuardedOptions
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-GUARD-API-001
+
+verification:
+  proves:
+    - api_contract
+    - output_structure
+  verification_type: automated
+
+assumptions:
+  - GuardedOptions uses a nearest-neighbour strategy to define the calibration data
+    support. The in-distribution check depends on the confidence and n_neighbors parameters.
+  - This claim does not assert that the guarded filter is statistically optimal or that it
+    catches all out-of-distribution instances; it asserts that the API is callable and
+    returns a valid CalibratedExplanations collection.
+  - explain_guarded_factual and explore_guarded_alternatives were REMOVED in v0.11.3.
+    Passing GuardedOptions as a keyword argument is the canonical replacement.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

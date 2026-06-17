@@ -24,9 +24,10 @@ requirement catalogs, and curated closure evidence summaries.
 | CI/tooling JSON schemas (non-runtime) | `development/schemas/` |
 | Capability claims | `development/capabilities/claims/` |
 | Requirements derived from capability claims | `development/capabilities/requirements/` |
-| Verification scenarios and helpers | `verification/capabilities/` |
+| Verification scenarios and helpers | `development/capabilities/verification/` |
 | Pytest capability verification | `tests/capabilities/` |
 | Generated verification run outputs | `reports/verification/` |
+| Curated capability evidence summaries | `development/capabilities/evidence/` |
 
 These locations are authoritative even when a directory has not yet been
 created. Do not create additional locations for the same material.
@@ -49,13 +50,13 @@ Use the location map above for each layer:
 - Claims belong in `development/capabilities/claims/`.
 - Requirements belong in `development/capabilities/requirements/`.
 - Executable verification scenarios and helpers belong in
-  `verification/capabilities/`.
+  `development/capabilities/verification/`.
 - Pytest checks belong in `tests/capabilities/` for new capability-contract
   tests. Existing nearby unit or integration tests may be linked from
   requirements when they already verify the required public behavior.
 - Generated run outputs belong in `reports/verification/`.
 - Human-curated release or closure evidence summaries belong in
-  `development/finished-work/`.
+  `development/capabilities/evidence/`.
 
 Do not add claim catalogs, requirement catalogs, schemas, verification code,
 tests, or evidence records unless a task explicitly asks for that work.

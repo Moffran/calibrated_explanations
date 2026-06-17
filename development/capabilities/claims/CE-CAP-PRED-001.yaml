@@ -1,0 +1,46 @@
+claim_id: CE-CAP-PRED-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations returns calibrated uncertainty intervals for predictions
+  via WrapCalibratedExplainer.predict with uq_interval=True (or predict_proba with
+  uq_interval=True for classification). The returned low and high bounds represent
+  calibrated uncertainty around the point prediction.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.predict
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.predict_proba
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+
+requirements:
+  - CE-REQ-PRED-API-001
+
+verification:
+  proves:
+    - api_contract
+    - interval_structure
+    - interval_ordering
+  verification_type: automated
+
+assumptions:
+  - The explainer must be calibrated before calling predict with uq_interval=True.
+  - Interval validity (coverage at or above the stated confidence level) depends on
+    the exchangeability assumption for the calibration set. This test verifies the
+    API contract and structural invariants (low <= point <= high) only; it does not
+    prove finite-sample coverage guarantees.
+  - For regression, the conformal interval semantics follow Conformal Predictive
+    Systems (CPS). For classification, Venn-Abers calibration is used.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result

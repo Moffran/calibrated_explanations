@@ -82,6 +82,9 @@ def test_legacy_to_domain_metadata_absent_leaves_fields_none():
 # Gap 1: _exp_to_domain replaces _legacy_payload + legacy_to_domain chain
 # (verified through the public to_json / from_json API)
 # ---------------------------------------------------------------------------
+# Private-method tests for _exp_to_domain are in tests/legacy/test_exp_to_domain.py
+# (moved there because _exp_to_domain is private and not permitted in the main test tree
+# under the ADR-030 public-contract policy).
 
 
 def _make_minimal_factual():
@@ -99,30 +102,6 @@ def _make_minimal_factual():
     ce.calibrate(x[10:], y[10:])
     result = ce.explain_factual(x[:2])
     return result
-
-
-def test_exp_to_domain_returns_explanation_instance():
-    """`_exp_to_domain` must return an Explanation dataclass instance."""
-    ce = _make_minimal_factual()
-    domain = ce._exp_to_domain(ce.explanations[0])
-    assert isinstance(domain, Explanation)
-
-
-def test_exp_to_domain_populates_calibration_metadata():
-    """`_exp_to_domain` must set calibration_metadata as a CalibrationDescriptor with a non-None method."""
-    ce = _make_minimal_factual()
-    domain = ce._exp_to_domain(ce.explanations[0])
-    assert isinstance(domain.calibration_metadata, CalibrationDescriptor)
-    assert domain.calibration_metadata.method is not None
-    assert domain.calibration_metadata.method == ce.calibrated_explainer.mode
-
-
-def test_exp_to_domain_populates_model_metadata():
-    """`_exp_to_domain` must set model_metadata as a ModelDescriptor with the learner class name."""
-    ce = _make_minimal_factual()
-    domain = ce._exp_to_domain(ce.explanations[0])
-    assert isinstance(domain.model_metadata, ModelDescriptor)
-    assert domain.model_metadata.type == "DecisionTreeClassifier"
 
 
 def test_to_json_task_field_matches_explainer_mode():

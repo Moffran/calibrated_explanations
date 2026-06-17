@@ -1,0 +1,48 @@
+claim_id: CE-CAP-REJECT-001
+claim_type: capability
+owner: calibrated_explanations
+status: current
+
+claim_text: >
+  calibrated_explanations supports reject/defer policies: passing a RejectPolicySpec
+  to WrapCalibratedExplainer.explain_factual or explore_alternatives tags each
+  instance's explanation envelope with a rejection status (FLAG, ONLY_REJECTED,
+  ONLY_ACCEPTED) based on the calibrated uncertainty score.
+
+public_api:
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.explain_factual
+  - calibrated_explanations.core.wrap_explainer.WrapCalibratedExplainer.explore_alternatives
+  - calibrated_explanations.RejectPolicySpec
+
+task_types:
+  - binary_classification
+  - multiclass_classification
+  - regression
+  - probabilistic_regression
+
+requirements:
+  - CE-REQ-REJECT-API-001
+
+verification:
+  proves:
+    - api_contract
+    - output_structure
+  verification_type: automated
+
+assumptions:
+  - RejectPolicySpec wraps a RejectPolicy enum and an NCF (non-conformity function)
+    configuration. The NCF determines how uncertainty is quantified for rejection.
+  - The FLAG policy processes all instances and adds rejection tags without filtering.
+    ONLY_REJECTED and ONLY_ACCEPTED filter the output to the respective subset.
+  - Rejection thresholds are calibrated against the calibration set; coverage of
+    reject decisions holds under the exchangeability assumption.
+  - This claim does not assert that the reject policy is statistically optimal; it
+    asserts that the API is callable and returns a tagged explanation collection.
+
+evidence_required:
+  - commit_sha
+  - package_version
+  - test_id
+  - dataset_id
+  - random_seed
+  - result
