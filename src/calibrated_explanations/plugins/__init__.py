@@ -30,6 +30,7 @@ from .intervals import (  # noqa: F401
     IntervalCalibratorContext,
     IntervalCalibratorPlugin,
     RegressionIntervalCalibrator,
+    validate_interval_calibrator_output,
 )
 from .manager import PluginManager  # noqa: F401
 from .plots import (  # noqa: F401
@@ -118,6 +119,7 @@ __all__ = [
     "unregister",
     "validate_explanation_batch",
     "validate_explanation_metadata",
+    "validate_interval_calibrator_output",
     "validate_plugin_config",
     "validate_plugin_config_schema",
     "validate_plugin_meta",

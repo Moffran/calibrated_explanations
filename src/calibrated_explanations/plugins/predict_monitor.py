@@ -13,6 +13,7 @@ from typing import Any, List, Mapping, Sequence, Tuple
 import numpy as np
 
 from ..plugins.predict import PredictBridge
+from ..utils.exceptions import ValidationError
 
 
 class PredictBridgeMonitor(PredictBridge):
@@ -166,26 +167,25 @@ class PredictBridgeMonitor(PredictBridge):
             ):
                 return
 
-            # Check low <= high
             if not np.all(low <= high):
-                import warnings
-
-                warnings.warn(
+                raise ValidationError(
                     "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
-                    UserWarning,
-                    stacklevel=2,
+                    details={
+                        "predict": predict.tolist(),
+                        "low": low.tolist(),
+                        "high": high.tolist(),
+                    },
                 )
 
-            # Check low <= predict <= high
-            # Note: We use a small epsilon for float comparison if needed, but strict inequality is safer for now
             epsilon = 1e-9
             if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
-                import warnings
-
-                warnings.warn(
+                raise ValidationError(
                     "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
-                    UserWarning,
-                    stacklevel=2,
+                    details={
+                        "predict": predict.tolist(),
+                        "low": low.tolist(),
+                        "high": high.tolist(),
+                    },
                 )
         except BaseException:
             exc_type = sys.exc_info()[0]

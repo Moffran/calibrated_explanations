@@ -665,17 +665,20 @@ def test_legacy_payload_prefers_available_rules(calibrated_collection):
     exp = calibrated_collection.explanations[0]
     exp.has_conjunctive_rules = True  # pylint: disable=protected-access
     exp.conjunctive_rules = {"ensured": ["rule-a"]}
-    payload = calibrated_collection.legacy_payload(exp)
+    with pytest.warns(DeprecationWarning, match="legacy_payload"):
+        payload = calibrated_collection.legacy_payload(exp)
     assert payload["rules"] == exp.conjunctive_rules
 
     exp.has_conjunctive_rules = False  # pylint: disable=protected-access
     exp.conjunctive_rules = None
     exp.rules = {"ensured": ["rule-b"]}
-    payload_rules = calibrated_collection.legacy_payload(exp)
+    with pytest.warns(DeprecationWarning, match="legacy_payload"):
+        payload_rules = calibrated_collection.legacy_payload(exp)
     assert payload_rules["rules"] == exp.rules
 
     exp.rules = None
-    generated = calibrated_collection.legacy_payload(exp)
+    with pytest.warns(DeprecationWarning, match="legacy_payload"):
+        generated = calibrated_collection.legacy_payload(exp)
     assert "rule" in generated["rules"]
 
 
@@ -695,7 +698,8 @@ def test_legacy_payload_handles_get_rules_exception(calibrated_collection):
         def get_rules(self):
             raise RuntimeError("boom")
 
-    payload = calibrated_collection.legacy_payload(BrokenRules())
+    with pytest.warns(DeprecationWarning, match="legacy_payload"):
+        payload = calibrated_collection.legacy_payload(BrokenRules())
     assert payload["rules"] == {}
 
 

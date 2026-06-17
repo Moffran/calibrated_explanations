@@ -1,8 +1,25 @@
-import pytest
 import importlib
+import json
+from pathlib import Path
+
+import pytest
 
 from calibrated_explanations.schema import validation as schema_validation
 from calibrated_explanations.utils.exceptions import ValidationError
+
+
+def test_should_validate_golden_explanation_fixture():
+    """Validate the committed ADR-005 golden payload fixture."""
+    # Arrange
+    fixture_path = Path(__file__).resolve().parents[1] / "golden_explanation_v1.json"
+    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+    # Act
+    schema_validation.validate_payload(payload)
+
+    # Assert
+    prediction = payload["prediction"]
+    assert prediction["low"][0] <= prediction["predict"][0] <= prediction["high"][0]
 
 
 def test_validate_payload_minimal_checks(monkeypatch):

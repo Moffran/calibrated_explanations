@@ -23,6 +23,8 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 
+pytestmark = pytest.mark.viz
+
 _RNG_SEED = 42
 _N_SAMPLES = 120
 _N_FEATURES = 4
@@ -73,5 +75,7 @@ def test_should_not_raise_when_plot_called_with_agg_backend(
 
     try:
         explanations.plot(show=False)
+        assert matplotlib.get_backend().lower() == "agg"
+        assert plt.get_fignums() == []
     finally:
         plt.close("all")

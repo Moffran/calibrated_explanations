@@ -95,3 +95,79 @@ def test_should_enforce_prediction_invariant_consistently_across_task_types(task
     )
     with pytest.raises(ValidationError, match="Prediction invariant violated"):
         validate_explanation_batch(batch, expected_task=task, expected_mode="test")
+
+
+def test_should_raise_when_classification_bridge_prediction_outside_interval():
+    """Classification bridge predictions must obey the same bounds as regression."""
+    mock_explainer = Mock()
+    mock_explainer.predict.return_value = (
+        np.asarray([0.9]),
+        (np.asarray([0.4]), np.asarray([0.6])),
+    )
+    bridge = LegacyPredictBridge(mock_explainer)
+
+    with pytest.raises(ValidationError, match="predict not in \\[low, high\\]"):
+        bridge.predict("X", mode="factual", task="classification")
+
+
+def test_should_validate_rule_level_weights_when_batch_contains_factual_rules():
+    """Factual rule weights must stay inside their calibrated intervals."""
+    batch = ExplanationBatch(
+        container_cls=DummyContainer,
+        explanation_cls=DummyExplanation,
+        instances=[
+            {
+                "rules": [
+                    {
+                        "weight": 0.9,
+                        "weight_interval": {"low": 0.2, "high": 0.4},
+                    }
+                ]
+            }
+        ],
+        collection_metadata={"task": "regression", "mode": "factual"},
+    )
+
+    with pytest.raises(ValidationError, match="rule 0 weight"):
+        validate_explanation_batch(batch, expected_task="regression", expected_mode="factual")
+
+
+def test_should_validate_predicted_value_when_batch_contains_alternative_rules():
+    """Alternative rule predicted values must stay inside their prediction intervals."""
+    batch = ExplanationBatch(
+        container_cls=DummyContainer,
+        explanation_cls=DummyExplanation,
+        instances=[
+            {
+                "reference_prediction": {"predict": 0.5, "low": 0.4, "high": 0.6},
+                "rules": [
+                    {
+                        "predicted_value": 0.9,
+                        "prediction_interval": {"low": 0.2, "high": 0.4},
+                    }
+                ],
+            }
+        ],
+        collection_metadata={"task": "regression", "mode": "alternative"},
+    )
+
+    with pytest.raises(ValidationError, match="rule 0 predicted_value"):
+        validate_explanation_batch(batch, expected_task="regression", expected_mode="alternative")
+
+
+def test_should_require_predicted_value_when_batch_contains_alternative_rule():
+    """Alternative rules must include the scenario prediction they explain."""
+    batch = ExplanationBatch(
+        container_cls=DummyContainer,
+        explanation_cls=DummyExplanation,
+        instances=[
+            {
+                "reference_prediction": {"predict": 0.5, "low": 0.4, "high": 0.6},
+                "rules": [{"prediction_interval": {"low": 0.2, "high": 0.4}}],
+            }
+        ],
+        collection_metadata={"task": "regression", "mode": "alternative"},
+    )
+
+    with pytest.raises(ValidationError, match="requires predicted_value"):
+        validate_explanation_batch(batch, expected_task="regression", expected_mode="alternative")

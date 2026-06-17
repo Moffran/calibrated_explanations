@@ -6,6 +6,7 @@ import pytest
 
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.plugins.predict import PredictBridge
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 class DummyBridge:
@@ -70,7 +71,7 @@ def test_predict_bridge_monitor_reset_usage():
     assert not monitor.used
 
 
-def test_predict_monitor_interval_tuple_validation_warns():
+def test_should_raise_when_predict_monitor_interval_tuple_violates_bounds():
     class IntervalBridge(DummyBridge):
         def predict_interval(self, x, *, task, bins=None):
             return (
@@ -80,8 +81,24 @@ def test_predict_monitor_interval_tuple_validation_warns():
             )
 
     monitor = PredictBridgeMonitor(IntervalBridge())
-    with pytest.warns(UserWarning, match="low > high"):
+    with pytest.raises(ValidationError, match="low > high"):
         monitor.predict_interval(np.array([[1.0]]), task="classification")
+
+
+def test_should_raise_when_predict_monitor_prediction_outside_interval():
+    class BadPredictBridge(DummyBridge):
+        def __init__(self) -> None:
+            super().__init__()
+            self.predictions["predict"] = {
+                "predict": np.asarray([0.9]),
+                "low": np.asarray([0.4]),
+                "high": np.asarray([0.6]),
+            }
+
+    monitor = PredictBridgeMonitor(BadPredictBridge())
+
+    with pytest.raises(ValidationError, match="predict not in \\[low, high\\]"):
+        monitor.predict(np.array([[1.0]]), mode="factual", task="classification")
 
 
 def test_predict_monitor_handles_conversion_errors(monkeypatch: pytest.MonkeyPatch):

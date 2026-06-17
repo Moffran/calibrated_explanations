@@ -16,9 +16,33 @@
 
 ### Bug fixes
 
+- **ADR-013: Added interval calibrator runtime output validation.** Trusted
+  VennAbers-style interval calibrators are now sampled at creation time and
+  checked for floating probability output, expected row shape, simplex bounds,
+  and interval monotonicity; ADR-013 now records that frozen
+  `IntervalCalibratorContext` supersedes a separate `LegacyIntervalContext`
+  adapter.
+
+- **ADR-015/ADR-026: Hardened plugin prediction invariants.** Prediction bridge
+  monitoring now raises `ValidationError` on interval invariant breaches,
+  classification bridge predictions enforce `predict in [low, high]` when paired
+  bounds are present, and explanation batch validation now checks rule-level
+  factual and alternative prediction intervals.
+
+- **ADR-006: Fixed plugin checksum metadata trust elevation.** Supplying a
+  `checksum` field in third-party plugin metadata no longer promotes the plugin
+  to trusted. Checksum verification is now recorded separately as integrity
+  metadata, while trust remains controlled only by the registry trust policy,
+  environment/config allowlists, or explicit keyed trust APIs.
+
 - **ADR-008: Fixed multiclass `class_index` latent serialization bug.** `MultiClassCalibratedExplanations.to_json()` and `to_json_stream()` previously lost `class_index` (and `class_label`) because those keys were added to the legacy payload dict after `legacy_to_domain()` had already constructed the `Explanation` object, so `from_legacy_dict` never extracted them and the domain object carried no class annotation. After the `_exp_to_domain` migration, class annotations are now explicitly merged into `domain.metadata` before serialization — `to_json → from_json` round-trips for multiclass collections preserve `class_index` in each explanation's metadata.
 
 ### CI / infrastructure
+
+- **ADR-005/ADR-030: Closed v0.11.4 test-quality gaps.** Added the missing
+  golden explanation fixture schema test, removed redundant private-member
+  legacy serialization tests, and hardened the visualization contract smoke test
+  with `viz` marker coverage plus concrete Agg/no-figure-leak assertions.
 
 - Fixed nightly `parity-reference` CI failures for `regression`/`probabilistic_regression`
   datasets. Root cause: commit `9693c3d8` (2026-06-12) removed the `scikit-learn==1.6.1`/`1.5.2`
