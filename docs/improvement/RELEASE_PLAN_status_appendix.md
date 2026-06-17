@@ -139,14 +139,15 @@ v0.11.4 sweep: gap 2 (conjunctive round-trip) is already closed in code — `dom
 
 ### ADR-012 - Documentation & Gallery Build Policy
 
-_Last gap analysis: 2026-06-11_
+_Last gap analysis: 2026-06-17_
 
 Evidence update (2026-06-11): the former gap framing ("docs build disables notebook execution") is outdated. Notebook execution now exists in two forms: the nightly advisory driver (`ci-nightly.yml` `notebook-exec-report` job runs `scripts/docs/run_notebooks.py --mode advisory --cell-timeout 30 --notebook-timeout 300`) and `nbsphinx_execute = "always"` for non-RTD, non-linkcheck Sphinx builds (`docs/conf.py:218`; RTD renders without execution). The advisory posture on this dev fork is recorded in `ci-nightly.yml:82-84` as deliberate, with blocking-mode enforcement assigned to the upstream Moffran repo at release time — consistent with ADR-012's advisory-mainline/blocking-release split. The rewritten gaps below reflect what actually remains.
 
+**Gap 1 closed (v0.11.4, 2026-06-17):** `docs-build` job added to `ci-nightly.yml` calling `reusable-build-docs.yml` with `build-target: linkcheck`. Sphinx linkcheck now runs nightly (advisory). `make check-ci-policy` passes.
+
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | ---: | ---: | ---: | --- |
-| 1 | Docs HTML/linkcheck CI job is unwired on PR/main | 3 | 2 | 6 | ADR-012 requires `sphinx-build -W` and linkcheck to run in CI (advisory on mainline). `reusable-build-docs.yml` exists but **no workflow calls it** — the only Sphinx build in CI is the manual-dispatch `maintenance.yml` regen-docs task. Doc rot is currently undetected on PR/main. Wire the reusable builder into `ci-pr.yml` or `ci-nightly.yml` (advisory). Target milestone: v1.0.0-rc. |
-| 2 | Per-example runtime ceiling (<30s) not enforced | 2 | 2 | 4 | The nightly driver enforces cell (30s) and notebook (300s) timeouts in advisory mode only; the ADR's <30s-per-example contribution rule has no blocking gate anywhere. Acceptable for the dev fork per the recorded advisory posture; blocking enforcement is a release-branch obligation. Target milestone: v1.0.0-rc. |
+| 1 | Per-example runtime ceiling (<30s) not enforced | 2 | 2 | 4 | The nightly driver enforces cell (30s) and notebook (300s) timeouts in advisory mode only; the ADR's <30s-per-example contribution rule has no blocking gate anywhere. Acceptable for the dev fork per the recorded advisory posture; blocking enforcement is a release-branch obligation. Target milestone: v1.0.0-rc. |
 
 ### ADR-013 - Interval Calibrator Plugin Strategy
 

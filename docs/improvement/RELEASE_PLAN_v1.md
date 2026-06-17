@@ -125,7 +125,7 @@ Gap-by-gap severity tables now live only in `docs/improvement/RELEASE_PLAN_statu
 
 **ADR-011 - Deprecation and Migration Policy:** Completed (2026-06-15). The two-minor default remains normal policy; all active deprecations are filed with v1.0.0 removal ETAs under the binding finalization exception. All three 2026-06-11 reopened gaps closed: (1) guarded wrappers removed in v0.11.3 via finalization exception; (2) active-deprecations ledger rebuilt with 9 correctly filed rows, `make deprecation-closure` passes (0 blocking); (3) raw `DeprecationWarning` sites in `normalization_strategy.py`, `core/reject.py`, `core/explain/__init__.py`, and `core/calibrated_explainer.py` all use `deprecate()` helper. No open appendix gaps.
 
-**ADR-012 - Documentation & Gallery Build Policy:** Accepted; gallery-tooling decision closed (nbconvert, 2026-06-02). Re-evidenced 2026-06-11: notebook execution exists (nightly advisory driver with timeouts; `nbsphinx_execute="always"` on non-RTD builds); the remaining gaps are the unwired docs HTML/linkcheck CI job (`reusable-build-docs.yml` has no caller) and blocking runtime-ceiling enforcement, both v1.0.0-rc.
+**ADR-012 - Documentation & Gallery Build Policy:** Accepted; gallery-tooling decision closed (nbconvert, 2026-06-02). Re-evidenced 2026-06-11: notebook execution exists (nightly advisory driver with timeouts; `nbsphinx_execute="always"` on non-RTD builds). Gap 1 closed (v0.11.4): docs HTML/linkcheck CI job wired via `docs-build` job in `ci-nightly.yml` calling `reusable-build-docs.yml`. Gap 2 (per-example runtime ceiling enforcement) remains advisory-only; blocking enforcement is a release-branch obligation. Target: v1.0.0-rc.
 
 **ADR-013 - Interval Calibrator Plugin Strategy:** Partially complete; protocol/signature alignment and fallback-chain strictness remain v0.11.1+.
 
@@ -610,7 +610,7 @@ Release gate: Plugin registries enforce trust and protocol policies, extras inst
 | Domain model authority (3 sub-gaps) | ADR-008 gaps 1/2/3 | 20/14/12 | Scope decision: RC gate vs. post-v1.0 re-target |
 | `ExplainerHandle.learner` direct bypass | ADR-015 gap 2 | 8 | Restrict or document as escape hatch |
 | Unfrozen nested context fields | ADR-026 gap 1 | 6 | Freeze mapping-type fields or scope to post-v1.0 |
-| Docs HTML/linkcheck CI job unwired | ADR-012 | — | Wire `reusable-build-docs.yml` caller |
+| Docs HTML/linkcheck CI job wired (nightly advisory) | ADR-012 Gap 1 | — | **Closed v0.11.4**: `docs-build` job added to `ci-nightly.yml` |
 
 
 ### v1.0.0-rc (release candidate readiness)

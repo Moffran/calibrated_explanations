@@ -120,3 +120,15 @@ jobs:
           name: notebook-exec-report
           path: |
             reports/docs/notebook_execution_report.json
+
+  docs-build:
+    # ADR-012: advisory linkcheck on this dev fork (kristinebergs). Blocking-mode
+    # enforcement is the upstream Moffran repo's responsibility at release time.
+    # ADR-035: heavy job wired into the approved nightly entrypoint; no
+    # standalone workflow.
+    name: Sphinx linkcheck (advisory)
+    continue-on-error: true
+    needs: []
+    uses: ./.github/workflows/reusable-build-docs.yml
+    with:
+      build-target: linkcheck
