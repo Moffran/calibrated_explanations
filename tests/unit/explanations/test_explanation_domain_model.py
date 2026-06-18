@@ -82,9 +82,6 @@ def test_legacy_to_domain_metadata_absent_leaves_fields_none():
 # Gap 1: _exp_to_domain replaces _legacy_payload + legacy_to_domain chain
 # (verified through the public to_json / from_json API)
 # ---------------------------------------------------------------------------
-# Private-method tests for _exp_to_domain are in tests/legacy/test_exp_to_domain.py
-# (moved there because _exp_to_domain is private and not permitted in the main test tree
-# under the ADR-030 public-contract policy).
 
 
 def _make_minimal_factual():

@@ -20,6 +20,7 @@ task_types:
 
 requirements:
   - CE-REQ-PRED-API-001
+  - CE-REQ-PRED-INTERVAL-BOUNDS-001
 
 verification:
   proves:
