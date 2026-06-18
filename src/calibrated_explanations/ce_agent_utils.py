@@ -27,7 +27,7 @@ from .core.exceptions import (
 )
 from .utils.deprecations import deprecate
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("calibrated_explanations.core.agents")
 
 
 CE_FIRST_POLICY: Mapping[str, Any] = {

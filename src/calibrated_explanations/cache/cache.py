@@ -45,7 +45,7 @@ except:  # noqa: E722
     cachetools = None  # type: ignore
     _HAVE_CACHETOOLS = False
     # Visible notification: cachetools missing, falling back to minimal backend
-    _logger = logging.getLogger(__name__)
+    _logger = logging.getLogger("calibrated_explanations.core.cache")
     _logger.warning(
         "Cache backend fallback: cachetools not available; using minimal in-package LRU/TTL implementation"
     )
@@ -189,7 +189,7 @@ except:  # noqa: E722
     cachetools = _CacheModuleShim()
 import numpy as np
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("calibrated_explanations.core.cache")
 
 # Export monotonic to support legacy shims/tests that reference
 # `calibrated_explanations.cache.cache.monotonic`.

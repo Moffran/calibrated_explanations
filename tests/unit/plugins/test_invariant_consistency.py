@@ -132,6 +132,29 @@ def test_should_validate_rule_level_weights_when_batch_contains_factual_rules():
         validate_explanation_batch(batch, expected_task="regression", expected_mode="factual")
 
 
+@pytest.mark.parametrize(
+    "rule",
+    [
+        {"weight": 0.3, "weight_interval": {"low": 0.2, "high": 0.4}},
+        {"weight": np.float64(0.3), "weight_interval": {"low": 0.3, "high": 0.3}},
+    ],
+)
+def test_should_accept_rule_level_weight_inside_interval(rule):
+    """Factual rule weights inside calibrated intervals must pass validation."""
+    batch = ExplanationBatch(
+        container_cls=DummyContainer,
+        explanation_cls=DummyExplanation,
+        instances=[{"rules": [rule]}],
+        collection_metadata={"task": "regression", "mode": "factual"},
+    )
+
+    validated = validate_explanation_batch(
+        batch, expected_task="regression", expected_mode="factual"
+    )
+
+    assert validated is batch
+
+
 def test_should_validate_predicted_value_when_batch_contains_alternative_rules():
     """Alternative rule predicted values must stay inside their prediction intervals."""
     batch = ExplanationBatch(

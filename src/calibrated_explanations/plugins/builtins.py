@@ -644,7 +644,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             logging.getLogger(__name__).warning(msg, extra=extra)
                         else:
                             logging.getLogger(__name__).debug(msg, extra=extra)
-                        level = logging.WARNING if cfg.strict_observability else logging.INFO
+                        level = logging.WARNING if cfg.strict_observability else logging.DEBUG
                         emit_feature_filter_governance_event(
                             decision="filter_skipped",
                             level=level,
@@ -681,7 +681,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     logging.getLogger(__name__).warning(msg, extra=extra)
                 else:
                     logging.getLogger(__name__).debug(msg, extra=extra)
-                level = logging.WARNING if cfg.strict_observability else logging.INFO
+                level = logging.WARNING if cfg.strict_observability else logging.DEBUG
                 emit_feature_filter_governance_event(
                     decision="filter_error",
                     level=level,
@@ -1168,7 +1168,14 @@ class LegacyPlotBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "legacy_compatible": True,
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 
@@ -1216,7 +1223,14 @@ class LegacyPlotRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "supports_interactive": False,
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 
@@ -1259,7 +1273,14 @@ class PlotSpecDefaultBuilder(PlotBuilder):
         "trust": {"trusted": True},
         "legacy_compatible": True,
         "output_formats": ["png", "svg", "pdf"],
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 
@@ -1573,7 +1594,14 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         "trust": {"trusted": True},
         "output_formats": ["png", "svg", "pdf"],
         "supports_interactive": False,
-        "plot_kinds": ("instance", "collection", "global"),
+        "plot_kinds": (
+            "factual_probabilistic",
+            "factual_regression",
+            "alternative_probabilistic",
+            "alternative_regression",
+            "global_probabilistic",
+            "global_regression",
+        ),
         "plot_modes": ("factual", "alternative", "fast"),
     }
 

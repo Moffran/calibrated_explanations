@@ -85,6 +85,14 @@ clear contract without duplicating the in-tree implementation details.
   discard the return value but must perform a calibrated call so telemetry and
   interval tracking remain consistent.【F:src/calibrated_explanations/plugins/builtins.py†L321-L348】
 
+#### Design note: trusted core plugin exemption
+
+Plugins with the `core.*` prefix are first-party adapters that may use internal
+execution paths and are exempt from the bridge-usage monitor wrapper by design.
+They remain responsible for satisfying the same calibrated prediction
+invariants, but the monitor is reserved for third-party and extension plugins
+where runtime enforcement is the trust boundary.
+
 ### 2a. Factual Explanation Calibration Contract
 
 When a plugin generates factual explanations:

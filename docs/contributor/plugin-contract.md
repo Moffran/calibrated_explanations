@@ -183,6 +183,35 @@ Interval plugins are selected globally or per-mode:
 - **pyproject.toml**: Under `[tool.calibrated_explanations.intervals]` with keys `default`, `fast`
 - **Dependencies**: Seeded from explanation plugin metadata `interval_dependency`
 
+### Migration from pre-plugin helper functions
+
+Older integrations sometimes reached into `CalibratedExplainer` internals or
+called interval helper functions directly. New code should wrap that behavior in
+an interval plugin instead:
+
+```python
+# Before: direct internal helper access
+calibrator = explainer.interval_learner
+interval = calibrator.predict_uncertainty(x, (5, 95))
+
+# After: plugin contract
+class LegacyCompatibleIntervalPlugin:
+    plugin_meta = {
+        "schema_version": 1,
+        "name": "external.interval.legacy",
+        "version": "0.1.0",
+        "provider": "example-team",
+        "capabilities": ["interval", "interval:regression"],
+        "data_modalities": ("tabular",),
+    }
+
+    def create(self, context, **kwargs):
+        return context
+```
+
+Use `IntervalCalibratorContext` to receive calibration splits, bins, residuals,
+difficulty metadata, and plugin state through the governed plugin boundary.
+
 ---
 
 ## Hello, explanation plugin

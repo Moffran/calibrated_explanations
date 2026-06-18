@@ -45,6 +45,48 @@ from .validation import validate_inputs_matrix, validate_model
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking
     from calibrated_explanations.api.config import ExplainerConfig
 
+_KNOWN_PUBLIC_KWARGS: frozenset[str] = frozenset(
+    {
+        "bins",
+        "categorical_features",
+        "classes",
+        "confidence",
+        "condition",
+        "condition_label",
+        "condition_labels",
+        "condition_source",
+        "default_reject_policy",
+        "difficulty_estimator",
+        "fast",
+        "feature",
+        "feature_names",
+        "guarded",
+        "guarded_options",
+        "include_reject_details",
+        "interval_summary",
+        "low_high_percentiles",
+        "mc",
+        "merge_adjacent",
+        "mode",
+        "multi_labels_enabled",
+        "n_neighbors",
+        "normalize",
+        "normalization",
+        "output_interval",
+        "predict_function",
+        "preprocessor_metadata",
+        "reject_confidence",
+        "reject_policy",
+        "seed",
+        "show",
+        "style_override",
+        "threshold",
+        "uq_interval",
+        "verbose",
+        "y_threshold",
+    }
+)
+
 
 class WrapCalibratedExplainer:
     """Provide a high-level fit/calibrate/explain workflow for learners.
@@ -68,7 +110,7 @@ class WrapCalibratedExplainer:
     calibrated: bool
     mc: Callable[[Any], Any] | MondrianCategorizer | None
     _logger: _logging.Logger
-    _STATE_SCHEMA_VERSION: int = 1
+    _STATE_SCHEMA_VERSION: int = 2
 
     def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
@@ -796,6 +838,14 @@ class WrapCalibratedExplainer:
         original = dict(kwargs)
         reject_removed_aliases(original)
         base = dict(original)
+        unknown = sorted(set(base) - _KNOWN_PUBLIC_KWARGS)
+        if unknown:
+            _warnings.warn(
+                "WrapCalibratedExplainer received unknown keyword arguments: "
+                f"{unknown}. These will be forwarded for compatibility but may be ignored.",
+                UserWarning,
+                stacklevel=3,
+            )
         if allowed is None:
             return base
         return {k: v for k, v in base.items() if k in allowed}
@@ -1282,12 +1332,12 @@ class WrapCalibratedExplainer:
     def _restore_calibrator_from_primitive(cls, primitive: Mapping[str, Any]) -> Any:
         """Rehydrate a calibrator object from a persisted primitive payload."""
         schema_version = primitive.get("schema_version")
-        if schema_version != cls._STATE_SCHEMA_VERSION:
+        if schema_version not in (1, 2):
             raise IncompatibleStateError(
                 "Unsupported calibrator primitive schema_version.",
                 details={
                     "schema_version": schema_version,
-                    "supported_versions": [cls._STATE_SCHEMA_VERSION],
+                    "supported_versions": [1, 2],
                 },
             )
         calibrator_type = primitive.get("calibrator_type")
@@ -1453,12 +1503,12 @@ class WrapCalibratedExplainer:
             )
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         schema_version = manifest.get("schema_version")
-        if schema_version != cls._STATE_SCHEMA_VERSION:
+        if schema_version not in (1, 2):
             raise IncompatibleStateError(
                 "Unsupported state schema_version.",
                 details={
                     "schema_version": schema_version,
-                    "supported_versions": [cls._STATE_SCHEMA_VERSION],
+                    "supported_versions": [1, 2],
                 },
             )
         files = manifest.get("files")
@@ -1503,7 +1553,17 @@ class WrapCalibratedExplainer:
             primitive = json.loads(primitive_path.read_text(encoding="utf-8"))
             restored = cls._restore_calibrator_from_primitive(primitive)
             if getattr(wrapper, "explainer", None) is not None:
-                wrapper.explainer.interval_learner = restored
+                learner = getattr(wrapper.explainer, "learner", None)
+                difficulty_estimator = getattr(wrapper.explainer, "difficulty_estimator", None)
+                orchestrator = getattr(wrapper.explainer, "prediction_orchestrator", None)
+                if orchestrator is not None:
+                    orchestrator.restore_calibrator_with_learner(
+                        restored,
+                        learner,
+                        difficulty_estimator=difficulty_estimator,
+                    )
+                else:
+                    wrapper.explainer.interval_learner = restored
 
         mapping_path = path / "preprocessing_mapping.json"
         if mapping_path.exists():

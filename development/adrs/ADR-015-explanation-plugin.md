@@ -159,6 +159,17 @@ ADR-013. Plugins must treat the context as read-only.
   must treat them as immutable accessors and should not expect mutation to
   persist.
 
+#### Accepted risk: broad handle delegation
+
+`ExplainerHandle.__getattr__` deliberately delegates otherwise unknown
+attributes to the underlying explainer as a compatibility escape hatch for
+in-tree legacy adapters and advanced plugins. This delegation is not a
+prediction path and does not relax the rule that plugin predictions must use
+`handle.predict()`. Access to `ExplainerHandle.learner` remains deprecated and
+is routed through the explicit property even when requested through
+`__getattr__("learner")`, so direct learner access still emits the ADR-011
+deprecation warning.
+
 #### 2a. Factual Explanation Requirements
 
 Explanation plugins generating factual batches must return an `ExplanationBatch` with

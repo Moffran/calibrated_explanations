@@ -20,6 +20,7 @@ import venn_abers as va
 
 from ..core.prediction.interval_summary import IntervalSummary, coerce_interval_summary
 from ..utils import convert_targets_to_numeric
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import ConfigurationError
 from .normalization_strategy import NormalizationStrategy, coerce_normalization_strategy
 
@@ -108,6 +109,11 @@ class VennAbers:
 
         self.ctargets = self.y_cal_numeric
 
+        self._fit_va()
+
+    def _fit_va(self) -> None:
+        """Fit underlying Venn-Abers models from stored calibration arrays."""
+        cprobs = np.asarray(self.cprobs)
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         if self.is_mondrian():
             self.va = {}
@@ -374,10 +380,19 @@ class VennAbers:
 
     def to_primitive(self) -> dict[str, Any]:
         """Serialize the calibrator into a JSON-safe primitive payload."""
+
+        def _as_list(value: Any) -> Any:
+            if value is None:
+                return None
+            if hasattr(value, "tolist"):
+                return value.tolist()
+            return list(value)
+
+        label_map = self.label_map or {}
+        original_labels = self.original_labels
         payload_bytes = pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
-        payload_b64 = base64.b64encode(payload_bytes).decode("ascii")
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "calibrator_type": "venn_abers",
             "parameters": {
                 "is_multiclass": bool(self.is_multiclass()),
@@ -386,8 +401,14 @@ class VennAbers:
             "checksums": {
                 "sha256": hashlib.sha256(payload_bytes).hexdigest(),
             },
-            "payload": {
-                "pickle_b64": payload_b64,
+            "fields": {
+                "y_cal_numeric": _as_list(self.y_cal_numeric),
+                "label_map": {str(key): value for key, value in label_map.items()},
+                "original_labels": _as_list(original_labels),
+                "x_cal": _as_list(self.x_cal),
+                "ctargets": _as_list(self.ctargets),
+                "cprobs": _as_list(self.cprobs),
+                "bins": _as_list(self.bins),
             },
         }
 
@@ -395,11 +416,20 @@ class VennAbers:
     def from_primitive(cls, payload: Mapping[str, object]) -> "VennAbers":
         """Rehydrate a calibrator from a primitive payload."""
         schema_version = payload.get("schema_version")
+        if schema_version == 2:
+            return cls._from_primitive_v2(payload)
         if schema_version != 1:
             raise ConfigurationError(
-                "Unsupported VennAbers schema_version. Supported versions: [1].",
-                details={"schema_version": schema_version, "supported_versions": [1]},
+                "Unsupported VennAbers schema_version. Supported versions: [1, 2].",
+                details={"schema_version": schema_version, "supported_versions": [1, 2]},
             )
+        deprecate(
+            "VennAbers state at schema_version 1 uses pickle serialization and will not load "
+            "in v1.0.0. Re-save your WrapCalibratedExplainer state to upgrade.",
+            key="venn_abers_primitive_v1",
+            stacklevel=3,
+            raise_on_error=False,
+        )
         calibrator_type = payload.get("calibrator_type")
         if calibrator_type != "venn_abers":
             raise ConfigurationError(
@@ -439,6 +469,72 @@ class VennAbers:
                 details={"restored_type": type(restored).__name__},
             )
         return restored
+
+    @classmethod
+    def _from_primitive_v2(cls, payload: Mapping[str, object]) -> "VennAbers":
+        """Rehydrate a JSON-safe schema v2 primitive."""
+        calibrator_type = payload.get("calibrator_type")
+        if calibrator_type != "venn_abers":
+            raise ConfigurationError(
+                "Invalid calibrator_type for VennAbers v2 payload.",
+                details={"calibrator_type": calibrator_type, "expected": "venn_abers"},
+            )
+        fields = payload.get("fields")
+        if not isinstance(fields, Mapping):
+            raise ConfigurationError(
+                "VennAbers v2 primitive missing 'fields' mapping.",
+                details={"field": "fields"},
+            )
+        required_fields = ("y_cal_numeric", "cprobs")
+        missing_fields = [name for name in required_fields if fields.get(name) is None]
+        if missing_fields:
+            raise ConfigurationError(
+                "VennAbers v2 primitive missing required field(s): " + ", ".join(missing_fields),
+                details={"fields": missing_fields},
+            )
+
+        obj = cls.__new__(cls)
+        obj.y_cal_numeric = np.asarray(fields.get("y_cal_numeric"))
+        raw_label_map = fields.get("label_map") or {}
+        obj.label_map = (
+            {int(key): value for key, value in raw_label_map.items()}
+            if isinstance(raw_label_map, Mapping)
+            else {}
+        )
+        raw_original_labels = fields.get("original_labels")
+        obj.original_labels = (
+            np.asarray(raw_original_labels) if raw_original_labels is not None else None
+        )
+        raw_x_cal = fields.get("x_cal")
+        obj.x_cal = np.asarray(raw_x_cal) if raw_x_cal is not None else None
+        raw_ctargets = fields.get("ctargets")
+        obj.ctargets = np.asarray(raw_ctargets) if raw_ctargets is not None else obj.y_cal_numeric
+        raw_cprobs = fields.get("cprobs")
+        if raw_cprobs is None:
+            raise ConfigurationError(
+                "VennAbers v2 primitive missing calibration probabilities.",
+                details={"field": "fields.cprobs"},
+            )
+        obj.cprobs = np.asarray(raw_cprobs)
+        raw_bins = fields.get("bins")
+        obj.bins = np.asarray(raw_bins) if raw_bins is not None else None
+        obj._is_multiclass = bool(
+            payload.get("parameters", {}).get("is_multiclass")
+            if isinstance(payload.get("parameters"), Mapping)
+            else len(np.unique(obj.y_cal_numeric)) > 2
+        )
+        obj.de = None
+        obj.learner = None
+        obj._predict_proba = None
+        obj._fit_va()
+        return obj
+
+    def reattach_learner(self, learner: Any, *, difficulty_estimator: Any = None, **_: Any) -> None:
+        """Re-attach learner callables after JSON-safe primitive restoration."""
+        self.learner = learner
+        self.de = difficulty_estimator
+        if learner is not None:
+            self._predict_proba = learner.predict_proba
 
 
 def exponent_scaling_list(probs, difficulties, beta=5):

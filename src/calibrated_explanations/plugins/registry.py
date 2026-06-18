@@ -1841,18 +1841,6 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             )
             continue
 
-        if isinstance(raw_meta, Mapping) and "data_modalities" not in raw_meta:
-            warnings.warn(
-                f"Plugin '{identifier}' does not declare required 'data_modalities'; skipping.",
-                UserWarning,
-                stacklevel=2,
-            )
-            _LOGGER.warning(
-                "Entry-point plugin %r missing required 'data_modalities'; skipping.",
-                identifier,
-            )
-            continue
-
         meta: Dict[str, Any] = dict(raw_meta)
         try:
             validate_plugin_meta(meta)

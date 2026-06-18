@@ -19,6 +19,7 @@ import crepes
 import numpy as np
 
 from ..utils import safe_first_element
+from ..utils.deprecations import deprecate
 from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
 from .venn_abers import VennAbers
 
@@ -634,19 +635,37 @@ class IntervalRegressor:
 
     def to_primitive(self) -> dict[str, Any]:
         """Serialize the calibrator into a JSON-safe primitive payload."""
+
+        def _as_list(value: Any) -> Any:
+            if value is None:
+                return None
+            if hasattr(value, "tolist"):
+                return value.tolist()
+            return list(value)
+
         payload_bytes = pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
-        payload_b64 = base64.b64encode(payload_bytes).decode("ascii")
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "calibrator_type": "interval_regressor",
             "parameters": {
                 "has_bins": bool(self.bins is not None),
+                "seed": getattr(self.ce, "seed", None),
             },
             "checksums": {
                 "sha256": hashlib.sha256(payload_bytes).hexdigest(),
             },
-            "payload": {
-                "pickle_b64": payload_b64,
+            "fields": {
+                "bins": _as_list(self.bins),
+                "y_cal_hat": _as_list(self.y_cal_hat),
+                "residual_cal": _as_list(self.residual_cal),
+                "sigma_cal": _as_list(self.sigma_cal),
+                "split_parts": [list(part) for part in self.split.get("parts", [])],
+                "y_threshold": _as_list(self.y_threshold)
+                if isinstance(self.y_threshold, np.ndarray)
+                else self.y_threshold,
+                "current_y_threshold": _as_list(self.current_y_threshold)
+                if isinstance(self.current_y_threshold, np.ndarray)
+                else self.current_y_threshold,
             },
         }
 
@@ -654,11 +673,20 @@ class IntervalRegressor:
     def from_primitive(cls, payload: Mapping[str, object]) -> "IntervalRegressor":
         """Rehydrate a calibrator from a primitive payload."""
         schema_version = payload.get("schema_version")
+        if schema_version == 2:
+            return cls._from_primitive_v2(payload)
         if schema_version != 1:
             raise ConfigurationError(
-                "Unsupported IntervalRegressor schema_version. Supported versions: [1].",
-                details={"schema_version": schema_version, "supported_versions": [1]},
+                "Unsupported IntervalRegressor schema_version. Supported versions: [1, 2].",
+                details={"schema_version": schema_version, "supported_versions": [1, 2]},
             )
+        deprecate(
+            "IntervalRegressor state at schema_version 1 uses pickle serialization and will not "
+            "load in v1.0.0. Re-save your WrapCalibratedExplainer state to upgrade.",
+            key="interval_regressor_primitive_v1",
+            stacklevel=3,
+            raise_on_error=False,
+        )
         calibrator_type = payload.get("calibrator_type")
         if calibrator_type != "interval_regressor":
             raise ConfigurationError(
@@ -698,3 +726,99 @@ class IntervalRegressor:
                 details={"restored_type": type(restored).__name__},
             )
         return restored
+
+    @classmethod
+    def _from_primitive_v2(cls, payload: Mapping[str, object]) -> "IntervalRegressor":
+        """Rehydrate a JSON-safe schema v2 primitive."""
+        calibrator_type = payload.get("calibrator_type")
+        if calibrator_type != "interval_regressor":
+            raise ConfigurationError(
+                "Invalid calibrator_type for IntervalRegressor v2 payload.",
+                details={"calibrator_type": calibrator_type, "expected": "interval_regressor"},
+            )
+        fields = payload.get("fields")
+        if not isinstance(fields, Mapping):
+            raise ConfigurationError(
+                "IntervalRegressor v2 primitive missing 'fields' mapping.",
+                details={"field": "fields"},
+            )
+        required_fields = ("y_cal_hat", "residual_cal", "sigma_cal")
+        missing_fields = [name for name in required_fields if fields.get(name) is None]
+        if missing_fields:
+            raise ConfigurationError(
+                "IntervalRegressor v2 primitive missing required field(s): "
+                + ", ".join(missing_fields),
+                details={"fields": missing_fields},
+            )
+
+        obj = cls.__new__(cls)
+        obj.ce = None
+        obj._bins_storage = None
+        obj._bins_size = 0
+        obj.bins = fields.get("bins")
+        obj.model = obj
+        obj._y_cal_hat_storage = np.asarray(fields.get("y_cal_hat"), dtype=float)
+        obj._y_cal_hat_size = obj._y_cal_hat_storage.shape[0]
+        obj._residual_cal_storage = np.asarray(fields.get("residual_cal"), dtype=float)
+        obj._residual_cal_size = obj._residual_cal_storage.shape[0]
+        obj._sigma_cal_storage = np.asarray(fields.get("sigma_cal"), dtype=float)
+        obj._sigma_cal_size = obj._sigma_cal_storage.shape[0]
+        obj.cps = crepes.ConformalPredictiveSystem()
+        parameters = payload.get("parameters")
+        seed = parameters.get("seed") if isinstance(parameters, Mapping) else None
+        obj._fit_cps(seed=seed)
+        obj.venn_abers = None
+        obj.proba_cal = None
+        obj.y_threshold = fields.get("y_threshold")
+        obj.current_y_threshold = fields.get("current_y_threshold")
+        obj.split = {}
+        raw_parts = fields.get("split_parts")
+        if isinstance(raw_parts, list) and len(raw_parts) == 2:
+            obj.split["parts"] = [list(raw_parts[0]), list(raw_parts[1])]
+        else:
+            n = obj._y_cal_hat_size
+            obj.split["parts"] = [list(range(n // 2)), list(range(n // 2, n))]
+        obj._fit_split_cps(seed=seed)
+        return obj
+
+    def _fit_cps(self, *, seed: Any = None) -> None:
+        """Fit the primary conformal predictive system from stored arrays."""
+        if self.bins is None:
+            self.cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, seed=seed)
+        else:
+            self.cps.fit(
+                residuals=self.residual_cal,
+                sigmas=self.sigma_cal,
+                bins=self.bins,
+                seed=seed,
+            )
+
+    def _fit_split_cps(self, *, seed: Any = None) -> None:
+        """Fit the probabilistic split conformal system from stored arrays."""
+        cal_cps = self.split["parts"][0]
+        self.split["cps"] = crepes.ConformalPredictiveSystem()
+        if self.bins is None:
+            self.split["cps"].fit(
+                residuals=self.residual_cal[cal_cps],
+                sigmas=self.sigma_cal[cal_cps],
+                seed=seed,
+            )
+        else:
+            self.split["cps"].fit(
+                residuals=self.residual_cal[cal_cps],
+                sigmas=self.sigma_cal[cal_cps],
+                bins=self.bins[cal_cps],
+                seed=seed,
+            )
+
+    def reattach_learner(
+        self,
+        learner: Any,
+        *,
+        calibrated_explainer: Any = None,
+        difficulty_estimator: Any = None,
+    ) -> None:
+        """Re-attach the calibrated explainer after JSON-safe restoration."""
+        del learner, difficulty_estimator
+        if calibrated_explainer is not None:
+            self.ce = calibrated_explainer

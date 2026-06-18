@@ -302,7 +302,7 @@ def test_cli_list_modality_filter_invalid_token():
 
 
 def test_plugin_without_modality_is_skipped_with_warning(monkeypatch):
-    """Entry-point plugin missing 'data_modalities' is skipped with UserWarning (fail-closed)."""
+    """Entry-point plugin missing 'data_modalities' is rejected by metadata validation."""
 
     class EntryPointPlugin:
         plugin_meta = {
@@ -346,7 +346,7 @@ def test_plugin_without_modality_is_skipped_with_warning(monkeypatch):
         lambda: EntryPoints(),
     )
 
-    with pytest.warns(UserWarning, match=r"does not declare required 'data_modalities'"):
+    with pytest.warns(UserWarning, match=r"Invalid metadata.*data_modalities"):
         result = load_entrypoint_plugins(include_untrusted=True)
 
     loaded_names = [d.identifier for d in result] if result else []
@@ -354,7 +354,7 @@ def test_plugin_without_modality_is_skipped_with_warning(monkeypatch):
 
 
 def test_plugin_without_modality_skipped_on_every_discovery(monkeypatch):
-    """Plugin missing 'data_modalities' is skipped with UserWarning on each discovery call."""
+    """Invalid plugin metadata is warned and skipped on each discovery call."""
 
     class EntryPointPlugin:
         plugin_meta = {
@@ -407,7 +407,8 @@ def test_plugin_without_modality_skipped_on_every_discovery(monkeypatch):
         w
         for w in caught
         if issubclass(w.category, UserWarning)
-        and "does not declare required 'data_modalities'" in str(w.message)
+        and "Invalid metadata" in str(w.message)
+        and "data_modalities" in str(w.message)
     ]
     assert len(skip_messages) == 2
 

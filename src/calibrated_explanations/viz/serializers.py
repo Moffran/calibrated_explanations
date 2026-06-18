@@ -79,6 +79,8 @@ class PlotKindRegistry:
             "requires_triangular": False,
             "requires_global_entries": False,
         },
+        # Internal PlotSpec routing kind only: plugin metadata declares semantic
+        # content kinds such as alternative_probabilistic/global_probabilistic.
         "triangular": {
             "modes": {"classification", "regression"},
             "requires_body": False,

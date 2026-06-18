@@ -128,6 +128,43 @@ class PredictionOrchestrator:
         """
         self.explainer.plugin_manager.initialize_chains()
 
+    def restore_calibrator_with_learner(
+        self,
+        calibrator: Any,
+        learner: Any,
+        *,
+        difficulty_estimator: Any = None,
+    ) -> None:
+        """Attach a restored calibrator to the explainer prediction context."""
+        if isinstance(calibrator, list):
+            for item in calibrator:
+                self.restore_calibrator_with_learner(
+                    item,
+                    learner,
+                    difficulty_estimator=difficulty_estimator,
+                )
+            self.explainer.interval_learner = calibrator
+            return
+        if isinstance(calibrator, tuple):
+            restored_items = []
+            for item in calibrator:
+                self.restore_calibrator_with_learner(
+                    item,
+                    learner,
+                    difficulty_estimator=difficulty_estimator,
+                )
+                restored_items.append(item)
+            self.explainer.interval_learner = tuple(restored_items)
+            return
+        reattach = getattr(calibrator, "reattach_learner", None)
+        if callable(reattach):
+            reattach(
+                learner,
+                calibrated_explainer=self.explainer,
+                difficulty_estimator=difficulty_estimator,
+            )
+        self.explainer.interval_learner = calibrator
+
     def predict(
         self,
         x,

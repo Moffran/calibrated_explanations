@@ -224,6 +224,8 @@ class ExplainerHandle:
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying explainer."""
+        if name == "learner":
+            return self.learner
         explainer = self.__dict__.get("_explainer")
         if explainer is None:
             raise AttributeError(name)

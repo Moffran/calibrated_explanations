@@ -12,9 +12,18 @@
   `data_modalities` was absent. That default-fallback is removed in v0.11.4. Plugins
   missing the key now raise `ValidationError` at registration time. Add
   `"data_modalities": ["tabular"]` (or the appropriate modality) to your `plugin_meta`
-  dict. See `docs/upgrade/v0.11.4-upgrade-checklist.md` for the full migration note.
+  dict. Entry-point discovery warns and skips invalid plugin metadata fail-closed. See
+  `docs/upgrade/v0.11.4-upgrade-checklist.md` for the full migration note.
 
 ### Bug fixes
+
+- **ADR-031: Migrated native calibrator primitives to JSON-safe schema v2.**
+  `VennAbers` and `IntervalRegressor` now serialize field-level JSON-safe
+  primitives instead of `pickle_b64` payloads, while v1 pickle primitives remain
+  loadable with `DeprecationWarning` through the v1.0.0 cleanup window. Wrapper
+  state manifests now write schema version 2 and continue to load v1 artifacts.
+  Malformed v2 primitives now fail fast with `ConfigurationError` before reaching
+  NumPy/crepes internals.
 
 - **ADR-013: Added interval calibrator runtime output validation.** Trusted
   VennAbers-style interval calibrators are now sampled at creation time and
@@ -29,6 +38,10 @@
   bounds are present, and explanation batch validation now checks rule-level
   factual and alternative prediction intervals.
 
+- **ADR-038: Unknown wrapper keyword arguments are now visible.**
+  `WrapCalibratedExplainer` emits a `UserWarning` for unrecognized public
+  keyword arguments while continuing to forward them for compatibility.
+
 - **ADR-006: Fixed plugin checksum metadata trust elevation.** Supplying a
   `checksum` field in third-party plugin metadata no longer promotes the plugin
   to trusted. Checksum verification is now recorded separately as integrity
@@ -38,6 +51,21 @@
 - **ADR-008: Fixed multiclass `class_index` latent serialization bug.** `MultiClassCalibratedExplanations.to_json()` and `to_json_stream()` previously lost `class_index` (and `class_label`) because those keys were added to the legacy payload dict after `legacy_to_domain()` had already constructed the `Explanation` object, so `from_legacy_dict` never extracted them and the domain object carried no class annotation. After the `_exp_to_domain` migration, class annotations are now explicitly merged into `domain.metadata` before serialization — `to_json → from_json` round-trips for multiclass collections preserve `class_index` in each explanation's metadata.
 
 ### CI / infrastructure
+
+- **ADR-012: Added strict release docs workflow support.** The reusable docs
+  workflow now runs `sphinx-build -W --keep-going`; nightly docs remain advisory,
+  and a release-branch `ci-release-docs.yml` workflow runs the blocking HTML docs
+  gate for `release/**`.
+
+- **ADR-028/STD-005: Added public logging configuration helper.**
+  `calibrated_explanations.configure_logging()` configures the package root
+  logger and installs the shared context filter; cache and legacy agent loggers
+  now live under ADR-028 `core.*` domains.
+
+- **ADR-037: Plot plugin metadata now uses semantic `plot_kinds`.** Built-in plot
+  plugins declare the six PlotSpec semantic kind names. Legacy category names
+  (`instance`, `collection`, `global`) remain accepted with `DeprecationWarning`
+  until v1.0.0; `triangular` remains an internal PlotSpec routing kind.
 
 - **ADR-005/ADR-030: Closed v0.11.4 test-quality gaps.** Added the missing
   golden explanation fixture schema test, removed redundant private-member

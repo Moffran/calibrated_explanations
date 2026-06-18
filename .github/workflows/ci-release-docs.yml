@@ -1,0 +1,20 @@
+# CI: Release docs gate
+# Purpose: Blocking Sphinx docs build for release branches.
+# Scope: Enforces ADR-012 strict docs build policy on release/** branches.
+name: CI - Release docs
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  workflow_dispatch: {}
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  docs-build:
+    name: Sphinx HTML (release blocking)
+    uses: ./.github/workflows/reusable-build-docs.yml
+    with:
+      build-target: html

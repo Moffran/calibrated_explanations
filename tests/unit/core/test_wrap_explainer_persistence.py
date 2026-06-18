@@ -56,6 +56,51 @@ def test_save_and_load_state_roundtrip_classification(tmp_path: Path) -> None:
     assert_payload_close(baseline, reloaded)
 
 
+def test_save_state_writes_schema_version_2_manifest(tmp_path: Path) -> None:
+    """save_state writes the current ADR-031 schema version."""
+    x, y = make_classification(
+        n_samples=64,
+        n_features=4,
+        n_informative=3,
+        n_redundant=0,
+        random_state=29,
+    )
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=12, random_state=4))
+    wrapper.fit(x[:32], y[:32])
+    wrapper.calibrate(x[32:48], y[32:48], seed=11)
+
+    state_dir = tmp_path / "schema_v2_state"
+    wrapper.save_state(state_dir)
+    manifest = json.loads((state_dir / "manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["schema_version"] == 2
+
+
+def test_load_state_accepts_v1_manifest(tmp_path: Path) -> None:
+    """load_state accepts schema v1 manifests for old saved artifacts."""
+    x, y = make_classification(
+        n_samples=64,
+        n_features=4,
+        n_informative=3,
+        n_redundant=0,
+        random_state=31,
+    )
+    wrapper = WrapCalibratedExplainer(RandomForestClassifier(n_estimators=12, random_state=5))
+    wrapper.fit(x[:32], y[:32])
+    wrapper.calibrate(x[32:48], y[32:48], seed=13)
+
+    state_dir = tmp_path / "schema_v1_state"
+    wrapper.save_state(state_dir)
+    manifest_path = state_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["schema_version"] = 1
+    write_manifest(manifest_path, manifest)
+
+    restored = WrapCalibratedExplainer.load_state(state_dir)
+
+    assert isinstance(restored, WrapCalibratedExplainer)
+
+
 def test_save_and_load_state_roundtrip_regression(tmp_path: Path) -> None:
     """Round-trip persistence preserves calibrated probabilistic regression payloads."""
     x, y = make_regression(n_samples=120, n_features=5, noise=0.2, random_state=11)
