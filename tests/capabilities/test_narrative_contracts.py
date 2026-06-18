@@ -12,11 +12,17 @@ assumption boundary.
 from __future__ import annotations
 
 import pytest
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 
-from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+pytest.importorskip(
+    "yaml",
+    reason="pyyaml not installed; skipping narrative contract tests (requires 'narrative' extra)",
+)
+
+from sklearn.datasets import make_classification  # noqa: E402
+from sklearn.ensemble import RandomForestClassifier  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
+
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer  # noqa: E402
 
 _RNG_SEED = 42
 _N_SAMPLES = 120
